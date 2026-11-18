@@ -49,7 +49,7 @@ public sealed class PythonReIdentifierVersionTests
         Assert.True(match.Success);
         Assert.Equal(1, match.LastIndex);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
-        Assert.Equal("😀a", PythonReSubstitutionAssert.Decode(regex.Subn("😀aa"u8, "\\g<" + name + ">")).ResultText);
+        Assert.Equal("😀a", PythonReSubstitutionAssert.Decode(regex.Subn("😀aa"u8, Encoding.UTF8.GetBytes("\\g<" + name + ">"))).ResultText);
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         Assert.Throws<OperationCanceledException>(() => regex.IsMatch("aa"u8, 0, cancellation.Token));
@@ -65,7 +65,7 @@ public sealed class PythonReIdentifierVersionTests
             captureCursor2.MoveNext(out match);
         }
         Assert.Equal(2, match.LastIndex);
-        Assert.Equal("a|b", PythonReSubstitutionAssert.Decode(regex.Subn("ab"u8, "\\g<é>|\\g<e\u0301>")).ResultText);
+        Assert.Equal("a|b", PythonReSubstitutionAssert.Decode(regex.Subn("ab"u8, "\\g<é>|\\g<e\u0301>"u8)).ResultText);
     }
 
     [Theory]
@@ -77,6 +77,6 @@ public sealed class PythonReIdentifierVersionTests
         Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex("(?P=" + name + ")"));
         Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex("(?(" + name + ")a|b)"));
         Assert.Throws<PythonRePatternException>(() =>
-            PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("a").Subn("a"u8, "\\g<" + name + ">")));
+            PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("a").Subn("a"u8, Encoding.UTF8.GetBytes("\\g<" + name + ">"))));
     }
 }

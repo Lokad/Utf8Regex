@@ -9,26 +9,23 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReNativeSubstitutionTests
 {
     [Theory]
-    [InlineData("(?P<x>é|😀)(a)?", "!é😀a!", @"[\g<x>\2\g<0>]")]
-    [InlineData("(?P<𝒜>é)", "é😀é", "😀\\g<𝒜>\0\\377")]
-    [InlineData("x*", "abxd", @"[\g<0>]")]
-    [InlineData("(?<=é)a", "éaéa", "😀")]
-    [InlineData("^a", "éaaa", "!")]
-    [InlineData("a", "aaaa", "é\\&\\101")]
-    public void PublicByteTemplatesRetainTextSubstitutionResultsAndProgression(string pattern, string subject, string template)
+    [InlineData("(?P<x>é|😀)(a)?", "!é😀a!", @"[\g<x>\2\g<0>]", 0, 0, "![éé][😀a😀a]!", 2)]
+    [InlineData("(?P<𝒜>é)", "é😀é", "😀\\g<𝒜>\0\\377", 1, 2, "é😀😀é\0ÿ", 1)]
+    [InlineData("x*", "abxd", @"[\g<0>]", 0, 0, "[]a[]b[x][]d[]", 5)]
+    [InlineData("(?<=é)a", "éaéa", "😀", 1, 2, "é😀éa", 1)]
+    [InlineData("^a", "éaaa", "!", 0, 2, "éaaa", 0)]
+    [InlineData("a", "aaaa", "é\\&\\101", -1, 0, "aaaa", 0)]
+    public void ByteTemplatesExpandCapturesAndRespectOffsetsAndCounts(
+        string pattern, string subject, string template, int count, int start, string result, int replacements)
     {
         var regex = new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern));
-        var input = Encoding.UTF8.GetBytes(subject); var replacement = Encoding.UTF8.GetBytes(template);
-        var starts = Enumerable.Range(0, input.Length + 1).Where(offset => offset == input.Length || (input[offset] & 0xc0) != 0x80);
-        foreach (var count in new[] { -1, 0, 1, 2 })
-            foreach (var start in starts)
-            {
-                var expected = regex.Subn(input, template, count, start);
-                var actual = regex.Subn(input, replacement, count, start);
-                Assert.Equal(expected.ReplacementCount, actual.ReplacementCount);
-                Assert.Equal(expected.ResultBytes, actual.ResultBytes);
-                Assert.Equal(expected.ResultBytes, regex.Replace(input, replacement, count, start));
-            }
+        var input = Encoding.UTF8.GetBytes(subject);
+        var replacement = Encoding.UTF8.GetBytes(template);
+        var expected = Encoding.UTF8.GetBytes(result);
+        var actual = regex.Subn(input, replacement, count, start);
+        Assert.Equal(replacements, actual.ReplacementCount);
+        Assert.Equal(expected, actual.ResultBytes);
+        Assert.Equal(expected, regex.Replace(input, replacement, count, start));
     }
 
     [Fact]
@@ -45,10 +42,7 @@ public sealed class PythonReNativeSubstitutionTests
         Assert.Equal("éa😀", Encoding.UTF8.GetString(regex.Replace("a"u8, "é\\g<x>😀"u8)));
         Assert.Equal(0UL, construction.Budget.ReservedBytes);
         Assert.Equal(0UL, construction.Budget.WorkSteps);
-        // Both source forms share the bounded owner, with explicit independent
-        // keys. Legacy invalid-UTF16 text never aliases strict native content.
-        Assert.Equal("éa😀", Encoding.UTF8.GetString(regex.Replace("a"u8, "é\\g<x>😀")));
-        Assert.Equal(2, regex.DebugReplacementPlanCacheEntryCount);
+        Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
     }
 
     [Theory]

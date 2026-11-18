@@ -50,7 +50,7 @@ public sealed class PythonScalarAtomRegressionTests
                 snapshots1.Add(snapshots1Match);
         }
         Assert.Equal(new[] { "\U0001f600]", "x]" }, snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
-        Assert.Equal("<_><_>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<_>")));
+        Assert.Equal("<_><_>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<_>"u8)));
     }
 
     [Theory]

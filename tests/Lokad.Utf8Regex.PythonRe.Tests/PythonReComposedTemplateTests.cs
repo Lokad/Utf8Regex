@@ -36,7 +36,7 @@ public sealed class PythonReComposedTemplateTests
     {
         using var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        var result = regex.Subn(input, @"[\g<0>]", count, startOffsetInBytes);
+        var result = regex.Subn(input, @"[\g<0>]"u8, count, startOffsetInBytes);
         Assert.Equal(expectedText, Encoding.UTF8.GetString(result.ResultBytes));
         Assert.Equal(expectedCount, result.ReplacementCount);
     }

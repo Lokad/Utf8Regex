@@ -96,7 +96,7 @@ public sealed class PythonReCaptureAliasTests
                     snapshots1.Add(snapshots1Match);
             }
             Assert.Equal(["a", "b"], Assert.Single(snapshots1.Select(captureSnapshot1 => Enumerable.Range(1, captureSnapshot1.Groups.Length - 1).Select(captureNumber1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureNumber1).Span)).ToArray()).ToArray()));
-            Assert.Equal("a|b", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "\\g<" + first + ">|\\g<" + second + ">")));
+            Assert.Equal("a|b", System.Text.Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes("\\g<" + first + ">|\\g<" + second + ">"))));
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
             Assert.Equal("b", System.Text.Encoding.UTF8.GetString((retained.Groups[2].Success ? retained.GetGroupMemory(retained.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
 

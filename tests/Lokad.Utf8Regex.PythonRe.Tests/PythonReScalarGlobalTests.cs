@@ -67,8 +67,8 @@ public sealed partial class PythonReScalarGlobalTests
             Assert.Equal(split, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, limit, start, token)));
             var resultText = e.GetProperty("replacement").GetString();
             var resultCount = e.GetProperty("replacement_count").GetInt32();
-            Assert.Equal(resultText, Encoding.UTF8.GetString(regex.Replace(input, replacement, limit, start, token)));
-            var bytes = regex.Subn(input, replacement, limit, start, token);
+            Assert.Equal(resultText, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(replacement), limit, start, token)));
+            var bytes = regex.Subn(input, Encoding.UTF8.GetBytes(replacement), limit, start, token);
             Assert.Equal(resultText, Encoding.UTF8.GetString(bytes.ResultBytes));
             Assert.Equal(resultCount, bytes.ReplacementCount);
 
@@ -106,13 +106,13 @@ public sealed partial class PythonReScalarGlobalTests
                         regex.SplitRanges(input, 0, 0, source.Token);
                         break;
                     case 6:
-                        regex.Replace(input, "x", 0, 0, source.Token);
+                        regex.Replace(input, "x"u8, 0, 0, source.Token);
                         break;
                     case 8:
-                        regex.Subn(input, "x", 0, 0, source.Token);
+                        regex.Subn(input, "x"u8, 0, 0, source.Token);
                         break;
                     default:
-                        PythonReSubstitutionAssert.Decode(regex.Subn(input, "x", 0, 0, source.Token));
+                        PythonReSubstitutionAssert.Decode(regex.Subn(input, "x"u8, 0, 0, source.Token));
                         break;
                 }
             });

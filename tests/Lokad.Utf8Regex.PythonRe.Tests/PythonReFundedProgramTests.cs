@@ -195,7 +195,7 @@ while (snapshots1Cursor.MoveNext(out var snapshots1Match)) snapshots1.Add(snapsh
 }
 _ = snapshots1;
 }, () => regex.SplitRanges(input),
-            () => regex.Subn(input, "x"), () => regex.CreateMatchCursor(input),
+            () => regex.Subn(input, "x"u8), () => regex.CreateMatchCursor(input),
         ];
         foreach (var operation in operations)
         {

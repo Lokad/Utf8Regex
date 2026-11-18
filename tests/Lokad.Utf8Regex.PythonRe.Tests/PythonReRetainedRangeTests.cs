@@ -225,7 +225,7 @@ public sealed class PythonReRetainedRangeTests
         Assert.True(rangeReceipt.Match.TryGetGroup(1, out var letters));
         Assert.Equal((305, 309), (letters.StartOffsetInBytes, letters.EndOffsetInBytes));
         Assert.Equal(1, rangeReceipt.Match.LastIndex);
-        using var output = second.SubnRetained("12"u8, @"[\g<d>]"); var escaped = output.Result;
+        using var output = second.SubnRetained("12"u8, @"[\g<d>]"u8); var escaped = output.Result;
         second.Dispose();
         Assert.True(digits.TryGetGroup(1, out var digitRange));
         Assert.Equal((5, 7), (digitRange.StartOffsetInBytes, digitRange.EndOffsetInBytes));

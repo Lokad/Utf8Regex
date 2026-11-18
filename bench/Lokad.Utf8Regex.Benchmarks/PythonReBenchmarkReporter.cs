@@ -1509,7 +1509,7 @@ internal sealed class PythonReBenchmarkContext
             PythonReBenchmarkOperation.SubnString or
             PythonReBenchmarkOperation.SubnUtf8
                 ? PythonReReplacementParser.Parse(
-                    benchmarkCase.Replacement,
+                    _replacementBytes,
                     parsed.CaptureGroupCount,
                     parsed.NamedGroups).ToDotNetReplacementString()
                 : benchmarkCase.Replacement;
@@ -1522,7 +1522,7 @@ internal sealed class PythonReBenchmarkContext
             _captureCount == 0)
         {
             var plan = PythonReReplacementParser.Parse(
-                benchmarkCase.Replacement,
+                _replacementBytes,
                 _captureCount,
                 new Dictionary<string, int>(StringComparer.Ordinal));
             var hasNonemptyExactReplacementPattern =
@@ -1832,7 +1832,7 @@ internal sealed class PythonReBenchmarkContext
                     var result = string.Empty;
                     for (var iteration = 0; iteration < iterations; iteration++)
                     {
-                        result = Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement));
+                        result = Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _replacementBytes));
                     }
 
                     return Complete(
@@ -1846,7 +1846,7 @@ internal sealed class PythonReBenchmarkContext
                     byte[] result = [];
                     for (var iteration = 0; iteration < iterations; iteration++)
                     {
-                        result = _pythonRegex.Replace(InputBytes, _case.Replacement);
+                        result = _pythonRegex.Replace(InputBytes, _replacementBytes);
                     }
 
                     return Complete(
@@ -1862,7 +1862,7 @@ internal sealed class PythonReBenchmarkContext
                     {
                         result = Encoding.UTF8.GetString(_pythonRegex.Replace(
                             InputBytes,
-                            _case.Replacement,
+                            _replacementBytes,
                             _case.Coverage.ReplacementCount));
                     }
 
@@ -1877,7 +1877,7 @@ internal sealed class PythonReBenchmarkContext
                     PythonReSubnTextResult result = default;
                     for (var iteration = 0; iteration < iterations; iteration++)
                     {
-                        result = PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement));
+                        result = PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _replacementBytes));
                     }
 
                     return Complete(
@@ -1891,7 +1891,7 @@ internal sealed class PythonReBenchmarkContext
                     Utf8PythonSubnUtf8Result result = default;
                     for (var iteration = 0; iteration < iterations; iteration++)
                     {
-                        result = _pythonRegex.Subn(InputBytes, _case.Replacement);
+                        result = _pythonRegex.Subn(InputBytes, _replacementBytes);
                     }
 
                     return Complete(
@@ -2074,10 +2074,10 @@ internal sealed class PythonReBenchmarkContext
         PythonReBenchmarkOperation.IsMatch => _pythonRegex.IsMatch(InputBytes) ? 1 : 0,        PythonReBenchmarkOperation.Search => Checksum(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search)),        PythonReBenchmarkOperation.SearchFromOffset => Checksum(
             _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search)),        PythonReBenchmarkOperation.Match => Checksum(_pythonRegex.Match(InputBytes)),        PythonReBenchmarkOperation.FullMatch => Checksum(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch)),        PythonReBenchmarkOperation.SearchDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.Count => _pythonRegex.Count(InputBytes),        PythonReBenchmarkOperation.CountFromOffset => _pythonRegex.Count(
             InputBytes,
-            _case.Coverage.StartOffsetInBytes),        PythonReBenchmarkOperation.FindIterDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.FindAllStructural => Checksum(PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.ReplaceString => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),        PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(_pythonRegex.Replace(InputBytes, _case.Replacement)),        PythonReBenchmarkOperation.ReplaceStringLimited => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(
+            _case.Coverage.StartOffsetInBytes),        PythonReBenchmarkOperation.FindIterDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.FindAllStructural => Checksum(PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.ReplaceString => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _replacementBytes))),        PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(_pythonRegex.Replace(InputBytes, _replacementBytes)),        PythonReBenchmarkOperation.ReplaceStringLimited => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(
             InputBytes,
-            _case.Replacement,
-            _case.Coverage.ReplacementCount))),        PythonReBenchmarkOperation.SubnString => Checksum(PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),        PythonReBenchmarkOperation.SubnUtf8 => Checksum(_pythonRegex.Subn(InputBytes, _case.Replacement)),        PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorString(),        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8(),        PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecutePythonReReplaceEvaluatorString(),        PythonReBenchmarkOperation.SplitStrings => Checksum(MaterializePythonSplitStrings()),        PythonReBenchmarkOperation.SplitStringsLimited => Checksum(MaterializePythonSplitStrings(_case.Coverage.MaxSplit)),        PythonReBenchmarkOperation.SplitDetailed => Checksum(MaterializePythonSplitDetailed()),        _ => throw new InvalidOperationException()    };
+            _replacementBytes,
+            _case.Coverage.ReplacementCount))),        PythonReBenchmarkOperation.SubnString => Checksum(PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _replacementBytes))),        PythonReBenchmarkOperation.SubnUtf8 => Checksum(_pythonRegex.Subn(InputBytes, _replacementBytes)),        PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorString(),        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8(),        PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecutePythonReReplaceEvaluatorString(),        PythonReBenchmarkOperation.SplitStrings => Checksum(MaterializePythonSplitStrings()),        PythonReBenchmarkOperation.SplitStringsLimited => Checksum(MaterializePythonSplitStrings(_case.Coverage.MaxSplit)),        PythonReBenchmarkOperation.SplitDetailed => Checksum(MaterializePythonSplitDetailed()),        _ => throw new InvalidOperationException()    };
 
     internal ulong ExecutePythonReSemanticDigest() => _case.Operation switch
     {
@@ -2103,15 +2103,15 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
             _case.Operation,
             PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.ReplaceString => SemanticDigest(
             _case.Operation,
-            Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),        PythonReBenchmarkOperation.ReplaceUtf8 => SemanticDigest(
+            Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _replacementBytes))),        PythonReBenchmarkOperation.ReplaceUtf8 => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Replace(InputBytes, _case.Replacement)),        PythonReBenchmarkOperation.ReplaceStringLimited => SemanticDigest(
+            _pythonRegex.Replace(InputBytes, _replacementBytes)),        PythonReBenchmarkOperation.ReplaceStringLimited => SemanticDigest(
             _case.Operation,
-            Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement, _case.Coverage.ReplacementCount))),        PythonReBenchmarkOperation.SubnString => SemanticDigest(
+            Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _replacementBytes, _case.Coverage.ReplacementCount))),        PythonReBenchmarkOperation.SubnString => SemanticDigest(
             _case.Operation,
-            PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),        PythonReBenchmarkOperation.SubnUtf8 => SemanticDigest(
+            PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _replacementBytes))),        PythonReBenchmarkOperation.SubnUtf8 => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Subn(InputBytes, _case.Replacement)),        PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorStringSemanticDigest(),        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8SemanticDigest(),        PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecutePythonReReplaceEvaluatorStringSemanticDigest(),        PythonReBenchmarkOperation.SplitStrings => SemanticDigest(
+            _pythonRegex.Subn(InputBytes, _replacementBytes)),        PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorStringSemanticDigest(),        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8SemanticDigest(),        PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecutePythonReReplaceEvaluatorStringSemanticDigest(),        PythonReBenchmarkOperation.SplitStrings => SemanticDigest(
             _case.Operation,
             MaterializePythonSplitStrings()),        PythonReBenchmarkOperation.SplitStringsLimited => SemanticDigest(
             _case.Operation,
@@ -2279,7 +2279,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
     {
         EnsureReplacementPhases();
         return PythonReReplacementParser.Parse(
-            _case.Replacement,
+            _replacementBytes,
             _captureCount,
             new Dictionary<string, int>(StringComparer.Ordinal));
     }
@@ -2407,20 +2407,20 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         return _case.Operation switch
         {
             PythonReBenchmarkOperation.ReplaceString => new(
-                Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement)),
+                Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _replacementBytes)),
                 null,
                 null),            PythonReBenchmarkOperation.ReplaceUtf8 => new(
                 string.Empty,
-                _pythonRegex.Replace(InputBytes, _case.Replacement),
+                _pythonRegex.Replace(InputBytes, _replacementBytes),
                 null),            PythonReBenchmarkOperation.ReplaceStringLimited => new(
                 Encoding.UTF8.GetString(_pythonRegex.Replace(
                     InputBytes,
-                    _case.Replacement,
+                    _replacementBytes,
                     _case.Coverage.ReplacementCount)),
                 null,
                 null),            PythonReBenchmarkOperation.SubnString => CreateStringReplacementResult(
-                PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),            PythonReBenchmarkOperation.SubnUtf8 => CreateUtf8ReplacementResult(
-                _pythonRegex.Subn(InputBytes, _case.Replacement)),            _ => throw new InvalidOperationException()        };
+                PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _replacementBytes))),            PythonReBenchmarkOperation.SubnUtf8 => CreateUtf8ReplacementResult(
+                _pythonRegex.Subn(InputBytes, _replacementBytes)),            _ => throw new InvalidOperationException()        };
     }
 
     internal PythonReBenchmarkReplacementResult ExecuteBoundedExactLiteralReplacement()

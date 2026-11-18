@@ -37,7 +37,7 @@ public sealed partial class Utf8PythonRegex
     private readonly bool _canUseZeroOffsetUtf8SearchValueFastPath;
     private readonly bool _canUseZeroOffsetUtf8ValueFastPath;
     private const int ReplacementPlanCacheCapacity = 16;
-    private readonly Utf8BoundedPreparationCache<object, PythonReReplacementPlan> _replacementPlanCache;
+    private readonly Utf8BoundedPreparationCache<byte[], PythonReReplacementPlan> _replacementPlanCache;
     private readonly object _patternSource;
 
     /// <summary>Owns constructor/factory admission and publishes one reusable program.</summary>
@@ -145,7 +145,7 @@ public sealed partial class Utf8PythonRegex
             _canUseZeroOffsetUtf8ValueFastPath =
                 _canUseZeroOffsetUtf8SearchValueFastPath &&
                 _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
-            _replacementPlanCache = Utf8BoundedPreparationCache<object, PythonReReplacementPlan>.CreateRetained(ReplacementPlanCacheCapacity, PythonReReplacementKeyComparer.Instance);
+            _replacementPlanCache = Utf8BoundedPreparationCache<byte[], PythonReReplacementPlan>.CreateRetained(ReplacementPlanCacheCapacity, PythonReReplacementKeyComparer.Instance);
 
             // Fund every retained operation program before transferring compilation
             // admission. Lazy unfunded constructors retain their established path.

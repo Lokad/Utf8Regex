@@ -13,6 +13,7 @@ public class Utf8PythonReNoMatchOutputBenchmarks
     private byte[] _input = null!;
     private string _text = null!;
     private string _replacement = null!;
+    private byte[] _replacementUtf8 = null!;
     private Utf8PythonRegex _unlimited = null!;
     private Utf8PythonRegex _finite = null!;
     private Regex _regex = null!;
@@ -26,6 +27,7 @@ public class Utf8PythonReNoMatchOutputBenchmarks
         _text = item.Input;
         _input = Encoding.UTF8.GetBytes(_text);
         _replacement = item.Replacement;
+        _replacementUtf8 = Encoding.UTF8.GetBytes(_replacement);
         _unlimited = new Utf8PythonRegex(item.Pattern, options: item.Options);
         _finite = new Utf8PythonRegex(item.Pattern, options: item.Options, policy: new Utf8RegexPolicy()
         {
@@ -49,11 +51,11 @@ public class Utf8PythonReNoMatchOutputBenchmarks
     public void Cleanup() => _cancellation.Dispose();
 
     [Benchmark(Baseline = true)]
-    public string Unlimited() => System.Text.Encoding.UTF8.GetString(_unlimited.Replace(_input, _replacement));
+    public string Unlimited() => System.Text.Encoding.UTF8.GetString(_unlimited.Replace(_input, _replacementUtf8));
     [Benchmark]
-    public string Finite() => System.Text.Encoding.UTF8.GetString(_finite.Replace(_input, _replacement));
+    public string Finite() => System.Text.Encoding.UTF8.GetString(_finite.Replace(_input, _replacementUtf8));
     [Benchmark]
-    public string FiniteWithToken() => System.Text.Encoding.UTF8.GetString(_finite.Replace(_input, _replacement, 0, 0, _cancellation.Token));
+    public string FiniteWithToken() => System.Text.Encoding.UTF8.GetString(_finite.Replace(_input, _replacementUtf8, 0, 0, _cancellation.Token));
     [Benchmark]
     public string PredecodedRegex() => _regex.Replace(_text, _replacement);
     [Benchmark]

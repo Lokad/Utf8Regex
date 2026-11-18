@@ -82,7 +82,7 @@ public sealed class PythonReCompletedBackreferenceTests
             }
             Assert.Equal(snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray(),
                             snapshots2.Select(captureSnapshot2 => System.Text.Encoding.UTF8.GetString(captureSnapshot2.GetGroupMemory(captureSnapshot2.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
-            Assert.Equal(System.Text.Encoding.UTF8.GetString(reference.Replace(repeated, "!")), System.Text.Encoding.UTF8.GetString(regex.Replace(repeated, "!")));
+            Assert.Equal(System.Text.Encoding.UTF8.GetString(reference.Replace(repeated, "!"u8)), System.Text.Encoding.UTF8.GetString(regex.Replace(repeated, "!"u8)));
         }
     }
 

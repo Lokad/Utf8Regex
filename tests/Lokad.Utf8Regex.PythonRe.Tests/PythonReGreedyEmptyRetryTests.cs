@@ -85,7 +85,7 @@ public sealed class PythonReGreedyEmptyRetryTests
             Assert.Equal(snapshots3.Select(captureSnapshot3 => captureSnapshot3.GetGroupMemory(captureSnapshot3.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray().Select(Convert.ToHexString),
                             snapshots4.Select(captureSnapshot4 => captureSnapshot4.GetGroupMemory(captureSnapshot4.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray().Select(Convert.ToHexString));
             Assert.Equal(PythonReSplitAssert.Decode(input, reference.SplitRanges(input, 0, start, default)), PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, start, default)));
-            Assert.Equal(System.Text.Encoding.UTF8.GetString(reference.Replace(input, "!", 0, start)), System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!", 0, start)));
+            Assert.Equal(System.Text.Encoding.UTF8.GetString(reference.Replace(input, "!"u8, 0, start)), System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!"u8, 0, start)));
 
             using var cursor = regex.CreateMatchCursor(input, start);
             var alias = cursor;

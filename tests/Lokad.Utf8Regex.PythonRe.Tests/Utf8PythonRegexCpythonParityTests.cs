@@ -84,15 +84,15 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [Fact]
     public void ReplacementTemplatesSupportCpythonGroupAndEscapeExamples()
     {
-        Assert.Equal("x x", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(?i)b+", options: PythonReCompileOptions.IgnoreCase).Replace("bbbb BBBB"u8, "x")));
-        Assert.Equal("xxxx", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(?P<a>x)").Replace("xx"u8, @"\g<a>\g<a>")));
-        Assert.Equal("xxxx", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(?P<a>x)").Replace("xx"u8, @"\g<a>\g<1>")));
-        Assert.Equal("xxxx", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("()x").Replace("xx"u8, @"\g<0>\g<0>")));
-        Assert.Equal("<>b<>", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(a)?").Replace("b"u8, @"<\1>")));
-        Assert.Equal("<>b<>", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(a)?").Replace("b"u8, @"<\g<1>>")));
-        Assert.Equal("\t\n\v\r\f\a\b", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("a").Replace("a"u8, @"\t\n\v\r\f\a\b")));
-        Assert.Equal("xx\bxx\b", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(?P<unk>x)").Replace("xx"u8, @"\g<1>\g<1>\b")));
-        Assert.Equal("hello there", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"(\S)\s+(\S)").Replace("hello  there"u8, @"\1 \2")));
+        Assert.Equal("x x", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(?i)b+", options: PythonReCompileOptions.IgnoreCase).Replace("bbbb BBBB"u8, "x"u8)));
+        Assert.Equal("xxxx", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(?P<a>x)").Replace("xx"u8, @"\g<a>\g<a>"u8)));
+        Assert.Equal("xxxx", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(?P<a>x)").Replace("xx"u8, @"\g<a>\g<1>"u8)));
+        Assert.Equal("xxxx", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("()x").Replace("xx"u8, @"\g<0>\g<0>"u8)));
+        Assert.Equal("<>b<>", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(a)?").Replace("b"u8, @"<\1>"u8)));
+        Assert.Equal("<>b<>", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(a)?").Replace("b"u8, @"<\g<1>>"u8)));
+        Assert.Equal("\t\n\v\r\f\a\b", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("a").Replace("a"u8, @"\t\n\v\r\f\a\b"u8)));
+        Assert.Equal("xx\bxx\b", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(?P<unk>x)").Replace("xx"u8, @"\g<1>\g<1>\b"u8)));
+        Assert.Equal("hello there", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"(\S)\s+(\S)").Replace("hello  there"u8, @"\1 \2"u8)));
     }
 
     [Fact]
@@ -100,36 +100,36 @@ public sealed class Utf8PythonRegexCpythonParityTests
     {
         var regex = new Utf8PythonRegex("x");
 
-        Assert.Equal("\0", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\0")));
-        Assert.Equal("\0", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\000")));
-        Assert.Equal("\0" + "8", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\008")));
-        Assert.Equal("\0" + "9", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\009")));
-        Assert.Equal("\x49", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\111")));
-        Assert.Equal("\x4F", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\117")));
-        Assert.Equal("\xFF", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\377")));
-        Assert.Equal("\x49" + "1", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\1111")));
-        Assert.Equal("\x07", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\07")));
-        Assert.Equal("\0" + "a", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\0a")));
-        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\g<00>")));
-        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\g<000>")));
+        Assert.Equal("\0", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\0"u8)));
+        Assert.Equal("\0", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\000"u8)));
+        Assert.Equal("\0" + "8", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\008"u8)));
+        Assert.Equal("\0" + "9", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\009"u8)));
+        Assert.Equal("\x49", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\111"u8)));
+        Assert.Equal("\x4F", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\117"u8)));
+        Assert.Equal("\xFF", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\377"u8)));
+        Assert.Equal("\x49" + "1", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\1111"u8)));
+        Assert.Equal("\x07", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\07"u8)));
+        Assert.Equal("\0" + "a", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\0a"u8)));
+        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\g<00>"u8)));
+        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(regex.Replace("x"u8, @"\g<000>"u8)));
 
-        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(((((((((((x)))))))))))").Replace("x"u8, @"\11")));
-        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(x)").Replace("x"u8, @"\g<01>")));
-        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(x)").Replace("x"u8, @"\g<001>")));
-        Assert.Equal("xz8", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("((((((((((y))))))))))(.)").Replace("xyz"u8, @"\118")));
-        Assert.Equal("xza", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("((((((((((y))))))))))(.)").Replace("xyz"u8, @"\11a")));
+        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(((((((((((x)))))))))))").Replace("x"u8, @"\11"u8)));
+        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(x)").Replace("x"u8, @"\g<01>"u8)));
+        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(x)").Replace("x"u8, @"\g<001>"u8)));
+        Assert.Equal("xz8", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("((((((((((y))))))))))(.)").Replace("xyz"u8, @"\118"u8)));
+        Assert.Equal("xza", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("((((((((((y))))))))))(.)").Replace("xyz"u8, @"\11a"u8)));
     }
 
     [Fact]
     public void SubnFollowsCpythonExamples()
     {
-        var first = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("(?i)b+", options: PythonReCompileOptions.IgnoreCase).Subn("bbbb BBBB"u8, "x"));
-        var second = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("b+").Subn("bbbb BBBB"u8, "x"));
-        var third = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("b+").Subn("xyz"u8, "x"));
-        var fourth = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("b*").Subn("xyz"u8, "x"));
-        var limited = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("b*").Subn("xyz"u8, "x", count: 2));
-        var emptyTwo = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("").Subn("ab"u8, "-", count: 2));
-        var emptyThree = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("").Subn("ab"u8, "-", count: 3));
+        var first = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("(?i)b+", options: PythonReCompileOptions.IgnoreCase).Subn("bbbb BBBB"u8, "x"u8));
+        var second = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("b+").Subn("bbbb BBBB"u8, "x"u8));
+        var third = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("b+").Subn("xyz"u8, "x"u8));
+        var fourth = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("b*").Subn("xyz"u8, "x"u8));
+        var limited = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("b*").Subn("xyz"u8, "x"u8, count: 2));
+        var emptyTwo = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("").Subn("ab"u8, "-"u8, count: 2));
+        var emptyThree = PythonReSubstitutionAssert.Decode(new Utf8PythonRegex("").Subn("ab"u8, "-"u8, count: 3));
 
         Assert.Equal(("x x", 2), (first.ResultText, first.ReplacementCount));
         Assert.Equal(("x BBBB", 1), (second.ResultText, second.ReplacementCount));
@@ -202,7 +202,7 @@ public sealed class Utf8PythonRegexCpythonParityTests
         AssertTemplateError("(?P<a>x)", @"\g<㊀>", "xx", "bad character in group name '㊀'");
         AssertTemplateError("(?P<a>x)", @"\g<¹>", "xx", "bad character in group name '¹'");
         AssertTemplateError("(?P<a>x)", @"\g<१>", "xx", "bad character in group name '१'");
-        Assert.Throws<IndexOutOfRangeException>(() => System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(?P<a>x)").Replace("xx"u8, @"\g<ab>")));
+        Assert.Throws<IndexOutOfRangeException>(() => System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex("(?P<a>x)").Replace("xx"u8, @"\g<ab>"u8)));
     }
 
     [Fact]
@@ -461,8 +461,8 @@ public sealed class Utf8PythonRegexCpythonParityTests
     {
         Assert.True(new Utf8PythonRegex(@"(?P<µ>x)").Match("x"u8).Success);
         Assert.True(new Utf8PythonRegex(@"(?P<𝔘𝔫𝔦𝔠𝔬𝔡𝔢>x)").Match("x"u8).Success);
-        Assert.Equal("xx", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"(?P<µ>x)").Replace("xx"u8, @"\g<µ>")));
-        Assert.Equal("xx", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"(?P<𝔘𝔫𝔦𝔠𝔬𝔡𝔢>x)").Replace("xx"u8, @"\g<𝔘𝔫𝔦𝔠𝔬𝔡𝔢>")));
+        Assert.Equal("xx", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"(?P<µ>x)").Replace("xx"u8, @"\g<µ>"u8)));
+        Assert.Equal("xx", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"(?P<𝔘𝔫𝔦𝔠𝔬𝔡𝔢>x)").Replace("xx"u8, @"\g<𝔘𝔫𝔦𝔠𝔬𝔡𝔢>"u8)));
     }
 
     [Fact]
@@ -782,7 +782,7 @@ public sealed class Utf8PythonRegexCpythonParityTests
     [Fact]
     public void ZeroWidthBoundaryReplaceFollowsCpythonExamples()
     {
-        Assert.Equal("-a-::-bc-", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"\b").Replace("a::bc"u8, "-")));
+        Assert.Equal("-a-::-bc-", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"\b").Replace("a::bc"u8, "-"u8)));
     }
 
     [Fact]
@@ -806,8 +806,8 @@ public sealed class Utf8PythonRegexCpythonParityTests
             }
         }
         Assert.Equal("|a|||bc|", JoinValues(wholeMatches17.ToArray()));
-        Assert.Equal("-a---bc-", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"\b|:+").Replace("a::bc"u8, "-")));
-        Assert.Equal("[]a[][::][]bc[]", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"(\b|:+)").Replace("a::bc"u8, @"[\1]")));
+        Assert.Equal("-a---bc-", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"\b|:+").Replace("a::bc"u8, "-"u8)));
+        Assert.Equal("[]a[][::][]bc[]", System.Text.Encoding.UTF8.GetString(new Utf8PythonRegex(@"(\b|:+)").Replace("a::bc"u8, @"[\1]"u8)));
     }
 
     private static (int Start, int End) GetSpan(Utf8PythonValueMatch match)
@@ -849,7 +849,7 @@ public sealed class Utf8PythonRegexCpythonParityTests
     private static void AssertTemplateError(string pattern, string replacement, string input, string messageContains)
     {
         var regex = new Utf8PythonRegex(pattern);
-        var ex = Assert.Throws<PythonRePatternException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace(System.Text.Encoding.UTF8.GetBytes(input), replacement)));
+        var ex = Assert.Throws<PythonRePatternException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace(System.Text.Encoding.UTF8.GetBytes(input), System.Text.Encoding.UTF8.GetBytes(replacement))));
         Assert.Contains(messageContains, ex.Message, StringComparison.Ordinal);
     }
 

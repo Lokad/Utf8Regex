@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- PythonRe `Replace`, `Subn` and `SubnRetained` take UTF-8 templates.
+  Use an `u8` literal or encode dynamic text before calling. Strict template
+  validation, capture expansion and retained-output funding remain in place.
+
 - Remove PCRE2 `Analyze()` and its diagnostic-only construction walk. Runtime
   search bounds and byte-slice flags still apply.
 

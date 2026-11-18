@@ -77,8 +77,8 @@ public sealed class PythonReAsciiBoundaryTests
                         Assert.Equal(control.IsMatch(input, offset, token.Token), actual.IsMatch(input, offset, token.Token));
                         foreach (var limit in new[] { 0, 1, 2 })
                             Assert.Equal(PythonReSplitAssert.Decode(input, control.SplitRanges(input, limit, offset, token.Token)), PythonReSplitAssert.Decode(input, actual.SplitRanges(input, limit, offset, token.Token)));
-                        Assert.Equal(PythonReSubstitutionAssert.Decode(control.Subn(input, "-", 0, offset, token.Token)).ResultText,
-                            PythonReSubstitutionAssert.Decode(actual.Subn(input, "-", 0, offset, token.Token)).ResultText);
+                        Assert.Equal(PythonReSubstitutionAssert.Decode(control.Subn(input, "-"u8, 0, offset, token.Token)).ResultText,
+                            PythonReSubstitutionAssert.Decode(actual.Subn(input, "-"u8, 0, offset, token.Token)).ResultText);
                         if (offset == input.Length) break;
                         Rune.DecodeFromUtf8(input.AsSpan(offset), out _, out var width);
                         offset += width;

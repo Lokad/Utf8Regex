@@ -89,7 +89,7 @@ public sealed class PythonReTextInputContractTests
             }
             _ = snapshots2;
             _ = PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default));
-            _ = regex.Replace(input, "X");
+            _ = regex.Replace(input, "X"u8);
             using var cursor = regex.CreateMatchCursor(input);
             var observed = 0;
             while (cursor.MoveNext(out _))

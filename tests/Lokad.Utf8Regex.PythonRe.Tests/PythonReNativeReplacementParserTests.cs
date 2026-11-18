@@ -8,79 +8,42 @@ public sealed class PythonReNativeReplacementParserTests
     private static readonly IReadOnlyDictionary<string, int> Names =
         new Dictionary<string, int>(StringComparer.Ordinal) { ["word"] = 1, ["𝒜"] = 2 };
 
-    public static IEnumerable<object[]> Templates()
-    {
-        foreach (var row in PythonReReplacementPreparationAdmissionTests.Shapes())
-            if ((string)row[0] != "surrogate-fragments") yield return row;
-        yield return ["é😀\0e\u0301\\é\\😀\\g<𝒜>\\377\\g<00000000000000000001>"];
-    }
-
-    [Theory]
-    [MemberData(nameof(Templates))]
-    public void NativeAndTextTemplatesPublishIdenticalBytePrograms(string template)
-    {
-        // Shapes uses two additional name spellings.
-        var names = new Dictionary<string, int>(Names) { ["_é"] = 7 };
-        var expected = PythonReReplacementParser.Parse(template, 12, names);
-        var actual = PythonReReplacementParser.Parse(Encoding.UTF8.GetBytes(template).AsSpan(), 12, names);
-        Assert.Equal(expected.LiteralUtf8, actual.LiteralUtf8);
-        Assert.Equal(expected.Tokens.Length, actual.Tokens.Length);
-        for (var i = 0; i < expected.Tokens.Length; i++)
-        {
-            Assert.Equal(expected.Tokens[i].Kind, actual.Tokens[i].Kind);
-            Assert.Equal(expected.Tokens[i].Number, actual.Tokens[i].Number);
-            Assert.Equal(expected.Tokens[i].Utf8, actual.Tokens[i].Utf8);
-        }
-    }
-
     [Theory]
     [InlineData(2046)] [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
-    public void LiteralBlocksRejoinScalarAndLegacySurrogateFragments(int prefixLength)
+    public void LiteralBlocksRejoinScalars(int prefixLength)
     {
         var prefix = new string('x', prefixLength);
         var template = prefix + "😀é\\g<word>" + prefix + "😀é";
         var native = PythonReReplacementParser.Parse(Encoding.UTF8.GetBytes(template).AsSpan(), 2, Names);
-        var text = PythonReReplacementParser.Parse(template, 2, Names);
-        Assert.Equal(Encoding.UTF8.GetBytes(prefix + "😀é"), native.Tokens[0].RequiredUtf8);
-        Assert.Equal(text.Tokens[0].Utf8, native.Tokens[0].Utf8);
-        Assert.Equal(text.Tokens[2].Utf8, native.Tokens[2].Utf8);
-        var repaired = PythonReReplacementParser.Parse(prefix + new string((char)0xd83d, 1) + @"\g<word>" + new string((char)0xde00, 1), 2, Names);
-        Assert.Equal(Encoding.UTF8.GetBytes(prefix + "\ufffd"), repaired.Tokens[0].RequiredUtf8);
-        Assert.Equal("\ufffd"u8.ToArray(), repaired.Tokens[2].RequiredUtf8);
+        Assert.Equal(3, native.Tokens.Length);
+        var literal = Encoding.UTF8.GetBytes(prefix + "😀é");
+        Assert.Equal(literal, native.Tokens[0].RequiredUtf8);
+        Assert.Equal(PythonReReplacementToken.ForGroupNumber(1), native.Tokens[1]);
+        Assert.Equal(literal, native.Tokens[2].RequiredUtf8);
     }
 
     [Theory]
-    [InlineData(@"\q")]
-    [InlineData("\\")]
-    [InlineData(@"\g")]
-    [InlineData(@"\g<")]
-    [InlineData(@"\g<word")]
-    [InlineData(@"\g<>")]
-    [InlineData(@"\g<bad name>")]
-    [InlineData(@"\g<unknown>")]
-    [InlineData(@"\g<3>")]
-    [InlineData(@"\g<00000000000000000000000099999999999999999999>")]
-    [InlineData(@"\3")]
-    [InlineData(@"\78")]
-    [InlineData(@"\400")]
-    [InlineData(@"\777")]
-    public void ErrorsRetainTextCoordinatesAndVocabularyAfterUnicodePrefixes(string suffix)
+    [InlineData(@"\q", 0)]
+    [InlineData("\\", 0)]
+    [InlineData(@"\g", 2)]
+    [InlineData(@"\g<", 3)]
+    [InlineData(@"\g<word", 3)]
+    [InlineData(@"\g<>", 3)]
+    [InlineData(@"\g<bad name>", 3)]
+    [InlineData(@"\g<3>", 3)]
+    [InlineData(@"\g<00000000000000000000000099999999999999999999>", 3)]
+    [InlineData(@"\3", 1)]
+    [InlineData(@"\78", 1)]
+    [InlineData(@"\400", 0)]
+    [InlineData(@"\777", 0)]
+    public void ErrorsRetainUtf16CoordinatesAfterUnicodePrefixes(string suffix, int relativePosition)
     {
         foreach (var prefix in new[] { "", "é😀\0e\u0301", new string('x', 2047) + "😀" })
         {
-            var template = prefix + suffix;
-            var expected = Record.Exception(() => PythonReReplacementParser.Parse(template, 2, Names));
-            var actual = Record.Exception(() => PythonReReplacementParser.Parse(Encoding.UTF8.GetBytes(template).AsSpan(), 2, Names));
-            Assert.NotNull(expected); Assert.NotNull(actual);
-            Assert.Equal(expected.GetType(), actual.GetType());
-            Assert.Equal(expected.Message, actual.Message);
-            if (expected is PythonRePatternException textError)
-            {
-                var nativeError = Assert.IsType<PythonRePatternException>(actual);
-                Assert.Equal(textError.Position, nativeError.Position);
-                Assert.Equal(textError.ErrorSource, nativeError.ErrorSource);
-                Assert.Equal(textError.ErrorKind, nativeError.ErrorKind);
-            }
+            var template = Encoding.UTF8.GetBytes(prefix + suffix);
+            var error = Assert.Throws<PythonRePatternException>(() => PythonReReplacementParser.Parse(template, 2, Names));
+            Assert.Equal(prefix.Length + relativePosition, error.Position);
+            Assert.Equal(PythonReErrorSource.Replacement, error.ErrorSource);
         }
     }
 

@@ -15,7 +15,7 @@ public sealed class PythonReSubstitutionOutputTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
-        var plan = PythonReReplacementParser.Parse(@"<\1>", 1, new Dictionary<string, int>());
+        var plan = PythonReReplacementParser.Parse(@"<\1>"u8, 1, new Dictionary<string, int>());
         var input = "😀"u8.ToArray();
         var cursor = new PythonReScalarMatchCursor(input, program, 0,
             Regex.InfiniteMatchTimeout,
@@ -175,7 +175,7 @@ public sealed class PythonReSubstitutionOutputTests
     {
         var regex = new Utf8PythonRegex("cat");
         var input = Encoding.UTF8.GetBytes(text);
-        var bytes = regex.Subn(input, replacement, limit);
+        var bytes = regex.Subn(input, Encoding.UTF8.GetBytes(replacement), limit);
         Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes.ResultBytes);
         Assert.Equal(replacements, bytes.ReplacementCount);
         input.AsSpan().Fill((byte)'x');

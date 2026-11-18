@@ -3,11 +3,10 @@ using Lokad.Utf8Regex.Internal.Caching;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-internal readonly struct PythonReReplacementRetainedStorage : IUtf8RetainedStorage<object, PythonReReplacementPlan>
+internal readonly struct PythonReReplacementRetainedStorage : IUtf8RetainedStorage<byte[], PythonReReplacementPlan>
 {
-    public ulong GetKeyCharge(object key) => key is byte[] bytes
-        ? Utf8ConstructionBudget.ArrayBytes<byte>(bytes.Length)
-        : Utf8ConstructionBudget.StringBytes(((string)key).Length);
+    public ulong GetKeyCharge(byte[] key) => Utf8ConstructionBudget.ArrayBytes<byte>(key.Length);
+
     public bool TryGetValueCharge<TControl>(PythonReReplacementPlan value, ulong maximum, TControl control, out ulong charge)
         where TControl : struct, IUtf8ConstructionTextControl
     {
@@ -30,20 +29,17 @@ internal readonly struct PythonReReplacementRetainedStorage : IUtf8RetainedStora
     }
 }
 
-// One bounded cache, with the original text keys for text conveniences and owned
-// bytes for native templates. Representation sharing earns no admission discount.
-internal sealed class PythonReReplacementKeyComparer : IEqualityComparer<object>
+internal sealed class PythonReReplacementKeyComparer : IEqualityComparer<byte[]>
 {
     internal static readonly PythonReReplacementKeyComparer Instance = new();
-    public new bool Equals(object? left, object? right) => ReferenceEquals(left, right) ||
-        (left is string text && right is string other && StringComparer.Ordinal.Equals(text, other)) ||
-        (left is byte[] bytes && right is byte[] otherBytes && bytes.AsSpan().SequenceEqual(otherBytes));
 
-    public int GetHashCode(object key)
+    public bool Equals(byte[]? left, byte[]? right) => ReferenceEquals(left, right) ||
+        (left is not null && right is not null && left.AsSpan().SequenceEqual(right));
+
+    public int GetHashCode(byte[] key)
     {
-        if (key is string text) return StringComparer.Ordinal.GetHashCode(text);
         var hash = new HashCode();
-        hash.AddBytes((byte[])key);
+        hash.AddBytes(key);
         return hash.ToHashCode();
     }
 }

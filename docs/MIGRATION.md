@@ -417,6 +417,11 @@ callback execution, final output/cancellation checks and memory admission belong
 to the host. PCRE2 likewise removes both callback overload families/evaluator
 delegates, and the now-unused Core `Utf8ReplacementWriter` is removed.
 
+PythonRe templates now take `ReadOnlySpan<byte>`. Use `@"<\g<name>>"u8` for a fixed
+template or encode a dynamic template in the host before calling `Replace`,
+`Subn` or `SubnRetained`. Use a strict UTF-8 encoder if the host must reject
+unpaired surrogates. Template grammar errors still report UTF-16 positions.
+
 For text output, decode `regex.Replace(input, template)` in the host with
 `Encoding.UTF8.GetString`. The regex meters its byte result; the caller owns the
 additional string allocation and any host-level admission for it.

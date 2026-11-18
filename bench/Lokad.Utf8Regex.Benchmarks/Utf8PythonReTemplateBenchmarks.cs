@@ -5,7 +5,7 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
-// Public text replacement on overlapping ASCII-capture/Unicode-subject semantics.
+// Public replacement with equivalent decoded output and prepared templates.
 // Setup warms immutable template plans; cold admission is qualified by tests.
 [MemoryDiagnoser]
 public class Utf8PythonReTemplateBenchmarks
@@ -16,7 +16,6 @@ public class Utf8PythonReTemplateBenchmarks
     private Utf8PythonRegex _finite = null!;
     private Regex _regex = null!;
     private CancellationTokenSource _cancellation = null!;
-    private const string Template = @"<\g<word>>";
 
     [Params(1, 128)]
     public int Repetitions { get; set; }
@@ -50,11 +49,11 @@ public class Utf8PythonReTemplateBenchmarks
     public void Cleanup() => _cancellation.Dispose();
 
     [Benchmark(Baseline = true)]
-    public string Unlimited() => System.Text.Encoding.UTF8.GetString(_unlimited.Replace(_input, Template));
+    public string Unlimited() => System.Text.Encoding.UTF8.GetString(_unlimited.Replace(_input, @"<\g<word>>"u8));
     [Benchmark]
-    public string Finite() => System.Text.Encoding.UTF8.GetString(_finite.Replace(_input, Template));
+    public string Finite() => System.Text.Encoding.UTF8.GetString(_finite.Replace(_input, @"<\g<word>>"u8));
     [Benchmark]
-    public string FiniteWithToken() => System.Text.Encoding.UTF8.GetString(_finite.Replace(_input, Template, 0, 0, _cancellation.Token));
+    public string FiniteWithToken() => System.Text.Encoding.UTF8.GetString(_finite.Replace(_input, @"<\g<word>>"u8, 0, 0, _cancellation.Token));
     [Benchmark]
     public string PredecodedRegex() => _regex.Replace(_text, "<${word}>");
     [Benchmark]

@@ -30,7 +30,7 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.Equal(count == 2 ? new[] { 0, 7 } : new[] { 0, 2, 6, 7 },
                 matches.Select(match => match.Value.StartOffsetInBytes));
             Assert.Equal(7, matches[^1].Value.EndOffsetInBytes);
-            Assert.Equal(count == 2 ? "XX" : "XX😀X!X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
+            Assert.Equal(count == 2 ? "XX" : "XX😀X!X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X"u8)));
             Assert.Equal(count == 2, regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
             using var cancellation = new CancellationTokenSource();
             cancellation.Cancel();
@@ -89,7 +89,7 @@ public sealed class PythonReTranslationLifetimeTests
                     snapshots1.Add(snapshots1Match);
             }
             Assert.Equal(1, snapshots1.Count);
-            Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
+            Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X"u8)));
         }
     }
     [Theory]
@@ -122,7 +122,7 @@ public sealed class PythonReTranslationLifetimeTests
                 snapshots2.Add(snapshots2Match);
         }
         Assert.Equal(1, snapshots2.Count);
-        Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
+        Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X"u8)));
     }
     [Theory]
     [InlineData("needle", "needle")]
@@ -219,7 +219,7 @@ public sealed class PythonReTranslationLifetimeTests
                 captureCursor5.MoveNext(out snapshot5);
             }
             Assert.True(snapshot5.Success);
-            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, @"\g<α>", 1)));
+            Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, @"\g<α>"u8, 1)));
         }
     }
     [Theory]

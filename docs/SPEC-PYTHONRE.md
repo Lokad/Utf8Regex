@@ -611,10 +611,12 @@ unnecessary branch state can lower construction/execution work, depth and workin
 requirements; captures, folding and retained-result/interruption contracts remain.
 
 Cold FullMatch/replacement preparation retains separate construction limits;
-finite working bytes cap additional covered construction capacity. A byte failure
-can report ConstructionBytes before execution. Template lookup also charges one
-invocation work step per 2,048 UTF-16 template units, rounded up, including warm
-cache access. Warm text-key hits need no cold scope. Failed preparation restores
+finite working bytes cap additional covered construction capacity. Denial of
+the immutable template key reports `ExecutionWorkingBytes`. A parser byte
+denial can report `ConstructionBytes` before matching. Template lookup charges
+one invocation work step per 2,048 template bytes, rounded up. On a miss the
+key copy charges the same rate. Warm lookups borrow the supplied bytes.
+Failed preparation restores
 parent loans without refunding spent work; one caller's interruption cannot become
 another waiter's authority. These scopes do not combine invocation, preparation
 and cache retention into a total memory bound.
@@ -708,7 +710,7 @@ The shared worker has one template operation; per-match snapshot loans, callback
 rollback and string completion are gone. Writer/final-root overlap, typed denial,
 original cancellation/deadline and retained-byte transfer remain enforced.
 
-`SubnRetained(input, replacement, count = 0, startOffsetInBytes = 0, token = default)`
+`SubnRetained(input, replacementUtf8, count = 0, startOffsetInBytes = 0, cancellationToken = default)`
 requires caller-funded Compile and returns `Utf8PythonRetainedSubnResult`. Its
 `Result` contains the owned UTF-8 byte array and replacement count. It uses the
 ordinary template validation, native/scalar matching and output pipeline, without
@@ -727,25 +729,21 @@ Previously obtained byte arrays remain valid; the caller owns admission for
 continued retention after explicit release. No finalizer is involved. Host text collections and ordinary
 bulk byte output remain outside these two receipt APIs.
 
-`Replace`, `Subn` and `SubnRetained` also accept a `ReadOnlySpan<byte>` replacement
-template, with optional count, byte start and cancellation token. These are UTF-8
-encodings of the same Python Unicode template grammar, not Python bytes-pattern
-semantics. Parsing, literal fragments, cache keys and output stay native bytes;
+`Replace`, `Subn` and `SubnRetained` take a `ReadOnlySpan<byte>` replacement template,
+with optional count, byte start and cancellation token. Templates encode Python's
+Unicode template grammar in UTF-8. Parsing, literal fragments, cache keys and output stay in bytes;
 only selected group-name/error lexemes may project text. Complete strict template
 validation precedes grammar errors and matching, including misses and negative
 counts. Template `Position` retains its published UTF-16 units, derived from the
-failed prefix. Existing string templates retain fragment-local surrogate repair.
+failed prefix.
 
 Warm native lookup borrows the supplied span. Cold preparation admits an immutable
 byte-key copy before acquisition and keeps its working loan through retained-cache
 admission; denial never retries without limits. That temporary key overlaps parser
 capacity under the working-byte ceiling and fixed construction backstop. Retained
-cache capacity has its separate existing conservative bound. Text and byte keys
-share one bounded cache but occupy independent entries, allowing earlier eviction
-without normalizing or aliasing legacy text. Failed templates are not retained.
+cache capacity has its separate conservative bound. Failed templates are not retained.
 Funded key/plan storage remains charged through eviction/disposal until its last
-active user finishes. Retained byte output has the same receipt contract as the
-text-template overload. Numeric work/depth/working/result limits and the original
+active user finishes. Numeric work/depth/working/result limits and the original
 operation token/deadline apply; neither caller buffers nor total process memory
 become covered by this API.
 

@@ -113,7 +113,7 @@ public sealed class PythonReOperationBoundaryTests
                 _ = regex.SplitRanges(input, 0, 0, token);
                 break;
             case 10:
-                _ = System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\2:\1", 0, 0, token));
+                _ = System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\2:\1"u8, 0, 0, token));
                 break;
             case 12:
                 _ = regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch);

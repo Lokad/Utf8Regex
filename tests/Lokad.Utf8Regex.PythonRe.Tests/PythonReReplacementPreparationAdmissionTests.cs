@@ -15,18 +15,18 @@ public sealed class PythonReReplacementPreparationAdmissionTests
     {
         foreach (var template in new[] { "", "café😀", @"\101z\041", @"x\0\07\377",
             @"\g<0>", @"\1\2\12", @"\g<0002>\g<word>", @"\g<𝒜>\g<_é>",
-            "café\\g<word>😀", "surrogate-fragments", @"\\\n\r\t\v\f\a\b\&", "a$\\101\\g<2>é" })
+            "café\\g<word>😀", @"\\\n\r\t\v\f\a\b\&", "a$\\101\\g<2>é" })
             yield return [template];
     }
 
-    private static PythonReReplacementPlan Parse(string template) => PythonReReplacementParser.Parse(
-        template == "surrogate-fragments" ? new string((char)0xd83d, 1) + @"\g<1>" + new string((char)0xde00, 1) : template, 12, Names);
+    private static PythonReReplacementPlan Parse(string template) =>
+        PythonReReplacementParser.Parse(Encoding.UTF8.GetBytes(template), 12, Names);
 
     [Fact]
     public void PublishedTemplateStorageKeepsItsConstructionLoan()
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var plan = PythonReReplacementParser.Parse("café😀\\g<1>z", 1,
+        var plan = PythonReReplacementParser.Parse("café😀\\g<1>z"u8, 1,
             new Dictionary<string, int>(StringComparer.Ordinal));
         Assert.NotEmpty(plan.Tokens);
         Assert.True(owner.Budget.ReservedBytes > 0,
@@ -223,17 +223,17 @@ public sealed class PythonReReplacementPreparationAdmissionTests
             {
                 captureCursor1.MoveNext(out retained);
             }
+            var invalidTemplate = Encoding.UTF8.GetBytes(template);
             for (var attempt = 0; attempt < 2; attempt++)
             {
-                Assert.Throws<PythonRePatternException>(() => regex.Replace(input, template));
-                Assert.Throws<PythonRePatternException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace(input, template)));
-                Assert.Throws<PythonRePatternException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(input, template)));
+                Assert.Throws<PythonRePatternException>(() => regex.Replace(input, invalidTemplate));
+                Assert.Throws<PythonRePatternException>(() => regex.Subn(input, invalidTemplate));
                 Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
             }
             Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
             Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
-            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\g<00000000000000000000001>")));
-            Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\g<00000000000000000000000>")));
+            Assert.Equal("😀", Encoding.UTF8.GetString(regex.Replace(input, @"\g<00000000000000000000001>"u8)));
+            Assert.Equal("😀a", Encoding.UTF8.GetString(regex.Replace(input, @"\g<00000000000000000000000>"u8)));
             Assert.Equal(2, regex.DebugReplacementPlanCacheEntryCount);
         }
     }
@@ -245,31 +245,15 @@ public sealed class PythonReReplacementPreparationAdmissionTests
     [InlineData("x*", "😀a", "", "😀a", 3)]
     public void PublicReplacementUsesCompleteUtf8FragmentsAndPythonReferences(string pattern, string subject,
         string template, string expected, int count)
-        => AssertReplacement(pattern, subject, template, expected, count);
-
-    [Fact]
-    public void MalformedTemplateFragmentsAreRepairedBeforeCapturesCanJoinThem()
-    {
-        // Build invalid UTF-16 interop text after discovery: xUnit serializes
-        // InlineData strings through UTF-8 and repairs isolated surrogate input.
-        var high = new string((char)0xd83d, 1);
-        var low = new string((char)0xde00, 1);
-        AssertReplacement("cat", "cat cat", high, "� �", 2);
-        AssertReplacement(".", "😀é", high + @"\g<0>" + low, "�😀��é�", 2);
-    }
-
-    private static void AssertReplacement(string pattern, string subject, string template, string expected, int count)
     {
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
-        Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, template));
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, template)));
-        var bytes = regex.Subn(input, template);
-        Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes.ResultBytes);
+        var replacement = Encoding.UTF8.GetBytes(template);
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        Assert.Equal(expectedBytes, regex.Replace(input, replacement));
+        var bytes = regex.Subn(input, replacement);
+        Assert.Equal(expectedBytes, bytes.ResultBytes);
         Assert.Equal(count, bytes.ReplacementCount);
-        var text = PythonReSubstitutionAssert.Decode(regex.Subn(input, template));
-        Assert.Equal(expected, text.ResultText);
-        Assert.Equal(count, text.ReplacementCount);
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
     }
 

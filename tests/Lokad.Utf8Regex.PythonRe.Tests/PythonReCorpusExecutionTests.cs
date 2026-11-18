@@ -70,7 +70,7 @@ public sealed class PythonReCorpusExecutionTests
                 Assert.Equal(corpusCase.Expected.MatchCount, regex.Count(input, corpusCase.StartOffsetInBytes));
                 break;
             case PythonReCorpusOperationKind.Replace:
-                Assert.Equal(corpusCase.Expected.ReplacementText, System.Text.Encoding.UTF8.GetString(regex.Replace(input, corpusCase.ReplacementPattern!, count: 0, startOffsetInBytes: corpusCase.StartOffsetInBytes)));
+                Assert.Equal(corpusCase.Expected.ReplacementText, System.Text.Encoding.UTF8.GetString(regex.Replace(input, System.Text.Encoding.UTF8.GetBytes(corpusCase.ReplacementPattern!), count: 0, startOffsetInBytes: corpusCase.StartOffsetInBytes)));
                 break;
             case PythonReCorpusOperationKind.Compile:
                 _ = regex;

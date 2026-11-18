@@ -22,10 +22,10 @@ public sealed class PythonReFundedReplacementTests
         var allowance = new Allowance(4 << 20); using var regex = Compile(allowance);
         var program = allowance.Used;
         var beforeCold = allowance.Reservations;
-        Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!")).ResultText);
+        Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!"u8)).ResultText);
         var retained = allowance.Used; Assert.True(retained > program);
         var reservations = allowance.Reservations;
-        Assert.Equal("a!a!", PythonReSubstitutionAssert.Decode(regex.Subn("aa"u8, @"\g<x>!")).ResultText);
+        Assert.Equal("a!a!", PythonReSubstitutionAssert.Decode(regex.Subn("aa"u8, @"\g<x>!"u8)).ResultText);
         Assert.Equal(retained, allowance.Used);
         Assert.True(allowance.Reservations - reservations < reservations - beforeCold);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
@@ -37,20 +37,20 @@ public sealed class PythonReFundedReplacementTests
     public void InvalidCanceledAndDeniedPreparationsPreserveValidEntries(bool warm)
     {
         var allowance = new Allowance(4 << 20); using var regex = Compile(allowance);
-        if (warm) Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!")).ResultText);
+        if (warm) Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!"u8)).ResultText);
         var retained = allowance.Used;
         var invalid = new string('x', 131072) + @"\q";
-        Assert.Throws<PythonRePatternException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(""u8, invalid)));
+        Assert.Throws<PythonRePatternException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(""u8, System.Text.Encoding.UTF8.GetBytes(invalid))));
         Assert.Equal(retained, allowance.Used);
         using var canceled = new CancellationTokenSource(); allowance.AfterGrant = canceled.Cancel;
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
-            PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"new\g<x>", 0, 0, canceled.Token))).CancellationToken);
+            PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"new\g<x>"u8, 0, 0, canceled.Token))).CancellationToken);
         allowance.AfterGrant = null; Assert.Equal(retained, allowance.Used);
         allowance.Maximum = retained + 256;
-        Assert.Throws<Utf8MemoryAdmissionException>(() => PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, new string('x', 65536))));
+        Assert.Throws<Utf8MemoryAdmissionException>(() => PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, System.Text.Encoding.UTF8.GetBytes(new string('x', 65536)))));
         Assert.Equal(retained, allowance.Used);
         allowance.Maximum = 4 << 20;
-        Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!")).ResultText);
+        Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!"u8)).ResultText);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
     }
 
@@ -62,7 +62,7 @@ public sealed class PythonReFundedReplacementTests
         var retained = allowance.Used;
         allowance.AfterGrant = () => ticks = 100;
         var subject = new byte[1 << 20]; subject.AsSpan().Fill((byte)'a');
-        var failure = Assert.Throws<RegexMatchTimeoutException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(subject, @"\g<x>!")));
+        var failure = Assert.Throws<RegexMatchTimeoutException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(subject, @"\g<x>!"u8)));
         allowance.AfterGrant = null;
         Assert.Empty(failure.Input); Assert.Equal(regex.Pattern, failure.Pattern);
         Assert.Equal(retained, allowance.Used);
@@ -73,15 +73,17 @@ public sealed class PythonReFundedReplacementTests
     public void PartialDenialOnAFullCachePreservesItsValidPlans()
     {
         var allowance = new Allowance(4 << 20); using var regex = Compile(allowance);
-        for (var i = 0; i < 64; i++) PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, i.ToString("D4") + @"\g<x>!"));
+        for (var i = 0; i < 64; i++) PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, System.Text.Encoding.UTF8.GetBytes(i.ToString("D4") + @"\g<x>!")));
         var retained = allowance.Used; var reservations = allowance.Reservations;
         allowance.Maximum = retained + 1024;
-        Assert.Throws<Utf8MemoryAdmissionException>(() => PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, new string('z', 65536))));
+        // The immutable key fits. A later construction allocation exceeds the remaining allowance.
+        var template = System.Text.Encoding.UTF8.GetBytes(new string('z', 768));
+        Assert.Throws<Utf8MemoryAdmissionException>(() => regex.Subn("a"u8, template));
         Assert.True(allowance.Reservations > reservations, "Denial must follow actual partial preparation admission.");
         Assert.Equal(retained, allowance.Used);
         allowance.Maximum = 4 << 20;
         var cacheCount = regex.DebugReplacementPlanCacheEntryCount;
-        Assert.Equal("0063a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"0063\g<x>!")).ResultText);
+        Assert.Equal("0063a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"0063\g<x>!"u8)).ResultText);
         Assert.Equal(cacheCount, regex.DebugReplacementPlanCacheEntryCount); Assert.Equal(retained, allowance.Used);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
     }
@@ -94,7 +96,7 @@ public sealed class PythonReFundedReplacementTests
         for (var i = 0; i < 256; i++)
         {
             var prefix = i.ToString("D4");
-            Assert.Equal(prefix + "a", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, prefix + @"\g<x>")).ResultText);
+            Assert.Equal(prefix + "a", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, System.Text.Encoding.UTF8.GetBytes(prefix + @"\g<x>"))).ResultText);
             if (i == 63) saturated = allowance.Used;
             if (i >= 64) Assert.Equal(saturated, allowance.Used);
         }
@@ -105,13 +107,13 @@ public sealed class PythonReFundedReplacementTests
     public async Task ConcurrentTemplateReuseLeavesOnlyRetainedFunding()
     {
         var allowance = new Allowance(4 << 20); using var regex = Compile(allowance);
-        for (var i = 0; i < 4; i++) PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, i + @"\g<x>"));
+        for (var i = 0; i < 4; i++) PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, System.Text.Encoding.UTF8.GetBytes(i + @"\g<x>")));
         var retained = allowance.Used;
         await Task.WhenAll(Enumerable.Range(0, 8).Select(worker => Task.Run(() =>
         {
             using var token = new CancellationTokenSource();
             for (var i = 0; i < 32; i++)
-                Assert.Equal((i % 4) + "a", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, (i % 4) + @"\g<x>", 0, 0, token.Token)).ResultText);
+                Assert.Equal((i % 4) + "a", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, System.Text.Encoding.UTF8.GetBytes((i % 4) + @"\g<x>"), 0, 0, token.Token)).ResultText);
         })));
         Assert.Equal(retained, allowance.Used);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
@@ -139,7 +141,7 @@ public sealed class PythonReFundedReplacementTests
                 }
                 return 0;
             });
-            try { output = PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!")).ResultText; }
+            try { output = PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!"u8)).ResultText; }
             catch (Exception failure) { error = failure; }
         })
         { IsBackground = true };
@@ -157,7 +159,7 @@ public sealed class PythonReFundedReplacementTests
                 for (var i = 0; i < 64; i++)
                 {
                     var prefix = i.ToString("D4");
-                    Assert.Equal(prefix + "a", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, prefix + @"\g<x>")).ResultText);
+                    Assert.Equal(prefix + "a", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, System.Text.Encoding.UTF8.GetBytes(prefix + @"\g<x>"))).ResultText);
                 }
                 held = allowance.Used;
             }
@@ -187,13 +189,13 @@ public sealed class PythonReFundedReplacementTests
         var owner = new Thread(() =>
         {
             ownerId = Environment.CurrentManagedThreadId;
-            try { PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!", 0, 0, ownerToken.Token)); }
+            try { PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!"u8, 0, 0, ownerToken.Token)); }
             catch (Exception failure) { ownerError = failure; }
         })
         { IsBackground = true };
         var follower = new Thread(() =>
         {
-            try { output = PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!", 0, 0, followerToken.Token)).ResultText; }
+            try { output = PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!"u8, 0, 0, followerToken.Token)).ResultText; }
             catch (Exception failure) { followerError = failure; }
         })
         { IsBackground = true };
@@ -215,7 +217,7 @@ public sealed class PythonReFundedReplacementTests
         Assert.Equal(ownerToken.Token, Assert.IsType<OperationCanceledException>(ownerError).CancellationToken);
         Assert.Null(followerError); Assert.Equal("a!", output);
         Assert.Equal(program, allowance.Used); // Failed owner removed; independent retry is uncached and refunded.
-        Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!")).ResultText);
+        Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!"u8)).ResultText);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
     }
 

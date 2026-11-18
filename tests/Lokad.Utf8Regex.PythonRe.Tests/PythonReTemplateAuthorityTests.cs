@@ -36,7 +36,7 @@ public sealed class PythonReTemplateAuthorityTests
         Assert.Same(hook, construction.Budget.CheckpointHook);
         Assert.Equal(0ul, construction.Budget.ReservedBytes);
         ticks = 0;
-        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template)));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8)));
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
     }
 
@@ -59,7 +59,7 @@ public sealed class PythonReTemplateAuthorityTests
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
         Assert.Same(hook, construction.Budget.CheckpointHook);
         Assert.Equal(0ul, construction.Budget.ReservedBytes);
-        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template)));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8)));
     }
 
     [Theory]
@@ -76,7 +76,7 @@ public sealed class PythonReTemplateAuthorityTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(200)
         });
-        var retained = regex.Subn("😀a"u8, Template);
+        var retained = regex.Subn("😀a"u8, "<\\g<x>>"u8);
         var payload = regex.DebugReplacementPlanCachePayloadBytes;
         var reads = 0;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads == 1 ? 0 : 250))
@@ -88,7 +88,7 @@ public sealed class PythonReTemplateAuthorityTests
         Assert.Equal(payload, regex.DebugReplacementPlanCachePayloadBytes);
         Assert.Equal("<😀><a>"u8.ToArray(), retained.ResultBytes);
         Assert.Equal(2, retained.ReplacementCount);
-        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template)));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8)));
     }
 
     [Theory]
@@ -96,7 +96,7 @@ public sealed class PythonReTemplateAuthorityTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
-    public void PreparationKeepsConstructionBackstopAndSharesTemplateLengthWork(int result)
+    public void ColdTemplateCopySharesInvocationWorkBudget(int result)
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
@@ -113,7 +113,7 @@ public sealed class PythonReTemplateAuthorityTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         Assert.Equal(1ul, error.Limit);
         Assert.Equal(2ul, error.Requested);
-        Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
+        Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
         var again = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(regex, result, CancellationToken.None));
         Assert.Equal(error.ResourceKind, again.ResourceKind);
         Assert.Equal(error.Requested, again.Requested);
@@ -144,7 +144,7 @@ public sealed class PythonReTemplateAuthorityTests
             Assert.True(construction.Budget.WorkSteps > 0);
         }
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
-        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template)));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8)));
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public sealed class PythonReTemplateAuthorityTests
                 preparing.Set();
                 Assert.True(release.Wait(TimeSpan.FromSeconds(10)), "Release pending preparation.");
             };
-            ownerResult = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template));
+            ownerResult = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8));
         }))
         { IsBackground = true };
         owner.Start();
@@ -211,7 +211,7 @@ public sealed class PythonReTemplateAuthorityTests
         Assert.Null(ownerError);
         Assert.Equal("<😀><a>", ownerResult);
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
-        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template)));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8)));
     }
 
     [Theory]
@@ -253,7 +253,7 @@ public sealed class PythonReTemplateAuthorityTests
             waiter = new Thread(() => waiterError = Record.Exception(() =>
             {
                 using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
-                waiterResult = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template));
+                waiterResult = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8));
             }))
             { IsBackground = true };
             waiter.Start();
@@ -278,7 +278,7 @@ public sealed class PythonReTemplateAuthorityTests
         if (timeout) Assert.IsType<RegexMatchTimeoutException>(ownerError);
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(ownerError).CancellationToken);
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
-        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template)));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8)));
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
     }
 
@@ -308,7 +308,7 @@ public sealed class PythonReTemplateAuthorityTests
         { IsBackground = true };
         var waiter = new Thread(() =>
         {
-            try { result = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template)); }
+            try { result = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8)); }
             catch (Exception error) { failure = error; }
             finally { completed.Set(); }
         })
@@ -343,14 +343,14 @@ public sealed class PythonReTemplateAuthorityTests
         }
         Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(ownerError).CancellationToken);
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
-        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template)));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8)));
     }
 
     private static void Run(Utf8PythonRegex regex, int result, CancellationToken token)
     {
-        if (result == 0) _ = regex.Replace("😀a"u8, Template, 0, 0, token);
-        else if (result == 1) _ = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template, 0, 0, token));
-        else if (result == 2) _ = regex.Subn("😀a"u8, Template, 0, 0, token);
-        else _ = PythonReSubstitutionAssert.Decode(regex.Subn("😀a"u8, Template, 0, 0, token));
+        if (result == 0) _ = regex.Replace("😀a"u8, "<\\g<x>>"u8, 0, 0, token);
+        else if (result == 1) _ = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<\\g<x>>"u8, 0, 0, token));
+        else if (result == 2) _ = regex.Subn("😀a"u8, "<\\g<x>>"u8, 0, 0, token);
+        else _ = PythonReSubstitutionAssert.Decode(regex.Subn("😀a"u8, "<\\g<x>>"u8, 0, 0, token));
     }
 }

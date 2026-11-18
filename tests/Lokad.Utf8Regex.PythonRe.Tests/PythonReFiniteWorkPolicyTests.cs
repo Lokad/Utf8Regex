@@ -54,7 +54,7 @@ public sealed class PythonReFiniteWorkPolicyTests
             3 => regex.Match(input, start, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch).Success.ToString(),
             4 => regex.Count(input, start, token).ToString(),
             18 => string.Join("|", regex.SplitRanges(input, 0, start, token).Select(x => $"{x.Number}:{x.Success}:{x.StartOffsetInBytes}:{x.EndOffsetInBytes}")),
-            21 => Encoding.UTF8.GetString(regex.Subn(input, "<\\g<0>>", 0, start, token).ResultBytes),
+            21 => Encoding.UTF8.GetString(regex.Subn(input, "<\\g<0>>"u8, 0, start, token).ResultBytes),
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         };
     }

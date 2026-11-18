@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 
@@ -12,7 +13,8 @@ public sealed class PythonReTemplateByteCeilingTests
     public void EmptySubjectCannotPrepareAnOversizedTemplate(bool liveToken)
     {
         var regex = Create("a", 4096);
-        var template = new string('x', 65536);
+        // The key fits, but the remaining working room cannot hold the parser's buffers.
+        var template = Encoding.UTF8.GetBytes(new string('x', 2048));
         using var token = new CancellationTokenSource();
         using var parent = Utf8ConstructionScope.Enter();
         var held = parent.Budget.AllocateArray<byte>(17, false);
@@ -38,12 +40,12 @@ public sealed class PythonReTemplateByteCeilingTests
             Assert.Equal(17, held.Length);
         }
 
-        Assert.Empty(regex.Replace([], "ok"));
+        Assert.Empty(regex.Replace([], "ok"u8));
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
     }
 
     [Fact]
-    public void ColdByteDenialPrecedesExecutionWithoutCachingFailure()
+    public void ColdKeyDenialPrecedesParsingWithoutCachingFailure()
     {
         var regex = new Utf8PythonRegex("a", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
@@ -56,8 +58,8 @@ public sealed class PythonReTemplateByteCeilingTests
                 MaxResultBytes = 1
             }
         });
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace([], "x"));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace([], "x"u8));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
     }
 
@@ -66,19 +68,19 @@ public sealed class PythonReTemplateByteCeilingTests
     {
         // Fund template-length work to reach the independent byte ceiling.
         var regex = Create("(?P<x>😀|a)", 1 << 20, work: 1024);
-        Assert.Empty(regex.Replace([], new string('x', 65536)));
-        var retained = regex.Subn("😀a"u8, @"<\g<x>>");
+        Assert.Empty(regex.Replace([], System.Text.Encoding.UTF8.GetBytes(new string('x', 65536))));
+        var retained = regex.Subn("😀a"u8, @"<\g<x>>"u8);
         Assert.Equal(2, retained.ReplacementCount);
         Assert.Equal("<😀><a>"u8.ToArray(), retained.ResultBytes);
         var entries = regex.DebugReplacementPlanCacheEntryCount;
         var payload = regex.DebugReplacementPlanCachePayloadBytes;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            regex.Replace([], new string('y', 1 << 20)));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
+            regex.Replace([], System.Text.Encoding.UTF8.GetBytes(new string('y', 1 << 20))));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
         Assert.Equal(entries, regex.DebugReplacementPlanCacheEntryCount);
         Assert.Equal(payload, regex.DebugReplacementPlanCachePayloadBytes);
         Assert.Equal("<😀><a>"u8.ToArray(), retained.ResultBytes);
-        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>")));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>"u8)));
     }
 
     [Theory]
@@ -109,7 +111,7 @@ public sealed class PythonReTemplateByteCeilingTests
             if (cancel) token.Cancel(); else ticks = 25;
         };
         parent.Budget.CheckpointHook = hook;
-        var failure = Record.Exception(() => regex.Replace("😀a"u8, @"<\g<x>>", 0, 0, token.Token));
+        var failure = Record.Exception(() => regex.Replace("😀a"u8, @"<\g<x>>"u8, 0, 0, token.Token));
         if (cancel)
             Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
@@ -125,7 +127,7 @@ public sealed class PythonReTemplateByteCeilingTests
         Assert.Same(hook, parent.Budget.CheckpointHook);
         ticks = 0;
         parent.Budget.CheckpointHook = null;
-        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>")));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>"u8)));
     }
 
     [Theory]
@@ -160,7 +162,7 @@ public sealed class PythonReTemplateByteCeilingTests
             else ticks = authority == 2 ? 110 : 25;
         };
         parent.Budget.CheckpointHook = hook;
-        var failure = Record.Exception(() => regex.Replace("😀a"u8, @"<\g<x>>", 0, 0, caller.Token));
+        var failure = Record.Exception(() => regex.Replace("😀a"u8, @"<\g<x>>"u8, 0, 0, caller.Token));
         if (authority < 2)
             Assert.Equal(authority == 0 ? caller.Token : parentToken.Token,
                 Assert.IsType<OperationCanceledException>(failure).CancellationToken);
@@ -176,7 +178,7 @@ public sealed class PythonReTemplateByteCeilingTests
         parent.Budget.CheckpointHook = null;
         parent.Budget.CancellationToken = default;
         parent.Budget.Deadline = Utf8ExecutionDeadline.Infinite;
-        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>")));
+        Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>"u8)));
     }
 
     private static Utf8PythonRegex Create(string pattern, ulong working, ulong work = 128) => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()

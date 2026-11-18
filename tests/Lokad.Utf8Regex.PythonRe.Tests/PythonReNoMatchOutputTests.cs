@@ -26,8 +26,8 @@ public sealed class PythonReNoMatchOutputTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var regex = Create();
-        var first = regex.Subn(input, @"[\1]", 0, 0);
-        var retained = regex.Subn(input, @"[\1]", 0, 0);
+        var first = regex.Subn(input, @"[\1]"u8, 0, 0);
+        var retained = regex.Subn(input, @"[\1]"u8, 0, 0);
         Assert.Equal(0, first.ReplacementCount);
         Assert.Equal(input, first.ResultBytes);
         Assert.Equal(input, retained.ResultBytes);
@@ -51,13 +51,13 @@ public sealed class PythonReNoMatchOutputTests
         var regex = Create(extent - (allow ? 0UL : 1UL));
         if (allow)
         {
-            Assert.Equal(input, regex.Subn(input, "x", 0, 0).ResultBytes);
+            Assert.Equal(input, regex.Subn(input, "x"u8, 0, 0).ResultBytes);
         }
         else
         {
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             {
-                _ = regex.Subn(input, "x", 0, 0);
+                _ = regex.Subn(input, "x"u8, 0, 0);
             });
             Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind);
         }
@@ -71,7 +71,7 @@ public sealed class PythonReNoMatchOutputTests
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() =>
-            PythonReSubstitutionAssert.Decode(regex.Subn("dog"u8, "x", 0, 0, cancellation.Token)));
+            PythonReSubstitutionAssert.Decode(regex.Subn("dog"u8, "x"u8, 0, 0, cancellation.Token)));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
     }
 }

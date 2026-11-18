@@ -28,7 +28,7 @@ public sealed class PythonReFundedExecutionTests
         var account = new Allowance(16 << 20);
         using var regex = Compile(pattern, account);
         var input = Encoding.UTF8.GetBytes(text);
-        regex.Subn(input, @"x\g<0>y"); // Retain the one template before observing temporary balances.
+        regex.Subn(input, @"x\g<0>y"u8); // Retain the one template before observing temporary balances.
         var held = account.Used;
         foreach (var (name, operation) in Operations(regex, input))
         {
@@ -52,7 +52,7 @@ public sealed class PythonReFundedExecutionTests
         var account = new Allowance(16 << 20);
         using var regex = Compile("(?P<x>a+)", account);
         var input = "aaa"u8.ToArray();
-        PythonReSubstitutionAssert.Decode(regex.Subn(input, @"x\g<0>y"));
+        PythonReSubstitutionAssert.Decode(regex.Subn(input, @"x\g<0>y"u8));
         var held = account.Used;
         account.Maximum = held;
         foreach (var (name, operation) in Operations(regex, input))
@@ -274,7 +274,7 @@ using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Full
 cursor.MoveNext(out _);
 }),
         ("SplitRanges", () => regex.SplitRanges(input)),
-        ("Subn", () => regex.Subn(input, @"x\g<0>y")),
+        ("Subn", () => regex.Subn(input, @"x\g<0>y"u8)),
         ("CursorAll", () => {
 using var cursor = regex.CreateMatchCursor(input);
 while (cursor.MoveNext(out _)) {

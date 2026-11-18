@@ -46,12 +46,13 @@ numeric labels for unnamed groups. It replaces `GetGroupNames` without exposing
 program storage. Short buffers report the complete required size; funded copies
 require an open regex and observe the original optional token.
 
-`Replace`, `Subn` and funded `SubnRetained` accept UTF-8 template spans as well as
-text templates. Native preparation/cache keys and literal/capture output remain
+`Replace`, `Subn` and funded `SubnRetained` accept UTF-8 template spans.
+Encode dynamic text templates in the host or use C# `u8` literals. Cache keys,
+literal fragments and capture output remain
 bytes. Warm queries borrow their span; cold keys are copied after admission.
 Template validation still runs on misses, and template error positions retain
-UTF-16 units. These overloads preserve the Unicode grammar, not Python bytes-regex
-semantics. For example, `regex.Subn(input, "[\\g<word>]"u8)` returns owned bytes
+UTF-16 units. The templates use Python's Unicode grammar.
+`regex.Subn(input, "[\\g<word>]"u8)` returns owned bytes
 and a substitution count.
 
 Bytes-pattern semantics, LOCALE and `\N{...}` Unicode-name lookup are excluded.
@@ -179,7 +180,7 @@ var regex = new Utf8PythonRegex(
 bool isMatch = regex.IsMatch("foo-foo"u8);
 var first = regex.Match("xx foo-foo yy"u8, mode: Utf8PythonMatchMode.Search);
 int count = regex.Count("foo-foo x foo-foo"u8);
-byte[] replaced = regex.Replace("foo x foo"u8, "<\\g<word>>");
+byte[] replaced = regex.Replace("foo x foo"u8, "<\\g<word>>"u8);
 using var matches = regex.CreateMatchCursor("foo-foo xx foo-foo"u8.ToArray());
 while (matches.MoveNext(out var match))
 {
@@ -253,7 +254,7 @@ replacement, including each API's required argument/output construction. Rich
 callback capture checks and digests run in a separate untimed verification pass.
 Earlier instrumented callback ratios are not bare replacement-throughput claims.
 
-Current replacement string rows include explicit host decoding of byte-template
+Replacement string rows include explicit host decoding of byte-template
 output. The former callback rows now time host constant-replacement composition
 over the real range cursor, with host-owned output buffers. Their capture replay
 remains untimed, and regex limits cover advances rather than host output. These

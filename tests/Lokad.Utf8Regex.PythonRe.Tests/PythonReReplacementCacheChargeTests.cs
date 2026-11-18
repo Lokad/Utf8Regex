@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Caching;
@@ -28,36 +29,27 @@ public sealed class PythonReReplacementCacheChargeTests
     [InlineData(@"\101\1\041")] [InlineData(@"\g<0>\g<1>")]
     public void ClosedChargesCoverCompleteProgramsAndExactCacheBoundaries(string template)
     {
-        var value = PythonReReplacementParser.Parse(template, 1, Names); var physical = PhysicalBytes(value);
+        var key = Encoding.UTF8.GetBytes(template);
+        var value = PythonReReplacementParser.Parse(key, 1, Names);
+        var physical = PhysicalBytes(value);
         using var owner = Utf8ConstructionScope.Enter(); var storage = default(PythonReReplacementRetainedStorage);
         Assert.True(storage.TryGetValueCharge(value, ulong.MaxValue, default(Utf8ConstructionTextNoControl), out var charge));
         Assert.True(charge >= physical);
         Assert.True(storage.TryGetValueCharge(value, charge, default(Utf8ConstructionTextNoControl), out var exact)); Assert.Equal(charge, exact);
         if (charge > 0) Assert.False(storage.TryGetValueCharge(value, charge - 1, default(Utf8ConstructionTextNoControl), out _));
-        var keyCharge = storage.GetKeyCharge(template);
+        var keyCharge = storage.GetKeyCharge(key);
+        Assert.Equal(ArrayBytes<byte>(key.Length), keyCharge);
         foreach (var allow in new[] { false, true })
         {
             if (keyCharge + charge == 0) continue;
             var maximum = keyCharge + charge - (allow ? 0UL : 1UL);
-            var cache = Utf8BoundedPreparationCache<object, PythonReReplacementPlan>.CreateRetained(2, PythonReReplacementKeyComparer.Instance, 65536, maximum);
-            var result = cache.GetOrAdd(template, value, static (_, value) => value, default(Utf8ConstructionTextNoControl), storage);
-            Assert.Same(value.Tokens, result.Tokens); Assert.Equal(allow ? 1 : 0, cache.Count);
-            Assert.Equal(allow ? maximum : 0UL, cache.PayloadBytes);
-            cache.Clear(); Assert.Same(value.Tokens, result.Tokens);
-        }
-        var nativeKey = System.Text.Encoding.UTF8.GetBytes(template);
-        keyCharge = storage.GetKeyCharge(nativeKey);
-        Assert.Equal(ArrayBytes<byte>(nativeKey.Length), keyCharge);
-        if (keyCharge + charge > 0)
-        foreach (var allow in new[] { false, true })
-        {
-            var maximum = keyCharge + charge - (allow ? 0UL : 1UL);
-            var cache = Utf8BoundedPreparationCache<object, PythonReReplacementPlan>.CreateRetained(2,
+            var cache = Utf8BoundedPreparationCache<byte[], PythonReReplacementPlan>.CreateRetained(2,
                 PythonReReplacementKeyComparer.Instance, 65536, maximum);
-            var result = cache.GetOrAdd(nativeKey, value, static (_, value) => value,
+            var result = cache.GetOrAdd(key, value, static (_, value) => value,
                 default(Utf8ConstructionTextNoControl), storage);
             Assert.Same(value.Tokens, result.Tokens); Assert.Equal(allow ? 1 : 0, cache.Count);
             Assert.Equal(allow ? maximum : 0UL, cache.PayloadBytes);
+            cache.Clear(); Assert.Same(value.Tokens, result.Tokens);
         }
     }
 
@@ -82,7 +74,7 @@ public sealed class PythonReReplacementCacheChargeTests
     [Fact]
     public void WorkCutoffsAndTokenPrecedencePreserveTheOriginalOwner()
     {
-        var value = PythonReReplacementParser.Parse(@"é\g<word>😀\1", 1, Names);
+        var value = PythonReReplacementParser.Parse(@"é\g<word>😀\1"u8, 1, Names);
         var storage = default(PythonReReplacementRetainedStorage); ulong steps;
         using (var probe = Utf8ConstructionScope.Enter())
         { Assert.True(storage.TryGetValueCharge(value, ulong.MaxValue, default(Utf8ConstructionTextNoControl), out _)); steps = probe.Budget.WorkSteps; }
@@ -106,7 +98,7 @@ public sealed class PythonReReplacementCacheChargeTests
     [Fact]
     public void TheParentDeadlinePrecedesPayloadDenialWithoutBeingRestarted()
     {
-        var value = PythonReReplacementParser.Parse(@"é\g<word>😀", 1, Names); var storage = default(PythonReReplacementRetainedStorage);
+        var value = PythonReReplacementParser.Parse(@"é\g<word>😀"u8, 1, Names); var storage = default(PythonReReplacementRetainedStorage);
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var owner = Utf8ConstructionScope.Enter(); owner.Budget.ReserveBytes(7);
         owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));

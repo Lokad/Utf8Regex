@@ -163,8 +163,8 @@ public sealed class PythonGroupNumberingRegressionTests
     public void ReplacementReferencesFollowPythonSlots(string pattern, string replacement, string input, string expected)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.Equal(expected, PythonReSubstitutionAssert.Decode(regex.Subn(Utf8(input), replacement, 0)).ResultText);
-        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Subn(Utf8(input), replacement, 0).ResultBytes));
+        Assert.Equal(expected, PythonReSubstitutionAssert.Decode(regex.Subn(Utf8(input), Encoding.UTF8.GetBytes(replacement), 0)).ResultText);
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Subn(Utf8(input), Encoding.UTF8.GetBytes(replacement), 0).ResultBytes));
     }
 
     [Fact]

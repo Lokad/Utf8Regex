@@ -158,7 +158,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.False(regex.Match(input).Success);
         Assert.False(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(new[] { prefix + " ", "SHERLOCK", " x ", "sherlock", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
-        Assert.Equal(prefix + " [SHERLOCK] x [sherlock]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
+        Assert.Equal(prefix + " [SHERLOCK] x [sherlock]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]"u8)));
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor1 = regex.CreateMatchCursor(("π😀ſHERLOCK"u8).ToArray(), 0, default))
         {
@@ -207,7 +207,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.False(regex.Match(input).Success);
         Assert.False(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(new[] { prefix + " ", "aaa", " x ", "aa", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
-        Assert.Equal(prefix + " [aaa] x [aa]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
+        Assert.Equal(prefix + " [aaa] x [aa]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]"u8)));
         var collectedRanges2 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor2 = regex.CreateMatchCursor(("π😀éa"u8).ToArray(), 0, default))
         {

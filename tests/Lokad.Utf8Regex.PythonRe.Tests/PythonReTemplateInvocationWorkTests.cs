@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -7,20 +8,18 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReTemplateInvocationWorkTests
 {
-    private delegate PythonReReplacementPlan Prepare(ReadOnlySpan<byte> input, string replacement,
+    private delegate PythonReReplacementPlan Prepare(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacement,
         Utf8SliceInvocation invocation, CancellationToken cancellationToken, out Utf8FundedStorage.Use? memoryUse);
 
     private static Prepare Preparation(Utf8PythonRegex regex) => typeof(Utf8PythonRegex)
         .GetMethod("GetReplacementPlan", BindingFlags.Instance | BindingFlags.NonPublic, null,
-            [typeof(ReadOnlySpan<byte>), typeof(string), typeof(Utf8SliceInvocation), typeof(CancellationToken), typeof(Utf8FundedStorage.Use).MakeByRefType()], null)!
+            [typeof(ReadOnlySpan<byte>), typeof(ReadOnlySpan<byte>), typeof(Utf8SliceInvocation), typeof(CancellationToken), typeof(Utf8FundedStorage.Use).MakeByRefType()], null)!
         .CreateDelegate<Prepare>(regex);
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LongTemplateIsDeniedBeforeColdPreparationEvenWhenSubjectIsEmpty(bool text)
+    [Fact]
+    public void LongTemplateIsDeniedBeforeColdPreparationEvenWhenSubjectIsEmpty()
     {
-        var template = new string('z', 1 << 20);
+        var template = Encoding.UTF8.GetBytes(new string('z', 1 << 20));
         var regex = new Utf8PythonRegex("a", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -36,11 +35,7 @@ public sealed class PythonReTemplateInvocationWorkTests
         retained[0] = 42;
         var held = parent.Budget.ReservedBytes;
         var spent = parent.Budget.WorkSteps;
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-        {
-            if (text) _ = System.Text.Encoding.UTF8.GetString(regex.Replace([], template));
-            else _ = regex.Replace([], template);
-        });
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace([], template));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
         Assert.Equal(64UL, failure.Limit);
         Assert.Equal(65UL, failure.Requested);
@@ -48,7 +43,7 @@ public sealed class PythonReTemplateInvocationWorkTests
         Assert.Equal(spent, parent.Budget.WorkSteps);
         Assert.Equal(held, parent.Budget.ReservedBytes);
         Assert.Equal(42, retained[0]);
-        Assert.Empty(regex.Replace([], "z"));
+        Assert.Empty(regex.Replace([], "z"u8));
     }
 
     [Theory]
@@ -60,7 +55,7 @@ public sealed class PythonReTemplateInvocationWorkTests
     {
         var regex = new Utf8PythonRegex("a");
         var prepare = Preparation(regex);
-        var template = new string('z', length);
+        var template = Encoding.UTF8.GetBytes(new string('z', length));
         var warm = new Utf8SliceInvocation(new(100000, 128, 16 << 20), Timeout.InfiniteTimeSpan, default);
         var plan = prepare([], template, warm, default, out _);
         using var parent = Utf8ConstructionScope.Enter();
@@ -72,10 +67,8 @@ public sealed class PythonReTemplateInvocationWorkTests
         Assert.Equal(1, regex.DebugReplacementPlanCacheEntryCount);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void WarmLengthDenialKeepsThePreviouslyPublishedPlan(bool text)
+    [Fact]
+    public void WarmLengthDenialKeepsThePreviouslyPublishedPlan()
     {
         var regex = new Utf8PythonRegex("a", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
@@ -86,14 +79,10 @@ public sealed class PythonReTemplateInvocationWorkTests
             }
         });
         var prepare = Preparation(regex);
-        var template = new string('z', 4096);
+        var template = Encoding.UTF8.GetBytes(new string('z', 4096));
         var funded = new Utf8SliceInvocation(new(100000, 128, 16 << 20), Timeout.InfiniteTimeSpan, default);
         var retained = prepare([], template, funded, default, out _);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-        {
-            if (text) _ = System.Text.Encoding.UTF8.GetString(regex.Replace([], template));
-            else _ = regex.Replace([], template);
-        });
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace([], template));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
         Assert.Equal(1UL, failure.Limit);
         Assert.Equal(2UL, failure.Requested);
@@ -117,7 +106,8 @@ public sealed class PythonReTemplateInvocationWorkTests
             timeout ? TimeSpan.FromMilliseconds(1) : Timeout.InfiniteTimeSpan, token.Token);
         invocation.CheckpointHook = step => { if (step == 64) { if (timeout) now++; else token.Cancel(); } };
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
-        var failure = Record.Exception(() => prepare([], new string('z', 1 << 20), invocation, token.Token, out _));
+        var template = Encoding.UTF8.GetBytes(new string('z', 1 << 20));
+        var failure = Record.Exception(() => prepare([], template, invocation, token.Token, out _));
         if (timeout) Assert.IsType<RegexMatchTimeoutException>(failure);
         else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Equal(64UL, invocation.Budget.Steps);

@@ -1,109 +1,23 @@
-using System.Buffers;
-using System.Text;
-using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
-// substitution entry points, split from the Python facade along the substitution ownership boundary.
 /// <summary>Substitution entry points for <see cref="Utf8PythonRegex"/>.</summary>
 public sealed partial class Utf8PythonRegex
 {
-
-    // replacement templates are parsed once per distinct template and shared across operations; failures are never retained.
-    private PythonReReplacementPlan GetReplacementPlan(string replacement, out Utf8FundedStorage.Use? memoryUse) =>
-        _replacementPlanCache.GetOrAdd(
-            replacement,
-            this,
-            static (template, self) =>
-            {
-                if (self.ResourcePolicy.MaxWorkingBytes is not { } maximumBytes)
-                    return PythonReReplacementParser.Parse((string)template, self.CaptureGroupCount, self._namedGroups);
-                // No token/deadline to forward on this lane. Restrict parser
-                // bytes without installing an otherwise empty per-work hook.
-                using var construction = Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes);
-                var plan = PythonReReplacementParser.Parse((string)template, self.CaptureGroupCount, self._namedGroups);
-                construction.Complete();
-                return plan;
-            },
-            default(Utf8ConstructionTextNoControl), default(PythonReReplacementRetainedStorage), out memoryUse);
-
-    private PythonReReplacementPlan GetReplacementPlan(ReadOnlySpan<byte> input, string replacement,
-        Utf8SliceInvocation invocation, CancellationToken cancellationToken, out Utf8FundedStorage.Use? memoryUse)
-    {
-        memoryUse = null;
-        var deadline = invocation.Budget.Deadline;
-        var control = new PythonRePreparationInterruptionControl(deadline, cancellationToken);
-        try
-        {
-            // Admit length-dependent hashing/comparison and possible parsing
-            // before entering the cache. Coarse text blocks share the original
-            // invocation; fine-grained parser work keeps its construction backstop.
-            if (!invocation.IsUnmetered)
-            {
-                var bufferControl = new Utf8InvocationBufferControl(ref invocation);
-                for (var offset = 0; offset < replacement.Length;)
-                {
-                    var breach = bufferControl.TryChargeWorkspaceStep();
-                    if (breach != Utf8ExecutionLimitKind.None)
-                        throw invocation.Budget.CreateResourceFailure();
-                    offset += Math.Min(2048, replacement.Length - offset);
-                }
-            }
-            try
-            {
-                if (deadline.IsInfinite && !cancellationToken.CanBeCanceled)
-                    return GetReplacementPlan(replacement, out memoryUse);
-                return _replacementPlanCache.GetOrAdd(replacement, (Self: this, Control: control),
-                    static (template, state) => state.Self.PrepareReplacementPlan(template, state.Control),
-                    control, default(PythonReReplacementRetainedStorage), out memoryUse);
-            }
-            catch (OperationCanceledException failure) when (failure.CancellationToken != cancellationToken)
-            {
-                // Pending entries share factory failures, but another caller's
-                // interruption is not this call's authority. Prepare once with
-                // our controls instead of entering another shared retry loop.
-                control.Check();
-                return _replacementPlanCache.PrepareForUse(replacement, (Self: this, Control: control),
-                    static (template, state) => state.Self.PrepareReplacementPlan(template, state.Control), control, out memoryUse);
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                control.Check(); // Rethrow if our own deadline expired.
-                return _replacementPlanCache.PrepareForUse(replacement, (Self: this, Control: control),
-                    static (template, state) => state.Self.PrepareReplacementPlan(template, state.Control), control, out memoryUse);
-            }
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input, Pattern);
-        }
-    }
-
-    private PythonReReplacementPlan PrepareReplacementPlan(object replacement,
+    private PythonReReplacementPlan PrepareReplacementPlan(byte[] replacement,
         PythonRePreparationInterruptionControl control)
     {
         // Borrow existing authority fields on a cache miss; a distinct parent
         // retains its original callback chain. Restore both fields and hook.
         // Working bytes also cap this phase's additional parser capacity;
         // construction work/depth and retained-cache admission stay separate.
-        var maximum = ResourcePolicy.MaxWorkingBytes;
-        if (replacement is byte[] native)
-        {
-            // The frozen key still has its temporary invocation loan. Bound its
-            // overlap with parser capacity; retained cache storage is separate.
-            var ceiling = Math.Min(maximum ?? ulong.MaxValue, Utf8ConstructionScope.DefaultBufferBytes);
-            var keyBytes = Utf8ConstructionBudget.ArrayBytes<byte>(native.Length);
-            maximum = ceiling - Math.Min(ceiling, keyBytes);
-        }
-        using var construction = maximum is { } maximumBytes
-            ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
-            : Utf8ConstructionScope.Enter();
+        // The frozen key still has its temporary invocation loan. Bound its
+        // overlap with parser capacity; retained cache storage is separate.
+        var ceiling = Math.Min(ResourcePolicy.MaxWorkingBytes ?? ulong.MaxValue, Utf8ConstructionScope.DefaultBufferBytes);
+        var keyBytes = Utf8ConstructionBudget.ArrayBytes<byte>(replacement.Length);
+        using var construction = Utf8ConstructionScope.RestrictAdditionalBytes(ceiling - Math.Min(ceiling, keyBytes));
         var budget = construction.Budget;
         var previousToken = budget.CancellationToken;
         var previousDeadline = budget.Deadline;
@@ -122,9 +36,7 @@ public sealed partial class Utf8PythonRegex
         }
         try
         {
-            var plan = replacement is byte[] utf8
-                ? PythonReReplacementParser.Parse(utf8.AsSpan(), CaptureGroupCount, _namedGroups)
-                : PythonReReplacementParser.Parse((string)replacement, CaptureGroupCount, _namedGroups);
+            var plan = PythonReReplacementParser.Parse(replacement, CaptureGroupCount, _namedGroups);
             construction.Complete();
             return plan;
         }
@@ -137,17 +49,14 @@ public sealed partial class Utf8PythonRegex
     }
 
     private PythonReReplacementPlan GetReplacementPlan(ReadOnlySpan<byte> input,
-        Utf8ConstructionPattern replacement, Utf8SliceInvocation invocation,
+        ReadOnlySpan<byte> query, Utf8SliceInvocation invocation,
         CancellationToken cancellationToken, out Utf8FundedStorage.Use? memoryUse)
     {
-        if (!replacement.IsUtf8)
-            return GetReplacementPlan(input, replacement.Text, invocation, cancellationToken, out memoryUse);
         memoryUse = null;
         var control = new PythonRePreparationInterruptionControl(invocation.Budget.Deadline, cancellationToken);
         ulong keyCharge = 0;
         try
         {
-            var query = replacement.Utf8;
             // Admit source-length work on warm hits too. The comparison borrows
             // the caller's span; only misses acquire an immutable key.
             var bufferControl = new Utf8InvocationBufferControl(ref invocation);
@@ -157,15 +66,15 @@ public sealed partial class Utf8PythonRegex
             try
             {
                 if (_replacementPlanCache.TryGet(query, control,
-                    static (key, bytes, current) => key is byte[] owned && NativeTemplateEquals(owned, bytes, current),
+                    static (key, bytes, current) => TemplateEquals(key, bytes, current),
                     control, out var plan, out memoryUse)) return plan;
             }
             catch (OperationCanceledException failure) when (failure.CancellationToken != cancellationToken)
-            { control.Check(); return PrepareNativeUncached(query, control, ref invocation, out memoryUse); }
+            { control.Check(); return PrepareUncachedTemplate(query, control, ref invocation, out memoryUse); }
             catch (Utf8ExecutionDeadlineExpiredException)
-            { control.Check(); return PrepareNativeUncached(query, control, ref invocation, out memoryUse); }
+            { control.Check(); return PrepareUncachedTemplate(query, control, ref invocation, out memoryUse); }
 
-            var key = FreezeNativeTemplate(query, control, ref invocation, out keyCharge);
+            var key = FreezeTemplate(query, control, ref invocation, out keyCharge);
             try
             {
                 return _replacementPlanCache.GetOrAdd(key, (Self: this, Control: control),
@@ -189,21 +98,21 @@ public sealed partial class Utf8PythonRegex
         finally { invocation.Ledger.Release(keyCharge); }
     }
 
-    private PythonReReplacementPlan PrepareNativeUncached(ReadOnlySpan<byte> query,
+    private PythonReReplacementPlan PrepareUncachedTemplate(ReadOnlySpan<byte> query,
         PythonRePreparationInterruptionControl control, ref Utf8SliceInvocation invocation,
         out Utf8FundedStorage.Use? memoryUse)
     {
         ulong charge = 0;
         try
         {
-            var key = FreezeNativeTemplate(query, control, ref invocation, out charge);
+            var key = FreezeTemplate(query, control, ref invocation, out charge);
             return _replacementPlanCache.PrepareForUse(key, (Self: this, Control: control),
                 static (template, state) => state.Self.PrepareReplacementPlan(template, state.Control), control, out memoryUse);
         }
         finally { invocation.Ledger.Release(charge); }
     }
 
-    private static byte[] FreezeNativeTemplate(ReadOnlySpan<byte> query,
+    private static byte[] FreezeTemplate(ReadOnlySpan<byte> query,
         PythonRePreparationInterruptionControl control, ref Utf8SliceInvocation invocation, out ulong charge)
     {
         charge = 0;
@@ -230,7 +139,7 @@ public sealed partial class Utf8PythonRegex
         return key;
     }
 
-    private static bool NativeTemplateEquals(ReadOnlySpan<byte> owned, ReadOnlySpan<byte> query,
+    private static bool TemplateEquals(ReadOnlySpan<byte> owned, ReadOnlySpan<byte> query,
         PythonRePreparationInterruptionControl control)
     {
         if (owned.Length != query.Length) return false;
@@ -260,41 +169,39 @@ public sealed partial class Utf8PythonRegex
         }
     }
 
-    /// <summary>Replaces matches after a byte offset and returns owned UTF-8 bytes, observing cancellation during matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="replacement">The replacement text.</param>
-    /// <param name="count">The maximum number of replacements to perform.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int count = 0, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
+    /// <summary>Replaces matches with a strict UTF-8 Python template and returns owned UTF-8 bytes.</summary>
+    /// <remarks>Zero count replaces all matches. The byte start preserves prefix assertion context. Template validation precedes matching, including on no match. The UTF-8 template uses Python text semantics.</remarks>
+    public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementUtf8,
+        int count = 0, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
+        => Subn(input, replacementUtf8, count, startOffsetInBytes, cancellationToken).ResultBytes;
+
+    /// <summary>Substitutes a strict UTF-8 Python template and returns owned bytes and the replacement count.</summary>
+    /// <remarks>Retains scalar semantics, capture expansion, synchronous cancellation and the original deadline/resource policy. Template errors retain their UTF-16 Position; malformed UTF-8 is rejected before template grammar. A cold template copies an admitted immutable key; warm lookups borrow the supplied span.</remarks>
+    public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementUtf8,
+        int count = 0, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken, out _).ResultBytes;
+        return SubnTemplateCore(input, replacementUtf8, count,
+            startOffsetInBytes, cancellationToken, out _);
     }
 
-    /// <summary>Substitutes into owned UTF-8 bytes whose charge remains reserved until the returned receipt is disposed.</summary>
-    /// <remarks>Requires caller-funded Compile. Reuses template preparation and native/scalar execution. No output copy or Release/TryReserve gap is added at publication. Dispose after retained users finish, or take over admission for byte-array aliases kept afterward. Numeric limits and the original token/deadline remain authoritative.</remarks>
+    /// <summary>Substitutes a strict UTF-8 template into owned bytes with caller-funded retained admission.</summary>
+    /// <remarks>Requires caller-funded compilation. Output remains valid after expression disposal; dispose the receipt when retained users finish, or take over admission for aliases kept afterward. Cached preparation stays funded through eviction or disposal and its last active use.</remarks>
     /// <exception cref="InvalidOperationException">This expression has no caller-owned program allowance.</exception>
-    public Utf8PythonRetainedSubnResult SubnRetained(ReadOnlySpan<byte> input, string replacement,
+    public Utf8PythonRetainedSubnResult SubnRetained(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementUtf8,
         int count = 0, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (_programMemory is null)
             throw new InvalidOperationException("Retained substitution requires caller-funded compilation.");
-        _ = SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken, out var retained, retain: true);
+        _ = SubnTemplateCore(input, replacementUtf8, count,
+            startOffsetInBytes, cancellationToken, out var retained, retain: true);
         return retained!;
     }
 
-    private Utf8PythonSubnUtf8Result SubnTemplateCore(ReadOnlySpan<byte> input, string replacement,
-        int count, int startOffsetInBytes, CancellationToken cancellationToken,
-        out Utf8PythonRetainedSubnResult? retained, bool retain = false)
-        => SubnTemplateCore(input, new Utf8ConstructionPattern(replacement), count,
-            startOffsetInBytes, cancellationToken, out retained, retain);
-
     private Utf8PythonSubnUtf8Result SubnTemplateCore(
         ReadOnlySpan<byte> input,
-        Utf8ConstructionPattern replacement,
+        ReadOnlySpan<byte> replacement,
         int count,
         int startOffsetInBytes, CancellationToken cancellationToken,
         out Utf8PythonRetainedSubnResult? retained, bool retain = false)
@@ -311,19 +218,6 @@ public sealed partial class Utf8PythonRegex
         SubstituteScalar(input, scalarPlan, count, startOffsetInBytes, invocation,
             out var scalarResult, out retained, retain);
         return scalarResult;
-    }
-
-    /// <summary>Replaces matches after a byte offset and returns UTF-8 bytes plus count, observing cancellation during matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="replacement">The replacement text.</param>
-    /// <param name="count">The maximum number of replacements to perform.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8PythonSubnUtf8Result Subn(ReadOnlySpan<byte> input, string replacement, int count = 0, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return SubnTemplateCore(input, replacement, count, startOffsetInBytes, cancellationToken, out _);
     }
 
 }
