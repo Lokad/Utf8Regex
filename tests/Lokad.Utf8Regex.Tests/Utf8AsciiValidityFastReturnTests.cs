@@ -16,13 +16,13 @@ public sealed class Utf8AsciiValidityFastReturnTests
             var storage = new byte[length + offset + 16];
             Array.Fill(storage, (byte)0xFF);
             for (var i = 0; i < length; i++) storage[offset + i] = (byte)(i & 127);
-            Assert.True(Utf8InputAnalyzer.TryValidateOnly(storage.AsSpan(offset, length), out var error));
+            Assert.True(Utf8Validation.TryValidateOnly(storage.AsSpan(offset, length), out var error));
             Assert.Equal(-1, error);
         }
         for (var value = 0; value <= byte.MaxValue; value++)
         {
             byte[] input = [(byte)value];
-            Assert.Equal(Utf8.IsValid(input), Utf8InputAnalyzer.TryValidateOnly(input, out var error));
+            Assert.Equal(Utf8.IsValid(input), Utf8Validation.TryValidateOnly(input, out var error));
             Assert.Equal(value < 128 ? -1 : 0, error);
         }
     }
@@ -38,10 +38,10 @@ public sealed class Utf8AsciiValidityFastReturnTests
         foreach (var length in new[] { 0, 15, 16, 31, 32, 63, 64, 255, 256, 2047, 2048, 65536 })
         {
             var valid = Encoding.UTF8.GetBytes("ss" + new string('x', length) + suffix);
-            Assert.True(Utf8InputAnalyzer.TryValidateOnly(valid, out var error));
+            Assert.True(Utf8Validation.TryValidateOnly(valid, out var error));
             Assert.Equal(-1, error);
             byte[] invalid = [.. valid, 0xF0, 0x9F];
-            Assert.False(Utf8InputAnalyzer.TryValidateOnly(invalid, out error));
+            Assert.False(Utf8Validation.TryValidateOnly(invalid, out error));
             Assert.Equal(valid.Length, error);
             foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
             {

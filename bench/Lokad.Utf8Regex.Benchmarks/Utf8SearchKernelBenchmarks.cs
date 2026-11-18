@@ -287,30 +287,6 @@ public class Utf8SearchKernelBenchmarks
         return _validationMixedLarge.Length;
     }
 
-    [Benchmark]
-    public int ValidateOnlyAsciiLarge()
-    {
-        return Utf8Validation.Validate(_validationAsciiLarge.Span).ByteLength;
-    }
-
-    [Benchmark]
-    public int ValidateOnlyTwoByteLarge()
-    {
-        return Utf8Validation.Validate(_validationTwoByteLarge.Span).ByteLength;
-    }
-
-    [Benchmark]
-    public int ValidateOnlyThreeByteLarge()
-    {
-        return Utf8Validation.Validate(_validationThreeByteLarge.Span).ByteLength;
-    }
-
-    [Benchmark]
-    public int ValidateOnlyMixedLarge()
-    {
-        return Utf8Validation.Validate(_validationMixedLarge.Span).ByteLength;
-    }
-
     private static string BuildInput(string needle)
     {
         var sb = new StringBuilder(64 * 1024);

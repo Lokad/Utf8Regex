@@ -41,9 +41,8 @@ public sealed class Utf8LookupValidationTests
             var input = storage.AsSpan(borrowedOffset, offset + sequence.Length + tail);
             var expected = Utf8.IsValid(input);
             CheckKernels(input, expected);
-            Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out _, out var scalarError));
-            Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var actualError));
-            Assert.Equal(scalarError, actualError);
+            Assert.Equal(expected, Utf8Validation.TryValidateOnly(input, out var actualError));
+            Assert.Equal(expected ? -1 : offset, actualError);
         }
     }
 
@@ -65,22 +64,22 @@ public sealed class Utf8LookupValidationTests
             var input = storage.AsSpan(borrowed, bytes.Length);
             var expected = Utf8.IsValid(input);
             CheckKernels(input, expected);
-            Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out _, out var scalarError));
-            Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var actualError, out var ascii));
-            Assert.Equal(scalarError, actualError);
-            Assert.False(ascii);
+            Assert.Equal(expected, Utf8Validation.TryValidateOnly(input, out var actualError));
+            Assert.Equal(expected ? -1 : length + 2, actualError);
         }
     }
 
     [Fact]
-    public void MixedAsciiAndUnicodeAcrossBlocksKeepsStrictPublicSuffixRejection()
+    public void MixedAsciiAndUnicodeAcrossBlocksKeepsStrictTemplateSuffixRejection()
     {
         var valid = Encoding.UTF8.GetBytes("needle " + string.Concat(Enumerable.Repeat("é中😀 " + new string('a', 129), 128)));
         CheckKernels(valid, true);
         var invalid = valid.Concat(new byte[] { 0xF0, 0x90, 0x80 }).ToArray();
         CheckKernels(invalid, false);
         var regex = new Utf8Regex("needle");
-        Assert.Equal(1, regex.Count(valid));
+        Assert.Equal(valid, regex.Replace("needle"u8, valid));
+        var error = Assert.Throws<ArgumentException>(() => regex.Replace("needle"u8, invalid));
+        Assert.Contains($"byte offset {valid.Length}.", error.Message);
     }
 
     private static void CheckKernels(ReadOnlySpan<byte> input, bool expected)

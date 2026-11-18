@@ -111,7 +111,6 @@ public sealed class Utf8CursorInvocationReservationTests
     {
         var regex = new Utf8Regex("(?<x>😀|é)", options: RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
         var input = "😀é😀"u8.ToArray();
-        var validation = Utf8Validation.Validate(input);
         // Cover every cutoff through map and table preparation. Denied setup
         // restores the parent's seven bytes but never refunds spent work.
         var success = false;

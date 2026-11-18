@@ -73,7 +73,7 @@ public sealed class Utf8ByteOutputBufferTests
         foreach (var suffix in suffixes)
         {
             var bytes = Enumerable.Repeat((byte)'x', prefix).Concat(suffix).ToArray();
-            var expected = Record.Exception(() => Utf8Validation.Validate(bytes));
+            var expected = Record.Exception(() => Utf8Validation.ThrowIfInvalidOnly(bytes));
             var scope = Utf8SliceByteOutputScope.Enter(new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None));
             try
             {

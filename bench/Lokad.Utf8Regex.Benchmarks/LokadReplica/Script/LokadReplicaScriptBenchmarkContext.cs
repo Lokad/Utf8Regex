@@ -154,18 +154,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         };
     }
 
-    public int ExecuteUtf8PrefixValidationOnly()
-    {
-        EnsurePrefixMatchLoop();
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            total += Utf8Validation.Validate(sample).ByteLength;
-        }
-
-        return total;
-    }
-
     public int ExecuteUtf8PrefixWellFormedOnly()
     {
         EnsurePrefixMatchLoop();
@@ -310,12 +298,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return BenchmarkCase.Id == "lokad/imports/module-imports"
             ? (Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(InputBytes, ImportPrefix, ImportOptionalSegment, out var count) ? count : Regex.Count(InputString))
             : 0;
-    }
-
-    public int ExecuteUtf8CountValidationOnly()
-    {
-        EnsureCountModel();
-        return Utf8Validation.Validate(InputBytes).ByteLength;
     }
 
     public int ExecuteUtf8CountWellFormedOnly()

@@ -3,13 +3,14 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
+using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex.Internal.Input;
 
 // Checked-span adaptation of Keiser/Lemire's lookup validation, informed by
 // simdutf/SimdUnicode d20b63710e8893dede79890f29fd5ae6745d3e2d (MIT).
 // Copyright (c) 2023 SimdUnicode authors. See the repository's packed LICENSE.txt.
-internal static partial class Utf8ValidationCore
+internal static class Utf8ValidationCore
 {
     // The three lookups intersect fault bits for the previous byte's high/low
     // nibbles and the current byte's high nibble. Bit7 denotes consecutive
@@ -28,7 +29,7 @@ internal static partial class Utf8ValidationCore
     internal static bool IsValidLookup256(ReadOnlySpan<byte> input)
     {
         if (input.Length < Vector256<byte>.Count + 3)
-            return TryValidate(input, out _, out _);
+            return Utf8.IsValid(input);
         var offset = LookupStart(input);
         if (offset < 0) return false;
         var high = Vector256.Create(LookupPreviousHigh, LookupPreviousHigh);
@@ -73,7 +74,7 @@ internal static partial class Utf8ValidationCore
     internal static bool IsValidLookup512(ReadOnlySpan<byte> input)
     {
         if (input.Length < Vector512<byte>.Count + 3)
-            return TryValidate(input, out _, out _);
+            return Utf8.IsValid(input);
         var offset = LookupStart(input);
         if (offset < 0) return false;
         var previousHigh256 = Vector256.Create(LookupPreviousHigh, LookupPreviousHigh);
@@ -132,10 +133,9 @@ internal static partial class Utf8ValidationCore
     private static bool LookupTail(ReadOnlySpan<byte> input, int offset)
     {
         // Include the preceding scalar even at exact EOF: its lead may need
-        // continuations beyond the last vector. Reuse the existing scalar/error
-        // authority rather than introducing a separate tail decoder.
+        // continuations beyond the last vector.
         var floor = offset - 1;
         while (floor > 0 && (input[floor] & 0xC0) == 0x80) floor--;
-        return TryValidate(input[floor..], out _, out _);
+        return Utf8.IsValid(input[floor..]);
     }
 }

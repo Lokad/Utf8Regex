@@ -1,39 +1,45 @@
 using System.Buffers;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
+using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex.Internal.Input;
 
 internal static partial class Utf8Validation
 {
-    private static readonly Encoding s_strictEncoding = new UTF8Encoding(
-        encoderShouldEmitUTF8Identifier: false,
-        throwOnInvalidBytes: true);
-
-    public static Utf8ValidationResult Validate(ReadOnlySpan<byte> input)
-    {
-        return Utf8InputAnalyzer.ValidateOnly(input);
-    }
-
     public static void ThrowIfInvalidOnly(ReadOnlySpan<byte> input)
     {
-        Utf8InputAnalyzer.ThrowIfInvalidOnly(input);
+        if (!TryValidateOnly(input, out var errorOffset))
+            throw CreateInvalidUtf8Exception(errorOffset);
     }
 
-    public static void ThrowIfInvalid(ReadOnlySpan<byte> input)
+    internal static bool TryValidateOnly(ReadOnlySpan<byte> input, out int errorOffset)
     {
-        _ = Validate(input);
+        var firstNonAscii = input.IndexOfAnyExceptInRange((byte)0, (byte)0x7f);
+        if (firstNonAscii < 0)
+        {
+            errorOffset = -1;
+            return true;
+        }
+
+        var suffix = input[firstNonAscii..];
+        var valid = Avx2.IsSupported || Vector512.IsHardwareAccelerated && Avx512BW.IsSupported
+            ? Utf8ValidationCore.IsValidLookup(suffix)
+            : Utf8.IsValid(suffix);
+        errorOffset = valid ? -1 : FindFirstInvalidByte(input, firstNonAscii);
+        return errorOffset < 0;
     }
 
-    public static string DecodeStrict(ReadOnlySpan<byte> input)
+    private static int FindFirstInvalidByte(ReadOnlySpan<byte> input, int offset)
     {
-        try
+        while (offset < input.Length)
         {
-            return s_strictEncoding.GetString(input);
+            if (Rune.DecodeFromUtf8(input[offset..], out _, out var width) != OperationStatus.Done)
+                return offset;
+            offset += width;
         }
-        catch (DecoderFallbackException exception)
-        {
-            throw CreateInvalidUtf8Exception(Math.Max(0, exception.Index));
-        }
+        return -1;
     }
 
     internal static ArgumentException CreateInvalidUtf8Exception(int byteOffset)

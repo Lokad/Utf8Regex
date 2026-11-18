@@ -20,9 +20,8 @@ public sealed class Utf8ConstrainedTripleValidationTests
             input[prefix.Length + 1] = (byte)second;
             input[prefix.Length + 2] = (byte)third;
             var expected = Utf8.IsValid(input);
-            Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out _, out var scalarError));
-            Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var vectorError));
-            Assert.Equal(scalarError, vectorError);
+            Assert.Equal(expected, Utf8Validation.TryValidateOnly(input, out var vectorError));
+            Assert.Equal(expected ? -1 : prefix.Length, vectorError);
         }
     }
 
@@ -40,21 +39,19 @@ public sealed class Utf8ConstrainedTripleValidationTests
                 lead, lead == 0xE0 ? (byte)0xA0 : (byte)0x9F, 0x80,
                 .. Enumerable.Repeat((byte)'b', tailLength), 0xFF];
             var input = storage.AsSpan(sliceOffset, prefix.Length + 3 + tailLength);
-            Check(input);
+            Check(input, -1);
             input[prefix.Length + 1] = lead == 0xE0 ? (byte)0x9F : (byte)0xA0;
-            Check(input);
+            Check(input, prefix.Length);
             // Earlier missing continuations must win over a later constrained error.
             input[0] = 0xC2; input[1] = (byte)'x';
-            Check(input);
+            Check(input, 0);
         }
     }
 
-    private static void Check(ReadOnlySpan<byte> input)
+    private static void Check(ReadOnlySpan<byte> input, int expectedError)
     {
-        var expected = Utf8.IsValid(input);
-        Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out _, out var scalarError));
-        Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var vectorError));
-        Assert.Equal(scalarError, vectorError);
+        Assert.Equal(expectedError < 0, Utf8Validation.TryValidateOnly(input, out var actualError));
+        Assert.Equal(expectedError, actualError);
     }
 
     private static void AssertRequestedWidth()

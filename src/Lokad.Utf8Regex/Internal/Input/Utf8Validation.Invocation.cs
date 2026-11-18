@@ -28,14 +28,8 @@ internal static partial class Utf8Validation
             breach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            var count = Math.Min(2048, input.Length - offset);
-            if (count < input.Length - offset)
-            {
-                var end = offset + count;
-                for (var tail = 0; tail < 3 && (input[end] & 0xc0) == 0x80; tail++) end--;
-                if ((input[end] & 0xc0) != 0x80) count = end - offset;
-            }
-            if (!Utf8InputAnalyzer.TryValidateOnly(input.Slice(offset, count), out var error))
+            var count = Utf8SliceBufferWork.Utf8BlockLength(input[offset..], 2048);
+            if (!TryValidateOnly(input.Slice(offset, count), out var error))
                 throw CreateInvalidUtf8Exception(offset + error);
             offset += count;
         }

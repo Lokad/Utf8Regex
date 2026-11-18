@@ -2184,10 +2184,11 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
 
     internal string DecodeInput() => s_strictUtf8.GetString(InputBytes);
 
-    internal Utf8ValidationResult ExecuteOneShotValidation()
+    internal int ExecuteOneShotValidation()
     {
         EnsureOneShotPhases();
-        return Utf8InputAnalyzer.ValidateOnly(InputBytes);
+        Utf8Validation.ThrowIfInvalidOnly(InputBytes);
+        return InputBytes.Length;
     }
 
     internal PythonReBenchmarkValueResult ExecuteCoreRawOneShot()
@@ -2213,7 +2214,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
             throw new InvalidOperationException("The exact-literal one-shot replay is unavailable.");
         }
 
-        _ = Utf8InputAnalyzer.ValidateOnly(InputBytes);
+        Utf8Validation.ThrowIfInvalidOnly(InputBytes);
         return ExecuteCoreRawOneShot();
     }
 
@@ -2442,7 +2443,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
                 "The bounded exact-literal replacement replay is not available for this case.");
         }
 
-        _ = Utf8InputAnalyzer.ValidateOnly(InputBytes);
+        Utf8Validation.ThrowIfInvalidOnly(InputBytes);
         var maximumReplacementCount = _case.Coverage.ReplacementCount == 0
             ? int.MaxValue
             : _case.Coverage.ReplacementCount;

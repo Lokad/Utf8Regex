@@ -117,7 +117,7 @@ public sealed class Pcre2TryReplaceInvocationTests
                 Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, liveToken ? source.Token : default));
             Assert.Equal(output.Length, written);
             Assert.Equal(output, storage.AsSpan(16 + shift, written).ToArray());
-            Utf8Validation.Validate(storage.AsSpan(16 + shift, written));
+            Utf8Validation.ThrowIfInvalidOnly(storage.AsSpan(16 + shift, written));
         }
     }
 

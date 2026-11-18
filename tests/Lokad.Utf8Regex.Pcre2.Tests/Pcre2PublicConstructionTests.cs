@@ -301,7 +301,7 @@ public sealed class Pcre2PublicConstructionTests
         foreach (var tail in tails)
         {
             var input = Enumerable.Repeat((byte)'a', prefix).Concat(tail).Concat("😀"u8.ToArray()).ToArray();
-            var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
+            var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(input));
             var failure = Assert.Throws<ArgumentException>(() => Utf8Pcre2Regex.Compile(input, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
             {
                 MatchTimeout = Timeout.InfiniteTimeSpan,

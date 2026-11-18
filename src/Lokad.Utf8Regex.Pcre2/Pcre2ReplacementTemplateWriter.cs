@@ -321,7 +321,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
         {
             CheckWork();
             if (Rune.DecodeFromUtf8(bytes, out var scalar, out var consumed) != OperationStatus.Done)
-                _ = Utf8Validation.Validate(bytes);
+                throw Utf8Validation.CreateInvalidUtf8Exception(0);
             AppendScalar(scalar, ref state, syntaxOnly);
             bytes = bytes[consumed..];
         }

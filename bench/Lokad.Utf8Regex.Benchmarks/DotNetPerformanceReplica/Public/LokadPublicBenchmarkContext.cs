@@ -133,18 +133,7 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecutePredecodedCompiledRegex() => Execute(CompiledRegex, InputString);
 
-    public int ExecuteUtf8ValidationOnly() => Utf8Validation.Validate(InputBytes).ByteLength;
-
     public int ExecuteUtf8IsValidOnly() => Utf8.IsValid(InputBytes) ? InputBytes.Length : 0;
-
-    public int ExecuteUtf8InputValidateOnly() => Utf8InputAnalyzer.ValidateOnly(InputBytes).ByteLength;
-
-    public int ExecuteUtf8ValidityOnly()
-    {
-        return Utf8InputAnalyzer.TryValidateOnly(InputBytes, out _)
-            ? InputBytes.Length
-            : 0;
-    }
 
     public int ExecuteUtf8WellFormedOnly()
     {

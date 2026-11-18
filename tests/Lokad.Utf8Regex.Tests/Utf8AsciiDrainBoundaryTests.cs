@@ -11,7 +11,7 @@ public sealed class Utf8AsciiDrainBoundaryTests
     [InlineData(255)] [InlineData(256)] [InlineData(257)]
     [InlineData(511)] [InlineData(512)] [InlineData(513)]
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
-    public void LongAsciiIslandsPreserveMetadataAndTheFirstMalformedByte(int length)
+    public void LongAsciiIslandsPreserveTheFirstMalformedByte(int length)
     {
         var ascii = new string(Enumerable.Range(0, length).Select(index => (char)(index & 127)).ToArray());
         var text = "中文" + ascii + "éK😀" + ascii + "尾";
@@ -20,9 +20,7 @@ public sealed class Utf8AsciiDrainBoundaryTests
         {
             byte[] storage = [.. Enumerable.Repeat((byte)0xFF, offset), .. encoded, 0xFF];
             var input = storage.AsSpan(offset, encoded.Length);
-            var description = Utf8InputAnalyzer.ValidateOnly(input, out var kelvin);
-            Assert.True(kelvin); Assert.False(description.IsAscii);
-            Assert.True(Utf8InputAnalyzer.TryValidateOnly(input, out var error));
+            Assert.True(Utf8Validation.TryValidateOnly(input, out var error));
             Assert.Equal(-1, error);
             var invocation = new Utf8SliceInvocation(new(10000, 0, 17), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(17));
@@ -32,9 +30,8 @@ public sealed class Utf8AsciiDrainBoundaryTests
             var malformedAt = 6 + length / 2;
             input[malformedAt] = 0xFF;
             input[^1] = 0xFF;
-            Assert.False(Utf8ValidationCore.TryValidate(input, out _, out var scalarError));
-            Assert.False(Utf8InputAnalyzer.TryValidateOnly(input, out var vectorError));
-            Assert.Equal(malformedAt, scalarError); Assert.Equal(malformedAt, vectorError);
+            Assert.False(Utf8Validation.TryValidateOnly(input, out var vectorError));
+            Assert.Equal(malformedAt, vectorError);
         }
     }
 
@@ -51,16 +48,11 @@ public sealed class Utf8AsciiDrainBoundaryTests
             var encoded = Encoding.UTF8.GetBytes(text);
             byte[] storage = [.. Enumerable.Repeat((byte)0xff, offset), .. encoded, 0xff];
             var subject = storage.AsSpan(offset, encoded.Length);
-            Assert.True(Utf8ValidationCore.TryValidate(subject, out var expected, out var error));
-            Assert.Equal(-1, error);
-            Assert.Equal(encoded.Length, expected.ByteLength);
-            Assert.False(expected.IsAscii);
-
             var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 13), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             var copy = invocation;
-                Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(subject, ref invocation));
-                Assert.Equal(invocation.Budget.Steps, copy.Budget.Steps);
+            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(subject, ref invocation));
+            Assert.Equal(invocation.Budget.Steps, copy.Budget.Steps);
             Assert.Equal(13UL, copy.Ledger.ReservedBytes);
         }
     }
@@ -75,8 +67,6 @@ public sealed class Utf8AsciiDrainBoundaryTests
             new byte[] { 0xc2, (byte)'x' }, new byte[] { 0xed, 0xa0, 0x80 }, new byte[] { 0xf4, 0x90, 0x80, 0x80 } })
         {
             byte[] subject = [.. prefix, .. malformed];
-            Assert.False(Utf8ValidationCore.TryValidate(subject, out _, out var error));
-            Assert.Equal(prefix.Length, error);
             var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 13), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             var failure = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(subject, ref invocation));

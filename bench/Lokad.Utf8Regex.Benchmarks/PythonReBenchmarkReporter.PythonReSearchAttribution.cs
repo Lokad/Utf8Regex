@@ -91,7 +91,6 @@ internal static partial class PythonReBenchmarkReporter
         {
             new("ThrowIfInvalidOnly", () => ExecuteSearchAttributionValidationOnly(input), input.Length),
             new("BclIsValidOnly", () => ExecuteBclIsValidOnly(input), input.Length),
-            new("FullValidate", () => ExecuteSearchAttributionFullValidation(input), ExecuteSearchAttributionFullValidation(input)),
             new("PrefilterOnly", () => ExecutePrefilterOnly(core, input), ExecutePrefilterOnly(core, input)),
         };
 
@@ -241,11 +240,6 @@ internal static partial class PythonReBenchmarkReporter
     private static int ExecuteBclIsValidOnly(byte[] input)
     {
         return Utf8.IsValid(input) ? input.Length : 0;
-    }
-
-    private static int ExecuteSearchAttributionFullValidation(byte[] input)
-    {
-        return Utf8Validation.Validate(input).ByteLength;
     }
 
     private static int ExecutePrefilterOnly(Utf8Regex core, byte[] input)

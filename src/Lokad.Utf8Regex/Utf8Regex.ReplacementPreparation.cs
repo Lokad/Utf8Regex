@@ -76,13 +76,13 @@ public sealed partial class Utf8Regex
         // parent shares its cumulative admission and interruption checkpoints.
         if (control.IsUncontrolled && (construction is null ||
             !construction.CancellationToken.CanBeCanceled && construction.Deadline.IsInfinite && construction.CheckpointHook is null))
-        { _ = Utf8Validation.Validate(template); return; }
+        { Utf8Validation.ThrowIfInvalidOnly(template); return; }
         for (var offset = 0; offset < template.Length;)
         {
             construction?.ChargeWork(0);
             control.Check();
             var count = Utf8SliceBufferWork.Utf8BlockLength(template[offset..]);
-            if (!Utf8InputAnalyzer.TryValidateOnly(template.Slice(offset, count), out var error))
+            if (!Utf8Validation.TryValidateOnly(template.Slice(offset, count), out var error))
                 throw Utf8Validation.CreateInvalidUtf8Exception(offset + error);
             offset += count;
         }

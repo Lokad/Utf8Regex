@@ -50,7 +50,7 @@ public sealed class Utf8CompiledScalarConsumerTests
         const string pattern = "^import\\s+(?<shared>shared\\s+)?\"(?<path>(\\.|[^\\\\\"]*))\".*$";
         const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Multiline;
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(isAscii, Utf8Validation.Validate(input).IsAscii);
+        Assert.Equal(isAscii, Utf8InputAnalyzer.IsAscii(input));
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, options: options | mode);

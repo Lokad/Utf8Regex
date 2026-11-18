@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using System.Text.Unicode;
 using Lokad.Utf8Regex.Internal.Input;
@@ -7,7 +8,7 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ValidationTests
 {
     [Fact]
-    public void EveryByteTagAtThreeByteBlockBoundariesAgreesWithScalarValidation()
+    public void EveryByteTagAtThreeByteBlockBoundariesKeepsTheFirstError()
     {
         var tail = Encoding.UTF8.GetBytes(new string('中', 80) + "é😀");
         foreach (var prefix in new[] { 0, 1, 28, 29, 30, 31, 32, 60, 61, 62, 63, 64, 125, 126, 127, 128, 255, 256, 257 })
@@ -22,61 +23,14 @@ public sealed class Utf8ValidationTests
                 input[prefix + 1] = second;
                 input[prefix + 2] = 0x80;
                 var expected = Utf8.IsValid(input);
-                Assert.Equal(expected, Utf8ValidationCore.TryValidate(input, out var scalar, out var scalarError));
-                Assert.Equal(expected, Utf8InputAnalyzer.TryValidateOnly(input, out var vectorError));
-                    if (!expected) Assert.Equal(scalarError, vectorError);
+                Assert.Equal(expected, Utf8Validation.TryValidateOnly(input, out var vectorError));
+                if (!expected)
+                {
+                    var validPrefix = tag < 128 ? 1 : tag is >= 0xc2 and <= 0xdf ? 2 : 0;
+                    Assert.Equal(prefix + validPrefix, vectorError);
                 }
+            }
         }
-    }
-
-    [Fact]
-    public void StrictAsciiDescriptorUsesByteLength()
-    {
-        ReadOnlySpan<byte> input = "hello"u8;
-
-        var result = Utf8Validation.Validate(input);
-
-        Assert.Equal(5, result.ByteLength);
-        Assert.True(result.IsAscii);
-    }
-
-    [Fact]
-    public void StrictBmpDescriptorUsesByteLength()
-    {
-        var input = "café"u8;
-
-        var result = Utf8Validation.Validate(input);
-
-        Assert.Equal(input.Length, result.ByteLength);
-        Assert.False(result.IsAscii);
-    }
-
-    [Fact]
-    public void StrictSupplementaryDescriptorUsesByteLength()
-    {
-        var input = "a😀b"u8;
-
-        var result = Utf8Validation.Validate(input);
-
-        Assert.Equal(input.Length, result.ByteLength);
-        Assert.False(result.IsAscii);
-    }
-
-    [Theory]
-    [InlineData("plain ASCII", false)]
-    [InlineData("café", false)]
-    [InlineData("K", true)]
-    [InlineData("before K after", true)]
-    [InlineData("中K文", true)]
-    [InlineData("中文K😀", true)]
-    public void ValidateOnlyCanReportKelvinSignWithoutASecondScan(string text, bool expected)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-
-        var validation = Utf8InputAnalyzer.ValidateOnly(input, out var containsKelvinSign);
-
-        Assert.Equal(input.Length, validation.ByteLength);
-        Assert.Equal(expected, containsKelvinSign);
     }
 
     [Fact]
@@ -84,7 +38,7 @@ public sealed class Utf8ValidationTests
     {
         var invalid = new byte[] { 0xE2, 0x82 };
 
-        var error = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalid(invalid));
+        var error = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(invalid));
 
         Assert.Contains("byte offset 0", error.Message);
     }
@@ -94,7 +48,7 @@ public sealed class Utf8ValidationTests
     {
         var invalid = new byte[] { 0x61, 0xE2, 0x28, 0xA1 };
 
-        var error = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalid(invalid));
+        var error = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(invalid));
 
         Assert.Contains("byte offset 1", error.Message);
     }
@@ -135,7 +89,7 @@ public sealed class Utf8ValidationTests
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(3)]
-    public void ValidityMatchesMetadataDecoderAtEveryWideLaneAndSliceOffset(int sliceOffset)
+    public void ValidityMatchesScalarDecoderAtEveryWideLaneAndSliceOffset(int sliceOffset)
     {
         var scalars = new[] { "é", "中", "ࠀ", "\uD7FF", "😀", "\U0010FFFF" };
         foreach (var scalar in scalars)
@@ -145,7 +99,7 @@ public sealed class Utf8ValidationTests
             var storage = new byte[sliceOffset + bytes.Length + 3];
             bytes.CopyTo(storage, sliceOffset);
             var input = storage.AsSpan(sliceOffset, bytes.Length);
-            Assert.True(Utf8InputAnalyzer.TryValidateOnly(input, out var validOffset));
+            Assert.True(Utf8Validation.TryValidateOnly(input, out var validOffset));
             Assert.Equal(-1, validOffset);
             for (var index = prefix; index < prefix + Encoding.UTF8.GetByteCount(scalar); index++)
             {
@@ -153,8 +107,9 @@ public sealed class Utf8ValidationTests
                 foreach (var replacement in new byte[] { 0, 0x7F, 0x80, 0xBF, 0xC0, 0xC1, 0xC2, 0xDF, 0xE0, 0xFF })
                 {
                     input[index] = replacement;
-                    var expected = Utf8ValidationCore.TryValidate(input, out _, out var expectedOffset);
-                    var actual = Utf8InputAnalyzer.TryValidateOnly(input, out var actualOffset);
+                    var expectedOffset = ScalarErrorOffset(input);
+                    var expected = expectedOffset < 0;
+                    var actual = Utf8Validation.TryValidateOnly(input, out var actualOffset);
                     Assert.True(expected == actual && expectedOffset == actualOffset,
                         $"slice={sliceOffset}, prefix={prefix}, scalar={scalar}, index={index}, byte={replacement:X2}: " +
                         $"expected={expected}/{expectedOffset}, actual={actual}/{actualOffset}");
@@ -162,6 +117,17 @@ public sealed class Utf8ValidationTests
                 input[index] = original;
             }
         }
+    }
+
+    private static int ScalarErrorOffset(ReadOnlySpan<byte> input)
+    {
+        for (var offset = 0; offset < input.Length;)
+        {
+            if (Rune.DecodeFromUtf8(input[offset..], out _, out var consumed) != OperationStatus.Done)
+                return offset;
+            offset += consumed;
+        }
+        return -1;
     }
 
     [Fact]

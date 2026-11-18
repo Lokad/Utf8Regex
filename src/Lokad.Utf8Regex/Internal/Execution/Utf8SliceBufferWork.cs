@@ -56,15 +56,15 @@ internal static class Utf8SliceBufferWork
         {
             Checkpoint(ref invocation);
             var count = Utf8BlockLength(bytes[offset..]);
-            if (!Input.Utf8InputAnalyzer.TryValidateOnly(bytes.Slice(offset, count), out var error))
+            if (!Input.Utf8Validation.TryValidateOnly(bytes.Slice(offset, count), out var error))
                 throw Input.Utf8Validation.CreateInvalidUtf8Exception(offset + error);
             offset += count;
         }
     }
 
-    internal static int Utf8BlockLength(ReadOnlySpan<byte> remaining)
+    internal static int Utf8BlockLength(ReadOnlySpan<byte> remaining, int maxBlockLength = 4096)
     {
-        var count = Math.Min(4096, remaining.Length);
+        var count = Math.Min(maxBlockLength, remaining.Length);
         if (count == remaining.Length) return count;
         var cut = count;
         while (count - cut < 3 && (remaining[cut] & 0xc0) == 0x80) cut--;

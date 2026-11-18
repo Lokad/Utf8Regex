@@ -46,7 +46,7 @@ public sealed class Utf8NativeProjectionInvocationTests
     public void MeteredValidationPreservesFirstInvalidByteAndFailureMessage(int offset, byte[] invalid)
     {
         byte[] input = [.. Enumerable.Repeat((byte)'x', offset), .. invalid, .. "xyz"u8.ToArray()];
-        var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
+        var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(input));
         var invocation = Metered();
         var actual = Assert.Throws<ArgumentException>(() => Utf8Validation.TryValidateOnly(input, ref invocation));
         Assert.Equal(expected.ParamName, actual.ParamName);
