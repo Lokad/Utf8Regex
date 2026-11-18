@@ -358,23 +358,8 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         }
     }
 
-    private Utf8Pcre2MatchContext MatchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
-    {
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
-        try
-        {
-            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
-            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-            return MatchDetailedValidated(input, ref subject, start, matchOptions, ref invocation);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
-        }
-    }
-
-    // Probe's normal fallback reuses this already validated subject/authority.
-    private Utf8Pcre2MatchContext MatchDetailedValidated(ReadOnlySpan<byte> input,
+    // Full probing reuses the original subject and invocation authority.
+    private Utf8Pcre2MatchContext MatchFullProbe(ReadOnlySpan<byte> input,
         scoped ref Utf8ValidatedInput subject, Utf8BytePosition start,
         Pcre2MatchOptions matchOptions, scoped ref Utf8SliceInvocation invocation)
     {
@@ -394,19 +379,6 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         }
 
         throw CreateUnsupportedPatternException();
-    }
-
-    /// <summary>Finds the first detailed match using an explicit start byte offset and per-operation options, observing cancellation during matching and required capture projection.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before entry and during bounded matching.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
-    public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        using var programUse = _programMemory?.Enter();
-        return MatchDetailedCore(input, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     private Utf8Pcre2ValueMatchEnumerator EnumerateMatchesCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
@@ -525,7 +497,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             }
 
             if (partialMode == Pcre2PartialMode.None)
-                return MatchDetailedValidated(input, ref subject, start, matchOptions, ref invocation).AsProbeResult();
+                return MatchFullProbe(input, ref subject, start, matchOptions, ref invocation).AsProbeResult();
 
             // Ordinary matching can prove a Soft full result, but cannot decide
             // Hard partial priority or infer absence of a partial from MARK.

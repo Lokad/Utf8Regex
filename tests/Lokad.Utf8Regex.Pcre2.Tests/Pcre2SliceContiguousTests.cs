@@ -80,12 +80,14 @@ public sealed class Pcre2SliceContiguousTests
     }
 
     [Fact]
-    public void OwnedDetailedPinsToSearchStart()
+    public void PrimaryCapturesKeepSearchOrigin()
     {
         var regex = new Utf8Pcre2Regex("\\Ga+", options: Pcre2CompileOptions.None);
-        var detailed = regex.MatchDetailed(Utf8("aab"), 1);
+        ReadOnlySpan<byte> detailed1Input = Utf8("aab");
+        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed1Input, startOffsetInBytes: 1, captures: detailed1Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(0).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed1Captures[0].Success ? detailed1Input.Slice(detailed1Captures[0].StartOffsetInBytes, detailed1Captures[0].EndOffsetInBytes - detailed1Captures[0].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

@@ -141,9 +141,11 @@ public sealed class Pcre2SliceLookaroundTests
     public void OwnedDetailedProjectsLookaroundGroups()
     {
         var regex = new Utf8Pcre2Regex("(?<=(a|b))", options: Pcre2CompileOptions.None);
-        var detailed = regex.MatchDetailed(Utf8("xab"), 0);
+        ReadOnlySpan<byte> detailed1Input = Utf8("xab");
+        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 
@@ -157,10 +159,12 @@ public sealed class Pcre2SliceLookaroundTests
 
     [Fact]
     public void OwnedRangeCursorSeesRetriedNonEmptyMatch()
-{
+    {
         var regex = new Utf8Pcre2Regex("(?<=abc)(|def)", options: Pcre2CompileOptions.None);
         using var cursor = regex.CreateMatchCursor(Utf8("abcdefabc"));
         var observations = new List<string>();
         while (cursor.MoveNext(out var match))
             observations.Add($"{match.Value.StartOffsetInBytes}:{Encoding.UTF8.GetString(match.GetValueMemory().Span)}");
-        Assert.Equal(["3:", "3:def", "9:"], observations);    }}
+        Assert.Equal(["3:", "3:def", "9:"], observations);
+    }
+}

@@ -10,8 +10,11 @@ public sealed class Pcre2SliceLeadingByteTests
     private const string Pattern = @"(?=(?<token>[a-z]{3}[0-9]{3}))abc123";
 
     [Theory]
-    [InlineData(0, true)] [InlineData(6, true)] [InlineData(8, true)]
-    [InlineData(9, false)] [InlineData(14, false)]
+    [InlineData(0, true)]
+    [InlineData(6, true)]
+    [InlineData(8, true)]
+    [InlineData(9, false)]
+    [InlineData(14, false)]
     public void PublicByteOffsetsRemainScalarAligned(int start, bool expected)
     {
         var regex = new Utf8Pcre2Regex(Pattern);
@@ -42,7 +45,10 @@ public sealed class Pcre2SliceLeadingByteTests
     }
 
     [Theory]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4096)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    [InlineData(4096)]
     public void MissingLeadingByteAdmitsBoundedScansEvenWithoutPublicLimits(int length)
     {
         var regex = new Utf8Pcre2Regex(Pattern);
@@ -88,13 +94,19 @@ public sealed class Pcre2SliceLeadingByteTests
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(expected, regex.IsMatch(input, 0));
         Assert.Equal(expected, regex.IsMatch(input, 0, Pcre2MatchOptions.None, live.Token));
-        Assert.Equal(expected, regex.MatchDetailed(input).Success);
+        Assert.Equal(expected, regex.Match(input).Success);
         if (expected && pattern == Pattern)
-            Assert.Equal("abc123", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(input).GetGroup(1).GetValueBytes()));
+        {
+            ReadOnlySpan<byte> result2Input = input;
+            var result2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var result2Result = regex.Match(result2Input, captures: result2Captures);
+            Assert.Equal("abc123", System.Text.Encoding.UTF8.GetString((result2Captures[1].Success ? result2Input.Slice(result2Captures[1].StartOffsetInBytes, result2Captures[1].EndOffsetInBytes - result2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        }
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void AnchoredAndCaselessRequestsDoNotUseAnInvalidLiteralProof(bool anchored)
     {
         var regex = new Utf8Pcre2Regex(Pattern, options: anchored ? Pcre2CompileOptions.Anchored : Pcre2CompileOptions.Caseless);
@@ -104,7 +116,10 @@ public sealed class Pcre2SliceLeadingByteTests
     }
 
     [Theory]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4096)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    [InlineData(4096)]
     public void BoundedPublicSearchKeepsStrictValidationAndUsefulLimits(int prefix)
     {
         var regex = new Utf8Pcre2Regex(Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
@@ -127,7 +142,8 @@ public sealed class Pcre2SliceLeadingByteTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ScanQuantaPreserveOriginalInterruptionAndBorrowedLoans(bool expire)
     {
         var regex = new Utf8Pcre2Regex(Pattern);

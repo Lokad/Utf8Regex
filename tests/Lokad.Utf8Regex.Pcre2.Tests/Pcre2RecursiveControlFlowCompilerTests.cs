@@ -40,15 +40,17 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     [Fact]
     public void DefineBlocksCanHoldMultipleForwardReferencedDefinitions()
     {
-        var regex = new Utf8Pcre2Regex(            "^(?&left)(?&right)(?(DEFINE)(?<left>a|x)(?<right>b|y))$");
+        var regex = new Utf8Pcre2Regex("^(?&left)(?&right)(?(DEFINE)(?<left>a|x)(?<right>b|y))$");
+        ReadOnlySpan<byte> match1Input = "ab"u8;
+        var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var match = regex.MatchDetailed("ab"u8);
+        var match = regex.Match(match1Input, captures: match1Captures);
 
         Assert.True(match.Success);
         // A returned subroutine restores caller captures, including unset slots.
-        Assert.False(match.GetGroup(1).Success);
-        Assert.False(match.GetGroup(2).Success);
-        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+        Assert.False(match1Captures[1].Success);
+        Assert.False(match1Captures[2].Success);
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.False(regex.IsMatch("ax"u8));
     }
 
@@ -67,7 +69,7 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     [Fact]
     public void NamedDuplicateCaptureConditionUsesTheFirstSetSlot()
     {
-        var regex = new Utf8Pcre2Regex(            "^(?J)(?:(?<x>a)|(?<x>b))(?(x)c|d)$");
+        var regex = new Utf8Pcre2Regex("^(?J)(?:(?<x>a)|(?<x>b))(?(x)c|d)$");
 
         Assert.True(regex.IsMatch("ac"u8));
         Assert.True(regex.IsMatch("bc"u8));
@@ -77,13 +79,19 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     [Fact]
     public void AssertionConditionCapturesFlowThroughEitherDecision()
     {
-        var positive = new Utf8Pcre2Regex("^(?(?=(a))abc|def)").MatchDetailed("abc"u8);
-        var negative = new Utf8Pcre2Regex("^(?(?!(a))def|abc)").MatchDetailed("abc"u8);
+        var positive2Regex = new Utf8Pcre2Regex("^(?(?=(a))abc|def)");
+        ReadOnlySpan<byte> positive2Input = "abc"u8;
+        var positive2Captures = new Utf8Pcre2CaptureRange[positive2Regex.CaptureGroupCount + 1];
+        var positive = positive2Regex.Match(positive2Input, captures: positive2Captures);
+        var negative3Regex = new Utf8Pcre2Regex("^(?(?!(a))def|abc)");
+        ReadOnlySpan<byte> negative3Input = "abc"u8;
+        var negative3Captures = new Utf8Pcre2CaptureRange[negative3Regex.CaptureGroupCount + 1];
+        var negative = negative3Regex.Match(negative3Input, captures: negative3Captures);
 
         Assert.True(positive.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(positive.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((positive2Captures[1].Success ? positive2Input.Slice(positive2Captures[1].StartOffsetInBytes, positive2Captures[1].EndOffsetInBytes - positive2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(negative.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(negative.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((negative3Captures[1].Success ? negative3Input.Slice(negative3Captures[1].StartOffsetInBytes, negative3Captures[1].EndOffsetInBytes - negative3Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -110,7 +118,7 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     [Fact]
     public void RecursiveCallsChargeInvocationLimitsAndRemainConcurrent()
     {
-        var limited = new Utf8Pcre2Regex(            "^(?<r>a(?&r)?b)$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var limited = new Utf8Pcre2Regex("^(?<r>a(?&r)?b)$", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

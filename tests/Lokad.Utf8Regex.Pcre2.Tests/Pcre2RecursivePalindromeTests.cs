@@ -15,10 +15,12 @@ public sealed class Pcre2RecursivePalindromeTests
         Assert.Equal(allowsEmpty, regex.IsMatch([]));
         Assert.True(regex.IsMatch("abccba"u8));
         Assert.False(regex.IsMatch("abca"u8));
+        ReadOnlySpan<byte> detailed1Input = "abcba"u8;
+        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var detailed = regex.MatchDetailed("abcba"u8);
+        var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("abcba", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("abcba", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -108,7 +110,7 @@ public sealed class Pcre2RecursivePalindromeTests
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
-        new(            pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

@@ -20,7 +20,7 @@ public sealed class Pcre2UnusedTreeRetentionTests
         Assert.True(regex.IsMatch("x"u8));
         Assert.Equal(1, regex.Count("x"u8));
         Assert.Equal(1, regex.Count("x"u8, 0, Pcre2MatchOptions.NotEmpty));
-        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("x"u8).Value.GetValueBytes()));
+        Assert.Equal("x", System.Text.Encoding.UTF8.GetString(regex.Match("x"u8).GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("x"u8, Pcre2PartialMode.None).Kind);
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("x"u8, Pcre2PartialMode.Soft).Kind);
         Assert.Throws<NotSupportedException>(() =>

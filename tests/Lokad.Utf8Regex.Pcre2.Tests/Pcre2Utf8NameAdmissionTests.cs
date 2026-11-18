@@ -8,8 +8,8 @@ public sealed class Pcre2Utf8NameAdmissionTests
     {
         foreach (var name in new[] { new string('a', 128), new string('é', 64),
             string.Concat(Enumerable.Repeat("𐐀", 32)) })
-        foreach (var form in new[] { "(?<{0}>😀)", "(?'{0}'😀)", "(?P<{0}>😀)" })
-            yield return [name, string.Format(form, name) + @"\k<" + name + ">"];
+            foreach (var form in new[] { "(?<{0}>😀)", "(?'{0}'😀)", "(?P<{0}>😀)" })
+                yield return [name, string.Format(form, name) + @"\k<" + name + ">"];
     }
 
     [Theory]
@@ -18,12 +18,16 @@ public sealed class Pcre2Utf8NameAdmissionTests
     {
         Assert.Equal(128, Encoding.UTF8.GetByteCount(name));
         var regex = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: Pcre2CompileOptions.Ucp);
-        var match = regex.MatchDetailed("é😀😀"u8);
+        ReadOnlyMemory<byte> match1Input = ("é😀😀"u8).ToArray();
+        using var match1Cursor = regex.CreateMatchCursor(match1Input);
+        match1Cursor.MoveNext(out var match1Result);
+        match1Cursor.Dispose();
+        var match = match1Result;
         Assert.True(match.Success);
         Assert.Equal((2, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-        Assert.Equal(2, match.CaptureSlotCount);
+        Assert.Equal(2, match.Groups.Length);
         Assert.True(match.TryGetFirstSetGroup(name, out var group));
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((group.Success ? match1Input.Span.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal((2, 6), (group.StartOffsetInBytes, group.EndOffsetInBytes));
         var names = new Pcre2NameEntry[1];
         Assert.Equal(1, regex.CopyNameEntries(names, out var more));
@@ -36,8 +40,8 @@ public sealed class Pcre2Utf8NameAdmissionTests
     {
         foreach (var name in new[] { new string('a', 129), new string('é', 65),
             string.Concat(Enumerable.Repeat("𐐀", 33)) })
-        foreach (var form in new[] { "(?<{0}>a)", "(?'{0}'a)", "(?P<{0}>a)" })
-            yield return [string.Format(form, name)];
+            foreach (var form in new[] { "(?<{0}>a)", "(?'{0}'a)", "(?P<{0}>a)" })
+                yield return [string.Format(form, name)];
     }
 
     [Theory]
@@ -74,8 +78,8 @@ public sealed class Pcre2Utf8NameAdmissionTests
     {
         foreach (var label in new[] { new string('x', 256), new string('é', 128),
             string.Concat(Enumerable.Repeat("😀", 64)) })
-        foreach (var verb in new[] { "", "MARK", "PRUNE", "THEN", "COMMIT", "SKIP", "ACCEPT", "FAIL", "F" })
-            yield return ["(*" + verb + ":" + label + ")a"];
+            foreach (var verb in new[] { "", "MARK", "PRUNE", "THEN", "COMMIT", "SKIP", "ACCEPT", "FAIL", "F" })
+                yield return ["(*" + verb + ":" + label + ")a"];
     }
 
     [Theory]
@@ -97,7 +101,10 @@ public sealed class Pcre2Utf8NameAdmissionTests
         var literal = "(?<" + name + ">a)(*MARK:" + label + ")";
         var quoted = new Utf8Pcre2Regex(@"\Q" + literal + @"\E");
         Assert.True(quoted.IsMatch(Encoding.UTF8.GetBytes(literal)));
-        Assert.Equal(1, quoted.MatchDetailed(Encoding.UTF8.GetBytes(literal)).CaptureSlotCount);
+        ReadOnlySpan<byte> result2Input = Encoding.UTF8.GetBytes(literal);
+        var result2Captures = new Utf8Pcre2CaptureRange[quoted.CaptureGroupCount + 1];
+        var result2Result = quoted.Match(result2Input, captures: result2Captures);
+        Assert.Equal(1, (result2Result.Success ? result2Captures.Length : 0));
         Assert.True(new Utf8Pcre2Regex(@"[\Q" + literal + @"\E]").IsMatch("é"u8));
         Assert.True(new Utf8Pcre2Regex("# " + literal + "\na", options: Pcre2CompileOptions.Extended).IsMatch("a"u8));
         Assert.True(new Utf8Pcre2Regex("(?#(?<" + name + ">a)a").IsMatch("a"u8));

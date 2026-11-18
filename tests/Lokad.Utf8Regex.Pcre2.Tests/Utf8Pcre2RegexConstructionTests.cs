@@ -114,7 +114,7 @@ public sealed class Utf8Pcre2RegexConstructionTests
     [Fact]
     public void Utf8Pcre2RegexAcceptsInfiniteMatchTimeout()
     {
-        var regex = new Utf8Pcre2Regex(            "abc", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("abc", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
         });
@@ -153,15 +153,15 @@ public sealed class Utf8Pcre2RegexConstructionTests
     [Fact]
     public void Utf8Pcre2RegexRejectsUnknownCompileSettingValues()
     {
-        var newlineException = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex(            "abc", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { Newline = (Pcre2NewlineConvention)999 }, policy: new Utf8RegexPolicy
+        var newlineException = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex("abc", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { Newline = (Pcre2NewlineConvention)999 }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
         }));
-        var bsrException = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex(            "abc", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { Bsr = (Pcre2BsrConvention)999 }, policy: new Utf8RegexPolicy
+        var bsrException = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex("abc", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { Bsr = (Pcre2BsrConvention)999 }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
         }));
-        var backslashCException = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex(            "abc", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { BackslashC = (Pcre2BackslashCPolicy)999 }, policy: new Utf8RegexPolicy
+        var backslashCException = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex("abc", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { BackslashC = (Pcre2BackslashCPolicy)999 }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
         }));
@@ -174,7 +174,7 @@ public sealed class Utf8Pcre2RegexConstructionTests
     [Fact]
     public void Utf8Pcre2RegexExposesDuplicateNameEntriesForSpecialPattern()
     {
-        var regex = new Utf8Pcre2Regex(            @"(?:(?<n>foo)|(?<n>bar))\k<n>", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"(?:(?<n>foo)|(?<n>bar))\k<n>", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
@@ -216,7 +216,7 @@ public sealed class Utf8Pcre2RegexConstructionTests
     [Fact]
     public void Utf8Pcre2RegexAnalyzeReportsSpecialPatternFlags()
     {
-        var regex = new Utf8Pcre2Regex(            @"(?:(?<n>foo)|(?<n>bar))\k<n>", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"(?:(?<n>foo)|(?<n>bar))\k<n>", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
@@ -238,7 +238,7 @@ public sealed class Utf8Pcre2RegexConstructionTests
     [Fact]
     public void Utf8Pcre2RegexAnalyzeReportsNonMonotoneLookaroundFlags()
     {
-        var regex = new Utf8Pcre2Regex(            "(?=ab\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(?=ab\\K)", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
@@ -294,7 +294,7 @@ public sealed class Utf8Pcre2RegexConstructionTests
         var regex = new Utf8Pcre2Regex("a(*FAIL)b");
 
         Assert.False(regex.Match("abc"u8).Success);
-        Assert.False(regex.MatchDetailed("abc"u8).Success);
+        Assert.False(regex.Match("abc"u8).Success);
         var enumerator = regex.EnumerateMatches("abc"u8);
         Assert.False(enumerator.MoveNext());
     }

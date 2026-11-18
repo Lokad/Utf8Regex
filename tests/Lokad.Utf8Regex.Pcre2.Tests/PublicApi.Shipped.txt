@@ -120,7 +120,6 @@ sealed class Utf8Pcre2Regex : IDisposable
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
   method Utf8Pcre2Analysis Analyze()
-  method Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
   method Utf8Pcre2MatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8Pcre2ProbeResult Probe(ReadOnlySpan<Byte> input, Pcre2PartialMode partialMode, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
   method Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, scoped Span<Utf8Pcre2CaptureRange> captures = default, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)

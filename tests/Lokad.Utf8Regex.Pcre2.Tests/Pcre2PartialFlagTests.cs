@@ -89,9 +89,9 @@ public sealed class Pcre2PartialFlagTests
     public void DollarNotEolAlsoUsesCorrectNormalMatcherSemantics()
     {
         var regex = new Utf8Pcre2Regex("abc$");
-        Assert.False(regex.MatchDetailed("abc\n"u8, 0, Pcre2MatchOptions.NotEol).Success);
-        Assert.True(regex.MatchDetailed("abc\n"u8).Success);
-        Assert.True(new Utf8Pcre2Regex(@"abc\Z").MatchDetailed("abc\n"u8, 0, Pcre2MatchOptions.NotEol).Success);
+        Assert.False(regex.Match("abc\n"u8, matchOptions: Pcre2MatchOptions.NotEol).Success);
+        Assert.True(regex.Match("abc\n"u8).Success);
+        Assert.True(new Utf8Pcre2Regex(@"abc\Z").Match("abc\n"u8, matchOptions: Pcre2MatchOptions.NotEol).Success);
     }
 
     [Fact]
@@ -123,7 +123,8 @@ public sealed class Pcre2PartialFlagTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void RejectedEmptyStillObservesOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();

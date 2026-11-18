@@ -47,11 +47,11 @@ public sealed class Pcre2AsciiIpv4CountTests
         var regex = Create();
         var oracle = new Regex(Pattern);
         foreach (var token in new[] { "00.11.22.25500", "255.249.199.000", "11.22.33.256", "999.999.999.999" })
-        for (var prefix = 2018; prefix <= 2050; prefix++)
-        {
-            var text = new string('x', prefix) + token + "😀00.11.22.255";
-            Assert.Equal(oracle.Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
-        }
+            for (var prefix = 2018; prefix <= 2050; prefix++)
+            {
+                var text = new string('x', prefix) + token + "😀00.11.22.255";
+                Assert.Equal(oracle.Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
+            }
         const string tail = "é00.11.22.255😀";
         for (var end = 0; end <= tail.Length; end++)
         {
@@ -124,7 +124,10 @@ public sealed class Pcre2AsciiIpv4CountTests
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var retained = new Utf8Pcre2Regex("(" + Pattern + ")").MatchDetailed("é00.11.22.255"u8);
+        var retained1Regex = new Utf8Pcre2Regex("(" + Pattern + ")");
+        ReadOnlySpan<byte> retained1Input = "é00.11.22.255"u8;
+        var retained1Captures = new Utf8Pcre2CaptureRange[retained1Regex.CaptureGroupCount + 1];
+        var retained = retained1Regex.Match(retained1Input, captures: retained1Captures);
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -139,7 +142,7 @@ public sealed class Pcre2AsciiIpv4CountTests
         Assert.True(entered);
         if (expire) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        Assert.Equal("00.11.22.255", Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("00.11.22.255", Encoding.UTF8.GetString((retained1Captures[1].Success ? retained1Input.Slice(retained1Captures[1].StartOffsetInBytes, retained1Captures[1].EndOffsetInBytes - retained1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         Assert.Equal(canceled.Token,

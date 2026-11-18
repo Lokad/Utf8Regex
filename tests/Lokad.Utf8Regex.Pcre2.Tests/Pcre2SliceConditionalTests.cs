@@ -33,13 +33,15 @@ public sealed class Pcre2SliceConditionalTests
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         var oracle = Bcl(pattern).Match(inputText);
-        var actual = regex.MatchDetailed(Utf8(inputText));
+        ReadOnlySpan<byte> actual1Input = Utf8(inputText);
+        var actual1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var actual = regex.Match(actual1Input, captures: actual1Captures);
         Assert.Equal(expected, actual.Success);
         for (var number = 0; number < oracle.Groups.Count; number++)
         {
-            Assert.Equal(oracle.Groups[number].Success, actual.GetGroup(number).Success);
+            Assert.Equal(oracle.Groups[number].Success, actual1Captures[number].Success);
             if (oracle.Groups[number].Success)
-                Assert.Equal(oracle.Groups[number].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroup(number).GetValueBytes()));
+                Assert.Equal(oracle.Groups[number].Value, System.Text.Encoding.UTF8.GetString((actual1Captures[number].Success ? actual1Input.Slice(actual1Captures[number].StartOffsetInBytes, actual1Captures[number].EndOffsetInBytes - actual1Captures[number].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         }
     }
 
@@ -61,9 +63,12 @@ public sealed class Pcre2SliceConditionalTests
     [Fact]
     public void NegativeAssertionConditionRetainsMatchedCaptures()
     {
-        var negative = new Utf8Pcre2Regex("^(?(?!(a))def|abc)").MatchDetailed("abc"u8);
+        var negative2Regex = new Utf8Pcre2Regex("^(?(?!(a))def|abc)");
+        ReadOnlySpan<byte> negative2Input = "abc"u8;
+        var negative2Captures = new Utf8Pcre2CaptureRange[negative2Regex.CaptureGroupCount + 1];
+        var negative = negative2Regex.Match(negative2Input, captures: negative2Captures);
         Assert.True(negative.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(negative.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((negative2Captures[1].Success ? negative2Input.Slice(negative2Captures[1].StartOffsetInBytes, negative2Captures[1].EndOffsetInBytes - negative2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     public static IEnumerable<object?[]> ParityCases()

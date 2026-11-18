@@ -42,7 +42,7 @@ public sealed class Pcre2GrammarBoundaryTests
         var bytes = Encoding.UTF8.GetBytes(subject);
         Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(regex.Match(bytes).GetValueBytes()));
         Assert.Equal(1, regex.Count(bytes));
-        Assert.True(regex.MatchDetailed(bytes).Success);
+        Assert.True(regex.Match(bytes).Success);
     }
 
     [Theory]

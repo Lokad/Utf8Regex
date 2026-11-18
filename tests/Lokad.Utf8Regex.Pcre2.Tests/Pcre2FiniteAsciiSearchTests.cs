@@ -63,10 +63,12 @@ public sealed class Pcre2FiniteAsciiSearchTests
             Assert.Equal(metered.IsMatch(input, start, Pcre2MatchOptions.Anchored),
                 regex.IsMatch(input, start, Pcre2MatchOptions.Anchored));
         }
-        var retained = regex.MatchDetailed(input);
-        Assert.Equal("11", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal("18", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
-        Assert.Equal("2019", System.Text.Encoding.UTF8.GetString(retained.GetGroup(3).GetValueBytes()));
+        ReadOnlySpan<byte> retained1Input = input;
+        var retained1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained1Input, captures: retained1Captures);
+        Assert.Equal("11", System.Text.Encoding.UTF8.GetString((retained1Captures[1].Success ? retained1Input.Slice(retained1Captures[1].StartOffsetInBytes, retained1Captures[1].EndOffsetInBytes - retained1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("18", System.Text.Encoding.UTF8.GetString((retained1Captures[2].Success ? retained1Input.Slice(retained1Captures[2].StartOffsetInBytes, retained1Captures[2].EndOffsetInBytes - retained1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("2019", System.Text.Encoding.UTF8.GetString((retained1Captures[3].Success ? retained1Input.Slice(retained1Captures[3].StartOffsetInBytes, retained1Captures[3].EndOffsetInBytes - retained1Captures[3].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(2, regex.Count(input));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
@@ -121,13 +123,15 @@ public sealed class Pcre2FiniteAsciiSearchTests
             Assert.Equal(metered.IsMatch(input, start, Pcre2MatchOptions.Anchored), direct.IsMatch(input, start, Pcre2MatchOptions.Anchored));
         }
         Assert.Equal(2, direct.Count(input));
-        var retained = direct.MatchDetailed(input);
-        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
-        Assert.False(retained.GetGroup(3).Success);
+        ReadOnlySpan<byte> retained2Input = input;
+        var retained2Captures = new Utf8Pcre2CaptureRange[direct.CaptureGroupCount + 1];
+        var retained = direct.Match(retained2Input, captures: retained2Captures);
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained2Captures[2].Success ? retained2Input.Slice(retained2Captures[2].StartOffsetInBytes, retained2Captures[2].EndOffsetInBytes - retained2Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.False(retained2Captures[3].Success);
         Assert.True(direct.IsMatch("cd"u8));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() => direct.IsMatch("ab"u8, 0, default, canceled.Token)).CancellationToken);
@@ -149,12 +153,14 @@ public sealed class Pcre2FiniteAsciiSearchTests
             if (start < input.Length && (input[start] & 0xc0) == 0x80) continue;
             Assert.Equal(metered.IsMatch(input, start), regex.IsMatch(input, start));
         }
-        var retained = regex.MatchDetailed(input);
-        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal(4, retained.GetGroup(1).StartOffsetInBytes);
+        ReadOnlySpan<byte> retained3Input = input;
+        var retained3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained3Input, captures: retained3Captures);
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained3Captures[1].Success ? retained3Input.Slice(retained3Captures[1].StartOffsetInBytes, retained3Captures[1].EndOffsetInBytes - retained3Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal(4, retained3Captures[1].StartOffsetInBytes);
         Assert.True(regex.IsMatch("def"u8));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained3Captures[1].Success ? retained3Input.Slice(retained3Captures[1].StartOffsetInBytes, retained3Captures[1].EndOffsetInBytes - retained3Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch("abc"u8, 0, default, canceled.Token)).CancellationToken);
@@ -197,12 +203,14 @@ public sealed class Pcre2FiniteAsciiSearchTests
                 regex.IsMatch(input, start, Pcre2MatchOptions.Anchored));
         }
         Assert.Equal(2, regex.Count(input));
-        var retained = regex.MatchDetailed(input);
-        Assert.Equal("a123a", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal(8, retained.GetGroup(1).StartOffsetInBytes);
+        ReadOnlySpan<byte> retained4Input = input;
+        var retained4Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained4Input, captures: retained4Captures);
+        Assert.Equal("a123a", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained4Captures[1].Success ? retained4Input.Slice(retained4Captures[1].StartOffsetInBytes, retained4Captures[1].EndOffsetInBytes - retained4Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal(8, retained4Captures[1].StartOffsetInBytes);
         Assert.True(regex.IsMatch("a456a"u8));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained4Captures[1].Success ? retained4Input.Slice(retained4Captures[1].StartOffsetInBytes, retained4Captures[1].EndOffsetInBytes - retained4Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -225,11 +233,13 @@ public sealed class Pcre2FiniteAsciiSearchTests
         Assert.True(regex.IsMatch("4111 1111 1111 1111"u8));
         Assert.False(regex.IsMatch("4111-1111-1111-11"u8));
         Assert.False(regex.IsMatch("٤١١١-1111-1111-1111"u8));
+        ReadOnlySpan<byte> detailed5Input = "card 4111-1111-1111-1111 done"u8;
+        var detailed5Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var detailed = regex.MatchDetailed("card 4111-1111-1111-1111 done"u8);
+        var detailed = regex.Match(detailed5Input, captures: detailed5Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("4111-1111-1111-1111", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
-        Assert.Equal("1111-", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("4111-1111-1111-1111", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
+        Assert.Equal("1111-", System.Text.Encoding.UTF8.GetString((detailed5Captures[1].Success ? detailed5Input.Slice(detailed5Captures[1].StartOffsetInBytes, detailed5Captures[1].EndOffsetInBytes - detailed5Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -313,7 +323,7 @@ public sealed class Pcre2FiniteAsciiSearchTests
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
-        new(            pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

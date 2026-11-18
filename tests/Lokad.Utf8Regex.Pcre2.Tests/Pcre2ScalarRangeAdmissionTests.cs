@@ -49,7 +49,7 @@ public sealed class Pcre2ScalarRangeAdmissionTests
                 },
                 MatchTimeout = Timeout.InfiniteTimeSpan
             });
-            var fromBytes = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: Pcre2CompileOptions.Ucp, compileSettings:                 default, policy: new Utf8RegexPolicy
+            var fromBytes = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
@@ -100,13 +100,15 @@ public sealed class Pcre2ScalarRangeAdmissionTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var input = Encoding.UTF8.GetBytes("é😁😃x😀");
-        var first = regex.MatchDetailed(input);
-        var group = first.GetGroup(1);
-        Assert.Equal("😁😃", System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
-        Assert.Equal((2,10),(group.StartOffsetInBytes,group.EndOffsetInBytes));
+        ReadOnlySpan<byte> first1Input = input;
+        var first1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var first = regex.Match(first1Input, captures: first1Captures);
+        var group = first1Captures[1];
+        Assert.Equal("😁😃", System.Text.Encoding.UTF8.GetString((group.Success ? first1Input.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal((2, 10), (group.StartOffsetInBytes, group.EndOffsetInBytes));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal("é<😁😃>x<😀>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
-        Assert.Equal("😁😃", System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
+        Assert.Equal("😁😃", System.Text.Encoding.UTF8.GetString((group.Success ? first1Input.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
 
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();

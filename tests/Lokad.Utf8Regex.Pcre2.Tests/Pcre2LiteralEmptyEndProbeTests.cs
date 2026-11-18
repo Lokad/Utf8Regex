@@ -182,11 +182,15 @@ public sealed class Pcre2LiteralEmptyEndProbeTests
     {
         var regex = new Utf8Pcre2Regex(@"\A");
         Assert.False(regex.IsMatch("x"u8, 0, Pcre2MatchOptions.NotEmptyAtStart));
-        Assert.Equal(0, regex.MatchDetailed("x"u8, 0, Pcre2MatchOptions.NotEmptyAtStart).CaptureSlotCount);
+        ReadOnlySpan<byte> result1Input = "x"u8;
+        var result1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var result1Result = regex.Match(result1Input, captures: result1Captures, matchOptions: Pcre2MatchOptions.NotEmptyAtStart);
+        Assert.Equal(0, (result1Result.Success ? result1Captures.Length : 0));
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void EmptyEndKeepsOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();

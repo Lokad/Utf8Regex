@@ -14,13 +14,13 @@ public sealed class Pcre2AsciiWordBoundaryTests
         const string alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
         byte[] pair = new byte[2];
         for (var left = 0; left < 128; left++)
-        for (var right = 0; right < 128; right++)
-        {
-            pair[0] = (byte)left; pair[1] = (byte)right;
-            var expected = alphabet.Contains((char)left) != alphabet.Contains((char)right);
-            Assert.Equal(expected, boundary.IsMatch(pair, 1, Pcre2MatchOptions.Anchored));
-            Assert.Equal(!expected, nonBoundary.IsMatch(pair, 1, Pcre2MatchOptions.Anchored));
-        }
+            for (var right = 0; right < 128; right++)
+            {
+                pair[0] = (byte)left; pair[1] = (byte)right;
+                var expected = alphabet.Contains((char)left) != alphabet.Contains((char)right);
+                Assert.Equal(expected, boundary.IsMatch(pair, 1, Pcre2MatchOptions.Anchored));
+                Assert.Equal(!expected, nonBoundary.IsMatch(pair, 1, Pcre2MatchOptions.Anchored));
+            }
         Assert.False(boundary.IsMatch([])); Assert.True(nonBoundary.IsMatch([]));
         Assert.True(boundary.IsMatch("a"u8, 0, Pcre2MatchOptions.Anchored));
         Assert.True(boundary.IsMatch("a"u8, 1, Pcre2MatchOptions.Anchored));
@@ -43,7 +43,9 @@ public sealed class Pcre2AsciiWordBoundaryTests
             var regex = new Utf8Pcre2Regex(@"\b(?<word>abc)\b", options: options);
             var expected = options == Pcre2CompileOptions.None ? asciiExpected : ucpExpected;
             var startOfWord = bytes.AsSpan().IndexOf("abc"u8);
-            var retained = regex.MatchDetailed(bytes);
+            ReadOnlySpan<byte> retained1Input = bytes;
+            var retained1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var retained = regex.Match(retained1Input, captures: retained1Captures);
             Assert.Equal(expected, retained.Success);
             Assert.Equal(expected ? 1 : 0, regex.Count(bytes));
             for (var offset = 0; offset <= bytes.Length; offset++)
@@ -53,7 +55,7 @@ public sealed class Pcre2AsciiWordBoundaryTests
                     regex.IsMatch(bytes, offset, Pcre2MatchOptions.Anchored));
             }
             _ = regex.IsMatch("other"u8);
-            if (expected) Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+            if (expected) Assert.Equal("abc", System.Text.Encoding.UTF8.GetString((retained1Captures[1].Success ? retained1Input.Slice(retained1Captures[1].StartOffsetInBytes, retained1Captures[1].EndOffsetInBytes - retained1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         }
     }
 
@@ -70,7 +72,8 @@ public sealed class Pcre2AsciiWordBoundaryTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ProductionHelperStillRejectsInvalidOffsets(bool ucp)
     {
         var bytes = "éa"u8.ToArray();

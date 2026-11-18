@@ -25,7 +25,8 @@ public sealed class Pcre2OptimizerAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ExpansionRetainsOriginalCancellationAndDeadline(bool timeout)
     {
         var (request, parsed) = Parse();
@@ -55,7 +56,8 @@ public sealed class Pcre2OptimizerAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ExpansionSharesWorkAndDepthAdmission(bool depth)
     {
         var (request, parsed) = Parse();
@@ -78,8 +80,13 @@ public sealed class Pcre2OptimizerAdmissionTests
     {
         foreach (var bytes in new[] { false, true })
         {
-            var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 256,
-                MaxWorkingBytes = 16 * 1024 * 1024, MaxResultBytes = 16 * 1024 * 1024 };
+            var policy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 16 * 1024 * 1024,
+                MaxResultBytes = 16 * 1024 * 1024
+            };
             var construction = new Utf8ConstructionPolicy { MaxBytes = 16 * 1024 * 1024 };
             var regex = bytes
                 ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), options: default, compileSettings: default, policy: new Utf8RegexPolicy
@@ -88,19 +95,21 @@ public sealed class Pcre2OptimizerAdmissionTests
                     ResourcePolicy = policy,
                     ConstructionPolicy = construction,
                     ConstructionTimeout = Timeout.InfiniteTimeSpan
-                }, cancellationToken: default)                : Utf8Pcre2Regex.Compile(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
-{
-    MatchTimeout = Timeout.InfiniteTimeSpan,
-    ResourcePolicy = policy,
-    ConstructionPolicy = construction,
-    ConstructionTimeout = Timeout.InfiniteTimeSpan
-}, cancellationToken: default);
+                }, cancellationToken: default) : Utf8Pcre2Regex.Compile(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy,
+                    ConstructionPolicy = construction,
+                    ConstructionTimeout = Timeout.InfiniteTimeSpan
+                }, cancellationToken: default);
             var input = Encoding.UTF8.GetBytes(subject);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(2, regex.Count(input));
-            var detailed = regex.MatchDetailed(input);
-            Assert.Equal(match, System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
-            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+            ReadOnlySpan<byte> detailed1Input = input;
+            var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
+            Assert.Equal(match, System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
+            Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         }
     }
 

@@ -8,14 +8,20 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2PolicyOwnershipTests
 {
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void ConstructorsAndFactoriesOwnFundingAndKeepAdmittedCursorAliases(int creation)
     {
         const string pattern = "(?<x>a+)(?<x>b)";
         var source = Encoding.UTF8.GetBytes(pattern); var account = new Account();
         var settings = new Utf8Pcre2CompileSettings { AllowDuplicateNames = true };
-        var policy = new Utf8RegexPolicy { ProgramMemoryAllowance = account,
-            ResourcePolicy = new() { MaxWorkSteps = 100000 } };
+        var policy = new Utf8RegexPolicy
+        {
+            ProgramMemoryAllowance = account,
+            ResourcePolicy = new() { MaxWorkSteps = 100000 }
+        };
         using var regex = creation switch
         {
             0 => new Utf8Pcre2Regex(pattern, compileSettings: settings, policy: policy),
@@ -47,7 +53,7 @@ public sealed class Pcre2PolicyOwnershipTests
         Assert.Throws<ObjectDisposedException>(() => regex.IsMatch("a"u8));
         Assert.Throws<ObjectDisposedException>(() => regex.Match("a"u8, captures: captures));
         Assert.Equal(original, captures[0]);
-        Assert.Throws<ObjectDisposedException>(() => regex.MatchDetailed("a"u8));
+
         Assert.Throws<ObjectDisposedException>(() => regex.Count("a"u8));
         Assert.Throws<ObjectDisposedException>(() => regex.EnumerateMatches("a"u8));
         Assert.Throws<ObjectDisposedException>(() => regex.CreateMatchCursor("a"u8.ToArray()));
@@ -115,7 +121,9 @@ public sealed class Pcre2PolicyOwnershipTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void AdmittedNumericOperationsFinishAfterCloseWithoutPublicGateReentry(int operation)
     {
         var account = new Account(); using var regex = new Utf8Pcre2Regex("(?<x>a+)", policy: new()
@@ -125,7 +133,6 @@ public sealed class Pcre2PolicyOwnershipTests
         { if (!closed) { regex.Dispose(); closed = true; Assert.Equal(held, account.Used); } return 0; });
         switch (operation)
         {
-            case 0: Assert.True(regex.MatchDetailed("aaa"u8).GetGroup(1).Success); break;
             case 1: Assert.True(regex.Probe("aaa"u8, Pcre2PartialMode.None).GetMatch().Success); break;
             case 2: Assert.Equal("<aaa>"u8.ToArray(), regex.Replace("aaa"u8, "<$1>"u8)); break;
             default: Assert.Equal(1, regex.MatchMany("aaa"u8, new Utf8Pcre2MatchData[2], out _)); break;
@@ -147,7 +154,10 @@ public sealed class Pcre2PolicyOwnershipTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void ConstructorAdmitsConstructionPolicyBeforePublishing(int kind)
     {
         var limit = kind switch
@@ -162,7 +172,8 @@ public sealed class Pcre2PolicyOwnershipTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ConstructionDeadlineIsIndependentForConstructorAndCompile(bool compile)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);

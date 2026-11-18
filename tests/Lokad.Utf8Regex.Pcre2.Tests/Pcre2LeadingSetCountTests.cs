@@ -40,7 +40,10 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(Pcre2CandidateSearchKind.None, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(3, regex.Count("xx"u8));
         Assert.True(regex.IsMatch("xx"u8));
-        Assert.Equal(string.Empty, System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("xx"u8).GetGroup(0).GetValueBytes()));
+        ReadOnlySpan<byte> result1Input = "xx"u8;
+        var result1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var result1Result = regex.Match(result1Input, captures: result1Captures);
+        Assert.Equal(string.Empty, System.Text.Encoding.UTF8.GetString((result1Captures[0].Success ? result1Input.Slice(result1Captures[0].StartOffsetInBytes, result1Captures[0].EndOffsetInBytes - result1Captures[0].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         var matches = regex.EnumerateMatches("xx"u8);
         var count = 0;
         while (matches.MoveNext()) count++;
@@ -152,7 +155,9 @@ public sealed class Pcre2LeadingSetCountTests
             },
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });
-        var retained = regex.MatchDetailed(Encoding.UTF8.GetBytes(hit));
+        ReadOnlySpan<byte> retained2Input = Encoding.UTF8.GetBytes(hit);
+        var retained2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained2Input, captures: retained2Captures);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(new string('x', 262144));
         var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
@@ -175,8 +180,8 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
         if (cancel) Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        Assert.Equal(firstCapture, System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        if (secondCapture is not null) Assert.Equal(secondCapture, System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
+        Assert.Equal(firstCapture, System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        if (secondCapture is not null) Assert.Equal(secondCapture, System.Text.Encoding.UTF8.GetString((retained2Captures[2].Success ? retained2Input.Slice(retained2Captures[2].StartOffsetInBytes, retained2Captures[2].EndOffsetInBytes - retained2Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]

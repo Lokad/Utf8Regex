@@ -195,7 +195,10 @@ public sealed class Pcre2FinalNewlineProbeTests
         var match = probe.GetMatch();
         Assert.Equal(1, match.CaptureSlotCount);
         Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        var expected = regex.MatchDetailed(input, start, flags).GetGroup(0);
+        ReadOnlySpan<byte> result1Input = input;
+        var result1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var result1Result = regex.Match(result1Input, startOffsetInBytes: start, captures: result1Captures, matchOptions: flags);
+        var expected = result1Captures[0];
         Assert.Equal((begin, end), (expected.StartOffsetInBytes, expected.EndOffsetInBytes));
     }
 
@@ -203,7 +206,7 @@ public sealed class Pcre2FinalNewlineProbeTests
     public void FinalNewlineHasExactResultAdmissionAndRetainedEmptyAliases()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
-        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex(@"\Z", options: Pcre2CompileOptions.FirstLine, compileSettings:             new() { Newline = Pcre2NewlineConvention.Any }, policy: new Utf8RegexPolicy
+        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex(@"\Z", options: Pcre2CompileOptions.FirstLine, compileSettings: new() { Newline = Pcre2NewlineConvention.Any }, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new()
             {
@@ -232,7 +235,7 @@ public sealed class Pcre2FinalNewlineProbeTests
     [Fact]
     public void FinalNewlineKeepsOriginalWorkAndWorkingAllowance()
     {
-        Utf8Pcre2Regex Create(uint work, ulong heap) => new(@"\Z", options: Pcre2CompileOptions.FirstLine, compileSettings:             new() { Newline = Pcre2NewlineConvention.Any }, policy: new Utf8RegexPolicy
+        Utf8Pcre2Regex Create(uint work, ulong heap) => new(@"\Z", options: Pcre2CompileOptions.FirstLine, compileSettings: new() { Newline = Pcre2NewlineConvention.Any }, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -249,11 +252,12 @@ public sealed class Pcre2FinalNewlineProbeTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void FinalNewlineKeepsOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"\Z", options: Pcre2CompileOptions.FirstLine, compileSettings:             new() { Newline = Pcre2NewlineConvention.Any }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"\Z", options: Pcre2CompileOptions.FirstLine, compileSettings: new() { Newline = Pcre2NewlineConvention.Any }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });

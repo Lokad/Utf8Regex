@@ -48,19 +48,20 @@ public sealed class Pcre2MemoryCursorTests
     {
         var regex = new Utf8Pcre2Regex(pattern, options: options); var input = Encoding.UTF8.GetBytes(text);
         using var cursor = regex.CreateMatchCursor(input, start, matchOptions);
-        var expected = regex.MatchDetailed(input, start, matchOptions);
+        var captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var expected = regex.Match(input, start, captures, matchOptions);
         var moved = cursor.MoveNext(out var first); Assert.Equal(expected.Success, moved);
         if (moved)
         {
-            Assert.Equal(expected.CaptureSlotCount, first.Groups.Length); Assert.Equal(expected.Mark, first.Mark);
-            for (var slot = 0; slot < expected.CaptureSlotCount; slot++)
+            Assert.Equal(captures.Length, first.Groups.Length); Assert.Equal(expected.Mark, first.Mark);
+            for (var slot = 0; slot < captures.Length; slot++)
             {
-                var old = expected.GetGroup(slot); Assert.True(first.TryGetGroup(slot, out var group));
+                var old = captures[slot]; Assert.True(first.TryGetGroup(slot, out var group));
                 Assert.Equal(old.Success, group.Success); Assert.Equal(old.StartOffsetInBytes, group.StartOffsetInBytes);
                 Assert.Equal(old.EndOffsetInBytes, group.EndOffsetInBytes); Assert.Equal(old.IsUtf8SliceWellFormed, group.IsUtf8SliceWellFormed);
-                Assert.Equal(old.GetValueBytes().ToArray(), first.GetGroupMemory(slot).ToArray());
+                Assert.Equal((old.Success ? input.AsSpan(old.StartOffsetInBytes, old.EndOffsetInBytes - old.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty).ToArray(), first.GetGroupMemory(slot).ToArray());
             }
-            var names = new Pcre2NameEntry[expected.NameEntryCount]; expected.CopyNameEntries(names, out var more);
+            var names = new Pcre2NameEntry[regex.NameEntryCount]; regex.CopyNameEntries(names, out var more);
             Assert.False(more); Assert.Equal(names, first.NameEntries.ToArray());
         }
         var enumerator = regex.EnumerateMatches(input, start, matchOptions);
@@ -88,7 +89,9 @@ public sealed class Pcre2MemoryCursorTests
         Assert.False(first.TryGetFirstSetGroup("missing", out _)); Assert.False(first.TryGetGroup(99, out _));
     }
 
-    [Theory] [InlineData(Pcre2NewlineConvention.Lf)] [InlineData(Pcre2NewlineConvention.Crlf)]
+    [Theory]
+    [InlineData(Pcre2NewlineConvention.Lf)]
+    [InlineData(Pcre2NewlineConvention.Crlf)]
     public void EmptyMatchesPreserveProfileCrlfAndSamePositionRetry(Pcre2NewlineConvention newline)
     {
         var regex = new Utf8Pcre2Regex("(?:|.)", options: Pcre2CompileOptions.None, compileSettings: new() { Newline = newline }, policy: new Utf8RegexPolicy
@@ -109,7 +112,7 @@ public sealed class Pcre2MemoryCursorTests
     [Fact]
     public void OptedInCodeUnitsReturnExplicitPartialByteRanges()
     {
-        var regex = new Utf8Pcre2Regex(@"(\C)", options: Pcre2CompileOptions.None, compileSettings:             new() { BackslashC = Pcre2BackslashCPolicy.Allow }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"(\C)", options: Pcre2CompileOptions.None, compileSettings: new() { BackslashC = Pcre2BackslashCPolicy.Allow }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
@@ -129,7 +132,7 @@ public sealed class Pcre2MemoryCursorTests
         var regex = new Utf8Pcre2Regex(".");
         foreach (var offset in new[] { -1, 1, 2, 3, 6 })
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.CreateMatchCursor("😀x"u8.ToArray(), offset));
-        var nonMonotone = new Utf8Pcre2Regex(@"(?=ab\K)", options: Pcre2CompileOptions.None, compileSettings:             new() { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        var nonMonotone = new Utf8Pcre2Regex(@"(?=ab\K)", options: Pcre2CompileOptions.None, compileSettings: new() { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
@@ -178,7 +181,9 @@ public sealed class Pcre2MemoryCursorTests
         Assert.Equal(held, root.Used); first.Dispose(); Assert.Equal(0UL, root.Used);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ActualInterruptionAfterAcquisitionRefundsBeforeThrowing(bool timeout)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -204,13 +209,19 @@ public sealed class Pcre2MemoryCursorTests
         Assert.Equal(1, results.Attempts); Assert.Equal(0UL, root.Used);
     }
 
-    [Theory] [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void AllNumericLimitsRemainEnforceable(int kind)
     {
         var policy = kind switch
         {
-            0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 }, 1 => new Utf8ResourcePolicy { MaxDepth = 1 },
-            2 => new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, _ => new Utf8ResourcePolicy { MaxResultBytes = 1 }
+            0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
+            1 => new Utf8ResourcePolicy { MaxDepth = 1 },
+            2 => new Utf8ResourcePolicy { MaxWorkingBytes = 1 },
+            _ => new Utf8ResourcePolicy { MaxResultBytes = 1 }
         };
         var root = new Root(); var working = new Account(root);
         var regex = new Utf8Pcre2Regex("(?=(?=(a+)))a+", options: default, compileSettings: default, policy: new Utf8RegexPolicy
@@ -303,7 +314,7 @@ public sealed class Pcre2MemoryCursorTests
         using var cursor = new Utf8Pcre2Regex("(a+)", options: default, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(250)
-        })            .CreateMatchCursor("aaa aaa"u8.ToArray(), workingMemoryAllowance: working);
+        }).CreateMatchCursor("aaa aaa"u8.ToArray(), workingMemoryAllowance: working);
         Assert.True(cursor.MoveNext(out var first)); await Task.Delay(350);
         Assert.Equal(Pcre2ErrorKind.Timeout, Assert.Throws<Pcre2MatchException>(() => cursor.MoveNext(out _)).ErrorKind);
         Assert.Equal(0UL, root.Used); Assert.Equal("aaa"u8.ToArray(), first.GetValueMemory().ToArray());

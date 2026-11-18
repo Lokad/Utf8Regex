@@ -20,7 +20,8 @@ public sealed class Pcre2PartialEndAnchoredTests
     }
 
     [Theory]
-    [InlineData(Pcre2PartialMode.Soft)] [InlineData(Pcre2PartialMode.Hard)]
+    [InlineData(Pcre2PartialMode.Soft)]
+    [InlineData(Pcre2PartialMode.Hard)]
     public void CompiledEndAnchoredAlsoRejectsPartial(Pcre2PartialMode mode)
     {
         var regex = new Utf8Pcre2Regex("(a)b+", options: Pcre2CompileOptions.EndAnchored);
@@ -36,11 +37,13 @@ public sealed class Pcre2PartialEndAnchoredTests
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.EndAnchored);
         var input = System.Text.Encoding.UTF8.GetBytes(text);
-        var expected = regex.MatchDetailed(input);
-        Assert.Equal((start, end), (expected.GetGroup(0).StartOffsetInBytes, expected.GetGroup(0).EndOffsetInBytes));
+        ReadOnlySpan<byte> expected1Input = input;
+        var expected1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var expected = regex.Match(expected1Input, captures: expected1Captures);
+        Assert.Equal((start, end), (expected1Captures[0].StartOffsetInBytes, expected1Captures[0].EndOffsetInBytes));
         var actual = regex.Probe(input, Pcre2PartialMode.None).GetMatch();
         Assert.Equal((start, end), (actual.GetGroup(0).StartOffsetInBytes, actual.GetGroup(0).EndOffsetInBytes));
-        Assert.Equal(expected.CaptureSlotCount, actual.CaptureSlotCount);
+        Assert.Equal((expected.Success ? expected1Captures.Length : 0), actual.CaptureSlotCount);
     }
 
     [Fact]

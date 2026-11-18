@@ -156,14 +156,16 @@ public sealed class Pcre2SliceBackrefTests
     }
 
     [Fact]
-    public void OwnedDetailedProjectsBackrefGroups()
+    public void PrimaryMatchWritesBackreferenceGroups()
     {
         var regex = new Utf8Pcre2Regex("(a)(b)\\2\\1", options: Pcre2CompileOptions.None);
-        var detailed = regex.MatchDetailed(Utf8("xxabbayy"), 0);
+        ReadOnlySpan<byte> detailed1Input = Utf8("xxabbayy");
+        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("abba", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
+        Assert.Equal("abba", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((detailed1Captures[2].Success ? detailed1Input.Slice(detailed1Captures[2].StartOffsetInBytes, detailed1Captures[2].EndOffsetInBytes - detailed1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

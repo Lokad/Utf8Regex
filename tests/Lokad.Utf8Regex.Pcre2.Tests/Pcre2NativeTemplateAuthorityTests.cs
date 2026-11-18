@@ -78,7 +78,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
     {
         var regex = Create(new() { MatchLimit = 200 });
         var input = "é😀"u8.ToArray();
-        Assert.True(regex.MatchDetailed(input).Success);
+        Assert.True(regex.Match(input).Success);
         var template = new string('x', 1 << 20) + "$2";
         var failure = Assert.Throws<Pcre2MatchException>(() =>
         {
@@ -159,8 +159,10 @@ public sealed class Pcre2NativeTemplateAuthorityTests
     }
 
     [Theory]
-    [InlineData(false, false)] [InlineData(false, true)]
-    [InlineData(true, false)] [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
     public void OriginalDeadlineAndTokenSurviveDiscoveryAndPublication(bool hit, bool cancel)
     {
         long ticks = 0;

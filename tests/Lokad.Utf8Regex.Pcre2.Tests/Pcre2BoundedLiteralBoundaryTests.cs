@@ -25,17 +25,21 @@ public sealed class Pcre2BoundedLiteralBoundaryTests
             if (start < bytes.Length && (bytes[start] & 0xc0) == 0x80) continue;
             Assert.Equal(regex.IsMatch(bytes, start, Pcre2MatchOptions.NotEmpty), regex.IsMatch(bytes, start));
             Assert.Equal(regex.Count(bytes, start, Pcre2MatchOptions.NotEmpty), regex.Count(bytes, start));
-            var expected = regex.MatchDetailed(bytes, start, Pcre2MatchOptions.NotEmpty);
-            var actual = regex.MatchDetailed(bytes, start);
+            ReadOnlySpan<byte> expected1Input = bytes;
+            var expected1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var expected = regex.Match(expected1Input, startOffsetInBytes: start, captures: expected1Captures, matchOptions: Pcre2MatchOptions.NotEmpty);
+            ReadOnlySpan<byte> actual2Input = bytes;
+            var actual2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var actual = regex.Match(actual2Input, startOffsetInBytes: start, captures: actual2Captures);
             Assert.Equal(expected.Success, actual.Success);
-            Assert.Equal(expected.CaptureSlotCount, actual.CaptureSlotCount);
-            for (var slot = 0; slot < expected.CaptureSlotCount; slot++)
+            Assert.Equal((expected.Success ? expected1Captures.Length : 0), (actual.Success ? actual2Captures.Length : 0));
+            for (var slot = 0; slot < (expected.Success ? expected1Captures.Length : 0); slot++)
             {
-                var left = expected.GetGroup(slot); var right = actual.GetGroup(slot);
+                var left = expected1Captures[slot]; var right = actual2Captures[slot];
                 Assert.Equal(left.Success, right.Success);
                 Assert.Equal((left.StartOffsetInBytes, left.EndOffsetInBytes),
                     (right.StartOffsetInBytes, right.EndOffsetInBytes));
-                Assert.Equal(System.Text.Encoding.UTF8.GetString(left.GetValueBytes()), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
+                Assert.Equal(System.Text.Encoding.UTF8.GetString((left.Success ? expected1Input.Slice(left.StartOffsetInBytes, left.EndOffsetInBytes - left.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)), System.Text.Encoding.UTF8.GetString((right.Success ? actual2Input.Slice(right.StartOffsetInBytes, right.EndOffsetInBytes - right.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             }
         }
     }

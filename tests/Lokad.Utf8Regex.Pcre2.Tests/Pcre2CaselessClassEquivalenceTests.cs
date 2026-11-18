@@ -63,12 +63,12 @@ public sealed class Pcre2CaselessClassEquivalenceTests
             });
             Assert.Equal(expected, regex.IsMatch(input, 0, Pcre2MatchOptions.None, token.Token));
             Assert.Equal(expected ? 1 : 0, regex.Count(input, 0, Pcre2MatchOptions.None, token.Token));
-            var match = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, token.Token);
+            var match = regex.Match(input, cancellationToken: token.Token);
             Assert.Equal(expected, match.Success);
             if (expected)
             {
-                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-                Assert.Equal((0, input.Length), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+                Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
             }
         }
     }
@@ -79,8 +79,10 @@ public sealed class Pcre2CaselessClassEquivalenceTests
         Assert.False(new Utf8Pcre2Regex(@"(?i)^[ß]$").IsMatch("ss"u8));
         Assert.False(new Utf8Pcre2Regex(@"(?i)^[é]$").IsMatch("e\u0301"u8));
         var regex = new Utf8Pcre2Regex(@"(?i)(?<x>[Kſ]+)");
-        var match = regex.MatchDetailed("😀kS"u8);
-        Assert.Equal("kS", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
-        Assert.Equal((4, 6), (match.GetGroup(1).StartOffsetInBytes, match.GetGroup(1).EndOffsetInBytes));
+        ReadOnlySpan<byte> match2Input = "😀kS"u8;
+        var match2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match2Input, captures: match2Captures);
+        Assert.Equal("kS", System.Text.Encoding.UTF8.GetString((match2Captures[1].Success ? match2Input.Slice(match2Captures[1].StartOffsetInBytes, match2Captures[1].EndOffsetInBytes - match2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal((4, 6), (match2Captures[1].StartOffsetInBytes, match2Captures[1].EndOffsetInBytes));
     }
 }

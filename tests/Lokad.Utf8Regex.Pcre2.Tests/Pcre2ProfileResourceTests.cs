@@ -12,7 +12,7 @@ public sealed class Pcre2ProfileResourceTests
     [InlineData(@"\x{41}+", "AAA")]
     [InlineData(@"\p{L}+", "αβ")]
     [InlineData("(?<a>x)(?<b>y)", "xy")]
-    public void SingleAndDetailedMatchingEnforceProfileWork(string pattern, string text)
+    public void PrimaryAndSnapshotMatchingEnforceProfileWork(string pattern, string text)
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
@@ -25,7 +25,14 @@ public sealed class Pcre2ProfileResourceTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input)).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.Match(input)).ErrorKind);
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed(input)).ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
+        {
+            ReadOnlyMemory<byte> result1Input = input;
+            using var result1Cursor = regex.CreateMatchCursor(result1Input);
+            result1Cursor.MoveNext(out var result1Result);
+            result1Cursor.Dispose();
+            _ = result1Result;
+        }).ErrorKind);
     }
 
     [Fact]
@@ -45,7 +52,8 @@ public sealed class Pcre2ProfileResourceTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void NoMatchOutputCannotEscapeTheHeapLimit(bool text)
     {
         var regex = new Utf8Pcre2Regex(@"\x{41}+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
@@ -81,30 +89,49 @@ public sealed class Pcre2ProfileResourceTests
     public void MixedNamesAndRetainedFinalCapturesKeepTheirPublicCoordinates()
     {
         var regex = new Utf8Pcre2Regex(@"\x{41}(?<face>😀)(é)");
-        var context = regex.MatchDetailed("xA😀éA😀é"u8, 1);
-        Assert.Equal(3, context.CaptureSlotCount);
-        Assert.Equal("A😀é", System.Text.Encoding.UTF8.GetString(context.Value.GetValueBytes()));
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(context.GetGroup(1).GetValueBytes()));
-        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(context.GetGroup(2).GetValueBytes()));
+        ReadOnlyMemory<byte> context2Input = ("xA😀éA😀é"u8).ToArray();
+        using var context2Cursor = regex.CreateMatchCursor(context2Input, 1);
+        context2Cursor.MoveNext(out var context2Result);
+        context2Cursor.Dispose();
+        var context = context2Result;
+        Assert.Equal(3, context.Groups.Length);
+        Assert.Equal("A😀é", System.Text.Encoding.UTF8.GetString((context.Value.Success ? context2Input.Span.Slice(context.Value.StartOffsetInBytes, context.Value.EndOffsetInBytes - context.Value.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((context.Groups[1].Success ? context2Input.Span.Slice(context.Groups[1].StartOffsetInBytes, context.Groups[1].EndOffsetInBytes - context.Groups[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString((context.Groups[2].Success ? context2Input.Span.Slice(context.Groups[2].StartOffsetInBytes, context.Groups[2].EndOffsetInBytes - context.Groups[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(context.TryGetFirstSetGroup("face", out var named));
         Assert.Equal((2, 6), (named.StartOffsetInBytes, named.EndOffsetInBytes));
-        Assert.True(regex.MatchDetailed("A😀é"u8).Success);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
+        ReadOnlyMemory<byte> result3Input = ("A😀é"u8).ToArray();
+        using var result3Cursor = regex.CreateMatchCursor(result3Input);
+        result3Cursor.MoveNext(out var result3Result);
+        result3Cursor.Dispose();
+        Assert.True(result3Result.Success);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((named.Success ? context2Input.Span.Slice(named.StartOffsetInBytes, named.EndOffsetInBytes - named.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        var repeated4Regex = new Utf8Pcre2Regex("(?<a>😀)+é");
+        ReadOnlyMemory<byte> repeated4Input = ("😀😀é"u8).ToArray();
+        using var repeated4Cursor = repeated4Regex.CreateMatchCursor(repeated4Input);
+        repeated4Cursor.MoveNext(out var repeated4Result);
+        repeated4Cursor.Dispose();
 
-        var repeated = new Utf8Pcre2Regex("(?<a>😀)+é").MatchDetailed("😀😀é"u8);
+        var repeated = repeated4Result;
         Assert.True(repeated.TryGetFirstSetGroup("a", out var retained));
         Assert.Equal((4, 8), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
-        var shared = new Utf8Pcre2Regex(@"(?<v>\x{41})(?<v>😀)", options: Pcre2CompileOptions.None, compileSettings:             new() { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        var shared5Regex = new Utf8Pcre2Regex(@"(?<v>\x{41})(?<v>😀)", options: Pcre2CompileOptions.None, compileSettings: new() { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan
-        }).MatchDetailed("A😀"u8);
+        });
+        ReadOnlyMemory<byte> shared5Input = ("A😀"u8).ToArray();
+        using var shared5Cursor = shared5Regex.CreateMatchCursor(shared5Input);
+        shared5Cursor.MoveNext(out var shared5Result);
+        shared5Cursor.Dispose();
+        var shared = shared5Result;
         Assert.True(shared.TryGetFirstSetGroup("v", out var first));
-        Assert.Equal("A", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(shared.GetGroup(2).GetValueBytes()));
+        Assert.Equal("A", System.Text.Encoding.UTF8.GetString((first.Success ? shared5Input.Span.Slice(first.StartOffsetInBytes, first.EndOffsetInBytes - first.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((shared.Groups[2].Success ? shared5Input.Span.Slice(shared.Groups[2].StartOffsetInBytes, shared.Groups[2].EndOffsetInBytes - shared.Groups[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void TemplateDiscoveryReplayAndOutputHaveOneFiniteAllowance(bool heap)
     {
         string Invoke(ulong cap)
@@ -168,7 +195,8 @@ public sealed class Pcre2ProfileResourceTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void OriginalInterruptionSurvivesCursorWaitsAndAliases(bool cancel)
     {
         long ticks = 0;

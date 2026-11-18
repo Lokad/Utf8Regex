@@ -68,9 +68,9 @@ public sealed class Pcre2NativePatternTests
     [Fact]
     public void QuotedClassMembersConsumeCompleteScalars()
     {
-        var match = new Utf8Pcre2Regex("[\\é\\😀]+"u8).MatchDetailed("xé😀z"u8);
+        var match = new Utf8Pcre2Regex("[\\é\\😀]+"u8).Match("xé😀z"u8);
         Assert.True(match.Success);
-        Assert.Equal((1, 7), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+        Assert.Equal((1, 7), (match.StartOffsetInBytes, match.EndOffsetInBytes));
     }
 
     [Fact]
@@ -96,11 +96,18 @@ public sealed class Pcre2NativePatternTests
     public void NativeByteStartsPreservePrefixContextAndScalarBoundaries()
     {
         var regex = new Utf8Pcre2Regex("(?<=a)😀+"u8);
-        var match = regex.MatchDetailed("a😀😀b"u8, 1);
+        var match = regex.Match("a😀😀b"u8, startOffsetInBytes: 1);
         Assert.True(match.Success);
-        Assert.Equal((1, 9), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.MatchDetailed("a😀😀b"u8, 2));
-        var literal = new Utf8Pcre2Regex("b"u8).MatchDetailed("a😀b"u8, 5);
-        Assert.Equal((5, 6), (literal.Value.StartOffsetInBytes, literal.Value.EndOffsetInBytes));
+        Assert.Equal((1, 9), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            ReadOnlyMemory<byte> result3Input = ("a😀😀b"u8).ToArray();
+            using var result3Cursor = regex.CreateMatchCursor(result3Input, 2);
+            result3Cursor.MoveNext(out var result3Result);
+            result3Cursor.Dispose();
+            _ = result3Result;
+        });
+        var literal = new Utf8Pcre2Regex("b"u8).Match("a😀b"u8, startOffsetInBytes: 5);
+        Assert.Equal((5, 6), (literal.StartOffsetInBytes, literal.EndOffsetInBytes));
     }
 }

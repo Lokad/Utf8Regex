@@ -29,11 +29,13 @@ public sealed class Pcre2AdjacentSetRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
         Assert.True(owner.IsMatch(input, 0, Pcre2MatchOptions.None, token.Token));
-        var retained = owner.MatchDetailed(input, 0, Pcre2MatchOptions.None, token.Token);
-        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
-        Assert.Equal(group, System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        ReadOnlySpan<byte> retained1Input = input;
+        var retained1Captures = new Utf8Pcre2CaptureRange[owner.CaptureGroupCount + 1];
+        var retained = owner.Match(retained1Input, captures: retained1Captures, cancellationToken: token.Token);
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
+        Assert.Equal(group, System.Text.Encoding.UTF8.GetString((retained1Captures[1].Success ? retained1Input.Slice(retained1Captures[1].StartOffsetInBytes, retained1Captures[1].EndOffsetInBytes - retained1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(1, owner.Count(input, 0, Pcre2MatchOptions.None, token.Token));
-        Assert.Equal(group, System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal(group, System.Text.Encoding.UTF8.GetString((retained1Captures[1].Success ? retained1Input.Slice(retained1Captures[1].StartOffsetInBytes, retained1Captures[1].EndOffsetInBytes - retained1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
             owner.Count(input, 0, Pcre2MatchOptions.None, token.Token)).CancellationToken);

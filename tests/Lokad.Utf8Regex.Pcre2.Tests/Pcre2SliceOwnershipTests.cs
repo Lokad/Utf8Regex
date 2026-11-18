@@ -212,7 +212,7 @@ public sealed class Pcre2SliceOwnershipTests
         var expectedEnd = expectedStart + Encoding.UTF8.GetByteCount(oracle.Value);
         Assert.True(regex.IsMatch(input, 0));
         Assert.Equal(1, regex.Count(input, 0));
-        var found = regex.Match(input, startOffsetInBytes: 0);
+        var found = regex.Match(input);
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);
@@ -248,25 +248,27 @@ public sealed class Pcre2SliceOwnershipTests
         var input = Utf8(inputText);
         var oracle = Bcl(pattern).Match(inputText, startOffsetInBytes);
         Assert.Equal(expectedSuccess, oracle.Success);
-        var detailed = regex.MatchDetailed(input, startOffsetInBytes);
+        ReadOnlySpan<byte> detailed1Input = input;
+        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed1Input, startOffsetInBytes: startOffsetInBytes, captures: detailed1Captures);
         Assert.Equal(oracle.Success, detailed.Success);
         if (oracle.Success)
         {
             Assert.Equal(oracle.Groups[0].Value, expectedWhole);
-            Assert.Equal(expectedWhole, System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+            Assert.Equal(expectedWhole, System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
             if (oracle.Groups.Count > 1)
             {
                 Assert.Equal(
                     oracle.Groups[1].Success,
-                    detailed.GetGroup(1).Success);
-                Assert.Equal(expectedFirst, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+                    detailed1Captures[1].Success);
+                Assert.Equal(expectedFirst, System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             }
             if (oracle.Groups.Count > 2)
             {
                 Assert.Equal(
                     oracle.Groups[2].Success,
-                    detailed.GetGroup(2).Success);
-                Assert.Equal(expectedSecond, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
+                    detailed1Captures[2].Success);
+                Assert.Equal(expectedSecond, System.Text.Encoding.UTF8.GetString((detailed1Captures[2].Success ? detailed1Input.Slice(detailed1Captures[2].StartOffsetInBytes, detailed1Captures[2].EndOffsetInBytes - detailed1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             }
         }
 
@@ -288,15 +290,17 @@ public sealed class Pcre2SliceOwnershipTests
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var input = Utf8(inputText);
         var oracle = Bcl(pattern).Match(inputText, startOffsetInBytes);
-        var detailed = regex.MatchDetailed(input, startOffsetInBytes);
+        ReadOnlySpan<byte> detailed2Input = input;
+        var detailed2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed2Input, startOffsetInBytes: startOffsetInBytes, captures: detailed2Captures);
         Assert.True(oracle.Success);
         Assert.True(detailed.Success);
-        Assert.True(detailed.GetGroup(winningGroup).Success);
-        Assert.Equal(winningValue, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(winningGroup).GetValueBytes()));
+        Assert.True(detailed2Captures[winningGroup].Success);
+        Assert.Equal(winningValue, System.Text.Encoding.UTF8.GetString((detailed2Captures[winningGroup].Success ? detailed2Input.Slice(detailed2Captures[winningGroup].StartOffsetInBytes, detailed2Captures[winningGroup].EndOffsetInBytes - detailed2Captures[winningGroup].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(
             oracle.Groups[3 - winningGroup].Success,
-            detailed.GetGroup(3 - winningGroup).Success);
-        Assert.False(detailed.GetGroup(3 - winningGroup).Success);
+            detailed2Captures[3 - winningGroup].Success);
+        Assert.False(detailed2Captures[3 - winningGroup].Success);
         Assert.False(
             regex.DebugCompiledProgram is null,
             "pattern=" + pattern);
@@ -310,14 +314,16 @@ public sealed class Pcre2SliceOwnershipTests
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var input = Utf8(inputText);
         var oracle = Bcl(pattern).Match(inputText);
-        var detailed = regex.MatchDetailed(input, 0);
+        ReadOnlySpan<byte> detailed3Input = input;
+        var detailed3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed3Input, captures: detailed3Captures);
         Assert.True(oracle.Success);
         Assert.True(detailed.Success);
-        Assert.Equal(oracle.Groups[0].Value, System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
-        Assert.Equal(oracle.Groups[1].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
-        Assert.Equal(oracle.Groups[2].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
+        Assert.Equal(oracle.Groups[0].Value, System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
+        Assert.Equal(oracle.Groups[1].Value, System.Text.Encoding.UTF8.GetString((detailed3Captures[1].Success ? detailed3Input.Slice(detailed3Captures[1].StartOffsetInBytes, detailed3Captures[1].EndOffsetInBytes - detailed3Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal(oracle.Groups[2].Value, System.Text.Encoding.UTF8.GetString((detailed3Captures[2].Success ? detailed3Input.Slice(detailed3Captures[2].StartOffsetInBytes, detailed3Captures[2].EndOffsetInBytes - detailed3Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         var expectedStart = Encoding.UTF8.GetByteCount(inputText[..oracle.Index]);
-        Assert.Equal(expectedStart, detailed.Value.StartOffsetInBytes);
+        Assert.Equal(expectedStart, detailed.StartOffsetInBytes);
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 
@@ -325,18 +331,20 @@ public sealed class Pcre2SliceOwnershipTests
     public void AnchoredDetailedFallsBackToBacktracking()
     {
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None);
-        var hit = regex.MatchDetailed(Utf8("aaabbxx"), 0, Pcre2MatchOptions.Anchored);
+        ReadOnlySpan<byte> hit4Input = Utf8("aaabbxx");
+        var hit4Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var hit = regex.Match(hit4Input, captures: hit4Captures, matchOptions: Pcre2MatchOptions.Anchored);
         Assert.True(hit.Success);
-        Assert.Equal("aaabb", System.Text.Encoding.UTF8.GetString(hit.Value.GetValueBytes()));
-        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(hit.GetGroup(1).GetValueBytes()));
-        var miss = regex.MatchDetailed(Utf8("xxaaabbyy"), 0, Pcre2MatchOptions.Anchored);
+        Assert.Equal("aaabb", System.Text.Encoding.UTF8.GetString(hit.GetValueBytes()));
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString((hit4Captures[1].Success ? hit4Input.Slice(hit4Captures[1].StartOffsetInBytes, hit4Captures[1].EndOffsetInBytes - hit4Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        var miss = regex.Match(Utf8("xxaaabbyy"), matchOptions: Pcre2MatchOptions.Anchored);
         Assert.False(miss.Success);
     }
 
     [Fact]
     public void ExhaustedMatchLimitFailsDetailedWithMatchLimitIdentity()
     {
-        var regex = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -345,7 +353,14 @@ public sealed class Pcre2SliceOwnershipTests
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
         var exception = Assert.Throws<Pcre2MatchException>(
-            () => regex.MatchDetailed(Utf8("xxaaabbyy"), 0));
+            () =>
+            {
+                ReadOnlyMemory<byte> result6Input = Utf8("xxaaabbyy");
+                using var result6Cursor = regex.CreateMatchCursor(result6Input);
+                result6Cursor.MoveNext(out var result6Result);
+                result6Cursor.Dispose();
+                _ = result6Result;
+            });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
@@ -353,12 +368,19 @@ public sealed class Pcre2SliceOwnershipTests
     public void OwnedDetailedTimeoutThrowsTimeoutIdentity()
     {
         var input = Utf8(new string((char)97, 2000));
-        var regex = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
         var exception = Assert.Throws<Pcre2MatchException>(
-            () => regex.MatchDetailed(input, 0));
+            () =>
+            {
+                ReadOnlyMemory<byte> result7Input = input;
+                using var result7Cursor = regex.CreateMatchCursor(result7Input);
+                result7Cursor.MoveNext(out var result7Result);
+                result7Cursor.Dispose();
+                _ = result7Result;
+            });
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
         Assert.True(regex.DebugCompiledProgram is not null);
     }
@@ -476,7 +498,7 @@ public sealed class Pcre2SliceOwnershipTests
     [Fact]
     public void ExhaustedMatchLimitFailsEnumerationWithMatchLimitIdentity()
     {
-        var regex = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -501,7 +523,7 @@ public sealed class Pcre2SliceOwnershipTests
     public void OwnedEnumerationTimeoutThrowsTimeoutIdentity()
     {
         var input = Utf8(new string((char)97, 2000));
-        var regex = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
@@ -599,7 +621,7 @@ public sealed class Pcre2SliceOwnershipTests
     public void TinyHeapLimitFailsShapingAdmissionWithHeapLimitIdentity()
     {
         var input = Utf8("xxaaabbyy");
-        var starved = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var starved = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -611,7 +633,7 @@ public sealed class Pcre2SliceOwnershipTests
             () => System.Text.Encoding.UTF8.GetString(starved.Replace(input, "<$0>")));
         Assert.Equal(Pcre2ErrorKind.HeapLimit, rentException.ErrorKind);
 
-        var grown = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var grown = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -672,7 +694,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.True(sliced.DebugCompiledProgram is not null);
     }
 
-[Fact]
+    [Fact]
     public void AnchoredReplaceFallsBackToBacktracking()
     {
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None);
@@ -705,7 +727,7 @@ public sealed class Pcre2SliceOwnershipTests
     [Fact]
     public void ExhaustedMatchLimitFailsReplaceWithMatchLimitIdentity()
     {
-        var regex = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -722,7 +744,7 @@ public sealed class Pcre2SliceOwnershipTests
     public void OwnedReplaceTimeoutThrowsTimeoutIdentity()
     {
         var input = Utf8(new string((char)97, 2000));
-        var regex = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
@@ -736,11 +758,11 @@ public sealed class Pcre2SliceOwnershipTests
     public void AnchoredMatchOptionsFallBackToBacktracking()
     {
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None);
-        var hit = regex.Match(Utf8("aaabbxx"), startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.Anchored);
+        var hit = regex.Match(Utf8("aaabbxx"), matchOptions: Pcre2MatchOptions.Anchored);
         Assert.True(hit.Success);
         Assert.Equal(0, hit.StartOffsetInBytes);
         Assert.Equal(5, hit.EndOffsetInBytes);
-        var miss = regex.Match(Utf8("xxaaabbyy"), startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.Anchored);
+        var miss = regex.Match(Utf8("xxaaabbyy"), matchOptions: Pcre2MatchOptions.Anchored);
         Assert.False(miss.Success);
         var offset = regex.Match(Utf8("xxaaabbyy"), startOffsetInBytes: 2, matchOptions: Pcre2MatchOptions.Anchored);
         Assert.True(offset.Success);
@@ -759,13 +781,13 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Throws<OperationCanceledException>(
             () => regex.Count(input, 0, Pcre2MatchOptions.None, canceled.Token));
         Assert.Throws<OperationCanceledException>(
-            () => regex.Match(input, startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.None, cancellationToken: canceled.Token));
+            () => regex.Match(input, cancellationToken: canceled.Token));
     }
 
     [Fact]
     public void GenerousMatchLimitSucceedsOnSlice()
     {
-        var regex = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -776,13 +798,13 @@ public sealed class Pcre2SliceOwnershipTests
         var input = Utf8("xxaaabbyy");
         Assert.True(regex.IsMatch(input, 0));
         Assert.Equal(1, regex.Count(input, 0));
-        Assert.True(regex.Match(input, startOffsetInBytes: 0).Success);
+        Assert.True(regex.Match(input).Success);
     }
 
     [Fact]
     public void ExhaustedMatchLimitFailsWithMatchLimitIdentity()
     {
-        var regex = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -801,7 +823,7 @@ public sealed class Pcre2SliceOwnershipTests
     public void OwnedCountTimeoutThrowsTimeoutIdentity()
     {
         var input = Utf8(new string((char)97, 2000));
-        var regex = new Utf8Pcre2Regex(            "(a+)(b+)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });

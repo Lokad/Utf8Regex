@@ -17,17 +17,21 @@ public sealed class Pcre2FullProbeCaptureTests
         var regex = new Utf8Pcre2Regex(pattern);
         Assert.NotEqual(Pcre2PartialProbeProgramKind.None, regex.DebugCompiledProgram.PartialProbe.Kind);
         var input = Encoding.UTF8.GetBytes(text);
-        var expected = regex.MatchDetailed(input);
+        ReadOnlyMemory<byte> expected1Input = input;
+        using var expected1Cursor = regex.CreateMatchCursor(expected1Input);
+        expected1Cursor.MoveNext(out var expected1Result);
+        expected1Cursor.Dispose();
+        var expected = expected1Result;
         var probe = regex.Probe(input, Pcre2PartialMode.Soft);
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, probe.Kind);
         var actual = probe.GetMatch();
-        Assert.Equal(expected.CaptureSlotCount, actual.CaptureSlotCount);
-        for (var slot = 0; slot < expected.CaptureSlotCount; slot++)
+        Assert.Equal(expected.Groups.Length, actual.CaptureSlotCount);
+        for (var slot = 0; slot < expected.Groups.Length; slot++)
         {
-            var left = expected.GetGroup(slot); var right = actual.GetGroup(slot);
+            var left = expected.Groups[slot]; var right = actual.GetGroup(slot);
             Assert.Equal(left.Success, right.Success);
             if (!left.Success) continue;
-            Assert.Equal(System.Text.Encoding.UTF8.GetString(left.GetValueBytes()), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
+            Assert.Equal(System.Text.Encoding.UTF8.GetString((left.Success ? expected1Input.Span.Slice(left.StartOffsetInBytes, left.EndOffsetInBytes - left.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
             Assert.Equal((left.StartOffsetInBytes, left.EndOffsetInBytes), (right.StartOffsetInBytes, right.EndOffsetInBytes));
         }
         var entries = new Pcre2NameEntry[regex.NameEntryCount];
@@ -40,7 +44,7 @@ public sealed class Pcre2FullProbeCaptureTests
     public void CapturedFullProbeHasExactResultAdmissionAndIndependentSnapshots()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(2);
-        Utf8Pcre2Regex Create(ulong resultBytes) => new Utf8Pcre2Regex(            "dog(?<tail>sbody)?", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        Utf8Pcre2Regex Create(ulong resultBytes) => new Utf8Pcre2Regex("dog(?<tail>sbody)?", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new()
             {
@@ -69,7 +73,7 @@ public sealed class Pcre2FullProbeCaptureTests
     [Fact]
     public void CapturedFullProbeKeepsOriginalWorkAndWorkingLimits()
     {
-        Utf8Pcre2Regex Create(uint work, ulong heap) => new("dog(?<tail>sbody)?", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        Utf8Pcre2Regex Create(uint work, ulong heap) => new("dog(?<tail>sbody)?", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

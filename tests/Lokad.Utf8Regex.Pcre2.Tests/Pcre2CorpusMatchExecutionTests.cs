@@ -10,7 +10,7 @@ public sealed class Pcre2CorpusMatchExecutionTests
     [MemberData(nameof(Pcre2CorpusExecutionData.MatchCases), MemberType = typeof(Pcre2CorpusExecutionData))]
     public void ActiveCorpusMatchCasesProduceExpectedResults(Pcre2CorpusCase corpusCase)
     {
-        var regex = new Utf8Pcre2Regex(            corpusCase.Pattern, options:             Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions), compileSettings:             Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings), policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(corpusCase.Pattern, options: Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions), compileSettings: Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings), policy: new Utf8RegexPolicy
         {
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
@@ -47,31 +47,32 @@ public sealed class Pcre2CorpusMatchExecutionTests
         {
             if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.MatchError)
             {
-                var exception = Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed(input, corpusCase.StartOffsetInBytes));
+                var exception = Assert.Throws<Pcre2MatchException>(() => regex.Match(input, corpusCase.StartOffsetInBytes));
                 Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind.ToString());
                 return;
             }
 
-            var match = regex.MatchDetailed(input, corpusCase.StartOffsetInBytes);
+            var captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var match = regex.Match(input, corpusCase.StartOffsetInBytes, captures);
             Assert.Equal(corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.FullMatch, match.Success);
             Assert.Equal(corpusCase.Expected.Mark, match.Mark);
 
             if (match.Success)
             {
-                Assert.Equal(corpusCase.Expected.StartOffsetInBytes, match.Value.StartOffsetInBytes);
-                Assert.Equal(corpusCase.Expected.EndOffsetInBytes, match.Value.EndOffsetInBytes);
+                Assert.Equal(corpusCase.Expected.StartOffsetInBytes, match.StartOffsetInBytes);
+                Assert.Equal(corpusCase.Expected.EndOffsetInBytes, match.EndOffsetInBytes);
                 if (corpusCase.Expected.ValueText is not null)
                 {
-                    Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+                    Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
                 }
                 if (corpusCase.Expected.HasContiguousByteRange is bool hasContiguous)
                 {
-                    Assert.Equal(hasContiguous, match.Value.HasContiguousByteRange);
+                    Assert.Equal(hasContiguous, match.HasContiguousByteRange);
                 }
 
                 foreach (var expectedGroup in corpusCase.Expected.Groups)
                 {
-                    var actualGroup = match.GetGroup(expectedGroup.Number);
+                    var actualGroup = captures[expectedGroup.Number];
                     Assert.Equal(expectedGroup.Success, actualGroup.Success);
                     if (expectedGroup.Success)
                     {
@@ -79,7 +80,7 @@ public sealed class Pcre2CorpusMatchExecutionTests
                         Assert.Equal(expectedGroup.EndOffsetInBytes, actualGroup.EndOffsetInBytes);
                         if (expectedGroup.ValueText is not null)
                         {
-                            Assert.Equal(expectedGroup.ValueText, System.Text.Encoding.UTF8.GetString(actualGroup.GetValueBytes()));
+                            Assert.Equal(expectedGroup.ValueText, System.Text.Encoding.UTF8.GetString(input.AsSpan(actualGroup.StartOffsetInBytes, actualGroup.EndOffsetInBytes - actualGroup.StartOffsetInBytes)));
                         }
                     }
                 }
@@ -87,7 +88,7 @@ public sealed class Pcre2CorpusMatchExecutionTests
                 if (corpusCase.Expected.NameEntries.Length > 0)
                 {
                     var entries = new Pcre2NameEntry[8];
-                    var written = match.CopyNameEntries(entries, out var isMore);
+                    var written = regex.CopyNameEntries(entries, out var isMore);
                     Assert.False(isMore);
                     Assert.Equal(corpusCase.Expected.NameEntries.Length, written);
                     for (var i = 0; i < written; i++)

@@ -36,7 +36,7 @@ public sealed class Pcre2DefineOptionScopeTests
         });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
-        Assert.Equal(expected, regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token).Success);
+        Assert.Equal(expected, regex.Match(input, cancellationToken: cancellation.Token).Success);
     }
 
     [Theory]
@@ -44,7 +44,7 @@ public sealed class Pcre2DefineOptionScopeTests
     [InlineData("(?U)(?(DEFINE)(?-U)(?<x>a))b+", "b")]
     public void DefinitionCannotChangeOuterGreediness(string pattern, string value)
     {
-        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(pattern).MatchDetailed("bbb"u8).Value.GetValueBytes()));
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(pattern).Match("bbb"u8).GetValueBytes()));
     }
 
     [Theory]
@@ -53,12 +53,14 @@ public sealed class Pcre2DefineOptionScopeTests
     public void CapturePolicyRestoresWithoutRemovingDefinitionSlots(bool outerNoAutoCapture)
     {
         var regex = new Utf8Pcre2Regex(outerNoAutoCapture
-            ? "(?(DEFINE)(?-n)(a))(b)" : "(?(DEFINE)(?n)(?<x>a))(b)", options:             outerNoAutoCapture ? Pcre2CompileOptions.NoAutoCapture : Pcre2CompileOptions.None);
-        var match = regex.MatchDetailed("b"u8);
+            ? "(?(DEFINE)(?-n)(a))(b)" : "(?(DEFINE)(?n)(?<x>a))(b)", options: outerNoAutoCapture ? Pcre2CompileOptions.NoAutoCapture : Pcre2CompileOptions.None);
+        ReadOnlySpan<byte> match3Input = "b"u8;
+        var match3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match3Input, captures: match3Captures);
         Assert.True(match.Success);
-        Assert.Equal(outerNoAutoCapture ? 2 : 3, match.CaptureSlotCount);
-        Assert.False(match.GetGroup(1).Success);
-        if (!outerNoAutoCapture) Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).GetValueBytes()));
+        Assert.Equal(outerNoAutoCapture ? 2 : 3, (match.Success ? match3Captures.Length : 0));
+        Assert.False(match3Captures[1].Success);
+        if (!outerNoAutoCapture) Assert.Equal("b", System.Text.Encoding.UTF8.GetString((match3Captures[2].Success ? match3Input.Slice(match3Captures[2].StartOffsetInBytes, match3Captures[2].EndOffsetInBytes - match3Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -67,7 +69,7 @@ public sealed class Pcre2DefineOptionScopeTests
     public void DefinitionLocalFoldsAndOuterScalarCapturesKeepTheirCoordinates(bool controlled)
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?(DEFINE)(?i)(?<x>é😀))(?<whole>(?&x))\k<whole>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"(?(DEFINE)(?i)(?<x>é😀))(?<whole>(?&x))\k<whole>", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -143,11 +145,13 @@ public sealed class Pcre2DefineOptionScopeTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var input = "qÉ😀É😀 É😀É😀"u8.ToArray();
-        var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
+        ReadOnlySpan<byte> retained4Input = input;
+        var retained4Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained4Input, captures: retained4Captures, cancellationToken: cancellation.Token);
         Assert.True(retained.Success);
-        Assert.Equal(3, retained.CaptureSlotCount);
-        Assert.Equal((1, 13), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
-        Assert.Equal("É😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
+        Assert.Equal(3, (retained.Success ? retained4Captures.Length : 0));
+        Assert.Equal((1, 13), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
+        Assert.Equal("É😀", System.Text.Encoding.UTF8.GetString((retained4Captures[2].Success ? retained4Input.Slice(retained4Captures[2].StartOffsetInBytes, retained4Captures[2].EndOffsetInBytes - retained4Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.False(regex.IsMatch("É😀é😀"u8)); // The following reference retains outer case sensitivity.
         Assert.Equal(2, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal("q<É😀> <É😀>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$whole>")));
@@ -155,7 +159,7 @@ public sealed class Pcre2DefineOptionScopeTests
         var error = Assert.Throws<OperationCanceledException>(() =>
             regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
-        Assert.Equal("É😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
+        Assert.Equal("É😀", System.Text.Encoding.UTF8.GetString((retained4Captures[2].Success ? retained4Input.Slice(retained4Captures[2].StartOffsetInBytes, retained4Captures[2].EndOffsetInBytes - retained4Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -166,7 +170,7 @@ public sealed class Pcre2DefineOptionScopeTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(?(DEFINE)(?i)(?<x>é😀))(?&x)", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(?(DEFINE)(?i)(?<x>é😀))(?&x)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -189,6 +193,6 @@ public sealed class Pcre2DefineOptionScopeTests
         else
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         Assert.Equal("É😀", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
-        Assert.True(regex.MatchDetailed("É😀"u8).Success);
+        Assert.True(regex.Match("É😀"u8).Success);
     }
 }

@@ -15,21 +15,25 @@ public sealed class Pcre2EscapeOperandBoundaryTests
     {
         var input = Encoding.UTF8.GetBytes(subject);
         var expected = new Utf8Pcre2Regex(equivalent);
-        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern))})
+        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern)) })
         {
             Assert.Equal(expected.Count(input), regex.Count(input));
             Assert.True(regex.IsMatch(input));
             Assert.Equal(System.Text.Encoding.UTF8.GetString(expected.Match(input).GetValueBytes()), System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
-            var expectedMatch = expected.MatchDetailed(input);
-            var actualMatch = regex.MatchDetailed(input);
-            Assert.Equal(expectedMatch.CaptureSlotCount, actualMatch.CaptureSlotCount);
-            for (var slot = 0; slot < expectedMatch.CaptureSlotCount; slot++)
+            ReadOnlySpan<byte> expectedMatch1Input = input;
+            var expectedMatch1Captures = new Utf8Pcre2CaptureRange[expected.CaptureGroupCount + 1];
+            var expectedMatch = expected.Match(expectedMatch1Input, captures: expectedMatch1Captures);
+            ReadOnlySpan<byte> actualMatch2Input = input;
+            var actualMatch2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var actualMatch = regex.Match(actualMatch2Input, captures: actualMatch2Captures);
+            Assert.Equal((expectedMatch.Success ? expectedMatch1Captures.Length : 0), (actualMatch.Success ? actualMatch2Captures.Length : 0));
+            for (var slot = 0; slot < (expectedMatch.Success ? expectedMatch1Captures.Length : 0); slot++)
             {
-                var expectedGroup = expectedMatch.GetGroup(slot);
-                var actualGroup = actualMatch.GetGroup(slot);
+                var expectedGroup = expectedMatch1Captures[slot];
+                var actualGroup = actualMatch2Captures[slot];
                 Assert.Equal(expectedGroup.Success, actualGroup.Success);
                 if (expectedGroup.Success)
-                    Assert.Equal(System.Text.Encoding.UTF8.GetString(expectedGroup.GetValueBytes()), System.Text.Encoding.UTF8.GetString(actualGroup.GetValueBytes()));
+                    Assert.Equal(System.Text.Encoding.UTF8.GetString((expectedGroup.Success ? expectedMatch1Input.Slice(expectedGroup.StartOffsetInBytes, expectedGroup.EndOffsetInBytes - expectedGroup.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)), System.Text.Encoding.UTF8.GetString((actualGroup.Success ? actualMatch2Input.Slice(actualGroup.StartOffsetInBytes, actualGroup.EndOffsetInBytes - actualGroup.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             }
             var expectedNames = new Pcre2NameEntry[expected.NameEntryCount];
             var actualNames = new Pcre2NameEntry[regex.NameEntryCount];

@@ -16,11 +16,11 @@ public sealed class Pcre2SupplementaryCaseTests
         var small = char.ConvertFromUtf32(lower);
         using var cancellation = new CancellationTokenSource();
         foreach (var ucp in new[] { false, true })
-        foreach (var finite in new[] { false, true })
-        {
-            var options = Pcre2CompileOptions.Caseless | (ucp ? Pcre2CompileOptions.Ucp : 0);
-            foreach (var (pattern, text, success) in new[]
+            foreach (var finite in new[] { false, true })
             {
+                var options = Pcre2CompileOptions.Caseless | (ucp ? Pcre2CompileOptions.Ucp : 0);
+                foreach (var (pattern, text, success) in new[]
+                {
                 ("^" + capital + "$", small, true),
                 ("^" + small + "$", capital, true),
                 ("^[" + capital + "]$", small, true),
@@ -34,37 +34,39 @@ public sealed class Pcre2SupplementaryCaseTests
                 ("(?ir)^" + capital + "$", small, true),
                 ("(?-i)^" + capital + "$", small, false),
             })
-            {
-                var limits = Limits(finite);
-                var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
                 {
-                    ResourcePolicy = new Utf8ResourcePolicy
+                    var limits = Limits(finite);
+                    var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
                     {
-                        MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
-                        MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
-                        MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
-                        MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
-                    },
-                    MatchTimeout = Timeout.InfiniteTimeSpan
-                });
-                var storage = Encoding.UTF8.GetBytes("padding!" + text + "!padding");
-                var input = storage.AsSpan(8, Encoding.UTF8.GetByteCount(text));
-                Assert.Equal(success, regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
-                Assert.Equal(success ? 1 : 0, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
-                var match = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
-                Assert.Equal(success, match.Success);
-                if (success)
-                {
-                    Assert.Equal((0, input.Length), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-                    Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-                    if (pattern.Contains(@"\1"))
+                        ResourcePolicy = new Utf8ResourcePolicy
+                        {
+                            MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                            MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                            MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                            MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                        },
+                        MatchTimeout = Timeout.InfiniteTimeSpan
+                    });
+                    var storage = Encoding.UTF8.GetBytes("padding!" + text + "!padding");
+                    var input = storage.AsSpan(8, Encoding.UTF8.GetByteCount(text));
+                    Assert.Equal(success, regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
+                    Assert.Equal(success ? 1 : 0, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
+                    ReadOnlySpan<byte> match1Input = input;
+                    var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+                    var match = regex.Match(match1Input, captures: match1Captures, cancellationToken: cancellation.Token);
+                    Assert.Equal(success, match.Success);
+                    if (success)
                     {
-                        Assert.Equal(capital, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
-                        Assert.Equal((0, 4), (match.GetGroup(1).StartOffsetInBytes, match.GetGroup(1).EndOffsetInBytes));
+                        Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+                        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+                        if (pattern.Contains(@"\1"))
+                        {
+                            Assert.Equal(capital, System.Text.Encoding.UTF8.GetString((match1Captures[1].Success ? match1Input.Slice(match1Captures[1].StartOffsetInBytes, match1Captures[1].EndOffsetInBytes - match1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+                            Assert.Equal((0, 4), (match1Captures[1].StartOffsetInBytes, match1Captures[1].EndOffsetInBytes));
+                        }
                     }
                 }
             }
-        }
     }
 
     [Theory]
@@ -96,8 +98,8 @@ public sealed class Pcre2SupplementaryCaseTests
         var small = char.ConvertFromUtf32(lower);
         using var cancellation = new CancellationTokenSource();
         foreach (var finite in new[] { false, true })
-        foreach (var (template, text, pattern, expected) in new[]
-        {
+            foreach (var (template, text, pattern, expected) in new[]
+            {
             (@"\U$1", small + capital, "^(.+)$", capital + capital),
             (@"\L$1", capital + small, "^(.+)$", small + small),
             (@"\u$1", small + small, "^(.+)$", capital + small),
@@ -108,25 +110,25 @@ public sealed class Pcre2SupplementaryCaseTests
             (@"\l" + capital + capital, "x", "x", small + capital),
             (@"\u😀" + small, "x", "x", "😀" + small),
         })
-        {
-            var limits = Limits(finite);
-            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
             {
-                ResourcePolicy = new Utf8ResourcePolicy
+                var limits = Limits(finite);
+                var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
                 {
-                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
-                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
-                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
-                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
-                },
-                MatchTimeout = Timeout.InfiniteTimeSpan
-            });
-            var input = Encoding.UTF8.GetBytes(text);
-            Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, template, 0,
-                Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.None, cancellation.Token)));
-            Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, template, 0,
-                Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.None, cancellation.Token));
-        }
+                    ResourcePolicy = new Utf8ResourcePolicy
+                    {
+                        MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                        MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                        MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                        MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                    },
+                    MatchTimeout = Timeout.InfiniteTimeSpan
+                });
+                var input = Encoding.UTF8.GetBytes(text);
+                Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, template, 0,
+                    Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.None, cancellation.Token)));
+                Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, template, 0,
+                    Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.None, cancellation.Token));
+            }
     }
 
     private static Utf8Pcre2ExecutionLimits Limits(bool finite) => finite ? new()

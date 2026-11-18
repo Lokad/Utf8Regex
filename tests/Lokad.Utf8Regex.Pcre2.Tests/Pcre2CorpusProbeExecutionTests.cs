@@ -10,7 +10,7 @@ public sealed class Pcre2CorpusProbeExecutionTests
     [MemberData(nameof(Pcre2CorpusExecutionData.ProbeSubsetCases), MemberType = typeof(Pcre2CorpusExecutionData))]
     public void ProbeSubsetCorpusCasesProduceExpectedResults(Pcre2CorpusCase corpusCase)
     {
-        var regex = new Utf8Pcre2Regex(            corpusCase.Pattern, options:             Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions), compileSettings:             Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings), policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(corpusCase.Pattern, options: Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions), compileSettings: Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings), policy: new Utf8RegexPolicy
         {
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
@@ -38,12 +38,14 @@ public sealed class Pcre2CorpusProbeExecutionTests
         if (probe.Kind == Utf8Pcre2ProbeKind.FullMatch)
         {
             Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(probe.GetMatch().Value.GetValueBytes()));
-            var detailed = regex.MatchDetailed(input, corpusCase.StartOffsetInBytes);
+            ReadOnlySpan<byte> detailed1Input = input;
+            var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var detailed = regex.Match(detailed1Input, startOffsetInBytes: corpusCase.StartOffsetInBytes, captures: detailed1Captures);
             var full = probe.GetMatch();
-            Assert.Equal(detailed.CaptureSlotCount, full.CaptureSlotCount);
-            for (var slot = 0; slot < detailed.CaptureSlotCount; slot++)
+            Assert.Equal((detailed.Success ? detailed1Captures.Length : 0), full.CaptureSlotCount);
+            for (var slot = 0; slot < (detailed.Success ? detailed1Captures.Length : 0); slot++)
             {
-                var expected = detailed.GetGroup(slot); var actual = full.GetGroup(slot);
+                var expected = detailed1Captures[slot]; var actual = full.GetGroup(slot);
                 Assert.Equal(expected.Success, actual.Success);
                 if (!expected.Success) continue;
                 Assert.Equal((expected.StartOffsetInBytes, expected.EndOffsetInBytes),

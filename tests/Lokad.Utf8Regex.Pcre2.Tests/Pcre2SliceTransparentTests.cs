@@ -77,10 +77,12 @@ public sealed class Pcre2SliceTransparentTests
     public void TransparentDetailedSkipsNonCapturingGroups()
     {
         var regex = new Utf8Pcre2Regex("(a)(?:b)(c)", options: Pcre2CompileOptions.None);
-        var detailed = regex.MatchDetailed(Utf8("abc"), 0);
+        ReadOnlySpan<byte> detailed1Input = Utf8("abc");
+        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
-        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString((detailed1Captures[2].Success ? detailed1Input.Slice(detailed1Captures[2].StartOffsetInBytes, detailed1Captures[2].EndOffsetInBytes - detailed1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

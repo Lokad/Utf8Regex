@@ -108,7 +108,8 @@ public sealed class Pcre2AsciiClassRunCountTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void LargeUnionPreparationKeepsTheOriginalInterruptionAuthority(bool cancel)
     {
         var large = new Utf8Pcre2Regex("[" + string.Concat(Enumerable.Repeat("a-zA-Z0-9", 43)) + "]+", policy: new Utf8RegexPolicy
@@ -186,7 +187,7 @@ public sealed class Pcre2AsciiClassRunCountTests
         Assert.Equal(1, plain.Count("abc zz"u8, 0, Pcre2MatchOptions.EndAnchored));
         var anchored = new Utf8Pcre2Regex(@"[a-z]{2,}", options: Pcre2CompileOptions.Anchored);
         Assert.Equal(0, anchored.Count("0abc xyz"u8));
-        var crlf = new Utf8Pcre2Regex(@"[a-z]{2,}", options: default, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        var crlf = new Utf8Pcre2Regex(@"[a-z]{2,}", options: default, compileSettings: new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
@@ -215,15 +216,19 @@ public sealed class Pcre2AsciiClassRunCountTests
         Assert.Equal(2, regex.Count(input, 5, default, token.Token, allowance));
         Assert.Equal(0, allowance.Attempts);
         var values = new Utf8Pcre2Regex(pattern);
-        var retained = values.MatchDetailed(input);
-        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        ReadOnlySpan<byte> retained1Input = input;
+        var retained1Captures = new Utf8Pcre2CaptureRange[values.CaptureGroupCount + 1];
+        var retained = values.Match(retained1Input, captures: retained1Captures);
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString((retained1Captures[1].Success ? retained1Input.Slice(retained1Captures[1].StartOffsetInBytes, retained1Captures[1].EndOffsetInBytes - retained1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(3, values.Count(input));
-        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString((retained1Captures[1].Success ? retained1Input.Slice(retained1Captures[1].StartOffsetInBytes, retained1Captures[1].EndOffsetInBytes - retained1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(0, values.Count(input, 0, Pcre2MatchOptions.Anchored, token.Token));
     }
 
     [Theory]
-    [InlineData(4095)] [InlineData(4096)] [InlineData(4097)]
+    [InlineData(4095)]
+    [InlineData(4096)]
+    [InlineData(4097)]
     public void ControlledRunsNeedNoWorkingLoanOrResultStorage(int length)
     {
         var regex = new Utf8Pcre2Regex(@"[a-z]{10,}", options: default, compileSettings: default, policy: new Utf8RegexPolicy
@@ -276,7 +281,9 @@ public sealed class Pcre2AsciiClassRunCountTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
     public void EmptyStreamCannotIgnoreAnExistingSharedDenial(int kind)
     {
         var regex = new Utf8Pcre2Regex(@"[a-z]+");
@@ -289,8 +296,12 @@ public sealed class Pcre2AsciiClassRunCountTests
         Pcre2MatchException? failure = null;
         try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input, new(0), default, ref invocation, out _); }
         catch (Pcre2MatchException error) { failure = error; }
-        Assert.Equal(kind switch { 0 => Pcre2ErrorKind.MatchLimit, 1 => Pcre2ErrorKind.DepthLimit,
-            _ => Pcre2ErrorKind.HeapLimit }, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
+        Assert.Equal(kind switch
+        {
+            0 => Pcre2ErrorKind.MatchLimit,
+            1 => Pcre2ErrorKind.DepthLimit,
+            _ => Pcre2ErrorKind.HeapLimit
+        }, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 
@@ -333,7 +344,8 @@ public sealed class Pcre2AsciiClassRunCountTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ControlledStreamChecksInterruptionBetweenBlocks(bool cancel)
     {
         var regex = new Utf8Pcre2Regex(@"[a-z]+", policy: new Utf8RegexPolicy

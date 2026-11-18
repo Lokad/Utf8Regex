@@ -8,7 +8,7 @@ public sealed class Pcre2AnchoredDotSearchTests
     private const string FtpLinePattern = @"^([0-9]+)(\-| |$)(.*)$";
 
     [Fact]
-    public void AnchoredDefaultDotPreservesBooleanAndDetailedResults()
+    public void AnchoredDefaultDotPreservesBooleanAndCaptureResults()
     {
         var regex = new Utf8Pcre2Regex(FtpLinePattern);
 
@@ -19,12 +19,14 @@ public sealed class Pcre2AnchoredDotSearchTests
         Assert.True(regex.IsMatch("123 αβ"u8));
         Assert.True(regex.IsMatch("123\n"u8));
         Assert.False(regex.IsMatch("123-contains\nembedded"u8));
+        ReadOnlySpan<byte> detailed1Input = "123-file listing"u8;
+        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var detailed = regex.MatchDetailed("123-file listing"u8);
+        var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("123", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
-        Assert.Equal("-", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
-        Assert.Equal("file listing", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(3).GetValueBytes()));
+        Assert.Equal("123", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("-", System.Text.Encoding.UTF8.GetString((detailed1Captures[2].Success ? detailed1Input.Slice(detailed1Captures[2].StartOffsetInBytes, detailed1Captures[2].EndOffsetInBytes - detailed1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("file listing", System.Text.Encoding.UTF8.GetString((detailed1Captures[3].Success ? detailed1Input.Slice(detailed1Captures[3].StartOffsetInBytes, detailed1Captures[3].EndOffsetInBytes - detailed1Captures[3].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -109,7 +111,7 @@ public sealed class Pcre2AnchoredDotSearchTests
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
-        new(            pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

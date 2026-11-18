@@ -53,25 +53,34 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     [Fact]
     public void AtomicCaptureStateIsRetainedOnSuccessAndRolledBackOnOuterFailure()
     {
-        var success = new Utf8Pcre2Regex("^(?>(a|ab))c$").MatchDetailed("ac"u8);
-        var fallback = new Utf8Pcre2Regex("^(?:(?>(a|ab))b|(ab)b)$").MatchDetailed("abb"u8);
+        var success1Regex = new Utf8Pcre2Regex("^(?>(a|ab))c$");
+        ReadOnlySpan<byte> success1Input = "ac"u8;
+        var success1Captures = new Utf8Pcre2CaptureRange[success1Regex.CaptureGroupCount + 1];
+        var success = success1Regex.Match(success1Input, captures: success1Captures);
+        var fallback2Regex = new Utf8Pcre2Regex("^(?:(?>(a|ab))b|(ab)b)$");
+        ReadOnlySpan<byte> fallback2Input = "abb"u8;
+        var fallback2Captures = new Utf8Pcre2CaptureRange[fallback2Regex.CaptureGroupCount + 1];
+        var fallback = fallback2Regex.Match(fallback2Input, captures: fallback2Captures);
 
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(success.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((success1Captures[1].Success ? success1Input.Slice(success1Captures[1].StartOffsetInBytes, success1Captures[1].EndOffsetInBytes - success1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(fallback.Success);
-        Assert.False(fallback.GetGroup(1).Success);
-        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(fallback.GetGroup(2).GetValueBytes()));
+        Assert.False(fallback2Captures[1].Success);
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString((fallback2Captures[2].Success ? fallback2Input.Slice(fallback2Captures[2].StartOffsetInBytes, fallback2Captures[2].EndOffsetInBytes - fallback2Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
     public void AcceptSucceedsImmediatelyAtTheCurrentInvocationBoundary()
     {
         var topLevel = new Utf8Pcre2Regex("a(*ACCEPT)b").Match("ac"u8);
-        var subroutine = new Utf8Pcre2Regex(            "^(?&g)c(?(DEFINE)(?<g>a(*ACCEPT)b))$").MatchDetailed("ac"u8);
+        var subroutine3Regex = new Utf8Pcre2Regex("^(?&g)c(?(DEFINE)(?<g>a(*ACCEPT)b))$");
+        ReadOnlySpan<byte> subroutine3Input = "ac"u8;
+        var subroutine3Captures = new Utf8Pcre2CaptureRange[subroutine3Regex.CaptureGroupCount + 1];
+        var subroutine = subroutine3Regex.Match(subroutine3Input, captures: subroutine3Captures);
 
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(topLevel.GetValueBytes()));
         Assert.True(subroutine.Success);
-        Assert.Equal("ac", System.Text.Encoding.UTF8.GetString(subroutine.Value.GetValueBytes()));
-        Assert.False(subroutine.GetGroup(1).Success);
+        Assert.Equal("ac", System.Text.Encoding.UTF8.GetString(subroutine.GetValueBytes()));
+        Assert.False(subroutine3Captures[1].Success);
     }
 
     [Fact]
@@ -115,11 +124,13 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     public void NamedSkipUsesTheMostRecentVisibleMark()
     {
         var regex = new Utf8Pcre2Regex("a(*MARK:X)b(*SKIP:X)(*F)|(.)");
-        var match = regex.MatchDetailed("abc"u8);
+        ReadOnlySpan<byte> match4Input = "abc"u8;
+        var match4Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match4Input, captures: match4Captures);
 
         Assert.True(match.Success);
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((match4Captures[1].Success ? match4Input.Slice(match4Captures[1].StartOffsetInBytes, match4Captures[1].EndOffsetInBytes - match4Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -191,7 +202,7 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     [Fact]
     public void ControlInstructionsChargeDepthAndHeapLimits()
     {
-        var depthLimited = new Utf8Pcre2Regex(            "(?>(?>a|b)|c)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var depthLimited = new Utf8Pcre2Regex("(?>(?>a|b)|c)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -199,7 +210,7 @@ public sealed class Pcre2BacktrackingControlCompilerTests
             },
             MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
         });
-        var heapLimited = new Utf8Pcre2Regex(            "(*MARK:A)a", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var heapLimited = new Utf8Pcre2Regex("(*MARK:A)a", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

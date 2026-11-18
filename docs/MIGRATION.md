@@ -259,6 +259,17 @@ and [host admission](SPEC.md#host-admission).
 
 ## Program owners, cursors and retained results
 
+PCRE2 removes ordinary `MatchDetailed`. Use primary Match with caller-owned byte
+capture slots for a first result, including K/C and MARK. For immutable snapshots
+and named result metadata, create a persistent cursor over stable memory and
+advance it under its original cumulative controls. Dispose after the required
+results; already-published ranges stay valid. A transient span needs host-owned
+stable memory for this API; host copies/capture buffers are outside regex limits.
+Cursor publication uses its actual working/result admission, whose modeled sizes
+can differ from the removed context's arrays. Primary caller-owned output needs
+no owned-result capacity. Preserve genuine Probe usage; its drivers/discriminant
+exceptions remain unchanged. Generic iteration still rejects nonmonotone K.
+
 PCRE2 also uses `Utf8RegexPolicy` on its two constructors and Compile factories,
 returning disposable `Utf8Pcre2Regex` for funded/unfunded creation. Remove
 `Utf8Pcre2RegexProgramOwner` references and the named Create factory. Keep PCRE2

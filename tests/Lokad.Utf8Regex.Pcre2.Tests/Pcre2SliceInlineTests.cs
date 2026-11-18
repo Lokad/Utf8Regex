@@ -130,7 +130,7 @@ public sealed class Pcre2SliceInlineTests
         var expected = Bcl(pattern).Match(inputText);
         Assert.True(expected.Success);
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        var found = regex.Match(Utf8(inputText), startOffsetInBytes: 0);
+        var found = regex.Match(Utf8(inputText));
         Assert.True(found.Success);
         Assert.Equal(expected.Index, found.StartOffsetInBytes);
         Assert.Equal(expected.Index + expected.Length, found.EndOffsetInBytes);
@@ -162,10 +162,12 @@ public sealed class Pcre2SliceInlineTests
         Assert.True(expected.Success);
         Assert.Equal(1, expected.Groups.Count);
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        var detailed = regex.MatchDetailed(Utf8("xabab"), 0);
+        ReadOnlySpan<byte> detailed1Input = Utf8("xabab");
+        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
-        Assert.Equal(1, detailed.CaptureSlotCount);
+        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
+        Assert.Equal(1, (detailed.Success ? detailed1Captures.Length : 0));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 
@@ -177,10 +179,12 @@ public sealed class Pcre2SliceInlineTests
         Assert.True(expected.Success);
         Assert.Equal(2, expected.Groups.Count);
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        var detailed = regex.MatchDetailed(Utf8("x\naab"), 0);
+        ReadOnlySpan<byte> detailed2Input = Utf8("x\naab");
+        var detailed2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed2Input, captures: detailed2Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("aab", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
-        Assert.Equal("aa", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("aab", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
+        Assert.Equal("aa", System.Text.Encoding.UTF8.GetString((detailed2Captures[1].Success ? detailed2Input.Slice(detailed2Captures[1].StartOffsetInBytes, detailed2Captures[1].EndOffsetInBytes - detailed2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 

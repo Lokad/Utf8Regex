@@ -47,11 +47,18 @@ public sealed class Pcre2CancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeMatchDetailed()
+    public void PreCanceledTokenThrowsBeforeMemoryCursorCreation()
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchDetailed(s_input, cancellationToken: token));
+        var exception = Assert.Throws<OperationCanceledException>(() =>
+        {
+            ReadOnlyMemory<byte> result1Input = s_input;
+            using var result1Cursor = regex.CreateMatchCursor(result1Input, 0, Pcre2MatchOptions.None, token);
+            result1Cursor.MoveNext(out var result1Result);
+            result1Cursor.Dispose();
+            _ = result1Result;
+        });
         Assert.Equal(token, exception.CancellationToken);
     }
 

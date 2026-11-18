@@ -9,8 +9,13 @@ public sealed class Pcre2ResourcePolicyTests
     [Fact]
     public void SharedPolicyMapsToPcre2UnitsAndRetainsErrorVocabulary()
     {
-        var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1, MaxDepth = 123,
-            MaxWorkingBytes = 123456, MaxResultBytes = 654321 };
+        var policy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 1,
+            MaxDepth = 123,
+            MaxWorkingBytes = 123456,
+            MaxResultBytes = 654321
+        };
         using var regex = new Utf8Pcre2Regex("foo", policy: new() { ResourcePolicy = policy });
         Assert.Equal(policy, regex.ResourcePolicy);
         Assert.Equal(1u, regex.DefaultExecutionLimits.MatchLimit);
@@ -52,7 +57,7 @@ public sealed class Pcre2ResourcePolicyTests
             ResourcePolicy = policy,
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
-        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("foo"u8).Value.GetValueBytes()));
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(regex.Match("foo"u8).GetValueBytes()));
     }
 
     [Fact]

@@ -56,10 +56,20 @@ not total heap, stack or process memory.
 
 ## Surface and admission
 
-`Utf8Pcre2Regex` supplies IsMatch, Count, Match/MatchDetailed,
+`Utf8Pcre2Regex` supplies IsMatch, Count, Match, persistent memory cursors,
 EnumerateMatches, MatchMany, replacement, Analyze, name metadata and Probe.
 Compile, match, substitution and probe options are separate types.
 There is no RTL or DFA matcher.
+
+The ordinary MatchDetailed entry point is removed. Match fills caller-owned byte
+capture slots; persistent cursors publish immutable last-capture snapshots and
+named metadata. Keep stable memory for a cursor, and dispose after the required
+results or on abandonment. Already-published ranges survive disposal. A caller
+with transient spans may copy into stable memory outside regex admission.
+First-only nonmonotone K/MARK remains on primary Match; generic iteration keeps
+its existing rejection. Actual partial/full Probe contexts and their failure
+discriminants remain available, with the same selected drivers and authority.
+No public forwarding replacement or validation token is introduced.
 
 `Match(input, startOffsetInBytes=0, captures=default, matchOptions=None,
 cancellationToken=default, workingMemoryAllowance=null)` returns the existing
@@ -82,10 +92,10 @@ without allocating a temporary result array. Primary `Utf8Pcre2ValueMatch.Mark`
 preserves the last relevant MARK on success and failure, including short capture
 destinations. It reuses the VM's already-computed immutable label reference,
 without another search, captured-result array or producer-owned text payload.
-The reference stays valid after later calls and program close. Probe/detailed
+The reference stays valid after later calls and program close. Full/partial probe
 value projections preserve their existing MARK too. Span enumeration publishes
 ranges only and does not report MARK; use primary Match or a persistent cursor.
-Full named metadata remains on capture cursors and actual detailed/probe results.
+Full named metadata remains on capture cursors and actual probe contexts.
 
 Compile an expression once and invoke its instance methods. Static IsMatch,
 Match and Replace convenience overloads are removed; they previously compiled a
@@ -99,10 +109,11 @@ Grammar errors use `Pcre2CompileException`; replacement errors use the dedicated
 substitution exception. The completion ledger records intentional operation
 support/rejection, rather than inferring it from another engine.
 
-Create validates common policy first; constructors validate timeout, option bits
-and settings before strict pattern validation/admission. Explicit Compile accepts
-separate construction policy/timeout/token and observes pre-cancellation before
-argument work. Invalid UTF-8 reports absolute byte offsets. A match byte floor
+Construction validates common policy, timeout, option bits and settings before
+strict pattern validation/admission. Policy construction controls remain separate
+from matching; Compile additionally accepts an original construction token and
+observes pre-cancellation before argument work. Invalid pattern UTF-8 reports
+absolute byte offsets. A match byte floor
 must be in [0,input.Length]; text-aware execution requires a valid scalar boundary.
 
 ## Grammar and lexical rules
@@ -149,7 +160,7 @@ a Unicode letter or underscore, then letters/digits/underscores; numeric names
 such as `(?<100>a)` fail with InvalidAfterParensQuery before backend selection.
 Capture names are limited to **128 UTF-8 bytes**, verb labels to **255 UTF-8 bytes**.
 
-Detailed results expose the last value per slot, not Core capture history.
+Cursor snapshots and full probe contexts expose the last value per slot, not Core capture history.
 `CopyNameEntries` and `CopyNumbersForName` expose the name table;
 Context/range-result `TryGetFirstSetGroup` returns the first set slot for a name.
 The regex-level one-shot named matcher is removed: match into caller-owned slots

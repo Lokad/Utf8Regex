@@ -55,15 +55,17 @@ public sealed class Pcre2SliceNamedTests
     [Fact]
     public void EnabledDuplicateNamesKeepDistinctProfileCaptureSlots()
     {
-        var regex = new Utf8Pcre2Regex("(?<x>a)(?<x>b)", options:             Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(?<x>a)(?<x>b)", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
         });
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
-        var context = regex.MatchDetailed("ab"u8);
+        ReadOnlySpan<byte> context1Input = "ab"u8;
+        var context1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var context = regex.Match(context1Input, captures: context1Captures);
         Assert.True(context.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(context.GetGroup(1).GetValueBytes()));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(context.GetGroup(2).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((context1Captures[1].Success ? context1Input.Slice(context1Captures[1].StartOffsetInBytes, context1Captures[1].EndOffsetInBytes - context1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((context1Captures[2].Success ? context1Input.Slice(context1Captures[2].StartOffsetInBytes, context1Captures[2].EndOffsetInBytes - context1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Span<int> numbers = stackalloc int[2];
         Assert.Equal(2, regex.CopyNumbersForName("x", numbers, out var isMore));
         Assert.False(isMore);
@@ -77,12 +79,16 @@ public sealed class Pcre2SliceNamedTests
         // BCL would number the unnamed (c) first. The slice decline above
         // keeps this shape on native numbering.
         var regex = new Utf8Pcre2Regex("(?<b>a)(c)+", options: Pcre2CompileOptions.None);
-        var detailed = regex.MatchDetailed(Utf8("acc"), 0);
+        ReadOnlyMemory<byte> detailed2Input = Utf8("acc");
+        using var detailed2Cursor = regex.CreateMatchCursor(detailed2Input);
+        detailed2Cursor.MoveNext(out var detailed2Result);
+        detailed2Cursor.Dispose();
+        var detailed = detailed2Result;
         Assert.True(detailed.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
-        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(2).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed.Groups[1].Success ? detailed2Input.Span.Slice(detailed.Groups[1].StartOffsetInBytes, detailed.Groups[1].EndOffsetInBytes - detailed.Groups[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString((detailed.Groups[2].Success ? detailed2Input.Span.Slice(detailed.Groups[2].StartOffsetInBytes, detailed.Groups[2].EndOffsetInBytes - detailed.Groups[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(detailed.TryGetFirstSetGroup("b", out var bee));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(bee.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((bee.Success ? detailed2Input.Span.Slice(bee.StartOffsetInBytes, bee.EndOffsetInBytes - bee.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     public static IEnumerable<object?[]> IsMatchCases()
@@ -160,11 +166,15 @@ public sealed class Pcre2SliceNamedTests
     public void OwnedDetailedProjectsNamedGroups()
     {
         var regex = new Utf8Pcre2Regex("(?<word>a)+", options: Pcre2CompileOptions.None);
-        var detailed = regex.MatchDetailed(Utf8("xaa"), 0);
+        ReadOnlyMemory<byte> detailed3Input = Utf8("xaa");
+        using var detailed3Cursor = regex.CreateMatchCursor(detailed3Input);
+        detailed3Cursor.MoveNext(out var detailed3Result);
+        detailed3Cursor.Dispose();
+        var detailed = detailed3Result;
         Assert.True(detailed.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed.Groups[1].Success ? detailed3Input.Span.Slice(detailed.Groups[1].StartOffsetInBytes, detailed.Groups[1].EndOffsetInBytes - detailed.Groups[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(detailed.TryGetFirstSetGroup("word", out var word));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(word.GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((word.Success ? detailed3Input.Span.Slice(word.StartOffsetInBytes, word.EndOffsetInBytes - word.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

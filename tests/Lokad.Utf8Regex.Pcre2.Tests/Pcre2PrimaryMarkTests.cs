@@ -20,21 +20,23 @@ public sealed class Pcre2PrimaryMarkTests
         using var regex = new Utf8Pcre2Regex(pattern, compileSettings: new()
         { BackslashC = Pcre2BackslashCPolicy.Allow, AllowLookaroundBackslashK = true }, policy: new()
         { ResourcePolicy = new() { MaxWorkSteps = 1_000_000, MaxDepth = 512, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } });
-        var expected = regex.MatchDetailed(input);
+        ReadOnlySpan<byte> expected1Input = input;
+        var expected1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var expected = regex.Match(expected1Input, captures: expected1Captures);
         Assert.Equal(success, expected.Success); Assert.Equal(mark, expected.Mark);
         var count = regex.CaptureGroupCount + 1;
         foreach (var width in new[] { 0, 1, count, count + 2 }.Distinct())
         {
             var captures = Enumerable.Repeat(Sentinel, width).ToArray(); var actual = regex.Match(input, captures: captures);
             Assert.Equal(success, actual.Success); Assert.Equal(mark, actual.Mark);
-            Assert.Equal(expected.Value.StartOffsetInBytes, actual.StartOffsetInBytes);
-            Assert.Equal(expected.Value.EndOffsetInBytes, actual.EndOffsetInBytes);
-            Assert.Equal(expected.Value.HasContiguousByteRange, actual.HasContiguousByteRange);
-            Assert.Equal(expected.Value.IsUtf8SliceWellFormed, actual.IsUtf8SliceWellFormed);
+            Assert.Equal(expected.StartOffsetInBytes, actual.StartOffsetInBytes);
+            Assert.Equal(expected.EndOffsetInBytes, actual.EndOffsetInBytes);
+            Assert.Equal(expected.HasContiguousByteRange, actual.HasContiguousByteRange);
+            Assert.Equal(expected.IsUtf8SliceWellFormed, actual.IsUtf8SliceWellFormed);
             for (var slot = 0; slot < Math.Min(width, count); slot++)
             {
                 if (!success) { Assert.Equal(default, captures[slot]); continue; }
-                var group = expected.GetGroup(slot);
+                var group = expected1Captures[slot];
                 Assert.Equal((group.Success, group.StartOffsetInBytes, group.EndOffsetInBytes, group.IsUtf8SliceWellFormed),
                     (captures[slot].Success, captures[slot].StartOffsetInBytes, captures[slot].EndOffsetInBytes, captures[slot].IsUtf8SliceWellFormed));
             }
@@ -58,14 +60,13 @@ public sealed class Pcre2PrimaryMarkTests
     }
 
     [Fact]
-    public void ProbeAndDetailedValueProjectionsKeepTheirExistingMark()
+    public void ProbeValueProjectionsKeepTheirExistingMark()
     {
         var regex = new Utf8Pcre2Regex("(*MARK:tag)a");
         var full = regex.Probe("a"u8, Pcre2PartialMode.None);
         Assert.Equal(full.Mark, full.Value.Mark); Assert.Equal(full.Mark, full.GetMatch().Value.Mark);
         var miss = regex.Probe("b"u8, Pcre2PartialMode.None);
         Assert.Equal("tag", miss.Mark); Assert.Equal(miss.Mark, miss.Value.Mark);
-        Assert.Equal("tag", regex.MatchDetailed("b"u8).Value.Mark);
         var partial = new Utf8Pcre2Regex("ab").Probe("a"u8, Pcre2PartialMode.Hard);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, partial.Kind);
         Assert.Equal(partial.Mark, partial.Value.Mark); Assert.Equal(partial.Mark, partial.GetPartial().Value.Mark);

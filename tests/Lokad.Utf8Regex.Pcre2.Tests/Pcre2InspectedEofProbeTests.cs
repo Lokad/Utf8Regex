@@ -171,7 +171,10 @@ public sealed class Pcre2InspectedEofProbeTests
         var match = probe.GetMatch();
         Assert.Equal(1, match.CaptureSlotCount);
         Assert.Equal(Encoding.UTF8.GetString(input.AsSpan(begin, end - begin)), System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        var expected = regex.MatchDetailed(input, start, flags).GetGroup(0);
+        ReadOnlySpan<byte> result1Input = input;
+        var result1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var result1Result = regex.Match(result1Input, startOffsetInBytes: start, captures: result1Captures, matchOptions: flags);
+        var expected = result1Captures[0];
         Assert.Equal((begin, end), (expected.StartOffsetInBytes, expected.EndOffsetInBytes));
     }
 
@@ -224,7 +227,8 @@ public sealed class Pcre2InspectedEofProbeTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void InspectedEofKeepsOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();

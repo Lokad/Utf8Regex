@@ -6,9 +6,12 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2BooleanSearchInterruptionTests
 {
     [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
-    [InlineData(1, false)] [InlineData(1, true)]
-    [InlineData(2, false)] [InlineData(2, true)]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(2, true)]
     public void SearchKeepsOriginalAuthorityAndRetainedCaptures(int kind, bool expire)
     {
         var pattern = kind switch
@@ -49,7 +52,7 @@ public sealed class Pcre2BooleanSearchInterruptionTests
             },
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });
-        var retained = regex.MatchDetailed(Encoding.UTF8.GetBytes(shortText));
+        var retained = regex.Match(Encoding.UTF8.GetBytes(shortText));
         armed = true;
         Exception? failure = null;
         try { _ = regex.IsMatch(input, 0, Pcre2MatchOptions.None, source.Token); }
@@ -58,7 +61,7 @@ public sealed class Pcre2BooleanSearchInterruptionTests
         Assert.True(entered);
         if (expire) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        Assert.Equal(shortText, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
+        Assert.Equal(shortText, System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(shortText)));
     }
 }

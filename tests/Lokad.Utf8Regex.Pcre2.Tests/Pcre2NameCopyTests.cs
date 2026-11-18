@@ -4,12 +4,17 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2NameCopyTests
 {
     [Theory]
-    [InlineData(0, "n")] [InlineData(1, "n")] [InlineData(2, "n")] [InlineData(3, "n")]
-    [InlineData(0, "missing")] [InlineData(3, "missing")] [InlineData(3, null)]
+    [InlineData(0, "n")]
+    [InlineData(1, "n")]
+    [InlineData(2, "n")]
+    [InlineData(3, "n")]
+    [InlineData(0, "missing")]
+    [InlineData(3, "missing")]
+    [InlineData(3, null)]
     public void BothNameCopiesPreserveOrderTruncationAndUnusedDestination(int capacity, string? name)
     {
         var regex = new Utf8Pcre2Regex("(?J)(?<n>a)|(?<n>b)");
-        var match = regex.MatchDetailed("b"u8);
+        var match = regex.Probe("b"u8, Pcre2PartialMode.Soft).GetMatch();
         Span<int> storage = stackalloc int[3];
         for (var context = 0; context < 2; context++)
         {
@@ -31,7 +36,7 @@ public sealed class Pcre2NameCopyTests
     public void NameCopiesNeedNoTemporaryCollections()
     {
         var regex = new Utf8Pcre2Regex("(?J)" + string.Join('|', Enumerable.Repeat("(?<n>a)", 64)));
-        var match = regex.MatchDetailed("a"u8);
+        var match = regex.Probe("a"u8, Pcre2PartialMode.Soft).GetMatch();
         Span<int> numbers = stackalloc int[1];
         for (var i = 0; i < 1000; i++)
         {

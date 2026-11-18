@@ -24,16 +24,19 @@ public sealed class Pcre2CommentSemanticsTests
         foreach (var pattern in new[] { body, "(?#ignored)" + body })
         {
             var regex = new Utf8Pcre2Regex(pattern);
-            var match = regex.MatchDetailed("é😀"u8);
+            ReadOnlySpan<byte> match1Input = "é😀"u8;
+            var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var match = regex.Match(match1Input, captures: match1Captures);
             Assert.True(match.Success);
-            Assert.Equal("é", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
-            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(2).GetValueBytes()));
+            Assert.Equal("é", System.Text.Encoding.UTF8.GetString((match1Captures[1].Success ? match1Input.Slice(match1Captures[1].StartOffsetInBytes, match1Captures[1].EndOffsetInBytes - match1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((match1Captures[2].Success ? match1Input.Slice(match1Captures[2].StartOffsetInBytes, match1Captures[2].EndOffsetInBytes - match1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "$1$2")));
         }
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void CommentDoesNotBypassOutputHeap(bool text)
     {
         var regex = new Utf8Pcre2Regex("(?#ignored)(é)(😀)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
@@ -64,7 +67,14 @@ public sealed class Pcre2CommentSemanticsTests
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed("é😀"u8)).ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
+        {
+            ReadOnlyMemory<byte> result2Input = ("é😀"u8).ToArray();
+            using var result2Cursor = regex.CreateMatchCursor(result2Input);
+            result2Cursor.MoveNext(out var result2Result);
+            result2Cursor.Dispose();
+            _ = result2Result;
+        }).ErrorKind);
     }
 
     [Theory]
@@ -110,9 +120,11 @@ public sealed class Pcre2CommentSemanticsTests
     public void EmptyCommentDelimitsNumericReferencesWithoutAddingSlots()
     {
         var regex = new Utf8Pcre2Regex(@"(a)\1(?#)2");
-        var match = regex.MatchDetailed("aa2"u8);
-        Assert.True(match.Success); Assert.Equal(2, match.CaptureSlotCount);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        ReadOnlySpan<byte> match3Input = "aa2"u8;
+        var match3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match3Input, captures: match3Captures);
+        Assert.True(match.Success); Assert.Equal(2, (match.Success ? match3Captures.Length : 0));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((match3Captures[1].Success ? match3Input.Slice(match3Captures[1].StartOffsetInBytes, match3Captures[1].EndOffsetInBytes - match3Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]

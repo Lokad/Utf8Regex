@@ -24,12 +24,14 @@ public sealed class Pcre2BranchResetCompilerTests
         string pattern, string input, bool usesBranchReset, int captureSlotCount)
     {
         var bytes = Encoding.UTF8.GetBytes(input);
-        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern))})
+        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern)) })
         {
             Assert.Equal(usesBranchReset, regex.Analyze().UsesBranchReset);
-            var match = regex.MatchDetailed(bytes);
+            ReadOnlySpan<byte> match1Input = bytes;
+            var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var match = regex.Match(match1Input, captures: match1Captures);
             Assert.True(match.Success);
-            Assert.Equal(captureSlotCount, match.CaptureSlotCount);
+            Assert.Equal(captureSlotCount, (match.Success ? match1Captures.Length : 0));
         }
     }
 
@@ -43,11 +45,13 @@ public sealed class Pcre2BranchResetCompilerTests
         string capture)
     {
         var regex = new Utf8Pcre2Regex(pattern);
+        ReadOnlySpan<byte> match2Input = Encoding.UTF8.GetBytes(input);
+        var match2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(input));
+        var match = regex.Match(match2Input, captures: match2Captures);
 
         Assert.True(match.Success);
-        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((match2Captures[1].Success ? match2Input.Slice(match2Captures[1].StartOffsetInBytes, match2Captures[1].EndOffsetInBytes - match2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
@@ -55,27 +59,33 @@ public sealed class Pcre2BranchResetCompilerTests
     public void FollowupNumberingUsesTheWidestBranch()
     {
         var regex = new Utf8Pcre2Regex("(x)(?|(a)(b)|(c))(d)");
+        ReadOnlySpan<byte> shortBranch3Input = "xcd"u8;
+        var shortBranch3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var shortBranch = regex.MatchDetailed("xcd"u8);
-        var wideBranch = regex.MatchDetailed("xabd"u8);
+        var shortBranch = regex.Match(shortBranch3Input, captures: shortBranch3Captures);
+        ReadOnlySpan<byte> wideBranch4Input = "xabd"u8;
+        var wideBranch4Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var wideBranch = regex.Match(wideBranch4Input, captures: wideBranch4Captures);
 
         Assert.True(shortBranch.Success);
-        Assert.Equal(5, shortBranch.CaptureSlotCount);
-        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(shortBranch.GetGroup(2).GetValueBytes()));
-        Assert.False(shortBranch.GetGroup(3).Success);
-        Assert.Equal("d", System.Text.Encoding.UTF8.GetString(shortBranch.GetGroup(4).GetValueBytes()));
+        Assert.Equal(5, (shortBranch.Success ? shortBranch3Captures.Length : 0));
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString((shortBranch3Captures[2].Success ? shortBranch3Input.Slice(shortBranch3Captures[2].StartOffsetInBytes, shortBranch3Captures[2].EndOffsetInBytes - shortBranch3Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.False(shortBranch3Captures[3].Success);
+        Assert.Equal("d", System.Text.Encoding.UTF8.GetString((shortBranch3Captures[4].Success ? shortBranch3Input.Slice(shortBranch3Captures[4].StartOffsetInBytes, shortBranch3Captures[4].EndOffsetInBytes - shortBranch3Captures[4].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
 
         Assert.True(wideBranch.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(wideBranch.GetGroup(2).GetValueBytes()));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(wideBranch.GetGroup(3).GetValueBytes()));
-        Assert.Equal("d", System.Text.Encoding.UTF8.GetString(wideBranch.GetGroup(4).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((wideBranch4Captures[2].Success ? wideBranch4Input.Slice(wideBranch4Captures[2].StartOffsetInBytes, wideBranch4Captures[2].EndOffsetInBytes - wideBranch4Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((wideBranch4Captures[3].Success ? wideBranch4Input.Slice(wideBranch4Captures[3].StartOffsetInBytes, wideBranch4Captures[3].EndOffsetInBytes - wideBranch4Captures[3].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("d", System.Text.Encoding.UTF8.GetString((wideBranch4Captures[4].Success ? wideBranch4Input.Slice(wideBranch4Captures[4].StartOffsetInBytes, wideBranch4Captures[4].EndOffsetInBytes - wideBranch4Captures[4].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
     public void SameNameAndNumberProducesOneNameTableEntryWithoutDuplicateNameMode()
     {
         var regex = new Utf8Pcre2Regex("(?|(?<x>a)|(?<x>b))\\k<x>");
-        var match = regex.MatchDetailed("bb"u8);
+        ReadOnlySpan<byte> match5Input = "bb"u8;
+        var match5Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match5Input, captures: match5Captures);
         var entries = new Pcre2NameEntry[1];
 
         Assert.True(match.Success);
@@ -83,26 +93,32 @@ public sealed class Pcre2BranchResetCompilerTests
         Assert.False(isMore);
         Assert.Equal("x", entries[0].Name);
         Assert.Equal(1, entries[0].Number);
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((match5Captures[1].Success ? match5Input.Slice(match5Captures[1].StartOffsetInBytes, match5Captures[1].EndOffsetInBytes - match5Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
     public void DuplicateNamedBackreferenceSelectsTheFirstSetSlot()
     {
         var regex = CreateDuplicateNameRegex();
+        ReadOnlySpan<byte> foo6Input = "foofoo"u8;
+        var foo6Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var foo = regex.MatchDetailed("foofoo"u8);
-        var bar = regex.MatchDetailed("barbar"u8);
+        var foo = regex.Match(foo6Input, captures: foo6Captures);
+        ReadOnlyMemory<byte> bar7Input = ("barbar"u8).ToArray();
+        using var bar7Cursor = regex.CreateMatchCursor(bar7Input);
+        bar7Cursor.MoveNext(out var bar7Result);
+        bar7Cursor.Dispose();
+        var bar = bar7Result;
         Span<int> numbers = stackalloc int[2];
 
         Assert.True(foo.Success);
-        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(foo.GetGroup(1).GetValueBytes()));
-        Assert.False(foo.GetGroup(2).Success);
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((foo6Captures[1].Success ? foo6Input.Slice(foo6Captures[1].StartOffsetInBytes, foo6Captures[1].EndOffsetInBytes - foo6Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.False(foo6Captures[2].Success);
         Assert.True(bar.Success);
-        Assert.False(bar.GetGroup(1).Success);
-        Assert.Equal("bar", System.Text.Encoding.UTF8.GetString(bar.GetGroup(2).GetValueBytes()));
+        Assert.False(bar.Groups[1].Success);
+        Assert.Equal("bar", System.Text.Encoding.UTF8.GetString((bar.Groups[2].Success ? bar7Input.Span.Slice(bar.Groups[2].StartOffsetInBytes, bar.Groups[2].EndOffsetInBytes - bar.Groups[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(bar.TryGetFirstSetGroup("n", out var selected));
-        Assert.Equal("bar", System.Text.Encoding.UTF8.GetString(selected.GetValueBytes()));
+        Assert.Equal("bar", System.Text.Encoding.UTF8.GetString((selected.Success ? bar7Input.Span.Slice(selected.StartOffsetInBytes, selected.EndOffsetInBytes - selected.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(2, regex.CopyNumbersForName("n", numbers, out var isMore));
         Assert.False(isMore);
         Assert.Equal([1, 2], numbers.ToArray());
@@ -137,7 +153,7 @@ public sealed class Pcre2BranchResetCompilerTests
         Assert.Equal(Pcre2ErrorKind.InvalidAfterParensQuery, error.ErrorKind);
     }
 
-    private static Utf8Pcre2Regex CreateDuplicateNameRegex() => new(        "(?:(?<n>foo)|(?<n>bar))\\k<n>", options:         Pcre2CompileOptions.None, compileSettings:         new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex CreateDuplicateNameRegex() => new("(?:(?<n>foo)|(?<n>bar))\\k<n>", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
     {
         MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
     });

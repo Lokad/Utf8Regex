@@ -14,7 +14,10 @@ public sealed class Pcre2SliceDepthAdmissionTests
         });
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void ScalarPublicOperationsPreserveExactDepthAndFailureIdentity(int operation)
     {
         var exact = Create(4); var denied = Create(3);
@@ -29,7 +32,7 @@ public sealed class Pcre2SliceDepthAdmissionTests
     private static string Run(Utf8Pcre2Regex regex, byte[] input, int operation) => operation switch
     {
         0 => regex.Count(input).ToString(),
-        1 => regex.MatchDetailed(input).Success ? "1" : "0",
+        1 => regex.Match(input).Success ? "1" : "0",
         2 => Count(regex, input).ToString(),
         _ => System.Text.Encoding.UTF8.GetString(regex.Replace(input, "$2$1"))
     };

@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PCRE2 MatchDetailed and its duplicate invocation wrapper. Use primary
+  caller-owned capture ranges or persistent cursor snapshots; actual partial
+  probes and their metadata remain supported. Recompile consumers.
+
 - Preserve PCRE2 MARK on primary Match results, including misses and short caller
   capture output, without another search or result array. Remove the redundant
   regex-level TryGetFirstSetGroup matcher; use capture slots or cursor metadata.

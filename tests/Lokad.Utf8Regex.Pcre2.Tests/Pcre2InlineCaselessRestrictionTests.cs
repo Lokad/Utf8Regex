@@ -47,30 +47,30 @@ public sealed class Pcre2InlineCaselessRestrictionTests
         var input = bytes.AsSpan(7, Encoding.UTF8.GetByteCount(text));
         using var token = new CancellationTokenSource();
         foreach (var options in new[] { Pcre2CompileOptions.None, Pcre2CompileOptions.Ucp })
-        foreach (var limits in new[] { default(Utf8Pcre2ExecutionLimits), new Utf8Pcre2ExecutionLimits
+            foreach (var limits in new[] { default(Utf8Pcre2ExecutionLimits), new Utf8Pcre2ExecutionLimits
         {
             MatchLimit = 1000000, DepthLimit = 256,
             HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20
         } })
-        {
-            var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
             {
-                ResourcePolicy = new Utf8ResourcePolicy
+                var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
                 {
-                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
-                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
-                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
-                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
-                },
-                MatchTimeout = Timeout.InfiniteTimeSpan
-            });
-            Assert.Equal(expected, regex.IsMatch(input, 0, Pcre2MatchOptions.None, token.Token));
-            Assert.Equal(expected ? 1 : 0, regex.Count(input, 0, Pcre2MatchOptions.None, token.Token));
-            var match = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, token.Token);
-            Assert.Equal(expected, match.Success);
-            if (expected)
-                Assert.Equal((0, input.Length), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-        }
+                    ResourcePolicy = new Utf8ResourcePolicy
+                    {
+                        MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                        MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                        MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                        MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                    },
+                    MatchTimeout = Timeout.InfiniteTimeSpan
+                });
+                Assert.Equal(expected, regex.IsMatch(input, 0, Pcre2MatchOptions.None, token.Token));
+                Assert.Equal(expected ? 1 : 0, regex.Count(input, 0, Pcre2MatchOptions.None, token.Token));
+                var match = regex.Match(input, cancellationToken: token.Token);
+                Assert.Equal(expected, match.Success);
+                if (expected)
+                    Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+            }
     }
 
     [Theory]
@@ -124,14 +124,27 @@ public sealed class Pcre2InlineCaselessRestrictionTests
                 },
                 MatchTimeout = Timeout.InfiniteTimeSpan
             });
-            var error = Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed("ksKS"u8));
-            Assert.Equal(kind switch { 0 => Pcre2ErrorKind.MatchLimit, 1 => Pcre2ErrorKind.DepthLimit,
-                2 => Pcre2ErrorKind.HeapLimit, _ => Pcre2ErrorKind.ResultLimit }, error.ErrorKind);
+            var error = Assert.Throws<Pcre2MatchException>(() =>
+            {
+                ReadOnlyMemory<byte> result2Input = ("ksKS"u8).ToArray();
+                using var result2Cursor = regex.CreateMatchCursor(result2Input);
+                result2Cursor.MoveNext(out var result2Result);
+                result2Cursor.Dispose();
+                _ = result2Result;
+            });
+            Assert.Equal(kind switch
+            {
+                0 => Pcre2ErrorKind.MatchLimit,
+                1 => Pcre2ErrorKind.DepthLimit,
+                2 => Pcre2ErrorKind.HeapLimit,
+                _ => Pcre2ErrorKind.ResultLimit
+            }, error.ErrorKind);
         }
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void AliasesKeepOriginalInterruptionAndRetainedCaptures(bool cancel)
     {
         long ticks = 0;
@@ -149,7 +162,9 @@ public sealed class Pcre2InlineCaselessRestrictionTests
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });
         var input = "😀kS Ks"u8.ToArray();
-        var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
+        ReadOnlySpan<byte> retained3Input = input;
+        var retained3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained3Input, captures: retained3Captures, cancellationToken: cancellation.Token);
         var cursor = regex.EnumerateMatches(input, 0, Pcre2MatchOptions.None, cancellation.Token);
         Assert.True(cursor.MoveNext()); var alias = cursor;
         if (cancel) cancellation.Cancel(); else ticks = 25;
@@ -159,8 +174,8 @@ public sealed class Pcre2InlineCaselessRestrictionTests
             Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.Equal("kS", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal((4, 6), (retained.GetGroup(1).StartOffsetInBytes, retained.GetGroup(1).EndOffsetInBytes));
+        Assert.Equal("kS", System.Text.Encoding.UTF8.GetString((retained3Captures[1].Success ? retained3Input.Slice(retained3Captures[1].StartOffsetInBytes, retained3Captures[1].EndOffsetInBytes - retained3Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal((4, 6), (retained3Captures[1].StartOffsetInBytes, retained3Captures[1].EndOffsetInBytes));
         Assert.True(regex.IsMatch("K"u8));
     }
 }

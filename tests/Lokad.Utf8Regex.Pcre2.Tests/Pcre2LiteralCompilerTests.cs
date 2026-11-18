@@ -16,21 +16,28 @@ public sealed class Pcre2LiteralCompilerTests
         var regex = new Utf8Pcre2Regex(pattern);
         var program = regex.DebugCompiledProgram;
         Assert.Null(program.PrimaryUtf8);
-        var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(pattern));
+        ReadOnlyMemory<byte> match1Input = Encoding.UTF8.GetBytes(pattern);
+        using var match1Cursor = regex.CreateMatchCursor(match1Input);
+        match1Cursor.MoveNext(out var match1Result);
+        match1Cursor.Dispose();
+        var match = match1Result;
         Assert.True(match.Success);
-        Assert.Equal(1, match.CaptureSlotCount);
-        Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetGroup(0).GetValueBytes()));
+        Assert.Equal(1, match.Groups.Length);
+        Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString((match.Groups[0].Success ? match1Input.Span.Slice(match.Groups[0].StartOffsetInBytes, match.Groups[0].EndOffsetInBytes - match.Groups[0].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(0, regex.NameEntryCount);
-        Assert.Equal(0, match.NameEntryCount);
+        Assert.Equal(0, match.NameEntries.Length);
         Assert.All(new[] { program.Operations.IsMatch, program.Operations.Count, program.Operations.Match,
             program.Operations.Enumerate, program.Operations.Replace },
             operation => Assert.Same(program.Operations.Match, operation));
     }
 
     [Theory]
-    [InlineData(0, false)] [InlineData(0, true)]
-    [InlineData(1, false)] [InlineData(1, true)]
-    [InlineData(2, false)] [InlineData(2, true)]
+    [InlineData(0, false)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    [InlineData(1, true)]
+    [InlineData(2, false)]
+    [InlineData(2, true)]
     public void PublicLiteralConstructionStillEnforcesMajorCaps(int kind, bool bytes)
     {
         var policy = kind switch
@@ -81,12 +88,12 @@ public sealed class Pcre2LiteralCompilerTests
     }
 
     [Theory]
-    [InlineData("abc","xxabczz",0,2,5)]
-    [InlineData("café","--café--",0,2,7)]
-    [InlineData("😀","a😀b",0,1,5)]
-    [InlineData("","a😀b",1,1,1)]
+    [InlineData("abc", "xxabczz", 0, 2, 5)]
+    [InlineData("café", "--café--", 0, 2, 7)]
+    [InlineData("😀", "a😀b", 0, 1, 5)]
+    [InlineData("", "a😀b", 1, 1, 1)]
     public void LiteralOneShotOperationsPreserveByteAndUtf16Coordinates(
-        string pattern,        string inputText,        int startOffsetInBytes,        int expectedByteStart,        int expectedByteEnd)
+        string pattern, string inputText, int startOffsetInBytes, int expectedByteStart, int expectedByteEnd)
     {
         var regex = new Utf8Pcre2Regex(pattern);
         var input = Encoding.UTF8.GetBytes(inputText);
@@ -97,12 +104,14 @@ public sealed class Pcre2LiteralCompilerTests
         Assert.True(match.Success);
         Assert.Equal(expectedByteStart, match.StartOffsetInBytes);
         Assert.Equal(expectedByteEnd, match.EndOffsetInBytes);
+        ReadOnlySpan<byte> detailed2Input = input;
+        var detailed2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var detailed = regex.MatchDetailed(input, startOffsetInBytes);
+        var detailed = regex.Match(detailed2Input, startOffsetInBytes: startOffsetInBytes, captures: detailed2Captures);
         Assert.True(detailed.Success);
-        Assert.Equal(1, detailed.CaptureSlotCount);
-        Assert.Equal(expectedByteStart, detailed.Value.StartOffsetInBytes);
-        Assert.Equal(expectedByteEnd, detailed.Value.EndOffsetInBytes);
+        Assert.Equal(1, (detailed.Success ? detailed2Captures.Length : 0));
+        Assert.Equal(expectedByteStart, detailed.StartOffsetInBytes);
+        Assert.Equal(expectedByteEnd, detailed.EndOffsetInBytes);
     }
 
     [Theory]
@@ -163,7 +172,7 @@ public sealed class Pcre2LiteralCompilerTests
         var input = "😀x"u8;
 
         Assert.False(regex.IsMatch(input, 0, Pcre2MatchOptions.NotEmpty));
-        var afterFirstScalar = regex.Match(input, startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.NotEmptyAtStart);
+        var afterFirstScalar = regex.Match(input, matchOptions: Pcre2MatchOptions.NotEmptyAtStart);
         Assert.True(afterFirstScalar.Success);
         Assert.Equal(4, afterFirstScalar.StartOffsetInBytes);
         Assert.False(regex.IsMatch(input, input.Length, Pcre2MatchOptions.NotEmptyAtStart));
@@ -190,7 +199,7 @@ public sealed class Pcre2LiteralCompilerTests
     [Fact]
     public void LiteralSearchHonorsConfiguredMatchWorkLimit()
     {
-        var regex = new Utf8Pcre2Regex(            "needle", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("needle", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

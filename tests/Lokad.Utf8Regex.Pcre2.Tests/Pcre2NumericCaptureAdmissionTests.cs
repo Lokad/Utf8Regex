@@ -9,8 +9,8 @@ public sealed class Pcre2NumericCaptureAdmissionTests
     public static IEnumerable<object[]> InvalidDefinitions()
     {
         foreach (var name in new[] { "1", "100", "١", "𝟙" })
-        foreach (var form in new[] { "(?<{0}>a)", "(?'{0}'a)", "(?P<{0}>a)" })
-            yield return [string.Format(form, name)];
+            foreach (var form in new[] { "(?<{0}>a)", "(?'{0}'a)", "(?P<{0}>a)" })
+                yield return [string.Format(form, name)];
         foreach (var pattern in new[] { "(a)(?<100>b)(?<x>c)", @"(?<x>a)(?<100>b)\k<x>",
             "(?x:(?-x:#(?<100>a)))", "(?x)(?-x:#)(?<100>a)", "(?x:# (?<100>a)\na)(?<100>b)" })
             yield return [pattern];
@@ -68,10 +68,12 @@ public sealed class Pcre2NumericCaptureAdmissionTests
     public void NumericLookingLiteralAndCommentTextKeepsItsMeaning(string pattern, string text, Pcre2CompileOptions options)
     {
         var regex = new Utf8Pcre2Regex(pattern, options: options);
-        var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
+        ReadOnlySpan<byte> match1Input = Encoding.UTF8.GetBytes(text);
+        var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match1Input, captures: match1Captures);
         Assert.True(match.Success);
-        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        Assert.Equal(1, match.CaptureSlotCount);
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+        Assert.Equal(1, (match.Success ? match1Captures.Length : 0));
         Assert.Equal(0, regex.NameEntryCount);
     }
 
@@ -82,10 +84,13 @@ public sealed class Pcre2NumericCaptureAdmissionTests
     {
         // Both formerly unserved bodies now execute in the owned profile.
         Pcre2CaptureNameValidator.Validate(pattern, Pcre2CompileOptions.None, Pcre2NewlineConvention.Lf);
-        var match = new Utf8Pcre2Regex(pattern).MatchDetailed("a"u8);
+        var match2Regex = new Utf8Pcre2Regex(pattern);
+        ReadOnlySpan<byte> match2Input = "a"u8;
+        var match2Captures = new Utf8Pcre2CaptureRange[match2Regex.CaptureGroupCount + 1];
+        var match = match2Regex.Match(match2Input, captures: match2Captures);
         Assert.True(match.Success);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        Assert.Equal(1, match.CaptureSlotCount);
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+        Assert.Equal(1, (match.Success ? match2Captures.Length : 0));
         var exception = Assert.Throws<Pcre2CompileException>(() =>
             new Utf8Pcre2Regex(pattern + "(?<100>b)"));
         Assert.Equal(Pcre2ErrorKind.InvalidAfterParensQuery, exception.ErrorKind);
@@ -119,20 +124,24 @@ public sealed class Pcre2NumericCaptureAdmissionTests
     {
         var regex = new Utf8Pcre2Regex(pattern);
         var input = Encoding.UTF8.GetBytes("z" + text + "z");
-        var match = regex.MatchDetailed(input);
+        ReadOnlyMemory<byte> match3Input = input;
+        using var match3Cursor = regex.CreateMatchCursor(match3Input);
+        match3Cursor.MoveNext(out var match3Result);
+        match3Cursor.Dispose();
+        var match = match3Result;
         Assert.True(match.Success);
-        Assert.Equal(3, match.CaptureSlotCount);
+        Assert.Equal(3, match.Groups.Length);
         Assert.False(match.TryGetGroup(100, out _));
-        AssertGroup(match.GetGroup(0), text, text);
-        AssertGroup(match.GetGroup(1), left, text);
-        AssertGroup(match.GetGroup(2), right, text);
+        AssertGroup(match.Groups[0], match3Input.Span, text, text);
+        AssertGroup(match.Groups[1], match3Input.Span, left, text);
+        AssertGroup(match.Groups[2], match3Input.Span, right, text);
         var names = new Pcre2NameEntry[1];
         Assert.Equal(1, regex.CopyNameEntries(names, out var more));
         Assert.False(more);
         Assert.Equal("x", names[0].Name);
         Assert.Equal(nameSlot, names[0].Number);
         Assert.True(match.TryGetFirstSetGroup("x", out var named));
-        Assert.Equal(nameSlot == 1 ? left : right, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
+        Assert.Equal(nameSlot == 1 ? left : right, System.Text.Encoding.UTF8.GetString((named.Success ? match3Input.Span.Slice(named.StartOffsetInBytes, named.EndOffsetInBytes - named.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         {
             using var cursor = regex.CreateMatchCursor(input);
             Assert.True(cursor.MoveNext(out var range));
@@ -141,7 +150,8 @@ public sealed class Pcre2NumericCaptureAdmissionTests
             Assert.Equal(right ?? "", Encoding.UTF8.GetString(range.GetGroupMemory(2).Span));
             Assert.Equal(right is not null, range.Groups[2].Success);
             Assert.Equal(nameSlot, range.NameEntries[0].Number);
-        }    }
+        }
+    }
 
     [Theory]
     [InlineData(1)]
@@ -161,11 +171,11 @@ public sealed class Pcre2NumericCaptureAdmissionTests
             group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes)));
     }
 
-    private static void AssertGroup(Utf8Pcre2GroupContext group, string? value, string text)
+    private static void AssertGroup(Utf8Pcre2CaptureRange group, ReadOnlySpan<byte> input, string? value, string text)
     {
         Assert.Equal(value is not null, group.Success);
         if (value is null) return;
-        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(input[group.StartOffsetInBytes..group.EndOffsetInBytes]));
         var start = text.IndexOf(value, StringComparison.Ordinal);
         Assert.Equal(1 + Encoding.UTF8.GetByteCount(text[..start]), group.StartOffsetInBytes);
         Assert.Equal(1 + Encoding.UTF8.GetByteCount(text[..(start + value.Length)]), group.EndOffsetInBytes);

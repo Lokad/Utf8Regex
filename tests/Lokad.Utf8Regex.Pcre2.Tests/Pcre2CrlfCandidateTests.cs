@@ -16,7 +16,8 @@ public sealed class Pcre2CrlfCandidateTests
         yield return [@"\D", new[] { "\r", "\n", "x" }];
     }
 
-    [Theory] [MemberData(nameof(Cases))]
+    [Theory]
+    [MemberData(nameof(Cases))]
     public void CandidateProgressionPreservesCrlfAndExplicitNewlineRoutes(string pattern, string[] expected)
     {
         var input = "\r\nx"u8.ToArray();
@@ -48,12 +49,21 @@ public sealed class Pcre2CrlfCandidateTests
             var destination = new byte[3];
             Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "G"u8, destination, out var written));
             Assert.Equal(replaced.ToString(), Encoding.UTF8.GetString(destination.AsSpan(0, written)));
-            if (pattern == "(.)") Assert.Equal("x", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(input).GetGroup(1).GetValueBytes()));
+            if (pattern == "(.)")
+            {
+                ReadOnlySpan<byte> result1Input = input;
+                var result1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+                var result1Result = regex.Match(result1Input, captures: result1Captures);
+                Assert.Equal("x", System.Text.Encoding.UTF8.GetString((result1Captures[1].Success ? result1Input.Slice(result1Captures[1].StartOffsetInBytes, result1Captures[1].EndOffsetInBytes - result1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+            }
         }
     }
 
     [Theory]
-    [InlineData(".", 2)] [InlineData(@"\N", 2)] [InlineData("(.)", 2)] [InlineData(".+", 1)]
+    [InlineData(".", 2)]
+    [InlineData(@"\N", 2)]
+    [InlineData("(.)", 2)]
+    [InlineData(".+", 1)]
     public void ExplicitLfStartIsStillAdmissible(string pattern, int expectedCount)
     {
         foreach (var finite in new[] { false, true })
@@ -61,7 +71,7 @@ public sealed class Pcre2CrlfCandidateTests
             var regex = Create(pattern, finite);
             foreach (var options in new[] { Pcre2MatchOptions.None, Pcre2MatchOptions.Anchored })
             {
-                Assert.False(regex.Match("\r\nx"u8, startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.Anchored).Success);
+                Assert.False(regex.Match("\r\nx"u8, matchOptions: Pcre2MatchOptions.Anchored).Success);
                 var result = regex.Match("\r\nx"u8, startOffsetInBytes: 1, matchOptions: options);
                 Assert.True(result.Success);
                 Assert.Equal(1, result.StartOffsetInBytes);
@@ -71,19 +81,20 @@ public sealed class Pcre2CrlfCandidateTests
     }
 
     [Theory]
-    [InlineData(".")] [InlineData(@"\N")]
+    [InlineData(".")]
+    [InlineData(@"\N")]
     public void CuratedPartialProbeKeepsTheSameCrlfProgression(string pattern)
     {
         foreach (var finite in new[] { false, true })
-        foreach (var mode in new[] { Pcre2PartialMode.Soft, Pcre2PartialMode.Hard })
-        {
-            var regex = Create(pattern, finite);
-            Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("\r\n"u8, mode).Kind);
-            var result = regex.Probe("\r\nx"u8, mode);
-            Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, result.Kind);
-            Assert.Equal((2, 3), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
-            Assert.Equal(1, regex.Probe("\r\nx"u8, mode, 1).Value.StartOffsetInBytes);
-        }
+            foreach (var mode in new[] { Pcre2PartialMode.Soft, Pcre2PartialMode.Hard })
+            {
+                var regex = Create(pattern, finite);
+                Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("\r\n"u8, mode).Kind);
+                var result = regex.Probe("\r\nx"u8, mode);
+                Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, result.Kind);
+                Assert.Equal((2, 3), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
+                Assert.Equal(1, regex.Probe("\r\nx"u8, mode, 1).Value.StartOffsetInBytes);
+            }
     }
 
     [Theory]
@@ -104,7 +115,9 @@ public sealed class Pcre2CrlfCandidateTests
     }
 
     [Theory]
-    [InlineData(".")] [InlineData("(.)")] [InlineData(@"[^\r]")]
+    [InlineData(".")]
+    [InlineData("(.)")]
+    [InlineData(@"[^\r]")]
     public void CorrectedRoutesKeepScalarValidationAndCancellation(string pattern)
     {
         var regex = Create(pattern, true);
@@ -117,7 +130,7 @@ public sealed class Pcre2CrlfCandidateTests
         Assert.Equal(source.Token, error.CancellationToken);
     }
 
-    private static Utf8Pcre2Regex Create(string pattern, bool finite) => new(pattern, options: default, compileSettings:         new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex Create(string pattern, bool finite) => new(pattern, options: default, compileSettings: new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
     {
         ResourcePolicy = new Utf8ResourcePolicy
         {

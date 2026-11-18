@@ -68,7 +68,10 @@ public sealed class Pcre2BacktrackingCountFramesTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void DenialReleasesExclusiveCapacityWithoutRefundingWork(int deniedLimit)
     {
         var regex = Create("(?i)(a+)(b)", new()
@@ -103,7 +106,8 @@ public sealed class Pcre2BacktrackingCountFramesTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void InterruptionAndRetainedCapturesKeepTheirOriginalAuthority(bool cancel)
     {
         long ticks = 0;
@@ -116,7 +120,9 @@ public sealed class Pcre2BacktrackingCountFramesTests
             return ticks;
         });
         var regex = Create("(?i)(a+)(?=b)b", timeout: TimeSpan.FromMilliseconds(20));
-        var retained = regex.MatchDetailed("aaab"u8);
+        ReadOnlySpan<byte> retained1Input = "aaab"u8;
+        var retained1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained1Input, captures: retained1Captures);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 3000)));
         var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
@@ -134,7 +140,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         if (cancel) Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else Assert.True(failure is Utf8ExecutionDeadlineExpiredException or Pcre2MatchException { ErrorKind: Pcre2ErrorKind.Timeout });
-        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString((retained1Captures[1].Success ? retained1Input.Slice(retained1Captures[1].StartOffsetInBytes, retained1Captures[1].EndOffsetInBytes - retained1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         armed = false;
         ticks = 0;
         Assert.Equal(1, regex.Count("ab"u8));

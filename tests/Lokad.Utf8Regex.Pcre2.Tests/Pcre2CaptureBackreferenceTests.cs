@@ -8,40 +8,44 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2CaptureBackreferenceTests
 {
     [Fact]
-    public void DetailedMatchProjectsNestedCapturesOnceFromUtf8Coordinates()
+    public void PrimaryMatchWritesNestedCapturesFromByteCoordinates()
     {
         var regex = new Utf8Pcre2Regex("(é)(😀)");
         var input = Encoding.UTF8.GetBytes("xé😀y");
+        ReadOnlySpan<byte> match1Input = input;
+        var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var match = regex.MatchDetailed(input);
+        var match = regex.Match(match1Input, captures: match1Captures);
 
         Assert.True(match.Success);
-        Assert.Equal(3, match.CaptureSlotCount);
-        AssertGroup(match.GetGroup(0),"é😀",1,7);
-        AssertGroup(match.GetGroup(1),"é",1,3);
-        AssertGroup(match.GetGroup(2),"😀",3,7);
+        Assert.Equal(3, (match.Success ? match1Captures.Length : 0));
+        AssertGroup(match1Captures[0], match1Input, "é😀", 1, 7);
+        AssertGroup(match1Captures[1], match1Input, "é", 1, 3);
+        AssertGroup(match1Captures[2], match1Input, "😀", 3, 7);
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
     [Fact]
-    public void DetailedMatchProjectsLargeCaptureSets()
+    public void PrimaryMatchWritesLargeCaptureSets()
     {
         const int explicitCaptureCount = 40;
         var regex = new Utf8Pcre2Regex(string.Concat(Enumerable.Repeat("(a)", explicitCaptureCount)));
         var text = new string('a', explicitCaptureCount);
-        var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
+        ReadOnlySpan<byte> match2Input = Encoding.UTF8.GetBytes(text);
+        var match2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match2Input, captures: match2Captures);
 
         Assert.True(match.Success);
-        Assert.Equal(explicitCaptureCount + 1, match.CaptureSlotCount);
-        AssertGroup(match.GetGroup(0),text,0,explicitCaptureCount);
+        Assert.Equal(explicitCaptureCount + 1, (match.Success ? match2Captures.Length : 0));
+        AssertGroup(match2Captures[0], match2Input, text, 0, explicitCaptureCount);
         for (var slot = 1; slot <= explicitCaptureCount; slot++)
         {
-            AssertGroup(match.GetGroup(slot),"a",slot - 1,slot);
+            AssertGroup(match2Captures[slot], match2Input, "a", slot - 1, slot);
         }
     }
 
     [Fact]
-    public void DetailedMatchWithLargeCaptureSetsSupportsConcurrentReuse()
+    public void PrimaryCaptureMatchingSupportsConcurrentReuse()
     {
         const int explicitCaptureCount = 40;
         var regex = new Utf8Pcre2Regex(string.Concat(Enumerable.Repeat("(a)", explicitCaptureCount)));
@@ -50,10 +54,12 @@ public sealed class Pcre2CaptureBackreferenceTests
 
         Parallel.For(0, 256, _ =>
         {
-            var match = regex.MatchDetailed(input);
-            var last = match.GetGroup(explicitCaptureCount);
+            ReadOnlySpan<byte> match3Input = input;
+            var match3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var match = regex.Match(match3Input, captures: match3Captures);
+            var last = match3Captures[explicitCaptureCount];
             if (!match.Success ||
-                match.CaptureSlotCount != explicitCaptureCount + 1 ||
+                (match.Success ? match3Captures.Length : 0) != explicitCaptureCount + 1 ||
                 !last.Success ||
                 last.StartOffsetInBytes != explicitCaptureCount - 1 ||
                 last.EndOffsetInBytes != explicitCaptureCount)
@@ -125,14 +131,20 @@ public sealed class Pcre2CaptureBackreferenceTests
     [Fact]
     public void CaptureJournalRestoresUnsetAndFinalRepeatedCaptures()
     {
-        var rollback = new Utf8Pcre2Regex("(?:(a)c|(b))\\2").MatchDetailed("bb"u8);
-        var repeated = new Utf8Pcre2Regex("(?<x>a|b)+").MatchDetailed("ab"u8);
+        var rollback4Regex = new Utf8Pcre2Regex("(?:(a)c|(b))\\2");
+        ReadOnlySpan<byte> rollback4Input = "bb"u8;
+        var rollback4Captures = new Utf8Pcre2CaptureRange[rollback4Regex.CaptureGroupCount + 1];
+        var rollback = rollback4Regex.Match(rollback4Input, captures: rollback4Captures);
+        var repeated5Regex = new Utf8Pcre2Regex("(?<x>a|b)+");
+        ReadOnlySpan<byte> repeated5Input = "ab"u8;
+        var repeated5Captures = new Utf8Pcre2CaptureRange[repeated5Regex.CaptureGroupCount + 1];
+        var repeated = repeated5Regex.Match(repeated5Input, captures: repeated5Captures);
 
         Assert.True(rollback.Success);
-        Assert.False(rollback.GetGroup(1).Success);
-        AssertGroup(rollback.GetGroup(2),"b",0,1);
+        Assert.False(rollback4Captures[1].Success);
+        AssertGroup(rollback4Captures[2], rollback4Input, "b", 0, 1);
         Assert.True(repeated.Success);
-        AssertGroup(repeated.GetGroup(1),"b",1,2);
+        AssertGroup(repeated5Captures[1], repeated5Input, "b", 1, 2);
     }
 
     [Fact]
@@ -148,7 +160,11 @@ public sealed class Pcre2CaptureBackreferenceTests
     public void NamedCaptureMetadataComesFromTheGenericCompiler()
     {
         var regex = new Utf8Pcre2Regex("(?P<word>é+)-(?P=word)");
-        var match = regex.MatchDetailed(Encoding.UTF8.GetBytes("éé-éé"));
+        ReadOnlyMemory<byte> match6Input = Encoding.UTF8.GetBytes("éé-éé");
+        using var match6Cursor = regex.CreateMatchCursor(match6Input);
+        match6Cursor.MoveNext(out var match6Result);
+        match6Cursor.Dispose();
+        var match = match6Result;
         var entries = new Pcre2NameEntry[1];
         Span<int> numbers = stackalloc int[1];
 
@@ -158,11 +174,11 @@ public sealed class Pcre2CaptureBackreferenceTests
         Assert.False(hasMoreEntries);
         Assert.Equal("word", entries[0].Name);
         Assert.Equal(1, entries[0].Number);
-        Assert.Equal(1, match.CopyNumbersForName("word", numbers, out var hasMoreNumbers));
+        Assert.Equal(1, regex.CopyNumbersForUtf8Name("word"u8, numbers, out var hasMoreNumbers));
         Assert.False(hasMoreNumbers);
         Assert.Equal(1, numbers[0]);
         Assert.True(match.TryGetFirstSetGroup("word", out var word));
-        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString(word.GetValueBytes()));
+        Assert.Equal("éé", System.Text.Encoding.UTF8.GetString((word.Success ? match6Input.Span.Slice(word.StartOffsetInBytes, word.EndOffsetInBytes - word.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -171,11 +187,15 @@ public sealed class Pcre2CaptureBackreferenceTests
     public void UtfModeCaptureNamesAcceptUnicodeLettersAndDecimalDigits(string name)
     {
         var regex = new Utf8Pcre2Regex($"(?<{name}>é)\\k<{name}>");
-        var match = regex.MatchDetailed(Encoding.UTF8.GetBytes("éé"));
+        ReadOnlyMemory<byte> match7Input = Encoding.UTF8.GetBytes("éé");
+        using var match7Cursor = regex.CreateMatchCursor(match7Input);
+        match7Cursor.MoveNext(out var match7Result);
+        match7Cursor.Dispose();
+        var match = match7Result;
 
         Assert.True(match.Success);
         Assert.True(match.TryGetFirstSetGroup(name, out var capture));
-        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(capture.GetValueBytes()));
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString((capture.Success ? match7Input.Span.Slice(capture.StartOffsetInBytes, capture.EndOffsetInBytes - capture.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -229,10 +249,10 @@ public sealed class Pcre2CaptureBackreferenceTests
     }
 
     private static void AssertGroup(
-        Utf8Pcre2GroupContext group,        string value,        int startInBytes,        int endInBytes)
+        Utf8Pcre2CaptureRange group, ReadOnlySpan<byte> input, string value, int startInBytes, int endInBytes)
     {
         Assert.True(group.Success);
-        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(input[group.StartOffsetInBytes..group.EndOffsetInBytes]));
         Assert.Equal(startInBytes, group.StartOffsetInBytes);
         Assert.Equal(endInBytes, group.EndOffsetInBytes);
     }

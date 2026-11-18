@@ -28,7 +28,14 @@ public sealed class Pcre2NonEmptyCountScopeTests
         Assert.Equal(expected, regex.Count(input));
         Assert.Equal(expected, regex.Count(input, 0, Pcre2MatchOptions.None, token.Token));
         Assert.Equal(Pcre2ErrorKind.ResultLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed(Encoding.UTF8.GetBytes(text))).ErrorKind);
+            Assert.Throws<Pcre2MatchException>(() =>
+            {
+                ReadOnlyMemory<byte> result1Input = Encoding.UTF8.GetBytes(text);
+                using var result1Cursor = regex.CreateMatchCursor(result1Input);
+                result1Cursor.MoveNext(out var result1Result);
+                result1Cursor.Dispose();
+                _ = result1Result;
+            }).ErrorKind);
     }
 
     [Fact]
@@ -54,7 +61,8 @@ public sealed class Pcre2NonEmptyCountScopeTests
     }
 
     [Theory]
-    [InlineData(1UL)] [InlineData(1048576UL)]
+    [InlineData(1UL)]
+    [InlineData(1048576UL)]
     public void ActualScratchIsAdmittedAndReleasedOnSuccessOrStickyDenial(ulong working)
     {
         var regex = Create("(a+)(b)", working: working);
@@ -104,7 +112,8 @@ public sealed class Pcre2NonEmptyCountScopeTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void InterruptionAfterValidationReleasesScratchAndKeepsRetainedCaptures(bool cancel)
     {
         long ticks = 0;
@@ -120,7 +129,9 @@ public sealed class Pcre2NonEmptyCountScopeTests
             },
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });
-        var retained = regex.MatchDetailed("aaab"u8);
+        ReadOnlySpan<byte> retained2Input = "aaab"u8;
+        var retained2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained2Input, captures: retained2Captures);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 3000)));
         var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
@@ -144,8 +155,8 @@ public sealed class Pcre2NonEmptyCountScopeTests
             Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
             Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((retained2Captures[2].Success ? retained2Input.Slice(retained2Captures[2].StartOffsetInBytes, retained2Captures[2].EndOffsetInBytes - retained2Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(1, regex.Count("ab"u8));
     }
 

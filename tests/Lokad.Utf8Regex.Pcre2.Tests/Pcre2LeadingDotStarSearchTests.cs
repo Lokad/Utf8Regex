@@ -12,11 +12,13 @@ public sealed class Pcre2LeadingDotStarSearchTests
 
         Assert.True(regex.IsMatch("Essential services"u8));
         Assert.False(regex.IsMatch("A regular service"u8));
+        ReadOnlySpan<byte> detailed1Input = "glass"u8;
+        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var detailed = regex.MatchDetailed("glass"u8);
+        var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("glass", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
-        Assert.Equal("ss", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("glass", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
+        Assert.Equal("ss", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -99,7 +101,7 @@ public sealed class Pcre2LeadingDotStarSearchTests
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
-        new(            pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

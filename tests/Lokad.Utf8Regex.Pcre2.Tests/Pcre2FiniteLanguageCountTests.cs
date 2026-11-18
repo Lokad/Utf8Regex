@@ -27,7 +27,14 @@ public sealed class Pcre2FiniteLanguageCountTests
         Assert.Equal(expected, regex.Count(input, 0, Pcre2MatchOptions.None, token.Token));
         // Count publishes no owned result payload, while detailed results still do.
         Assert.Equal(Pcre2ErrorKind.ResultLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed(input)).ErrorKind);
+            Assert.Throws<Pcre2MatchException>(() =>
+            {
+                ReadOnlyMemory<byte> result1Input = input;
+                using var result1Cursor = regex.CreateMatchCursor(result1Input);
+                result1Cursor.MoveNext(out var result1Result);
+                result1Cursor.Dispose();
+                _ = result1Result;
+            }).ErrorKind);
     }
 
     [Theory]
@@ -117,8 +124,9 @@ public sealed class Pcre2FiniteLanguageCountTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void CountKeepsOriginalInterruptionAndRetainedDetailedCaptures(bool cancel)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CountKeepsOriginalInterruptionAndRetainedCaptureRanges(bool cancel)
     {
         using var token = new CancellationTokenSource();
         var regex = new Utf8Pcre2Regex("(a)(b)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
@@ -132,7 +140,9 @@ public sealed class Pcre2FiniteLanguageCountTests
             },
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });
-        var retained = regex.MatchDetailed("ab"u8);
+        ReadOnlySpan<byte> retained2Input = "ab"u8;
+        var retained2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained2Input, captures: retained2Captures);
         int reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {
@@ -146,8 +156,8 @@ public sealed class Pcre2FiniteLanguageCountTests
         else
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.Throws<Pcre2MatchException>(
                 () => regex.Count(input)).ErrorKind);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((retained2Captures[2].Success ? retained2Input.Slice(retained2Captures[2].StartOffsetInBytes, retained2Captures[2].EndOffsetInBytes - retained2Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(1, regex.Count("ab"u8));
     }
 
@@ -173,7 +183,8 @@ public sealed class Pcre2FiniteLanguageCountTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void SparseSeekingChecksTheOriginalAuthorityAfterValidation(bool cancel)
     {
         long ticks = 0;

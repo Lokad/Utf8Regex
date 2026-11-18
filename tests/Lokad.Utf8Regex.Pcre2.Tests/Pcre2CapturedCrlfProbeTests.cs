@@ -104,12 +104,14 @@ public sealed class Pcre2CapturedCrlfProbeTests
         if (kind != Utf8Pcre2ProbeKind.FullMatch) return;
         var actual = probe.GetMatch();
         Assert.Equal(2, actual.CaptureSlotCount);
-        var expected = regex.MatchDetailed(input, start, flags);
+        ReadOnlySpan<byte> expected1Input = input;
+        var expected1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var expected = regex.Match(expected1Input, startOffsetInBytes: start, captures: expected1Captures, matchOptions: flags);
         for (var slot = 0; slot < 2; slot++)
         {
-            var left = expected.GetGroup(slot); var right = actual.GetGroup(slot);
+            var left = expected1Captures[slot]; var right = actual.GetGroup(slot);
             Assert.True(right.Success);
-            Assert.Equal(System.Text.Encoding.UTF8.GetString(left.GetValueBytes()), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
+            Assert.Equal(System.Text.Encoding.UTF8.GetString((left.Success ? expected1Input.Slice(left.StartOffsetInBytes, left.EndOffsetInBytes - left.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
             Assert.Equal((begin, end), (right.StartOffsetInBytes, right.EndOffsetInBytes));
         }
         if (pattern.Contains("?<part>"))
@@ -123,7 +125,7 @@ public sealed class Pcre2CapturedCrlfProbeTests
     public void CapturedAlternativeHasExactResultAdmissionAndIndependentAliases()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(2);
-        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex(@"^(?<part>a$|a\r)", options: Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex(@"^(?<part>a$|a\r)", options: Pcre2CompileOptions.None, compileSettings: new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new()
             {
@@ -151,7 +153,7 @@ public sealed class Pcre2CapturedCrlfProbeTests
     [Fact]
     public void CapturedAlternativeKeepsOriginalWorkAndWorkingAllowance()
     {
-        Utf8Pcre2Regex Create(uint work, ulong heap) => new(@"^(a$|a\r)", options: Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        Utf8Pcre2Regex Create(uint work, ulong heap) => new(@"^(a$|a\r)", options: Pcre2CompileOptions.None, compileSettings: new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -168,11 +170,12 @@ public sealed class Pcre2CapturedCrlfProbeTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void CapturedAlternativeObservesOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"^(a$|a\r)", options: Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"^(a$|a\r)", options: Pcre2CompileOptions.None, compileSettings: new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });

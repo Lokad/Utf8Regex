@@ -38,8 +38,12 @@ public sealed class Pcre2DuplicateOptionScopeTests
         });
         var bytes = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
-        var match = regex.MatchDetailed(bytes, 0, Pcre2MatchOptions.None, cancellation.Token);
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+        ReadOnlyMemory<byte> match1Input = bytes;
+        using var match1Cursor = regex.CreateMatchCursor(match1Input, 0, Pcre2MatchOptions.None, cancellation.Token);
+        match1Cursor.MoveNext(out var match1Result);
+        match1Cursor.Dispose();
+        var match = match1Result;
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString((match.Value.Success ? match1Input.Span.Slice(match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(match.TryGetFirstSetGroup("x", out var capture));
         Assert.True(capture.Success);
     }
@@ -72,7 +76,7 @@ public sealed class Pcre2DuplicateOptionScopeTests
     public void ScalarSlotsReferencesIterationAndRetainedResultsKeepTheirAuthority(bool controlled)
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)|(?<x>é))\k<x>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)|(?<x>é))\k<x>", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -148,12 +152,14 @@ public sealed class Pcre2DuplicateOptionScopeTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var input = "q😀😀 éé"u8.ToArray();
-        var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
-        Assert.Equal(3, retained.CaptureSlotCount);
+        ReadOnlySpan<byte> retained2Input = input;
+        var retained2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained2Input, captures: retained2Captures, cancellationToken: cancellation.Token);
+        Assert.Equal(3, (retained.Success ? retained2Captures.Length : 0));
         Assert.Equal(2, regex.NameEntryCount);
-        Assert.Equal((1, 9), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.False(retained.GetGroup(2).Success);
+        Assert.Equal((1, 9), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.False(retained2Captures[2].Success);
         Span<int> numbers = stackalloc int[2];
         Assert.Equal(2, regex.CopyNumbersForName("x", numbers, out var isMore));
         Assert.False(isMore);
@@ -170,7 +176,7 @@ public sealed class Pcre2DuplicateOptionScopeTests
         var cancelled = Assert.Throws<OperationCanceledException>(() =>
             regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal(cancellation.Token, cancelled.CancellationToken);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -180,7 +186,7 @@ public sealed class Pcre2DuplicateOptionScopeTests
     [InlineData(3, Pcre2ErrorKind.ResultLimit)]
     public void ExistingFiniteControlsStillDenyTheOwnedRoute(int limit, Pcre2ErrorKind expected)
     {
-        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)(?:aa|bb)|(?<x>é))\k<x>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)(?:aa|bb)|(?<x>é))\k<x>", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -191,7 +197,14 @@ public sealed class Pcre2DuplicateOptionScopeTests
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        var error = Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed("😀aa😀"u8));
+        var error = Assert.Throws<Pcre2MatchException>(() =>
+        {
+            ReadOnlyMemory<byte> result3Input = ("😀aa😀"u8).ToArray();
+            using var result3Cursor = regex.CreateMatchCursor(result3Input);
+            result3Cursor.MoveNext(out var result3Result);
+            result3Cursor.Dispose();
+            _ = result3Result;
+        });
         Assert.Equal(expected, error.ErrorKind);
     }
 
@@ -203,7 +216,7 @@ public sealed class Pcre2DuplicateOptionScopeTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)|(?<x>é))\k<x>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)|(?<x>é))\k<x>", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -226,6 +239,6 @@ public sealed class Pcre2DuplicateOptionScopeTests
         else
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         Assert.Equal("😀😀", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
-        Assert.True(regex.MatchDetailed("éé"u8).Success);
+        Assert.True(regex.Match("éé"u8).Success);
     }
 }

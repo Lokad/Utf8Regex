@@ -60,114 +60,119 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
         yield return [new[] { "\u0600a", "x" }];
     }
 
-    [Theory] [MemberData(nameof(PropertyBoundaries))]
+    [Theory]
+    [MemberData(nameof(PropertyBoundaries))]
     public void GraphemePropertiesPreservePublicRangesCapturesAndReplacement(string[] segments)
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(segments));
         foreach (var finite in new[] { false, true })
-        foreach (var pattern in new[] { @"\X", @"(?=\X)\X", @"(?<g>\X)" })
-        {
-            var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+            foreach (var pattern in new[] { @"\X", @"(?=\X)\X", @"(?<g>\X)" })
             {
-                ResourcePolicy = new Utf8ResourcePolicy
+                var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
                 {
-                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                    ResourcePolicy = new Utf8ResourcePolicy
                     {
-                        MatchLimit = 1_000_000,
-                        DepthLimit = 1024,
-                        HeapLimitInBytes = 16 << 20,
-                        ResultLimitInBytes = 16 << 20
-                    }
+                        MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
 
-                    : default)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                    {
-                        MatchLimit = 1_000_000,
-                        DepthLimit = 1024,
-                        HeapLimitInBytes = 16 << 20,
-                        ResultLimitInBytes = 16 << 20
-                    }
+                        : default)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
 
-                    : default)).MatchLimit,
-                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                    {
-                        MatchLimit = 1_000_000,
-                        DepthLimit = 1024,
-                        HeapLimitInBytes = 16 << 20,
-                        ResultLimitInBytes = 16 << 20
-                    }
+                        : default)).MatchLimit,
+                        MaxDepth = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
 
-                    : default)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                    {
-                        MatchLimit = 1_000_000,
-                        DepthLimit = 1024,
-                        HeapLimitInBytes = 16 << 20,
-                        ResultLimitInBytes = 16 << 20
-                    }
+                        : default)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
 
-                    : default)).DepthLimit,
-                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                    {
-                        MatchLimit = 1_000_000,
-                        DepthLimit = 1024,
-                        HeapLimitInBytes = 16 << 20,
-                        ResultLimitInBytes = 16 << 20
-                    }
+                        : default)).DepthLimit,
+                        MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
 
-                    : default)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                    {
-                        MatchLimit = 1_000_000,
-                        DepthLimit = 1024,
-                        HeapLimitInBytes = 16 << 20,
-                        ResultLimitInBytes = 16 << 20
-                    }
+                        : default)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
 
-                    : default)).HeapLimitInBytes,
-                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                    {
-                        MatchLimit = 1_000_000,
-                        DepthLimit = 1024,
-                        HeapLimitInBytes = 16 << 20,
-                        ResultLimitInBytes = 16 << 20
-                    }
+                        : default)).HeapLimitInBytes,
+                        MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
 
-                    : default)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                    {
-                        MatchLimit = 1_000_000,
-                        DepthLimit = 1024,
-                        HeapLimitInBytes = 16 << 20,
-                        ResultLimitInBytes = 16 << 20
-                    }
+                        : default)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
 
-                    : default)).ResultLimitInBytes
-                },
-                MatchTimeout = Timeout.InfiniteTimeSpan
-            });
-            Assert.True(regex.IsMatch(input));
-            Assert.Equal(segments.Length, regex.Count(input));
-            Assert.Equal(segments[0], System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
-            var cursor = regex.EnumerateMatches(input);
-            var offset = 0;
-            foreach (var segment in segments)
-            {
-                Assert.True(cursor.MoveNext());
-                Assert.Equal(offset, cursor.Current.StartOffsetInBytes);
-                offset += Encoding.UTF8.GetByteCount(segment);
-                Assert.Equal(offset, cursor.Current.EndOffsetInBytes);
-                Assert.Equal(segment, System.Text.Encoding.UTF8.GetString(cursor.Current.GetValueBytes()));
+                        : default)).ResultLimitInBytes
+                    },
+                    MatchTimeout = Timeout.InfiniteTimeSpan
+                });
+                Assert.True(regex.IsMatch(input));
+                Assert.Equal(segments.Length, regex.Count(input));
+                Assert.Equal(segments[0], System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
+                var cursor = regex.EnumerateMatches(input);
+                var offset = 0;
+                foreach (var segment in segments)
+                {
+                    Assert.True(cursor.MoveNext());
+                    Assert.Equal(offset, cursor.Current.StartOffsetInBytes);
+                    offset += Encoding.UTF8.GetByteCount(segment);
+                    Assert.Equal(offset, cursor.Current.EndOffsetInBytes);
+                    Assert.Equal(segment, System.Text.Encoding.UTF8.GetString(cursor.Current.GetValueBytes()));
+                }
+                Assert.False(cursor.MoveNext());
+                Assert.Equal(input.Length, offset);
+                Assert.Equal(string.Concat(segments.Select(text => $"<{text}>")), System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+                var destination = new byte[segments.Length];
+                Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryReplace(input, "G"u8, destination, out var written));
+                Assert.Equal(segments.Length, written);
+                Assert.Equal(new string('G', segments.Length), Encoding.UTF8.GetString(destination));
+                if (pattern.Contains("?<g>"))
+                {
+                    ReadOnlyMemory<byte> result1Input = input;
+                    using var result1Cursor = regex.CreateMatchCursor(result1Input);
+                    result1Cursor.MoveNext(out var result1Result);
+                    result1Cursor.Dispose();
+                    Assert.True(result1Result.TryGetFirstSetGroup("g", out var group));
+                    Assert.Equal(segments[0], System.Text.Encoding.UTF8.GetString((group.Success ? result1Input.Span.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+                }
             }
-            Assert.False(cursor.MoveNext());
-            Assert.Equal(input.Length, offset);
-            Assert.Equal(string.Concat(segments.Select(text => $"<{text}>")), System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
-            var destination = new byte[segments.Length];
-            Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryReplace(input, "G"u8, destination, out var written));
-            Assert.Equal(segments.Length, written);
-            Assert.Equal(new string('G', segments.Length), Encoding.UTF8.GetString(destination));
-            if (pattern.Contains("?<g>"))
-            {
-                Assert.True(regex.MatchDetailed(input).TryGetFirstSetGroup("g", out var group));
-                Assert.Equal(segments[0], System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
-            }
-        }
         // The existing Unicode Indic-conjunct rule remains supported even where
         // native PCRE2 10.47 splits a conjunct; property predicates are now exact.
         var repeated = new Utf8Pcre2Regex(@"^\X+$");

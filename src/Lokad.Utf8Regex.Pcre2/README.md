@@ -31,7 +31,12 @@ The admitted profile includes literals/classes, branching/repetition, captures,
 backreferences, assertions, scoped options, branch reset, duplicate names,
 recursion/subroutines, conditionals, atomic groups, backtracking control, `\K`,
 Unicode and opted-in `\C`. Normal operations include `IsMatch`, `Match`,
-`MatchDetailed`, `Count`, `EnumerateMatches`, `MatchMany` and substitution.
+`CreateMatchCursor`, `Count`, `EnumerateMatches`, `MatchMany` and substitution.
+`MatchDetailed` is removed: use caller-owned capture slots, or a persistent cursor
+for owned snapshots and named metadata. Dispose temporary cursors after the
+required results; returned ranges remain valid with unchanged subject memory.
+Cursor creation and owned publication have additional operating costs. First-only
+callers can retain reusable capture buffers and copy UTF-8 name numbers once.
 
 `Analyze().UsesBranchReset` reports parsed branch-reset syntax, including nested
 groups and groups without captures. `IsFullyNative` means all supported operations

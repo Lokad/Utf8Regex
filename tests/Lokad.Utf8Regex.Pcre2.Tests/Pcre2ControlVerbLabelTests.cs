@@ -43,7 +43,7 @@ public sealed class Pcre2ControlVerbLabelTests
                 },
                 MatchTimeout = Timeout.InfiniteTimeSpan
             });
-            var bytes = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: Pcre2CompileOptions.Ucp, compileSettings:                 default, policy: new Utf8RegexPolicy
+            var bytes = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
             {
                 ResourcePolicy = new Utf8ResourcePolicy
                 {
@@ -93,12 +93,14 @@ public sealed class Pcre2ControlVerbLabelTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var input = Encoding.UTF8.GetBytes("xé😀xé😀");
-        var retained = regex.MatchDetailed(input);
+        ReadOnlySpan<byte> retained1Input = input;
+        var retained1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained1Input, captures: retained1Captures);
         Assert.Equal("(?<100>😀", retained.Mark);
-        Assert.Equal(3, retained.CaptureSlotCount);
-        Assert.Equal((1, 7), (retained.GetGroup(0).StartOffsetInBytes, retained.GetGroup(0).EndOffsetInBytes));
-        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
+        Assert.Equal(3, (retained.Success ? retained1Captures.Length : 0));
+        Assert.Equal((1, 7), (retained1Captures[0].StartOffsetInBytes, retained1Captures[0].EndOffsetInBytes));
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString((retained1Captures[1].Success ? retained1Input.Slice(retained1Captures[1].StartOffsetInBytes, retained1Captures[1].EndOffsetInBytes - retained1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((retained1Captures[2].Success ? retained1Input.Slice(retained1Captures[2].StartOffsetInBytes, retained1Captures[2].EndOffsetInBytes - retained1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal("(?<100>😀", retained.Mark);
         Assert.Equal("x<(?<100>😀:😀>x<(?<100>😀:😀>",

@@ -8,11 +8,13 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
     public void ResetSeparatesConsumedAndReportedStartsWhilePreservingEarlierCaptures()
     {
         var regex = new Utf8Pcre2Regex("([a-z]+)-\\K[0-9]+");
-        var match = regex.MatchDetailed("xx name-123 yy"u8);
+        ReadOnlySpan<byte> match1Input = "xx name-123 yy"u8;
+        var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match1Input, captures: match1Captures);
 
         Assert.True(match.Success);
-        Assert.Equal("123", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        Assert.Equal("name", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        Assert.Equal("123", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+        Assert.Equal("name", System.Text.Encoding.UTF8.GetString((match1Captures[1].Success ? match1Input.Slice(match1Captures[1].StartOffsetInBytes, match1Captures[1].EndOffsetInBytes - match1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 
@@ -54,7 +56,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
     {
         var regex = new Utf8Pcre2Regex("^abc\\K");
         var match = regex.Match("abcdef"u8);
-        var notEmpty = regex.Match("abcdef"u8, startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.NotEmpty);
+        var notEmpty = regex.Match("abcdef"u8, matchOptions: Pcre2MatchOptions.NotEmpty);
 
         Assert.True(match.Success);
         Assert.Equal(3, match.StartOffsetInBytes);
@@ -75,17 +77,17 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
     [Fact]
     public void OptedInLookaroundResetPreservesRawOneShotOffsetsAndRejectsIteration()
     {
-        var regex = new Utf8Pcre2Regex(            "(?=(?:a|aa)+\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(?=(?:a|aa)+\\K)", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
         var match = regex.Match("aa"u8);
-        var detailed = regex.MatchDetailed("aa"u8);
+        var detailed = regex.Match("aa"u8);
 
         Assert.Equal(2, match.StartOffsetInBytes);
         Assert.Equal(0, match.EndOffsetInBytes);
-        Assert.Equal(2, detailed.Value.StartOffsetInBytes);
-        Assert.Equal(0, detailed.Value.EndOffsetInBytes);
+        Assert.Equal(2, detailed.StartOffsetInBytes);
+        Assert.Equal(0, detailed.EndOffsetInBytes);
         Assert.Throws<NotSupportedException>(() => regex.Count("aa"u8));
         Assert.Throws<NotSupportedException>(() => regex.EnumerateMatches("aa"u8));
         Assert.Throws<NotSupportedException>(() => regex.Replace("aa"u8, "x"));
@@ -97,7 +99,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
     [Fact]
     public void AnalysisUsesGenericResetSemantics()
     {
-        var regex = new Utf8Pcre2Regex(            "(?=(?:a|aa)+\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("(?=(?:a|aa)+\\K)", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });

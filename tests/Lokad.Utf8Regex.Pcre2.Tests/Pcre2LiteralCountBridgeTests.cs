@@ -38,18 +38,27 @@ public sealed class Pcre2LiteralCountBridgeTests
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ", 1000)));
         Assert.Equal(1000, regex.Count(bytes));
         Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed(bytes)).ErrorKind);
+            Assert.Throws<Pcre2MatchException>(() =>
+            {
+                ReadOnlyMemory<byte> result1Input = bytes;
+                using var result1Cursor = regex.CreateMatchCursor(result1Input);
+                result1Cursor.MoveNext(out var result1Result);
+                result1Cursor.Dispose();
+                _ = result1Result;
+            }).ErrorKind);
     }
 
     [Fact]
     public void ExplicitOptionsMalformedTailsAndRetainedCapturesKeepTheirContracts()
     {
         var regex = Create("(a)(b)");
-        var retained = regex.MatchDetailed("😀ab ab"u8, 4);
+        ReadOnlySpan<byte> retained2Input = "😀ab ab"u8;
+        var retained2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained2Input, startOffsetInBytes: 4, captures: retained2Captures);
         Assert.Equal(1, regex.Count("😀ab ab"u8, 4, Pcre2MatchOptions.Anchored));
         Assert.Equal(2, regex.Count("😀ab ab"u8, 4));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((retained2Captures[2].Success ? retained2Input.Slice(retained2Captures[2].StartOffsetInBytes, retained2Captures[2].EndOffsetInBytes - retained2Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀ab"u8, 1));
     }
 
@@ -105,8 +114,11 @@ public sealed class Pcre2LiteralCountBridgeTests
             {
                 Exception? failure = null;
                 var count = -1;
-                try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
-                    new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out count); }
+                try
+                {
+                    Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
+                    new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out count);
+                }
                 catch (Exception error) { failure = error; }
                 Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
                 Assert.Equal(0, count);
@@ -120,7 +132,8 @@ public sealed class Pcre2LiteralCountBridgeTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void InterruptionAfterValidationKeepsOriginalAuthorityAndRetainedCaptures(bool cancel)
     {
         long ticks = 0;
@@ -136,7 +149,9 @@ public sealed class Pcre2LiteralCountBridgeTests
             },
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });
-        var retained = regex.MatchDetailed("ab"u8);
+        ReadOnlySpan<byte> retained3Input = "ab"u8;
+        var retained3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained3Input, captures: retained3Captures);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes("π😀" + string.Concat(Enumerable.Repeat("ab ", 1000)));
         var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
@@ -144,15 +159,18 @@ public sealed class Pcre2LiteralCountBridgeTests
         var checkpoints = 0;
         invocation.CheckpointHook = _ => { checkpoints++; if (cancel) token.Cancel(); else ticks = 25; };
         Exception? failure = null;
-        try { Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
-            new Utf8BytePosition(6), Pcre2MatchOptions.None, ref invocation, out _); }
+        try
+        {
+            Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
+            new Utf8BytePosition(6), Pcre2MatchOptions.None, ref invocation, out _);
+        }
         catch (Exception error) { failure = error; }
         Assert.True(checkpoints > 0 && invocation.Budget.Steps > validated);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         if (cancel) Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained3Captures[1].Success ? retained3Input.Slice(retained3Captures[1].StartOffsetInBytes, retained3Captures[1].EndOffsetInBytes - retained3Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((retained3Captures[2].Success ? retained3Input.Slice(retained3Captures[2].StartOffsetInBytes, retained3Captures[2].EndOffsetInBytes - retained3Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]

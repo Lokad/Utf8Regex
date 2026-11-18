@@ -15,9 +15,9 @@ public sealed class Pcre2AsciiSearchTests
         Assert.True(regex.IsMatch("prefix 192.168.001.001 suffix"u8));
         Assert.False(regex.IsMatch("prefix 999.999.999.999 suffix"u8));
 
-        var detailed = regex.MatchDetailed("prefix 192.168.001.001 suffix"u8);
+        var detailed = regex.Match("prefix 192.168.001.001 suffix"u8);
         Assert.True(detailed.Success);
-        Assert.Equal("192.168.001.001", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("192.168.001.001", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public sealed class Pcre2AsciiSearchTests
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
-        new(            pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

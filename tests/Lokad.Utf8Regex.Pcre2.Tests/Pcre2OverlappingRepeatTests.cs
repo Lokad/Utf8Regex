@@ -34,7 +34,7 @@ public sealed class Pcre2OverlappingRepeatTests
         Assert.Equal(expected, direct.IsMatch(bytes));
         Assert.Equal(expected, finite.IsMatch(bytes));
         Assert.Equal(expected ? 1 : 0, direct.Count(bytes));
-        Assert.Equal(expected, direct.MatchDetailed(bytes).Success);
+        Assert.Equal(expected, direct.Match(bytes).Success);
 
     }
 

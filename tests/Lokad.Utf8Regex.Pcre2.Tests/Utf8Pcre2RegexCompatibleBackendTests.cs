@@ -29,12 +29,14 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
     public void FooOptionalBarSupportsDetailedMatchThroughCompatibleBackend()
     {
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
+        ReadOnlySpan<byte> match1Input = "xxfooBARzz"u8;
+        var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
 
-        var match = regex.MatchDetailed("xxfooBARzz"u8);
+        var match = regex.Match(match1Input, captures: match1Captures);
 
         Assert.True(match.Success);
-        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString((match1Captures[1].Success ? match1Input.Slice(match1Captures[1].StartOffsetInBytes, match1Captures[1].EndOffsetInBytes - match1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -119,7 +121,7 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
         var regex = new Utf8Pcre2Regex("foo");
 
         Assert.Equal("xxbarzz", System.Text.Encoding.UTF8.GetString(regex.Replace("xxfoozz"u8, "bar")));
-        Assert.Equal("xx$zz", System.Text.Encoding.UTF8.GetString(regex.Replace("xxfoozz"u8, "$",0, substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral,Pcre2MatchOptions.None)));
+        Assert.Equal("xx$zz", System.Text.Encoding.UTF8.GetString(regex.Replace("xxfoozz"u8, "$", 0, substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral, Pcre2MatchOptions.None)));
     }
 
     [Fact]

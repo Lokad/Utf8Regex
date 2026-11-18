@@ -21,7 +21,9 @@ public sealed class Pcre2CallerCaptureTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8Pcre2Regex(pattern);
-        var expected = regex.MatchDetailed(input, start);
+        ReadOnlySpan<byte> expected1Input = input;
+        var expected1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var expected = regex.Match(expected1Input, startOffsetInBytes: start, captures: expected1Captures);
         var count = regex.CaptureGroupCount + 1;
         foreach (var width in new[] { 0, 1, 2, count, count + 2 }.Distinct())
         {
@@ -30,14 +32,14 @@ public sealed class Pcre2CallerCaptureTests
             Assert.Equal(expected.Success, actual.Success);
             if (actual.Success)
             {
-                Assert.Equal(expected.Value.StartOffsetInBytes, actual.StartOffsetInBytes);
-                Assert.Equal(expected.Value.EndOffsetInBytes, actual.EndOffsetInBytes);
-                Assert.Equal(expected.Value.IsUtf8SliceWellFormed, actual.IsUtf8SliceWellFormed);
+                Assert.Equal(expected.StartOffsetInBytes, actual.StartOffsetInBytes);
+                Assert.Equal(expected.EndOffsetInBytes, actual.EndOffsetInBytes);
+                Assert.Equal(expected.IsUtf8SliceWellFormed, actual.IsUtf8SliceWellFormed);
             }
             for (var slot = 0; slot < Math.Min(width, count); slot++)
             {
                 if (!expected.Success) { Assert.Equal(default, output[slot]); continue; }
-                var group = expected.GetGroup(slot);
+                var group = expected1Captures[slot];
                 Assert.Equal(group.Number, output[slot].Number);
                 Assert.Equal(group.Success, output[slot].Success);
                 Assert.Equal(group.StartOffsetInBytes, output[slot].StartOffsetInBytes);

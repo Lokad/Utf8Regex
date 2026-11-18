@@ -19,16 +19,18 @@ public sealed class Pcre2SpecializedProbeOptionTests
         Assert.NotEqual(Pcre2PartialProbeProgramKind.None, regex.DebugCompiledProgram.PartialProbe.Kind);
         Assert.IsNotType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         var input = System.Text.Encoding.UTF8.GetBytes(text);
-        var expected = regex.MatchDetailed(input, start, options);
+        ReadOnlySpan<byte> expected1Input = input;
+        var expected1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var expected = regex.Match(expected1Input, startOffsetInBytes: start, captures: expected1Captures, matchOptions: options);
         Assert.Equal(success, expected.Success);
         var probe = regex.Probe(input, Pcre2PartialMode.None, start, options);
         Assert.Equal(success ? Utf8Pcre2ProbeKind.FullMatch : Utf8Pcre2ProbeKind.NoMatch, probe.Kind);
         if (!success) return;
         var actual = probe.GetMatch();
-        Assert.Equal(expected.CaptureSlotCount, actual.CaptureSlotCount);
+        Assert.Equal((expected.Success ? expected1Captures.Length : 0), actual.CaptureSlotCount);
         for (var slot = 0; slot < actual.CaptureSlotCount; slot++)
         {
-            var left = expected.GetGroup(slot);
+            var left = expected1Captures[slot];
             var right = actual.GetGroup(slot);
             Assert.Equal(left.Success, right.Success);
             if (!left.Success) continue;
@@ -40,7 +42,7 @@ public sealed class Pcre2SpecializedProbeOptionTests
     public void ExplicitOptionCapturePublicationKeepsFiniteAdmissionAndSnapshots()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(2);
-        Utf8Pcre2Regex Create(ulong resultBytes) => new Utf8Pcre2Regex("(?<head>a)b+", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        Utf8Pcre2Regex Create(ulong resultBytes) => new Utf8Pcre2Regex("(?<head>a)b+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new()
             {
@@ -65,7 +67,8 @@ public sealed class Pcre2SpecializedProbeOptionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ExplicitOptionsObserveOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();

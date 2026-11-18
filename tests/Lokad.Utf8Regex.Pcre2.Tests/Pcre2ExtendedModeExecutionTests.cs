@@ -38,19 +38,19 @@ public sealed class Pcre2ExtendedModeExecutionTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         foreach (var regex in new[] { new Utf8Pcre2Regex(pattern, options: options), finite })
-        foreach (var (text, expected) in new[] { ("a", letter), (" ", space), ("\t", tab), ("A", capital) })
-        {
-            var bytes = Encoding.UTF8.GetBytes("😀" + text);
-            Assert.Equal(expected, regex.IsMatch(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
-            Assert.Equal(expected ? 1 : 0, regex.Count(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
-            var match = regex.MatchDetailed(bytes, 0, Pcre2MatchOptions.None, cancellation.Token);
-            Assert.Equal(expected, match.Success);
-            if (expected)
+            foreach (var (text, expected) in new[] { ("a", letter), (" ", space), ("\t", tab), ("A", capital) })
             {
-                Assert.Equal((4, 5), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-                Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+                var bytes = Encoding.UTF8.GetBytes("😀" + text);
+                Assert.Equal(expected, regex.IsMatch(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
+                Assert.Equal(expected ? 1 : 0, regex.Count(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
+                var match = regex.Match(bytes, cancellationToken: cancellation.Token);
+                Assert.Equal(expected, match.Success);
+                if (expected)
+                {
+                    Assert.Equal((4, 5), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+                    Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+                }
             }
-        }
     }
 
     [Fact]
@@ -134,20 +134,24 @@ public sealed class Pcre2ExtendedModeExecutionTests
                 },
                 MatchTimeout = Timeout.InfiniteTimeSpan
             });
-            var match = regex.MatchDetailed("😀 aa bb\t"u8, 0, Pcre2MatchOptions.None, cancellation.Token);
+            ReadOnlyMemory<byte> match2Input = ("😀 aa bb\t"u8).ToArray();
+            using var match2Cursor = regex.CreateMatchCursor(match2Input, 0, Pcre2MatchOptions.None, cancellation.Token);
+            match2Cursor.MoveNext(out var match2Result);
+            match2Cursor.Dispose();
+            var match = match2Result;
             Assert.True(match.Success);
             Assert.Equal((5, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
             Assert.True(match.TryGetFirstSetGroup("g", out var first));
-            Assert.Equal("aa", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
+            Assert.Equal("aa", System.Text.Encoding.UTF8.GetString((first.Success ? match2Input.Span.Slice(first.StartOffsetInBytes, first.EndOffsetInBytes - first.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             Assert.Equal((5, 7), (first.StartOffsetInBytes, first.EndOffsetInBytes));
             Assert.True(match.TryGetFirstSetGroup("h", out var second));
-            Assert.Equal(" bb", System.Text.Encoding.UTF8.GetString(second.GetValueBytes()));
+            Assert.Equal(" bb", System.Text.Encoding.UTF8.GetString((second.Success ? match2Input.Span.Slice(second.StartOffsetInBytes, second.EndOffsetInBytes - second.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             Assert.Equal((7, 10), (second.StartOffsetInBytes, second.EndOffsetInBytes));
             Assert.Equal("😀 <aa| bb>\t", System.Text.Encoding.UTF8.GetString(regex.Replace("😀 aa bb\t"u8, "<$1|$2>")));
             Assert.Equal(1, regex.Count("😀 aa bb\t"u8, 0, Pcre2MatchOptions.None, cancellation.Token));
             cancellation.Cancel();
             Assert.Throws<OperationCanceledException>(() => regex.Count("😀 aa bb\t"u8, 0, Pcre2MatchOptions.None, cancellation.Token));
-            Assert.Equal("aa", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
+            Assert.Equal("aa", System.Text.Encoding.UTF8.GetString((first.Success ? match2Input.Span.Slice(first.StartOffsetInBytes, first.EndOffsetInBytes - first.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         }
     }
 

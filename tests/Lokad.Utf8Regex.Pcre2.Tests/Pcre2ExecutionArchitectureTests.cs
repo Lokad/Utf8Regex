@@ -112,7 +112,7 @@ public sealed class Pcre2ExecutionArchitectureTests
     {
         var ordinary = new Utf8Pcre2Regex("^a+$");
         var captured = new Utf8Pcre2Regex("(a)");
-        var limited = new Utf8Pcre2Regex(            "^(a+)+b$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var limited = new Utf8Pcre2Regex("^(a+)+b$", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -253,7 +253,7 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Fact]
     public void BacktrackingCaptureStateUsesOneFixedRentPerCandidate()
     {
-        var regex = new Utf8Pcre2Regex(            @"(?:(?<n>f.o)|(?<n>b.r))\k<n>", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"(?:(?<n>f.o)|(?<n>b.r))\k<n>", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
@@ -283,11 +283,11 @@ public sealed class Pcre2ExecutionArchitectureTests
     {
         var branchResetBasic = new Utf8Pcre2Regex(@"(?|(abc)|(xyz))");
         var branchReset = new Utf8Pcre2Regex(@"(?|(abc)|(xyz))\1");
-        var duplicateNames = new Utf8Pcre2Regex(            @"(?:(?<n>foo)|(?<n>bar))\k<n>", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        var duplicateNames = new Utf8Pcre2Regex(@"(?:(?<n>foo)|(?<n>bar))\k<n>", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        var branchResetFollowup = new Utf8Pcre2Regex(            @"(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\k'a'", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        var branchResetFollowup = new Utf8Pcre2Regex(@"(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\k'a'", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
@@ -297,7 +297,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var optionalCapture = new Utf8Pcre2Regex(@"foo(?<Bar>BAR)?");
         var greedyRepeat = new Utf8Pcre2Regex(@"(?:a){1,3}a");
         var lazyRepeat = new Utf8Pcre2Regex(@"(?:a){1,3}?a");
-        var metered = new Utf8Pcre2Regex(            @"(?|(abc)|(xyz))", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var metered = new Utf8Pcre2Regex(@"(?|(abc)|(xyz))", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -305,7 +305,7 @@ public sealed class Pcre2ExecutionArchitectureTests
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        var tightlyMetered = new Utf8Pcre2Regex(            @"(?|(abc)|(xyz))\1", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var tightlyMetered = new Utf8Pcre2Regex(@"(?|(abc)|(xyz))\1", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -357,9 +357,13 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(optionalCapture.IsMatch("xx fooBAR"u8));
         Assert.True(optionalCapture.IsMatch("xx foo"u8, 3));
         Assert.False(optionalCapture.IsMatch("xx foo"u8, 4));
-        var optionalMatch = optionalCapture.MatchDetailed("fooBAR"u8);
+        ReadOnlyMemory<byte> optionalMatch1Input = ("fooBAR"u8).ToArray();
+        using var optionalMatch1Cursor = optionalCapture.CreateMatchCursor(optionalMatch1Input);
+        optionalMatch1Cursor.MoveNext(out var optionalMatch1Result);
+        optionalMatch1Cursor.Dispose();
+        var optionalMatch = optionalMatch1Result;
         Assert.True(optionalMatch.TryGetFirstSetGroup("Bar", out var optionalGroup));
-        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString(optionalGroup.GetValueBytes()));
+        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString((optionalGroup.Success ? optionalMatch1Input.Span.Slice(optionalGroup.StartOffsetInBytes, optionalGroup.EndOffsetInBytes - optionalGroup.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch("abcabc"u8)).ErrorKind);
@@ -395,13 +399,24 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.Equal((0, 6), (
             optionalDestination[0].StartOffsetInBytes,
             optionalDestination[0].EndOffsetInBytes));
-        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(branchReset.MatchDetailed("abcabc"u8).GetGroup(1).GetValueBytes()));
-        var duplicateMatch = duplicateNames.MatchDetailed("foofoo"u8);
+        ReadOnlySpan<byte> result2Input = "abcabc"u8;
+        var result2Captures = new Utf8Pcre2CaptureRange[branchReset.CaptureGroupCount + 1];
+        var result2Result = branchReset.Match(result2Input, captures: result2Captures);
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString((result2Captures[1].Success ? result2Input.Slice(result2Captures[1].StartOffsetInBytes, result2Captures[1].EndOffsetInBytes - result2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        ReadOnlyMemory<byte> duplicateMatch3Input = ("foofoo"u8).ToArray();
+        using var duplicateMatch3Cursor = duplicateNames.CreateMatchCursor(duplicateMatch3Input);
+        duplicateMatch3Cursor.MoveNext(out var duplicateMatch3Result);
+        duplicateMatch3Cursor.Dispose();
+        var duplicateMatch = duplicateMatch3Result;
         Assert.True(duplicateMatch.TryGetFirstSetGroup("n", out var duplicateGroup));
-        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(duplicateGroup.GetValueBytes()));
-        var followupMatch = branchResetFollowup.MatchDetailed("aaaccccaaa"u8);
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((duplicateGroup.Success ? duplicateMatch3Input.Span.Slice(duplicateGroup.StartOffsetInBytes, duplicateGroup.EndOffsetInBytes - duplicateGroup.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        ReadOnlyMemory<byte> followupMatch4Input = ("aaaccccaaa"u8).ToArray();
+        using var followupMatch4Cursor = branchResetFollowup.CreateMatchCursor(followupMatch4Input);
+        followupMatch4Cursor.MoveNext(out var followupMatch4Result);
+        followupMatch4Cursor.Dispose();
+        var followupMatch = followupMatch4Result;
         Assert.True(followupMatch.TryGetFirstSetGroup("a", out var followupGroup));
-        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(followupGroup.GetValueBytes()));
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString((followupGroup.Success ? followupMatch4Input.Span.Slice(followupGroup.StartOffsetInBytes, followupGroup.EndOffsetInBytes - followupGroup.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -410,7 +425,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var nonExact = new Utf8Pcre2Regex(@"([a-z]+)\1");
         var caseless = new Utf8Pcre2Regex(@"(?i:(abc))\1");
         var nonRootAtomic = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)c");
-        var tooManyAlternatives = new Utf8Pcre2Regex(            "(?|" + string.Join('|', Enumerable.Range(0, 65).Select(static i => $"(v{i:D2})")) + ")");
+        var tooManyAlternatives = new Utf8Pcre2Regex("(?|" + string.Join('|', Enumerable.Range(0, 65).Select(static i => $"(v{i:D2})")) + ")");
         var tooLong = new Utf8Pcre2Regex($"(?|({new string('a', 4097)}))");
         var unboundedRepeat = new Utf8Pcre2Regex(@"(?:ab|cd)+z");
         var possessiveRepeat = new Utf8Pcre2Regex(@"(?:a|b){1,2}+a");
@@ -435,7 +450,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var duplicateLanguage = new Utf8Pcre2Regex(@"(?:a\Kb|ab)");
         var resetAtEnd = new Utf8Pcre2Regex(@"ab\K");
         var unicode = new Utf8Pcre2Regex(@"é\Kλ");
-        var metered = new Utf8Pcre2Regex(            @"abc\K123", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var metered = new Utf8Pcre2Regex(@"abc\K123", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -613,7 +628,7 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Fact]
     public void MeteredAnchorIsMatchServesSliceUnderVisitBudget()
     {
-        var regex = new Utf8Pcre2Regex(            "^a+b$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("^a+b$", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -633,10 +648,12 @@ public sealed class Pcre2ExecutionArchitectureTests
         var regex = new Utf8Pcre2Regex("([a-z]+),");
 
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-        var match = regex.MatchDetailed("one,two,"u8);
+        ReadOnlySpan<byte> match5Input = "one,two,"u8;
+        var match5Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match5Input, captures: match5Captures);
 
         Assert.Equal(2, regex.Count("one,two,"u8));
-        Assert.Equal("one", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        Assert.Equal("one", System.Text.Encoding.UTF8.GetString((match5Captures[1].Success ? match5Input.Slice(match5Captures[1].StartOffsetInBytes, match5Captures[1].EndOffsetInBytes - match5Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]

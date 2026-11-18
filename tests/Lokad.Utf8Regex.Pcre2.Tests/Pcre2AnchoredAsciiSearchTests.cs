@@ -18,9 +18,9 @@ public sealed class Pcre2AnchoredAsciiSearchTests
         Assert.False(regex.IsMatch("1.2.3"u8));
         Assert.False(regex.IsMatch("١٢"u8));
 
-        var detailed = regex.MatchDetailed("-3.14159"u8);
+        var detailed = regex.Match("-3.14159"u8);
         Assert.True(detailed.Success);
-        Assert.Equal("-3.14159", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("-3.14159", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
     }
 
     [Fact]
@@ -76,15 +76,15 @@ public sealed class Pcre2AnchoredAsciiSearchTests
         {
             var direct = new Utf8Pcre2Regex(pattern);
             var vm = CreateMetered(pattern, 1_000_000);
-        var oracle = new Regex(pattern.Replace(@"\d", "[0-9]", StringComparison.Ordinal)
-            .Replace(@"\s", @"[\t\n\r\f\v ]", StringComparison.Ordinal), RegexOptions.CultureInvariant);
+            var oracle = new Regex(pattern.Replace(@"\d", "[0-9]", StringComparison.Ordinal)
+                .Replace(@"\s", @"[\t\n\r\f\v ]", StringComparison.Ordinal), RegexOptions.CultureInvariant);
 
             foreach (var inputText in EnumerateWords("ab0.\n", 5))
             {
                 var input = Encoding.UTF8.GetBytes(inputText);
                 var expected = oracle.IsMatch(inputText);
-            Assert.Equal(expected, direct.IsMatch(input));
-            Assert.Equal(expected, vm.IsMatch(input));
+                Assert.Equal(expected, direct.IsMatch(input));
+                Assert.Equal(expected, vm.IsMatch(input));
             }
         }
     }
@@ -165,7 +165,7 @@ public sealed class Pcre2AnchoredAsciiSearchTests
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
-        new(            pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

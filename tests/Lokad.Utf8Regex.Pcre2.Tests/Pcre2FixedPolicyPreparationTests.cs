@@ -3,7 +3,11 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2FixedPolicyPreparationTests
 {
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
     public void EachFiniteControlReachesRetainedOriginalAndDerivedCore(int limit)
     {
         var policy = new Utf8ResourcePolicy
@@ -27,14 +31,19 @@ public sealed class Pcre2FixedPolicyPreparationTests
             var input = pattern == "abc|xyz" ? "abc xyz"u8.ToArray() : "ab ab"u8.ToArray();
             Assert.True(regex.IsMatch(input));
             Assert.Equal(2, regex.Count(input));
-            Assert.True(regex.MatchDetailed(input).Success);
+            Assert.True(regex.Match(input).Success);
             var matches = regex.EnumerateMatches(input);
             var count = 0;
             while (matches.MoveNext()) count++;
             Assert.Equal(2, count);
             Assert.Equal("! !", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!")));
             if (pattern.Contains("?<left>"))
-                Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(input).GetGroup(1).GetValueBytes()));
+            {
+                ReadOnlySpan<byte> result2Input = input;
+                var result2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+                var result2Result = regex.Match(result2Input, captures: result2Captures);
+                Assert.Equal("a", System.Text.Encoding.UTF8.GetString((result2Captures[1].Success ? result2Input.Slice(result2Captures[1].StartOffsetInBytes, result2Captures[1].EndOffsetInBytes - result2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+            }
             using var canceled = new CancellationTokenSource();
             canceled.Cancel();
             Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>

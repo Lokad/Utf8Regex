@@ -56,31 +56,40 @@ public sealed class Pcre2AssertionCompilerTests
     }
 
     [Fact]
-    public void PositiveAssertionCapturesFlowToBackreferencesAndDetailedResults()
+    public void PositiveAssertionCapturesFlowToBackreferencesAndCallerSlots()
     {
-        var lookahead = new Utf8Pcre2Regex("(?=(?<word>[a-z]+))\\k<word>")            .MatchDetailed("abc!"u8);
-        var lookbehind = new Utf8Pcre2Regex("(?<=(a|b))\\1")            .MatchDetailed("xaa"u8);
-        var outerToAssertion = new Utf8Pcre2Regex("(a)(?=\\1b)\\1b")            .MatchDetailed("aab"u8);
+        var lookahead1Regex = new Utf8Pcre2Regex("(?=(?<word>[a-z]+))\\k<word>");
+        ReadOnlySpan<byte> lookahead1Input = "abc!"u8;
+        var lookahead1Captures = new Utf8Pcre2CaptureRange[lookahead1Regex.CaptureGroupCount + 1];
+        var lookahead = lookahead1Regex.Match(lookahead1Input, captures: lookahead1Captures);
+        var lookbehind2Regex = new Utf8Pcre2Regex("(?<=(a|b))\\1");
+        ReadOnlySpan<byte> lookbehind2Input = "xaa"u8;
+        var lookbehind2Captures = new Utf8Pcre2CaptureRange[lookbehind2Regex.CaptureGroupCount + 1];
+        var lookbehind = lookbehind2Regex.Match(lookbehind2Input, captures: lookbehind2Captures);
+        var outerToAssertion = new Utf8Pcre2Regex("(a)(?=\\1b)\\1b").Match("aab"u8);
 
         Assert.True(lookahead.Success);
-        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(lookahead.Value.GetValueBytes()));
-        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(lookahead.GetGroup(1).GetValueBytes()));
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(lookahead.GetValueBytes()));
+        Assert.Equal("abc", System.Text.Encoding.UTF8.GetString((lookahead1Captures[1].Success ? lookahead1Input.Slice(lookahead1Captures[1].StartOffsetInBytes, lookahead1Captures[1].EndOffsetInBytes - lookahead1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
 
         Assert.True(lookbehind.Success);
-        Assert.Equal(2, lookbehind.Value.StartOffsetInBytes);
-        Assert.Equal(1, lookbehind.GetGroup(1).StartOffsetInBytes);
+        Assert.Equal(2, lookbehind.StartOffsetInBytes);
+        Assert.Equal(1, lookbehind2Captures[1].StartOffsetInBytes);
 
         Assert.True(outerToAssertion.Success);
-        Assert.Equal("aab", System.Text.Encoding.UTF8.GetString(outerToAssertion.Value.GetValueBytes()));
+        Assert.Equal("aab", System.Text.Encoding.UTF8.GetString(outerToAssertion.GetValueBytes()));
     }
 
     [Fact]
     public void NegativeAssertionDiscardsCapturesFromItsFailedProbe()
     {
-        var match = new Utf8Pcre2Regex("(?!(a))b").MatchDetailed("b"u8);
+        var match4Regex = new Utf8Pcre2Regex("(?!(a))b");
+        ReadOnlySpan<byte> match4Input = "b"u8;
+        var match4Captures = new Utf8Pcre2CaptureRange[match4Regex.CaptureGroupCount + 1];
+        var match = match4Regex.Match(match4Input, captures: match4Captures);
 
         Assert.True(match.Success);
-        Assert.False(match.GetGroup(1).Success);
+        Assert.False(match4Captures[1].Success);
     }
 
     [Theory]
@@ -100,15 +109,21 @@ public sealed class Pcre2AssertionCompilerTests
     [Fact]
     public void ScopedNoAutoCaptureAndUngreedyRestoreAtGroupExit()
     {
-        var noAutoCapture = new Utf8Pcre2Regex("(?n:(a))(?<x>b)").MatchDetailed("ab"u8);
-        var ungreedy = new Utf8Pcre2Regex("(?U:a+)(a+)").MatchDetailed("aaaa"u8);
+        var noAutoCapture5Regex = new Utf8Pcre2Regex("(?n:(a))(?<x>b)");
+        ReadOnlySpan<byte> noAutoCapture5Input = "ab"u8;
+        var noAutoCapture5Captures = new Utf8Pcre2CaptureRange[noAutoCapture5Regex.CaptureGroupCount + 1];
+        var noAutoCapture = noAutoCapture5Regex.Match(noAutoCapture5Input, captures: noAutoCapture5Captures);
+        var ungreedy6Regex = new Utf8Pcre2Regex("(?U:a+)(a+)");
+        ReadOnlySpan<byte> ungreedy6Input = "aaaa"u8;
+        var ungreedy6Captures = new Utf8Pcre2CaptureRange[ungreedy6Regex.CaptureGroupCount + 1];
+        var ungreedy = ungreedy6Regex.Match(ungreedy6Input, captures: ungreedy6Captures);
 
         Assert.True(noAutoCapture.Success);
-        Assert.Equal(2, noAutoCapture.CaptureSlotCount);
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(noAutoCapture.GetGroup(1).GetValueBytes()));
+        Assert.Equal(2, (noAutoCapture.Success ? noAutoCapture5Captures.Length : 0));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((noAutoCapture5Captures[1].Success ? noAutoCapture5Input.Slice(noAutoCapture5Captures[1].StartOffsetInBytes, noAutoCapture5Captures[1].EndOffsetInBytes - noAutoCapture5Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
 
         Assert.True(ungreedy.Success);
-        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(ungreedy.GetGroup(1).GetValueBytes()));
+        Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString((ungreedy6Captures[1].Success ? ungreedy6Input.Slice(ungreedy6Captures[1].StartOffsetInBytes, ungreedy6Captures[1].EndOffsetInBytes - ungreedy6Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -181,7 +196,7 @@ public sealed class Pcre2AssertionCompilerTests
     {
         // Both repeat branches remain viable; the assertion still needs a
         // pending alternative in addition to its own logical depth.
-        var limited = new Utf8Pcre2Regex(            "(?=(a+|a+b))a", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var limited = new Utf8Pcre2Regex("(?=(a+|a+b))a", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -197,9 +212,11 @@ public sealed class Pcre2AssertionCompilerTests
         Parallel.For(0, 256, index =>
         {
             var input = index % 2 == 0 ? "a"u8 : "b"u8;
-            var match = regex.MatchDetailed(input);
+            ReadOnlySpan<byte> match7Input = input;
+            var match7Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var match = regex.Match(match7Input, captures: match7Captures);
             Assert.True(match.Success);
-            Assert.Equal(0, match.GetGroup(1).StartOffsetInBytes);
+            Assert.Equal(0, match7Captures[1].StartOffsetInBytes);
         });
     }
 }

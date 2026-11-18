@@ -15,9 +15,9 @@ public sealed class Pcre2SeparatedRunSearchTests
         Assert.True(regex.IsMatch("https://atlas.example.org/reports/export?id=42"u8));
         Assert.False(regex.IsMatch("not a URI"u8));
 
-        var detailed = regex.MatchDetailed("go to https://example.org/a?q=1#top now"u8);
+        var detailed = regex.Match("go to https://example.org/a?q=1#top now"u8);
         Assert.True(detailed.Success);
-        Assert.Equal("https://example.org/a?q=1#top", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
+        Assert.Equal("https://example.org/a?q=1#top", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public sealed class Pcre2SeparatedRunSearchTests
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
-        new(            pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

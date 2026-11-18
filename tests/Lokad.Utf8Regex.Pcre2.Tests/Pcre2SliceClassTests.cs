@@ -64,8 +64,8 @@ public sealed class Pcre2SliceClassTests
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(input, 0));
         Assert.Equal(expected.Length, regex.Count(input, 0));
-        Assert.Equal(expected[0], System.Text.Encoding.UTF8.GetString(regex.Match(input, startOffsetInBytes: 0).GetValueBytes()));
-        Assert.Equal(expected[0], System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(input, 0).Value.GetValueBytes()));
+        Assert.Equal(expected[0], System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
+        Assert.Equal(expected[0], System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
         var actual = new List<string>();
         var matches = regex.EnumerateMatches(input, 0);
         while (matches.MoveNext()) actual.Add(System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes()));
@@ -79,10 +79,12 @@ public sealed class Pcre2SliceClassTests
     {
         var regex = new Utf8Pcre2Regex("(?<x>[[:alpha:]]+)!");
         var input = Utf8("1ab! a]!");
-        var match = regex.MatchDetailed(input, 0);
+        ReadOnlySpan<byte> match2Input = input;
+        var match2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match2Input, captures: match2Captures);
         Assert.True(match.Success);
-        Assert.Equal("ab!", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        Assert.Equal("ab!", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+        Assert.Equal("ab", System.Text.Encoding.UTF8.GetString((match2Captures[1].Success ? match2Input.Slice(match2Captures[1].StartOffsetInBytes, match2Captures[1].EndOffsetInBytes - match2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("1<ab> a]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.DebugCompiledProgram is not null);
@@ -126,7 +128,7 @@ public sealed class Pcre2SliceClassTests
         string pattern, string inputText, int expectedStart, int expectedEnd)
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        var found = regex.Match(Utf8(inputText), startOffsetInBytes: 0);
+        var found = regex.Match(Utf8(inputText));
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);
@@ -151,13 +153,15 @@ public sealed class Pcre2SliceClassTests
     }
 
     [Fact]
-    public void OwnedDetailedProjectsClassGroup()
+    public void PrimaryMatchWritesClassGroup()
     {
         var regex = new Utf8Pcre2Regex("([^a-z]+)", options: Pcre2CompileOptions.None);
-        var detailed = regex.MatchDetailed(Utf8("xxAByy"), 0);
+        ReadOnlySpan<byte> detailed3Input = Utf8("xxAByy");
+        var detailed3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed3Input, captures: detailed3Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("AB", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
-        Assert.Equal("AB", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("AB", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
+        Assert.Equal("AB", System.Text.Encoding.UTF8.GetString((detailed3Captures[1].Success ? detailed3Input.Slice(detailed3Captures[1].StartOffsetInBytes, detailed3Captures[1].EndOffsetInBytes - detailed3Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

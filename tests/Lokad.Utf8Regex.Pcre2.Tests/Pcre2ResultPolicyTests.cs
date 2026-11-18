@@ -7,7 +7,7 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2ResultPolicyTests
 {
-    private static Utf8Pcre2Regex Create(string pattern, ulong resultBytes) => new Utf8Pcre2Regex(        pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex Create(string pattern, ulong resultBytes) => new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
     {
         ResourcePolicy = new()
         {
@@ -22,20 +22,33 @@ public sealed class Pcre2ResultPolicyTests
     [InlineData("(é)(😀)", "é😀")]
     [InlineData("(*MARK:x)(é)(😀)", "é😀")]
     [InlineData(@"\x41+", "AAA")]
-    public void ResultOnlyPolicyBoundsDetailedPublicationWithoutBoundingScalarValues(string pattern, string text)
+    public void ResultOnlyPolicyBoundsCursorPublicationWithoutBoundingScalarValues(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var tiny = Create(pattern, 1);
         Assert.True(tiny.IsMatch(input));
         Assert.Equal(1, tiny.Count(input));
         Assert.True(tiny.Match(input).Success);
-        var error = Assert.Throws<Pcre2MatchException>(() => { _ = tiny.MatchDetailed(input); });
+        var error = Assert.Throws<Pcre2MatchException>(() =>
+        {
+            ReadOnlyMemory<byte> result1Input = input;
+            using var result1Cursor = tiny.CreateMatchCursor(result1Input);
+            result1Cursor.MoveNext(out var result1Result);
+            result1Cursor.Dispose();
+            _ = result1Result;
+        });
         Assert.Equal("ResultLimit", error.ErrorKind.ToString());
-        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(Create(pattern, 1 << 20).MatchDetailed(input).Value.GetValueBytes()));
+        var result2Regex = Create(pattern, 1 << 20);
+        ReadOnlyMemory<byte> result2Input = input;
+        using var result2Cursor = result2Regex.CreateMatchCursor(result2Input);
+        result2Cursor.MoveNext(out var result2Result);
+        result2Cursor.Dispose();
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString((result2Result.Value.Success ? result2Input.Span.Slice(result2Result.Value.StartOffsetInBytes, result2Result.Value.EndOffsetInBytes - result2Result.Value.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void OwnedNoMatchOutputCannotEscapeResultAdmission(bool text)
     {
         var regex = Create("A", 1);
@@ -69,14 +82,31 @@ public sealed class Pcre2ResultPolicyTests
     [InlineData("A", "A", 1)]
     [InlineData("(é)(😀)", "é😀", 3)]
     [InlineData(@"(?<v>\x41)(😀)", "A😀", 3)]
-    public void DetailedArrayHasAnExactModeledBoundary(string pattern, string text, int slots)
+    public void CursorCaptureArrayHasAnExactModeledBoundary(string pattern, string text, int slots)
     {
-        var cap = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(slots);
+        var cap = Utf8ConstructionBudget.ArrayBytes<Utf8Pcre2CaptureRange>(slots);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(Create(pattern, cap).MatchDetailed(input).Value.GetValueBytes()));
+        var result3Regex = Create(pattern, cap);
+        ReadOnlyMemory<byte> result3Input = input;
+        using var result3Cursor = result3Regex.CreateMatchCursor(result3Input);
+        result3Cursor.MoveNext(out var result3Result);
+        result3Cursor.Dispose();
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString((result3Result.Value.Success ? result3Input.Span.Slice(result3Result.Value.StartOffsetInBytes, result3Result.Value.EndOffsetInBytes - result3Result.Value.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("ResultLimit", Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Create(pattern, cap - 1).MatchDetailed(input); }).ErrorKind.ToString());
-        Assert.Equal(text, System.Text.Encoding.UTF8.GetString(Create(pattern, cap).MatchDetailed(input).Value.GetValueBytes()));
+        {
+            var result4Regex = Create(pattern, cap - 1);
+            ReadOnlyMemory<byte> result4Input = input;
+            using var result4Cursor = result4Regex.CreateMatchCursor(result4Input);
+            result4Cursor.MoveNext(out var result4Result);
+            result4Cursor.Dispose();
+            _ = result4Result;
+        }).ErrorKind.ToString());
+        var result5Regex = Create(pattern, cap);
+        ReadOnlyMemory<byte> result5Input = input;
+        using var result5Cursor = result5Regex.CreateMatchCursor(result5Input);
+        result5Cursor.MoveNext(out var result5Result);
+        result5Cursor.Dispose();
+        Assert.Equal(text, System.Text.Encoding.UTF8.GetString((result5Result.Value.Success ? result5Input.Span.Slice(result5Result.Value.StartOffsetInBytes, result5Result.Value.EndOffsetInBytes - result5Result.Value.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -134,14 +164,20 @@ public sealed class Pcre2ResultPolicyTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "$2$1")));
-        Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("é😀"u8).Value.GetValueBytes()));
+        ReadOnlyMemory<byte> result6Input = ("é😀"u8).ToArray();
+        using var result6Cursor = regex.CreateMatchCursor(result6Input);
+        result6Cursor.MoveNext(out var result6Result);
+        result6Cursor.Dispose();
+        Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString((result6Result.Value.Success ? result6Input.Span.Slice(result6Result.Value.StartOffsetInBytes, result6Result.Value.EndOffsetInBytes - result6Result.Value.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
     public void TemplateResultFailureIsStructuredAndFreshCallsReset()
-{
+    {
         var error = Assert.Throws<Pcre2MatchException>(() => Create(@"(?<v>\x41)😀", 1).Replace("A😀"u8, "!"));
         Assert.Equal("ResultLimit", error.ErrorKind.ToString());
         var regex = Create(@"(?<v>\x41)😀", 1 << 20);
         Assert.Equal("!"u8.ToArray(), regex.Replace("A😀"u8, "!"));
-        Assert.Equal("!"u8.ToArray(), regex.Replace("A😀"u8, "!"));    }}
+        Assert.Equal("!"u8.ToArray(), regex.Replace("A😀"u8, "!"));
+    }
+}

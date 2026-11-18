@@ -224,7 +224,7 @@ public sealed class Pcre2ExecutionRouteTests
                 "x"u8,
                 tooSmall,
                 out bytesWritten,
-substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflowLength));
+substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.Equal(expectedFixed.Length, bytesWritten);
     }
 
@@ -251,7 +251,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
     [Fact]
     public void MeteredLiteralFamilyCountRetainsPcre2ResourceSemantics()
     {
-        var regex = new Utf8Pcre2Regex(            "foo|bar", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("foo|bar", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -306,7 +306,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
     }
 
     [Fact]
-    public void AbPlusPatternUsesDirectCaptureIndependentGlobalsAndVmForDetailedSurface()
+    public void AbPlusPatternPreservesGlobalAndCaptureOperations()
     {
         var regex = new Utf8Pcre2Regex("(a)b+");
 
@@ -391,7 +391,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.Anchored));
         Assert.False(regex.IsMatch(input, 2, Pcre2MatchOptions.Anchored));
 
-        var limited = new Utf8Pcre2Regex(            @"\b\w{10,}\b", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var limited = new Utf8Pcre2Regex(@"\b\w{10,}\b", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -484,7 +484,10 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(2, regex.Count("foofoo foo bar foofoo"u8));
         Assert.False(regex.IsMatch("foo"u8));
-        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("xx foofoo"u8).GetGroup(1).GetValueBytes()));
+        ReadOnlySpan<byte> result1Input = "xx foofoo"u8;
+        var result1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var result1Result = regex.Match(result1Input, captures: result1Captures);
+        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((result1Captures[1].Success ? result1Input.Slice(result1Captures[1].StartOffsetInBytes, result1Captures[1].EndOffsetInBytes - result1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -552,7 +555,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         Assert.True(match.Success);
         Assert.Equal("c.de", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
 
-        var metered = new Utf8Pcre2Regex(            @"[^a]+\.[^z]+", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var metered = new Utf8Pcre2Regex(@"[^a]+\.[^z]+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -592,7 +595,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
     [Fact]
     public void ConfiguredLimitsBypassCandidateSearchAndRetainPcre2Accounting()
     {
-        var regex = new Utf8Pcre2Regex(            @"[a-z]+@[a-z]+", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"[a-z]+@[a-z]+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -638,7 +641,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
     }
 
     [Fact]
-    public void DateValidatorUsesBoundedIsMatchAndVmForDetailedOperations()
+    public void DateValidatorPreservesBooleanAndCaptureOperations()
     {
         var regex = new Utf8Pcre2Regex(@"^\d{1,2}/\d{1,2}/\d{4}$");
 
@@ -697,39 +700,43 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
     }
 
     [Fact]
-    public void GroupZeroOnlyPatternUsesOwnedDetailedMatch()
+    public void GroupZeroOnlyPatternReturnsPrimaryByteRange()
     {
         var regex = new Utf8Pcre2Regex(@"\w{10,}");
 
-        var match = regex.MatchDetailed("abcdefghij short"u8);
+        var match = regex.Match("abcdefghij short"u8);
 
         Assert.True(match.Success);
-        Assert.Equal("abcdefghij", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-        Assert.Equal(0, match.Value.StartOffsetInBytes);
-        Assert.Equal(10, match.Value.EndOffsetInBytes);
+        Assert.Equal("abcdefghij", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+        Assert.Equal(0, match.StartOffsetInBytes);
+        Assert.Equal(10, match.EndOffsetInBytes);
     }
 
     [Fact]
-    public void CapturedPatternUsesOwnedDetailedMatch()
+    public void CapturedPatternPublishesNamedCursorRanges()
     {
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
+        ReadOnlyMemory<byte> match3Input = ("xxfooBARzz"u8).ToArray();
+        using var match3Cursor = regex.CreateMatchCursor(match3Input, 2);
+        match3Cursor.MoveNext(out var match3Result);
+        match3Cursor.Dispose();
 
-        var match = regex.MatchDetailed("xxfooBARzz"u8, startOffsetInBytes: 2);
+        var match = match3Result;
 
         Assert.True(match.Success);
-        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
+        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString((match.Value.Success ? match3Input.Span.Slice(match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
 
-        var whole = match.GetGroup(0);
+        var whole = match.Groups[0];
         Assert.True(whole.Success);
-        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString(whole.GetValueBytes()));
+        Assert.Equal("fooBAR", System.Text.Encoding.UTF8.GetString((whole.Success ? match3Input.Span.Slice(whole.StartOffsetInBytes, whole.EndOffsetInBytes - whole.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
 
-        var capture = match.GetGroup(1);
+        var capture = match.Groups[1];
         Assert.True(capture.Success);
-        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString(capture.GetValueBytes()));
+        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString((capture.Success ? match3Input.Span.Slice(capture.StartOffsetInBytes, capture.EndOffsetInBytes - capture.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
 
         Assert.True(match.TryGetFirstSetGroup("Bar", out var named));
         Assert.True(named.Success);
-        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
+        Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString((named.Success ? match3Input.Span.Slice(named.StartOffsetInBytes, named.EndOffsetInBytes - named.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
@@ -810,10 +817,12 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
 
         Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.True(regex.IsMatch("glass"u8));
-        var match = regex.MatchDetailed("glass"u8);
+        ReadOnlySpan<byte> match4Input = "glass"u8;
+        var match4Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match4Input, captures: match4Captures);
         Assert.True(match.Success);
-        Assert.True(match.GetGroup(1).Success);
-        Assert.Equal("ss", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        Assert.True(match4Captures[1].Success);
+        Assert.Equal("ss", System.Text.Encoding.UTF8.GetString((match4Captures[1].Success ? match4Input.Slice(match4Captures[1].StartOffsetInBytes, match4Captures[1].EndOffsetInBytes - match4Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]

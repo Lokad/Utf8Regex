@@ -46,13 +46,15 @@ public sealed class Pcre2SubroutineCaptureReturnTests
             });
             Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
             Assert.Equal(1, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
-            var match = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
-            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-            var group = match.GetGroup(slot);
+            ReadOnlySpan<byte> match1Input = input;
+            var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var match = regex.Match(match1Input, captures: match1Captures, cancellationToken: cancellation.Token);
+            Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+            var group = match1Captures[slot];
             Assert.Equal(value is not null, group.Success);
             if (value is not null)
             {
-                Assert.Equal(value, System.Text.Encoding.UTF8.GetString(group.GetValueBytes()));
+                Assert.Equal(value, System.Text.Encoding.UTF8.GetString((group.Success ? match1Input.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
                 Assert.Equal((start, end), (group.StartOffsetInBytes, group.EndOffsetInBytes));
             }
         }
@@ -86,7 +88,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(expected ? 1 : 0, regex.Count(input));
-        Assert.Equal(expected, regex.MatchDetailed(input).Success);
+        Assert.Equal(expected, regex.Match(input).Success);
     }
 
     [Fact]
@@ -99,7 +101,10 @@ public sealed class Pcre2SubroutineCaptureReturnTests
         Assert.True(cursor.MoveNext());
         Assert.Equal(4, cursor.Current.StartOffsetInBytes);
         Assert.False(cursor.MoveNext());
-        Assert.False(regex.MatchDetailed("😀"u8).GetGroup(1).Success);
+        ReadOnlySpan<byte> result3Input = "😀"u8;
+        var result3Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var result3Result = regex.Match(result3Input, captures: result3Captures);
+        Assert.False(result3Captures[1].Success);
     }
 
     [Theory]
@@ -110,7 +115,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?(DEFINE)(?<x>😀(?&x)?é))(?<w>(?&x))\k<w>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(@"(?(DEFINE)(?<x>😀(?&x)?é))(?<w>(?&x))\k<w>", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -122,7 +127,9 @@ public sealed class Pcre2SubroutineCaptureReturnTests
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });
         var input = "😀é😀é 😀é😀é"u8.ToArray();
-        var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
+        ReadOnlySpan<byte> retained4Input = input;
+        var retained4Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var retained = regex.Match(retained4Input, captures: retained4Captures, cancellationToken: cancellation.Token);
         var cursor = regex.EnumerateMatches(input, 0, Pcre2MatchOptions.None, cancellation.Token);
         Assert.True(cursor.MoveNext());
         var alias = cursor;
@@ -133,8 +140,8 @@ public sealed class Pcre2SubroutineCaptureReturnTests
             Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
             Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
-        Assert.False(retained.GetGroup(1).Success);
-        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
-        Assert.True(regex.MatchDetailed("😀é😀é"u8).Success);
+        Assert.False(retained4Captures[1].Success);
+        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString((retained4Captures[2].Success ? retained4Input.Slice(retained4Captures[2].StartOffsetInBytes, retained4Captures[2].EndOffsetInBytes - retained4Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.True(regex.Match("😀é😀é"u8).Success);
     }
 }

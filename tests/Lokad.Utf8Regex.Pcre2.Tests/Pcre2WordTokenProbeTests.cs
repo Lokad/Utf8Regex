@@ -148,15 +148,17 @@ public sealed class Pcre2WordTokenProbeTests
         Assert.Equal((begin, end), (probe.Value.StartOffsetInBytes, probe.Value.EndOffsetInBytes));
         if (kind != Utf8Pcre2ProbeKind.FullMatch) return;
         var actual = probe.GetMatch();
-        var expected = regex.MatchDetailed(input, start, flags);
-        Assert.Equal(expected.CaptureSlotCount, actual.CaptureSlotCount);
+        ReadOnlySpan<byte> expected1Input = input;
+        var expected1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var expected = regex.Match(expected1Input, startOffsetInBytes: start, captures: expected1Captures, matchOptions: flags);
+        Assert.Equal((expected.Success ? expected1Captures.Length : 0), actual.CaptureSlotCount);
         for (var slot = 0; slot < actual.CaptureSlotCount; slot++)
         {
-            var left = expected.GetGroup(slot); var right = actual.GetGroup(slot);
+            var left = expected1Captures[slot]; var right = actual.GetGroup(slot);
             Assert.Equal(left.Success, right.Success);
             if (left.Success)
             {
-                Assert.Equal(System.Text.Encoding.UTF8.GetString(left.GetValueBytes()), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
+                Assert.Equal(System.Text.Encoding.UTF8.GetString((left.Success ? expected1Input.Slice(left.StartOffsetInBytes, left.EndOffsetInBytes - left.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
                 Assert.Equal((left.StartOffsetInBytes, left.EndOffsetInBytes), (right.StartOffsetInBytes, right.EndOffsetInBytes));
             }
         }
@@ -220,7 +222,8 @@ public sealed class Pcre2WordTokenProbeTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void UnicodeWordObservesOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();

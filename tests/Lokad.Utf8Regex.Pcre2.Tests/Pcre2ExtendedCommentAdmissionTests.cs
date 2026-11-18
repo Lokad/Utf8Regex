@@ -34,12 +34,14 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
         });
         var bytes = Encoding.UTF8.GetBytes(text);
         Assert.Equal(1, regex.Count(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
-        var match = regex.MatchDetailed(bytes, 0, Pcre2MatchOptions.None, cancellation.Token);
+        ReadOnlySpan<byte> match1Input = bytes;
+        var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match1Input, captures: match1Captures, cancellationToken: cancellation.Token);
         Assert.True(match.Success);
-        Assert.Equal((2, end), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-        Assert.Equal(2, match.CaptureSlotCount);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
-        Assert.Equal((2, 6), (match.GetGroup(1).StartOffsetInBytes, match.GetGroup(1).EndOffsetInBytes));
+        Assert.Equal((2, end), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal(2, (match.Success ? match1Captures.Length : 0));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((match1Captures[1].Success ? match1Input.Slice(match1Captures[1].StartOffsetInBytes, match1Captures[1].EndOffsetInBytes - match1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal((2, 6), (match1Captures[1].StartOffsetInBytes, match1Captures[1].EndOffsetInBytes));
     }
 
     [Theory]
@@ -93,13 +95,15 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
     [InlineData(Pcre2NewlineConvention.Nul, "\0")]
     public void CommentsUseConfiguredNewline(Pcre2NewlineConvention newline, string separator)
     {
-        var regex = new Utf8Pcre2Regex("# [ (?C) \\C" + separator + "(😀)", options:             Pcre2CompileOptions.Extended, compileSettings: new() { Newline = newline }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("# [ (?C) \\C" + separator + "(😀)", options: Pcre2CompileOptions.Extended, compileSettings: new() { Newline = newline }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        var match = regex.MatchDetailed("😀"u8);
+        ReadOnlySpan<byte> match2Input = "😀"u8;
+        var match2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match2Input, captures: match2Captures);
         Assert.True(match.Success);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((match2Captures[1].Success ? match2Input.Slice(match2Captures[1].StartOffsetInBytes, match2Captures[1].EndOffsetInBytes - match2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
     [Theory]
@@ -108,7 +112,7 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
     [InlineData(@"[[:alpha:]#][\C]")]
     public void AllowingByteAtomsStillRejectsActualByteEscapesInClasses(string pattern)
     {
-        var failure = Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(pattern, options:             Pcre2CompileOptions.Extended, compileSettings: new() { BackslashC = Pcre2BackslashCPolicy.Allow }, policy: new Utf8RegexPolicy
+        var failure = Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Extended, compileSettings: new() { BackslashC = Pcre2BackslashCPolicy.Allow }, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan
         }));

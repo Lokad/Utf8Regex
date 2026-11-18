@@ -9,11 +9,11 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2CharacterTests
 {
     [Theory]
-    [InlineData("é",1,3)]
-    [InlineData("€",3,6)]
-    [InlineData("😀",6,10)]
+    [InlineData("é", 1, 3)]
+    [InlineData("€", 3, 6)]
+    [InlineData("😀", 6, 10)]
     public void DotReportsExactCoordinatesAcrossUtf8ScalarWidths(
-        string expected,        int startOffsetInBytes,        int expectedEndOffsetInBytes)
+        string expected, int startOffsetInBytes, int expectedEndOffsetInBytes)
     {
         var regex = new Utf8Pcre2Regex(".");
         var input = Encoding.UTF8.GetBytes("aé€😀z");
@@ -179,7 +179,7 @@ public sealed class Pcre2CharacterTests
         Assert.Equal(found, regex.IsMatch(input, floor));
         var match = regex.Match(input, startOffsetInBytes: floor);
         Assert.Equal(found, match.Success);
-        Assert.Equal(found, regex.MatchDetailed(input, floor).Success);
+        Assert.Equal(found, regex.Match(input, startOffsetInBytes: floor).Success);
         Assert.Equal(found ? 1 : 0, regex.Count(input, floor));
         var cursor = regex.EnumerateMatches(input, floor);
         Assert.Equal(found, cursor.MoveNext());
@@ -234,7 +234,7 @@ public sealed class Pcre2CharacterTests
         var regex = new Utf8Pcre2Regex(@"\p{Sm}");
         var input = Encoding.UTF8.GetBytes("x+<|~¬⁄X৲𝛁=");
         var suffixStart = Encoding.UTF8.GetByteCount("x+<");
-        var limited = new Utf8Pcre2Regex(            @"\p{Sm}", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var limited = new Utf8Pcre2Regex(@"\p{Sm}", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -283,7 +283,7 @@ public sealed class Pcre2CharacterTests
     public void CharacterSearchHasUsefulWorkAdmission()
     {
         var input = Encoding.UTF8.GetBytes(new string('x', 128));
-        var sufficient = new Utf8Pcre2Regex(            "[0-9]", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var sufficient = new Utf8Pcre2Regex("[0-9]", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -291,7 +291,7 @@ public sealed class Pcre2CharacterTests
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        var insufficient = new Utf8Pcre2Regex(            "[0-9]", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        var insufficient = new Utf8Pcre2Regex("[0-9]", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

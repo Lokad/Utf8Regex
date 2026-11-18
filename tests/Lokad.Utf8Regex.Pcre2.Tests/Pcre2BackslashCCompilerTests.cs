@@ -40,17 +40,19 @@ public sealed class Pcre2BackslashCCompilerTests
     public void CapturedBackslashCReportsHonestCoordinates()
     {
         var regex = Create(@"(\C)");
-        var match = regex.MatchDetailed("😀"u8);
+        ReadOnlySpan<byte> match1Input = "😀"u8;
+        var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var match = regex.Match(match1Input, captures: match1Captures);
 
         Assert.True(match.Success);
-        Assert.False(match.Value.IsUtf8SliceWellFormed);
-        var group = match.GetGroup(1);
+        Assert.False(match.IsUtf8SliceWellFormed);
+        var group = match1Captures[1];
         Assert.True(group.Success);
         Assert.Equal(0, group.StartOffsetInBytes);
         Assert.Equal(1, group.EndOffsetInBytes);
         Assert.False(group.IsUtf8SliceWellFormed);
-        Assert.True(group.HasContiguousByteRange);
-        Assert.Equal(new byte[] { 0xf0 }, group.GetValueBytes().ToArray());
+        Assert.True((group.Success && group.StartOffsetInBytes <= group.EndOffsetInBytes));
+        Assert.Equal(new byte[] { 0xf0 }, (group.Success ? match1Input.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty).ToArray());
     }
 
     [Fact]

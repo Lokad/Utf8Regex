@@ -56,7 +56,7 @@ public sealed class Pcre2SliceDotTests
     [MemberData(nameof(DeclinedNewlines))]
     public void NonLfNewlineConventionsDeclineSliceRouting(Pcre2NewlineConvention newline)
     {
-        var regex = new Utf8Pcre2Regex(            "a.*b", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { Newline = newline }, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex("a.*b", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { Newline = newline }, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = default,
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
@@ -124,7 +124,7 @@ public sealed class Pcre2SliceDotTests
         string pattern, string inputText, int expectedStart, int expectedEnd)
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        var found = regex.Match(Utf8(inputText), startOffsetInBytes: 0);
+        var found = regex.Match(Utf8(inputText));
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);
@@ -152,10 +152,12 @@ public sealed class Pcre2SliceDotTests
     public void OwnedDetailedProjectsDotGroupOnAstralInput()
     {
         var regex = new Utf8Pcre2Regex("(.+)", options: Pcre2CompileOptions.None);
-        var detailed = regex.MatchDetailed(Utf8("x\U0001F600y"), 0);
+        ReadOnlySpan<byte> detailed1Input = Utf8("x\U0001F600y");
+        var detailed1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var detailed = regex.Match(detailed1Input, captures: detailed1Captures);
         Assert.True(detailed.Success);
-        Assert.Equal("x\U0001F600y", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
-        Assert.Equal("x\U0001F600y", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
+        Assert.Equal("x\U0001F600y", System.Text.Encoding.UTF8.GetString(detailed.GetValueBytes()));
+        Assert.Equal("x\U0001F600y", System.Text.Encoding.UTF8.GetString((detailed1Captures[1].Success ? detailed1Input.Slice(detailed1Captures[1].StartOffsetInBytes, detailed1Captures[1].EndOffsetInBytes - detailed1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 
