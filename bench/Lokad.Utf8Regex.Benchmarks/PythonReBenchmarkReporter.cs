@@ -268,25 +268,33 @@ internal static partial class PythonReBenchmarkReporter
 
     private static int Refresh(int iterations, int samples)
     {
-        var snapshot = LoadPythonReBenchmarkSnapshot();
+        var previous = File.Exists(GetPythonReSnapshotPath()) ? LoadPythonReBenchmarkSnapshot() : null;
+        var cases = previous?.Cases ?? new(StringComparer.Ordinal);
+        var lifecycle = previous?.Lifecycle ?? new(StringComparer.Ordinal);
+        var scaling = previous?.ScalingFamilies ?? new(StringComparer.Ordinal);
+        var catalogHash = ComputePythonReCatalogSha256();
+        var caseIds = GetPythonReCatalogCaseIds();
+        var corpus = CaptureCorpusProvenance();
         foreach (var benchmarkCase in PythonReBenchmarkCatalog.Cases)
         {
             Console.WriteLine();
             var measurement = Measure(benchmarkCase, iterations, samples);
             Print(benchmarkCase, measurement);
-            snapshot.Cases[benchmarkCase.Id] = measurement;
+            cases[benchmarkCase.Id] = measurement;
             WriteSnapshot(new PythonReBenchmarkSnapshot
             {
                 SchemaVersion = PythonReBenchmarkSchemaVersion,
                 GeneratedAtUtc = DateTimeOffset.UtcNow,
-                CatalogSha256 = ComputePythonReCatalogSha256(),
-                CatalogCaseIds = GetPythonReCatalogCaseIds(),
-                Corpus = CaptureCorpusProvenance(),
-                Cases = snapshot.Cases,
-                Lifecycle = snapshot.Lifecycle,
-                ScalingFamilies = snapshot.ScalingFamilies
-            });
+                CatalogSha256 = catalogHash,
+                CatalogCaseIds = caseIds,
+                Corpus = corpus,
+                Cases = cases,
+                Lifecycle = lifecycle,
+                ScalingFamilies = scaling
+            }, publishPresentation: false);
         }
+        ExportBenchmarkSummary();
+        WritePythonReBenchmarkMarkdown();
         Console.WriteLine($"Snapshot           : {GetPythonReSnapshotPath()}");
         return 0;
     }
@@ -393,12 +401,13 @@ internal static partial class PythonReBenchmarkReporter
         measurement.InputSha256 = Convert.ToHexString(SHA256.HashData(context.InputBytes));
     }
 
-    private static void WriteSnapshot(PythonReBenchmarkSnapshot snapshot)
+    private static void WriteSnapshot(PythonReBenchmarkSnapshot snapshot, bool publishPresentation = true)
     {
         var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
         var snapshotPath = GetPythonReSnapshotPath();
         Directory.CreateDirectory(Path.GetDirectoryName(snapshotPath)!);
         BenchmarkFileWriter.WriteTextAtomically(snapshotPath, json + Environment.NewLine);
+        if (!publishPresentation) return;
         WriteBenchmarkSummary(snapshot);
         WritePythonReBenchmarkMarkdown();
     }

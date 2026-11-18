@@ -918,8 +918,9 @@ internal static partial class BenchmarkInspectReporter
     {
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
-        var snapshot = LoadReadmeBenchmarkSnapshot();
         var sections = ParseReadmeSections(sectionsText);
+        var snapshot = LoadReadmeBenchmarkSnapshot(startFreshIfMissing:
+            sections.Count == Enum.GetValues<ReadmeBenchmarkSection>().Length);
         var remainingSections = sections.ToHashSet();
 
         RefreshReadmeSnapshotSectionPairIfRequested(
@@ -944,8 +945,7 @@ internal static partial class BenchmarkInspectReporter
             RefreshReadmeSnapshotSection(snapshot, section, iterations, samples, resume);
         }
 
-        SaveReadmeBenchmarkSnapshot(snapshot);
-        RewriteReadmeFromSnapshot(snapshot);
+        SaveReadmeBenchmarkSnapshot(snapshot, publishPresentation: true);
         Console.WriteLine($"Updated README sections: {string.Join(", ", sections.Select(static s => s.ToString()))}");
         return 0;
     }
@@ -968,8 +968,7 @@ internal static partial class BenchmarkInspectReporter
             GetOrAddSnapshotSection(snapshot, target).Cases[caseId] = ReadmeCaseMeasurementJson.FromMeasurement(measurement);
         }
 
-        SaveReadmeBenchmarkSnapshot(snapshot);
-        RewriteReadmeFromSnapshot(snapshot);
+        SaveReadmeBenchmarkSnapshot(snapshot, publishPresentation: true);
         Console.WriteLine($"Updated README case: {caseId}");
         return 0;
     }
@@ -1065,22 +1064,27 @@ internal static partial class BenchmarkInspectReporter
     private const string ReadmeBenchmarkSnapshotFileName = "README.Benchmarks.json";
     private const string ReadmeMeasurementProtocol = "IndependentSixLaneV3";
 
-    private static ReadmeBenchmarkSnapshot LoadReadmeBenchmarkSnapshot()
+    private static ReadmeBenchmarkSnapshot LoadReadmeBenchmarkSnapshot(bool startFreshIfMissing = false)
     {
-        var path = BenchmarkSummary.RawPath(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeBenchmarkSnapshotFileName);
+        var path = GetReadmeSnapshotPath();
+        if (startFreshIfMissing && !File.Exists(path)) return new ReadmeBenchmarkSnapshot();
         var json = File.ReadAllText(path, Encoding.UTF8);
         return JsonSerializer.Deserialize<ReadmeBenchmarkSnapshot>(json, ReadmeBenchmarkSnapshotJsonOptions) ?? throw new InvalidOperationException($"Could not deserialize {ReadmeBenchmarkSnapshotFileName}.");
     }
 
-    private static void SaveReadmeBenchmarkSnapshot(ReadmeBenchmarkSnapshot snapshot)
+    private static void SaveReadmeBenchmarkSnapshot(ReadmeBenchmarkSnapshot snapshot, bool publishPresentation = false)
     {
         snapshot.SchemaVersion = 6;
-        var path = BenchmarkSummary.RawPath(Path.GetDirectoryName(FindRepoFile("README.md"))!, ReadmeBenchmarkSnapshotFileName);
+        var path = GetReadmeSnapshotPath();
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         var json = JsonSerializer.Serialize(snapshot, ReadmeBenchmarkSnapshotJsonOptions);
         BenchmarkFileWriter.WriteTextAtomically(path, json + Environment.NewLine);
+        // A fresh or interrupted refresh can checkpoint an incomplete catalog.
+        // The parity report and README still require every published row.
+        if (!publishPresentation) return;
         WriteReadmeParityReport(snapshot, path);
         WriteReadmeBenchmarkSummary(snapshot);
+        RewriteReadmeFromSnapshot(snapshot);
     }
 
     private static string FindRepoFile(string fileName)

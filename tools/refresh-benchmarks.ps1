@@ -3,6 +3,7 @@
 Refresh selected benchmark phases or the complete one-hour delivery catalog.
 .DESCRIPTION
 Builds/tests once, reuses binaries, writes phase artifacts and regenerates recorded README results.
+Complete catalog refreshes can start without prior raw benchmark snapshots.
 #>
 [CmdletBinding()]
 param(
