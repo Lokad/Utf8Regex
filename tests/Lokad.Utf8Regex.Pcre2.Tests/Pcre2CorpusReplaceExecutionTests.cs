@@ -20,12 +20,12 @@ public sealed class Pcre2CorpusReplaceExecutionTests
         if (corpusCase.Expected.Outcome == Pcre2CorpusOutcomeKind.ReplacementError)
         {
             var exception = Assert.Throws<Pcre2SubstitutionException>(
-                () => regex.Replace(input, corpusCase.ReplacementPattern!, corpusCase.StartOffsetInBytes, replacementOptions));
+                () => regex.Replace(input, Encoding.UTF8.GetBytes(corpusCase.ReplacementPattern!), corpusCase.StartOffsetInBytes, replacementOptions));
             Assert.Equal(corpusCase.Expected.ErrorKind, exception.ErrorKind.ToString());
             return;
         }
 
-        var output = regex.Replace(input, corpusCase.ReplacementPattern!, corpusCase.StartOffsetInBytes, replacementOptions);
+        var output = regex.Replace(input, Encoding.UTF8.GetBytes(corpusCase.ReplacementPattern!), corpusCase.StartOffsetInBytes, replacementOptions);
         Assert.Equal(corpusCase.Expected.ReplacementText, Encoding.UTF8.GetString(output));
     }
 

@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- PCRE2 replacement accepts UTF-8 templates, including Extended grammar and
+  funded destination output.
+
 - Core `Replace` and `TryReplace` take UTF-8 templates. The existing byte
   substitution grammar, strict template validation and funded destination
   support remain available.

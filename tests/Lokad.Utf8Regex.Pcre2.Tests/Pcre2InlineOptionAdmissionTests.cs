@@ -74,7 +74,7 @@ public sealed class Pcre2InlineOptionAdmissionTests
         var retained = regex.Match(retained2Input, captures: retained2Captures);
         Assert.Equal((2, 6), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.Equal("é<😀>", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "<$x>")));
+        Assert.Equal("é<😀>", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "<$x>"u8)));
         using var cancellation = new CancellationTokenSource();
         var empty = new Utf8Pcre2Regex(directive, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
@@ -137,7 +137,7 @@ public sealed class Pcre2InlineOptionAdmissionTests
         Assert.Equal(second, System.Text.Encoding.UTF8.GetString((retained.Groups[2].Success ? retained3Input.Span.Slice(retained.Groups[2].StartOffsetInBytes, retained.Groups[2].EndOffsetInBytes - retained.Groups[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(retained.TryGetGroup(1, out var named)); Assert.True(named.Success);
         Assert.Equal(first, System.Text.Encoding.UTF8.GetString((named.Success ? retained3Input.Span.Slice(named.StartOffsetInBytes, named.EndOffsetInBytes - named.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.Equal("q" + first + "/" + second, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "$1/$2")));
+        Assert.Equal("q" + first + "/" + second, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "$1/$2"u8)));
         Assert.Equal(1, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         if (pattern.Contains(@"\1", StringComparison.Ordinal))
         {

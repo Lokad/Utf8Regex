@@ -103,7 +103,7 @@ public sealed class Pcre2SliceBoundaryTests
     public void OwnedReplaceExpandsAbsoluteGroup()
     {
         var regex = new Utf8Pcre2Regex("\\A([a-z]+)\\z", options: Pcre2CompileOptions.None);
-        Assert.Equal("<abc>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("abc"), "<$1>")));
+        Assert.Equal("<abc>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("abc"), "<$1>"u8)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

@@ -104,7 +104,7 @@ public sealed class Pcre2ControlVerbLabelTests
         Assert.Equal(2, regex.Count(input));
         Assert.Equal("(?<100>😀", retained.Mark);
         Assert.Equal("x<(?<100>😀:😀>x<(?<100>😀:😀>",
-            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<${*MARK}:$2>")));
+            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<${*MARK}:$2>"u8)));
 
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();

@@ -115,7 +115,7 @@ public sealed class Pcre2BacktrackingCompilerTests
         var input = "cat horsehorse cat"u8;
 
         Assert.Equal(3, regex.Count(input));
-        Assert.Equal("<cat> <horsehorse> <cat>", Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+        Assert.Equal("<cat> <horsehorse> <cat>", Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
 
         var matches = regex.EnumerateMatches(input);
         Assert.True(matches.MoveNext());

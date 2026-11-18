@@ -142,7 +142,7 @@ public sealed class Pcre2SliceAnchorTests
     public void OwnedReplaceExpandsAnchorGroup()
     {
         var regex = new Utf8Pcre2Regex("^(a.c)+$", options: Pcre2CompileOptions.None);
-        Assert.Equal("<abc>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("abc"), "<$1>")));
+        Assert.Equal("<abc>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("abc"), "<$1>"u8)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

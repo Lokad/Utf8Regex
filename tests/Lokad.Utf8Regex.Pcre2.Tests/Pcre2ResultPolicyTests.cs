@@ -54,8 +54,8 @@ public sealed class Pcre2ResultPolicyTests
         var regex = Create("A", 1);
         var error = Assert.Throws<Pcre2MatchException>(() =>
         {
-            if (text) _ = System.Text.Encoding.UTF8.GetString(regex.Replace("zzz"u8, "!"));
-            else _ = regex.Replace("zzz"u8, "!");
+            if (text) _ = System.Text.Encoding.UTF8.GetString(regex.Replace("zzz"u8, "!"u8));
+            else _ = regex.Replace("zzz"u8, "!"u8);
         });
         Assert.Equal("ResultLimit", error.ErrorKind.ToString());
     }
@@ -130,7 +130,7 @@ public sealed class Pcre2ResultPolicyTests
         string replacement, string expected, Pcre2SubstitutionOptions options)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        string Invoke(ulong cap) => System.Text.Encoding.UTF8.GetString(Create(pattern, cap).Replace(input, replacement, 0, options));
+        string Invoke(ulong cap) => System.Text.Encoding.UTF8.GetString(Create(pattern, cap).Replace(input, Encoding.UTF8.GetBytes(replacement), 0, options));
         Assert.Equal(expected, Invoke(1 << 20));
         ulong first = 1, last = 1 << 20;
         while (first < last)
@@ -142,7 +142,7 @@ public sealed class Pcre2ResultPolicyTests
         Assert.InRange(first, 2UL, (1UL << 20) - 1);
         Assert.Equal("ResultLimit", Assert.Throws<Pcre2MatchException>(() => Invoke(first - 1)).ErrorKind.ToString());
         Assert.Equal(expected, Invoke(first));
-        Assert.Equal(expected, Encoding.UTF8.GetString(Create(pattern, 1 << 20).Replace(input, replacement, 0, options)));
+        Assert.Equal(expected, Encoding.UTF8.GetString(Create(pattern, 1 << 20).Replace(input, Encoding.UTF8.GetBytes(replacement), 0, options)));
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public sealed class Pcre2ResultPolicyTests
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "$2$1")));
+        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "$2$1"u8)));
         ReadOnlyMemory<byte> result6Input = ("é😀"u8).ToArray();
         using var result6Cursor = regex.CreateMatchCursor(result6Input);
         result6Cursor.MoveNext(out var result6Result);
@@ -174,10 +174,10 @@ public sealed class Pcre2ResultPolicyTests
     [Fact]
     public void TemplateResultFailureIsStructuredAndFreshCallsReset()
     {
-        var error = Assert.Throws<Pcre2MatchException>(() => Create(@"(?<v>\x41)😀", 1).Replace("A😀"u8, "!"));
+        var error = Assert.Throws<Pcre2MatchException>(() => Create(@"(?<v>\x41)😀", 1).Replace("A😀"u8, "!"u8));
         Assert.Equal("ResultLimit", error.ErrorKind.ToString());
         var regex = Create(@"(?<v>\x41)😀", 1 << 20);
-        Assert.Equal("!"u8.ToArray(), regex.Replace("A😀"u8, "!"));
-        Assert.Equal("!"u8.ToArray(), regex.Replace("A😀"u8, "!"));
+        Assert.Equal("!"u8.ToArray(), regex.Replace("A😀"u8, "!"u8));
+        Assert.Equal("!"u8.ToArray(), regex.Replace("A😀"u8, "!"u8));
     }
 }

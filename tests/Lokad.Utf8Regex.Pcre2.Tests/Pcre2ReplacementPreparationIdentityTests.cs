@@ -7,7 +7,7 @@ public sealed class Pcre2ReplacementPreparationIdentityTests
 {
     public static IEnumerable<object[]> Routes()
     {
-        foreach (var route in new[] { "Bytes", "Text", "Utf8Template", "Destination" })
+        foreach (var route in new[] { "Bytes", "Destination" })
         foreach (var finite in new[] { false, true }) yield return [route, finite];
     }
 
@@ -31,8 +31,8 @@ public sealed class Pcre2ReplacementPreparationIdentityTests
         var regex = Create(finite, "a");
         var cases = new (string Template, string Expected)[] {
             ("$0", "😀aé"), ("$$", "😀$é"), ("x$0y", "😀xayé"),
-            (@"\n$0", "😀\\naé"), ("\ud800$0\udc00", "😀�a�é"),
-            ("\ud800$$\udc00", "😀�$�é"), ("\ud800\udc00", "😀𐀀é"), ("é😀", "😀é😀é") };
+            (@"\n$0", "😀\\naé"), ("𐀀$0é", "😀𐀀aéé"),
+            ("é$$𐀀", "😀é$𐀀é"), ("𐀀", "😀𐀀é"), ("é😀", "😀é😀é") };
         foreach (var item in cases)
         foreach (var options in new[] { Pcre2SubstitutionOptions.None, Pcre2SubstitutionOptions.UnsetEmpty,
             Pcre2SubstitutionOptions.UnknownUnset, Pcre2SubstitutionOptions.UnsetEmpty | Pcre2SubstitutionOptions.UnknownUnset })
@@ -84,10 +84,8 @@ public sealed class Pcre2ReplacementPreparationIdentityTests
         Pcre2SubstitutionOptions options)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        if (route == "Text") return System.Text.Encoding.UTF8.GetString(regex.Replace(input, template,0, options,Pcre2MatchOptions.None));
-        if (route == "Bytes") return Encoding.UTF8.GetString(regex.Replace(input, template, 0, options));
         var utf8Template = Encoding.UTF8.GetBytes(template);
-        if (route == "Utf8Template") return Encoding.UTF8.GetString(regex.Replace(input, utf8Template, 0, options));
+        if (route == "Bytes") return Encoding.UTF8.GetString(regex.Replace(input, utf8Template, 0, options));
         var destination = new byte[64];
         destination.AsSpan().Fill(0xcc);
         Assert.Equal(OperationStatus.Done, regex.TryReplace(input, utf8Template, destination,

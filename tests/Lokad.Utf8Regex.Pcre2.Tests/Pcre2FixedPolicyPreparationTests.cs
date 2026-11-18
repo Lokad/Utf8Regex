@@ -36,7 +36,7 @@ public sealed class Pcre2FixedPolicyPreparationTests
             var count = 0;
             while (matches.MoveNext()) count++;
             Assert.Equal(2, count);
-            Assert.Equal("! !", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!")));
+            Assert.Equal("! !", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!"u8)));
             if (pattern.Contains("?<left>"))
             {
                 ReadOnlySpan<byte> result2Input = input;

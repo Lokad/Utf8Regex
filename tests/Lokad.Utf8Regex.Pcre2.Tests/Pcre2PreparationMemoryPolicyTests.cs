@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -25,9 +26,9 @@ public sealed class Pcre2PreparationMemoryPolicyTests
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() => regex.Replace("ab"u8, template, 0, options)).ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() => regex.Replace("ab"u8, System.Text.Encoding.UTF8.GetBytes(template), 0, options)).ErrorKind);
         Assert.Equal(0, regex.DebugReplacementCacheEntryCount);
-        Assert.NotEmpty(new Utf8Pcre2Regex("(?<x>a)b").Replace("ab"u8, template, 0, options));
+        Assert.NotEmpty(new Utf8Pcre2Regex("(?<x>a)b").Replace("ab"u8, System.Text.Encoding.UTF8.GetBytes(template), 0, options));
     }
 
     [Theory] [MemberData(nameof(Templates))]
@@ -35,15 +36,16 @@ public sealed class Pcre2PreparationMemoryPolicyTests
     {
         var regex = new Utf8Pcre2Regex("(?<x>a)b");
         var get = Preparation(regex);
+        var templateUtf8 = Encoding.UTF8.GetBytes(template);
         var invocation = new Utf8SliceInvocation(new(100000, 256, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
         using (var control = Pcre2ReplacementPreparationControl.Borrow(invocation, default))
         {
-            var retained = get(template, options);
+            var retained = get(templateUtf8, options);
             var admitted = invocation.Ledger.ReservedBytes;
             Assert.True(admitted > 13);
             using (var joined = Pcre2ReplacementPreparationControl.JoinOrEnter(Timeout.InfiniteTimeSpan))
-                Assert.Equal(retained, get(template, options));
+                Assert.Equal(retained, get(templateUtf8, options));
             Assert.Equal(admitted, invocation.Ledger.ReservedBytes);
         }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
@@ -63,18 +65,19 @@ public sealed class Pcre2PreparationMemoryPolicyTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var get = Preparation(regex);
-        var retained = get(template, options);
-        Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() => regex.Replace("ab"u8, template, 0, options)).ErrorKind);
+        var templateUtf8 = Encoding.UTF8.GetBytes(template);
+        var retained = get(templateUtf8, options);
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() => regex.Replace("ab"u8, templateUtf8, 0, options)).ErrorKind);
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
-        Assert.Equal(retained, get(template, options));
+        Assert.Equal(retained, get(templateUtf8, options));
     }
 
-    private static Func<string, Pcre2SubstitutionOptions, Pcre2ReplacementPreparation> Preparation(Utf8Pcre2Regex regex)
-        => typeof(Utf8Pcre2Regex).GetMethod("GetReplacementPreparation", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .CreateDelegate<Func<string, Pcre2SubstitutionOptions, Pcre2ReplacementPreparation>>(regex);
+    internal static Func<ReadOnlySpan<byte>, Pcre2SubstitutionOptions, Pcre2ReplacementPreparation> Preparation(Utf8Pcre2Regex regex)
+        => typeof(Utf8Pcre2Regex).GetMethod("GetTemplatePreparation", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .CreateDelegate<Func<ReadOnlySpan<byte>, Pcre2SubstitutionOptions, Pcre2ReplacementPreparation>>(regex);
 
     // Output-only boundary fixtures deliberately borrow a previously prepared
     // immutable plan; cold preparation admission has separate public tests here.
     internal static void Warm(Utf8Pcre2Regex regex, string template)
-        => _ = Preparation(regex)(template, Pcre2SubstitutionOptions.None);
+        => _ = Preparation(regex)(Encoding.UTF8.GetBytes(template), Pcre2SubstitutionOptions.None);
 }

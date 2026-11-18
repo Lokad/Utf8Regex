@@ -85,7 +85,7 @@ public sealed class Pcre2CancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "bar", cancellationToken: token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "bar"u8, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -125,7 +125,7 @@ public sealed class Pcre2CancellationTests
         Assert.Equal(1, regex.Count(s_input, startOffsetInBytes: 4));
         Assert.Equal(4, regex.Match(s_input, startOffsetInBytes: 4).StartOffsetInBytes);
         Assert.False(regex.IsMatch(s_input, startOffsetInBytes: 1, matchOptions: Pcre2MatchOptions.Anchored));
-        Assert.Equal("bar bar", Encoding.UTF8.GetString(regex.Replace(s_input, "bar")));
+        Assert.Equal("bar bar", Encoding.UTF8.GetString(regex.Replace(s_input, "bar"u8)));
         var destination = new byte[16];
         Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryReplace(s_input, "bar"u8,
             destination, out var written, substitutionOptions: Pcre2SubstitutionOptions.None));

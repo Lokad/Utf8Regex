@@ -208,7 +208,7 @@ public sealed class Pcre2CharacterTests
 
 
 
-        Assert.Equal("<a>-<é>😀", Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+        Assert.Equal("<a>-<é>😀", Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
     }
 
     [Fact]

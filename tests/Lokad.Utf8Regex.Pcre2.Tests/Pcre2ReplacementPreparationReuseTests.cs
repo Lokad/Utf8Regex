@@ -1,29 +1,23 @@
 using System.Buffers;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
-using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2ReplacementPreparationReuseTests
 {
     [Theory]
-    [InlineData("Bytes")]
-    [InlineData("Text")]
-    [InlineData("Utf8Bytes")]
-    [InlineData("Destination")]
-    public void UncacheableTemplateDoesNotNeedTwoCompilationAllowances(string route)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void UncacheableTemplateDoesNotNeedTwoCompilationAllowances(bool destinationOutput)
     {
-        // Exceed the payload bound in both representations: byte keys retain
-        // less storage than their former decoded string keys.
+        // The immutable key and its lowered payload together exceed the cache bound.
         var template = "$1" + new string('x', 2 << 20);
         var utf8 = Encoding.UTF8.GetBytes(template);
         ulong work;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            var source = route is "Utf8Bytes" or "Destination"
-                ? new Utf8ConstructionPattern(utf8) : new Utf8ConstructionPattern(template);
-            _ = Pcre2ReplacementPreparationControl.Prepare(source, Pcre2SubstitutionOptions.None, false);
+            _ = Pcre2ReplacementPreparationControl.Prepare(utf8, Pcre2SubstitutionOptions.None, false);
             work = measured.Budget.WorkSteps;
         }
         foreach (var finite in new[] { false, true })
@@ -44,13 +38,7 @@ public sealed class Pcre2ReplacementPreparationReuseTests
             // Leave room for cache admission work, but not a second compilation.
             var allowance = work + work / 2;
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, allowance, ulong.MaxValue);
-            var output = route switch
-            {
-                "Bytes" => regex.Replace("a"u8, template),
-                "Text" => Encoding.UTF8.GetBytes(System.Text.Encoding.UTF8.GetString(regex.Replace("a"u8, template))),
-                "Utf8Bytes" => regex.Replace("a"u8, utf8),
-                _ => ReplaceInto(regex, utf8, destination)
-            };
+            var output = destinationOutput ? ReplaceInto(regex, utf8, destination) : regex.Replace("a"u8, utf8);
             Assert.Equal(destination.Length, output.Length);
             Assert.Equal((byte)'a', output[0]);
             Assert.DoesNotContain(output.AsSpan(1).ToArray(), value => value != (byte)'x');
@@ -66,14 +54,14 @@ public sealed class Pcre2ReplacementPreparationReuseTests
         ulong work;
         using (var measured = Utf8ConstructionScope.Enter())
         {
-            _ = Pcre2ReplacementPreparationControl.Prepare(template, Pcre2SubstitutionOptions.None, false);
+            _ = Pcre2ReplacementPreparationControl.Prepare(Encoding.UTF8.GetBytes(template), Pcre2SubstitutionOptions.None, false);
             work = measured.Budget.WorkSteps;
         }
         var regex = new Utf8Pcre2Regex("(a)");
         using (var denied = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, work - 1, ulong.MaxValue))
             Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace("a"u8, template)).ResourceKind);
-        Assert.Equal("a" + template[2..], Encoding.UTF8.GetString(regex.Replace("a"u8, template)));
+                Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace("a"u8, Encoding.UTF8.GetBytes(template))).ResourceKind);
+        Assert.Equal("a" + template[2..], Encoding.UTF8.GetString(regex.Replace("a"u8, Encoding.UTF8.GetBytes(template))));
     }
 
     [Theory]

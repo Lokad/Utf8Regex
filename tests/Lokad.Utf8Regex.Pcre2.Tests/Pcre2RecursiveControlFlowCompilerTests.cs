@@ -112,7 +112,7 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
         var regex = new Utf8Pcre2Regex("(?<pair>a(?&pair)?b)");
 
         Assert.Equal(2, regex.Count("aabb ab"u8));
-        Assert.Equal("[aabb] [ab]", Encoding.UTF8.GetString(regex.Replace("aabb ab"u8, "[${pair}]")));
+        Assert.Equal("[aabb] [ab]", Encoding.UTF8.GetString(regex.Replace("aabb ab"u8, "[${pair}]"u8)));
     }
 
     [Fact]

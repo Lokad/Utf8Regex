@@ -26,7 +26,7 @@ public sealed class Pcre2MultilineSearchTests
 
 
         Assert.Equal("INFO: boot\n<ERROR: first>\nERROR: \n<ERROR: \r>\n<ERROR: café>\n",
-            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
     }
 
     [Fact]

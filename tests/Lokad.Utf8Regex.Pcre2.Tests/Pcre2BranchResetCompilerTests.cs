@@ -131,7 +131,7 @@ public sealed class Pcre2BranchResetCompilerTests
         var input = "foofoo barbar"u8;
 
         Assert.Equal(2, regex.Count(input));
-        Assert.Equal("<foo> <bar>", Encoding.UTF8.GetString(regex.Replace(input, "<$n>")));
+        Assert.Equal("<foo> <bar>", Encoding.UTF8.GetString(regex.Replace(input, "<$n>"u8)));
     }
 
     [Fact]

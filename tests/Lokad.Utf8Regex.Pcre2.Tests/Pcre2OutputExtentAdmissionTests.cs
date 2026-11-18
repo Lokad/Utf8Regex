@@ -59,13 +59,13 @@ public sealed class Pcre2OutputExtentAdmissionTests
             Pcre2PreparationMemoryPolicyTests.Warm(regex, replacement);
             if (allow)
             {
-                var result = regex.Replace(input, replacement);
+                var result = regex.Replace(input, System.Text.Encoding.UTF8.GetBytes(replacement));
                 if (count == 0) Assert.Equal(input, result);
                 else { Assert.Equal(count * replacement.Length, result.Length); Assert.All(result, static value => Assert.Equal((byte)'b', value)); }
             }
             else
             {
-                var failure = Assert.Throws<Pcre2MatchException>(() => regex.Replace(input, replacement));
+                var failure = Assert.Throws<Pcre2MatchException>(() => regex.Replace(input, System.Text.Encoding.UTF8.GetBytes(replacement)));
                 Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind);
             }
         }

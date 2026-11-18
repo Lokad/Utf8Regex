@@ -124,9 +124,9 @@ public sealed class Pcre2SupplementaryCaseTests
                     MatchTimeout = Timeout.InfiniteTimeSpan
                 });
                 var input = Encoding.UTF8.GetBytes(text);
-                Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, template, 0,
+                Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template), 0,
                     Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.None, cancellation.Token)));
-                Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, template, 0,
+                Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, Encoding.UTF8.GetBytes(template), 0,
                     Pcre2SubstitutionOptions.Extended, Pcre2MatchOptions.None, cancellation.Token));
             }
     }

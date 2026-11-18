@@ -206,7 +206,7 @@ public sealed class Pcre2ExecutionRouteTests
         Assert.Equal(16, enumerator.Current.StartOffsetInBytes);
 
         const string expected = "é <tempus> <magna> <semper> <tempus>";
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
 
         var expectedFixed = "é x x x x"u8;
@@ -299,7 +299,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.True(regex.DebugUsesUtf8RegexTranslation);
         Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);
 
-        var replaced = regex.Replace("fooBAR x"u8, "<$0|$Bar>");
+        var replaced = regex.Replace("fooBAR x"u8, "<$0|$Bar>"u8);
 
         Assert.Equal("<fooBAR|BAR> x", Encoding.UTF8.GetString(replaced));
     }
@@ -347,7 +347,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
 
         Assert.Equal(
             "short <abcdefghij> <x_123456789> <yyyyyyyyyy> é<abcdefghij>",
-            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
 
         var compiled = regex.DebugCompiledProgram;
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
@@ -409,7 +409,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Parallel.For(0, 256, _ =>
         {
             Assert.Equal(2, regex.Count(input));
-            Assert.Equal("short <abcdefghij> <klmnopqrst>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+            Assert.Equal("short <abcdefghij> <klmnopqrst>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
         });
     }
 
@@ -444,7 +444,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
 
                 var input = Encoding.UTF8.GetBytes(builder.ToString());
                 Assert.Equal(GetRanges(vmOnly, input), GetRanges(candidate, input));
-                Assert.Equal(System.Text.Encoding.UTF8.GetString(vmOnly.Replace(input, "<$0>")), System.Text.Encoding.UTF8.GetString(candidate.Replace(input, "<$0>")));
+                Assert.Equal(System.Text.Encoding.UTF8.GetString(vmOnly.Replace(input, "<$0>"u8)), System.Text.Encoding.UTF8.GetString(candidate.Replace(input, "<$0>"u8)));
             }
         }
 
@@ -535,7 +535,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.Equal("β.γ", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
 
-        Assert.Equal("<bc.d>za<bc.e>za<β.γ>z", Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+        Assert.Equal("<bc.d>za<bc.e>za<β.γ>z", Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
     }
 
     [Fact]

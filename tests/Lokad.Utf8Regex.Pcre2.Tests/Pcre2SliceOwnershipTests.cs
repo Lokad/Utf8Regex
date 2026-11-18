@@ -566,10 +566,10 @@ public sealed class Pcre2SliceOwnershipTests
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var input = Utf8(inputText);
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, replacement)));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(replacement))));
         Assert.Equal(
             expected,
-            Encoding.UTF8.GetString(regex.Replace(input, replacement)));
+            Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(replacement))));
         Assert.False(
             regex.DebugCompiledProgram is null,
             "pattern=" + pattern);
@@ -589,11 +589,11 @@ public sealed class Pcre2SliceOwnershipTests
             "Pcre2Slice",
             backtracked.DebugDescribeExecutionPlan());
         Assert.Equal(
-            System.Text.Encoding.UTF8.GetString(backtracked.Replace(input, "-")),
-            System.Text.Encoding.UTF8.GetString(sliced.Replace(input, "-")));
+            System.Text.Encoding.UTF8.GetString(backtracked.Replace(input, "-"u8)),
+            System.Text.Encoding.UTF8.GetString(sliced.Replace(input, "-"u8)));
         Assert.Equal(
-            System.Text.Encoding.UTF8.GetString(backtracked.Replace(input, "<$0>")),
-            System.Text.Encoding.UTF8.GetString(sliced.Replace(input, "<$0>")));
+            System.Text.Encoding.UTF8.GetString(backtracked.Replace(input, "<$0>"u8)),
+            System.Text.Encoding.UTF8.GetString(sliced.Replace(input, "<$0>"u8)));
         Assert.True(sliced.DebugCompiledProgram is not null);
     }
 
@@ -603,7 +603,7 @@ public sealed class Pcre2SliceOwnershipTests
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None);
         Assert.Equal(
             "\U0001F600<aaabb>\U0001F600",
-            System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("\U0001F600aaabb\U0001F600"), "<$0>")));
+            System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("\U0001F600aaabb\U0001F600"), "<$0>"u8)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 
@@ -613,7 +613,7 @@ public sealed class Pcre2SliceOwnershipTests
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None);
         Assert.Equal(
             "aab <aabb>",
-            System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("aab aabb"), "<$0>", 4)));
+            System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("aab aabb"), "<$0>"u8, 4)));
     }
 
     [Fact]
@@ -629,7 +629,7 @@ public sealed class Pcre2SliceOwnershipTests
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
         var rentException = Assert.Throws<Pcre2MatchException>(
-            () => System.Text.Encoding.UTF8.GetString(starved.Replace(input, "<$0>")));
+            () => System.Text.Encoding.UTF8.GetString(starved.Replace(input, "<$0>"u8)));
         Assert.Equal(Pcre2ErrorKind.HeapLimit, rentException.ErrorKind);
 
         var grown = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
@@ -641,7 +641,7 @@ public sealed class Pcre2SliceOwnershipTests
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
         var growthException = Assert.Throws<Pcre2MatchException>(
-            () => System.Text.Encoding.UTF8.GetString(grown.Replace(input, "<$0>")));
+            () => System.Text.Encoding.UTF8.GetString(grown.Replace(input, "<$0>"u8)));
         Assert.Equal(Pcre2ErrorKind.HeapLimit, growthException.ErrorKind);
         Assert.True(grown.DebugCompiledProgram is not null);
     }
@@ -654,7 +654,7 @@ public sealed class Pcre2SliceOwnershipTests
             "xx<$0>yy",
             System.Text.Encoding.UTF8.GetString(regex.Replace(
                 Utf8("xxaaabbyy"),
-                "<$0>",
+                "<$0>"u8,
                 0,
                 Pcre2SubstitutionOptions.SubstituteLiteral)));
         Assert.True(regex.DebugCompiledProgram is not null);
@@ -672,7 +672,7 @@ public sealed class Pcre2SliceOwnershipTests
             expected,
             System.Text.Encoding.UTF8.GetString(regex.Replace(
                 Utf8(inputText),
-                "<$0>",
+                "<$0>"u8,
                 0,
                 Pcre2SubstitutionOptions.SubstituteReplacementOnly)));
     }
@@ -686,10 +686,10 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.DoesNotContain(
             "Pcre2Slice",
             backtracked.DebugDescribeExecutionPlan());
-        Assert.Equal("xx<aaa|bb>yy", System.Text.Encoding.UTF8.GetString(backtracked.Replace(input, "<$1|$2>")));
+        Assert.Equal("xx<aaa|bb>yy", System.Text.Encoding.UTF8.GetString(backtracked.Replace(input, "<$1|$2>"u8)));
         Assert.Equal(
-            System.Text.Encoding.UTF8.GetString(backtracked.Replace(input, "<$1|$2>")),
-            System.Text.Encoding.UTF8.GetString(sliced.Replace(input, "<$1|$2>")));
+            System.Text.Encoding.UTF8.GetString(backtracked.Replace(input, "<$1|$2>"u8)),
+            System.Text.Encoding.UTF8.GetString(sliced.Replace(input, "<$1|$2>"u8)));
         Assert.True(sliced.DebugCompiledProgram is not null);
     }
 
@@ -700,11 +700,11 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(
             "<aaabb>xx",
             System.Text.Encoding.UTF8.GetString(regex.Replace(
-                Utf8("aaabbxx"), "<$0>", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored)));
+                Utf8("aaabbxx"), "<$0>"u8, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored)));
         Assert.Equal(
             "xxaaabbyy",
             System.Text.Encoding.UTF8.GetString(regex.Replace(
-                Utf8("xxaaabbyy"), "<$0>", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored)));
+                Utf8("xxaaabbyy"), "<$0>"u8, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored)));
     }
 
     [Fact]
@@ -716,7 +716,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Throws<OperationCanceledException>(
             () => regex.Replace(
                 Utf8("xxaaabbyy"),
-                "<$0>",
+                "<$0>"u8,
                 0,
                 Pcre2SubstitutionOptions.None,
                 Pcre2MatchOptions.None,
@@ -735,7 +735,7 @@ public sealed class Pcre2SliceOwnershipTests
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
         var exception = Assert.Throws<Pcre2MatchException>(
-            () => System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xxaaabbyy"), "<$0>")));
+            () => System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xxaaabbyy"), "<$0>"u8)));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
@@ -748,7 +748,7 @@ public sealed class Pcre2SliceOwnershipTests
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
         var exception = Assert.Throws<Pcre2MatchException>(
-            () => System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+            () => System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
         Assert.True(regex.DebugCompiledProgram is not null);
     }

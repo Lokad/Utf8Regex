@@ -48,7 +48,7 @@ public sealed class Pcre2TokenRepeatTests
         Assert.Equal(["abc", "", "def", ""], values);
 
 
-        Assert.Equal("<abc><>\n<def><>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+        Assert.Equal("<abc><>\n<def><>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
     }
 
     [Fact]

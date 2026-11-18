@@ -74,7 +74,7 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
         Assert.True(enumerator.MoveNext());
         Assert.Equal("httpClient", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
-        Assert.Equal("client client x client client", System.Text.Encoding.UTF8.GetString(regex.Replace("HttpClient httpclient x HTTPCLIENT httpClient"u8, "client")));
+        Assert.Equal("client client x client client", System.Text.Encoding.UTF8.GetString(regex.Replace("HttpClient httpclient x HTTPCLIENT httpClient"u8, "client"u8)));
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
 
         Assert.Equal(
             "HttpClient httpclient x client client",
-            System.Text.Encoding.UTF8.GetString(regex.Replace("HttpClient httpclient x HTTPCLIENT httpClient"u8, "client", startOffsetInBytes: 23)));
+            System.Text.Encoding.UTF8.GetString(regex.Replace("HttpClient httpclient x HTTPCLIENT httpClient"u8, "client"u8, startOffsetInBytes: 23)));
     }
 
     [Fact]
@@ -120,8 +120,8 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
     {
         var regex = new Utf8Pcre2Regex("foo");
 
-        Assert.Equal("xxbarzz", System.Text.Encoding.UTF8.GetString(regex.Replace("xxfoozz"u8, "bar")));
-        Assert.Equal("xx$zz", System.Text.Encoding.UTF8.GetString(regex.Replace("xxfoozz"u8, "$", 0, substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral, Pcre2MatchOptions.None)));
+        Assert.Equal("xxbarzz", System.Text.Encoding.UTF8.GetString(regex.Replace("xxfoozz"u8, "bar"u8)));
+        Assert.Equal("xx$zz", System.Text.Encoding.UTF8.GetString(regex.Replace("xxfoozz"u8, "$"u8, 0, substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral, Pcre2MatchOptions.None)));
     }
 
     [Fact]

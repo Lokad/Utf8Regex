@@ -84,7 +84,7 @@ public sealed class Pcre2SliceAtomicTests
     public void OwnedReplaceMatchesOracle()
     {
         var regex = new Utf8Pcre2Regex("(?>a+)b", options: Pcre2CompileOptions.None);
-        Assert.Equal(Bcl("(?>a+)b").Replace("aaab", "<$0>"), System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("aaab"), "<$0>")));
+        Assert.Equal(Bcl("(?>a+)b").Replace("aaab", "<$0>"), System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("aaab"), "<$0>"u8)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

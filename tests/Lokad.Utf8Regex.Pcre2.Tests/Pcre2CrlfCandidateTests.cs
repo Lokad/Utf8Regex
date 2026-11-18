@@ -45,7 +45,7 @@ public sealed class Pcre2CrlfCandidateTests
             }
             Assert.False(cursor.MoveNext());
             replaced.Append("\r\nx".AsSpan(previousEnd));
-            Assert.Equal(replaced.ToString(), System.Text.Encoding.UTF8.GetString(regex.Replace(input, "G")));
+            Assert.Equal(replaced.ToString(), System.Text.Encoding.UTF8.GetString(regex.Replace(input, "G"u8)));
             var destination = new byte[3];
             Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "G"u8, destination, out var written));
             Assert.Equal(replaced.ToString(), Encoding.UTF8.GetString(destination.AsSpan(0, written)));

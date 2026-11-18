@@ -132,7 +132,7 @@ public sealed class Pcre2AssertionCompilerTests
         var regex = new Utf8Pcre2Regex("(?=a)");
 
         Assert.Equal(3, regex.Count("aaa"u8));
-        Assert.Equal("|a|a|a", Encoding.UTF8.GetString(regex.Replace("aaa"u8, "|")));
+        Assert.Equal("|a|a|a", Encoding.UTF8.GetString(regex.Replace("aaa"u8, "|"u8)));
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public sealed class Pcre2AssertionCompilerTests
     {
         var regex = new Utf8Pcre2Regex("(?=(?<x>a))a");
 
-        Assert.Equal("[a] [a]", Encoding.UTF8.GetString(regex.Replace("a a"u8, "[${x}]")));
+        Assert.Equal("[a] [a]", Encoding.UTF8.GetString(regex.Replace("a a"u8, "[${x}]"u8)));
     }
 
     [Fact]

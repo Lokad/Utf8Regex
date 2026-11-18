@@ -175,7 +175,7 @@ public sealed class Pcre2DuplicateOptionScopeTests
         Assert.False(isMore);
         Assert.Equal(new[] { 1, 2 }, numbers.ToArray());
         Assert.Equal(2, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
-        Assert.Equal("q<😀> <é>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$x>")));
+        Assert.Equal("q<😀> <é>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$x>"u8)));
         var cursor = regex.EnumerateMatches(input, 0, Pcre2MatchOptions.None, cancellation.Token);
         Assert.True(cursor.MoveNext());
         Assert.Equal((1, 9), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));

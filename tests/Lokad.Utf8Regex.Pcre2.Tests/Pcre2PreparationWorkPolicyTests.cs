@@ -1,4 +1,4 @@
-using System.Reflection;
+using System.Text;
 using Lokad.Utf8Regex.Internal;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -18,24 +18,24 @@ public sealed class Pcre2PreparationWorkPolicyTests
     {
         var denied = Create(3);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-            denied.Replace("ab"u8, template, 0, options)).ErrorKind);
+            denied.Replace("ab"u8, System.Text.Encoding.UTF8.GetBytes(template), 0, options)).ErrorKind);
         Assert.Equal(0, denied.DebugReplacementCacheEntryCount);
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Create(100000).Replace("ab"u8, template, 0, options)));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Create(100000).Replace("ab"u8, System.Text.Encoding.UTF8.GetBytes(template), 0, options)));
     }
 
     [Theory] [MemberData(nameof(Templates))]
     public void WarmReuseObservesInvocationWorkAndPreservesCachedValue(string template, Pcre2SubstitutionOptions options, string expected)
     {
         var regex = Create(3);
-        var get = typeof(Utf8Pcre2Regex).GetMethod("GetReplacementPreparation", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .CreateDelegate<Func<string, Pcre2SubstitutionOptions, Pcre2ReplacementPreparation>>(regex);
-        var retained = get(template, options);
+        var get = Pcre2PreparationMemoryPolicyTests.Preparation(regex);
+        var templateUtf8 = Encoding.UTF8.GetBytes(template);
+        var retained = get(templateUtf8, options);
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-            regex.Replace("ab"u8, template, 0, options)).ErrorKind);
+            regex.Replace("ab"u8, templateUtf8, 0, options)).ErrorKind);
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
-        Assert.Equal(retained, get(template, options));
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Create(100000).Replace("ab"u8, template, 0, options)));
+        Assert.Equal(retained, get(templateUtf8, options));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Create(100000).Replace("ab"u8, System.Text.Encoding.UTF8.GetBytes(template), 0, options)));
     }
 
     [Fact]
@@ -44,12 +44,12 @@ public sealed class Pcre2PreparationWorkPolicyTests
         var regex = Create(100000);
         using (var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, 1, ulong.MaxValue))
         {
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace("ab"u8, "${x}"));
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace("ab"u8, "${x}"u8));
             Assert.Equal(0, regex.DebugReplacementCacheEntryCount);
             Assert.Equal(0UL, owner.Budget.ReservedBytes);
         }
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "${x}")));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "${x}")));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "${x}"u8)));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "${x}"u8)));
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
     }
 

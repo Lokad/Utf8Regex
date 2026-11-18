@@ -32,18 +32,18 @@ public sealed class Pcre2ReplaceLimitTests
     public void TinyLimitBreachesTemplateReplace(string pattern, string inputText, string replacement)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
-        var exception = Assert.Throws<Pcre2MatchException>(() => Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 1 }).Replace(input, replacement));
+        var exception = Assert.Throws<Pcre2MatchException>(() => Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 1 }).Replace(input, Encoding.UTF8.GetBytes(replacement)));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
 
-        var generous = Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 1000 }).Replace(input, replacement);
-        var unlimited = Create(pattern, default).Replace(input, replacement);
+        var generous = Create(pattern, new Utf8Pcre2ExecutionLimits { MatchLimit = 1000 }).Replace(input, Encoding.UTF8.GetBytes(replacement));
+        var unlimited = Create(pattern, default).Replace(input, Encoding.UTF8.GetBytes(replacement));
         Assert.Equal(unlimited, generous);
     }
     [Fact]
     public void TinyDepthLimitBreachesTemplateReplace()
     {
         var input = Encoding.UTF8.GetBytes("aaabbb aaabbb");
-        var exception = Assert.Throws<Pcre2MatchException>(() => Create("(a+)(b+)", new Utf8Pcre2ExecutionLimits { DepthLimit = 1 }).Replace(input, "Z"));
+        var exception = Assert.Throws<Pcre2MatchException>(() => Create("(a+)(b+)", new Utf8Pcre2ExecutionLimits { DepthLimit = 1 }).Replace(input, "Z"u8));
         Assert.Equal(Pcre2ErrorKind.DepthLimit, exception.ErrorKind);
     }
 
@@ -51,7 +51,7 @@ public sealed class Pcre2ReplaceLimitTests
     public void TinyHeapLimitBreachesTemplateReplace()
     {
         var input = Encoding.UTF8.GetBytes("aaabbb aaabbb");
-        var exception = Assert.Throws<Pcre2MatchException>(() => Create("(a+)(b+)", new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 }).Replace(input, "Z"));
+        var exception = Assert.Throws<Pcre2MatchException>(() => Create("(a+)(b+)", new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 }).Replace(input, "Z"u8));
         Assert.Equal(Pcre2ErrorKind.HeapLimit, exception.ErrorKind);
     }
 }

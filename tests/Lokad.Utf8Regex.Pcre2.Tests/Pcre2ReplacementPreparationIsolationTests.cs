@@ -61,8 +61,8 @@ public sealed class Pcre2ReplacementPreparationIsolationTests
         var regex = new Utf8Pcre2Regex("(a)");
         for (var attempt = 0; attempt < 2; attempt++)
             Assert.Equal(Pcre2ErrorKind.UnknownReplacementGroup,
-                Assert.Throws<Pcre2SubstitutionException>(() => regex.Replace("a"u8, "${missing}")).ErrorKind);
-        Assert.Equal("a", Encoding.UTF8.GetString(regex.Replace("a"u8, "$1")));
+                Assert.Throws<Pcre2SubstitutionException>(() => regex.Replace("a"u8, "${missing}"u8)).ErrorKind);
+        Assert.Equal("a", Encoding.UTF8.GetString(regex.Replace("a"u8, "$1"u8)));
     }
 
     private static (Exception? OwnerFailure, Exception? FollowerFailure, string? FollowerOutput,
@@ -156,8 +156,8 @@ public sealed class Pcre2ReplacementPreparationIsolationTests
     {
         switch (route)
         {
-            case "Bytes": return Encoding.UTF8.GetString(regex.Replace(input, template, 0, default, default, token));
-            case "Text": return System.Text.Encoding.UTF8.GetString(regex.Replace(input, template, 0, default, default, token));
+            case "Bytes": return Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template), 0, default, default, token));
+            case "Text": return System.Text.Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template), 0, default, default, token));
             case "Utf8Bytes": return Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template), 0, default, default, token));
             default:
                 var destination = new byte[128];

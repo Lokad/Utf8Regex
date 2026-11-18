@@ -113,7 +113,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "abc"u8,
-            "\\a\\b\\e\\f\\n\\r\\t\\v\\\\",
+            "\\a\\b\\e\\f\\n\\r\\t\\v\\\\"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.Extended,Pcre2MatchOptions.None));
 
         Assert.Equal("\u0007\b\u001b\f\n\r\t\u000b\\", actual);
@@ -126,7 +126,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             ">abcd1234abcd5678<"u8,
-            "wxyz",
+            "wxyz"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.SubstituteMatched,Pcre2MatchOptions.None));
 
         Assert.Equal(">wxyz1234wxyz5678<", actual);
@@ -139,7 +139,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "fooBAR foo"u8,
-            "<$0/$1>",
+            "<$0/$1>"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.UnsetEmpty,Pcre2MatchOptions.None));
 
         Assert.Equal("<fooBAR/BAR> <foo/>", actual);
@@ -152,7 +152,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "ab abb x"u8,
-            "<$0/$1>"));
+            "<$0/$1>"u8));
 
         Assert.Equal("<ab/a> <abb/a> x", actual);
     }
@@ -164,7 +164,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "cc"u8,
-            "X",
+            "X"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly,Pcre2MatchOptions.None));
 
         Assert.Equal("XX", actual);
@@ -177,7 +177,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "cc"u8,
-            "X",
+            "X"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral,Pcre2MatchOptions.None));
 
         Assert.Equal("XX", actual);
@@ -190,7 +190,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "cc"u8,
-            "X",
+            "X"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly | Pcre2SubstitutionOptions.SubstituteLiteral,Pcre2MatchOptions.None));
 
         Assert.Equal("XX", actual);
@@ -203,7 +203,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "XabcdYabcdZ"u8,
-            "\\$1$2\\",
+            "\\$1$2\\"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral,Pcre2MatchOptions.None));
 
         Assert.Equal("X\\$1$2\\Y\\$1$2\\Z", actual);
@@ -216,7 +216,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "abcde-abcde-"u8,
-            "X$ONE+${TWO}Z",
+            "X$ONE+${TWO}Z"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly,Pcre2MatchOptions.None));
 
         Assert.Equal("Xb+dZXb+dZ", actual);
@@ -229,7 +229,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "XYaZ"u8,
-            "foo",
+            "foo"u8,
             startOffsetInBytes: 2,
             substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly));
 
@@ -243,7 +243,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "xyzabcdxyzabcdxyz"u8,
-            ">$1<",
+            ">$1<"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.SubstituteMatched,Pcre2MatchOptions.None));
 
         Assert.Equal("xyz>bc<xyz>bc<xyz", actual);
@@ -256,7 +256,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "xyz55abcdxyzabcdxyz"u8,
-            ">$+<",
+            ">$+<"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.UnsetEmpty,Pcre2MatchOptions.None));
 
         Assert.Equal("xyz><>bc<xyz>bc<xyz", actual);
@@ -272,7 +272,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "foofoo barbar"u8,
-            "<$n>"));
+            "<$n>"u8));
 
         Assert.Equal("<foo> <bar>", actual);
     }
@@ -284,7 +284,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "xabcpqrxxxyzx"u8,
-            "<$2/$3>",
+            "<$2/$3>"u8,
 0,            substitutionOptions: Pcre2SubstitutionOptions.UnsetEmpty,Pcre2MatchOptions.None));
 
         Assert.Equal("<abc/pqr><xyz/>", actual);
@@ -300,7 +300,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "aaaccccaaa bccccb"u8,
-            "<$a|$+>"));
+            "<$a|$+>"u8));
 
         Assert.Equal("<aaa|cccc> <b|cccc>", actual);
     }
@@ -312,7 +312,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "C X"u8,
-            "<${*MARK}:$1>"));
+            "<${*MARK}:$1>"u8));
 
         Assert.Equal("<A:C> <A:X>", actual);
     }
@@ -324,7 +324,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "a123a"u8,
-            "<$1/$0>"));
+            "<$1/$0>"u8));
 
         Assert.Equal("<a/a123a>", actual);
     }
@@ -336,7 +336,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "ABD BAD"u8,
-            "<$1>"));
+            "<$1>"u8));
 
         Assert.Equal("<B> <A>", actual);
     }
@@ -348,7 +348,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "foobar xxfoobar"u8,
-            "<$0/$1>"));
+            "<$0/$1>"u8));
 
         Assert.Equal("foo<bar/foo> xxfoo<bar/foo>", actual);
     }
@@ -360,7 +360,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "abxab"u8,
-            "<$0/$1>"));
+            "<$0/$1>"u8));
 
         Assert.Equal("a<b/ab>xa<b/ab>", actual);
     }
@@ -372,7 +372,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "foobar foobaz"u8,
-            "<$0/$1/$2>"));
+            "<$0/$1/$2>"u8));
 
         Assert.Equal("foo<bar/foo/bar> <foobaz/foo/baz>", actual);
     }
@@ -384,7 +384,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "foobarbaz xxfoobarbaz"u8,
-            "<$0/$1>"));
+            "<$0/$1>"u8));
 
         Assert.Equal("foo<barbaz/foobar> xxfoo<barbaz/foobar>", actual);
     }
@@ -396,7 +396,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "abcdef"u8,
-            "<$0>"));
+            "<$0>"u8));
 
         Assert.Equal("abc<>def", actual);
     }
@@ -408,7 +408,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "abcdef"u8,
-            "<$0>"));
+            "<$0>"u8));
 
         Assert.Equal("<>abcdef", actual);
     }
@@ -420,7 +420,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "abac"u8,
-            "<$0/$1>"));
+            "<$0/$1>"u8));
 
         Assert.Equal("aba<c/abac>", actual);
     }
@@ -432,7 +432,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "ab"u8,
-            "<$0>"));
+            "<$0>"u8));
 
         Assert.Equal("a<b>", actual);
     }

@@ -181,7 +181,7 @@ public sealed class Pcre2SliceCategoryTests
     {
         Assert.Equal(expected, Bcl(pattern).Replace(inputText, "<$0>"));
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8(inputText), "<$0>")));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8(inputText), "<$0>"u8)));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
 }

@@ -23,7 +23,7 @@ public sealed class Pcre2PrefixRepeatTests
         Assert.Equal([(0, 2), (3, 6), (7, 11), (14, 16)], ranges);
 
 
-        Assert.Equal("<ab> <abb> <abbb> x <ab>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+        Assert.Equal("<ab> <abb> <abbb> x <ab>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
     }
 
     [Theory]

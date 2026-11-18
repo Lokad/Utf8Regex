@@ -158,7 +158,7 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
                 }
                 Assert.False(cursor.MoveNext());
                 Assert.Equal(input.Length, offset);
-                Assert.Equal(string.Concat(segments.Select(text => $"<{text}>")), System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+                Assert.Equal(string.Concat(segments.Select(text => $"<{text}>")), System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
                 var destination = new byte[segments.Length];
                 Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryReplace(input, "G"u8, destination, out var written));
                 Assert.Equal(segments.Length, written);
@@ -187,10 +187,10 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
         var input = Encoding.UTF8.GetBytes("a\u0301🇫🇷👩🏽‍💻");
 
         Assert.True(regex.IsMatch(input));
-        Assert.Equal($"<{Encoding.UTF8.GetString(input)}>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+        Assert.Equal($"<{Encoding.UTF8.GetString(input)}>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
         Assert.Equal(
             "GG",
-            System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(@"\X").Replace(Encoding.UTF8.GetBytes("a\u0301🇫🇷"), "G")));
+            System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex(@"\X").Replace(Encoding.UTF8.GetBytes("a\u0301🇫🇷"), "G"u8)));
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
     }
 

@@ -443,7 +443,7 @@ internal static partial class BenchmarkInspectReporter
             }
 
             Measure("ReplacementCursorEnumerate", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
-            Measure("PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
+            Measure("PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.ReplacementUtf8).Length);
         }
 
         MeasurePcre2TrustedNativeModes(benchmarkCase, samples);
@@ -572,7 +572,7 @@ internal static partial class BenchmarkInspectReporter
             }
 
             Measure("Pcre2ReplacementCursorEnumerate", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
-            Measure("Pcre2PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
+            Measure("Pcre2PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.ReplacementUtf8).Length);
             Measure("Utf8Replace", samples, iterations, () => context.Utf8Regex!.Replace(context.InputBytes, Encoding.UTF8.GetBytes(context.Replacement)).Length);
             Measure("DecodeReplace", samples, iterations, () => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex!, Encoding.UTF8.GetString(context.InputBytes), context.Replacement));
             Measure("PredecodedReplace", samples, iterations, () => RegexBenchmarkResult.ReplaceUtf8Length(context.Regex!, context.InputString, context.Replacement));
@@ -805,10 +805,10 @@ internal static partial class BenchmarkInspectReporter
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Replace) != 0)
         {
-            Measure("Pcre2PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
+            Measure("Pcre2PublicReplace", samples, iterations, () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.ReplacementUtf8).Length);
             var allocatedBytes = MeasureAllocatedBytesPerInvocation(
                 iterations,
-                () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.Replacement).Length);
+                () => context.Utf8Pcre2Regex.Replace(context.InputBytes, context.ReplacementUtf8).Length);
             Console.WriteLine(
                 $"Pcre2PublicReplaceAllocated: {allocatedBytes,10:N0} B/op");
         }
@@ -1356,7 +1356,7 @@ var rangeResult61356 = enumerator.Current;
             Utf8Pcre2BenchmarkOperation.IsMatch => regex.IsMatch(context.InputBytes) ? 1 : 0,
             Utf8Pcre2BenchmarkOperation.Count => regex.Count(context.InputBytes),
             Utf8Pcre2BenchmarkOperation.EnumerateMatches => ExecutePcre2PublicEnumeratorRangeSink(regex, context.InputBytes),
-            Utf8Pcre2BenchmarkOperation.Replace => regex.Replace(context.InputBytes, context.Replacement).Length,
+            Utf8Pcre2BenchmarkOperation.Replace => regex.Replace(context.InputBytes, context.ReplacementUtf8).Length,
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         };
 

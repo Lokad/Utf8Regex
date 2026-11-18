@@ -27,7 +27,7 @@ public sealed class Pcre2DocumentationExampleTests
 
         Assert.Equal(["https://example.com", "http://localhost."], values);
 
-        byte[] redacted = regex.Replace(input, "<$host>");
+        byte[] redacted = regex.Replace(input, "<$host>"u8);
         Assert.Equal("Visit <example.com> and <localhost.>", Encoding.UTF8.GetString(redacted));
     }
 }

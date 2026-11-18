@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -38,9 +39,10 @@ public sealed class Pcre2ReplacementCacheChargeTests
     [InlineData("${name}")] [InlineData("${name:+yes:no}")] [InlineData(@"\Ué$1\E")]
     public void BothActualProgramShapesFitConservativeExactCharges(string template)
     {
+        var templateUtf8 = Encoding.UTF8.GetBytes(template);
         Pcre2ReplacementPreparation value;
-        if (Pcre2SimpleReplacementParser.TryParse(template, Pcre2SubstitutionOptions.None, out var simple)) value = new(simple, null);
-        else value = new(null, Pcre2PreparedReplacementParser.Parse(template, Pcre2SubstitutionOptions.Extended));
+        if (Pcre2SimpleReplacementParser.TryParse(templateUtf8, Pcre2SubstitutionOptions.None, out var simple)) value = new(simple, null);
+        else value = new(null, Pcre2PreparedReplacementParser.Parse(templateUtf8, Pcre2SubstitutionOptions.Extended));
         var physical = PhysicalBytes(value);
         using var owner = Utf8ConstructionScope.Enter(); owner.Budget.ReserveBytes(7);
         Assert.True(Compute(value, ulong.MaxValue, default, out var charge)); Assert.True(charge >= physical);
@@ -72,7 +74,7 @@ public sealed class Pcre2ReplacementCacheChargeTests
     [Fact]
     public void EveryWorkCutoffAndEmptyValueChecksUseTheParentBudget()
     {
-        var value = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("é$1😀", Pcre2SubstitutionOptions.Extended));
+        var value = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("é$1😀"u8, Pcre2SubstitutionOptions.Extended));
         ulong steps;
         using (var probe = Utf8ConstructionScope.Enter()) { Assert.True(Compute(value, ulong.MaxValue, default, out _)); steps = probe.Budget.WorkSteps; }
         for (ulong cap = 0; cap <= steps; cap++)

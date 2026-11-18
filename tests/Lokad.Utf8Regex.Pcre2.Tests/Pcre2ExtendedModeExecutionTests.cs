@@ -147,7 +147,7 @@ public sealed class Pcre2ExtendedModeExecutionTests
             Assert.True(match.TryGetGroup(2, out var second)); Assert.True(second.Success);
             Assert.Equal(" bb", System.Text.Encoding.UTF8.GetString((second.Success ? match2Input.Span.Slice(second.StartOffsetInBytes, second.EndOffsetInBytes - second.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             Assert.Equal((7, 10), (second.StartOffsetInBytes, second.EndOffsetInBytes));
-            Assert.Equal("😀 <aa| bb>\t", System.Text.Encoding.UTF8.GetString(regex.Replace("😀 aa bb\t"u8, "<$1|$2>")));
+            Assert.Equal("😀 <aa| bb>\t", System.Text.Encoding.UTF8.GetString(regex.Replace("😀 aa bb\t"u8, "<$1|$2>"u8)));
             Assert.Equal(1, regex.Count("😀 aa bb\t"u8, 0, Pcre2MatchOptions.None, cancellation.Token));
             cancellation.Cancel();
             Assert.Throws<OperationCanceledException>(() => regex.Count("😀 aa bb\t"u8, 0, Pcre2MatchOptions.None, cancellation.Token));

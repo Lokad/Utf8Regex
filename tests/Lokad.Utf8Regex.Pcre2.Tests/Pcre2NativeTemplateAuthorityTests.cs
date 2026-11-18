@@ -31,7 +31,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         var input = new byte[1 << 20]; input.AsSpan().Fill((byte)'z');
         var regex = Create(new() { HeapLimitInBytes = 4096 });
         Assert.False(regex.IsMatch(input, 0, Pcre2MatchOptions.Anchored));
-        string Invoke() => Encoding.UTF8.GetString(regex.Replace(input, "$2$1", 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored));
+        string Invoke() => Encoding.UTF8.GetString(regex.Replace(input, "$2$1"u8, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.Anchored));
         try { _ = Invoke(); } catch (Pcre2MatchException) { }
         var before = GC.GetAllocatedBytesForCurrentThread();
         var failure = Assert.Throws<Pcre2MatchException>(() => Invoke());
@@ -68,7 +68,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         Assert.True(DiscoverySucceeds(first));
         var failure = Assert.Throws<Pcre2MatchException>(() =>
         {
-            _ = regex.Replace(input, "$2$1");
+            _ = regex.Replace(input, "$2$1"u8);
         });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
     }
@@ -82,7 +82,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         var template = new string('x', 1 << 20) + "$2";
         var failure = Assert.Throws<Pcre2MatchException>(() =>
         {
-            _ = regex.Replace(input, template);
+            _ = regex.Replace(input, Encoding.UTF8.GetBytes(template));
         });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
         Assert.False(Pcre2ReplacementPreparationControl.IsActive);
@@ -102,7 +102,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         string Invoke(ulong cap)
         {
             var regex = Create(new() { HeapLimitInBytes = heap ? cap : 0, MatchLimit = heap ? 0 : (uint)cap });
-            return Encoding.UTF8.GetString(regex.Replace(input, template));
+            return Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
         }
         var kind = heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit;
         ulong first = 1, last = 1UL << 20;
@@ -135,7 +135,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         var retained = cursor.ProjectCurrentCaptures();
         var beforeWriting = invocation.Budget.Steps;
         var discoveryPeak = invocation.Budget.PeakWorkingBytes;
-        var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("$2$1", Pcre2SubstitutionOptions.None));
+        var preparation = new Pcre2ReplacementPreparation(null, Pcre2PreparedReplacementParser.Parse("$2$1"u8, Pcre2SubstitutionOptions.None));
         cursor.WorkingInvocation.ShareStorageForCursor();
         var writer = new Pcre2ReplacementTemplateWriter(input, [], cursor.WorkingInvocation);
         try
@@ -217,8 +217,8 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         if (matchOptions == Pcre2MatchOptions.None) Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         else Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         var input = Encoding.UTF8.GetBytes(subject);
-        var bytes = regex.Replace(input, template, start, options, matchOptions, source.Token);
-        var text = System.Text.Encoding.UTF8.GetString(regex.Replace(input, template, start, options, matchOptions, source.Token));
+        var bytes = regex.Replace(input, Encoding.UTF8.GetBytes(template), start, options, matchOptions, source.Token);
+        var text = System.Text.Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template), start, options, matchOptions, source.Token));
         Assert.Equal(expected, Encoding.UTF8.GetString(bytes)); Assert.Equal(expected, text);
         input.AsSpan().Fill((byte)'z');
         Assert.Equal(expected, Encoding.UTF8.GetString(bytes)); Assert.Equal(expected, text);

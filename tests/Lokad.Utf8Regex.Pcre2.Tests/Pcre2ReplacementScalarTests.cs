@@ -9,7 +9,7 @@ public sealed class Pcre2ReplacementScalarTests
     public void PublishedSimpleTemplateStorageRequiresConstructionCapacity()
     {
         using var owner = Utf8ConstructionScope.Enter();
-        Assert.True(Pcre2SimpleReplacementParser.TryParse("café😀$0z", Pcre2SubstitutionOptions.None, out _));
+        Assert.True(Pcre2SimpleReplacementParser.TryParse("café😀$0z"u8, Pcre2SubstitutionOptions.None, out _));
         Assert.True(owner.Budget.ReservedBytes > 0, "Published replacement arrays require live construction capacity.");
     }
 
@@ -20,7 +20,7 @@ public sealed class Pcre2ReplacementScalarTests
     public void LeadingZeroReferencesKeepTheirEntireNumericIdentifier(string pattern, string input, string replacement, string expected)
     {
         var regex = new Utf8Pcre2Regex(pattern);
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(input), replacement)));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement))));
     }
 
     [Theory]
@@ -36,7 +36,7 @@ public sealed class Pcre2ReplacementScalarTests
     {
         var regex = new Utf8Pcre2Regex("(𐐨𐐀)");
         var input = "𐐨𐐀"u8;
-        Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, replacement, 0, Pcre2SubstitutionOptions.Extended));
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, replacement,0, substitutionOptions: Pcre2SubstitutionOptions.Extended,Pcre2MatchOptions.None)));
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, Encoding.UTF8.GetBytes(replacement), 0, Pcre2SubstitutionOptions.Extended));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(replacement),0, substitutionOptions: Pcre2SubstitutionOptions.Extended,Pcre2MatchOptions.None)));
     }
 }

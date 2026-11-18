@@ -15,11 +15,11 @@ public sealed class Pcre2LiteralTemplateAuthorityTests
         var expected = count == 0 ? "z" : new string('b', count * replacement.Length);
         var admitted = Create(new() { HeapLimitInBytes = bytePeak });
         Pcre2PreparationMemoryPolicyTests.Warm(admitted, replacement);
-        Assert.Equal(Encoding.UTF8.GetBytes(expected), admitted.Replace(input, replacement));
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), admitted.Replace(input, Encoding.UTF8.GetBytes(replacement)));
         var denied = Create(new() { HeapLimitInBytes = bytePeak - 1 });
         Pcre2PreparationMemoryPolicyTests.Warm(denied, replacement);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(
-            () => denied.Replace(input, replacement)).ErrorKind);
+            () => denied.Replace(input, Encoding.UTF8.GetBytes(replacement))).ErrorKind);
     }
 
     [Theory]
@@ -42,7 +42,7 @@ public sealed class Pcre2LiteralTemplateAuthorityTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var input = Encoding.UTF8.GetBytes(subject);
-        Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, replacement, 0, options));
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, Encoding.UTF8.GetBytes(replacement), 0, options));
     }
 
     private static Utf8Pcre2Regex Create(Utf8Pcre2ExecutionLimits limits)

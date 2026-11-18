@@ -171,7 +171,7 @@ public sealed class Pcre2SliceTemplateAuthorityTests
         {
             var regex = Create(new() { MatchLimit = 1000000, HeapLimitInBytes = 1000000 }, pattern: pattern);
             var bytes = Encoding.UTF8.GetBytes(input);
-            var result = regex.Replace(bytes, template, start, options, Pcre2MatchOptions.None, token);
+            var result = regex.Replace(bytes, Encoding.UTF8.GetBytes(template), start, options, Pcre2MatchOptions.None, token);
             var expectedBytes = Encoding.UTF8.GetBytes(expected);
             Assert.Equal(expectedBytes, result);
             if (bytes.Length != 0 && input == expected) Assert.NotSame(bytes, result);
@@ -204,7 +204,7 @@ public sealed class Pcre2SliceTemplateAuthorityTests
             var regex = Create(new() { MatchLimit = working ? 0 : (uint)cap, HeapLimitInBytes = working ? cap : 0 });
             try
             {
-                return Encoding.UTF8.GetString(regex.Replace(input, template, 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token));
+                return Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template), 0, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token));
             }
             finally { Assert.False(Pcre2ReplacementPreparationControl.IsActive); }
         }

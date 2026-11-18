@@ -11,16 +11,13 @@ public sealed class Pcre2ReplacementPreparationAdmissionTests
     public static IEnumerable<object[]> Shapes()
     {
         foreach (var template in new[] { "", "café😀", "$$", "$0", "$&", "${0}",
-            "a$$b$0c${0}😀", "surrogate-fragments", "tail$", "𝒜$0́" })
+            "a$$b$0c${0}😀", "tail$", "𝒜$0́" })
             yield return [template];
     }
 
-    private static string Resolve(string template) => template == "surrogate-fragments"
-        ? new string((char)0xd83d, 1) + "$0" + new string((char)0xde00, 1) : template;
-
     private static Pcre2SimpleReplacementPlan Parse(string template)
     {
-        if (!Pcre2SimpleReplacementParser.TryParse(Resolve(template), Pcre2SubstitutionOptions.None, out var plan))
+        if (!Pcre2SimpleReplacementParser.TryParse(Encoding.UTF8.GetBytes(template), Pcre2SubstitutionOptions.None, out var plan))
             throw new InvalidOperationException("Expected a qualified simple template.");
         return plan;
     }
@@ -162,7 +159,7 @@ public sealed class Pcre2ReplacementPreparationAdmissionTests
     public void LiteralBypassUsesTheSameCanonicalByteAndCapacityOwner(string template, string expected)
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var plan = Pcre2SimpleReplacementParser.Literal(template);
+        var plan = Pcre2SimpleReplacementParser.Literal(Encoding.UTF8.GetBytes(template));
         Assert.True(owner.Budget.ReservedBytes >= GraphBytes(plan) + 128ul);
         Assert.Single(plan.Segments);
         Assert.False(plan.Segments[0].IsWholeMatch);
@@ -180,7 +177,7 @@ public sealed class Pcre2ReplacementPreparationAdmissionTests
         using var owner = Utf8ConstructionScope.Enter();
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
-        Assert.False(Pcre2SimpleReplacementParser.TryParse(template, Pcre2SubstitutionOptions.None, out _));
+        Assert.False(Pcre2SimpleReplacementParser.TryParse(Encoding.UTF8.GetBytes(template), Pcre2SubstitutionOptions.None, out _));
         AssertParent(owner.Budget, checkpoint, parent);
         Assert.True(owner.Budget.WorkSteps > 2);
         using (var recovery = Utf8ConstructionScope.Enter()) { _ = Parse(""); }
@@ -193,21 +190,12 @@ public sealed class Pcre2ReplacementPreparationAdmissionTests
         var regex = new Utf8Pcre2Regex("cat");
         using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 0, ulong.MaxValue))
         {
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace("cat"u8, "café😀$0"));
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace("cat"u8, "café😀$0"u8));
             Assert.Equal(0, regex.DebugReplacementCacheEntryCount);
             Assert.Equal(0ul, owner.Budget.ReservedBytes);
         }
-        Assert.Equal("café😀cat", System.Text.Encoding.UTF8.GetString(regex.Replace("cat"u8, "café😀$0")));
+        Assert.Equal("café😀cat", System.Text.Encoding.UTF8.GetString(regex.Replace("cat"u8, "café😀$0"u8)));
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
-    }
-
-    [Fact]
-    public void InvalidSurrogateFragmentsCannotCombineAcrossAnEmptyReference()
-    {
-        var template = new string((char)0xd83d, 1) + "$0" + new string((char)0xde00, 1);
-        Assert.Equal("��😀��", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("").Replace("😀"u8, template)));
-        var literal = Pcre2SimpleReplacementParser.Literal(new string((char)0xd83d, 1));
-        Assert.Equal("�"u8.ToArray(), literal.Segments[0].LiteralUtf8);
     }
 
     private static ulong GraphBytes(Pcre2SimpleReplacementPlan plan)

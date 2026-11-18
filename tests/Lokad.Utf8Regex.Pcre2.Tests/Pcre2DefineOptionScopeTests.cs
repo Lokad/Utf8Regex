@@ -154,7 +154,7 @@ public sealed class Pcre2DefineOptionScopeTests
         Assert.Equal("É😀", System.Text.Encoding.UTF8.GetString((retained4Captures[2].Success ? retained4Input.Slice(retained4Captures[2].StartOffsetInBytes, retained4Captures[2].EndOffsetInBytes - retained4Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.False(regex.IsMatch("É😀é😀"u8)); // The following reference retains outer case sensitivity.
         Assert.Equal(2, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
-        Assert.Equal("q<É😀> <É😀>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$whole>")));
+        Assert.Equal("q<É😀> <É😀>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$whole>"u8)));
         cancellation.Cancel();
         var error = Assert.Throws<OperationCanceledException>(() =>
             regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));

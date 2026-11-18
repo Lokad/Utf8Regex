@@ -69,7 +69,7 @@ public sealed class Pcre2TimeoutIdentityTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
-        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Replace(CreateCatastrophicInput(), "Z"));
+        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Replace(CreateCatastrophicInput(), "Z"u8));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
     }
 

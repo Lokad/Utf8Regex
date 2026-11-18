@@ -98,7 +98,7 @@ public sealed class Pcre2BackslashCCompilerTests
     {
         var regex = Create(@"\C");
 
-        Assert.Equal("xx", Encoding.UTF8.GetString(regex.Replace("é"u8, "x")));
+        Assert.Equal("xx", Encoding.UTF8.GetString(regex.Replace("é"u8, "x"u8)));
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public sealed class Pcre2BackslashCCompilerTests
     {
         var regex = Create(@"^\C");
 
-        Assert.Equal(new byte[] { (byte)'x', 0xA9 }, regex.Replace("é"u8, "x"));
+        Assert.Equal(new byte[] { (byte)'x', 0xA9 }, regex.Replace("é"u8, "x"u8));
     }
 
     [Fact]

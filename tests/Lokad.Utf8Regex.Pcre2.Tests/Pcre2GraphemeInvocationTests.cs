@@ -250,7 +250,7 @@ public sealed class Pcre2GraphemeInvocationTests
             case "Count": _ = regex.Count(input, 0, default, token); break;
             case "Match": _ = regex.Match(input, startOffsetInBytes: 0, matchOptions: default, cancellationToken: token); break;
             case "Enumerate": var cursor = regex.EnumerateMatches(input, 0, default, token); _ = cursor.MoveNext(); break;
-            case "Replace": _ = regex.Replace(input, "Z", 0, default, default, token); break;
+            case "Replace": _ = regex.Replace(input, "Z"u8, 0, default, default, token); break;
             case "Destination": _ = regex.TryReplace(input, "Z"u8, new byte[4], out _, 0, default, default, token); break;
             default: throw new ArgumentOutOfRangeException(nameof(route));
         }

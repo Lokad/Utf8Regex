@@ -7,10 +7,7 @@ namespace Lokad.Utf8Regex.Pcre2;
 // capacity and roots without refunding work; the prepared compiler owns other grammar.
 internal static class Pcre2SimpleReplacementParser
 {
-    internal static Pcre2SimpleReplacementPlan Literal(string replacement)
-        => Literal(new Utf8ConstructionPattern(replacement));
-
-    internal static Pcre2SimpleReplacementPlan Literal(Utf8ConstructionPattern replacement)
+    internal static Pcre2SimpleReplacementPlan Literal(ReadOnlySpan<byte> replacement)
     {
         using var scope = Utf8ConstructionScope.Enter();
         using var storage = Utf8ConstructionSession.Create(scope.Budget);
@@ -21,10 +18,7 @@ internal static class Pcre2SimpleReplacementParser
         return new(segments);
     }
 
-    internal static bool TryParse(string replacement, Pcre2SubstitutionOptions options, out Pcre2SimpleReplacementPlan plan)
-        => TryParse(new Utf8ConstructionPattern(replacement), options, out plan);
-
-    internal static bool TryParse(Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, out Pcre2SimpleReplacementPlan plan)
+    internal static bool TryParse(ReadOnlySpan<byte> replacement, Pcre2SubstitutionOptions options, out Pcre2SimpleReplacementPlan plan)
     {
         plan = default;
         if (options != Pcre2SubstitutionOptions.None) return false;
@@ -38,12 +32,12 @@ internal static class Pcre2SimpleReplacementParser
             storage.Budget.ChargeWork(1);
             if (replacement[index] != '$' || index + 1 == replacement.Length) continue;
             storage.Budget.ChargeWork(1);
-            var next = replacement[index + 1];
+            var next = (char)replacement[index + 1];
             if (next == '0' && index + 2 < replacement.Length)
             {
                 storage.Budget.ChargeWork(1);
                 // $01 is group 1, not group 0 followed by a literal 1.
-                if (char.IsAsciiDigit(replacement[index + 2])) return false;
+                if (char.IsAsciiDigit((char)replacement[index + 2])) return false;
             }
             var end = index + 1;
             var wholeMatch = next is '&' or '0';
@@ -58,7 +52,7 @@ internal static class Pcre2SimpleReplacementParser
             else if (!wholeMatch && next != '$') return false;
 
             if (index > literalStart) segments.Add(FromLiteral(storage, replacement, literalStart, index - literalStart));
-            segments.Add(wholeMatch ? new([], true) : new(storage.EncodeRepairedUtf8("$".AsSpan(), default(Pcre2ReplacementTextControl)), false));
+            segments.Add(wholeMatch ? new([], true) : new(Pcre2ReplacementPreparationControl.CopySource(storage, "$"u8), false));
             index = end;
             literalStart = index + 1;
         }
@@ -71,8 +65,8 @@ internal static class Pcre2SimpleReplacementParser
     }
 
     private static Pcre2SimpleReplacementSegment FromLiteral(Utf8ConstructionSession storage,
-        Utf8ConstructionPattern replacement, int start, int length)
-        => new(Pcre2ReplacementPreparationControl.EncodeSource(storage, replacement, start, length), false);
+        ReadOnlySpan<byte> replacement, int start, int length)
+        => new(Pcre2ReplacementPreparationControl.CopySource(storage, replacement.Slice(start, length)), false);
 }
 
 // Value descriptors borrow the admitted segment array and its payloads.

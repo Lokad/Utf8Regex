@@ -31,10 +31,7 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
     internal static Pcre2ReplacementPreparationControl JoinOrEnter(TimeSpan timeout)
         => s_current.Active ? default : EnterOperation(timeout, default);
 
-    internal static Pcre2ReplacementPreparation Prepare(string replacement, Pcre2SubstitutionOptions options, bool literal)
-        => Prepare(new Utf8ConstructionPattern(replacement), options, literal);
-
-    internal static Pcre2ReplacementPreparation Prepare(Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, bool literal)
+    internal static Pcre2ReplacementPreparation Prepare(ReadOnlySpan<byte> replacement, Pcre2SubstitutionOptions options, bool literal)
     {
         if (!s_current.HasInvocation || s_current.Invocation.HasUnlimitedWorkingMemory)
             return Compile(replacement, options, literal);
@@ -72,35 +69,30 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
         }
     }
 
-    private static Pcre2ReplacementPreparation Compile(Utf8ConstructionPattern replacement, Pcre2SubstitutionOptions options, bool literal)
+    private static Pcre2ReplacementPreparation Compile(ReadOnlySpan<byte> replacement, Pcre2SubstitutionOptions options, bool literal)
     {
         if (literal) return new(Pcre2SimpleReplacementParser.Literal(replacement), null);
         return Pcre2SimpleReplacementParser.TryParse(replacement, options, out var simple)
             ? new(simple, null) : new(null, Pcre2PreparedReplacementParser.Parse(replacement, options));
     }
 
-    // Native callers validate once before route selection. Copy complete scalar
-    // fragments directly; only the explicit text convenience performs encoding.
-    internal static byte[] EncodeSource(Utf8ConstructionSession storage,
-        Utf8ConstructionPattern source, int start, int length)
+    internal static byte[] CopySource(Utf8ConstructionSession storage,
+        ReadOnlySpan<byte> source)
     {
-        if (!source.IsUtf8)
-            return storage.EncodeRepairedUtf8(source.Text.AsSpan(start, length), default(Pcre2ReplacementTextControl));
-        var result = storage.Allocate<byte>(length);
-        var bytes = source.Utf8.Slice(start, length);
-        for (var offset = 0; offset < length;)
+        var result = storage.Allocate<byte>(source.Length);
+        for (var offset = 0; offset < source.Length;)
         {
             Check();
-            var count = Math.Min(2048, length - offset);
+            var count = Math.Min(2048, source.Length - offset);
             storage.Budget.ChargeWork((ulong)count);
-            bytes.Slice(offset, count).CopyTo(result.AsSpan(offset, count));
+            source.Slice(offset, count).CopyTo(result.AsSpan(offset, count));
             offset += count;
         }
         Check();
         return result;
     }
 
-    internal static byte[] FreezeNativeKey(Utf8ConstructionSession storage, Utf8ConstructionPattern source)
+    internal static byte[] FreezeTemplateKey(Utf8ConstructionSession storage, ReadOnlySpan<byte> source)
     {
         Check();
         var charge = Utf8ConstructionBudget.ArrayBytes<byte>(source.Length);
@@ -113,7 +105,7 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
             s_current.PreparationReservation += charge;
         }
         Check();
-        return EncodeSource(storage, source, 0, source.Length);
+        return CopySource(storage, source);
     }
 
     internal static void Check()
@@ -132,9 +124,9 @@ internal readonly ref struct Pcre2ReplacementPreparationControl
     }
 
     // Fund length-dependent hashing/comparison before entering the cache.
-    // This coarse charge complements existing parser/encoding checkpoints;
+    // This coarse charge complements existing parser/copy checkpoints;
     // it does not pretend to count every construction helper or allocation.
-    internal static void CheckText(int length)
+    internal static void CheckTemplateLength(int length)
     {
         if (!s_current.HasInvocation) return;
         for (var offset = 0; offset < length;)

@@ -265,22 +265,17 @@ Use PCRE2 substitution grammar, not .NET parsing. Default forms are `$$`,
 `${*MARK}` and `$<name>`. Backslash processing requires Extended.
 Replace/TryReplace run left-to-right and reject non-monotone successful ranges.
 
-UTF-8 template overloads validate the complete template before route selection,
-then parse its literals, escapes and selectors directly from bytes. Prepared
-payloads, retained keys and output require no whole-template string. The same
-simple/prepared grammar and native/global/detailed drivers serve both source
-forms. Syntax errors remain deferred instructions: no-match and unselected
-fallback behavior retain their existing profile rules. Strict malformed UTF-8
-still fails even on no match or SubstituteLiteral. String templates retain their
-fragment-local surrogate repair.
+Replace and TryReplace take strict UTF-8 templates. They validate the complete
+template before route selection, including with no match or SubstituteLiteral.
+Literal fragments, escapes and selectors parse directly from bytes. Syntax errors
+remain deferred instructions, preserving the no-match and unselected fallback rules.
 
 Warm byte-template cache queries borrow the supplied span. Cold keys are copied
 after major-buffer admission; their temporary working loan overlaps parser/output
-storage and refunds with the operation. Text and byte keys use independent entries
-in one bounded cache; only Extended separates grammar variants. Other substitution
-flags keep their execution meanings. Native construction extents use bytes, so
-position-table capacity can exceed the corresponding UTF-16 source capacity;
-fixed work/instruction/byte backstops remain. These modeled costs are not stable
+storage and refunds with the operation. Only Extended separates grammar variants
+in the bounded cache. Other substitution flags keep their execution meanings.
+Construction uses byte extents with work, instruction and byte backstops.
+These modeled costs are not stable
 per-template quotas or aggregate host-retention guarantees.
 
 Discovery, actual yielded captures/Mark, output growth and final byte copying

@@ -90,7 +90,7 @@ public sealed class Pcre2SliceTransparentTests
     public void TransparentReplaceMatchesOracle()
     {
         var regex = new Utf8Pcre2Regex("(a)(?:b)(c)", options: Pcre2CompileOptions.None);
-        Assert.Equal(Bcl("(a)(?:b)(c)").Replace("abc", "<$1$2>"), System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("abc"), "<$1$2>")));
+        Assert.Equal(Bcl("(a)(?:b)(c)").Replace("abc", "<$1$2>"), System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("abc"), "<$1$2>"u8)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

@@ -163,7 +163,7 @@ public sealed class Pcre2BacktrackingControlCompilerTests
 
         Assert.Equal("B", match.Mark);
         Assert.Equal("B", probe.Mark);
-        Assert.Equal("<B:b>", System.Text.Encoding.UTF8.GetString(regex.Replace("b"u8, "<${*MARK}:$1>")));
+        Assert.Equal("<B:b>", System.Text.Encoding.UTF8.GetString(regex.Replace("b"u8, "<${*MARK}:$1>"u8)));
     }
 
     [Fact]

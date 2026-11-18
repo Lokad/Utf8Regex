@@ -209,9 +209,9 @@ public sealed class Pcre2CaptureBackreferenceTests
         var regex = new Utf8Pcre2Regex("(?<left>a)(?<right>b)");
         var input = "ab ab"u8;
 
-        Assert.Equal("b-a b-a", Encoding.UTF8.GetString(regex.Replace(input, "${right}-$1")));
+        Assert.Equal("b-a b-a", Encoding.UTF8.GetString(regex.Replace(input, "${right}-$1"u8)));
 
-        var numericResult = regex.Replace(input, "$2/$1");
+        var numericResult = regex.Replace(input, "$2/$1"u8);
         Assert.Equal("b/a b/a", Encoding.UTF8.GetString(numericResult));
     }
 
@@ -222,7 +222,7 @@ public sealed class Pcre2CaptureBackreferenceTests
         var input = "aa abab aa"u8;
 
         Assert.Equal(3, regex.Count(input));
-        Assert.Equal("<aa> <abab> <aa>", Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+        Assert.Equal("<aa> <abab> <aa>", Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
     }
 
     [Fact]

@@ -427,8 +427,8 @@ unpaired surrogates. Template grammar errors still report UTF-16 positions.
 For text output, decode `regex.Replace(input, template)` in the host with
 `Encoding.UTF8.GetString`. The regex meters its byte result; the caller owns the
 additional string allocation and any host-level admission for it.
-PCRE2 likewise removes its template `ReplaceToString` overloads while retaining
-byte `Replace`/`TryReplace`. With opt-in `\C`, byte output may be malformed UTF-8;
+PCRE2 removes its string-template overloads. Pass UTF-8 templates to
+`Replace` or `TryReplace`. With opt-in `\C`, byte output may be malformed UTF-8;
 validate it before decoding. Byte templates preserve PCRE2 substitution's special
 `\K` empty-match disposition; ordinary host range iteration keeps the cursor's
 documented disposition.

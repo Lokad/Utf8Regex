@@ -19,7 +19,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
     [InlineData(@"\o{373000}", "😀")]
     public void OctalEscapesProduceOneCompleteScalar(string template, string expected)
     {
-        Assert.Equal(Encoding.UTF8.GetBytes(expected), new Utf8Pcre2Regex("(x)").Replace("x"u8, template, 0, Pcre2SubstitutionOptions.Extended));
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), new Utf8Pcre2Regex("(x)").Replace("x"u8, Encoding.UTF8.GetBytes(template), 0, Pcre2SubstitutionOptions.Extended));
     }
 
     [Theory]
@@ -27,7 +27,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
     [InlineData(@"\o{4200000}")]
     public void InvalidScalarOctalEscapesAreRejected(string template)
     {
-        var error = Assert.Throws<Pcre2SubstitutionException>(() => new Utf8Pcre2Regex("(x)").Replace("x"u8, template, 0, Pcre2SubstitutionOptions.Extended));
+        var error = Assert.Throws<Pcre2SubstitutionException>(() => new Utf8Pcre2Regex("(x)").Replace("x"u8, Encoding.UTF8.GetBytes(template), 0, Pcre2SubstitutionOptions.Extended));
         Assert.Equal(Pcre2ErrorKind.BadReplacementEscape, error.ErrorKind);
     }
 
@@ -44,8 +44,8 @@ public sealed class Pcre2ReplacementByteExpansionTests
     public void CapturesAndSubjectReferencesUseExactScalarByteRanges(string template, string expected)
     {
         var regex = new Utf8Pcre2Regex("(?<w>😀𐐨)");
-        Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace("α😀𐐨β"u8, template, 0, Pcre2SubstitutionOptions.Extended));
-        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace("α😀𐐨β"u8, template, 0, Pcre2SubstitutionOptions.Extended)));
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace("α😀𐐨β"u8, Encoding.UTF8.GetBytes(template), 0, Pcre2SubstitutionOptions.Extended));
+        Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace("α😀𐐨β"u8, Encoding.UTF8.GetBytes(template), 0, Pcre2SubstitutionOptions.Extended)));
     }
 
     [Fact]
@@ -55,8 +55,8 @@ public sealed class Pcre2ReplacementByteExpansionTests
         {
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
         });
-        Assert.Equal("😀"u8.ToArray(), regex.Replace("😀"u8, "$1"));
-        Assert.Equal(new byte[] {0xf0, 0xf0, 0x9f, 0x9f, 0x98, 0x98, 0x80, 0x80}, regex.Replace("😀"u8, "$1$1"));
+        Assert.Equal("😀"u8.ToArray(), regex.Replace("😀"u8, "$1"u8));
+        Assert.Equal(new byte[] {0xf0, 0xf0, 0x9f, 0x9f, 0x98, 0x98, 0x80, 0x80}, regex.Replace("😀"u8, "$1$1"u8));
     }
 
     [Theory]
@@ -65,23 +65,22 @@ public sealed class Pcre2ReplacementByteExpansionTests
     {
         var regex = new Utf8Pcre2Regex("(?<w>😀)");
         var options = replacementOnly ? Pcre2SubstitutionOptions.SubstituteReplacementOnly : Pcre2SubstitutionOptions.None;
-        var actual = regex.Replace("😀x😀"u8, "[${w}]", 4, options);
+        var actual = regex.Replace("😀x😀"u8, "[${w}]"u8, 4, options);
         Assert.Equal(Encoding.UTF8.GetBytes(replacementOnly ? "[😀]" : "😀x[😀]"), actual);
     }
 
     [Fact]
-    public void UnpairedTemplateFragmentsCannotJoinAcrossAnEmptyCapture()
+    public void UnicodeTemplateFragmentsSurviveEmptyCaptureExpansion()
     {
-        var template = new string((char)0xd83d, 1) + "$1" + new string((char)0xde00, 1);
-        Assert.Equal("��😀��", System.Text.Encoding.UTF8.GetString(new Utf8Pcre2Regex("()").Replace("😀"u8, template)));
+        Assert.Equal("𐀀é😀𐀀é"u8.ToArray(), new Utf8Pcre2Regex("()").Replace("😀"u8, "𐀀$1é"u8));
     }
 
     [Fact]
     public void NoMatchLeavesInvalidTemplatesUnevaluated()
     {
         var regex = new Utf8Pcre2Regex("(cat)");
-        Assert.Equal("😀dog"u8.ToArray(), regex.Replace("😀dog"u8, @"\o{Z}", 0, Pcre2SubstitutionOptions.Extended));
-        Assert.Empty(regex.Replace("😀dog"u8, "${", 0, Pcre2SubstitutionOptions.SubstituteReplacementOnly));
+        Assert.Equal("😀dog"u8.ToArray(), regex.Replace("😀dog"u8, @"\o{Z}"u8, 0, Pcre2SubstitutionOptions.Extended));
+        Assert.Empty(regex.Replace("😀dog"u8, "${"u8, 0, Pcre2SubstitutionOptions.SubstituteReplacementOnly));
     }
 
     [Fact]
@@ -93,7 +92,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
         try
         {
             Assert.Equal(48ul, writer.ReservedWorkingBytes);
-            writer.AppendTemplate(new(null, Pcre2PreparedReplacementParser.Parse("café😀", Pcre2SubstitutionOptions.None)), Pcre2SubstitutionOptions.None, [], 0, 4, null);
+            writer.AppendTemplate(new(null, Pcre2PreparedReplacementParser.Parse("café😀"u8, Pcre2SubstitutionOptions.None)), Pcre2SubstitutionOptions.None, [], 0, 4, null);
             Assert.Equal(48ul, writer.ReservedWorkingBytes);
             var result = writer.Complete();
             Assert.Equal("café😀"u8.ToArray(), result);
@@ -109,7 +108,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
         try
         {
             Pcre2MatchException? failure = null;
-            try { limited.AppendTemplate(new(null, Pcre2PreparedReplacementParser.Parse("café😀", Pcre2SubstitutionOptions.None)), Pcre2SubstitutionOptions.None, [], 0, 4, null); }
+            try { limited.AppendTemplate(new(null, Pcre2PreparedReplacementParser.Parse("café😀"u8, Pcre2SubstitutionOptions.None)), Pcre2SubstitutionOptions.None, [], 0, 4, null); }
             catch (Pcre2MatchException error) { failure = error; }
             Assert.NotNull(failure);
             Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind);
@@ -134,7 +133,7 @@ public sealed class Pcre2ReplacementByteExpansionTests
         try
         {
             Exception? failure = null;
-            try { writer.AppendTemplate(new(null, Pcre2PreparedReplacementParser.Parse(new string('x', 256), Pcre2SubstitutionOptions.None)), Pcre2SubstitutionOptions.None, [], 0, 4, null); }
+            try { writer.AppendTemplate(new(null, Pcre2PreparedReplacementParser.Parse(Encoding.UTF8.GetBytes(new string('x', 256)), Pcre2SubstitutionOptions.None)), Pcre2SubstitutionOptions.None, [], 0, 4, null); }
             catch (Exception error) { failure = error; }
             if (deadline) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);

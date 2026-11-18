@@ -36,7 +36,7 @@ public sealed class Pcre2SharedNameMetadataTests
                 nameBytes.AsSpan().Fill(0xff);
             }
             Assert.Equal(1, regex.Count(input));
-            Assert.Equal("<a>", Encoding.UTF8.GetString(regex.Replace(input, "<$x>")));
+            Assert.Equal("<a>", Encoding.UTF8.GetString(regex.Replace(input, "<$x>"u8)));
             Assert.True(retained.TryGetGroup(1, out var after));
             Assert.Equal(first, after);
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString((first.Success ? retained1Input.Span.Slice(first.StartOffsetInBytes, first.EndOffsetInBytes - first.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));

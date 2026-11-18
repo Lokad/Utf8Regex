@@ -34,7 +34,7 @@ public sealed class Pcre2SliceDepthAdmissionTests
         0 => regex.Count(input).ToString(),
         1 => regex.Match(input).Success ? "1" : "0",
         2 => Count(regex, input).ToString(),
-        _ => System.Text.Encoding.UTF8.GetString(regex.Replace(input, "$2$1"))
+        _ => System.Text.Encoding.UTF8.GetString(regex.Replace(input, "$2$1"u8))
     };
 
     private static int Count(Utf8Pcre2Regex regex, byte[] input)

@@ -90,5 +90,5 @@ public sealed class Pcre2ReplacementEntryInvocationTests
     });
 
     private static string Run(Utf8Pcre2Regex regex, byte[] input, string mode, CancellationToken token = default, int start = 0)
-=>mode switch { "Bytes" => Encoding.UTF8.GetString(regex.Replace(input, "Z", start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)), "Utf8Template" => Encoding.UTF8.GetString(regex.Replace(input, "Z"u8, start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)), _ => throw new ArgumentOutOfRangeException(nameof(mode)) };
+=>mode switch { "Bytes" => Encoding.UTF8.GetString(regex.Replace(input, "Z"u8, start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)), "Utf8Template" => Encoding.UTF8.GetString(regex.Replace(input, "Z"u8, start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)), _ => throw new ArgumentOutOfRangeException(nameof(mode)) };
 }

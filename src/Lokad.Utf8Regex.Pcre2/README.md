@@ -137,10 +137,10 @@ while (matches.MoveNext())
     }
 }
 
-byte[] redacted = regex.Replace(input, "<$host>");
+byte[] redacted = regex.Replace(input, "<$host>"u8);
 ```
 
-Replacement strings use PCRE2 substitution syntax. Templates return owned bytes
+UTF-8 templates use PCRE2 substitution syntax. Replace returns owned bytes
 through `Replace` or write caller storage through `TryReplace`. Decode valid output
 in the host when text is needed; the extra string is outside regex resource
 controls. Opt-in `\C` can produce raw malformed UTF-8, so check that output first.

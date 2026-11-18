@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Replacement;
-using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -50,10 +49,7 @@ public sealed class Pcre2RangeBufferAdmissionTests
             },
             MatchTimeout = Regex.InfiniteMatchTimeout
         });
-        var prepare = typeof(Utf8Pcre2Regex).GetMethod("GetTemplatePreparation",
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-            .CreateDelegate<Func<Utf8ConstructionPattern, Pcre2SubstitutionOptions, Pcre2ReplacementPreparation>>(regex);
-        _ = prepare(new("b"u8), default);
+        Pcre2PreparationMemoryPolicyTests.Warm(regex, "b");
         var input = Enumerable.Repeat((byte)'a', count).ToArray();
         var destination = Enumerable.Repeat((byte)0xcc, count).ToArray();
         if (!allow)

@@ -48,7 +48,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
         Assert.Equal(2, regex.Count(input));
         Assert.Equal(
             "a-<12/a/12> b-<345/b/345>",
-            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0/$1/$2>")));
+            System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0/$1/$2>"u8)));
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
         Assert.Equal(3, match.StartOffsetInBytes);
         Assert.Equal(3, match.EndOffsetInBytes);
         Assert.False(notEmpty.Success);
-        Assert.Equal("abc<>def", System.Text.Encoding.UTF8.GetString(regex.Replace("abcdef"u8, "<$0>")));
+        Assert.Equal("abc<>def", System.Text.Encoding.UTF8.GetString(regex.Replace("abcdef"u8, "<$0>"u8)));
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
         Assert.Equal(0, detailed.EndOffsetInBytes);
         Assert.Throws<NotSupportedException>(() => regex.Count("aa"u8));
         Assert.Throws<NotSupportedException>(() => regex.EnumerateMatches("aa"u8));
-        Assert.Throws<NotSupportedException>(() => regex.Replace("aa"u8, "x"));
+        Assert.Throws<NotSupportedException>(() => regex.Replace("aa"u8, "x"u8));
 
 
     }

@@ -10,7 +10,7 @@ public sealed class Pcre2ReplacementCacheTests
         var regex = new Utf8Pcre2Regex("foo");
         for (var i = 0; i < 100; i++)
         {
-            _ = regex.Replace("foo"u8, $"replacement-{i}");
+            _ = regex.Replace("foo"u8, System.Text.Encoding.UTF8.GetBytes($"replacement-{i}"));
         }
 
         Assert.InRange(regex.DebugReplacementCacheEntryCount, 1, 16);

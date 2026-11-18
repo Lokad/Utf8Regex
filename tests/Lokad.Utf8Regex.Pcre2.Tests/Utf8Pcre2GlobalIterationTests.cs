@@ -47,7 +47,7 @@ public sealed class Utf8Pcre2GlobalIterationTests
         var regex = new Utf8Pcre2Regex(@"(?:a\Kb)*", options: Pcre2CompileOptions.None);
         var input = Encoding.UTF8.GetBytes("ab xx ab yy ab");
 
-        var replaced = regex.Replace(input, "R");
+        var replaced = regex.Replace(input, "R"u8);
 
         Assert.Equal("aRR RxRxR aRR RyRyR aRR", Encoding.UTF8.GetString(replaced));
     }
@@ -79,7 +79,7 @@ public sealed class Utf8Pcre2GlobalIterationTests
         var regex = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)", options: Pcre2CompileOptions.None);
         var input = Encoding.UTF8.GetBytes("abz ab xx abz");
 
-        var replaced = regex.Replace(input, "R");
+        var replaced = regex.Replace(input, "R"u8);
 
         Assert.Equal("aR R xx aR", Encoding.UTF8.GetString(replaced));
     }

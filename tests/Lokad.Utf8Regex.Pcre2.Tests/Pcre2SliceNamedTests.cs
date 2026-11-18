@@ -182,7 +182,7 @@ public sealed class Pcre2SliceNamedTests
     public void OwnedReplaceExpandsNamedGroup()
     {
         var regex = new Utf8Pcre2Regex("(?<word>a)+", options: Pcre2CompileOptions.None);
-        Assert.Equal("x<a>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xaa"), "<$1>")));
+        Assert.Equal("x<a>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xaa"), "<$1>"u8)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 }

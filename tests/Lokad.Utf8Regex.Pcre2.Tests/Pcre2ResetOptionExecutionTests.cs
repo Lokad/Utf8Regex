@@ -130,7 +130,7 @@ public sealed class Pcre2ResetOptionExecutionTests
         Assert.Equal((2, 6), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((retained.Success ? match2Input.Slice(retained.StartOffsetInBytes, retained.EndOffsetInBytes - retained.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(2, regex.Count(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
-        Assert.Equal("é😀😀", System.Text.Encoding.UTF8.GetString(regex.Replace(bytes, "$1")));
+        Assert.Equal("é😀😀", System.Text.Encoding.UTF8.GetString(regex.Replace(bytes, "$1"u8)));
         cancellation.Cancel();
         Assert.Throws<OperationCanceledException>(() => regex.Count(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((retained.Success ? match2Input.Slice(retained.StartOffsetInBytes, retained.EndOffsetInBytes - retained.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
@@ -219,6 +219,6 @@ public sealed class Pcre2ResetOptionExecutionTests
         Assert.True(match.Success);
         Assert.Equal((2, 10), (match.StartOffsetInBytes, match.EndOffsetInBytes));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((match6Captures[1].Success ? match6Input.Slice(match6Captures[1].StartOffsetInBytes, match6Captures[1].EndOffsetInBytes - match6Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀😀"u8, "$1")));
+        Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀😀"u8, "$1"u8)));
     }
 }

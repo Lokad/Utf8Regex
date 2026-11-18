@@ -17,28 +17,14 @@ public sealed class Pcre2NativeTemplatePreparationTests
     {
         var regex = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern));
         var subject = Encoding.UTF8.GetBytes(input); var source = Encoding.UTF8.GetBytes(template);
-        var expected = regex.Replace(subject, template, 0, options);
-        Assert.Equal(expected, regex.Replace(subject, source, 0, options));
-        var entries = regex.DebugReplacementCacheEntryCount;
-        Assert.Equal(2, entries); // Distinct text/native keys in one bounded cache.
+        var expected = regex.Replace(subject, source, 0, options);
+        Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
         using (var owner = new Utf8ConstructionScope(0, 0, 0, 0))
         {
             Assert.Equal(expected, regex.Replace(subject, source, 0, options));
             Assert.Equal(0UL, owner.Budget.ReservedBytes); Assert.Equal(0UL, owner.Budget.WorkSteps);
         }
-        long Allocated(bool native)
-        {
-            byte[] output = [];
-            for (var index = 0; index < 10; index++)
-                output = native ? regex.Replace(subject, source, 0, options) : regex.Replace(subject, template, 0, options);
-            var before = GC.GetAllocatedBytesForCurrentThread();
-            for (var index = 0; index < 20; index++)
-                output = native ? regex.Replace(subject, source, 0, options) : regex.Replace(subject, template, 0, options);
-            var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-            GC.KeepAlive(output); return bytes;
-        }
-        Assert.Equal(Allocated(false), Allocated(true));
-        Assert.Equal(entries, regex.DebugReplacementCacheEntryCount);
+        Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
     }
 
     [Theory]
@@ -116,20 +102,18 @@ public sealed class Pcre2NativeTemplatePreparationTests
         var source = "é${x}😀"u8.ToArray();
         // Public operations establish their own invocation. Borrow the production
         // preparation method directly to verify the existing ledger's overlap.
-        var method = typeof(Utf8Pcre2Regex).GetMethod("GetTemplatePreparation",
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
-        var prepare = method.CreateDelegate<Func<Lokad.Utf8Regex.Internal.FrontEnd.Utf8ConstructionPattern, Pcre2SubstitutionOptions, Pcre2ReplacementPreparation>>(regex);
+        var prepare = Pcre2PreparationMemoryPolicyTests.Preparation(regex);
         using (var control = Pcre2ReplacementPreparationControl.Borrow(invocation, default))
         {
-            var plan = prepare(new(source), default); var held = invocation.Ledger.ReservedBytes;
+            var plan = prepare(source, default); var held = invocation.Ledger.ReservedBytes;
             Assert.True(held > 13);
-            Assert.Equal(plan, prepare(new(source), default)); Assert.Equal(held, invocation.Ledger.ReservedBytes);
+            Assert.Equal(plan, prepare(source, default)); Assert.Equal(held, invocation.Ledger.ReservedBytes);
         }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
         var denied = new Utf8SliceInvocation(new(1_000_000, 1024, 32), Timeout.InfiniteTimeSpan, default);
         using (var control = Pcre2ReplacementPreparationControl.Borrow(denied, default))
             Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
-                prepare(new("another${x}"u8), default)).ErrorKind);
+                prepare("another${x}"u8, default)).ErrorKind);
         Assert.Equal(0UL, denied.Ledger.ReservedBytes);
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
     }

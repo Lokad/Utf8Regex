@@ -243,18 +243,18 @@ public sealed class Pcre2LiteralGlobalOperationTests
     {
         var regex = new Utf8Pcre2Regex("abc");
 
-        Assert.Equal("x<abc><abc>", System.Text.Encoding.UTF8.GetString(regex.Replace("xabcabc"u8, "<$0>")));
+        Assert.Equal("x<abc><abc>", System.Text.Encoding.UTF8.GetString(regex.Replace("xabcabc"u8, "<$0>"u8)));
         Assert.Equal(
             "[abc][abc]",
             System.Text.Encoding.UTF8.GetString(regex.Replace(
                 "xabcabc"u8,
-                "[$&]",
+                "[$&]"u8,
 0,                substitutionOptions: Pcre2SubstitutionOptions.SubstituteReplacementOnly,Pcre2MatchOptions.None)));
         Assert.Equal(
             "x$0$0",
             System.Text.Encoding.UTF8.GetString(regex.Replace(
                 "xabcabc"u8,
-                "$0",
+                "$0"u8,
 0,                substitutionOptions: Pcre2SubstitutionOptions.SubstituteLiteral,Pcre2MatchOptions.None)));
     }
 
@@ -281,7 +281,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
     public void LiteralTemplateUsesTheProducedMatch()
 {
         var regex = new Utf8Pcre2Regex("é");
-        Assert.Equal("x[é][é]"u8.ToArray(), regex.Replace("xéé"u8, "[$0]"));    }
+        Assert.Equal("x[é][é]"u8.ToArray(), regex.Replace("xéé"u8, "[$0]"u8));    }
     [Fact]
     public void LiteralProbeSupportsFullPartialAndNoMatchResults()
     {
@@ -410,7 +410,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
             }
 
             Assert.Equal(4, count);
-            Assert.Equal("x <café> <naïve> <😀> <café>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+            Assert.Equal("x <café> <naïve> <😀> <café>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
         });
     }
 

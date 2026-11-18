@@ -165,7 +165,7 @@ public sealed class Pcre2SliceDotTests
     public void OwnedReplaceExpandsDotGroup()
     {
         var regex = new Utf8Pcre2Regex("(a.*b)", options: Pcre2CompileOptions.None);
-        Assert.Equal("xx<aabb>YY", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xxaabbYY"), "<$1>")));
+        Assert.Equal("xx<aabb>YY", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xxaabbYY"), "<$1>"u8)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 }
