@@ -523,6 +523,19 @@ internal static partial class Utf8SliceRunner
         if (following is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
         {
             ReadOnlySpan<byte> mask = program.SetMasks[following.A].AsSpan(0, 16);
+            if (atom.Kind == Utf8SliceInstructionKind.Literal)
+            {
+                // The repeat's exact literal can intersect the following
+                // ASCII set at only one scalar. Check that member directly.
+                var proofBreach = invocation.TryChargeStep();
+                if (proofBreach != Utf8ExecutionLimitKind.None)
+                { outcome = new(false, -1, proofBreach, null, null); return true; }
+                var value = atom.A;
+                if ((uint)value < 128 && (mask[value >> 3] & (1 << (value & 7))) != 0) return false;
+                var literalRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+                outcome = new(literalRepeat.EndIndex >= 0, literalRepeat.EndIndex, literalRepeat.Breach, null, null);
+                return true;
+            }
             if (atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 })
             {
                 // Exact ASCII intersection also rejects overlap in constant

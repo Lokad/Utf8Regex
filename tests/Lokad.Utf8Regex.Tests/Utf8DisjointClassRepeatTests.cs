@@ -8,6 +8,25 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8DisjointClassRepeatTests
 {
     [Fact]
+    public void ExactLiteralChecksWideAsciiFollowerUnderFiniteWork()
+    {
+        const string pattern = @"\A *[0-9A-Z]\z";
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 20, MaxWorkingBytes = 1 }
+        });
+        Assert.True(regex.IsMatch("  A"u8, token.Token));
+
+        using var denied = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2 }
+        });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.IsMatch("  A"u8, token.Token)).ResourceKind);
+    }
+
+    [Fact]
     public void AdjacentCaptureBoundariesKeepFiniteLongRuns()
     {
         var first = new string('a', 8192); var second = new string('1', 8192);
@@ -94,6 +113,9 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData(@"(?=(x*))\1y", "xxxy")]
     [InlineData("(?<=(x{2}))y", "xxy")]
     [InlineData("(é*)-", "éé- é-")]
+    [InlineData("(é*)[0-9A-Z]", "ééA é2 A")]
+    [InlineData(@"\A(a*)[ab]\z", "aaa")]
+    [InlineData(@"\A(a*?)[ab]\z", "aaa")]
     [InlineData(@"(\d{2,4})\b", "123A 1234 12 1")]
     [InlineData(@"\b\d{1,2}/\d{1,2}/(\d{2,4})\b", "11/18/201A 11/19/2018")]
     [InlineData(@"(([a-z]{1,4}))\b", "abcd abcdef abc-")]
