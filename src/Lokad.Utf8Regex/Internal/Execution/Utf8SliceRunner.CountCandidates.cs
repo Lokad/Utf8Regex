@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -109,6 +110,92 @@ internal static partial class Utf8SliceRunner
             TryGetPositiveCategorySet(program, program.Instructions[index], out var categories, out var low, out var high) &&
             categories == 1u << (int)UnicodeCategory.DecimalDigitNumber &&
             (low & ~Utf8AsciiBytePredicates.DecimalMask) == 0 && high == 0;
+
+    private static bool CanSkipShortRepeatChain(Utf8SliceProgram program)
+    {
+        var code = program.Instructions;
+        if (code.Length is < 9 or > 64 || (code.Length - 5) % 4 != 0 ||
+            code[0] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: >= 2 and <= 64 } outer ||
+            outer.A != code.Length - 2 || code[^3] is not { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 0 } ||
+            code[^2] is not { Kind: Utf8SliceInstructionKind.RepeatExit } outerExit || outerExit.A != outer.B ||
+            code[^1].Kind != Utf8SliceInstructionKind.Accept) return false;
+
+        // The search already proved one required ASCII starter. Each other
+        // atom excludes it and every other run's alphabet. Thus each complete
+        // body has a unique usable boundary and contains no later body start.
+        ulong seenLow = 0, seenHigh = 0;
+        uint seenCategories = 0;
+        if (!TryAddDisjointRepeatAtom(program, code[1], ref seenLow, ref seenHigh, ref seenCategories)) return false;
+        for (var index = 2; index < code.Length - 3; index += 4)
+        {
+            if (code[index] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy } repeat || repeat.A != index + 3 ||
+                code[index + 2] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } loop || loop.A != index ||
+                code[index + 3] is not { Kind: Utf8SliceInstructionKind.RepeatExit } exit || exit.A != repeat.B ||
+                !TryAddDisjointRepeatAtom(program, code[index + 1], ref seenLow, ref seenHigh, ref seenCategories)) return false;
+        }
+        return true;
+    }
+
+    private static bool TryAddDisjointRepeatAtom(Utf8SliceProgram program, Utf8SliceInstruction atom,
+        ref ulong seenLow, ref ulong seenHigh, ref uint seenCategories)
+    {
+        ulong low, high;
+        uint categories = 0;
+        if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && (uint)atom.A < 128)
+        {
+            low = atom.A < 64 ? 1UL << atom.A : 0;
+            high = atom.A >= 64 ? 1UL << (atom.A - 64) : 0;
+        }
+        else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } && program.SetMasks[atom.A] is { Length: 16 } mask)
+        {
+            low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
+            high = BinaryPrimitives.ReadUInt64LittleEndian(mask.AsSpan(8));
+        }
+        else if (!TryGetPositiveCategorySet(program, atom, out categories, out low, out high)) return false;
+
+        if ((low & seenLow) != 0 || (high & seenHigh) != 0 || (categories & seenCategories) != 0) return false;
+        seenLow |= low;
+        seenHigh |= high;
+        seenCategories |= categories;
+        return true;
+    }
+
+    private static Utf8ExecutionLimitKind CheckRepeatChain(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        byte first, byte last, ref int position, ref Utf8SliceInvocation invocation, out bool possible)
+    {
+        possible = false;
+        var code = program.Instructions;
+        var minimum = code[0].RepeatMinimum;
+        var bodyEnd = code.Length - 3;
+        var next = position;
+        for (var piece = 0; piece < minimum; piece++)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (next == input.Length || (uint)(input[next] - first) > (uint)(last - first))
+            {
+                position = next;
+                return Utf8ExecutionLimitKind.None;
+            }
+
+            var afterStarter = ++next;
+            for (var index = 2; index < bodyEnd; index += 4)
+            {
+                var run = RunClassRepeat(program, index, input, next, ref invocation);
+                if (run.Breach != Utf8ExecutionLimitKind.None) return run.Breach;
+                if (run.EndIndex < 0)
+                {
+                    // This body also fails when entered on its own. Later
+                    // starters remain available to the ordinary byte search.
+                    position = afterStarter;
+                    return Utf8ExecutionLimitKind.None;
+                }
+                next = run.EndIndex;
+            }
+        }
+        possible = true;
+        return Utf8ExecutionLimitKind.None;
+    }
 
     internal static Utf8ExecutionLimitKind TrySeekAsciiCandidate(ReadOnlySpan<byte> input, ref int position,
         byte first, byte last, ref Utf8SliceInvocation invocation)

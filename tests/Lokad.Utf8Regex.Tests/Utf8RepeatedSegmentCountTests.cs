@@ -56,6 +56,22 @@ public sealed class Utf8RepeatedSegmentCountTests
     {
         var regex = new Utf8Regex(pattern, options: options);
         Assert.Equal(new Regex(pattern, options).Count("Ab Cd Ef !"), regex.Count("Ab Cd Ef !"u8));
+        Assert.Equal(new Regex(pattern, options).Count("ABCDEFX | ABCD "), regex.Count("ABCDEFX | ABCD "u8));
+    }
+
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void DisjointShortChainsCanBeRejectedWithinALinearWorkBudget(RegexOptions options)
+    {
+        const string pattern = @"(?:[A-Z][a-z]+\s*){10,100}";
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("Ab Cd Ef Gh Ij Kl Mn Op Qr\u2003!", 320)));
+        using var regex = Utf8Regex.Compile(pattern, options, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 45_000 }
+        });
+        using var token = new CancellationTokenSource();
+        Assert.Equal(0, regex.Count(input, token.Token));
     }
 
     [Fact]

@@ -800,6 +800,7 @@ internal static partial class Utf8SliceRunner
             !program.CanMatchEmpty && !program.HasContiguousAnchor
             ? GetLeadingAsciiCandidate(program, candidatePlan, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast, out leadingScalarIndex) : -1;
         var checkBranchedPrefix = leadingAsciiFirst >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
+        var checkRepeatChain = leadingAsciiFirst >= 0 && leadingScalarIndex == 1 && CanSkipShortRepeatChain(program);
         var leadingClass = -1;
         var whitespaceLiteralIndex = -1;
         long whitespaceGapMaximum = 0;
@@ -837,7 +838,7 @@ internal static partial class Utf8SliceRunner
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                     if ((leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond))) ||
-                        !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex) :
+                        !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex) :
                             MatchesStraightAsciiPrefix(program, input, position, 0)))
                     {
                         // Rejecting a necessary prefix advances one admitted ASCII
@@ -845,6 +846,13 @@ internal static partial class Utf8SliceRunner
                         // effects; the next search keeps the original work authority.
                         position++;
                         continue;
+                    }
+                    if (checkRepeatChain)
+                    {
+                        var chainBreach = CheckRepeatChain(program, input, (byte)leadingAsciiFirst, leadingAsciiLast,
+                            ref position, ref invocation, out var possible);
+                        if (chainBreach != Utf8ExecutionLimitKind.None) return new(count, chainBreach);
+                        if (!possible) continue;
                     }
                 }
                 while (whitespaceLiteral >= 0 && position > whitespaceWindowEnd)
