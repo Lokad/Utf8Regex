@@ -224,6 +224,13 @@ public sealed class Utf8ClassPrefixCandidateTests
             }
         });
         Assert.Equal(1, efficient.Count(input));
+        using var live = new CancellationTokenSource();
+        var match = efficient.Match(input, 0, [], live.Token);
+        Assert.Equal((100000, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        using var cursor = efficient.CreateMatchCursor(input, 17, live.Token);
+        Assert.True(cursor.MoveNext(out var current));
+        Assert.True(current.GetValueMemory().Span.SequenceEqual("é Holmes"u8));
+        Assert.False(cursor.MoveNext(out _));
         var tight = new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,

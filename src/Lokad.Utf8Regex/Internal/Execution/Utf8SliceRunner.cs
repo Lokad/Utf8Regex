@@ -515,24 +515,28 @@ internal static partial class Utf8SliceRunner
         var leadingClass = -1;
         var classLiteral = -1;
         var classSearch = default(PreparedSubstringSearch?);
+        long classGapMaximum = 0;
+        var directClassLiteral = false;
         var singleWindowAttempt = false;
         var wideInput = input.Length - fromByte >= 256;
         if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
             (wideInput || candidatePlan.LiteralSearch is { Length: > 1, IgnoreCase: false }))
         {
-            var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out var literalIndex, out _, out var directClassLiteral);
-            if (directClassLiteral)
+            var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out var literalIndex,
+                out classGapMaximum, out directClassLiteral);
+            if (leadingClass >= 0 && literal >= 0)
             {
                 classSearch = GetAlignedDelimiterSearch(program, literalIndex, candidatePlan);
-                if (classSearch is { Length: > 1 })
+                if (directClassLiteral && classSearch is { Length: > 1 })
                 {
                     var proofBreach = TryProveSingleWindowAttempt(program, leadingClass, (byte)literal,
                         ref invocation, out singleWindowAttempt);
                     if (proofBreach != Utf8ExecutionLimitKind.None)
                         return new(false, -1, -1, null, null, proofBreach);
                 }
-                if (wideInput || singleWindowAttempt) classLiteral = literal;
+                if (singleWindowAttempt || wideInput && (directClassLiteral || classSearch is not null))
+                    classLiteral = literal;
             }
         }
         // Keep existing literal guidance when available. A decimal set can
@@ -565,7 +569,8 @@ internal static partial class Utf8SliceRunner
             while (classLiteral >= 0 && position > classWindowEnd)
             {
                 var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
-                    (byte)classLiteral, classSearch, 0, true, ref position, ref invocation, out classWindowEnd);
+                    (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
+                    ref position, ref invocation, out classWindowEnd);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
