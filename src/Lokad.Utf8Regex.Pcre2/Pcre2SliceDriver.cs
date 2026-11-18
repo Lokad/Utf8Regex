@@ -5,6 +5,7 @@ using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Pcre2;
 
@@ -314,6 +315,7 @@ internal static class Pcre2SliceDriver
 
     internal static int Count(
         Utf8SliceProgram program,
+        in Pcre2CandidateSearchProgram candidates,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
@@ -322,7 +324,11 @@ internal static class Pcre2SliceDriver
         // A non-empty program needs no PCRE2 empty retry. Keep admitted scratch
         // across matches instead of renting/releasing it on every MoveNext.
         if (!program.CanMatchEmpty && !program.RightToLeft)
-            return CountNonEmpty(program, default, ref input, start, ref invocation);
+        {
+            var branchPrefixes = candidates.Kind == Pcre2CandidateSearchKind.BranchLeadingLiterals
+                ? candidates.Searcher : default;
+            return CountNonEmpty(program, default, ref input, start, ref invocation, branchPrefixes);
+        }
 
         var cursor = new Pcre2SliceGlobalMatchCursor(
             program, invocation, input, start, request, null);
@@ -343,7 +349,8 @@ internal static class Pcre2SliceDriver
         in Utf8SearchPlan searchPlan,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
-        scoped ref Utf8SliceInvocation invocation)
+        scoped ref Utf8SliceInvocation invocation,
+        in PreparedSearcher branchPrefixes = default)
     {
         if (Utf8SliceRunner.TryCountTerminalScalar(program, input.Bytes, start.Value, ref invocation, out var terminal))
         {
@@ -354,7 +361,7 @@ internal static class Pcre2SliceDriver
         try
         {
             var outcome = Utf8SliceRunner.CountFromBytes(program, input.Bytes, start.Value,
-                slots.Starts, slots.Ends, ref invocation, searchPlan);
+                slots.Starts, slots.Ends, ref invocation, searchPlan, branchPrefixes);
             ThrowIfSliceBreached(outcome.Breach);
             return outcome.Count;
         }

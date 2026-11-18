@@ -1794,6 +1794,7 @@ internal static class Pcre2GlobalOperationDriver
 
             result = Pcre2SliceDriver.Count(
                 sliceProgram.SliceProgram,
+                compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 compiledProgram.Request,

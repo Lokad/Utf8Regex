@@ -738,7 +738,8 @@ internal static partial class Utf8SliceRunner
         int[] captureStarts,
         int[] captureEnds,
         ref Utf8SliceInvocation invocation,
-        in Utf8SearchPlan candidatePlan)
+        in Utf8SearchPlan candidatePlan,
+        in PreparedSearcher branchPrefixes = default)
     {
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)fromByte > (uint)input.Length ||
@@ -780,7 +781,9 @@ internal static partial class Utf8SliceRunner
             first.A == (int)Utf8SliceAnchorKind.VeryEnd;
         // A distance-zero exact prefix is necessary, never sufficient. The scalar
         // VM still verifies every candidate; stateful/empty/casefold starts decline.
-        var seekLiteral = CanSeekExactPrefix(program, candidatePlan);
+        // PCRE2-INTEGRATION-POINT: a caller may provide its proved branch prefixes.
+        var useBranchPrefixes = branchPrefixes.HasValue;
+        var seekLiteral = useBranchPrefixes || CanSeekExactPrefix(program, candidatePlan);
         byte leadingAsciiLast = 0;
         var leadingAsciiSecond = -1;
         byte leadingAsciiSecondLast = 0;
@@ -862,7 +865,14 @@ internal static partial class Utf8SliceRunner
                     return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                 if (seekLiteral)
                 {
-                    var seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation);
+                    Utf8ExecutionLimitKind seekBreach;
+                    if (useBranchPrefixes)
+                    {
+                        seekBreach = branchPrefixes.TryFindMatch(input, position, input.Length, false,
+                            ref invocation, out var candidate, out var found);
+                        position = found ? candidate.Index : -1;
+                    }
+                    else seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     // Keep the final charge and recheck the original token after
                     // its diagnostic hook before publishing any accumulated count.

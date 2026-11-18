@@ -131,6 +131,23 @@ public sealed class Pcre2SliceLeadingByteTests
         Assert.Equal(1, regex.Count(input, from, Pcre2MatchOptions.None, live.Token));
     }
 
+    [Fact]
+    public void SliceCountUsesExactBranchPrefixesBeforeVerification()
+    {
+        const string prefix = "Holmes x Watson 😀 ";
+        var text = prefix + new string('H', 32_768) + "Holmes\n Watson x Holmes\n Holmes y Watson";
+        var input = Encoding.UTF8.GetBytes(text);
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        using var regex = new Utf8Pcre2Regex("Holmes.{0,25}Watson|Watson.{0,25}Holmes", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 1 << 20 },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
+        using var live = new CancellationTokenSource();
+        Assert.Equal(2, regex.Count(input, floor, Pcre2MatchOptions.None, live.Token));
+        Assert.Equal(0, regex.Count(input, floor, Pcre2MatchOptions.Anchored, live.Token));
+    }
+
     [Theory]
     [InlineData(2047)]
     [InlineData(2048)]
