@@ -7,6 +7,38 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8SimplePrefixCountTests
 {
     [Theory]
+    [InlineData(@"(?<head>[\w.+-]+@)[\w-]+\.[\w.-]+", "bad@? 😀éclair@chez.fr xx@z.rs")]
+    [InlineData(@"[^;]+;[A-Z]", "bad;? 😀é;Z xy;A")]
+    [InlineData(@"[\w,]{2,4},\d", "a,none! 😀éxyz,5 bc,7")]
+    public void LeadingClassWindowsKeepFirstMatchAndByteFloor(string pattern, string tail)
+    {
+        var text = new string(' ', 300) + tail;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
+        using var cancellation = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 1 << 20 }
+        });
+        Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, cancellation.Token));
+        Assert.Equal(oracle.Count(text), regex.Count(input, cancellation.Token));
+        foreach (var start in new[] { 0, 305 })
+        {
+            var byteFloor = Encoding.UTF8.GetByteCount(text.AsSpan(0, start));
+            var expected = oracle.Match(text, start);
+            var cursor = Utf8MatchSequence.First(regex.CreateMatchCursor(input, byteFloor, cancellation.Token));
+            Utf8MatchSequence.AssertCaptures(expected, cursor, input, text);
+            var expectedRanges = oracle.Matches(text, start).Select(match =>
+                (Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)),
+                 Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index + match.Length))));
+            var actualRanges = new List<(int, int)>();
+            foreach (var match in regex.EnumerateMatches(input, byteFloor, cancellation.Token))
+                actualRanges.Add((match.StartOffsetInBytes, match.EndOffsetInBytes));
+            Assert.Equal(expectedRanges, actualRanges);
+        }
+    }
+
+    [Theory]
     [InlineData("((?:AB|XY)([0-9]{2}))")]
     [InlineData("(ab|a)[0-9]{2}")]
     [InlineData("(?:aba|ba)[0-9]{2}")]

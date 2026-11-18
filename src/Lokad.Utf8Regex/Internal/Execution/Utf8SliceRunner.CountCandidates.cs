@@ -284,6 +284,17 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
+    private static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int leadingClass, byte literal, ref int position,
+        ref Utf8SliceInvocation invocation, out int windowEnd)
+    {
+        var floor = position;
+        var breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
+        windowEnd = position;
+        if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
+        return TryRewindClassWhitespace(program, input, floor, leadingClass, 0, ref position, ref invocation);
+    }
+
     private static bool MatchesStraightAsciiPrefix(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, int instructionIndex)
     {

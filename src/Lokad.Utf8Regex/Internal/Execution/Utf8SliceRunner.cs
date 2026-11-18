@@ -505,15 +505,38 @@ internal static partial class Utf8SliceRunner
         // Keep the cheaper existing head proof when available. Prepared prefix
         // search fills its gaps, including multi-alternative and UTF-8 starts.
         var seekLiteral = leading < 0 && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
-        if (leading >= 0 || seekLiteral)
+        var leadingClass = -1;
+        var classLiteral = -1;
+        if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
+            !program.IgnoreCase && !program.HasContiguousAnchor && input.Length - fromByte >= 256)
+        {
+            var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out var literalIndex, out _);
+            if (leadingClass >= 0 && literalIndex == leadingClass + 3)
+                classLiteral = literal;
+        }
+        if (leading >= 0 || seekLiteral || classLiteral >= 0)
         {
             // A miss can avoid local scratch, but not an enclosing storage loan.
             var admission = invocation.TryReserveWorking(0);
             if (admission != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, null, null, admission);
         }
+        var classWindowEnd = -1;
         for (var position = fromByte; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
         {
+            // The required delimiter proves a window of possible starts.
+            // Verify every survivor against the complete subject so later
+            // matches, captures and assertion context keep their usual order.
+            while (classLiteral >= 0 && position > classWindowEnd)
+            {
+                var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
+                    (byte)classLiteral, ref position, ref invocation, out classWindowEnd);
+                if (seekBreach != Utf8ExecutionLimitKind.None)
+                    return new(false, -1, -1, null, null, seekBreach);
+                if (position < 0)
+                    return new(false, -1, -1, null, null,
+                        new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+            }
             if (seekLiteral)
             {
                 var seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation);
@@ -775,26 +798,27 @@ internal static partial class Utf8SliceRunner
                 {
                     if (leadingClass >= 0)
                     {
-                        var search = candidatePlan.LiteralSearch.GetValueOrDefault();
                         Utf8ExecutionLimitKind seekBreach;
                         if (whitespaceLiteralIndex == leadingClass + 3)
                         {
-                            whitespaceWindowEnd = position;
-                            seekBreach = TrySeekAsciiCandidate(input, ref whitespaceWindowEnd,
-                                (byte)whitespaceLiteral, (byte)whitespaceLiteral, ref invocation);
+                            seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
+                                (byte)whitespaceLiteral, ref position, ref invocation, out whitespaceWindowEnd);
                         }
                         else
+                        {
+                            var search = candidatePlan.LiteralSearch.GetValueOrDefault();
                             seekBreach = Utf8SearchExecutor.TryFindLiteralCandidate(search, input, position,
                                 input.Length - search.Length, false, ref invocation, out whitespaceWindowEnd);
-                        if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
-                        var floor = position;
-                        position = whitespaceWindowEnd;
-                        if (position >= 0)
-                        {
-                            seekBreach = TryRewindClassWhitespace(program, input, floor, leadingClass,
-                                whitespaceGapMaximum, ref position, ref invocation);
-                            if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
+                            if (seekBreach == Utf8ExecutionLimitKind.None)
+                            {
+                                var floor = position;
+                                position = whitespaceWindowEnd;
+                                if (position >= 0)
+                                    seekBreach = TryRewindClassWhitespace(program, input, floor, leadingClass,
+                                        whitespaceGapMaximum, ref position, ref invocation);
+                            }
                         }
+                        if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     }
                     else
                     {
