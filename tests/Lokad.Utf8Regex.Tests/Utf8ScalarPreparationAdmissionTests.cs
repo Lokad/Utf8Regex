@@ -26,7 +26,7 @@ public sealed class Utf8ScalarPreparationAdmissionTests
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor("\U0001f600\U00010400"u8.ToArray()));
         Assert.True(detailed.Success);
         Assert.Equal((0, 8), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
-        Assert.Equal(nonBacktracking ? 1 : 2, detailed.GetCaptures(regex.GroupNumberFromName("x")).Length);
+        Assert.Equal(nonBacktracking ? 1 : 2, detailed.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
 
         var prepared = Utf8FrontEnd.Compile("(?<x>.){2}", options);
@@ -58,7 +58,7 @@ public sealed class Utf8ScalarPreparationAdmissionTests
         var regex = new Utf8Regex("(?<x>a){0,2}?b", options: options);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("aab"u8.ToArray()));
         Assert.True(match.Success);
-        Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromName("x")).Length);
+        Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

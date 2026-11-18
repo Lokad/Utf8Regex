@@ -68,7 +68,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
                     Assert.True(detailed.TryGetGroup("x", out var group));
                     Assert.True(group.Success);
                     Assert.Equal((shape == 2 ? 1 : 0, Encoding.UTF8.GetByteCount(body)), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
-                    Assert.Equal(body, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+                    Assert.Equal(body, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
                 }
             }
             var cursor = regex.EnumerateMatches(input);

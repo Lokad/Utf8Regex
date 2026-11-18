@@ -81,8 +81,8 @@ public sealed class Utf8ComplementaryClassTests
 
             var alternative = new Utf8Regex("(?<g>" + emptyClass + "){1000000000}|(?<g>😀)", options: options);
             Assert.True(Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).TryGetGroup("g", out var group));
-            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).GetGroupMemory(alternative.GroupNumberFromName("g")).Span));
-            Assert.Equal((1, 4, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes), Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).GetCaptures(alternative.GroupNumberFromName("g")).Length));
+            Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).GetGroupMemory(alternative.GroupNumberFromUtf8Name("g"u8)).Span));
+            Assert.Equal((1, 4, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes), Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).GetCaptures(alternative.GroupNumberFromUtf8Name("g"u8)).Length));
         }
     }
 

@@ -279,21 +279,6 @@ public sealed partial class Utf8Regex : IDisposable
         Utf8RegexSyntax.ValidateOptions(options);
     }
 
-    /// <summary>Returns the number assigned to a group name, or <c>-1</c> when the name is undefined.</summary>
-    public int GroupNumberFromName(string name)
-    {
-        using var programUse = _programMemory?.Enter();
-        if (name is null) throw new ArgumentNullException(nameof(name));
-        return _program.CaptureCatalog.GroupNumberFromName(name);
-    }
-
-    /// <summary>Returns the name assigned to a group number, or an empty string when the number is undefined.</summary>
-    public string GroupNameFromNumber(int i)
-    {
-        using var programUse = _programMemory?.Enter();
-        return _program.CaptureCatalog.GroupNameFromNumber(i);
-    }
-
     // Preserve qualified native lanes; the shared owned VM traverses the original
     // UTF-8 subject. Coordinate conversion belongs to result interoperability.
     private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input, CancellationToken token)

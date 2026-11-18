@@ -105,10 +105,8 @@ public sealed class Utf8SliceSparseGroupTests
             copiedNames24[captureSlot24] = System.Text.Encoding.UTF8.GetString(nameBytes24);
         }
         Assert.Equal(oracle.GetGroupNames(), copiedNames24);
-        foreach (var number in numbers.Concat(new[] { -1, 0, 1, 2, 5, 7, 12, 13, int.MaxValue }).Distinct())
-            Assert.Equal(oracle.GroupNameFromNumber(number), regex.GroupNameFromNumber(number));
         foreach (var name in oracle.GetGroupNames().Concat(new[] { "00", "01", "05", "012", "1", "x", "12", "missing" }))
-            Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
+            Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name)));
         using var source = new CancellationTokenSource();
         foreach (var text in texts)
         {

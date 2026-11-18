@@ -300,8 +300,8 @@ public sealed class Utf8NativeLiteralInvocationTests
         var oracle = new Regex(pattern, options).Match("ab");
         Assert.Equal(Utf8ExecutionBackend.FallbackRegex, Prepared(regex).ExecutionBackend);
         Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).TryGetGroup("x", out var actual));
-        Assert.Equal(oracle.Groups["x"].Value, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromName("x")).Span));
-        Assert.Equal(oracle.Groups["x"].Captures.Count, Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).GetCaptures(regex.GroupNumberFromName("x")).Length);
+        Assert.Equal(oracle.Groups["x"].Value, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
+        Assert.Equal(oracle.Groups["x"].Captures.Count, Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
     }
 
     public static IEnumerable<object[]> SemanticExclusionCases()

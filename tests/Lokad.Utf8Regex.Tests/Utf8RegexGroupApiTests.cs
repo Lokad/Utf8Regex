@@ -13,8 +13,7 @@ public sealed class Utf8RegexGroupApiTests
 
         var groupNumber = regex.GroupNumberFromName("word");
 
-        Assert.Equal(groupNumber, utf8Regex.GroupNumberFromName("word"));
-        Assert.Equal(regex.GroupNameFromNumber(groupNumber), utf8Regex.GroupNameFromNumber(groupNumber));
+        Assert.Equal(groupNumber, utf8Regex.GroupNumberFromUtf8Name("word"u8));
         var copiedNames15 = new string[utf8Regex.CaptureGroupCount + 1];
         for (var captureSlot15 = 0; captureSlot15 < copiedNames15.Length; captureSlot15++)
         {

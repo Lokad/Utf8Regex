@@ -269,12 +269,6 @@ internal sealed class Utf8CaptureCatalog
         return numeric < GroupNumbers.Length ? (int)numeric : -1;
     }
 
-    internal string GroupNameFromNumber(int number)
-    {
-        var ordinal = OrdinalFromNumber(number);
-        return (uint)ordinal < (uint)GroupNames.Length ? GroupNames[ordinal] : string.Empty;
-    }
-
     internal int OrdinalFromNumber(int number)
         => SparseMapping is null ? (uint)number < (uint)GroupNumbers.Length ? number : -1
             : SparseMapping.TryGetValue(number, out var ordinal) ? ordinal : -1;

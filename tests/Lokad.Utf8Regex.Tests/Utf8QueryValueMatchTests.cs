@@ -136,7 +136,7 @@ public sealed class Utf8QueryValueMatchTests
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
-        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("topicId")).Span)); Assert.Equal("tab", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("tab")).Span));
+        Assert.Equal("12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("topicId"u8)).Span)); Assert.Equal("tab", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("tab"u8)).Span));
         byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: token.Token)).CancellationToken);

@@ -134,8 +134,8 @@ public sealed class Utf8NonBacktrackingBatchTests
                 if (matches.Count != 0)
                 {
                     var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-                    Assert.Equal(matches[0].Groups["x"].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
-                    Assert.Equal(matches[0].Groups["last"].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("last")).Span));
+                    Assert.Equal(matches[0].Groups["x"].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
+                    Assert.Equal(matches[0].Groups["last"].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name("last"u8)).Span));
                 }
             }
         }
@@ -398,7 +398,7 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal(2, nested.NonBacktrackingCaptureOpeningCount);
         var regex = new Utf8Regex("(?<x>a(?<x>b)c){16}", options: RegexOptions.NonBacktracking);
         var result = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abc", 16)))));
-        Assert.Equal("abc", Encoding.UTF8.GetString(result.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal("abc", Encoding.UTF8.GetString(result.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
     }
 
     [Theory]

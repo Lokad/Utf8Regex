@@ -72,7 +72,7 @@ public sealed class Utf8ScalarDiscoveryTests
             (compiled ? RegexOptions.Compiled : 0) | (reverse ? RegexOptions.RightToLeft : 0));
         var input = "é😀𐐀a"u8.ToArray();
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-        AssertHistory(match, regex.GroupNumberFromName("scalar"), input, reverse);
+        AssertHistory(match, regex.GroupNumberFromUtf8Name("scalar"u8), input, reverse);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

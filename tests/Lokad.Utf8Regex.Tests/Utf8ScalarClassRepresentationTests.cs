@@ -215,10 +215,10 @@ public sealed class Utf8ScalarClassRepresentationTests
         Assert.True(match.Success);
         Assert.Equal((0, 8), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
         Assert.True(match.TryGetGroup("x", out var group));
-        Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromName("x")).Length);
+        Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
         for (var index = 0; index < 2; index++)
         {
-            var capture = match.GetCaptures(regex.GroupNumberFromName("x"))[index];
+            var capture = match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[index];
             Assert.Equal((rtl ? 4 - 4 * index : 4 * index, 4), (capture.StartOffsetInBytes, (capture.EndOffsetInBytes - capture.StartOffsetInBytes)));
         }
         AssertOwned(regex);

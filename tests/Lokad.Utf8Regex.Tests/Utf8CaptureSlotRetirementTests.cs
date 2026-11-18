@@ -114,7 +114,7 @@ public sealed class Utf8CaptureSlotRetirementTests
             copiedNames2[captureSlot2] = System.Text.Encoding.UTF8.GetString(nameBytes2);
         }
         Assert.Equal(oracle.GetGroupNames(), copiedNames2);
-        foreach (var name in oracle.GetGroupNames()) Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
+        foreach (var name in oracle.GetGroupNames()) Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name)));
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text]);
         var input = Encoding.UTF8.GetBytes(text);
         var hit = Utf8MatchSequence.First(regex.CreateMatchCursor(input));

@@ -26,9 +26,7 @@ public sealed class Utf8SliceCaptureCatalogTests
             var oracle = new Regex(pattern, options);
             var regex = new Utf8Regex(pattern, options: options);
             foreach (var name in new[] { "", "0", "00", "1", "01", "2", "12", "012", "x", "é", "missing", "-1", " 1", "2147483648" })
-                Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
-            foreach (var number in new[] { -1, 0, 1, 2, 3, 12, int.MaxValue })
-                Assert.Equal(oracle.GroupNameFromNumber(number), regex.GroupNameFromNumber(number));
+                Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name)));
             var copiedNames17 = new string[regex.CaptureGroupCount + 1];
             for (var captureSlot17 = 0; captureSlot17 < copiedNames17.Length; captureSlot17++)
             {
@@ -46,7 +44,7 @@ public sealed class Utf8SliceCaptureCatalogTests
             Assert.Equal(oracle.GetGroupNumbers(), numbers);
             Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
             foreach (var name in oracle.GetGroupNames())
-                Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
+                Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name)));
             var context = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text)));
             var expected = oracle.Match(text);
             Utf8MatchSequence.AssertCaptures(expected, context, Encoding.UTF8.GetBytes(text), text);
@@ -106,7 +104,7 @@ public sealed class Utf8SliceCaptureCatalogTests
         }
         finally { session.Complete(); }
         Assert.True(regex.IsMatch(input));
-        Assert.Equal(literal, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetGroupMemory(regex.GroupNumberFromName(name)).Span));
+        Assert.Equal(literal, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetGroupMemory(regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name))).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

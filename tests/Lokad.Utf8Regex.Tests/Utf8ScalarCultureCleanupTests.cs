@@ -48,9 +48,9 @@ public sealed class Utf8ScalarCultureCleanupTests
             Assert.Equal((0, input.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
             Assert.Equal(text, System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
             Assert.Equal(patternId == 0 ? "\u0130" : "\U0001f600",
-                System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName(patternId == 0 ? "col" : "before")).Span));
+                System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(patternId == 0 ? "col" : "before"))).Span));
             Assert.Equal(patternId == 0 ? "23" : "\U0001f600",
-                System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName(patternId == 0 ? "row" : patternId == 1 ? "tab" : "name")).Span));
+                System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(patternId == 0 ? "row" : patternId == 1 ? "tab" : "name"))).Span));
             Assert.Equal("<" + text + ">", Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
             var cursor = regex.EnumerateMatches(input);
             Assert.True(cursor.MoveNext());
@@ -95,7 +95,7 @@ public sealed class Utf8ScalarCultureCleanupTests
                 var wanted = oracle.Match(text);
                 var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
                 Assert.Equal(wanted.Success, found.Success);
-                if (wanted.Success) Assert.Equal(wanted.Groups["x"].Value, System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+                if (wanted.Success) Assert.Equal(wanted.Groups["x"].Value, System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
                 Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
                 var positions = new List<(int, int)>();
                 foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));

@@ -294,6 +294,11 @@ compact ordinals; unnamed slots use their actual decimal group number. The forme
 can leave a partial copy. Slot bounds are checked after original-token and funded
 access checks; names come from validated canonical metadata. This explicit copy
 uses the same ownership and interruption contract as pattern copying below.
+The string-key `GroupNumberFromName` and string-returning `GroupNameFromNumber`
+are removed. Use `GroupNumberFromUtf8Name` for valid UTF-8 keys and enumerate
+compact slots for name export. Unknown byte keys return -1; named/sparse aliases
+and dense numeric parsing keep their existing rules. Text-key encoding and host
+collections are caller work. Parser-internal string resolution remains separate.
 
 `TryCopyPatternUtf8(destination, out bytesRequired, token)` copies exact original
 source into caller storage without creating a source string/output buffer or

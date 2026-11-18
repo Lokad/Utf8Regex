@@ -27,7 +27,7 @@ public sealed class Utf8UriExistenceTests
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(match.Success, regex.IsMatch(input));
             if (match.Success)
-                Assert.Equal(System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(captured.CreateMatchCursor(input)).GetGroupMemory(captured.GroupNumberFromName("uri")).Span), System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(0).Span));
+                Assert.Equal(System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(captured.CreateMatchCursor(input)).GetGroupMemory(captured.GroupNumberFromUtf8Name("uri"u8)).Span), System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(0).Span));
         }
         Assert.False(regex.IsMatch("x://😀"u8));
         Assert.True(regex.IsMatch("𐐀://😀😀"u8));

@@ -84,7 +84,7 @@ public sealed class Utf8BeginningSearchTests
         });
         Assert.Equal(2, regex.Count(input));
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-        Assert.Equal("é\n😀", System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("path")).Span));
+        Assert.Equal("é\n😀", System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromUtf8Name("path"u8)).Span));
         Assert.Equal(new Regex(pattern, options).Match(text).Value, System.Text.Encoding.UTF8.GetString(actual.GetValueMemory().Span));
         var scalar = new Utf8Regex("^(.)", options: options, policy: new Utf8RegexPolicy
         {

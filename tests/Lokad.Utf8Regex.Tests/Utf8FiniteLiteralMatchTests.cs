@@ -83,7 +83,7 @@ public sealed class Utf8FiniteLiteralMatchTests
         });
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("é😀dog"u8.ToArray()));
         AssertRange(regex.Match("😀cat"u8), "😀cat", 2, 3);
-        Assert.Equal("dog", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("animal")).Span));
+        Assert.Equal("dog", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("animal"u8)).Span));
     }
 
     private static void AssertRange(Utf8CaptureRange actual, string text, int start, int length)
@@ -162,7 +162,7 @@ public sealed class Utf8FiniteLiteralMatchTests
                         var expected = new Regex(pattern, options).Match(text);
             AssertRange(regex.Match(input, cancellationToken: source.Token), text, expected.Index, length);
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray(), cancellationToken: source.Token));
-            Assert.Equal(literal, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("hit")).Span));
+            Assert.Equal(literal, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name("hit"u8)).Span));
             Assert.Equal(2, regex.Count(input, source.Token));
         }
     }
@@ -196,7 +196,7 @@ public sealed class Utf8FiniteLiteralMatchTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 3, []));
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
         Assert.Equal("nee", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
-        Assert.Equal("dle", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("suffix")).Span));
+        Assert.Equal("dle", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name("suffix"u8)).Span));
 
         var tiny = Create(regex.Pattern, options: options);
         AssertRange(tiny.Match(input), text, 3, 6);

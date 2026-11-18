@@ -98,15 +98,15 @@ public sealed class Utf8LeadingDigitsBooleanTests
         var input = "123-😀é\n"u8.ToArray();
         var first = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(first.Success);
-        Assert.Equal("123", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromName("head")).Span));
-        Assert.Equal("-", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromName("separator")).Span));
-        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromName("tail")).Span));
+        Assert.Equal("123", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromUtf8Name("head"u8)).Span));
+        Assert.Equal("-", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromUtf8Name("separator"u8)).Span));
+        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromUtf8Name("tail"u8)).Span));
         Assert.Equal(1, regex.Count(input));
         Assert.True(regex.Match(input, 0, []).Success);
         Assert.False(regex.Match(input, 1, []).Success);
         Assert.False(regex.Match(input, 2, []).Success);
         Assert.True(regex.IsMatch("7-ok"u8));
-        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromName("tail")).Span));
+        Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromUtf8Name("tail"u8)).Span));
     }
 
     [Theory]

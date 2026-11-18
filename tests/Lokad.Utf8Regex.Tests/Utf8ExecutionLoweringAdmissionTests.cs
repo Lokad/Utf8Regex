@@ -216,8 +216,8 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("a😀"u8.ToArray()));
         Assert.True(match.Success);
         Assert.True(match.TryGetGroup("x", out var group));
-        Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromName("x")).Length);
+        Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.Equal((1, 4), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
     }
 }

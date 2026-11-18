@@ -141,7 +141,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var captured = new Utf8Regex(@"(?<w>\w+)\s+Holmes\k<w>");
         var witness = Encoding.UTF8.GetBytes(new string('!', 260) + "ab Holmesb");
         Assert.Equal(1, captured.Count(witness));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(captured.CreateMatchCursor(witness)).GetGroupMemory(captured.GroupNumberFromName("w")).Span));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(captured.CreateMatchCursor(witness)).GetGroupMemory(captured.GroupNumberFromUtf8Name("w"u8)).Span));
     }
 
     [Fact]

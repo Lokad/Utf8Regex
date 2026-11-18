@@ -73,13 +73,13 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
         var captured = new Utf8Regex(@"\G(?<prefix>///)(?<body>[^\n]*)\n");
         var input = "///value\n///next\n"u8.ToArray();
         var value = captured.Match(input); var detailed = Utf8MatchSequence.First(captured.CreateMatchCursor(input));
-        Assert.Equal("value", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromName("body")).Span));
+        Assert.Equal("value", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromUtf8Name("body"u8)).Span));
         Utf8MatchSequence.EqualValue(value, captured.Match(input, 0, []));
         var cursor = captured.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         _ = captured.Match("///other\n"u8);
-        Assert.Equal("value", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromName("body")).Span));
+        Assert.Equal("value", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromUtf8Name("body"u8)).Span));
         foreach (var pattern in new[] { Pattern, @"\Ghello[^;]*;", @"\G///[^\n]*\nEND" })
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.IgnoreCase, RegexOptions.RightToLeft })
         foreach (var text in new[] { "///é😀\nrest", "helloé;tail;", "///hi\nEND", "///hi\nwrong" })

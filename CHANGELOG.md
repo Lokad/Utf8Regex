@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove Core string metadata queries GroupNumberFromName/GroupNameFromNumber.
+  Use UTF-8 keys and compact caller-buffer name export; preserve numeric/sparse/
+  shared identities and retained-result lifetimes. Recompile consumers.
+
 - Replace Core/PythonRe GetGroupNames with caller-buffer TryCopyGroupNameUtf8,
   preserving compact/Python opening order and original cancellation. PythonRe
   reuses scalar-program names and removes a duplicate table/builder. Funded

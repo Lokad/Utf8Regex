@@ -143,7 +143,7 @@ public sealed class Utf8ScalarCultureTests
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
             var referenceMatch = Utf8MatchSequence.First(referenceRegex.CreateMatchCursor(referenceInput, cancellationToken: source.Token));
             Assert.Equal(referenceInput.Length, (referenceMatch.Value.EndOffsetInBytes - referenceMatch.Value.StartOffsetInBytes));
-            Assert.Equal("\U00010428", System.Text.Encoding.UTF8.GetString(referenceMatch.GetGroupMemory(referenceRegex.GroupNumberFromName("x")).Span));
+            Assert.Equal("\U00010428", System.Text.Encoding.UTF8.GetString(referenceMatch.GetGroupMemory(referenceRegex.GroupNumberFromUtf8Name("x"u8)).Span));
             AssertOwned(referenceRegex);
         }
         finally { CultureInfo.CurrentCulture = saved; }

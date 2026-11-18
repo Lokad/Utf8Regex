@@ -77,7 +77,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
             regex.Replace([], new string('x', 1 << 20)));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(count, Cache(regex).Count);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
         Assert.Equal("<😀><a>", Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<${x}>")));
     }
 

@@ -232,7 +232,7 @@ public sealed class Utf8DisjointClassRepeatTests
         Assert.Equal(expected is null ? 0 : 1, regex.Count(input));
         if (expected is not null)
         {
-            Assert.Equal(expected, Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("run")).Span));
+            Assert.Equal(expected, Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromUtf8Name("run"u8)).Span));
             Assert.Equal(input.Length, actual.Value.EndOffsetInBytes - actual.Value.StartOffsetInBytes);
         }
     }
@@ -250,8 +250,8 @@ public sealed class Utf8DisjointClassRepeatTests
         Assert.False(cursor.MoveNext(out _));
         cursor.Dispose();
         Assert.Equal("abc-", Encoding.UTF8.GetString(alias.GetValueMemory().Span));
-        Assert.Equal("abc", Encoding.UTF8.GetString(alias.GetGroupMemory(regex.GroupNumberFromName("run")).Span));
-        Assert.Equal("-", Encoding.UTF8.GetString(alias.GetGroupMemory(regex.GroupNumberFromName("tail")).Span));
+        Assert.Equal("abc", Encoding.UTF8.GetString(alias.GetGroupMemory(regex.GroupNumberFromUtf8Name("run"u8)).Span));
+        Assert.Equal("-", Encoding.UTF8.GetString(alias.GetGroupMemory(regex.GroupNumberFromUtf8Name("tail"u8)).Span));
     }
 
     [Theory]

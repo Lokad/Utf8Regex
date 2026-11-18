@@ -180,17 +180,14 @@ public sealed class Utf8SliceNamedTests
         }
         Assert.Equal(new[] { "0", "1", "b" }, copiedNames23);
         Assert.Equal(new[] { 0, 1, 2 }, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
-        Assert.Equal(1, regex.GroupNumberFromName("1"));
-        Assert.Equal(2, regex.GroupNumberFromName("b"));
-        Assert.Equal(-1, regex.GroupNumberFromName("zzz"));
-        Assert.Equal("1", regex.GroupNameFromNumber(1));
-        Assert.Equal("b", regex.GroupNameFromNumber(2));
-        Assert.Equal(string.Empty, regex.GroupNameFromNumber(9));
+        Assert.Equal(1, regex.GroupNumberFromUtf8Name("1"u8));
+        Assert.Equal(2, regex.GroupNumberFromUtf8Name("b"u8));
+        Assert.Equal(-1, regex.GroupNumberFromUtf8Name("zzz"u8));
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("acc")));
         Assert.True(detailed.Success);
         Assert.Equal("c", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(2).Span));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("b")).Span));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name("b"u8)).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

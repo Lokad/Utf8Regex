@@ -65,8 +65,7 @@ public sealed class Utf8LoweringDepthTests
         }
         Assert.Equal(runtime.GetGroupNames(), copiedNames3);
         Assert.Equal(runtime.GetGroupNumbers(), Enumerable.Range(0, utf8.CaptureGroupCount + 1).Select(utf8.GroupNumberFromCaptureSlot).ToArray());
-        Assert.Equal(runtime.GroupNumberFromName("word"), utf8.GroupNumberFromName("word"));
-        Assert.Equal("word", utf8.GroupNameFromNumber(utf8.GroupNumberFromName("word")));
+        Assert.Equal(runtime.GroupNumberFromName("word"), utf8.GroupNumberFromUtf8Name("word"u8));
         Assert.True(utf8.IsMatch(Encoding.UTF8.GetBytes("xxabcxx")));
         Assert.True(utf8.Inspection.PreparedRegex.ScalarProgram is not null);
     }

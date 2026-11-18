@@ -148,7 +148,7 @@ public sealed class Utf8SliceAssertionDirectionTests
         var regex = new Utf8Regex(pattern, options: options);
         using var cursor = regex.CreateMatchCursor(input, 1024);
         Assert.True(cursor.MoveNext(out var match));
-        Assert.Equal(1024, match.GetCaptures(regex.GroupNumberFromName("o")).Length);
+        Assert.Equal(1024, match.GetCaptures(regex.GroupNumberFromUtf8Name("o"u8)).Length);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

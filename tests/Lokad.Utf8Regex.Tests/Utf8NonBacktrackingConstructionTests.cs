@@ -75,7 +75,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         Assert.Equal(2, huge.Count("😀"u8));
         Assert.True(Utf8MatchSequence.First(huge.CreateMatchCursor("😀"u8.ToArray())).TryGetGroup("x", out var group));
         Assert.True(group.Success);
-        Assert.Equal(1, Utf8MatchSequence.First(huge.CreateMatchCursor("😀"u8.ToArray())).GetCaptures(huge.GroupNumberFromName("x")).Length);
+        Assert.Equal(1, Utf8MatchSequence.First(huge.CreateMatchCursor("😀"u8.ToArray())).GetCaptures(huge.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.Equal((0, 0), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
         Assert.Equal("Q😀Q", Encoding.UTF8.GetString(huge.Replace("😀"u8, "Q")));
         Assert.True(huge.Inspection.PreparedRegex.ScalarProgram is not null);

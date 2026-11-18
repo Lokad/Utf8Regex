@@ -62,7 +62,7 @@ public sealed class Utf8PositiveCategoryRepeatTests
         Assert.True(cursor.MoveNext(out var second));
         cursor.Dispose();
         Assert.Equal("a😀@", Encoding.UTF8.GetString(first.GetValueMemory().Span));
-        Assert.Equal("a😀", Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromName("run")).Span));
+        Assert.Equal("a😀", Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromUtf8Name("run"u8)).Span));
         Assert.Equal("éa@", Encoding.UTF8.GetString(second.GetValueMemory().Span));
     }
 

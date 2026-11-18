@@ -159,6 +159,16 @@ there when necessary. Original cancellation takes precedence over slot and
 program checks. Funded metadata copies require an open expression, including in
 PythonRe where the former clone API lacked that guard. Previously copied values
 and retained match results keep their lifetimes.
+Core `GroupNumberFromName(string)` is replaced by `GroupNumberFromUtf8Name`.
+Pass UTF-8 literals directly or encode dynamic text keys in the host. Unknown
+keys still return -1; the entire key must be valid UTF-8, and an optional token
+is checked before program access. `GroupNameFromNumber` is removed too: enumerate
+compact slots and pair `GroupNumberFromCaptureSlot` with `TryCopyGroupNameUtf8`.
+Undefined-number empty-string results and null-string query overloads are no
+longer operations of this byte-key surface. Recompile consumers.
+Named UTF-8 lookup currently scans the stored keys linearly. Resolve names once
+before repeated matching; metadata lookup cost can grow with the number of names.
+
 `MatchDetailed` and `MatchDetailedFromUtf16Offset` are removed, along with
 `Utf8MatchContext`, `Utf8GroupContext` and `Utf8CaptureContext`. Use the memory cursor for capture
 history, with a scalar-aligned byte start:

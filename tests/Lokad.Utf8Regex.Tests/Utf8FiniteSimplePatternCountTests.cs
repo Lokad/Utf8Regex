@@ -160,7 +160,7 @@ public sealed class Utf8FiniteSimplePatternCountTests
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         }
         finally { diagnostics.Complete(); }
-        Assert.Equal("b12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("n")).Span));
+        Assert.Equal("b12", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("n"u8)).Span));
         Assert.Equal(512, regex.Count(input));
     }
 }

@@ -33,7 +33,7 @@ public sealed class Utf8DynamicCodeCapabilityTests
             Assert.Equal(Encoding.UTF8.GetString(match.GetGroupMemory(0).Span), System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
             if (pattern.Contains("?<x>"))
                 Assert.Equal(pattern == "(?<x>.)" && mode != RegexOptions.RightToLeft ? "é" : "😀",
-                    System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+                    System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
             using var canceled = new CancellationTokenSource();
             canceled.Cancel();
             Assert.Equal(canceled.Token,

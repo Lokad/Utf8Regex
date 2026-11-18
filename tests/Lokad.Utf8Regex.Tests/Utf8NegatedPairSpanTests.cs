@@ -20,7 +20,7 @@ public sealed class Utf8NegatedPairSpanTests
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(match.Success);
         Assert.Equal("!" + value + "a", System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
-        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("run")).Span));
+        Assert.Equal(value, System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromUtf8Name("run"u8)).Span));
         Assert.Equal(1, regex.Count(input));
         Assert.True(regex.IsMatch(input));
         Assert.True(regex.Match(input).Success);

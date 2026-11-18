@@ -35,7 +35,7 @@ public sealed class Utf8AnchoredCountPrefixTests
             var detailed = Utf8MatchSequence.First(actual.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
             Assert.Equal(first.Success, detailed.Success);
             if (first.Success)
-                Assert.Equal(first.Groups["tail"].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(actual.GroupNumberFromName("tail")).Span));
+                Assert.Equal(first.Groups["tail"].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(actual.GroupNumberFromUtf8Name("tail"u8)).Span));
             var ranges = new List<(int Index, int Length)>();
             foreach (var match in actual.EnumerateMatches(input))
                     ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
@@ -44,7 +44,7 @@ public sealed class Utf8AnchoredCountPrefixTests
                 Encoding.UTF8.GetByteCount(match.Value))).ToArray(), ranges);
             Assert.Equal(ranges.Count, actual.Count(input));
             if (first.Success)
-                Assert.Equal(first.Groups["tail"].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(actual.GroupNumberFromName("tail")).Span));
+                Assert.Equal(first.Groups["tail"].Value, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(actual.GroupNumberFromUtf8Name("tail"u8)).Span));
         }
     }
 

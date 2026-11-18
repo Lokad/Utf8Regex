@@ -108,7 +108,7 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
         var cursor = captured.EnumerateMatches(bytes); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext()); var first = alias.Current;
         Assert.Equal(first, cursor.Current); Assert.False(cursor.MoveNext()); Assert.Equal(first, alias.Current);
-        _ = captured.Match("Other"u8); Assert.Equal("AbC_9", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(captured.GroupNumberFromName("id")).Span));
+        _ = captured.Match("Other"u8); Assert.Equal("AbC_9", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(captured.GroupNumberFromUtf8Name("id"u8)).Span));
         var offset = new Utf8Regex(Pattern, options: Options).Match("😀!AbC9!tail"u8, 5, []);
         Assert.Equal((5, 4), (offset.StartOffsetInBytes, offset.EndOffsetInBytes - offset.StartOffsetInBytes));
         var nbPattern = Pattern.Replace(@"\G", @"\A");

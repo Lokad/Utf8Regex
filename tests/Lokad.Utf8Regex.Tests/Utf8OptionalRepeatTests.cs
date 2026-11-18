@@ -43,7 +43,7 @@ public sealed class Utf8OptionalRepeatTests
             Assert.True(cursor.MoveNext(out var retained));
             Assert.Equal(0, retained.GetCaptures(0)[0].StartOffsetInBytes);
             Assert.Equal(5, retained.GetCaptures(0)[0].EndOffsetInBytes);
-            var valueNumber = regex.GroupNumberFromName("value");
+            var valueNumber = regex.GroupNumberFromUtf8Name("value"u8);
             Assert.Equal("😀", Encoding.UTF8.GetString(retained.GetGroupMemory(valueNumber).Span));
             Assert.True(cursor.MoveNext(out var second));
             Assert.Equal("X", Encoding.UTF8.GetString(second.GetValueMemory().Span));

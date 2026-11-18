@@ -58,17 +58,15 @@ public sealed class PythonReGroupNumberingOwnershipTests
             }
         }
 
+        using var native = new Utf8Regex(translation.NativePatternUtf8, options: translation.NativeRegexOptions,
+            policy: new Utf8RegexPolicy { MatchTimeout = Timeout.InfiniteTimeSpan });
         var nextNamed = nextUnnamed;
         foreach (var pair in parseResult.NamedGroups.OrderBy(pair => pair.Value))
         {
             expected[pair.Value] = nextNamed++;
             var alias = "g" + pair.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
             Assert.Equal(expected[pair.Value], managed.GroupNumberFromName(alias));
-            Assert.Equal(expected[pair.Value], new Utf8Regex(translation.NativePatternUtf8, options: translation.NativeRegexOptions, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = default
-            }).GroupNumberFromName(alias));
+            Assert.Equal(expected[pair.Value], native.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(alias)));
         }
 
         var program = PythonReScalarCompiler.Compile(parseResult);

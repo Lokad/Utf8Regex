@@ -2,13 +2,8 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.DiffTests;
 
-/// <summary>
-/// R02 extraction 4: owned group metadata answers every group query identically to the
-/// BCL oracle across plain, numbered, named, unicode-named, non-capturing, nested,
-/// backreference, inline-option, balancing, conditional, ECMAScript, right-to-left,
-/// ExplicitCapture, and empty patterns, including undefined names, out-of-range
-/// numbers, and null-name rejection.
-/// </summary>
+// Byte-key lookup and caller-buffer names preserve the overlapping BCL metadata
+// semantics across syntax/options; null-string queries are outside this API.
 public sealed class Utf8RegexGroupApiDiffTests
 {
     public static IEnumerable<object?[]> GroupPatterns()
@@ -57,20 +52,7 @@ public sealed class Utf8RegexGroupApiDiffTests
         var probes = runtime.GetGroupNames().Concat(new[] { "missing", "0", string.Empty, "999999" });
         foreach (var name in probes)
         {
-            Assert.Equal(runtime.GroupNumberFromName(name), utf8.GroupNumberFromName(name));
+            Assert.Equal(runtime.GroupNumberFromName(name), utf8.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name)));
         }
-
-        for (var number = -1; number <= runtime.GetGroupNumbers().Length + 1; number++)
-        {
-            Assert.Equal(runtime.GroupNameFromNumber(number), utf8.GroupNameFromNumber(number));
-        }
-    }
-
-    [Fact]
-    public void GroupNumberFromNameNullThrowsLikeRuntime()
-    {
-        var runtime = Assert.Throws<ArgumentNullException>(() => new Regex("abc").GroupNumberFromName(null!));
-        var utf8 = Assert.Throws<ArgumentNullException>(() => new Utf8Regex("abc").GroupNumberFromName(null!));
-        Assert.Equal(runtime.ParamName, utf8.ParamName);
     }
 }

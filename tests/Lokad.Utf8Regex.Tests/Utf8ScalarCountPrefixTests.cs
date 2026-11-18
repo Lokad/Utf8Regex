@@ -77,9 +77,9 @@ public sealed class Utf8ScalarCountPrefixTests
         Assert.True(retained.Success);
         Assert.Equal(6, retained.Value.StartOffsetInBytes);
         Assert.Equal(4, (retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes));
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
         Assert.Equal(2, regex.Count(input, source.Token));
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.Count("😀 x😀"u8, source.Token)).CancellationToken);

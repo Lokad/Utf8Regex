@@ -110,7 +110,7 @@ public sealed class Utf8BoundedGapCandidateTests
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected, regex.Count(input));
             Assert.True(retained.Success);
-            Assert.False(string.IsNullOrEmpty(System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("w")).Span)));
+            Assert.False(string.IsNullOrEmpty(System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("w"u8)).Span)));
         }
     }
 

@@ -114,8 +114,8 @@ public sealed class Utf8ScalarCaptureContinuationTests
         Assert.True(match.Success);
         Assert.Equal((0, 9), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
         Assert.True(match.TryGetGroup("x", out var group));
-        Assert.Equal(3, match.GetCaptures(regex.GroupNumberFromName("x")).Length);
-        Assert.Equal(rtl ? "a" : "𐐨", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal(3, match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
+        Assert.Equal(rtl ? "a" : "𐐨", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
         Assert.Equal(rtl ? (0, 1) : (5, 4), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
         Assert.Equal(rtl ? "<a>" : "<𐐨>", Encoding.UTF8.GetString(regex.Replace(input, "<${x}>")));
     }

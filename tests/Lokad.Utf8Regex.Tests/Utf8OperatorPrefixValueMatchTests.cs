@@ -93,7 +93,7 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
         _ = captured.Match("++"u8);
-        Assert.Equal("+=-", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromName("op")).Span));
+        Assert.Equal("+=-", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromUtf8Name("op"u8)).Span));
         Assert.Equal(1, captured.Count(bytes));
         var nonBacktracking = new Utf8Regex(Pattern.Replace(@"\G", @"\A"), options: RegexOptions.NonBacktracking, policy: new Utf8RegexPolicy
         {

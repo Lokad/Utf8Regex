@@ -65,7 +65,7 @@ public sealed class Utf8SliceProjectionTests
         Assert.False((actual.TryGetGroup(1, out var range1) ? range1.Success : default));
         Assert.True((actual.TryGetGroup(2, out var range2) ? range2.Success : default));
         Assert.Equal(oracle.Groups[2].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(2).Span));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("2")).Span));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromUtf8Name("2"u8)).Span));
     }
 
     [Fact]

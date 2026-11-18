@@ -64,7 +64,7 @@ public sealed class Utf8RtlStrictEndCountTests
                 Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), retained.Value.StartOffsetInBytes);
                 Assert.Equal(Encoding.UTF8.GetByteCount(expected.Value), (retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes));
                 if (pattern.Contains("?<g>"))
-                    Assert.Equal(expected.Groups["g"].Value, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("g")).Span));
+                    Assert.Equal(expected.Groups["g"].Value, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("g"u8)).Span));
             }
         }
     }

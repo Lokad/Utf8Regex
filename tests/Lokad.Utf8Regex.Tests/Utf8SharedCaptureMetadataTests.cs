@@ -58,9 +58,7 @@ public sealed class Utf8SharedCaptureMetadataTests
         Assert.Equal(oracle.GetGroupNames(), names); Assert.Equal(oracle.GetGroupNumbers(), numbers);
         Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         foreach (var name in oracle.GetGroupNames().Concat(new[] { "", "00", "01", "012", "missing" }))
-            Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
-        foreach (var number in oracle.GetGroupNumbers().Concat(new[] { -1, 2, 12, int.MaxValue }))
-            Assert.Equal(oracle.GroupNameFromNumber(number), regex.GroupNameFromNumber(number));
+            Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name)));
         var input = Encoding.UTF8.GetBytes(subject);
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); var expected = oracle.Match(subject);
         var preparedCatalog = regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog;
@@ -71,7 +69,7 @@ public sealed class Utf8SharedCaptureMetadataTests
         Utf8MatchSequence.AssertCaptures(expected, actual, input, subject);
         foreach (var name in oracle.GetGroupNames())
         {
-            Assert.Equal(expected.Groups[name].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName(name)).Span));
+            Assert.Equal(expected.Groups[name].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name))).Span));
             Assert.True(actual.TryGetGroup(name, out _));
         }
         Assert.False(actual.TryGetGroup("missing", out _));

@@ -84,7 +84,7 @@ public sealed class Utf8CaptureSnapshotBoundsTests
         try
         {
             var result = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
-            Assert.Equal("aaa"u8.ToArray(), result.GetGroupMemory(regex.GroupNumberFromName("run")).ToArray());
+            Assert.Equal("aaa"u8.ToArray(), result.GetGroupMemory(regex.GroupNumberFromUtf8Name("run"u8)).ToArray());
         }
         finally { session.Complete(); }
         var far = new Utf8Regex(@"a(?=(?<far>.*))(?<far>)", options: RegexOptions.None, policy: new Utf8RegexPolicy
@@ -94,7 +94,7 @@ public sealed class Utf8CaptureSnapshotBoundsTests
         });
         var farResult = Utf8MatchSequence.First(far.CreateMatchCursor(input));
         Assert.True(farResult.Success);
-        Assert.Equal(2, farResult.GetCaptures(far.GroupNumberFromName("far")).Length);
+        Assert.Equal(2, farResult.GetCaptures(far.GroupNumberFromUtf8Name("far"u8)).Length);
         // Distant endpoints borrow the subject; per-scalar history needs owned ranges.
         var history = new Utf8Regex("(?<each>.)+", options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
@@ -123,7 +123,7 @@ public sealed class Utf8CaptureSnapshotBoundsTests
             var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)");
             var first = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             var alias = first;
-            var number = regex.GroupNumberFromName("run");
+            var number = regex.GroupNumberFromUtf8Name("run"u8);
             var groupMemory = first.GetGroupMemory(number);
             var capture = first.GetCaptures(number)[0];
             _ = Utf8MatchSequence.First(regex.CreateMatchCursor("éaac"u8.ToArray()));

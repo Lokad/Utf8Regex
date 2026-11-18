@@ -120,9 +120,9 @@ public sealed class Utf8PublicScalarFallbackTests
         Assert.True(match.TryGetGroup("x", out var first));
         Assert.True(first.Success);
         Assert.Equal((5, 9), (first.StartOffsetInBytes, first.EndOffsetInBytes));
-        Assert.Equal("😀"u8.ToArray(), match.GetGroupMemory(regex.GroupNumberFromName("x")).ToArray());
+        Assert.Equal("😀"u8.ToArray(), match.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).ToArray());
         Assert.Equal("a"u8.ToArray(), match.GetGroupMemory(12).ToArray());
-        Assert.Equal(1, match.GetCaptures(regex.GroupNumberFromName("x")).Length);
+        Assert.Equal(1, match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

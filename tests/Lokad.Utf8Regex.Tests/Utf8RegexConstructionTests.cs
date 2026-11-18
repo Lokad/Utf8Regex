@@ -173,7 +173,7 @@ public sealed class Utf8RegexConstructionTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("unsupported_options", regex.Inspection.FallbackReason);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
-        Assert.Equal("#😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("///#😀"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromName("title")).Span));
+        Assert.Equal("#😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("///#😀"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromUtf8Name("title"u8)).Span));
     }
 
     [Fact]
@@ -251,9 +251,9 @@ public sealed class Utf8RegexConstructionTests
         var regex = new Utf8Regex("^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[4];
         Assert.Equal(new Utf8CaptureRange(0, 6), regex.Match("A0f1c2"u8, 0, slots));
-        Assert.Equal(new Utf8CaptureRange(0, 2), slots[regex.GroupNumberFromName("red")]);
-        Assert.Equal(new Utf8CaptureRange(2, 4), slots[regex.GroupNumberFromName("green")]);
-        Assert.Equal(new Utf8CaptureRange(4, 6), slots[regex.GroupNumberFromName("blue")]);
+        Assert.Equal(new Utf8CaptureRange(0, 2), slots[regex.GroupNumberFromUtf8Name("red"u8)]);
+        Assert.Equal(new Utf8CaptureRange(2, 4), slots[regex.GroupNumberFromUtf8Name("green"u8)]);
+        Assert.Equal(new Utf8CaptureRange(4, 6), slots[regex.GroupNumberFromUtf8Name("blue"u8)]);
     }
 
     [Fact]

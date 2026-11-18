@@ -62,7 +62,7 @@ public sealed class Utf8BoundedDotCandidateTests
         });
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(match.TryGetGroup("gap", out _));
-        Assert.Equal("é😀", Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("gap")).Span));
+        Assert.Equal("é😀", Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromUtf8Name("gap"u8)).Span));
         Assert.Equal(1, regex.Count(input));
     }
 
@@ -218,7 +218,7 @@ public sealed class Utf8BoundedDotCandidateTests
                 Assert.Equal(length <= maximum, actual.Success);
                 Utf8MatchSequence.EqualCaptures(expected, actual);
                 Assert.Equal(reference.Count(input), regex.Count(input));
-                if (actual.Success) Assert.Equal(gap, Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("gap")).Span));
+                if (actual.Success) Assert.Equal(gap, Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromUtf8Name("gap"u8)).Span));
             }
         }
     }
@@ -254,8 +254,8 @@ public sealed class Utf8BoundedDotCandidateTests
                 Assert.Equal(reference.IsMatch(input), regex.IsMatch(input));
                 if (actual.Success)
                 {
-                    Assert.Equal(gap, Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("gap")).Span));
-                    if (tail.Contains("?<tail>")) Assert.Equal("at", Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromName("tail")).Span));
+                    Assert.Equal(gap, Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromUtf8Name("gap"u8)).Span));
+                    if (tail.Contains("?<tail>")) Assert.Equal("at", Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromUtf8Name("tail"u8)).Span));
                 }
             }
         }
@@ -335,7 +335,7 @@ public sealed class Utf8BoundedDotCandidateTests
         const string pattern = "A(?<gap>.{8,25})Z";
         var regex = new Utf8Regex(pattern); var input = "AxxxxxxxxZ"u8.ToArray();
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-        var group = retained.GetGroupMemory(regex.GroupNumberFromName("gap"));
+        var group = retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("gap"u8));
         var cursor = regex.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(cursor.Current, alias.Current);

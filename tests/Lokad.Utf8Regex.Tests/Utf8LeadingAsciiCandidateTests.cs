@@ -204,7 +204,7 @@ public sealed class Utf8LeadingAsciiCandidateTests
             ResourcePolicy = Funded
         });
         Assert.Equal(1, captured.Count("éABaB😀"u8));
-        Assert.Equal("B", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(captured.CreateMatchCursor("éABaB😀"u8.ToArray())).GetGroupMemory(captured.GroupNumberFromName("w")).Span));
+        Assert.Equal("B", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(captured.CreateMatchCursor("éABaB😀"u8.ToArray())).GetGroupMemory(captured.GroupNumberFromUtf8Name("w"u8)).Span));
     }
 
     [Theory]

@@ -95,7 +95,7 @@ public sealed class Utf8AsciiScalarWitnessTests
         Assert.Equal((0, 18), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
         var expected = new[] { (0, 1), (1, 4), (5, 4), (9, 4), (13, 4), (17, 1) };
         if (options.HasFlag(RegexOptions.RightToLeft)) Array.Reverse(expected);
-        var captures = match.GetCaptures(regex.GroupNumberFromName("x"));
+        var captures = match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8));
         Assert.Equal(expected.Length, captures.Length);
         for (var index = 0; index < expected.Length; index++)
         {

@@ -14,11 +14,11 @@ public sealed class Utf8ReversibleMatchStateTests
         Assert.True(match.Success);
         Assert.Equal((0, 10), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
         Assert.True(match.TryGetGroup("x", out var x));
-        Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromName("x")).Length);
-        Assert.Equal((0, 4), (match.GetCaptures(regex.GroupNumberFromName("x"))[0].StartOffsetInBytes, (match.GetCaptures(regex.GroupNumberFromName("x"))[0].EndOffsetInBytes - match.GetCaptures(regex.GroupNumberFromName("x"))[0].StartOffsetInBytes)));
-        Assert.Equal((4, 4), (match.GetCaptures(regex.GroupNumberFromName("x"))[1].StartOffsetInBytes, (match.GetCaptures(regex.GroupNumberFromName("x"))[1].EndOffsetInBytes - match.GetCaptures(regex.GroupNumberFromName("x"))[1].StartOffsetInBytes)));
+        Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
+        Assert.Equal((0, 4), (match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[0].StartOffsetInBytes, (match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[0].EndOffsetInBytes - match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[0].StartOffsetInBytes)));
+        Assert.Equal((4, 4), (match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[1].StartOffsetInBytes, (match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[1].EndOffsetInBytes - match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[1].StartOffsetInBytes)));
         Assert.True(match.TryGetGroup("y", out var y));
-        Assert.Equal(1, match.GetCaptures(regex.GroupNumberFromName("y")).Length);
+        Assert.Equal(1, match.GetCaptures(regex.GroupNumberFromUtf8Name("y"u8)).Length);
         Assert.Equal((8, 1), (y.StartOffsetInBytes, (y.EndOffsetInBytes - y.StartOffsetInBytes)));
     }
 

@@ -63,7 +63,7 @@ public sealed class Utf8DeepScalarAdmissionTests
         Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         Assert.True(detailed.TryGetGroup("leaf", out var leaf));
         Assert.Equal((0, 4), (leaf.StartOffsetInBytes, (leaf.EndOffsetInBytes - leaf.StartOffsetInBytes)));
-        Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("leaf")).Span));
+        Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name("leaf"u8)).Span));
         Assert.Equal(family == "behind" ? "\U0001f600<\U0001f600>" : "<\U0001f600>",
             Encoding.UTF8.GetString(regex.Replace(input, "<${leaf}>")));
         var cursor = regex.EnumerateMatches(input);

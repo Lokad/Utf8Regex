@@ -73,10 +73,10 @@ public sealed class Utf8AdjacentSetRepeatTests
         var bytes = Encoding.UTF8.GetBytes("😀é12 é3");
         var retained = Utf8MatchSequence.First(owner.CreateMatchCursor(bytes));
         Assert.Equal("😀é12"u8.ToArray(), retained.GetValueMemory().ToArray());
-        Assert.Equal("😀é"u8.ToArray(), retained.GetGroupMemory(owner.GroupNumberFromName("run")).ToArray());
+        Assert.Equal("😀é"u8.ToArray(), retained.GetGroupMemory(owner.GroupNumberFromUtf8Name("run"u8)).ToArray());
         Assert.Equal((0, 8), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         Assert.Equal(2, owner.Count(bytes));
-        Assert.Equal("😀é"u8.ToArray(), retained.GetGroupMemory(owner.GroupNumberFromName("run")).ToArray());
+        Assert.Equal("😀é"u8.ToArray(), retained.GetGroupMemory(owner.GroupNumberFromUtf8Name("run"u8)).ToArray());
     }
 
     [Fact]

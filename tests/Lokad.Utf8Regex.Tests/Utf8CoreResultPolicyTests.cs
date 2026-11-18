@@ -211,8 +211,8 @@ public sealed class Utf8CoreResultPolicyTests
         var options = RegexOptions.CultureInvariant | RegexOptions.NonBacktracking;
         var regex = Create("(?<x>.)+", 1000000, options);
         var context = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-        Assert.Equal(1, context.GetCaptures(regex.GroupNumberFromName("x")).Length);
-        Assert.Equal("中", System.Text.Encoding.UTF8.GetString(context.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal(1, context.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
+        Assert.Equal("中", System.Text.Encoding.UTF8.GetString(context.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
         AssertResultFailure(() => Utf8MatchSequence.First(Create("(?<x>.)+", 1, options).CreateMatchCursor(input)), 1);
     }
 

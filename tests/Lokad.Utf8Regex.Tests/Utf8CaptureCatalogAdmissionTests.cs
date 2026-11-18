@@ -31,11 +31,9 @@ public sealed class Utf8CaptureCatalogAdmissionTests
             var number = seed.Numbers[ordinal];
             Assert.Equal(ordinal, catalog.OrdinalFromNumber(number));
             Assert.Equal(number, catalog.GroupNumberFromName(seed.Names[ordinal]));
-            Assert.Equal(seed.Names[ordinal], catalog.GroupNameFromNumber(number));
         }
         Assert.Equal(-1, catalog.OrdinalFromNumber(-1));
         Assert.Equal(-1, catalog.GroupNumberFromName("missing"));
-        Assert.Equal(string.Empty, catalog.GroupNameFromNumber(-1));
         Array.Fill(seed.Definitions, new("changed", 8, false, 0));
         Assert.Equal(seed.Assigned, catalog.DefinitionNumbers);
         Assert.Equal(seed.Names, catalog.GroupNames);

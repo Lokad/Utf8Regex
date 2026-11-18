@@ -138,8 +138,8 @@ public sealed class Utf8OrderedWindowCandidateTests
         var regex = new Utf8Regex(@"(?<x>Tom).{0,2}river\k<x>|river.{0,2}Tom");
         var input = "😀Tom!riverTom"u8.ToArray();
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-        Assert.Equal("Tom", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal("Tom", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
         Assert.Equal(1, regex.Count(input));
-        Assert.Equal("Tom", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
+        Assert.Equal("Tom", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
     }
 }

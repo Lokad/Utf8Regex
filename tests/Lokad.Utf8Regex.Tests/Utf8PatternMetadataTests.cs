@@ -22,7 +22,8 @@ public sealed class Utf8PatternMetadataTests
     public void NativeLookupPreservesTheExistingNameAndNumericContract(string pattern, string name)
     {
         var regex = Utf8Regex.Compile(Encoding.UTF8.GetBytes(pattern));
-        Assert.Equal(regex.GroupNumberFromName(name), regex.GroupNumberFromUtf8Name(Encoding.UTF8.GetBytes(name)));
+        var expected = new System.Text.RegularExpressions.Regex(pattern).GroupNumberFromName(name);
+        Assert.Equal(expected, regex.GroupNumberFromUtf8Name(Encoding.UTF8.GetBytes(name)));
     }
 
     [Fact]
