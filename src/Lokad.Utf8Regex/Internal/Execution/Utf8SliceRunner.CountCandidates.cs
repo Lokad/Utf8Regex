@@ -4,9 +4,15 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
-    // Capture markers, anchors and mandatory repeat entries consume no scalar.
-    // An unfolded ASCII literal/positive range proves possible starts. Other
-    // instructions (including optional repeats/forks/assertions) decline.
+    // These entries leave the input edge unchanged when they succeed. The
+    // scanner can reject an impossible consuming byte before the VM runs them.
+    private static bool PrecedesRequiredScalar(Utf8SliceInstruction entry) =>
+        entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
+            Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Lookahead or Utf8SliceInstructionKind.Lookbehind ||
+        entry.Kind == Utf8SliceInstructionKind.RepeatGreedy && entry.RepeatMinimum > 0;
+
+    // An unfolded ASCII literal or positive range proves possible starts.
+    // Optional repeats and forks can reach a different consuming instruction.
     private static int GetLeadingAsciiCandidate(Utf8SliceProgram program, out byte last,
         out int second, out byte secondLast)
     {
@@ -17,14 +23,8 @@ internal static partial class Utf8SliceRunner
         var index = 0;
         // This optional per-invocation proof stays bounded even for deeply
         // nested captures; larger prefixes retain the metered VM scan.
-        while (index < code.Length && index < 64)
-        {
-            var entry = code[index];
-            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or Utf8SliceInstructionKind.Anchor ||
-                entry.Kind == Utf8SliceInstructionKind.RepeatGreedy && entry.RepeatMinimum > 0)
-                index++;
-            else break;
-        }
+        while (index < code.Length && index < 64 && PrecedesRequiredScalar(code[index]))
+            index++;
         if (index >= code.Length || index >= 64) return -1;
         var first = GetUnfoldedAsciiRange(code[index], out last);
         if (first < 0) return first;
@@ -32,14 +32,8 @@ internal static partial class Utf8SliceRunner
         // Repeat-end/exit, optional entries and forks stay opaque: the next
         // instruction in storage need not be the next consumed scalar.
         index++;
-        while (index < code.Length && index < 64)
-        {
-            var entry = code[index];
-            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or Utf8SliceInstructionKind.Anchor ||
-                entry.Kind == Utf8SliceInstructionKind.RepeatGreedy && entry.RepeatMinimum > 0)
-                index++;
-            else break;
-        }
+        while (index < code.Length && index < 64 && PrecedesRequiredScalar(code[index]))
+            index++;
         if (index < code.Length && index < 64)
             second = GetUnfoldedAsciiRange(code[index], out secondLast);
         return first;

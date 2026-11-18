@@ -10,7 +10,10 @@ public sealed class Utf8SimplePrefixCountTests
     [InlineData(@"(?<head>[\w.+-]+@)[\w-]+\.[\w.-]+", "bad@? 😀éclair@chez.fr xx@z.rs")]
     [InlineData(@"[^;]+;[A-Z]", "bad;? 😀é;Z xy;A")]
     [InlineData(@"[\w,]{2,4},\d", "a,none! 😀éxyz,5 bc,7")]
-    public void LeadingClassWindowsKeepFirstMatchAndByteFloor(string pattern, string tail)
+    [InlineData(@"(?<=(?<lead>é))(?<word>[A-Z][a-z]+)(?=\s|$)", "abcdéAlpha 😀éBeta")]
+    [InlineData(@"(?=(?<first>[A-Z]))[A-Z](?<!Z)[a-z]+", "Zed  😀Alpha Zulu Beta")]
+    [InlineData(@"(?![A-Z]x)[A-Z](?<!Z)[a-z]+", "Ax Zed 😀Bravo")]
+    public void NecessaryStartsKeepFirstMatchAndByteFloor(string pattern, string tail)
     {
         var text = new string(' ', 300) + tail;
         var input = Encoding.UTF8.GetBytes(text);
