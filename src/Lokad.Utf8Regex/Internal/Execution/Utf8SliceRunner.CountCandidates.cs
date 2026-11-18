@@ -566,6 +566,27 @@ internal static partial class Utf8SliceRunner
             (window.Max != window.Min && window.Max < remaining && input[start + window.Max] == window.Literal);
     }
 
+    private static (int Min, int Max, byte Literal) GetShortRepeatLiteralWindow(Utf8SliceProgram program, int atomIndex)
+    {
+        var code = program.Instructions.AsSpan();
+        var repeat = code[atomIndex - 1];
+        if (code.Length - atomIndex < 4 || repeat.RepeatMinimum == 0 || repeat.RepeatMaximum > 2 ||
+            !IsSingleClassRepeat(code, atomIndex - 1) ||
+            code[atomIndex + 3] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal)
+            return default;
+        return ((int)repeat.RepeatMinimum, (int)repeat.RepeatMaximum, (byte)literal.A);
+    }
+
+    private static bool MayReachShortRepeatLiteral(ReadOnlySpan<byte> input, int start,
+        (int Min, int Max, byte Literal) window, bool admitsWideScalars)
+    {
+        // A two-scalar repeat can leave the byte window only when one
+        // of its consumed scalars is wider than a byte. Let the VM decide.
+        return admitsWideScalars && (input[start] >= 128 ||
+                window.Max == 2 && start + 1 < input.Length && input[start + 1] >= 128) ||
+            HasAsciiLiteralInWindow(input, start, window);
+    }
+
     private static bool IsSingleAtomRepeat(ReadOnlySpan<Utf8SliceInstruction> code, int index, Utf8SliceInstruction entry)
         => entry.A == index + 3 && entry.A < code.Length &&
             code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == index &&

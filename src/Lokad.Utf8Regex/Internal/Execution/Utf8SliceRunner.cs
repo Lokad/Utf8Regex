@@ -544,6 +544,8 @@ internal static partial class Utf8SliceRunner
             leading = '0';
             leadingLast = (byte)'9';
         }
+        var shortRepeatWindow = leadingScalarIndex > 0 && leading >= 0
+            ? GetShortRepeatLiteralWindow(program, leadingScalarIndex) : default;
         if (leading >= 0 || seekLiteral || classLiteral >= 0)
         {
             // A miss can avoid local scratch, but not an enclosing storage loan.
@@ -602,6 +604,8 @@ internal static partial class Utf8SliceRunner
             // bounded work and the original interruption authority.
             if (leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                 (uint)(input[position + 1] - second) > (uint)(secondLast - second)))
+                continue;
+            if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
                 continue;
             if (checkBranchedPrefix && !MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex))
                 continue;
