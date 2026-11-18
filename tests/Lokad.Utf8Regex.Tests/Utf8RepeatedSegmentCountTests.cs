@@ -7,6 +7,39 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8RepeatedSegmentCountTests
 {
+    [Fact]
+    public void EndConstrainedCompoundRepeatSkipsUnreachableTailsWithinTheWorkBudget()
+    {
+        const string pattern = @"\A(?:[a-z]+\.)+(?:[a-z]{2,12}|[0-9]{1,3})\]?\z";
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("northwind.", 32)) + "net#");
+        using var regex = Utf8Regex.Compile(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkSteps = 1500 }
+        });
+        using var token = new CancellationTokenSource();
+        Assert.False(regex.IsMatch(input, token.Token));
+    }
+
+    [Theory]
+    [InlineData("x", @"\z", "", RegexOptions.None)]
+    [InlineData("x", "$", "\n", RegexOptions.None)]
+    [InlineData("x", "$", "\nmore text after the first line", RegexOptions.Multiline)]
+    [InlineData("é", @"\z", "", RegexOptions.None)]
+    [InlineData("x", @"\z", "", RegexOptions.RightToLeft)]
+    public void ReachableRepeatExitsKeepGreedyCapturesAndEndSemantics(
+        string last, string anchor, string after, RegexOptions options)
+    {
+        var pattern = @"\A(?<part>[aé]+\.)+(?<tail>a\." + last + ")" + anchor;
+        var text = "é.a." + last + after;
+        var input = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8Regex(pattern, options: options);
+        using var token = new CancellationTokenSource();
+        var expected = new Regex(pattern, options).Match(text);
+        Assert.True(expected.Success);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
+    }
+
     [Theory]
     [InlineData(@"(?:[A-Z][a-z]+\s*){2,3}")]
     [InlineData(@"(?:[A-Z][a-z]{2,}\s+){1,3}")]

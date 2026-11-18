@@ -457,6 +457,10 @@ assertion state retain their own admission. When the remaining instructions
 prove an exact terminal literal, the engine can find the last reachable
 occurrence in bounded, metered blocks and execute the tail without a rewind
 frame. The usual capture and result admission applies at that endpoint.
+When a bounded continuation must reach a terminal end anchor, the engine
+can discard a saved repeat exit that is too far from the end. Its rollback
+and interruption checks still run. A lax anchor allows a final LF, and a
+multiline anchor can still succeed earlier in the subject.
 
 The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result

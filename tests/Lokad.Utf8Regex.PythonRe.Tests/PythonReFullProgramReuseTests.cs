@@ -41,6 +41,21 @@ public sealed class PythonReFullProgramReuseTests
         Assert.Equal(Utf8SliceInstructionKind.Accept, original.Instructions[^1].Kind);
     }
 
+    [Fact]
+    public void FullMatchRecomputesACopiedHintAtTheTailWindowBoundary()
+    {
+        var pattern = "(?:ab)+" + new string('c', 126) + "$";
+        var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
+        var original = PythonReScalarCompiler.Compile(parse);
+        var exit = Array.FindIndex(original.Instructions, static op => op.Kind == Utf8SliceInstructionKind.RepeatExit);
+        var priorLimit = original.Instructions[exit].B;
+        Assert.True(priorLimit > 0);
+
+        var derived = PythonReScalarCompiler.RequireFullMatch(original);
+        Assert.Equal(0, derived.Instructions[exit].B);
+        Assert.Equal(priorLimit, original.Instructions[exit].B);
+    }
+
     [Theory]
     [InlineData("a|ab", "ab", true)]
     [InlineData("a|ab", "abc", false)]

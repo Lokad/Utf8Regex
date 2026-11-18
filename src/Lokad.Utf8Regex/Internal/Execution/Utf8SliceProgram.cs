@@ -203,6 +203,7 @@ internal readonly struct Utf8SliceInstruction
 
     internal Utf8SliceInstructionKind Kind { get; }
     internal int A { get; }
+    // RepeatExit uses a positive B as an exclusive byte bound to the input end.
     internal int B { get; }
     internal int C { get; }
     // For a positive unfolded Set, packed ASCII interval endpoints:
@@ -910,6 +911,8 @@ internal static class Utf8SliceLowerer
         }
 
         var instructions = lowerer.Instructions.Take();
+        if (!lowerer.MirrorExecute && !lowerer.NonBacktracking && lowerer.RepeatCount != 0)
+            MarkBoundedEndTails(instructions, lowerer.Budget);
         if (lowerer.HasNullableNonBacktrackingLoop && lowerer.NonBacktrackingScopes is { } scopes)
         {
             var lifted = Utf8NonBacktrackingLoopGraph.Lift(instructions, scopes, lowerer.Budget);
@@ -933,6 +936,92 @@ internal static class Utf8SliceLowerer
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
             lowerer.BackreferenceLowerings.Take());
+    }
+
+    internal static void MarkBoundedEndTails(Span<Utf8SliceInstruction> code, Utf8ConstructionBudget budget,
+        bool appendedEndAnchor = false)
+    {
+        if (code.Length < 2 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return;
+        var end = FindTerminalEnd(code[..^1]);
+        if (end < 0) return;
+
+        // Walk a bounded suffix once. Zero means that reaching the anchor
+        // cannot be proved. The lax end can leave an unconsumed final LF.
+        const int precedingInstructions = 127;
+        var start = Math.Max(0, end - precedingInstructions);
+        if (appendedEndAnchor && FindTerminalEnd(code[..^2]) is >= 0 and var oldEnd)
+        {
+            // FullMatch owns a copy with one new terminal anchor. A few copied
+            // hints may now be outside the window we are about to recompute.
+            for (var index = Math.Max(0, oldEnd - precedingInstructions); index < start; index++)
+            {
+                budget.ChargeWork(1);
+                var previous = code[index];
+                if (previous is { Kind: Utf8SliceInstructionKind.RepeatExit, B: > 0 })
+                    code[index] = new(previous.Kind, previous.A, 0, previous.C, previous.D);
+            }
+        }
+        Span<int> limits = stackalloc int[end - start + 1];
+        limits[^1] = code[end].A == (int)Utf8SliceAnchorKind.VeryEnd ? 1 : 2;
+        for (var index = end - 1; index >= start; index--)
+        {
+            budget.ChargeWork(1);
+            var instruction = code[index];
+            var next = limits[index - start + 1];
+            long limit = 0;
+            var width = ScalarMaximumBytes(instruction);
+            if (width != 0 && next != 0)
+                limit = (long)next + width;
+            else switch (instruction.Kind)
+            {
+                case Utf8SliceInstructionKind.RepeatExit:
+                    if (next != instruction.B)
+                        code[index] = new(instruction.Kind, instruction.A, next, instruction.C, instruction.D);
+                    limit = next;
+                    break;
+                case Utf8SliceInstructionKind.CaptureStart:
+                case Utf8SliceInstructionKind.CaptureEnd:
+                case Utf8SliceInstructionKind.Boundary:
+                    limit = next;
+                    break;
+                case Utf8SliceInstructionKind.Jump when instruction.A > index && instruction.A <= end:
+                    limit = limits[instruction.A - start];
+                    break;
+                case Utf8SliceInstructionKind.Fork when instruction.B == 0 && next != 0 && instruction.A > index && instruction.A <= end:
+                    var other = limits[instruction.A - start];
+                    if (other != 0) limit = Math.Max(next, other);
+                    break;
+                case Utf8SliceInstructionKind.RepeatGreedy:
+                case Utf8SliceInstructionKind.RepeatLazy:
+                    var exit = instruction.A;
+                    if (exit == index + 3 && exit < end && code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } back &&
+                        back.A == index && code[exit] is { Kind: Utf8SliceInstructionKind.RepeatExit, B: > 0 } done &&
+                        done.A == instruction.B && instruction.RepeatMaximum != long.MaxValue &&
+                        ScalarMaximumBytes(code[index + 1]) is > 0 and var atomWidth)
+                        limit = done.B + instruction.RepeatMaximum * atomWidth;
+                    break;
+            }
+            limits[index - start] = limit <= int.MaxValue ? (int)limit : 0;
+        }
+
+        static int FindTerminalEnd(ReadOnlySpan<Utf8SliceInstruction> code)
+        {
+            var index = code.Length - 1;
+            while (index >= 0 && code.Length - index < 32 && code[index].Kind == Utf8SliceInstructionKind.CaptureEnd)
+                index--;
+            return index >= 0 && code[index] is { Kind: Utf8SliceInstructionKind.Anchor } anchor &&
+                (anchor.A == (int)Utf8SliceAnchorKind.VeryEnd || anchor.A == (int)Utf8SliceAnchorKind.End && anchor.B == 0)
+                ? index : -1;
+        }
+
+        static int ScalarMaximumBytes(Utf8SliceInstruction instruction) => instruction switch
+        {
+            { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: < 128 } or
+                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } => 1,
+            { Kind: Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Dot or
+                Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid } => 4,
+            _ => 0,
+        };
     }
 
     private sealed class Lowering

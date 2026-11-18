@@ -1766,6 +1766,15 @@ internal static partial class Utf8SliceRunner
                         }
                         break;
                     case Utf8SliceResumeKind.RepeatUnwind:
+                        var endLimit = instructions[popped.Target].B;
+                        if (endLimit != 0 && input.Length - popped.InputIndex >= endLimit)
+                        {
+                            // This saved endpoint cannot reach the terminal anchor.
+                            // The undo has run normally and the next frame owns its state.
+                            var skipBreach = invocation.TryChargeStep();
+                            if (skipBreach != Utf8ExecutionLimitKind.None) { failure = skipBreach; goto Failure; }
+                            goto Backtrack;
+                        }
                         if (!SetRepeat(counts, positions, popped.Aux, popped.Count, popped.InputIndex, ref stacks, ref invocation))
                         {
                             failure = stacks.Breach;

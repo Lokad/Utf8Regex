@@ -32,6 +32,8 @@ internal static partial class PythonReScalarCompiler
         }
         instructions[^2] = new(Utf8SliceInstructionKind.Anchor, (int)Utf8SliceAnchorKind.VeryEnd, 0, 0, 0);
         instructions[^1] = new(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0);
+        if (program.RepeatCount != 0)
+            Utf8SliceLowerer.MarkBoundedEndTails(instructions, budget, appendedEndAnchor: true);
         var result = Utf8SliceProgram.Create(instructions, program.SetMasks,
             program.CategorySetMembers, program.RepeatCount, program.GroupCount,
             program.RequiresUnicodeWordBoundary, program.RequiresUnicodeShorthand, program.RequiresUnicodeCategory,
