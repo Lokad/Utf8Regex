@@ -86,7 +86,8 @@ public sealed class Utf8CoreDepthPolicyTests
                     MaxDepth = 1
                 }
             });
-            var input = Encoding.UTF8.GetBytes(new string('é', 10000) + "aaaa");
+            // Cover a full diagnostic interval of vectorized block searches.
+            var input = Encoding.UTF8.GetBytes(new string('é', 1 << 17) + "aaaa");
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, token.Token));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
             Assert.True(triggered);

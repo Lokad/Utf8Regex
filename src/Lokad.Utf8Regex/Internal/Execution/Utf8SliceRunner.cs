@@ -503,7 +503,7 @@ internal static partial class Utf8SliceRunner
         // executes the VM; empty/contiguous/mirrored/folded roots stay unchanged.
         var leading = !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
             !program.CanMatchEmpty && !program.HasContiguousAnchor
-            ? GetLeadingAsciiCandidate(program, out leadingLast, out second, out secondLast, out leadingScalarIndex) : -1;
+            ? GetLeadingAsciiCandidate(program, candidatePlan, out leadingLast, out second, out secondLast, out leadingScalarIndex) : -1;
         // Keep the cheaper existing head proof when available. Prepared prefix
         // search fills its gaps, including multi-alternative and UTF-8 starts.
         var seekLiteral = leading < 0 && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
@@ -772,7 +772,7 @@ internal static partial class Utf8SliceRunner
         // Keep one candidate search rather than scanning its prefix twice.
         var leadingAsciiFirst = !seekLiteral && !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
             !program.CanMatchEmpty && !program.HasContiguousAnchor
-            ? GetLeadingAsciiCandidate(program, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast, out _) : -1;
+            ? GetLeadingAsciiCandidate(program, candidatePlan, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast, out _) : -1;
         var leadingClass = -1;
         var whitespaceLiteralIndex = -1;
         long whitespaceGapMaximum = 0;

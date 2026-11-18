@@ -412,6 +412,46 @@ public sealed class Utf8LeadingAsciiCandidateTests
         Assert.Equal(cancelAt, reads);
     }
 
+    [Theory]
+    [InlineData(@"(?<part>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.[0-9]{2}")]
+    [InlineData(@"(?<part>25[0-5]|2[0-4][0-9]|[01]??[0-9][0-9])\.[0-9]{2}")]
+    [InlineData(@"(?<part>25[0-5]|É[A-Z]|[01]?[0-9][0-9])\.[0-9]{2}")]
+    [InlineData(@"(?<part>[01]?[0-9][0-9]|)\.[0-9]{2}")]
+    public void BranchStartsKeepAlternationPriorityAndByteCaptures(string pattern)
+    {
+        const string text = "00.99 é😀 256.78 234.34 ÉB.12 125.56 .72 17.92";
+        var input = Encoding.UTF8.GetBytes(text);
+        const string prefix = "00.99 é😀 ";
+        var oracle = new Regex(pattern).Matches(text, prefix.Length);
+        using var regex = Utf8Regex.Compile(pattern, policy: new() { ResourcePolicy = Funded });
+        var from = Encoding.UTF8.GetByteCount(prefix);
+        using var live = new CancellationTokenSource();
+        using var cursor = regex.CreateMatchCursor(input, from, live.Token);
+        foreach (Match expected in oracle)
+        {
+            Assert.True(cursor.MoveNext(out var match));
+            Assert.Equal(expected.Value, Encoding.UTF8.GetString(match.GetValueMemory().Span));
+            Assert.Equal(expected.Groups["part"].Value, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), match.Value.StartOffsetInBytes);
+        }
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(new Regex(pattern).Count(text), regex.Count(input, live.Token));
+    }
+
+    [Fact]
+    public void BranchedStartSkipsSparseInputUnderAFiniteWorkLimit()
+    {
+        const string octet = @"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
+        var input = Encoding.UTF8.GetBytes(new string('x', 32763) + "😀 123.17.24.25");
+        using var regex = Utf8Regex.Compile(@"(?:" + octet + @"\.){3}" + octet, policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 512 }
+        });
+        using var live = new CancellationTokenSource();
+        Assert.Equal(1, regex.Count(input, live.Token));
+        Assert.True(regex.IsMatch(input, live.Token));
+    }
+
     private const string StraightPrefixPattern = @"(?:# [Nn][Oo][Qq][Aa])(?::\s?(([A-Z]+[0-9]+(?:[,\s]+)?)+))?";
 
     private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 4000000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };

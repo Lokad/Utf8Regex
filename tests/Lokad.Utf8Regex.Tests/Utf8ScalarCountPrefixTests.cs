@@ -168,26 +168,27 @@ public sealed class Utf8ScalarCountPrefixTests
     }
 
     [Fact]
-    public void CandidateSearchReducesImpossibleVmAttemptsWithEveryCutoffPreserved()
+    public void BothCandidateSearchesSkipImpossibleStartsAndEnforceEveryCutoff()
     {
         var regex = new Utf8Regex("(ab|cd)+", options: RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var plan = regex.Inspection.SearchPlan;
         var input = Encoding.UTF8.GetBytes(new string('x', 4097) + "abcd xx cd");
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
-        var plain = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
-        Assert.Equal(2, Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref plain).Count);
-        var guided = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
-        Assert.Equal(2, Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref guided, plan).Count);
-        Assert.True(guided.Budget.Steps < plain.Budget.Steps / 4);
-        for (ulong limit = 1; limit <= guided.Budget.Steps; limit++)
+        foreach (var candidatePlan in new[] { default, plan })
         {
-            var invocation = new Utf8SliceInvocation(new(limit, 0, 0), Timeout.InfiniteTimeSpan, default);
-            Assert.True(invocation.Ledger.TryReserve(13));
-            var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation, plan);
-            Assert.Equal(limit == guided.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, result.Breach);
-            if (result.Breach == Utf8ExecutionLimitKind.None) Assert.Equal(2, result.Count);
-            Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
+            var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
+            Assert.Equal(2, Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref funded, candidatePlan).Count);
+            Assert.InRange(funded.Budget.Steps, 1UL, 256UL);
+            for (ulong limit = 1; limit <= funded.Budget.Steps; limit++)
+            {
+                var invocation = new Utf8SliceInvocation(new(limit, 0, 0), Timeout.InfiniteTimeSpan, default);
+                Assert.True(invocation.Ledger.TryReserve(13));
+                var result = Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation, candidatePlan);
+                Assert.Equal(limit == funded.Budget.Steps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, result.Breach);
+                if (result.Breach == Utf8ExecutionLimitKind.None) Assert.Equal(2, result.Count);
+                Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
+            }
         }
     }
 

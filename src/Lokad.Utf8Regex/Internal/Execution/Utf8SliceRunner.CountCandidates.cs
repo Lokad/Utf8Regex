@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -14,8 +15,7 @@ internal static partial class Utf8SliceRunner
         entry.Kind == Utf8SliceInstructionKind.RepeatGreedy && entry.RepeatMinimum > 0;
 
     // An unfolded ASCII literal or positive range proves possible starts.
-    // Optional repeats and forks can reach a different consuming instruction.
-    private static int GetLeadingAsciiCandidate(Utf8SliceProgram program, out byte last,
+    private static int GetLeadingAsciiCandidate(Utf8SliceProgram program, in Utf8SearchPlan candidatePlan, out byte last,
         out int second, out byte secondLast, out int firstScalarIndex)
     {
         last = 0;
@@ -31,7 +31,13 @@ internal static partial class Utf8SliceRunner
         if (index >= code.Length || index >= 64) return -1;
         firstScalarIndex = index;
         var first = GetUnfoldedAsciiRange(code[index], out last);
-        if (first < 0) return first;
+        if (first < 0)
+        {
+            if (code[index].Kind is not (Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.RepeatGreedy or
+                Utf8SliceInstructionKind.RepeatLazy) || CanSeekExactPrefix(program, candidatePlan)) return -1;
+            var remaining = 64;
+            return GetBranchedAsciiStart(code, index, ref remaining, out last);
+        }
         // Only straight-line mandatory entries can precede the next scalar.
         // Repeat-end/exit, optional entries and forks stay opaque: the next
         // instruction in storage need not be the next consumed scalar.
@@ -41,6 +47,45 @@ internal static partial class Utf8SliceRunner
         if (index < code.Length && index < 64)
             second = GetUnfoldedAsciiRange(code[index], out secondLast);
         return first;
+    }
+
+    // Every reachable arm must prove its first consuming byte. Stop on
+    // unknown effects, an empty completion or backwards control flow. The
+    // two arms share a fixed visit budget, including when paths reconverge.
+    private static int GetBranchedAsciiStart(ReadOnlySpan<Utf8SliceInstruction> code, int index,
+        ref int remaining, out byte last)
+    {
+        last = 0;
+        while ((uint)index < (uint)code.Length && remaining > 0)
+        {
+            --remaining;
+            var entry = code[index];
+            if (PrecedesRequiredScalar(entry)) { index++; continue; }
+            if (entry.Kind == Utf8SliceInstructionKind.Jump && entry.A > index) { index = entry.A; continue; }
+
+            int first, next;
+            if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index + 1)
+            {
+                first = GetBranchedAsciiStart(code, index + 1, ref remaining, out last);
+                next = entry.A;
+            }
+            else if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy &&
+                entry.RepeatMinimum == 0 && entry.RepeatMaximum == 1 && entry.A == index + 3 && entry.A < code.Length)
+            {
+                // The one-atom optional can consume its byte or skip directly
+                // through the zero-width repeat exit into the continuation.
+                first = GetUnfoldedAsciiRange(code[index + 1], out last);
+                next = entry.A + 1;
+            }
+            else return GetUnfoldedAsciiRange(entry, out last);
+
+            if (first < 0) return -1;
+            var other = GetBranchedAsciiStart(code, next, ref remaining, out var otherLast);
+            if (other < 0) return -1;
+            last = Math.Max(last, otherLast);
+            return Math.Min(first, other);
+        }
+        return -1;
     }
 
     private static int GetUnfoldedAsciiRange(Utf8SliceInstruction instruction, out byte last)

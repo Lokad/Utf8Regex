@@ -115,6 +115,22 @@ public sealed class Pcre2SliceLeadingByteTests
         Assert.Equal(!anchored, regex.IsMatch(input, 0));
     }
 
+    [Fact]
+    public void BranchedCountUsesTheSharedBoundedScanFromAByteOffset()
+    {
+        const string octet = @"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
+        const string excludedPrefix = "22.23.24.25 é ";
+        var input = Encoding.UTF8.GetBytes(excludedPrefix + new string('x', 32763) + "😀 123.17.24.25");
+        var from = Encoding.UTF8.GetByteCount(excludedPrefix);
+        using var regex = new Utf8Pcre2Regex(@"(?:" + octet + @"\.){3}" + octet, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 1 << 20 },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
+        using var live = new CancellationTokenSource();
+        Assert.Equal(1, regex.Count(input, from, Pcre2MatchOptions.None, live.Token));
+    }
+
     [Theory]
     [InlineData(2047)]
     [InlineData(2048)]
