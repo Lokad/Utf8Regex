@@ -387,6 +387,20 @@ internal static partial class Utf8SliceRunner
               atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 })); skipped++) tail++;
         if (tail == instructions.Length) return false;
         var suffix = instructions[tail];
+        if (requiredEnd is null && atom is { Kind: Utf8SliceInstructionKind.Dot, A: not 0 } &&
+            repeat.RepeatMinimum <= 1 && repeat.RepeatMaximum == long.MaxValue &&
+            suffix is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } &&
+            TryGetStrictEndLiteralWidth(instructions.AsSpan(tail), out var suffixWidth))
+        {
+            // An exact-width tail at absolute end allows just one endpoint.
+            // Leave literal checks and captures to the VM at that endpoint.
+            var end = input.Length - suffixWidth;
+            if (end < 0 || (uint)start > (uint)end ||
+                (input[start] & 0xC0) == 0x80 || (input[end] & 0xC0) == 0x80) return true;
+            var endRepeat = RunClassRepeat(program, repeatIndex, input[..end], start, ref invocation);
+            outcome = new(endRepeat.EndIndex >= 0, endRepeat.EndIndex, endRepeat.Breach, null, null);
+            return true;
+        }
         if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy && atom.Kind == Utf8SliceInstructionKind.Dot &&
             repeat.RepeatMinimum == 0 && repeat.RepeatMaximum == long.MaxValue && requiredEnd is null &&
             suffix is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && (uint)suffix.A < 128 &&
@@ -771,6 +785,26 @@ internal static partial class Utf8SliceRunner
         // instructions retain their journals, capture positions and publication.
         outcome = new(selected >= 0, selected, Utf8ExecutionLimitKind.None, null, null);
         return true;
+    }
+
+    private static bool TryGetStrictEndLiteralWidth(ReadOnlySpan<Utf8SliceInstruction> tail, out int width)
+    {
+        width = 0;
+        if (tail.Length is < 3 or > 64 || tail[^1].Kind != Utf8SliceInstructionKind.Accept) return false;
+        var anchor = tail.Length - 2;
+        while (anchor > 0 && tail[anchor].Kind == Utf8SliceInstructionKind.CaptureEnd) anchor--;
+        if (tail[anchor] is not { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd })
+            return false;
+
+        foreach (ref readonly var instruction in tail[..anchor])
+        {
+            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                continue;
+            if (instruction is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } ||
+                !Rune.TryCreate(instruction.A, out var scalar)) return false;
+            width += scalar.Utf8SequenceLength;
+        }
+        return width != 0;
     }
 
     private static bool TryGetLiteralAfterCaptureMarkers(ReadOnlySpan<Utf8SliceInstruction> instructions,
