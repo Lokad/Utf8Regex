@@ -38,6 +38,19 @@ public sealed class Utf8ControlledDecimalBooleanTests
         }
     }
 
+    [Theory]
+    [InlineData("-3.14159")]
+    [InlineData("3.14159")]
+    [InlineData("-314159")]
+    [InlineData("-")]
+    [InlineData(".\n")]
+    public void DisjointTerminalOptionalsNeedNoRewindStorage(string text)
+    {
+        using var source = new CancellationTokenSource();
+        using var regex = Create(false, 128, 1, 1, 1);
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
+    }
+
     [Fact]
     public void DigitDiscoverySpendsTheOriginalWorkAllowance()
     {

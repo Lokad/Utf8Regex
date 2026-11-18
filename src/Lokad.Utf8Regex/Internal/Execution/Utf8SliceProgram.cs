@@ -333,8 +333,8 @@ internal sealed class Utf8SliceProgram
         // Instructions and flags are complete before publishing the program.
         // Keep this bounded, allocation-free proof off repeated match attempts.
         HasTerminalCaptureRoot = Utf8SliceRunner.CanRunTerminalCaptureRoot(this);
-        TerminalRepeatWithoutRewind = !rightToLeft && !isNonBacktracking && repeatCount >= 3
-            ? Utf8SliceRunner.FindTerminalRepeatWithoutRewind(this, Utf8ConstructionScope.CurrentBudget) : -1;
+        if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
+            TerminalRepeatsWithoutRewind = Utf8SliceRunner.FindTerminalRepeatsWithoutRewind(this, Utf8ConstructionScope.CurrentBudget);
         // An absolute start confines an empty match to byte zero. A terminal
         // anchor can then still exclude the last scalar on nonempty extents.
         if (!rightToLeft && !isNonBacktracking && (!canMatchEmpty || instructions is
@@ -496,8 +496,15 @@ internal sealed class Utf8SliceProgram
     internal bool CanMatchEmpty { get; }
     internal bool HasUnicodePatternAtoms { get; }
     internal bool HasTerminalCaptureRoot { get; }
-    internal int TerminalRepeatWithoutRewind { get; }
+    private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
+
+    internal bool SkipsTerminalRewind(int repeatIndex)
+    {
+        var (mask, anchor) = TerminalRepeatsWithoutRewind;
+        var distance = anchor - repeatIndex;
+        return mask != 0 && (uint)distance < 64 && (mask & (1UL << distance)) != 0;
+    }
 
     internal bool RejectsByFinalAscii(ReadOnlySpan<byte> input)
     {
@@ -511,6 +518,27 @@ internal sealed class Utf8SliceProgram
         => atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
             CategorySetMembers[atom.D] is [{ Negated: false, Table: {
                 Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
+
+    internal bool TryGetUnfoldedAsciiSet(in Utf8SliceInstruction atom, out Utf8SearchAsciiSet ascii, out bool asciiOnly)
+    {
+        ascii = default;
+        asciiOnly = false;
+        if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 })
+        {
+            asciiOnly = (uint)atom.A < 128;
+            if (asciiOnly) ascii = ascii.With((byte)atom.A);
+            return true;
+        }
+        if (atom is not { Kind: Utf8SliceInstructionKind.Set, C: 0 } && GetCompleteAsciiCategoryMask(atom) == 0)
+            return false;
+        var mask = SetMasks[atom.A].AsSpan();
+        var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
+        var high = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
+        if (atom.B != 0) { low = ~low; high = ~high; }
+        ascii = Utf8SearchAsciiSet.FromMasks(low, high);
+        asciiOnly = atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 };
+        return true;
+    }
 
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) FindRequiredFinalAscii(Utf8ConstructionBudget budget)
     {
@@ -561,20 +589,6 @@ internal sealed class Utf8SliceProgram
                     break;
                 case Utf8SliceInstructionKind.Fail:
                     break;
-                case Utf8SliceInstructionKind.Literal when instruction.B == 0:
-                    if (next && (uint)instruction.A < 128) ascii = ascii.With((byte)instruction.A);
-                    break;
-                case Utf8SliceInstructionKind.Set when instruction.C == 0:
-                case Utf8SliceInstructionKind.CategorySet when next && GetCompleteAsciiCategoryMask(instruction) != 0:
-                    if (next)
-                    {
-                        var mask = SetMasks[instruction.A].AsSpan();
-                        var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
-                        var high = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
-                        if (instruction.B != 0) { low = ~low; high = ~high; }
-                        ascii = Utf8SearchAsciiSet.FromMasks(ascii.Low | low, ascii.High | high);
-                    }
-                    break;
                 case Utf8SliceInstructionKind.Literal:
                 case Utf8SliceInstructionKind.Set:
                 case Utf8SliceInstructionKind.Dot:
@@ -582,7 +596,11 @@ internal sealed class Utf8SliceProgram
                 case Utf8SliceInstructionKind.Shorthand:
                 case Utf8SliceInstructionKind.Hybrid:
                 case Utf8SliceInstructionKind.Backref:
-                    if (next) return default;
+                    if (next)
+                    {
+                        if (!TryGetUnfoldedAsciiSet(instruction, out var set, out _)) return default;
+                        ascii = Utf8SearchAsciiSet.FromMasks(ascii.Low | set.Low, ascii.High | set.High);
+                    }
                     break;
                 default:
                     return default;

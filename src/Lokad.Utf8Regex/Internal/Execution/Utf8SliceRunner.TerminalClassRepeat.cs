@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -351,11 +352,56 @@ internal static partial class Utf8SliceRunner
         return new(found, found ? outcome.EndIndex : -1, outcome.Breach, null, null);
     }
 
-    internal static int FindTerminalRepeatWithoutRewind(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    internal static (ulong Mask, int Anchor) FindTerminalRepeatsWithoutRewind(Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
         var code = program.Instructions.AsSpan();
-        if (code.Length < 14 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return -1;
+        if (code.Length < 6 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return default;
         var end = Utf8SliceProgram.FindTerminalEnd(code[..^1]);
+        if (end < 0) return default;
+        var equivalent = program.RepeatCount >= 3 ? FindEquivalentTerminalRepeat(program, code, end, budget) : -1;
+        var rewindFree = equivalent >= 0 ? 1UL << (end - equivalent) : 0;
+
+        // Track ASCII bytes on which the suffix can start. The lax anchor can
+        // also succeed before LF without consuming it. Opaque control flow
+        // ends the walk, so every inspected skip still reaches this anchor.
+        var first = default(Utf8SearchAsciiSet);
+        if (code[end].A == (int)Utf8SliceAnchorKind.End) first = first.With((byte)'\n');
+        var floor = Math.Max(0, end - 63);
+        for (var pc = end - 1; pc >= floor; pc--)
+        {
+            budget.ChargeWork(1);
+            var entry = code[pc];
+            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
+            if (entry.Kind == Utf8SliceInstructionKind.RepeatExit)
+            {
+                var repeatIndex = pc - 3;
+                if (repeatIndex < floor) break;
+                var repeat = code[repeatIndex];
+                if (repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) ||
+                    !IsSingleAtomRepeat(code, repeatIndex, repeat) ||
+                    !program.TryGetUnfoldedAsciiSet(code[repeatIndex + 1], out var atom, out var asciiOnly)) break;
+                budget.ChargeWork(3);
+                if (repeat.RepeatMinimum == 0)
+                {
+                    // Skipping a matching optional leaves its byte at the
+                    // suffix start. None of the suffix's first bytes accept it.
+                    if (asciiOnly && repeat.RepeatMaximum == 1 &&
+                        (first.Low & atom.Low) == 0 && (first.High & atom.High) == 0)
+                        rewindFree |= 1UL << (end - repeatIndex);
+                    first = Utf8SearchAsciiSet.FromMasks(first.Low | atom.Low, first.High | atom.High);
+                }
+                else first = atom;
+                pc = repeatIndex;
+            }
+            else if (program.TryGetUnfoldedAsciiSet(entry, out var atom, out _)) first = atom;
+            else break;
+        }
+        return (rewindFree, end);
+    }
+
+    private static int FindEquivalentTerminalRepeat(Utf8SliceProgram program, ReadOnlySpan<Utf8SliceInstruction> code,
+        int end, Utf8ConstructionBudget budget)
+    {
         if (end < 12) return -1;
         var afterRepeats = end;
         for (var skipped = 0; skipped < 32 && code[afterRepeats - 1].Kind == Utf8SliceInstructionKind.CaptureEnd; skipped++)
@@ -429,7 +475,7 @@ internal static partial class Utf8SliceRunner
         }
         // A fixed count or a proved terminal continuation needs one endpoint.
         if (repeat.RepeatMinimum == repeat.RepeatMaximum ||
-            requiredEnd is null && repeatIndex == program.TerminalRepeatWithoutRewind)
+            requiredEnd is null && program.SkipsTerminalRewind(repeatIndex))
         {
             var fixedRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             outcome = new(fixedRepeat.EndIndex >= 0, fixedRepeat.EndIndex, fixedRepeat.Breach, null, null);

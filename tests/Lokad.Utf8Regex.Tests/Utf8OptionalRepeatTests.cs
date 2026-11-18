@@ -32,6 +32,20 @@ public sealed class Utf8OptionalRepeatTests
             ["", "a", "b", "c", "ab", "aab", "abb", "abc", "ac", "ad", "ébéb", "baabc aab"], options);
 
     [Theory]
+    [InlineData(@"\A(a?)a\z", "a", "", 1)]
+    [InlineData(@"\A(\n??)$", "\n", "", 0)]
+    [InlineData(@"\A(\n??)\z", "\n", "\n", 1)]
+    [InlineData(@"\A(-?)\d*(\.?)\d*$", "-١.٢\n", "-", 6)]
+    public void TerminalOptionalKeepsCaptureAndEndPriority(string pattern, string text, string captured, int end)
+    {
+        using var regex = Utf8Regex.Compile(pattern);
+        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text));
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(end, match.Value.EndOffsetInBytes);
+        Assert.Equal(captured, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void ScalarOptionalCapturesRetainByteBoundariesAndBorrowedResults(bool lazy)
