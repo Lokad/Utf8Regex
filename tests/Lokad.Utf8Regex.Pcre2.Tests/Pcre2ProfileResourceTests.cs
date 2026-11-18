@@ -250,7 +250,7 @@ public sealed class Pcre2ProfileResourceTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromMilliseconds(20), CancellationToken.None);
         var budget = new Pcre2ResourceBudget(default, invocation, false);
-        var input = Utf8ValidatedInput.Create("éx"u8);
+        var input = Utf8ValidatedInput.BorrowBytes("éx"u8);
         ticks = 25;
         Pcre2MatchException? failure = null;
         try { Pcre2MatchPublication.Publish(2, 3, ref input, ref budget); }

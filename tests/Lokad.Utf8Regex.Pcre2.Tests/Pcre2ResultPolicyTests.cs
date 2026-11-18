@@ -65,7 +65,7 @@ public sealed class Pcre2ResultPolicyTests
     {
         var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
         var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 0, 2 * bytes - 1), Timeout.InfiniteTimeSpan, default);
-        var input = Utf8ValidatedInput.Create("😀"u8);
+        var input = Utf8ValidatedInput.BorrowBytes("😀"u8);
         var first = Pcre2Runner.PublishSliceCaptures(1, 0, 4, [], [], ref input, ref invocation);
         Pcre2SliceDriver.DetachProjectedGroups(first, ref invocation);
         var alias = invocation;

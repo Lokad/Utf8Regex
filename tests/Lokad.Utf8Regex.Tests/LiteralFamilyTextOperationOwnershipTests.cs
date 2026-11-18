@@ -38,7 +38,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     {
         var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes("cat caf\u00E9 horse ni\u00F1o");
-        Assert.True(regex.CanUseNativeSplit(Utf8Validation.Validate(input)), "pattern=" + pattern + " options=" + options.ToString());
+        Assert.True(regex.CanUseNativeSplit(), "pattern=" + pattern + " options=" + options.ToString());
     }
 
     public static IEnumerable<object?[]> ExcludedRouteCases()
@@ -53,7 +53,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     {
         var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes("cat horse caf\u00E9 noir");
-        Assert.False(regex.CanUseNativeSplit(Utf8Validation.Validate(input)), "pattern=" + pattern + " options=" + options.ToString());
+        Assert.False(regex.CanUseNativeSplit(), "pattern=" + pattern + " options=" + options.ToString());
     }
 
     public static IEnumerable<object?[]> SplitParityCases()
@@ -123,7 +123,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     {
         var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        Assert.True(regex.CanUseNativeSplit(Utf8Validation.Validate(input)), "pattern=" + pattern + " options=" + options.ToString());
+        Assert.True(regex.CanUseNativeSplit(), "pattern=" + pattern + " options=" + options.ToString());
         // Literal alternatives and BMP subjects overlap the comparator's
         // code-unit semantics. EnumerateSplits returns gaps without captures.
         var oracle = new Regex(pattern, options);

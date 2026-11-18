@@ -76,12 +76,11 @@ public sealed class Utf8ScalarCountTests
         var regex = new Utf8Regex("", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var runtime = Assert.IsType<Utf8LiteralCompiledEngineRuntime>(regex.Inspection.CompiledRuntime);
         var input = Encoding.UTF8.GetBytes("é😀𐐀a");
-        var validation = Utf8Validation.Validate(input);
         var deadline = finite ? Utf8ExecutionDeadline.Start(TimeSpan.FromSeconds(10)) : Utf8ExecutionDeadline.Infinite;
-        Assert.Equal(5, runtime.Count(input, validation, deadline));
+        Assert.Equal(5, runtime.Count(input, deadline));
         var prepared = Assert.IsType<Lokad.Utf8Regex.Internal.Planning.Utf8PreparedRegex>(typeof(Utf8Regex)
             .GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(regex));
-        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(prepared, input, validation, deadline);
+        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(prepared, input, deadline);
         int[] bytes = [0, 2, 6, 10, 11];
         for (var index = 0; index < bytes.Length; index++)
         {

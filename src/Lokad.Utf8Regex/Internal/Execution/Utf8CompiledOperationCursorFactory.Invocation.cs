@@ -1,4 +1,3 @@
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using System.Text.RegularExpressions;
 
@@ -6,7 +5,7 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8CompiledOperationCursorFactory
 {
-    internal static bool CanCreateInvocationMatchCursor(Utf8PreparedRegex prepared, Utf8ValidationResult validation, ref Utf8SliceInvocation invocation)
+    internal static bool CanCreateInvocationMatchCursor(Utf8PreparedRegex prepared, ref Utf8SliceInvocation invocation)
     {
         if ((prepared.SemanticRegex.Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0) return false;
         switch (prepared.ExecutionKind)
@@ -35,8 +34,8 @@ internal static partial class Utf8CompiledOperationCursorFactory
         }
     }
 
-    // Transfer the original invocation without resetting validation, deadline or token.
-    internal static Utf8OperationMatchCursor CreateInvocationMatchCursor(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8SliceInvocation invocation, int byteFloor)
+    // Transfer the original invocation without resetting the deadline or token.
+    internal static Utf8OperationMatchCursor CreateInvocationMatchCursor(Utf8PreparedRegex prepared, ReadOnlySpan<byte> input, Utf8SliceInvocation invocation, int byteFloor)
     {
         var cursor = prepared.ExecutionKind switch
         {

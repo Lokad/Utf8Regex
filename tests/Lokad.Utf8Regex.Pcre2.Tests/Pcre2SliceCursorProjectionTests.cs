@@ -76,7 +76,7 @@ public sealed class Pcre2SliceCursorProjectionTests
     {
         var regex = Create(policy: 5);
         var program = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
-        var input = Utf8ValidatedInput.Create(Encoding.UTF8.GetBytes(new string('é', 4096) + "ab cd"));
+        var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(new string('é', 4096) + "ab cd"));
         var cursor = new Pcre2SliceGlobalMatchCursor(program.SliceProgram, input, new(0),
             regex.DebugCompiledProgram.Request, CancellationToken.None);
         Assert.True(cursor.MoveNext());

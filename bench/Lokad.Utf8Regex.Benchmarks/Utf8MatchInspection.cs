@@ -10,14 +10,14 @@ internal static class Utf8MatchInspection
     public static bool IsMatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input, Utf8ValidationResult validation)
         => !Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input) &&
            (regex.Inspection.CompiledRuntime is { } runtime
-               ? runtime.IsMatch(input, validation, Utf8ExecutionDeadline.Infinite)
+               ? runtime.IsMatch(input, Utf8ExecutionDeadline.Infinite)
                : Utf8PreparedScalarExecutor.IsMatch(regex.Inspection.PreparedRegex, input, validation, Utf8ExecutionDeadline.Infinite));
 
     public static Utf8CaptureRange MatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input, Utf8ValidationResult validation)
         => Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)
             ? default(Utf8CaptureRange)
             : regex.Inspection.CompiledRuntime is { } runtime
-                ? runtime.Match(input, validation, Utf8ExecutionDeadline.Infinite)
+                ? runtime.Match(input, Utf8ExecutionDeadline.Infinite)
                 : Utf8PreparedScalarExecutor.Match(regex.Inspection.PreparedRegex, input, validation, Utf8ExecutionDeadline.Infinite);
 
     public static bool TryCountSelectedKernelWithoutValidation(Utf8Regex regex, ReadOnlySpan<byte> input, out int count)
@@ -29,7 +29,7 @@ internal static class Utf8MatchInspection
         }
         if (regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
         {
-            count = regex.Inspection.CompiledRuntime!.Count(input, default, Utf8ExecutionDeadline.Infinite);
+            count = regex.Inspection.CompiledRuntime!.Count(input, Utf8ExecutionDeadline.Infinite);
             return true;
         }
         count = 0;

@@ -27,7 +27,7 @@ public sealed class DotNetPerformanceReplicaRuntimeTests
             if (regex._packedNibbleLiteralFamilyCountStrategy is { } packed)
                 selectedCount = packed.Count(inputBytes);
             else if (regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily)
-                selectedCount = regex.Inspection.CompiledRuntime!.Count(inputBytes, default, Utf8ExecutionDeadline.Infinite);
+                selectedCount = regex.Inspection.CompiledRuntime!.Count(inputBytes, Utf8ExecutionDeadline.Infinite);
             else
             {
                 // SIMD-gated kernels can decline; keep the public oracle check on every ISA.

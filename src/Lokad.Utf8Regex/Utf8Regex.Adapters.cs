@@ -132,26 +132,15 @@ public sealed partial class Utf8Regex
 
         if (CanUseFusedCompiledUtf8LiteralCount() || CanUseFusedCompiledUtf8LiteralFamilyCount())
         {
-            return CountViaCompiledEngine(remaining, default, CreateExecutionBudget());
+            return _compiledEngineRuntime.Count(remaining, CreateExecutionBudget());
         }
 
-        if (CanUseWellFormedOnlyValidation())
-        {
-            if (RejectsByRequiredPrefilter(remaining))
-            {
-                return 0;
-            }
-
-            return CountViaCompiledEngine(remaining, default, CreateExecutionBudget());
-        }
-
-        var validation = input.GetSuffixValidation(start);
         if (RejectsByRequiredPrefilter(remaining))
         {
             return 0;
         }
 
-        return CountViaCompiledEngine(remaining, validation, CreateExecutionBudget());
+        return _compiledEngineRuntime.Count(remaining, CreateExecutionBudget());
     }
 
     private Utf8ValueMatchEnumerator EnumerateMatchesAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
@@ -279,16 +268,8 @@ public sealed partial class Utf8Regex
                 .WithTimeoutMapping(input.Bytes, this);
         }
 
-        if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals)
-        {
-
-            return CreateMatchEnumeratorViaCompiledEngine(remaining, default, budget)
-                .WithBaseOffset(start.Value);
-        }
-
-        var validation = input.GetSuffixValidation(start);
-
-        return CreateMatchEnumeratorViaCompiledEngine(remaining, validation, budget)
+        return new Utf8ValueMatchEnumerator(Utf8CompiledOperationCursorFactory.CreateMatchCursor(
+                _preparedRegex, remaining, budget))
             .WithBaseOffset(start.Value);
     }
 
@@ -332,19 +313,12 @@ public sealed partial class Utf8Regex
                 return match.Success;
             }
 
-            // Definitive byte kernels need no coordinate facts. Remaining
-            // compiled routes request their existing description here.
-            var input = Utf8ValidatedInput.Create(bytes);
-
             if (_owner.RejectsByRequiredPrefilter(bytes))
             {
                 return false;
             }
 
-            return _owner.IsMatchViaCompiledEngine(
-                bytes,
-                input.Validation,
-                Utf8ExecutionDeadline.Infinite);
+            return _owner._compiledEngineRuntime.IsMatch(bytes, Utf8ExecutionDeadline.Infinite);
         }
 
         public int CountPrepared(Utf8ValidatedInput input, Utf8BytePosition start)

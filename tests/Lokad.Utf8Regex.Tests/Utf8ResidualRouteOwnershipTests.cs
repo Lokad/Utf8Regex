@@ -22,7 +22,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
             MatchTimeout = TimeSpan.FromSeconds(1)
         });
         var bytes = "😀xab 😀ab"u8.ToArray();
-        var subject = Utf8ValidatedInput.Create(bytes);
+        var subject = Utf8ValidatedInput.BorrowBytes(bytes);
         var start = subject.GetBytePosition(7, "startOffsetInBytes");
         var match = regex.Match(bytes, start.Value, []);
         Assert.True(match.Success);

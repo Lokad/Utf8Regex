@@ -28,7 +28,7 @@ public sealed class Pcre2SliceLeadingByteTests
     {
         var regex = new Utf8Pcre2Regex(Pattern);
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        var input = Utf8ValidatedInput.Create(Encoding.UTF8.GetBytes(new string('x', 2048)));
+        var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(new string('x', 2048)));
         using var live = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, live.Token);
         invocation.ShareStorageForCursor(); Assert.True(invocation.Ledger.TryReserve(13));
@@ -53,7 +53,7 @@ public sealed class Pcre2SliceLeadingByteTests
     {
         var regex = new Utf8Pcre2Regex(Pattern);
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        var input = Utf8ValidatedInput.Create(Encoding.UTF8.GetBytes(new string('x', length)));
+        var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(new string('x', length)));
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         invocation.ShareStorageForCursor(); Assert.True(invocation.Ledger.TryReserve(13));
         var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, invocation, input,
@@ -148,7 +148,7 @@ public sealed class Pcre2SliceLeadingByteTests
     {
         var regex = new Utf8Pcre2Regex(Pattern);
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        var input = Utf8ValidatedInput.Create(Encoding.UTF8.GetBytes(new string('x', 4096) + "abc123"));
+        var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(new string('x', 4096) + "abc123"));
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var live = new CancellationTokenSource();

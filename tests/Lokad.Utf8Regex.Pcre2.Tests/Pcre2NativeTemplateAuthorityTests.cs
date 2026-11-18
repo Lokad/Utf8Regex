@@ -54,7 +54,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
             var budget = new Pcre2ResourceBudget(compiled.Request.DefaultLimits,
                 Pcre2SliceDriver.CreateInvocation(compiled.Request, default), false);
             var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(native.Program, compiled.CandidateSearchPlan,
-                Utf8ValidatedInput.Create(input), new(0), Pcre2MatchOptions.None, compiled.Request, budget);
+                Utf8ValidatedInput.BorrowBytes(input), new(0), Pcre2MatchOptions.None, compiled.Request, budget);
             return !cursor.MoveNext();
         }
         uint first = 1, last = 65536;
@@ -129,7 +129,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         var invocation = Pcre2SliceDriver.CreateInvocation(compiled.Request, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(7));
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(native.Program, compiled.CandidateSearchPlan,
-            Utf8ValidatedInput.Create(input), new(0), Pcre2MatchOptions.None, compiled.Request,
+            Utf8ValidatedInput.BorrowBytes(input), new(0), Pcre2MatchOptions.None, compiled.Request,
             new Pcre2ResourceBudget(compiled.Request.DefaultLimits, invocation, false));
         Assert.True(cursor.MoveNext());
         var retained = cursor.ProjectCurrentCaptures();
@@ -174,7 +174,7 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         var input = Encoding.UTF8.GetBytes(hit ? "é😀" : "zzz");
         var invocation = Pcre2SliceDriver.CreateInvocation(compiled.Request, source.Token);
         var cursor = new Pcre2BacktrackingDetailedGlobalMatchCursor(native.Program, compiled.CandidateSearchPlan,
-            Utf8ValidatedInput.Create(input), new(0), Pcre2MatchOptions.None, compiled.Request,
+            Utf8ValidatedInput.BorrowBytes(input), new(0), Pcre2MatchOptions.None, compiled.Request,
             new Pcre2ResourceBudget(compiled.Request.DefaultLimits, invocation, false));
         Assert.Equal(hit, cursor.MoveNext());
         ticks = 15;

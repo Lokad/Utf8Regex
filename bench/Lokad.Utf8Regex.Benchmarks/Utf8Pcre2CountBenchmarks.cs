@@ -34,7 +34,7 @@ public class Utf8Pcre2CountBenchmarks
     [Benchmark]
     public int Utf8RegexPcre2Bridge()
     {
-        var input = Utf8ValidatedInput.Create(_context.InputBytes);
+        var input = Utf8ValidatedInput.BorrowBytes(_context.InputBytes);
         var start = input.GetBytePosition(0, "startOffsetInBytes");
         return _context.Utf8Regex!.ByteOffsetExecution.CountPrepared(input, start);
     }

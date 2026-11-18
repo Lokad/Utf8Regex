@@ -115,13 +115,10 @@ public sealed partial class Utf8Regex
             return result.Status;
         }
 
-        var validation = Utf8InputAnalyzer.Describe(input);
-        var budget = deadline;
         if (TryGetExactLiteralReplacementBytes(replacement, out var exactLiteralReplacementBytes))
         {
             return TryReplaceLiteralBytesCore(
                 input,
-                validation,
                 exactLiteralReplacementBytes,
                 destination,
                 out bytesWritten, deadline);
@@ -131,7 +128,6 @@ public sealed partial class Utf8Regex
         {
             return TryReplaceLiteralBytesCore(
                 input,
-                validation,
                 replacementBytes,
                 destination,
                 out bytesWritten, deadline);
@@ -143,10 +139,10 @@ public sealed partial class Utf8Regex
         return scalarResult.Status;
     }
 
-    private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ReadOnlySpan<byte> replacementBytes, Utf8ExecutionDeadline deadline) =>
-        ReplaceLiteralBytesCore(input, validation, replacementBytes, out _, deadline);
+    private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementBytes, Utf8ExecutionDeadline deadline) =>
+        ReplaceLiteralBytesCore(input, replacementBytes, out _, deadline);
 
-    private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ReadOnlySpan<byte> replacementBytes, out int replacementCount, Utf8ExecutionDeadline budget)
+    private byte[] ReplaceLiteralBytesCore(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementBytes, out int replacementCount, Utf8ExecutionDeadline budget)
     {
 
         // Reuse the prepared ASCII family search already used by Split. The
@@ -155,7 +151,7 @@ public sealed partial class Utf8Regex
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null &&
             TryGetSmallAsciiLiteralFamilySearch(input, out var smallFamily)
                 ? new Utf8OperationMatchCursor(input, smallFamily, budget)
-                : Utf8CompiledOperationCursorFactory.CreateMatchCursor(_preparedRegex, input, validation, budget);
+                : Utf8CompiledOperationCursorFactory.CreateMatchCursor(_preparedRegex, input, budget);
         return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref cursor, out replacementCount);
     }
 
@@ -175,13 +171,12 @@ public sealed partial class Utf8Regex
             maximumReplacementCount, ref invocation, ref results, out replacementCount);
     }
 
-    private OperationStatus TryReplaceLiteralBytesCore(ReadOnlySpan<byte> input, Utf8ValidationResult validation, ReadOnlySpan<byte> replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionDeadline budget)
+    private OperationStatus TryReplaceLiteralBytesCore(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementBytes, Span<byte> destination, out int bytesWritten, Utf8ExecutionDeadline budget)
     {
 
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
             input,
-            validation,
             budget);
         var success = Utf8CursorReplaceEngine.TryReplace(
             input,
@@ -194,7 +189,7 @@ public sealed partial class Utf8Regex
     }
 
     private bool TryReplaceViaNativePlan(
-        ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8AnalyzedReplacement replacement, Utf8ExecutionDeadline budget, out byte[] replaced)
+        ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, Utf8ExecutionDeadline budget, out byte[] replaced)
     {
         var plan = RewriteWholeLiteralCapturePlan(replacement.Plan);
         if (replacement.IsLiteral ||
@@ -207,7 +202,6 @@ public sealed partial class Utf8Regex
         var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
             _preparedRegex,
             input,
-            validation,
             budget);
         replaced = Utf8NativeReplacementExecutor.Replace(input, plan, ref cursor);
         return true;

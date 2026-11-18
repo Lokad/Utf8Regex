@@ -110,64 +110,8 @@ public sealed partial class Utf8Regex
         return true;
     }
 
-    private bool IsMatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
-    {
-
-        return _compiledEngine.Kind switch
-        {
-            Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily =>
-                _compiledEngineRuntime.IsMatch(input, default, budget),
-            _ => _compiledEngineRuntime.IsMatch(input, validation, budget),
-        };
-    }
-
-    private int CountViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
-    {
-        // Anchored literal prefixes count directly through the router below: at most one
-        // anchored match, byte-exact on every input, without general scalar discovery.
-        // Folded prefixes ride the same router arm, which switches on the kind.
-        if (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix)
-        {
-            return _compiledEngineRuntime.Count(input, validation, budget);
-        }
-
-        // Anchored literal suffixes count the same way: at most one match at the
-        // input end, byte-exact on every input. Folded suffixes ride the same router
-        // arm, which switches on the kind.
-        if (_anchoredLiteral.IsExactSuffix ||
-            _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd)
-        {
-            return _compiledEngineRuntime.Count(input, validation, budget);
-        }
-
-        return _compiledEngine.Kind switch
-        {
-            Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily =>
-                _compiledEngineRuntime.Count(input, default, budget),
-            _ => _compiledEngineRuntime.Count(input, validation, budget),
-        };
-    }
-
-    private Utf8CaptureRange MatchViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
-    {
-
-        return _compiledEngine.Kind switch
-        {
-            Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily =>
-                _compiledEngineRuntime.Match(input, default, budget),
-            _ => _compiledEngineRuntime.Match(input, validation, budget),
-        };
-    }
-
-    private Utf8ValueMatchEnumerator CreateMatchEnumeratorViaCompiledEngine(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
-    {
-
-        return new Utf8ValueMatchEnumerator(Utf8CompiledOperationCursorFactory.CreateMatchCursor(
-            _preparedRegex, input, validation, budget));
-    }
-
     private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledEngine(
-        ReadOnlySpan<byte> input, Utf8ValidationResult validation, int count, Utf8ExecutionDeadline budget)
+        ReadOnlySpan<byte> input, int count, Utf8ExecutionDeadline budget)
     {
         // R05: anchored ASCII literal families split through the anchor-enforcing owned
         // cursors (at most one match at a fixed position), mirroring enumeration; the
@@ -205,11 +149,9 @@ public sealed partial class Utf8Regex
                 count);
         }
 
-
         return Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
             _preparedRegex,
             input,
-            validation,
             count,
             budget);
     }

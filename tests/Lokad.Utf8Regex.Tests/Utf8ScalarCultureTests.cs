@@ -197,7 +197,7 @@ public sealed class Utf8ScalarCultureTests
             var prefix = culture == "tr-TR" ? "\u0130" : "I";
             var regex = new Utf8Regex(scoped ? "(?i:i(.))" : "i(.)", options: Options(compiled, false, scoped));
             var firstSegment = "a" + prefix + "\U0001f600b";
-            var input = Utf8ValidatedInput.Create(Encoding.UTF8.GetBytes(firstSegment + prefix + "\U0001f600"));
+            var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(firstSegment + prefix + "\U0001f600"));
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
             var zero = input.GetBytePosition(0, "start");
             Assert.True(regex.ByteOffsetExecution.IsMatchPrepared(input.Bytes));

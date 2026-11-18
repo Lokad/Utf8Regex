@@ -4,40 +4,20 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Internal.Input;
 
-/// <summary>
-/// Operation-local caller-valid subject bytes and optional eligibility facts. The engine
-/// relies on the caller to guarantee validity for the complete subject.
-/// </summary>
-internal ref struct Utf8ValidatedInput
+/// <summary>Borrowed caller-valid UTF-8 and checked byte positions.</summary>
+internal readonly ref struct Utf8ValidatedInput
 {
     private readonly ReadOnlySpan<byte> _bytes;
-    private Utf8ValidationResult? _validation;
 
-    private Utf8ValidatedInput(ReadOnlySpan<byte> bytes, Utf8ValidationResult? validation)
-    {
-        _bytes = bytes;
-        _validation = validation;
-    }
+    private Utf8ValidatedInput(ReadOnlySpan<byte> bytes) => _bytes = bytes;
 
     // PCRE2-INTEGRATION-POINT: the adapter requires caller-valid text.
-    // Byte execution needs no whole
-    // subject description; genuine metadata consumers request it separately.
-    internal static Utf8ValidatedInput BorrowBytes(ReadOnlySpan<byte> bytes, bool isAscii = false)
-        => new(bytes, isAscii ? new Utf8ValidationResult(bytes.Length, true) : null);
+    internal static Utf8ValidatedInput BorrowBytes(ReadOnlySpan<byte> bytes) => new(bytes);
 
     public ReadOnlySpan<byte> Bytes => _bytes;
 
-    public Utf8ValidationResult Validation => _validation ??
-        throw new InvalidOperationException("This byte operation has not requested a subject description.");
-
     public int ByteLength => _bytes.Length;
 
-
-    public bool IsAscii => _validation?.IsAscii == true;
-
-
-    public static Utf8ValidatedInput Create(ReadOnlySpan<byte> input)
-        => new(input, Utf8InputAnalyzer.Describe(input));
 
     public Utf8BytePosition GetBytePosition(int value, string parameterName)
         => GetBytePosition(_bytes, value, parameterName);
@@ -63,9 +43,6 @@ internal ref struct Utf8ValidatedInput
         var value = position.Value;
         return value == _bytes.Length || value == 0 || (_bytes[value] & 0xC0) != 0x80;
     }
-
-    public Utf8ValidationResult GetSuffixValidation(Utf8BytePosition start) =>
-        Utf8InputAnalyzer.Describe(_bytes[start.Value..]);
 
     public bool TryAdvanceScalar(Utf8BytePosition position, out Utf8BytePosition next)
     {

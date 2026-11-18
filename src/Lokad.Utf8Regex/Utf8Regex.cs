@@ -360,28 +360,12 @@ public sealed partial class Utf8Regex : IDisposable
             return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
         }
 
-        if (CanUseWellFormedOnlyValidation())
-        {
-
-            if (RejectsByRequiredPrefilter(input))
-            {
-                return false;
-            }
-
-            var fastBudget = CreateExecutionBudget();
-            return IsMatchViaCompiledEngine(input, default, fastBudget);
-        }
-
-        var validation = Utf8InputAnalyzer.Describe(input);
-
         if (RejectsByRequiredPrefilter(input))
         {
             return false;
         }
 
-        var budget = CreateExecutionBudget();
-
-        return IsMatchViaCompiledEngine(input, validation, budget);
+        return _compiledEngineRuntime.IsMatch(input, CreateExecutionBudget());
     }
 
     private bool OwnedSliceIsMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, CancellationToken token)
@@ -509,7 +493,7 @@ public sealed partial class Utf8Regex : IDisposable
             _prioritizeBoundaryLiteralFamilyCount)
         {
 
-            return CountViaCompiledEngine(input, default, CreateExecutionBudget());
+            return _compiledEngineRuntime.Count(input, CreateExecutionBudget());
         }
 
         if (ShouldUseKelvinSignFallback(input))
@@ -532,7 +516,7 @@ public sealed partial class Utf8Regex : IDisposable
 
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedAsciiLiteralFamilyCount);
             var fastBudget = CreateExecutionBudget();
-            return CountViaCompiledEngine(input, default, fastBudget);
+            return _compiledEngineRuntime.Count(input, fastBudget);
         }
 
         if (CanUseFusedCompiledUtf8LiteralCount() || CanUseFusedCompiledUtf8LiteralFamilyCount())
@@ -542,7 +526,7 @@ public sealed partial class Utf8Regex : IDisposable
                     ? Utf8ExecutionRoute.CompiledFusedUtf8LiteralCount
                     : Utf8ExecutionRoute.CompiledFusedUtf8LiteralFamilyCount);
             var fastBudget = CreateExecutionBudget();
-            return CountViaCompiledEngine(input, default, fastBudget);
+            return _compiledEngineRuntime.Count(input, fastBudget);
         }
 
         if (RejectsByRequiredPrefilter(input))
@@ -551,7 +535,7 @@ public sealed partial class Utf8Regex : IDisposable
             return 0;
         }
 
-        return CountViaCompiledEngine(input, default, CreateExecutionBudget());
+        return _compiledEngineRuntime.Count(input, CreateExecutionBudget());
     }
 
     /// <summary>Owned scalar count from an admitted byte boundary.</summary>
@@ -698,7 +682,7 @@ public sealed partial class Utf8Regex : IDisposable
         }
 
         var runtime = _compiledEngineRuntime;
-        var canUseAsciiProbe = runtime.SupportsAsciiMatchProbe && CanUseAsciiDirectInput(input);
+        var canUseAsciiProbe = runtime.SupportsAsciiMatchProbe && Utf8InputAnalyzer.IsAscii(input);
         var canUseUtf8Probe = runtime.SupportsUtf8MatchProbe;
         if (canUseAsciiProbe || canUseUtf8Probe)
         {
@@ -721,15 +705,12 @@ public sealed partial class Utf8Regex : IDisposable
             }
         }
 
-        var validation = Utf8InputAnalyzer.Describe(input);
-
         if (RejectsByRequiredPrefilter(input))
         {
-            return default(Utf8CaptureRange);
+            return default;
         }
 
-        var budget = CreateExecutionBudget();
-        return MatchViaCompiledEngine(input, validation, budget);
+        return runtime.Match(input, CreateExecutionBudget());
     }
 
     private Utf8CaptureRange OwnedSliceMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, CancellationToken token)
@@ -868,7 +849,7 @@ public sealed partial class Utf8Regex : IDisposable
                 .WithTimeoutMapping(input, this);
         }
 
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.BorrowBytes(input);
         var startOffsetInBytes = UsesRightToLeft() ? input.Length : 0;
         var start = subject.GetBytePosition(startOffsetInBytes, "startOffsetInBytes");
         return new Utf8ByteOffsetExecution(this).EnumerateMatches(subject, start)
@@ -1017,10 +998,6 @@ public sealed partial class Utf8Regex : IDisposable
 
 
         var budget = CreateExecutionBudget();
-        var usesAsciiDirectInput = CanUseAsciiDirectInput(input);
-        var validation = usesAsciiDirectInput
-            ? new Utf8ValidationResult(input.Length, true)
-            : Utf8InputAnalyzer.Describe(input);
         // R05: anchored ASCII literal families split through the anchor-enforcing
         // owned cursors (at most one match at a fixed position), like enumeration.
         var isAnchoredDirectSplitFamily = _anchoredLiteral.LiteralUtf8 is { Length: > 0 } &&
@@ -1028,9 +1005,9 @@ public sealed partial class Utf8Regex : IDisposable
             _anchoredLiteral.IsExactSuffix ||
             _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd);
         if (count > 0 &&
-            (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily))
+            (CanUseNativeSplit() || isAnchoredDirectSplitFamily))
         {
-            return CreateSplitEnumeratorViaCompiledEngine(input, validation, count, budget)
+            return CreateSplitEnumeratorViaCompiledEngine(input, count, budget)
                 .WithTimeoutMapping(this);
         }
 
@@ -1103,13 +1080,9 @@ public sealed partial class Utf8Regex : IDisposable
                 GetParsedReplacement(replacementPatternUtf8, control), Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
         }
 
-        var validation = CanUseAsciiDirectInput(input)
-            ? default
-            : Utf8InputAnalyzer.Describe(input);
-
         if (replacementPatternUtf8.IndexOf((byte)'$') < 0)
         {
-            return ReplaceLiteralBytesCore(input, validation, replacementPatternUtf8, deadline);
+            return ReplaceLiteralBytesCore(input, replacementPatternUtf8, deadline);
         }
 
         var replacementPattern = GetParsedReplacement(replacementPatternUtf8, control);
@@ -1119,10 +1092,10 @@ public sealed partial class Utf8Regex : IDisposable
         var budget = deadline;
         if (TryGetExactLiteralReplacementBytes(replacementPattern, out var exactLiteralReplacementBytes))
         {
-            return ReplaceLiteralBytesCore(input, validation, exactLiteralReplacementBytes, deadline);
+            return ReplaceLiteralBytesCore(input, exactLiteralReplacementBytes, deadline);
         }
 
-        if (TryReplaceViaNativePlan(input, validation, replacementPattern, budget, out var nativeResult))
+        if (TryReplaceViaNativePlan(input, replacementPattern, budget, out var nativeResult))
         {
             return nativeResult;
         }
@@ -1133,7 +1106,7 @@ public sealed partial class Utf8Regex : IDisposable
                 default, cancellationToken, deadline).Bytes;
         }
 
-        return ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline);
+        return ReplaceLiteralBytesCore(input, replacementBytes, deadline);
     }
 
     private OperationStatus TryReplaceUtf8Core(
@@ -1149,13 +1122,12 @@ public sealed partial class Utf8Regex : IDisposable
             !(_ownedSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
             replacementPatternUtf8.IndexOf((byte)'$') < 0)
         {
-            var validation = Utf8InputAnalyzer.Describe(input);
             // The worker consumes the template synchronously. Own it only when
             // writing the destination could overwrite bytes still needed later.
             ReadOnlySpan<byte> directReplacementBytes = replacementPatternUtf8.Overlaps(destination)
                 ? replacementPatternUtf8.ToArray()
                 : replacementPatternUtf8;
-            return TryReplaceLiteralBytesCore(input, validation, directReplacementBytes, destination, out bytesWritten, deadline);
+            return TryReplaceLiteralBytesCore(input, directReplacementBytes, destination, out bytesWritten, deadline);
         }
 
         var replacementPattern = GetParsedReplacement(replacementPatternUtf8, control);
@@ -1201,7 +1173,7 @@ public sealed partial class Utf8Regex : IDisposable
         new(limits.MaxWorkingBytes != 0 || limits.MaxResultBytes != 0
             ? string.Empty : Encoding.UTF8.GetString(input), pattern, timeout);
 
-    internal bool CanUseNativeSplit(Utf8ValidationResult validation)
+    internal bool CanUseNativeSplit()
     {
         // Split segments are match-delimited gaps. Grouped literal shapes use
         // the same group-agnostic cursors as ungrouped literals.
@@ -1219,7 +1191,7 @@ public sealed partial class Utf8Regex : IDisposable
         if (MatchTimeout != Regex.InfiniteMatchTimeout ||
             _preparedRegex.ExecutionPattern is null || _preparedRegex.ExecutionPattern.IndexOf('(') >= 0 ||
             CompiledEngineKind != Utf8CompiledEngineKind.LiteralFamily ||
-            _program.CompiledEngineRuntime is not Utf8LiteralCompiledEngineRuntime literalFamilyRuntime)
+            _program.CompiledEngineRuntime is not { } literalFamilyRuntime)
         {
             search = default;
             return false;
@@ -1238,29 +1210,4 @@ public sealed partial class Utf8Regex : IDisposable
         return UsesRightToLeft() &&
             _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex;
     }
-
-    private bool CanUseWellFormedOnlyValidation()
-    {
-        return _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals
-                or NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
-||
-            (_compiledEngine.Kind == Utf8CompiledEngineKind.FallbackRegex &&
-             !CanGuideFallbackVerification());
-    }
-
-    private bool CanUseAsciiDirectInput(ReadOnlySpan<byte> input)
-    {
-        if (_preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or
-                                             NativeExecutionKind.ExactUtf8Literal or
-                                             NativeExecutionKind.ExactUtf8Literals or
-                                             NativeExecutionKind.AsciiLiteralIgnoreCase or
-                                             NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&
-            !_preparedRegex.AnchoredLiteral.IsExact)
-        {
-            return false;
-        }
-
-        return Utf8InputAnalyzer.IsAscii(input);
-    }
-
 }

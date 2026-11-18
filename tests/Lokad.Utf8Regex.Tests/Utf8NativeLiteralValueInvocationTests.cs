@@ -193,11 +193,11 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             catch (Utf8ExecutionDeadlineExpiredException) { return true; }
         }, TimeSpan.FromSeconds(1)));
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() => {
-            if (operation == "ismatch") _ = runtime.IsMatch("target"u8, default, deadline);
-            else if (operation == "count") _ = runtime.Count("target"u8, default, deadline);
-            else _ = runtime.Match("target"u8, default, deadline);
+            if (operation == "ismatch") _ = runtime.IsMatch("target"u8, deadline);
+            else if (operation == "count") _ = runtime.Count("target"u8, deadline);
+            else _ = runtime.Match("target"u8, deadline);
         });
-        Assert.True(runtime.IsMatch("target"u8, default, Utf8ExecutionDeadline.Infinite));
+        Assert.True(runtime.IsMatch("target"u8, Utf8ExecutionDeadline.Infinite));
     }
 
     [Theory]

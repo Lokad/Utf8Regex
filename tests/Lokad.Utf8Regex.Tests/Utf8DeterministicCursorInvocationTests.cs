@@ -83,11 +83,10 @@ public sealed class Utf8DeterministicCursorInvocationTests
         var prepared = Prepared(regex);
         const string text = "ab12 12ab ab34 34ab abcdefgh ijklmnop\nab1d\nab2d\nab12\nab34\n";
         var input = Encoding.UTF8.GetBytes(text);
-        var validation = Utf8Validation.Validate(input);
         var oracle = new Regex(pattern, Options(compiled));
         for (var floor = 0; floor <= text.Length; floor++)
         {
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation, Utf8ExecutionDeadline.Infinite, floor);
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, Utf8ExecutionDeadline.Infinite, floor);
             foreach (Match expected in oracle.Matches(text, floor))
             {
                 Assert.True(cursor.MoveNext());
@@ -96,7 +95,7 @@ public sealed class Utf8DeterministicCursorInvocationTests
             Assert.False(cursor.MoveNext());
         }
         var budget = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200));
-        var timed = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation, budget, 0);
+        var timed = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, budget, 0);
         clock.Advance(250);
         Exception? observed = null;
         try { _ = timed.MoveNext(); } catch (Exception exception) { observed = exception; }

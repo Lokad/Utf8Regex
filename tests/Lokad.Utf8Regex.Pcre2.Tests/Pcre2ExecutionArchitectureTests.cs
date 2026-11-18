@@ -162,7 +162,7 @@ public sealed class Pcre2ExecutionArchitectureTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
-        var input = Utf8ValidatedInput.Create("é😀é😀"u8);
+        var input = Utf8ValidatedInput.BorrowBytes("é😀é😀"u8);
         var left = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, input, new(0), regex.DebugCompiledProgram.Request, CancellationToken.None);
         var right = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, input, new(0), regex.DebugCompiledProgram.Request, CancellationToken.None);
         Assert.True(left.MoveNext());
@@ -208,7 +208,7 @@ public sealed class Pcre2ExecutionArchitectureTests
 
         var compiled = regex.DebugCompiledProgram;
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.BorrowBytes(input);
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
             subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
             compiled.Request, collectDiagnostics: true);
@@ -261,7 +261,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var input = "foofoo barbar xx foofoo"u8;
         var compiled = regex.DebugCompiledProgram;
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.BorrowBytes(input);
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
             subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
             compiled.Request, collectDiagnostics: true);
@@ -527,7 +527,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var program = compiled.Operations.Match is Pcre2SliceDirectProgram slice ? slice.Fallback :
             Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Match).Program;
         Assert.NotNull(program);
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.BorrowBytes(input);
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
             subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
             compiled.Request, collectDiagnostics: true);
@@ -659,7 +659,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var program = compiled.Operations.Match is Pcre2SliceDirectProgram slice ? slice.Fallback :
             Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Match).Program;
         Assert.NotNull(program);
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.BorrowBytes(input);
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
             subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
             compiled.Request, collectDiagnostics: true);

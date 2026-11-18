@@ -52,7 +52,7 @@ public sealed class Utf8ResidualScalarRouteTests
             var regex = new Utf8Regex(pattern, options: Options(compiled));
             var expected = gap == 25 ? 1 : 0;
             Assert.Equal(expected, regex.Count(bytes));
-            var input = Utf8ValidatedInput.Create(bytes);
+            var input = Utf8ValidatedInput.BorrowBytes(bytes);
             Assert.Equal(expected, regex.ByteOffsetExecution.CountPrepared(input, input.GetBytePosition(0, "start")));
             var match = regex.Match(bytes);
             Assert.Equal(expected != 0, match.Success);

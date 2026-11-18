@@ -19,12 +19,12 @@ public sealed partial class Utf8Regex
             if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             Utf8OperationMatchCursor cursor;
-            if (!HasFiniteExecutionLimits && CanUseNativeOffsetCursor(input, ref invocation, out var anchored, out var validation))
+            if (!HasFiniteExecutionLimits && CanUseNativeOffsetCursor(input, ref invocation, out var anchored))
             {
 
                 cursor = anchored
                     ? new Utf8OperationMatchCursor(input, _anchoredLiteral.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _anchoredLiteral.Kind, invocation).WithStartFloor(startOffsetInBytes)
-                    : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startOffsetInBytes);
+                    : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, invocation, startOffsetInBytes);
             }
             else
             {
@@ -40,7 +40,7 @@ public sealed partial class Utf8Regex
         catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
     }
 
-    private bool CanUseNativeOffsetCursor(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation, out bool anchored, out Utf8ValidationResult validation)
+    private bool CanUseNativeOffsetCursor(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation, out bool anchored)
     {
         var program = _ownedSliceProgram;
         // The public offset selector applies its lifetime-policy guard before
@@ -50,7 +50,6 @@ public sealed partial class Utf8Regex
             !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
             !program.HasContiguousAnchor;
         anchored = false;
-        validation = default;
         if (!eligible) return false;
         // Only live ASCII-dependent cursors need input facts. Literal discovery
         // and the general scalar program use original bytes without this pass.
@@ -58,15 +57,15 @@ public sealed partial class Utf8Regex
             _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix or
                 Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or
                 Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd;
-        if (needsFacts) validation = Utf8InputAnalyzer.Describe(input, ref invocation);
+        var isAscii = needsFacts && Utf8InputAnalyzer.Describe(input, ref invocation).IsAscii;
         anchored = eligible && _anchoredLiteral.LiteralUtf8 is { Length: > 0 } &&
             (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or
                 Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffixStrictEnd ||
-             validation.IsAscii && (Options & RegexOptions.CultureInvariant) != 0 &&
+             isAscii && (Options & RegexOptions.CultureInvariant) != 0 &&
                 _anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix or
                     Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd);
         var native = eligible && !program.IgnoreCase &&
-            Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(_preparedRegex, validation, ref invocation);
+            Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(_preparedRegex, ref invocation);
         return anchored || native;
     }
 }

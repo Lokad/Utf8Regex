@@ -109,9 +109,7 @@ public sealed class Utf8CompiledScalarConsumerTests
     {
         var prepared = Prepare("(?<d>😀)(?=.)", RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0));
         var input = "é😀x😀z"u8.ToArray();
-        var validation = Utf8Validation.Validate(input);
-        var cursor = Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(prepared, input,
-            validation, int.MaxValue, Utf8ExecutionDeadline.Infinite);
+        var cursor = Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(prepared, input, int.MaxValue, Utf8ExecutionDeadline.Infinite);
         var pieces = new List<string>();
         while (cursor.MoveNext()) pieces.Add(Encoding.UTF8.GetString(cursor.Current.GetValueBytes()));
         Assert.Equal(rtl ? new[] { "z", "x", "é" } : ["é", "x", "z"], pieces);
@@ -217,12 +215,11 @@ public sealed class Utf8CompiledScalarConsumerTests
     {
         var prepared = Prepare(pattern, RegexOptions.CultureInvariant | RegexOptions.RightToLeft);
         var input = Encoding.UTF8.GetBytes(text);
-        var validation = Utf8Validation.Validate(input);
-        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(prepared, input, validation, Utf8ExecutionDeadline.Infinite);
+        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(prepared, input, Utf8ExecutionDeadline.Infinite);
         Assert.True(cursor.IsRightToLeft);
         Assert.Equal(Encoding.UTF8.GetBytes(expected), Utf8CursorReplaceEngine.Replace(input, "!"u8, ref cursor, out var replaced));
         Assert.Equal(count, replaced);
-        cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(prepared, input, validation, Utf8ExecutionDeadline.Infinite);
+        cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(prepared, input, Utf8ExecutionDeadline.Infinite);
         var output = new byte[expected.Length];
         Assert.True(Utf8CursorReplaceEngine.TryReplace(input, "!"u8, output, ref cursor, out var written));
         Assert.Equal(output.Length, written); Assert.Equal(Encoding.UTF8.GetBytes(expected), output);

@@ -186,20 +186,6 @@ public sealed class Utf8ValidationTests
     }
 
     [Fact]
-    public void InputAnalyzerDescribesValidatedBytes()
-    {
-        var input = "a😀b"u8;
-
-        var analysis = Utf8ValidatedInput.Create(input);
-
-        Assert.Equal(input.Length, analysis.Validation.ByteLength);
-        Assert.False(analysis.Validation.IsAscii);
-
-
-
-    }
-
-    [Fact]
     public void ValidatedInputRejectsEveryContinuationByteAsAStart()
     {
         var input = "aé€😀z"u8.ToArray();
@@ -224,7 +210,7 @@ public sealed class Utf8ValidationTests
     public void ValidatedInputAdvancesAndRetreatsByScalar(string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.BorrowBytes(input);
         var boundaries = new List<(int Bytes, int Utf16)> { (0, 0) };
         foreach (var scalar in text.EnumerateRunes())
         {
@@ -247,7 +233,7 @@ public sealed class Utf8ValidationTests
 
     private static void ValidateBytePosition(byte[] input, int offset)
     {
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.BorrowBytes(input);
         _ = subject.GetBytePosition(offset, "startOffsetInBytes");
     }
 

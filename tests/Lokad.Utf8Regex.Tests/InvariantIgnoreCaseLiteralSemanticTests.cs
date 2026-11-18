@@ -269,12 +269,9 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var actual = new Utf8Regex(pattern, options: options);
         var analysis = Utf8FrontEnd.Compile(pattern, options);
         var input = Encoding.UTF8.GetBytes(subject);
-        var validation = Utf8Validation.Validate(input);
         var splits = Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
             actual.Inspection.PreparedRegex,
-            input,
-            validation,
-            int.MaxValue,
+            input, int.MaxValue,
             Utf8ExecutionDeadline.Infinite);
 
         var expectedSplits = new List<(int ByteIndex, int ByteLength, string Value)>();

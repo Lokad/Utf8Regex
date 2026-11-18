@@ -274,7 +274,6 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         var prefix = kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix;
         var text = prefix ? Encoding.UTF8.GetString(literal) + (mixed ? "é😀" : "xxx") : (mixed ? "é😀" + new string('x', 8193) : new string('x', 8193)) + Encoding.UTF8.GetString(literal) + (kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix ? "\n" : "");
         var input = Encoding.UTF8.GetBytes(text);
-        var validation = Utf8Validation.Validate(input);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(7));
         var original = new Utf8OperationMatchCursor(input, literal, kind, baseline);
@@ -305,19 +304,16 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData("é")]
     [InlineData("(?:ab|xy)")]
 
-    public void NativeFactoryKeepsValidationWorkAndBorrowedAdmission(string pattern)
+    public void NativeFactoryKeepsPriorWorkAndBorrowedAdmission(string pattern)
     {
         var prepared = Prepared(new Utf8Regex(pattern, options: RegexOptions.CultureInvariant));
         var input = Encoding.UTF8.GetBytes(new string('x', 8193) + "abc ab1d getAlpha é");
-        // Structural/window lanes require ASCII; Unicode literals retain mixed projection.
-        if (pattern.StartsWith("a.", StringComparison.Ordinal) || pattern.StartsWith("(?:get", StringComparison.Ordinal))
-            input = Encoding.UTF8.GetBytes(new string('x', 8193) + "abc ab1d getAlpha");
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
-        Assert.True(Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(prepared, validation, ref invocation));
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
+        Assert.True(Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(prepared, ref invocation));
         var steps = invocation.Budget.Steps;
-        var cursor = Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(prepared, input, validation, invocation, 8193);
+        var cursor = Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(prepared, input, invocation, 8193);
         Assert.True(cursor.DebugInvocationSteps >= steps);
         Assert.Equal(7UL, cursor.DebugInvocationReservedBytes);
         Assert.False(cursor.DebugIsOwnedSlice);

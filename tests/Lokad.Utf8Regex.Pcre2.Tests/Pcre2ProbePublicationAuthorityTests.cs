@@ -144,7 +144,7 @@ public sealed class Pcre2ProbePublicationAuthorityTests
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
             ++polls > nativePolls && nativePolls >= 0 ? 25 : 0);
-        var input = Utf8ValidatedInput.Create("é😀"u8);
+        var input = Utf8ValidatedInput.BorrowBytes("é😀"u8);
         var budget = new Pcre2ResourceBudget(compiled.Request.DefaultLimits, compiled.Request.MatchTimeout, false);
         Assert.True(Pcre2LiteralRunner.Match(literal.Program, ref input, new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget).Success);
         nativePolls = polls;

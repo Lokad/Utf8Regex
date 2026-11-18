@@ -140,7 +140,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             actualValues.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
 
-        Assert.True(actual.CanUseNativeSplit(Utf8Validation.Validate(bytes)));
+        Assert.True(actual.CanUseNativeSplit());
         Assert.Equal(expected.Split(input, count), actualValues);
     }
 
@@ -165,7 +165,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             var actual = new Utf8Regex(testCase.Pattern, options: caseOptions);
             var actualValues = new List<string>();
 
-            Assert.False(actual.CanUseNativeSplit(Utf8Validation.Validate(bytes)));
+            Assert.False(actual.CanUseNativeSplit());
             foreach (var split in actual.EnumerateSplits(bytes))
             {
                 actualValues.Add(Encoding.UTF8.GetString(split.GetValueBytes()));

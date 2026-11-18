@@ -68,7 +68,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         return false;
     }
 
-    public bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
+    public bool IsMatch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (TryStartSingleLiteralInvocation(budget, out var invocation))
         {
@@ -100,7 +100,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
                 _regexPlan,
                 input,
-                validation,
                 budget);
             return cursor.MoveNext();
         }
@@ -119,7 +118,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         };
     }
 
-    public int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
+    public int Count(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.LiteralUtf8 is { Length: 0 } &&
             !_regexPlan.SearchPlan.HasBoundaryRequirements && !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
@@ -148,7 +147,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
                 _regexPlan,
                 input,
-                validation,
                 budget);
             var constrainedCount = 0;
             while (cursor.MoveNext())
@@ -173,7 +171,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         };
     }
 
-    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
+    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (TryStartSingleLiteralInvocation(budget, out var invocation))
         {
@@ -188,7 +186,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         {
             if (budget.IsInfinite && _compositeTrailingLiteralSearch is { } compositeSearch)
             {
-                return MatchCompositeTrailingLiteral(input, compositeSearch, validation.IsAscii);
+                return MatchCompositeTrailingLiteral(input, compositeSearch);
             }
 
             if (CanUseDirectExactSingleScalar(budget))
@@ -201,7 +199,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(
                 _regexPlan,
                 input,
-                validation,
                 budget);
             if (!cursor.MoveNext())
             {
@@ -252,7 +249,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     }
 
     private static Utf8CaptureRange MatchCompositeTrailingLiteral(
-        ReadOnlySpan<byte> input, CompositeTrailingLiteralSearch search, bool inputIsAscii)
+        ReadOnlySpan<byte> input, CompositeTrailingLiteralSearch search)
     {
         var indexInBytes = search.FindFirst(input);
         if (indexInBytes < 0)
@@ -288,7 +285,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         {
             // The family cursor derives coordinates from the consumed prefix;
             // it does not consume whole-input validation metadata.
-            match = Match(input, default, Utf8ExecutionDeadline.Infinite);
+            match = Match(input, Utf8ExecutionDeadline.Infinite);
             return true;
         }
 
@@ -358,7 +355,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     {
         if (budget.IsInfinite && _compositeTrailingLiteralSearch is { } compositeSearch)
         {
-            match = MatchCompositeTrailingLiteral(input, compositeSearch, inputIsAscii: true);
+            match = MatchCompositeTrailingLiteral(input, compositeSearch);
             return true;
         }
 

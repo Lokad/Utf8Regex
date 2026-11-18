@@ -28,7 +28,7 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
             var bytes = 7 + groupBytes - (allow || slots == 0 ? 0UL : 1UL);
             var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, bytes), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            var input = Utf8ValidatedInput.Create("x😀é"u8);
+            var input = Utf8ValidatedInput.BorrowBytes("x😀é"u8);
             if (!allow && slots != 0)
             {
                 try { _ = Pcre2Runner.PublishSliceCaptures(slots, 1, 7, starts, ends, ref input, ref invocation); Assert.Fail("Expected physical aggregate denial."); }
@@ -52,7 +52,7 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
     [Fact]
     public void ReverseAndMissingEdgesRetainTheirOriginalPublicProjection()
     {
-        var input = Utf8ValidatedInput.Create("x😀é"u8);
+        var input = Utf8ValidatedInput.BorrowBytes("x😀é"u8);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         int[] starts = [7, -1, 2, 5];
         int[] ends = [1, 7, 5, -1];
@@ -78,7 +78,7 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
         {
             var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(steps, 0, 1UL << 20), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            var input = Utf8ValidatedInput.Create(bytes);
+            var input = Utf8ValidatedInput.BorrowBytes(bytes);
             try
             {
                 var groups = Pcre2Runner.PublishSliceCaptures(slots, 0, bytes.Length, starts, ends, ref input, ref invocation);
@@ -109,7 +109,7 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
         var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 1UL << 20), Timeout.InfiniteTimeSpan, cancellation.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         invocation.CheckpointHook = _ => cancellation.Cancel();
-        var input = Utf8ValidatedInput.Create(bytes);
+        var input = Utf8ValidatedInput.BorrowBytes(bytes);
         try { _ = Pcre2Runner.PublishSliceCaptures(slots, 0, bytes.Length, starts, ends, ref input, ref invocation); Assert.Fail("Expected cancellation after entry."); }
         catch (OperationCanceledException failure) { Assert.Equal(cancellation.Token, failure.CancellationToken); }
         Assert.True(invocation.Budget.Steps > 0);
@@ -125,7 +125,7 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
         var compiled = regex.DebugCompiledProgram;
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(compiled.Operations.Match);
         var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram,
-            Utf8ValidatedInput.Create("xé😀xé😀"u8), new Utf8BytePosition(0), compiled.Request, cancellation.Token);
+            Utf8ValidatedInput.BorrowBytes("xé😀xé😀"u8), new Utf8BytePosition(0), compiled.Request, cancellation.Token);
         Assert.True(CursorInvocation(ref cursor).Ledger.TryReserve(7));
         Assert.True(cursor.MoveNext());
         var first = cursor.CaptureGroupsAt(cursor.Current.StartOffsetInBytes, true);

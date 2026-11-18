@@ -113,7 +113,7 @@ public sealed class Pcre2ExecutionRouteTests
     {
         var regex = new Utf8Pcre2Regex(pattern);
         var inputBytes = Encoding.UTF8.GetBytes(inputText);
-        var input = Utf8ValidatedInput.Create(inputBytes);
+        var input = Utf8ValidatedInput.BorrowBytes(inputBytes);
         var start = input.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
         var program = Assert.IsType<Pcre2LiteralFamilyDirectProgram>(
             regex.DebugCompiledProgram.Operations.Enumerate);
@@ -351,7 +351,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
 
         var compiled = regex.DebugCompiledProgram;
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Enumerate).Program;
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.BorrowBytes(input);
         var cursor = Pcre2GlobalMatchCursor.CreateBacktracking(program, compiled.CandidateSearchPlan,
             subject, subject.GetBytePosition(0, "startOffsetInBytes"), Pcre2MatchOptions.None,
             compiled.Request, collectDiagnostics: true);

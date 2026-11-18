@@ -140,10 +140,9 @@ public sealed class Utf8IdentifierCursorTests
         var oracle = new Regex(pattern, options);
         const string text = "xgetAlpha getOmega setBeta LogError ( xLogWarning( LogInformation( class Order struct Worker";
         var input = Encoding.UTF8.GetBytes(text);
-        var validation = Utf8Validation.Validate(input);
         for (var floor = 0; floor <= text.Length; floor++)
         {
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, validation, Utf8ExecutionDeadline.Infinite, floor);
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, Utf8ExecutionDeadline.Infinite, floor);
             foreach (Match expected in oracle.Matches(text, floor))
             {
                 Assert.True(cursor.MoveNext());

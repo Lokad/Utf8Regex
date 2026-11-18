@@ -21,7 +21,7 @@ internal static partial class BenchmarkInspectReporter
         Utf8Pcre2Regex regex, ReadOnlySpan<byte> input, int startOffsetInBytes)
     {
         var program = regex.DebugCompiledProgram;
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.BorrowBytes(input);
         var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
         var backtrackingProgram = program.Operations.IsMatch switch
         {
@@ -51,7 +51,7 @@ internal static partial class BenchmarkInspectReporter
         var program = regex.DebugCompiledProgram;
         if (program.Operations.Match is Pcre2BacktrackingDirectProgram { Program.MayReportNonMonotoneMatchOffsets: true })
             throw new NotSupportedException("SPEC-PCRE2 rejects non-monotone iterative matches.");
-        var subject = Utf8ValidatedInput.Create(input);
+        var subject = Utf8ValidatedInput.BorrowBytes(input);
         var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
         var backtrackingProgram = program.Operations.Enumerate switch
         {
@@ -603,7 +603,7 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecutePcre2DirectLiteralFamilyIndexSum(Utf8Pcre2BenchmarkContext context)
     {
         var searcher = GetPcre2DirectLiteralFamilySearcher(context);
-        var input = Utf8ValidatedInput.Create(context.InputBytes);
+        var input = Utf8ValidatedInput.BorrowBytes(context.InputBytes);
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var sum = 0;
         while (searcher.TryFindNextNonOverlappingLength(
@@ -621,7 +621,7 @@ internal static partial class BenchmarkInspectReporter
     private static int ExecutePcre2DirectLiteralFamilyProjectionSum(Utf8Pcre2BenchmarkContext context)
     {
         var searcher = GetPcre2DirectLiteralFamilySearcher(context);
-        var input = Utf8ValidatedInput.Create(context.InputBytes);
+        var input = Utf8ValidatedInput.BorrowBytes(context.InputBytes);
         var budget = new Pcre2ResourceBudget(default, Timeout.InfiniteTimeSpan, false);
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         var sum = 0;

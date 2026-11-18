@@ -83,7 +83,7 @@ public sealed class Utf8NativeProjectionInvocationTests
         {
             6 or 7 => new Utf8OperationMatchCursor(input, literal, budget, family == 6 ? Utf8AnchoredLiteralKind.AnchoredAsciiLiteralSuffix : Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix),
             8 => new Utf8OperationMatchCursor(input, plan, literal, NativeExecutionKind.ExactUtf8Literal, budget, true),
-            _ => Utf8CompiledOperationCursorFactory.CreateMatchCursor(plan, input, Utf8Validation.Validate(input), budget),
+            _ => Utf8CompiledOperationCursorFactory.CreateMatchCursor(plan, input, budget),
         };
         clock.Advance(250);
         var expired = false;

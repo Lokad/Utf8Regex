@@ -475,8 +475,8 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Samples           : {samples}");
         Console.WriteLine($"ExecutionKind     : {context.Utf8Regex.Inspection.ExecutionKind}");
         Console.WriteLine($"CompiledKind      : {context.CompiledUtf8Regex.Inspection.ExecutionKind}");
-        Console.WriteLine($"CanUseNative      : {context.Utf8Regex.CanUseNativeSplit(Utf8Validation.Validate(context.InputBytes))}");
-        Console.WriteLine($"CompiledCanUseNative: {context.CompiledUtf8Regex.CanUseNativeSplit(Utf8Validation.Validate(context.InputBytes))}");
+        Console.WriteLine($"CanUseNative      : {context.Utf8Regex.CanUseNativeSplit()}");
+        Console.WriteLine($"CompiledCanUseNative: {context.CompiledUtf8Regex.CanUseNativeSplit()}");
 
         MeasureUtf8CaseLane("ValidationOnly", samples, iterations, () =>
             ExecuteValidationOnly(context.InputBytes));
@@ -2584,8 +2584,8 @@ internal static partial class BenchmarkInspectReporter
         }
         else if (context.Operation == LokadPublicBenchmarkOperation.Split)
         {
-            Console.WriteLine($"BaselineCanUseNativeSplit : {context.Utf8Regex.CanUseNativeSplit(Utf8Validation.Validate(context.InputBytes))}");
-            Console.WriteLine($"CompiledCanUseNativeSplit : {context.CompiledUtf8Regex.CanUseNativeSplit(Utf8Validation.Validate(context.InputBytes))}");
+            Console.WriteLine($"BaselineCanUseNativeSplit : {context.Utf8Regex.CanUseNativeSplit()}");
+            Console.WriteLine($"CompiledCanUseNativeSplit : {context.CompiledUtf8Regex.CanUseNativeSplit()}");
             Console.WriteLine($"BaselineCanUseSmallAsciiLiteralFamilySplit : {context.Utf8Regex.TryGetSmallAsciiLiteralFamilySearch(context.InputBytes, out _)}");
             Console.WriteLine($"CompiledCanUseSmallAsciiLiteralFamilySplit : {context.CompiledUtf8Regex.TryGetSmallAsciiLiteralFamilySearch(context.InputBytes, out _)}");
 

@@ -21,7 +21,7 @@ public sealed class Pcre2SliceScanWorkspaceTests
         var storage = new byte[offset + bytes.Length + 1];
         storage.AsSpan().Fill(0xff);
         bytes.CopyTo(storage, offset);
-        var input = Utf8ValidatedInput.Create(storage.AsSpan(offset, bytes.Length));
+        var input = Utf8ValidatedInput.BorrowBytes(storage.AsSpan(offset, bytes.Length));
         Assert.Equal(2, regex.Count(input.Bytes));
         var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, input,
             new Utf8BytePosition(0), compiled.Request, default);
@@ -67,7 +67,7 @@ public sealed class Pcre2SliceScanWorkspaceTests
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(compiled.Operations.Count);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aa!😀", 128)) + "aaabb");
         var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram,
-            Utf8ValidatedInput.Create(bytes), new Utf8BytePosition(0), compiled.Request, cancellation.Token);
+            Utf8ValidatedInput.BorrowBytes(bytes), new Utf8BytePosition(0), compiled.Request, cancellation.Token);
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(7));
         cursor.WorkingInvocation.CheckpointHook = _ =>
         {
