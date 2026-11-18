@@ -35,15 +35,14 @@ public sealed class Utf8OrderedWindowInvocationTests
         });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(bytes)).ResourceKind);
-        denied = new Utf8Regex(head + ".{1,2}z", policy: new Utf8RegexPolicy
+        using var tinyWorking = new Utf8Regex(head + ".{1,2}z", policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new()
             {
                 MaxWorkingBytes = 1
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(bytes)).ResourceKind);
+        Assert.Equal(1, tinyWorking.Count(bytes));
     }
 
     private static readonly string[] Patterns = [@"a\s+b", @"a\s{2,}b", @"a\s+?b", @"a.{0,4}b", @"river.{10,25}Tom",

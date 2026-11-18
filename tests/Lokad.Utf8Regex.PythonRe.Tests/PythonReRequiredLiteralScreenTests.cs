@@ -83,7 +83,7 @@ public sealed class PythonReRequiredLiteralScreenTests
             }
         });
         Assert.True(limited.Match("ab"u8, mode: Utf8PythonMatchMode.Search).Success);
-        var overlapping = new Utf8PythonRegex("a+ab", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        var overlapping = new Utf8PythonRegex("(?:a|aa)+ab", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new()

@@ -630,45 +630,35 @@ internal static partial class Utf8SliceRunner
         }
         if (includesLiteral)
         {
-            if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy ||
-                atom.Kind != Utf8SliceInstructionKind.Dot || suffix.Kind != Utf8SliceInstructionKind.Literal ||
-                (uint)suffix.A >= 128 || repeat.RepeatMaximum is < 8 or > 511)
+            if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy || suffix.Kind != Utf8SliceInstructionKind.Literal)
                 return false;
-            // A scalar consumes at most four bytes. Absence in this conservative
-            // window rules out every endpoint; presence still needs normal VM
-            // backtracking, including newline, capture and greedy-order rules.
-            breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None)
+            if (atom.Kind == Utf8SliceInstructionKind.Dot && (uint)suffix.A < 128 && repeat.RepeatMaximum is >= 8 and <= 511)
             {
-                outcome = new(false, -1, breach, null, null);
-                return true;
+                // An absent prefix also rejects bounded dots with nonterminal tails.
+                // Four bytes per scalar is a conservative upper bound on its reach.
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None)
+                { outcome = new(false, -1, breach, null, null); return true; }
+                Span<byte> prefix = stackalloc byte[8];
+                prefix[0] = (byte)suffix.A;
+                var prefixLength = 1;
+                while (prefixLength < prefix.Length && prefixLength < instructions.Length - tail)
+                {
+                    var next = instructions[tail + prefixLength];
+                    if (next.Kind != Utf8SliceInstructionKind.Literal || next.B != 0 || (uint)next.A >= 128)
+                        break;
+                    prefix[prefixLength++] = (byte)next.A;
+                }
+                var length = Math.Min(input.Length - start, (int)repeat.RepeatMaximum * 4 + prefixLength);
+                var window = input.Slice(start, length);
+                var possible = prefixLength == 1 ? window.IndexOf(prefix[0]) >= 0
+                    : window.IndexOf(prefix[..prefixLength]) >= 0;
+                breach = invocation.TryChargeInputStep();
+                invocation.Budget.ThrowIfCancellationRequested();
+                if (breach != Utf8ExecutionLimitKind.None || !possible)
+                { outcome = new(false, -1, breach, null, null); return true; }
             }
-            // Bound instruction inspection and the search even for enormous tails.
-            // Stop at captures, folds or other instructions; this prefix is only
-            // a necessary condition, never a substitute for executing the tail.
-            Span<byte> prefix = stackalloc byte[8];
-            prefix[0] = (byte)suffix.A;
-            var prefixLength = 1;
-            while (prefixLength < prefix.Length && prefixLength < instructions.Length - tail)
-            {
-                var next = instructions[tail + prefixLength];
-                if (next.Kind != Utf8SliceInstructionKind.Literal || next.B != 0 || (uint)next.A >= 128)
-                    break;
-                prefix[prefixLength++] = (byte)next.A;
-            }
-            // Include the whole prefix at the final possible scalar endpoint.
-            var length = Math.Min(input.Length - start, (int)repeat.RepeatMaximum * 4 + prefixLength);
-            var window = input.Slice(start, length);
-            var possible = prefixLength == 1 ? window.IndexOf(prefix[0]) >= 0
-                : window.IndexOf(prefix[..prefixLength]) >= 0;
-            breach = invocation.TryChargeInputStep();
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (breach != Utf8ExecutionLimitKind.None || !possible)
-            {
-                outcome = new(false, -1, breach, null, null);
-                return true;
-            }
-            return TryRunBoundedDotTerminalTail(program, repeatIndex, tail, input, start,
+            return TryRunGreedyRepeatTerminalLiteral(program, repeatIndex, tail, input, start,
                 requiredEnd, ref invocation, out outcome);
         }
         if (alternateScalar >= 0)
@@ -742,14 +732,13 @@ internal static partial class Utf8SliceRunner
         return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
     }
 
-    private static bool TryRunBoundedDotTerminalTail(Utf8SliceProgram program, int repeatIndex, int tail,
+    private static bool TryRunGreedyRepeatTerminalLiteral(Utf8SliceProgram program, int repeatIndex, int tail,
         ReadOnlySpan<byte> input, int start, int? requiredEnd, ref Utf8SliceInvocation invocation,
         out Utf8SliceMatchOutcome outcome)
     {
         outcome = default;
-        // The caller proved a greedy Dot, maximum 8..511 and an ASCII tail head.
-        // Prove the complete terminal tail before discarding any rewind choice.
-        // Outer capture endings still execute in the VM at the selected boundary.
+        // Prove the literal through Accept before discarding rewind choices.
+        // Capture boundaries still execute in the VM at the selected endpoint.
         if (program.HasBalancing) return false;
         Span<byte> literal = stackalloc byte[64];
         var length = 0;
@@ -758,8 +747,15 @@ internal static partial class Utf8SliceRunner
         while (cursor < instructions.Length && instructions[cursor].Kind == Utf8SliceInstructionKind.Literal)
         {
             var item = instructions[cursor++];
-            if (item.B != 0 || (uint)item.A >= 128 || length == literal.Length) return false;
-            literal[length++] = (byte)item.A;
+            if (item.B != 0 || length == literal.Length) return false;
+            if ((uint)item.A < 128)
+                literal[length++] = (byte)item.A;
+            else
+            {
+                if (!Rune.TryCreate(item.A, out var scalar) ||
+                    !scalar.TryEncodeToUtf8(literal[length..], out var written)) return false;
+                length += written;
+            }
         }
         for (var skipped = 0; skipped < 32 && cursor < instructions.Length &&
             instructions[cursor].Kind == Utf8SliceInstructionKind.CaptureEnd; skipped++) cursor++;
@@ -768,35 +764,41 @@ internal static partial class Utf8SliceRunner
         if (length == 0 || (uint)cursor >= (uint)instructions.Length ||
             instructions[cursor].Kind != Utf8SliceInstructionKind.Accept) return false;
 
-        var repeat = instructions[repeatIndex];
-        var singleline = instructions[repeatIndex + 1].A != 0;
-        var position = start;
-        var selected = -1;
-        for (var count = 0; ; count++)
+        var run = RunClassRepeat(program, repeatIndex, input, start, ref invocation, out var minimumEnd);
+        if (run.EndIndex < 0 || run.Breach != Utf8ExecutionLimitKind.None)
         {
-            var breach = invocation.TryChargeStep();
+            outcome = new(false, -1, run.Breach, null, null);
+            return true;
+        }
+
+        var last = Math.Min(run.EndIndex, input.Length - length);
+        if (requiredEnd is int end)
+        {
+            // Within an assertion only one endpoint can reach the required end.
+            last = Math.Min(last, end - length);
+            minimumEnd = Math.Max(minimumEnd, end - length);
+        }
+
+        // Every scalar boundary between the two run endpoints is reachable.
+        // A complete UTF-8 literal starts with a lead byte, so an exact byte
+        // hit supplies a scalar boundary even when the search window splits one.
+        var selected = -1;
+        while (last >= minimumEnd)
+        {
+            var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None)
             {
                 outcome = new(false, -1, breach, null, null);
                 return true;
             }
-            if (count >= repeat.RepeatMinimum && input[position..].StartsWith(literal[..length]) &&
-                (requiredEnd is null || position + length == requiredEnd))
-                selected = position;
-            if (count == repeat.RepeatMaximum ||
-                !TryReadScalar(input, position, false, out var scalar, out var width) ||
-                !singleline && scalar.Value == '\n') break;
-            position += width;
+            var first = Math.Max(minimumEnd, last - (2048 - length));
+            var block = input.Slice(first, last - first + length);
+            var hit = length == 1 ? block.LastIndexOf(literal[0]) : block.LastIndexOf(literal[..length]);
+            if (hit >= 0) { selected = first + hit; break; }
+            last = first - 1;
         }
-        var terminal = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
-        if (terminal != Utf8ExecutionLimitKind.None)
-        {
-            outcome = new(false, -1, terminal, null, null);
-            return true;
-        }
-        // Report the repeat's endpoint. Original RepeatExit/CaptureEnd/literal
-        // instructions retain their journals, capture positions and publication.
+        invocation.Budget.CheckDeadline();
         outcome = new(selected >= 0, selected, Utf8ExecutionLimitKind.None, null, null);
         return true;
     }
@@ -938,9 +940,16 @@ internal static partial class Utf8SliceRunner
                     break;
             }
             if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
-            breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
-            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
-            if (!hit) break;
+            if (dot)
+            {
+                if (atom.A == 0 && scalar.Value == '\n') break;
+            }
+            else
+            {
+                breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
+                if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+                if (!hit) break;
+            }
             position += width;
             if (++count == minimum) minimumEnd = position;
         }

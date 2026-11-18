@@ -67,6 +67,38 @@ public sealed class Utf8BoundedDotCandidateTests
     }
 
     [Fact]
+    public void GreedyTerminalLiteralCanCrossAReverseSearchBlock()
+    {
+        const string pattern = @"\A(?<gap>.*)(?<tail>😀é)";
+        // The final reverse block starts at byte 2050. The literal at 2049
+        // is visible only if the next block includes bytes beyond its last start.
+        var input = Encoding.UTF8.GetBytes(new string('a', 2049) + "😀é" + new string('x', 2043));
+        using var token = new CancellationTokenSource();
+        using var limited = Utf8Regex.Compile(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkSteps = 128, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        Assert.True(limited.IsMatch(input, token.Token));
+
+        using var regex = new Utf8Regex(pattern);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
+        Assert.Equal(2055, match.Value.EndOffsetInBytes);
+        Assert.Equal(2049, match.GetGroupMemory(1).Length);
+        Assert.True(match.GetGroupMemory(2).Span.SequenceEqual("😀é"u8));
+    }
+
+    [Theory]
+    [InlineData(2, true)]
+    [InlineData(3, false)]
+    public void GreedyClassTerminalLiteralRespectsScalarMinimum(int minimum, bool hit)
+    {
+        using var regex = new Utf8Regex(@"\A(?<gap>[a😀]{" + minimum + ",4})😀a");
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor("a😀😀a"u8.ToArray()));
+        Assert.Equal(hit, match.Success);
+        if (hit) Assert.True(match.GetGroupMemory(1).Span.SequenceEqual("a😀"u8));
+    }
+
+    [Fact]
     public void AChildRequiredEndCannotDiscardAnEarlierValidEndpoint()
     {
         foreach (var pattern in new[] { @"(?<=A(?<gap>.{0,25})Watson)X", @"(?=A(?<gap>.{0,25})Watson)A.*X" })
@@ -111,18 +143,27 @@ public sealed class Utf8BoundedDotCandidateTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void CompleteTailScanObservesOriginalInterruption(bool expire)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void CompleteTailScanObservesOriginalInterruption(bool expire, bool reverse)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var token = new CancellationTokenSource();
-        var program = new Utf8Regex(@"\AA.{0,511}Watson").Inspection.AvailableOwnedSliceProgram;
-        var input = Encoding.UTF8.GetBytes("A" + new string('x', 100) + "Watson");
+        using var regex = new Utf8Regex(reverse ? @"\AA.*Watson" : @"\AA.{0,511}Watson");
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        var input = Encoding.UTF8.GetBytes(reverse ? "AWatson" + new string('x', 250000) : "A" + new string('x', 100) + "Watson");
         var invocation = new Utf8SliceInvocation(new(100000, 1024, 1 << 20),
             expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
         var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; if (expire) clock.Advance(50); else token.Cancel(); };
+        // The forward dot takes about 123 blocks for the long subject. The
+        // next selected checkpoint interrupts the descending literal search.
+        invocation.CheckpointHook = steps =>
+        {
+            if (reverse && steps < 192) return;
+            entered = true;
+            if (expire) clock.Advance(50); else token.Cancel();
+        };
         Exception? error = null;
         try { _ = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation); }
         catch (Exception observed) { error = observed; }

@@ -42,7 +42,7 @@ public sealed class Utf8CoreWorkingPolicyTests
     [MemberData(nameof(OperationModes), MemberType = typeof(Utf8CoreWorkPolicyTests))]
     public void AllPublicOperationsHaveFiniteWorkingSuccessAndExactCutoff(string operation, bool compiled, bool live)
     {
-        const string pattern = "(?<x>😀+)(?<y>😀ab)";
+        const string pattern = "(?<x>😀)+(?<y>😀ab)";
         var input = "😀😀😀ab"u8.ToArray();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         using var source = new CancellationTokenSource();

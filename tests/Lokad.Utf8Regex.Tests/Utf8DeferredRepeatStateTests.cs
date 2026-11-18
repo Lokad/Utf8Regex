@@ -88,7 +88,7 @@ public sealed class Utf8DeferredRepeatStateTests
     }
 
     [Theory]
-    [InlineData("a{1,3}a", "aaaa")]
+    [InlineData(@"a{1,3}?a\z", "aaaa")]
     [InlineData("a{1,3}(?=b{1,2}c)b+c", "aaabbc")]
     public void EveryWorkCutoffAndWorkingDenialRefundsTheEnclosingLoan(string pattern, string text)
     {
@@ -123,7 +123,7 @@ public sealed class Utf8DeferredRepeatStateTests
     [InlineData(false)] [InlineData(true)]
     public void InterruptionDuringInitialStateAcquisitionRefundsTheEnclosingLoan(bool expire)
     {
-        var program = Program("a{1,3}a");
+        var program = Program(@"a{1,3}?a\z");
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

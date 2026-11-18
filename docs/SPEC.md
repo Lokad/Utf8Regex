@@ -453,7 +453,10 @@ proved candidate filter can avoid VM work before verification.
 A forward greedy repeat of one side-effect-free scalar atom can keep its
 remaining endpoints in a single live frame. The run scan and each retry are
 metered. Depth and working admission cover the frame, while capture and
-assertion state retain their own admission.
+assertion state retain their own admission. When the remaining instructions
+prove an exact terminal literal, the engine can find the last reachable
+occurrence in bounded, metered blocks and execute the tail without a rewind
+frame. The usual capture and result admission applies at that endpoint.
 
 The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result
