@@ -77,6 +77,22 @@ public sealed class PosixGreedyAsciiRunTests
     }
 
     [Theory]
+    [InlineData("([a\n]+)^()", "a\na", PosixCompileOptions.Newline, 2)]
+    [InlineData("([k\n]+)^()", "K\nK", PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase, 4)]
+    public void LineBeginningAfterMixedRunCanRewind(string pattern, string text, PosixCompileOptions options, int end)
+    {
+        using var regex = new Utf8PosixRegex(pattern, options: options);
+        var groups = new Utf8CaptureRange[3];
+        var input = Encoding.UTF8.GetBytes(text);
+        var whole = regex.Match(input, captures: groups);
+        Assert.True(whole.Success);
+        Assert.Equal((0, end), (whole.StartOffsetInBytes, whole.EndOffsetInBytes));
+        Assert.Equal((0, end), (groups[1].StartOffsetInBytes, groups[1].EndOffsetInBytes));
+        Assert.Equal((end, end), (groups[2].StartOffsetInBytes, groups[2].EndOffsetInBytes));
+        Assert.Equal(1, regex.Count(input));
+    }
+
+    [Theory]
     [InlineData("^([a]+)([[:space:]]+)$", PosixCompileOptions.Newline)]
     [InlineData("([a]+)([[:space:]]+)$", PosixCompileOptions.Newline)]
     [InlineData("^(([a]{1,2}))([[:space:]]{1,3})$", PosixCompileOptions.Newline)]

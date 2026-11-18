@@ -306,6 +306,9 @@ internal sealed partial class PosixProgram
         var hasAnchor = false;
         var hasLineEndAnchor = false;
         var hasNullableRun = false;
+        var canRewindAtLineStart = false;
+        const int lineFeedOctet = '\n' >> 3;
+        const byte lineFeedBit = 1 << ('\n' & 7);
         var code = program.Instructions;
         for (var index = 0; index < code.Length; index++)
         {
@@ -316,6 +319,10 @@ internal sealed partial class PosixProgram
             {
                 hasAnchor = true;
                 hasLineEndAnchor |= instruction.A == (int)Utf8SliceAnchorKind.End && instruction.B != 0;
+                // A mixed run can consume past its last LF. Only the ordinary
+                // scalar loop can return to the earlier beginning-of-line boundary.
+                if (instruction.A == (int)Utf8SliceAnchorKind.Beginning && instruction.B != 0 && canRewindAtLineStart)
+                    asciiOnly = false;
                 continue;
             }
             if (instruction.Kind == Utf8SliceInstructionKind.Accept)
@@ -326,7 +333,7 @@ internal sealed partial class PosixProgram
                 // Ordinary greedy rewind tries the longest valid final endpoint
                 // first, including an earlier LF before a line-end anchor. The
                 // direct byte loop cannot rewind, so only that shortcut declines.
-                if (hasLineEndAnchor && (seen['\n' >> 3] & (1 << ('\n' & 7))) != 0) asciiOnly = false;
+                if (hasLineEndAnchor && (seen[lineFeedOctet] & lineFeedBit) != 0) asciiOnly = false;
                 return pieces > 0 && index == code.Length - 1 && !(hasAnchor && hasNullableRun);
             }
             var repeated = instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy;
@@ -390,14 +397,18 @@ internal sealed partial class PosixProgram
                 mask = literalMask;
             }
             var nonempty = false;
+            var hasOtherByte = false;
             for (var octet = 0; octet < seen.Length; octet++)
             {
                 budget.ChargeWork(1);
                 if (required && (seen[octet] & mask[octet]) != 0) return false;
                 nonempty |= mask[octet] != 0;
+                hasOtherByte |= (octet == lineFeedOctet ? mask[octet] & ~lineFeedBit : mask[octet]) != 0;
                 if (repeated) seen[octet] |= mask[octet];
             }
             if (!nonempty) return false;
+            canRewindAtLineStart = repeated && instruction.RepeatMinimum < instruction.RepeatMaximum &&
+                (mask[lineFeedOctet] & lineFeedBit) != 0 && hasOtherByte;
             if (pieces == 0 && required) firstRequiredRunAtom = atomIndex;
             pieces++;
             index = exitIndex;
