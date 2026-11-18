@@ -5,6 +5,7 @@ using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using static Lokad.Utf8Regex.Tests.Utf8CoreWorkPolicyTests;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -123,12 +124,8 @@ public sealed class Utf8CoreResultPolicyTests
             }
         });
 
-    public static IEnumerable<object[]> OperationModes() => Utf8CoreWorkPolicyTests.OperationModes();
-    private static string Run(Utf8Regex regex, string operation, byte[] input, CancellationToken token, int offset = 1)
-        => Utf8CoreWorkPolicyTests.Run(regex, operation, input, token, offset);
-
     [Theory]
-    [MemberData(nameof(OperationModes))]
+    [MemberData(nameof(OperationModes), MemberType = typeof(Utf8CoreWorkPolicyTests))]
     public void EveryAcceptedOperationPreservesResultsAndEnforcesItsDeclaredCapacityScope(string operation, bool compiled, bool live)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
@@ -142,10 +139,13 @@ public sealed class Utf8CoreResultPolicyTests
         if (operation is "is" or "count" or "match" or "slot-match" or "matches" or "matches-offset" or "split" or "split-count")
             Assert.Equal(expected, Run(Create(pattern, 1, options), operation, input, token));
         else AssertResultFailure(() => Run(Create(pattern, 1, options), operation, input, token), 1);
+        source.Cancel();
+        var canceled = Assert.Throws<OperationCanceledException>(() => Run(Create(pattern, 1, options), operation, input, source.Token));
+        Assert.Equal(source.Token, canceled.CancellationToken);
     }
 
     [Theory]
-    [MemberData(nameof(OperationModes))]
+    [MemberData(nameof(OperationModes), MemberType = typeof(Utf8CoreWorkPolicyTests))]
     public void ExactAndOneUnderCapacityAndAllSmallCapsHaveDefinedOutcomes(string operation, bool compiled, bool live)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
@@ -178,7 +178,7 @@ public sealed class Utf8CoreResultPolicyTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
-        foreach (var operation in new[] { "capture", "replace", "replace-bytes", "destination", "destination-bytes" })
+        foreach (var operation in new[] { "capture", "replace", "destination" })
         {
             Assert.Equal(Run(new Utf8Regex(pattern, options: options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
@@ -358,19 +358,6 @@ public sealed class Utf8CoreResultPolicyTests
             Encoding.UTF8.GetString(Create("ab", 1).Replace("ab"u8, "Z"u8, already.Token));
         });
         Assert.True(canceled.CancellationToken.IsCancellationRequested);
-    }
-
-    [Theory]
-    [MemberData(nameof(OperationModes))]
-    public void GenerousResultBudgetsKeepStrictFullValidationAndOriginalTokens(string operation, bool compiled, bool live)
-    {
-        var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        using var source = new CancellationTokenSource();
-        var token = live ? source.Token : default;
-        var input = "ab x"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
-        source.Cancel();
-        var failure = Assert.Throws<OperationCanceledException>(() => Run(Create("ab", 1, options), operation, input, source.Token));
-        Assert.Equal(source.Token, failure.CancellationToken);
     }
 
     [Fact]

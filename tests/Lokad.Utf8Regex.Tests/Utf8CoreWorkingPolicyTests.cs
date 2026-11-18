@@ -2,15 +2,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
+using static Lokad.Utf8Regex.Tests.Utf8CoreWorkPolicyTests;
 
 namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8CoreWorkingPolicyTests
 {
-    private static readonly string[] Operations = ["is", "count", "match", "capture", "slot-match",
-        "capture-offset", "matches", "matches-offset", "split", "split-count", "replace",
-        "replace-bytes", "destination", "destination-bytes"];
-
     private static Utf8Regex Create(string pattern, ulong bytes, RegexOptions options)
         => new(pattern, options: options, policy: new Utf8RegexPolicy
         {
@@ -30,7 +27,7 @@ public sealed class Utf8CoreWorkingPolicyTests
 
     private static void Denied(Utf8ResourceLimitExceededException error, ulong bytes, string operation)
     {
-        if (operation is "replace" or "replace-bytes" or "destination" or "destination-bytes" &&
+        if (operation is "replace" or "destination" &&
             error.ResourceKind == Utf8ResourceLimitKind.ConstructionBytes)
         {
             // Template preparation has its own additional-capacity ceiling
@@ -41,15 +38,8 @@ public sealed class Utf8CoreWorkingPolicyTests
         else Denied(error, bytes);
     }
 
-    public static IEnumerable<object[]> Modes()
-    {
-        foreach (var operation in Operations)
-        foreach (var compiled in new[] { false, true })
-        foreach (var live in new[] { false, true }) yield return [operation, compiled, live];
-    }
-
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(OperationModes), MemberType = typeof(Utf8CoreWorkPolicyTests))]
     public void AllPublicOperationsHaveFiniteWorkingSuccessAndExactCutoff(string operation, bool compiled, bool live)
     {
         const string pattern = "(?<x>😀+)(?<y>😀ab)";

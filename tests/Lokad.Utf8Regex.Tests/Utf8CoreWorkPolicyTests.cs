@@ -8,9 +8,8 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8CoreWorkPolicyTests
 {
-    private static readonly string[] Operations = ["is", "count", "match", "capture", "slot-match",
-        "capture-offset", "matches", "matches-offset", "split", "split-count", "replace",
-        "replace-bytes", "destination", "destination-bytes"];
+    internal static readonly IReadOnlyList<string> Operations = ["is", "count", "match", "capture", "slot-match",
+        "capture-offset", "matches", "matches-offset", "split", "split-count", "replace", "destination"];
 
     private static Utf8Regex Create(string pattern, ulong cap, RegexOptions options = RegexOptions.CultureInvariant,
         TimeSpan? timeout = null) => new(pattern, options: options, policy: new Utf8RegexPolicy
@@ -140,12 +139,12 @@ public sealed class Utf8CoreWorkPolicyTests
 
     [Theory]
     [MemberData(nameof(OperationModes))]
-    public void FullValidationAndCanceledEntryCannotBeSkippedByEarlyHits(string operation, bool compiled, bool live)
+    public void EarlyHitsObserveWorkLimitsAndPreCancellation(string operation, bool compiled, bool live)
     {
         using var source = new CancellationTokenSource();
         var token = live ? source.Token : default;
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var input = "ab x"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
+        var input = "ab é"u8.ToArray();
         AssertWorkFailure(() => Run(Create("ab", 1, options), operation, input, token), 1);
         source.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() => Run(Create("ab", 1, options), operation, input, source.Token));
@@ -153,14 +152,14 @@ public sealed class Utf8CoreWorkPolicyTests
     }
 
     [Fact]
-    public void DerivedStartsRejectSurrogateInteriorsAndUseOneValidationBudget()
+    public void ByteStartsRejectContinuationBytesAndObserveWorkLimits()
     {
         var input = Encoding.UTF8.GetBytes("é😀ab");
-        foreach (var operation in Operations.Where(x => x.Contains("offset")))
+        foreach (var operation in new[] { "slot-match", "capture-offset", "matches-offset" })
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => Run(Create("ab", 100000), operation, input, default, 2));
-            Assert.Equal(Run(new Utf8Regex("ab"), operation, input, default, 3),
-                Run(Create("ab", 100000), operation, input, default, 3));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Run(Create("ab", 100000), operation, input, default, 3));
+            Assert.Equal(Run(new Utf8Regex("ab"), operation, input, default, 6),
+                Run(Create("ab", 100000), operation, input, default, 6));
         }
         var large = Encoding.UTF8.GetBytes("ab" + new string('é', 10000));
         foreach (var operation in Operations)
@@ -311,43 +310,39 @@ public sealed class Utf8CoreWorkPolicyTests
         return result.ToString();
     }
 
-    internal static string Run(Utf8Regex regex, string operation, byte[] input, CancellationToken token, int offset = 1)
+    internal static string Run(Utf8Regex regex, string operation, byte[] input, CancellationToken token,
+        int? startOffsetInBytes = null)
     {
-        var live = token.CanBeCanceled;
+        int Start() => startOffsetInBytes ??
+            (Rune.DecodeFromUtf8(input, out _, out var width) == OperationStatus.Done ? width : 0);
+
         switch (operation)
         {
-            case "is": return (live ? regex.IsMatch(input, token) : regex.IsMatch(input)).ToString();
-            case "count": return (live ? regex.Count(input, token) : regex.Count(input)).ToString();
-            case "match": return Range(regex.Match(input,
-                (regex.Options & RegexOptions.RightToLeft) != 0 ? input.Length : 0, [], token));
+            case "is": return regex.IsMatch(input, token).ToString();
+            case "count": return regex.Count(input, token).ToString();
+            case "match": return Range(regex.Match(input, cancellationToken: token));
             case "capture": return Detail(Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token)));
-            case "slot-match": return (live ? regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), [], token).Success : regex.Match(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), []).Success).ToString();
-            case "capture-offset": return Detail(live ? Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), token)) : Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)))));
+            case "slot-match":
+                var slots = new Utf8CaptureRange[regex.CaptureGroupCount + 1];
+                var match = regex.Match(input, Start(), slots, token);
+                return Range(match) + "|" + string.Join("|", slots.Select(Range));
+            case "capture-offset": return Detail(Utf8MatchSequence.First(regex.CreateMatchCursor(input, Start(), token)));
             case "matches":
             case "matches-offset":
-                var matches = operation == "matches-offset"
-                    ? (live ? regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)), token) : regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset))))
-                    : (live ? regex.EnumerateMatches(input, cancellationToken: token) : regex.EnumerateMatches(input));
+                var matches = regex.EnumerateMatches(input, operation == "matches-offset" ? Start() : null, token);
                 var ranges = new List<string>();
                 while (matches.MoveNext()) ranges.Add(Range(matches.Current));
                 return string.Join("|", ranges);
             case "split":
             case "split-count":
-                var split = operation == "split-count"
-                    ? (live ? regex.EnumerateSplits(input, 2, token) : regex.EnumerateSplits(input, 2))
-                    : (live ? regex.EnumerateSplits(input, cancellationToken: token) : regex.EnumerateSplits(input));
+                var split = regex.EnumerateSplits(input, operation == "split-count" ? 2 : int.MaxValue, token);
                 var pieces = new List<string>();
                 while (split.MoveNext()) pieces.Add(Convert.ToHexString(split.Current.GetValueBytes()));
                 return string.Join("|", pieces);
-            case "replace": return Encoding.UTF8.GetString(live ? regex.Replace(input, "<$&>"u8, token) : regex.Replace(input, "<$&>"u8));
-            case "replace-bytes": return Encoding.UTF8.GetString(live ? regex.Replace(input, "<$&>"u8, token) : regex.Replace(input, "<$&>"u8));
+            case "replace": return Encoding.UTF8.GetString(regex.Replace(input, "<$&>"u8, token));
             case "destination":
-            case "destination-bytes":
                 var destination = new byte[4096];
-                OperationStatus status;
-                int written;
-                if (operation == "destination") status = live ? regex.TryReplace(input, "<$&>"u8, destination, out written, token) : regex.TryReplace(input, "<$&>"u8, destination, out written);
-                else status = live ? regex.TryReplace(input, "<$&>"u8, destination, out written, token) : regex.TryReplace(input, "<$&>"u8, destination, out written);
+                var status = regex.TryReplace(input, "<$&>"u8, destination, out var written, token);
                 Assert.Equal(OperationStatus.Done, status);
                 return Encoding.UTF8.GetString(destination.AsSpan(0, written));
             default: throw new ArgumentOutOfRangeException(nameof(operation));

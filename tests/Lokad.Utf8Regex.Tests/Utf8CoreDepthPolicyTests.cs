@@ -2,14 +2,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
+using static Lokad.Utf8Regex.Tests.Utf8CoreWorkPolicyTests;
 
 namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8CoreDepthPolicyTests
 {
-    private static readonly string[] Operations = ["is", "count", "match", "capture", "slot-match",
-        "capture-offset", "matches", "matches-offset", "split", "split-count", "replace",
-        "replace-bytes", "destination", "destination-bytes"];
     private static Utf8Regex Create(string pattern, uint cap, RegexOptions options)
         => new(pattern, options: options, policy: new Utf8RegexPolicy
         {
@@ -19,19 +17,13 @@ public sealed class Utf8CoreDepthPolicyTests
                 MaxDepth = cap
             }
         });
-    public static IEnumerable<object[]> Modes()
-    {
-        foreach (var operation in Operations)
-            foreach (var compiled in new[] { false, true })
-                foreach (var live in new[] { false, true }) yield return [operation, compiled, live];
-    }
     private static void Denied(Utf8ResourceLimitExceededException error, uint cap)
     {
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, error.ResourceKind);
         Assert.Equal((ulong)cap, error.Limit); Assert.Equal((ulong)cap + 1, error.Requested);
     }
     [Theory]
-    [MemberData(nameof(Modes))]
+    [MemberData(nameof(OperationModes), MemberType = typeof(Utf8CoreWorkPolicyTests))]
     public void AllPublicOperationsHaveExactDepthSuccessAndOneUnderDenial(string operation, bool compiled, bool live)
     {
         const string pattern = "(?<x>😀+)(?<y>😀ab)";
