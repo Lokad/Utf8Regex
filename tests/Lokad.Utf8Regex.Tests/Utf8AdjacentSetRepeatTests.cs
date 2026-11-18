@@ -28,6 +28,12 @@ public sealed class Utf8AdjacentSetRepeatTests
     [InlineData(@"(?<x>[a-z]+)[0-9]+(?(x)X|Y)", "abc12X")]
     [InlineData(@"([a-z]+)[^a-z0-9]+", "abc!!!")]
     [InlineData(@"([a-z]+)[é0-9]+", "abcé12")]
+    [InlineData(@"(\w+)\s+\w+\s+Holmes", "π😀 é\u0085名\u2028Holmes Ω\u3000薛\tHolmes")]
+    [InlineData(@"(\p{L}+)\p{Zs}+K", "é\u00a0K 東\u3000K")]
+    [InlineData(@"(\p{L}+)\p{Ll}+Z", "abcZ éλZ")]
+    [InlineData(@"([\p{L}\u0085]+)\s+Z", "é\u0085Z")]
+    [InlineData(@"([\p{L}\t]+)\s+Z", "é\tZ")]
+    [InlineData(@"([^\p{L}]+)\s+Z", "!\u2029Z")]
     public void PublicCapturesAndDeclinedShapesKeepTheirOutcomes(string pattern, string text)
     {
         var options = RegexOptions.CultureInvariant;
@@ -79,10 +85,12 @@ public sealed class Utf8AdjacentSetRepeatTests
         Assert.Equal("😀é"u8.ToArray(), retained.GetGroupMemory(owner.GroupNumberFromUtf8Name("run"u8)).ToArray());
     }
 
-    [Fact]
-    public void FusedRunsNeedNoRepeatOrRewindStorage()
+    [Theory]
+    [InlineData(@"\Aitem\s+[0-9]+\z", "item   12345")]
+    [InlineData(@"\A\w+\s+\w+\s+Holmes\z", "é\u0085東\u3000Holmes")]
+    [InlineData(@"\A\p{L}+\p{Zs}+K\z", "é\u00a0K")]
+    public void FusedRunsNeedNoRepeatOrRewindStorage(string pattern, string text)
     {
-        const string pattern = @"\Aitem\s+[0-9]+\z";
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1,
             MaxWorkingBytes = 1, MaxResultBytes = 1 };
         var owner = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
@@ -90,7 +98,7 @@ public sealed class Utf8AdjacentSetRepeatTests
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = policy
         });
-        Assert.True(owner.Match("item   12345"u8, 0, []).Success);
+        Assert.True(owner.Match(Encoding.UTF8.GetBytes(text), 0, []).Success);
     }
 
     [Theory]

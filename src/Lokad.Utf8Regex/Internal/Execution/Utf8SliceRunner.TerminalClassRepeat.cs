@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Globalization;
 using System.Numerics;
 using System.Text;
 
@@ -518,6 +519,15 @@ internal static partial class Utf8SliceRunner
             outcome = new(setRepeat.EndIndex >= 0, setRepeat.EndIndex, setRepeat.Breach, null, null);
             return true;
         }
+        if (following.Kind is Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid &&
+            TryGetPositiveCategorySet(program, atom, out var ownCategories, out var ownLow, out var ownHigh) &&
+            TryGetPositiveCategorySet(program, following, out var nextCategories, out var nextLow, out var nextHigh) &&
+            (ownCategories & nextCategories) == 0 && (ownLow & nextLow) == 0 && (ownHigh & nextHigh) == 0)
+        {
+            var classRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+            outcome = new(classRepeat.EndIndex >= 0, classRepeat.EndIndex, classRepeat.Breach, null, null);
+            return true;
+        }
         // End anchors can succeed only at the subject end or before LF. If the
         // atom excludes LF, no shorter endpoint can satisfy either kind of end.
         // Keep this conservative proof for absolute ends as well as multiline $.
@@ -611,6 +621,37 @@ internal static partial class Utf8SliceRunner
         }
         var finalRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
         outcome = new(finalRepeat.EndIndex >= 0, finalRepeat.EndIndex, finalRepeat.Breach, null, null);
+        return true;
+    }
+
+    private static bool TryGetPositiveCategorySet(Utf8SliceProgram program,
+        in Utf8SliceInstruction atom, out uint unicodeCategories, out ulong asciiLow, out ulong asciiHigh)
+    {
+        asciiLow = asciiHigh = 0;
+        unicodeCategories = 0;
+        if (atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
+            program.CategorySetMembers[atom.D] is [{ Negated: false, Table: { Mask: not 0,
+                Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }])
+        {
+            // The lowerer includes every ASCII member of this category table.
+            unicodeCategories = table.Mask;
+        }
+        else if (atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } &&
+            atom.C == 1 << (int)Utf8SliceShorthand.Space)
+        {
+            // The separator categories plus controls bound Unicode whitespace.
+            // Add the exact ASCII shorthand members to the explicit mask.
+            unicodeCategories = (1u << (int)UnicodeCategory.SpaceSeparator) |
+                (1u << (int)UnicodeCategory.LineSeparator) |
+                (1u << (int)UnicodeCategory.ParagraphSeparator) |
+                (1u << (int)UnicodeCategory.Control);
+            asciiLow = (1UL << ' ') | 0x3e00UL; // U+0009..U+000D and U+0020
+        }
+        else return false;
+
+        ReadOnlySpan<byte> mask = program.SetMasks[atom.A];
+        asciiLow |= BinaryPrimitives.ReadUInt64LittleEndian(mask);
+        asciiHigh = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
         return true;
     }
 
