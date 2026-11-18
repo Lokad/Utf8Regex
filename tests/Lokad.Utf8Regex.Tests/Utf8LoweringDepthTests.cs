@@ -53,7 +53,7 @@ public sealed class Utf8LoweringDepthTests
         var utf8 = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var runtime = new Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(runtime.GetGroupNames(), utf8.GetGroupNames());
-        Assert.Equal(runtime.GetGroupNumbers(), utf8.GetGroupNumbers());
+        Assert.Equal(runtime.GetGroupNumbers(), Enumerable.Range(0, utf8.CaptureGroupCount + 1).Select(utf8.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(runtime.GroupNumberFromName("word"), utf8.GroupNumberFromName("word"));
         Assert.Equal("word", utf8.GroupNameFromNumber(utf8.GroupNumberFromName("word")));
         Assert.True(utf8.IsMatch(Encoding.UTF8.GetBytes("xxabcxx")));

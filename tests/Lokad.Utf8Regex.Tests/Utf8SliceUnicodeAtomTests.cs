@@ -135,7 +135,7 @@ public sealed class Utf8SliceUnicodeAtomTests
         Assert.Equal(metadata.GetGroupNames(), oracle.GetGroupNames());
         Assert.Equal(metadata.GetGroupNumbers(), oracle.GetGroupNumbers());
         Assert.Equal(metadata.GetGroupNames(), regex.GetGroupNames());
-        Assert.Equal(metadata.GetGroupNumbers(), regex.GetGroupNumbers());
+        Assert.Equal(metadata.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         AssertOwned(regex);
     }
 

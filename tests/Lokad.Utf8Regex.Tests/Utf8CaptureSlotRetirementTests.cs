@@ -101,7 +101,7 @@ public sealed class Utf8CaptureSlotRetirementTests
         // overlaps the UTF-8 contract even with supplementary characters.
         var oracle = new Regex(pattern, options & ~RegexOptions.Compiled);
         var regex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
         foreach (var name in oracle.GetGroupNames()) Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text]);

@@ -89,7 +89,7 @@ public sealed class Utf8NonBacktrackingBatchTests
             {
                 Assert.True(actual.MoveNext(out var found));
                 Assert.Equal(wanted.Value, found.Value);
-                foreach (var group in ordinary.GetGroupNumbers())
+                foreach (var group in Enumerable.Range(0, ordinary.CaptureGroupCount + 1).Select(ordinary.GroupNumberFromCaptureSlot).ToArray())
                 {
                     Assert.True(wanted.TryGetGroup(group, out var left));
                     Assert.True(found.TryGetGroup(group, out var right));

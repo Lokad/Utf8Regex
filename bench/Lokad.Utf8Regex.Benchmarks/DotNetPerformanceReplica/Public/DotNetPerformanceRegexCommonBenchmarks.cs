@@ -156,18 +156,10 @@ public class DotNetPerformanceRegexConstructionBenchmarks
     }
 
     [Benchmark(Baseline = true)]
-    public int Utf8RegexCtor()
-    {
-        var regex = new Utf8Regex(_pattern, options: Options);
-        return regex.GetGroupNumbers().Length;
-    }
+    public Utf8Regex Utf8RegexCtor() => new(_pattern, options: Options);
 
     [Benchmark]
-    public int DotNetCtor()
-    {
-        var regex = new Regex(_pattern, Options, Regex.InfiniteMatchTimeout);
-        return regex.GetGroupNumbers().Length;
-    }
+    public Regex DotNetCtor() => new(_pattern, Options, Regex.InfiniteMatchTimeout);
 
     [Benchmark]
     public int Utf8RegexCtorInvoke()

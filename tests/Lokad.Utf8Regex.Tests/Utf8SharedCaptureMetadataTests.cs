@@ -35,7 +35,7 @@ public sealed class Utf8SharedCaptureMetadataTests
         var program = Utf8RegexProgram.Compile(pattern, options, prepareRuntime: true);
         var catalog = program.PreparedRegex.SemanticRegex.CaptureCatalog!;
         Assert.NotNull(catalog); Assert.Same(catalog, program.CaptureCatalog);
-        // Program metadata borrows the canonical catalog directly. Public array
+        // Program metadata borrows the canonical catalog directly. Public name-array
         // copies, sparse lookups, captures and replacement below share its data.
         Assert.Same(catalog, program.PreparedRegex.ScalarProgram?.CaptureCatalog);
 
@@ -43,11 +43,11 @@ public sealed class Utf8SharedCaptureMetadataTests
         // text overlap the UTF-8 contract, including supplementary literals.
         var oracle = new Regex(pattern, options);
         var regex = new Utf8Regex(pattern, options: options);
-        var names = regex.GetGroupNames(); var numbers = regex.GetGroupNumbers();
+        var names = regex.GetGroupNames(); var numbers = Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray();
         Assert.Equal(oracle.GetGroupNames(), names); Assert.Equal(oracle.GetGroupNumbers(), numbers);
-        Array.Fill(names, "corrupted"); Array.Fill(numbers, -1);
+        Array.Fill(names, "corrupted");
         Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
-        Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         foreach (var name in oracle.GetGroupNames().Concat(new[] { "", "00", "01", "012", "missing" }))
             Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
         foreach (var number in oracle.GetGroupNumbers().Concat(new[] { -1, 2, 12, int.MaxValue }))

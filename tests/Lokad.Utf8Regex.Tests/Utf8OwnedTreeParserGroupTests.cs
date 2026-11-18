@@ -324,7 +324,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
-        Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, product.CaptureGroupCount + 1).Select(product.GroupNumberFromCaptureSlot).ToArray());
         foreach (var inputText in inputs)
         {
             var input = Encoding.UTF8.GetBytes(inputText);
@@ -368,7 +368,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
-        Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, product.CaptureGroupCount + 1).Select(product.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
         foreach (var inputText in inputs)
         {

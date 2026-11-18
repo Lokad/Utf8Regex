@@ -90,7 +90,7 @@ internal static class Utf8AsciiScalarOperationAssertions
         Assert.Equal(metadata.GetGroupNames(), oracle.GetGroupNames());
         Assert.Equal(metadata.GetGroupNumbers(), oracle.GetGroupNumbers());
         Assert.Equal(metadata.GetGroupNames(), metadataRegex.GetGroupNames());
-        Assert.Equal(metadata.GetGroupNumbers(), metadataRegex.GetGroupNumbers());
+        Assert.Equal(metadata.GetGroupNumbers(), Enumerable.Range(0, metadataRegex.CaptureGroupCount + 1).Select(metadataRegex.GroupNumberFromCaptureSlot).ToArray());
         Owned(metadataRegex);
 
         // Keep independent cold instances for every public operation, as in the

@@ -298,7 +298,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
-        Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, product.CaptureGroupCount + 1).Select(product.GroupNumberFromCaptureSlot).ToArray());
         foreach (var inputText in inputs)
         {
             AssertDetailedAgreement(oracle, product, inputText);
@@ -374,7 +374,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
-        Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, product.CaptureGroupCount + 1).Select(product.GroupNumberFromCaptureSlot).ToArray());
         foreach (var inputText in inputs)
         {
             AssertDetailedAgreement(oracle, product, inputText);

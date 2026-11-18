@@ -98,7 +98,7 @@ internal static partial class BenchmarkInspectReporter
                 Profile = "Core", Filter = filter, OperationFilter = operationFilter,
                 InputContract = "Caller-valid unchanged UTF-8 / predecoded .NET text; Core performs no subject validation. DecodeThenRegex includes decoding.",
                 Scope = "24 representative patterns; structural neighbours and everyday patterns. Not exhaustive old-catalog coverage or adapter coverage.",
-                OutputContract = "Byte ranges and complete capture histories; BCL coordinate map is prepared outside timing. No string materialization.",
+                OutputContract = "Byte ranges and complete capture histories; BCL coordinate map is prepared outside timing. No string materialization. Construction consumes the same CultureInvariant Options mask on every producer, without metadata-array copies.",
                 Policy = "Token, 10-second deadline, 50M work steps, 4096 depth, 16 MiB working/result; caller working allowance in combined lane.",
                 Results = results }, new JsonSerializerOptions { WriteIndented = true }) + "\n");
             Console.WriteLine($"Generality output: {path}; elapsed {started.Elapsed.TotalSeconds:F1}s.");
@@ -145,10 +145,12 @@ internal static partial class BenchmarkInspectReporter
 
         internal int Execute(string operation, string lane)
         {
+            // Consume equivalent cheap metadata on every construction lane.
+            // Group-number copies would measure an unrelated public operation.
             if (operation == "Construct") return lane switch {
-                "Core" => Create().GetGroupNumbers().Length,
-                "PredecodedRegex" => new Regex(_pattern, RegexOptions.CultureInvariant).GetGroupNumbers().Length,
-                _ => new Regex(_pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled).GetGroupNumbers().Length };
+                "Core" => (int)(Create().Options & RegexOptions.CultureInvariant),
+                "PredecodedRegex" => (int)(new Regex(_pattern, RegexOptions.CultureInvariant).Options & RegexOptions.CultureInvariant),
+                _ => (int)(new Regex(_pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled).Options & RegexOptions.CultureInvariant) };
             if (!lane.StartsWith("Core", StringComparison.Ordinal))
             {
                 var text = lane == "DecodeThenRegex" ? Encoding.UTF8.GetString(_input) : _text;

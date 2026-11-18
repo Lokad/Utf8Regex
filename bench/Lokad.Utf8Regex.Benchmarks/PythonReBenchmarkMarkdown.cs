@@ -106,6 +106,7 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine("### Construction and first call");
         writer.WriteLine();
         writer.WriteLine("Contextual uncached-construction throughput, separate from warm Status. Values include managed-thread allocations where measured; CPython uses its compiler directly to bypass the compile cache.");
+        writer.WriteLine("These recorded construction-only rows include the former metadata-array copies. Current backend/adapter lifecycle consumers read capture counts, like CPython's groups attribute; historical figures do not qualify that revised work.");
         writer.WriteLine();
         writer.WriteLine("| Family | PythonRe construction | CPython compile | PythonRe first search | CPython first search |");
         writer.WriteLine("| --- | ---: | ---: | ---: | ---: |");

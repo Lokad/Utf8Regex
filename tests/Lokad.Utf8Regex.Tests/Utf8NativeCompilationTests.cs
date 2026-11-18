@@ -17,7 +17,7 @@ public sealed class Utf8NativeCompilationTests
         var text = new Utf8Regex(pattern, options: options);
         Array.Fill(source, (byte)0xff);
         Assert.Equal(pattern, native.Pattern);
-        Assert.Equal(text.GetGroupNumbers(), native.GetGroupNumbers());
+        Assert.Equal(Enumerable.Range(0, text.CaptureGroupCount + 1).Select(text.GroupNumberFromCaptureSlot).ToArray(), Enumerable.Range(0, native.CaptureGroupCount + 1).Select(native.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(text.GetGroupNames(), native.GetGroupNames());
         string[] subjects = ["", "a", "abc", "aaaa", "ababc", "é😀😀b", "é😀é😀", "éê😀🙏",
             "xé😀aabc", "a\0é\u0301😀", "é \v \u00a0 😀😀", "\nabc\n", "KkKéÉ", "🙏😀x"];
@@ -31,7 +31,7 @@ public sealed class Utf8NativeCompilationTests
             var actualDetailed = Utf8MatchSequence.First(native.CreateMatchCursor(input));
             Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
             if (expectedDetailed.Success)
-                foreach (var number in text.GetGroupNumbers())
+                foreach (var number in Enumerable.Range(0, text.CaptureGroupCount + 1).Select(text.GroupNumberFromCaptureSlot).ToArray())
                 {
                     Assert.True(expectedDetailed.TryGetGroup(number, out var group));
                     Assert.True(actualDetailed.TryGetGroup(number, out var nativeGroup));

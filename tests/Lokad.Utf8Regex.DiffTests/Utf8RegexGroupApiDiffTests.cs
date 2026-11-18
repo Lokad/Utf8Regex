@@ -41,7 +41,7 @@ public sealed class Utf8RegexGroupApiDiffTests
         var runtime = new Regex(pattern, options);
 
         Assert.Equal(runtime.GetGroupNames(), utf8.GetGroupNames());
-        Assert.Equal(runtime.GetGroupNumbers(), utf8.GetGroupNumbers());
+        Assert.Equal(runtime.GetGroupNumbers(), Enumerable.Range(0, utf8.CaptureGroupCount + 1).Select(utf8.GroupNumberFromCaptureSlot).ToArray());
 
         var probes = runtime.GetGroupNames().Concat(new[] { "missing", "0", string.Empty, "999999" });
         foreach (var name in probes)

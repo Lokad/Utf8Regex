@@ -108,7 +108,7 @@ public sealed class Utf8OwnedCutoverBehaviorTests
             }
 
             var expectedNumbers = b.GetGroupNumbers();
-            var actualNumbers = p.GetGroupNumbers();
+            var actualNumbers = Enumerable.Range(0, p.CaptureGroupCount + 1).Select(p.GroupNumberFromCaptureSlot).ToArray();
             if (!expectedNumbers.SequenceEqual(actualNumbers))
             {
                 return "metadata:numbers bcl=[" + string.Join(",", expectedNumbers) + "]/product=[" + string.Join(",", actualNumbers) + "]";

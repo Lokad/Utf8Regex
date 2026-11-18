@@ -53,7 +53,7 @@ public sealed class Utf8ScalarFlatAdmissionTests
             Assert.True(match.Success);
             Assert.Equal((0, 4), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
             Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span));
-            if (regex.GetGroupNumbers().Length > 1) Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+            if ((regex.CaptureGroupCount + 1) > 1) Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
             Assert.Equal("<\U0001f600>"u8.ToArray(), regex.Replace("\U0001f600"u8, "<$&>", source.Token));
             AssertOwned(regex);
         }

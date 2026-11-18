@@ -90,7 +90,7 @@ public sealed class Utf8ScalarCaptureFixtureTests
         var subject = new Utf8ScalarCaptureFixture.Subject(Text);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input));
         Assert.Equal((0, 14), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-        Assert.Equal(new[] { 0, 12 }, regex.GetGroupNumbers());
+        Assert.Equal(new[] { 0, 12 }, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         var captures = match.GetCaptures(12);
         var expected = new[] { (0, 1), (1, 4), (5, 4), (9, 4), (13, 1) };
         if (rtl) Array.Reverse(expected);

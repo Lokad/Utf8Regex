@@ -60,7 +60,7 @@ public sealed class Utf8CaptureSlotMatchTests
         });
         using var source = new CancellationTokenSource();
         var numbers = oracle.GetGroupNumbers();
-        Assert.Equal(numbers, regex.GetGroupNumbers());
+        Assert.Equal(numbers, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         var sentinel = new Utf8CaptureRange(123, 124);
         foreach (var text in new[] { "", "abc", "éaababc d", "aaabbbd", "aaaac", "éé abc éa" })
         {

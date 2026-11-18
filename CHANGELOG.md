@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Remove Core GetGroupNumbers. Resolve compact ordinals through CaptureGroupCount
+  and GroupNumberFromCaptureSlot, preserving sparse/shared slot identities.
+  Callers own copied collections; funded metadata access requires an open regex.
+  Constructor benchmarks consume objects or cheap metadata on both producers.
+
 - Remove PCRE2's redundant regex-level string CopyNumbersForName. Use the existing
   UTF-8 key method with ordered duplicate copies, complete key validation and an
   optional token. Match-context name copies remain available. Recompile callers.

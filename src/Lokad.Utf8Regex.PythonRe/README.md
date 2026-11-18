@@ -440,6 +440,7 @@ The full snapshot retains per-row confidence intervals, exclusion reasons, exact
 ### Construction and first call
 
 Contextual uncached-construction throughput, separate from warm Status. Values include managed-thread allocations where measured; CPython uses its compiler directly to bypass the compile cache.
+These recorded construction-only rows include the former metadata-array copies. Current backend/adapter lifecycle consumers read capture counts, like CPython's groups attribute; historical figures do not qualify that revised work.
 
 | Family | PythonRe construction | CPython compile | PythonRe first search | CPython first search |
 | --- | ---: | ---: | ---: | ---: |

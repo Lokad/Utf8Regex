@@ -168,7 +168,7 @@ public sealed class Utf8SliceNamedTests
         var regex = new Utf8Regex("(?<b>a)(c)+", options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(new[] { "0", "1", "b" }, regex.GetGroupNames());
-        Assert.Equal(new[] { 0, 1, 2 }, regex.GetGroupNumbers());
+        Assert.Equal(new[] { 0, 1, 2 }, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(1, regex.GroupNumberFromName("1"));
         Assert.Equal(2, regex.GroupNumberFromName("b"));
         Assert.Equal(-1, regex.GroupNumberFromName("zzz"));

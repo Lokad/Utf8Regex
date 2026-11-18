@@ -76,9 +76,9 @@ public sealed class Utf8SliceExplicitCaptureTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var oracle = new Regex("(a)+(?<x>b)+", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
-        Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(new[] { "0", "x" }, regex.GetGroupNames());
-        Assert.Equal(new[] { 0, 1 }, regex.GetGroupNumbers());
+        Assert.Equal(new[] { 0, 1 }, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("ab")));
         Assert.True(detailed.Success);
         Assert.Equal("b", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
@@ -92,9 +92,9 @@ public sealed class Utf8SliceExplicitCaptureTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var oracle = new Regex("(\\p{L}+)(?<x>y)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
-        Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(new[] { "0", "x" }, regex.GetGroupNames());
-        Assert.Equal(new[] { 0, 1 }, regex.GetGroupNumbers());
+        Assert.Equal(new[] { 0, 1 }, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("aby")));
         Assert.True(detailed.Success);
         Assert.Equal("y", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));

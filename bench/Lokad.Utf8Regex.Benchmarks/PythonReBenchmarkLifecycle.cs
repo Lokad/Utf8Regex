@@ -95,15 +95,15 @@ internal static partial class PythonReBenchmarkReporter
                 iterations,
                 samples)),
             BackendCreation = ToLifecycleTiming(MeasureOperation(
-                () => new Utf8Regex(                    translation.NativePatternUtf8, options:                     translation.NativeRegexOptions, policy: new Utf8RegexPolicy
+                () => new Utf8Regex(translation.NativePatternUtf8, options: translation.NativeRegexOptions, policy: new Utf8RegexPolicy
                 {
                     MatchTimeout = Timeout.InfiniteTimeSpan,
                     ResourcePolicy = default
-                }).GetGroupNumbers().Length,
+                }).CaptureGroupCount,
                 iterations,
                 samples)),
             AdapterConstruction = ToLifecycleTiming(MeasureOperation(
-                () => new Utf8PythonRegex(definition.Pattern, options: options).GetGroupNames().Length,
+                () => new Utf8PythonRegex(definition.Pattern, options: options).CaptureGroupCount,
                 iterations,
                 samples)),
             ConstructFirstSearch = ToLifecycleTiming(MeasureOperation(

@@ -70,7 +70,7 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(2, owner.CaptureGroupCount);
         Assert.Equal(new[] { 0, 2, 10 }, Enumerable.Range(0, 3).Select(owner.GroupNumberFromCaptureSlot));
         var regex = new Utf8Regex(@"(?<=é)(?<10>a)+(?<2>b)?");
-        Assert.Equal(regex.GetGroupNumbers(), Enumerable.Range(0, 3).Select(regex.GroupNumberFromCaptureSlot));
+        Assert.Equal(new[] { 0, 2, 10 }, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot));
         Assert.Throws<ArgumentOutOfRangeException>(() => owner.GroupNumberFromCaptureSlot(-1));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.GroupNumberFromCaptureSlot(3));
         var output = new Utf8CaptureRange[3];

@@ -278,7 +278,13 @@ synchronous cancellation/deadlines remain required.
 
 `CaptureGroupCount` counts defined capture slots excluding group zero. Sparse
 numbers and repeated declarations of a shared slot do not inflate it; captures
-need not participate in a match. `GetGroupNumbers` retains sparse identities.
+need not participate in a match. For ordinals zero through `CaptureGroupCount`,
+`GroupNumberFromCaptureSlot` returns actual group numbers in compact slot order,
+preserving sparse and shared identities. The copied-array `GetGroupNumbers` is
+removed; callers allocate collections when needed, outside regex controls. Each
+metadata access retains its open-producer funding guard. Separate calls do not
+form an atomic snapshot across program close; retained match results keep their
+own lifetime contract.
 
 `TryCopyPatternUtf8(destination, out bytesRequired, token)` copies exact original
 source into caller storage without creating a source string/output buffer or

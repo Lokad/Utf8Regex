@@ -367,7 +367,7 @@ public sealed class Utf8SliceInlineOperationTests
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(1, oracle.GetGroupNumbers().Length);
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        Assert.Equal(1, regex.GetGroupNumbers().Length);
+        Assert.Equal(1, (regex.CaptureGroupCount + 1));
         var foundInline = regex.Match(Encoding.UTF8.GetBytes("ab"));
         Assert.True(foundInline.Success);
         Assert.Equal(0, foundInline.StartOffsetInBytes);

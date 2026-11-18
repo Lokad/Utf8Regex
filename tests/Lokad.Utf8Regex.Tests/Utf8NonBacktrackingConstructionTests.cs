@@ -40,7 +40,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         if (actual.Success)
         {
             Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)), (actual.Value.StartOffsetInBytes, (actual.Value.EndOffsetInBytes - actual.Value.StartOffsetInBytes)));
-            foreach (var number in ordinary.GetGroupNumbers())
+            foreach (var number in Enumerable.Range(0, ordinary.CaptureGroupCount + 1).Select(ordinary.GroupNumberFromCaptureSlot).ToArray())
             {
                 Assert.True(expected.TryGetGroup(number, out var wanted));
                 Assert.True(actual.TryGetGroup(number, out var found));
@@ -155,7 +155,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(expected.Success, actual.Success);
         Assert.Equal((expected.Value.StartOffsetInBytes, (expected.Value.EndOffsetInBytes - expected.Value.StartOffsetInBytes)), (actual.Value.StartOffsetInBytes, (actual.Value.EndOffsetInBytes - actual.Value.StartOffsetInBytes)));
-        foreach (var number in ordinary.GetGroupNumbers())
+        foreach (var number in Enumerable.Range(0, ordinary.CaptureGroupCount + 1).Select(ordinary.GroupNumberFromCaptureSlot).ToArray())
         {
             Assert.True(expected.TryGetGroup(number, out var wanted)); Assert.True(actual.TryGetGroup(number, out var found));
             Assert.Equal(wanted.Success, found.Success);

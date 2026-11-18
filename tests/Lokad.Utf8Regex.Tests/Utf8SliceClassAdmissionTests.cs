@@ -106,7 +106,7 @@ public sealed class Utf8SliceClassAdmissionTests
         var oracle = new Regex(pattern, options);
         var regex = new Utf8Regex(pattern, options: options);
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, options));
-        Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
         Assert.Equal(oracle.Count(text), regex.Count(input));

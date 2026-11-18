@@ -92,7 +92,7 @@ public sealed class Utf8SliceSparseGroupTests
     {
         oracle = Utf8ScalarCaptureFixture.Project(oracle);
         var numbers = oracle.GetGroupNumbers();
-        Assert.Equal(numbers, regex.GetGroupNumbers());
+        Assert.Equal(numbers, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
         foreach (var number in numbers.Concat(new[] { -1, 0, 1, 2, 5, 7, 12, 13, int.MaxValue }).Distinct())
             Assert.Equal(oracle.GroupNameFromNumber(number), regex.GroupNameFromNumber(number));

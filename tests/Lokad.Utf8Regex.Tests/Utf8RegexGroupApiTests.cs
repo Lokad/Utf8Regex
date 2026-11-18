@@ -16,6 +16,6 @@ public sealed class Utf8RegexGroupApiTests
         Assert.Equal(groupNumber, utf8Regex.GroupNumberFromName("word"));
         Assert.Equal(regex.GroupNameFromNumber(groupNumber), utf8Regex.GroupNameFromNumber(groupNumber));
         Assert.Equal(regex.GetGroupNames(), utf8Regex.GetGroupNames());
-        Assert.Equal(regex.GetGroupNumbers(), utf8Regex.GetGroupNumbers());
+        Assert.Equal(regex.GetGroupNumbers(), Enumerable.Range(0, utf8Regex.CaptureGroupCount + 1).Select(utf8Regex.GroupNumberFromCaptureSlot).ToArray());
     }
 }

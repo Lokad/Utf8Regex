@@ -48,7 +48,6 @@ sealed class Utf8Regex : IDisposable
   method Int32 GroupNumberFromCaptureSlot(Int32 captureSlot)
   method Int32 GroupNumberFromName(String name)
   method Int32 GroupNumberFromUtf8Name(ReadOnlySpan<Byte> nameUtf8, Threading.CancellationToken cancellationToken = default)
-  method Int32[] GetGroupNumbers()
   method String GroupNameFromNumber(Int32 i)
   method String[] GetGroupNames()
   method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Nullable<Int32> startOffsetInBytes = null, Span<Utf8CaptureRange> captures = default, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null, Nullable<Int32> endOffsetInBytes = null)

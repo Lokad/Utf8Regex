@@ -149,7 +149,7 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
-        Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+        Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, product.CaptureGroupCount + 1).Select(product.GroupNumberFromCaptureSlot).ToArray());
         foreach (var inputText in inputs)
         {
             var input = Encoding.UTF8.GetBytes(inputText);

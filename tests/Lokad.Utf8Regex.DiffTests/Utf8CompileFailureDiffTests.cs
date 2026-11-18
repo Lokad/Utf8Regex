@@ -82,7 +82,7 @@ public sealed class Utf8CompileFailureDiffTests
             });
 
             Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
-            Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
+            Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, product.CaptureGroupCount + 1).Select(product.GroupNumberFromCaptureSlot).ToArray());
             Assert.Equal(oracle.GetGroupNames(), productTimeout.GetGroupNames());
         }
     }

@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex;
 public sealed partial class Utf8Regex
 {
     /// <summary>Finds a scalar match and optionally writes its last capture ranges into caller-owned slots.</summary>
-    /// <remarks>A null start selects zero forward or the selected end in right-to-left mode. Slots follow GetGroupNumbers order including zero. Short buffers do not change matching; excess entries remain untouched. Pre-cancellation leaves output unchanged; failure after capture entry clears written slots. The optional end retains prefix/lookbehind context. Capture history remains available through CreateMatchCursor. Keep borrowed bytes valid and unchanged.</remarks>
+    /// <remarks>A null start selects zero forward or the selected end in right-to-left mode. Compact slots include zero; GroupNumberFromCaptureSlot resolves each group number. Short buffers do not change matching; excess entries remain untouched. Pre-cancellation leaves output unchanged; failure after capture entry clears written slots. The optional end retains prefix/lookbehind context. Capture history remains available through CreateMatchCursor. Keep borrowed bytes valid and unchanged.</remarks>
     public Utf8CaptureRange Match(ReadOnlySpan<byte> input, int? startOffsetInBytes = null,
         Span<Utf8CaptureRange> captures = default, CancellationToken cancellationToken = default,
         IUtf8MemoryAllowance? workingMemoryAllowance = null, int? endOffsetInBytes = null)

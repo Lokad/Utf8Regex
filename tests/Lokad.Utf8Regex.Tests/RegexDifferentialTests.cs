@@ -102,7 +102,7 @@ public sealed class RegexDifferentialTests
             });
             var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
             var token = mode == "token" ? cancellation.Token : default;
-            var captures = new Utf8CaptureRange[regex.GetGroupNumbers().Length];
+            var captures = new Utf8CaptureRange[(regex.CaptureGroupCount + 1)];
             foreach (var text in subjects)
             {
                 var input = Encoding.UTF8.GetBytes(text);

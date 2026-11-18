@@ -30,13 +30,12 @@ public sealed class Utf8SliceCaptureCatalogTests
             foreach (var number in new[] { -1, 0, 1, 2, 3, 12, int.MaxValue })
                 Assert.Equal(oracle.GroupNameFromNumber(number), regex.GroupNameFromNumber(number));
             var names = regex.GetGroupNames();
-            var numbers = regex.GetGroupNumbers();
+            var numbers = Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray();
             Assert.Equal(oracle.GetGroupNames(), names);
             Assert.Equal(oracle.GetGroupNumbers(), numbers);
             Array.Fill(names, "corrupted");
-            Array.Fill(numbers, -1);
             Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
-            Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
+            Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
             foreach (var name in oracle.GetGroupNames())
                 Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
             var context = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text)));
