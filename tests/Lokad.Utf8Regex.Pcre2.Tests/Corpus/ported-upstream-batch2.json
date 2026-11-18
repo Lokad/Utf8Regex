@@ -75,7 +75,7 @@
     "MatchOptions": [],
     "InputText": "abczz",
     "StartOffsetInBytes": 0,
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Expected": {
       "Outcome": "FullMatch",
       "StartOffsetInBytes": 0,
@@ -118,7 +118,7 @@
     "MatchOptions": [],
     "InputText": "bbbc",
     "StartOffsetInBytes": 0,
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Expected": {
       "Outcome": "FullMatch",
       "StartOffsetInBytes": 0,
@@ -161,7 +161,7 @@
     "MatchOptions": [],
     "InputText": "bbbc",
     "StartOffsetInBytes": 0,
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Expected": {
       "Outcome": "FullMatch",
       "StartOffsetInBytes": 0,
@@ -204,7 +204,7 @@
     "MatchOptions": [],
     "InputText": "bbabc",
     "StartOffsetInBytes": 0,
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Expected": {
       "Outcome": "FullMatch",
       "StartOffsetInBytes": 0,

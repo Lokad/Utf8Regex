@@ -136,7 +136,7 @@
     "Id": "pcre2.testinput1.branch-reset-backref.abcabc",
     "Source": "pcre2:testdata/testinput1:lines-4422-4423",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -164,7 +164,7 @@
     "Id": "pcre2.testinput1.branch-reset-backref.xyzxyz",
     "Source": "pcre2:testdata/testinput1:lines-4422-4424",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -185,35 +185,35 @@
     "Id": "pcre2.testinput1.branch-reset-basic.xaaa",
     "Source": "pcre2:testdata/testinput1:lines-5868-5870",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-basic.xbc",
     "Source": "pcre2:testdata/testinput1:lines-5868-5870",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-dupname-backref.aaaaaa",
     "Source": "pcre2:testdata/testinput1:lines-5872-5873",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-dupname-backref.allowdup.detailed.aaaaaa",
     "Source": "pcre2:testdata/testinput1:lines-5872-5873",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-dupname-backref.allowdup.detailed.bb",
     "Source": "pcre2:testdata/testinput1:lines-5872-5874",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -234,7 +234,7 @@
     "Id": "pcre2.testinput1.branch-reset-dupname-backref.bb",
     "Source": "pcre2:testdata/testinput1:lines-5872-5874",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -255,14 +255,14 @@
     "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.aaaccccaaa",
     "Source": "pcre2:testdata/testinput1:lines-5876-5877",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-dupnames-followed-by-dupname.bccccb",
     "Source": "pcre2:testdata/testinput1:lines-5876-5878",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -283,14 +283,14 @@
     "Id": "pcre2.testinput1.branch-reset-dupnames-followup.allowdup.detailed.aaaccccaaa",
     "Source": "pcre2:testdata/testinput1:lines-5876-5877",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-dupnames-followup.allowdup.detailed.bccccb",
     "Source": "pcre2:testdata/testinput1:lines-5876-5878",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -311,14 +311,14 @@
     "Id": "pcre2.testinput1.branch-reset-g-reference.aaaaaa",
     "Source": "pcre2:testdata/testinput1:lines-5858-5860",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-g-reference.bb",
     "Source": "pcre2:testdata/testinput1:lines-5858-5860",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -339,35 +339,35 @@
     "Id": "pcre2.testinput1.branch-reset-same-name-backref.aaaaaa",
     "Source": "pcre2:testdata/testinput1:lines-5872-5874",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-same-name-backref.bb",
     "Source": "pcre2:testdata/testinput1:lines-5872-5874",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-same-name-followup.aaaccccaaa",
     "Source": "pcre2:testdata/testinput1:lines-5876-5878",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-same-name-followup.bccccb",
     "Source": "pcre2:testdata/testinput1:lines-5876-5878",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-subroutine.abcabc",
     "Source": "pcre2:testdata/testinput1:lines-4429-4433",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -395,28 +395,28 @@
     "Id": "pcre2.testinput1.branch-reset-subroutine.xyzabc",
     "Source": "pcre2:testdata/testinput1:lines-4429-4433",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.branch-reset-subroutine.xyzxyz-no-match",
     "Source": "pcre2:testdata/testinput1:lines-4429-4433",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.capture-repeat.abcabczz",
     "Source": "pcre2:testdata/testinput1:capture-repeat:subject-2",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.capture-repeat.abczz",
     "Source": "pcre2:testdata/testinput1:capture-repeat:subject-1",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -437,28 +437,28 @@
     "Id": "pcre2.testinput1.commit-subroutine.abd",
     "Source": "pcre2:testdata/testinput1:lines-5913-5918",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.commit-subroutine.abx-no-match",
     "Source": "pcre2:testdata/testinput1:lines-5913-5918",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.commit-subroutine.abxabd",
     "Source": "pcre2:testdata/testinput1:lines-5913-5918",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.commit-subroutine.bad",
     "Source": "pcre2:testdata/testinput1:lines-5913-5918",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -500,14 +500,14 @@
     "Id": "pcre2.testinput1.commit-subroutine.xabd",
     "Source": "pcre2:testdata/testinput1:lines-5913-5918",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.conditional-anchor-lookahead-accept.abc",
     "Source": "pcre2:testdata/testinput1:lines-5993-5994",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -521,7 +521,7 @@
     "Id": "pcre2.testinput1.conditional-anchor-lookahead.abc",
     "Source": "pcre2:testdata/testinput1:lines-5987-5988",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -535,7 +535,7 @@
     "Id": "pcre2.testinput1.conditional-anchor-negative-lookahead-accept.abc",
     "Source": "pcre2:testdata/testinput1:lines-5996-5997",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -549,7 +549,7 @@
     "Id": "pcre2.testinput1.conditional-anchor-negative-lookahead.abc",
     "Source": "pcre2:testdata/testinput1:lines-5990-5991",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -563,7 +563,7 @@
     "Id": "pcre2.testinput1.conditional-lookahead-empty-alt.bbak",
     "Source": "pcre2:testdata/testinput1:lines-5950-5951",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -577,7 +577,7 @@
     "Id": "pcre2.testinput1.conditional-lookahead-plus.bbak",
     "Source": "pcre2:testdata/testinput1:lines-5947-5948",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -619,14 +619,14 @@
     "Id": "pcre2.testinput1.define-subroutine.baaab-no-match",
     "Source": "pcre2:testdata/testinput1:lines-5889-5892",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.define-subroutine.bbbb",
     "Source": "pcre2:testdata/testinput1:lines-5889-5891",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -675,7 +675,7 @@
     "Id": "pcre2.testinput1.greedy-quantifier.bbbc",
     "Source": "pcre2:testdata/testinput1:greedy-quantifier:subject-3",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -689,7 +689,7 @@
     "Id": "pcre2.testinput1.ignorecase-backref.case-switch",
     "Source": "pcre2:testdata/testinput1:lines-5903-5904",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -703,126 +703,126 @@
     "Id": "pcre2.testinput1.k-reset-alt.foobar",
     "Source": "pcre2:testdata/testinput1:lines-4390-4391",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-alt.foobaz",
     "Source": "pcre2:testdata/testinput1:lines-4392-4393",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-anchor-abc.defabcxyz",
     "Source": "pcre2:testdata/testinput1:lines-4408-4409",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-anchor-cz-or-ac.ac",
     "Source": "pcre2:testdata/testinput1:lines-4733-4734",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-atomic-alt.ab",
     "Source": "pcre2:testdata/testinput1:lines-4736-4737",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-atomic-repeat.ababc",
     "Source": "pcre2:testdata/testinput1:lines-5756-5757",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-atomic.ab",
     "Source": "pcre2:testdata/testinput1:lines-4724-4725",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-captured-atomic.ab",
     "Source": "pcre2:testdata/testinput1:lines-4727-4728",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-captured-repeat-possessive.ababc",
     "Source": "pcre2:testdata/testinput1:lines-5762-5763",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-captured-repeat.ababc",
     "Source": "pcre2:testdata/testinput1:lines-5765-5766",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-captured.ab",
     "Source": "pcre2:testdata/testinput1:lines-4730-4731",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-define-subroutine.ab",
     "Source": "pcre2:testdata/testinput1:lines-4739-4740",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-grouped.foobarbaz",
     "Source": "pcre2:testdata/testinput1:lines-4394-4395",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-recursive-any.abac",
     "Source": "pcre2:testdata/testinput1:lines-6559-6560",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-recursive-captured.abac",
     "Source": "pcre2:testdata/testinput1:lines-6562-6563",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-repeat-possessive.ababc",
     "Source": "pcre2:testdata/testinput1:lines-5753-5754",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset-repeat.ababc",
     "Source": "pcre2:testdata/testinput1:lines-5759-5760",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.k-reset.foo-bar",
     "Source": "pcre2:testdata/testinput1:k-reset-basic",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -990,7 +990,7 @@
     "Id": "pcre2.testinput1.lazy-quantifier.bbbc",
     "Source": "pcre2:testdata/testinput1:lazy-quantifier:subject-3",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -1004,7 +1004,7 @@
     "Id": "pcre2.testinput1.lookbehind-zero-quantifier.acx",
     "Source": "pcre2:testdata/testinput1:lines-5886-5887",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -1116,7 +1116,7 @@
     "Id": "pcre2.testinput1.positive-lookahead-alt.ab",
     "Source": "pcre2:testdata/testinput1:lines-5960-5962",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -1137,7 +1137,7 @@
     "Id": "pcre2.testinput1.recursive-alt.bab",
     "Source": "pcre2:testdata/testinput1:lines-5981-5982",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -1158,7 +1158,7 @@
     "Id": "pcre2.testinput1.recursive-optional.abcba",
     "Source": "pcre2:testdata/testinput1:lines-5984-5985",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -1172,56 +1172,56 @@
     "Id": "pcre2.testinput1.recursive-palindrome-optional.a",
     "Source": "pcre2:testdata/testinput1:lines-5971-5972",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome-optional.aba",
     "Source": "pcre2:testdata/testinput1:lines-5971-5973",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome-optional.ababa",
     "Source": "pcre2:testdata/testinput1:lines-5971-5976",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome-optional.abba",
     "Source": "pcre2:testdata/testinput1:lines-5971-5974",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome-optional.abcba",
     "Source": "pcre2:testdata/testinput1:lines-5971-5975",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome-optional.abccba",
     "Source": "pcre2:testdata/testinput1:lines-5971-5977",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome-optional.abcdcba",
     "Source": "pcre2:testdata/testinput1:lines-5971-5978",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome-optional.abcddcba",
     "Source": "pcre2:testdata/testinput1:lines-5971-5979",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -1284,35 +1284,35 @@
     "Id": "pcre2.testinput1.recursive-palindrome.a",
     "Source": "pcre2:testdata/testinput1:lines-5964-5968",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome.aba",
     "Source": "pcre2:testdata/testinput1:lines-5964-5968",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome.ababa",
     "Source": "pcre2:testdata/testinput1:lines-5964-5970",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome.abcba",
     "Source": "pcre2:testdata/testinput1:lines-5964-5969",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput1.recursive-palindrome.abcdcba",
     "Source": "pcre2:testdata/testinput1:lines-5964-5971",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -1354,7 +1354,7 @@
     "Id": "pcre2.testinput1.reluctant-alternation.bbabc",
     "Source": "pcre2:testdata/testinput1:reluctant-alternation:subject-2",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -1368,7 +1368,7 @@
     "Id": "pcre2.testinput1.subroutine-prefix-digits.a123a",
     "Source": "pcre2:testdata/testinput1:lines-5999-6000",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2033,21 +2033,21 @@
     "Id": "pcre2.testinput2.k-reset-abc123.xyzabc123pqr",
     "Source": "pcre2:testdata/testinput2:lines-2778-2779",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput2.k-reset-anchor-abc.abcdef",
     "Source": "pcre2:testdata/testinput1:lines-4406-4407",
     "SourceFile": "testdata/testinput1",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput2.k-reset-anchor-lookahead-or-abc.abcdef",
     "Source": "pcre2:testdata/testinput2:lines-2807-2808",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2103,7 +2103,7 @@
     "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-conditional-bad-subject",
     "Source": "pcre2:testdata/testinput2:lines-6442-6443",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2117,21 +2117,21 @@
     "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-recursive-1",
     "Source": "pcre2:testdata/testinput2:lines-6433-6434",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput2.match-error-lookaround-k-runtime-recursive-2",
     "Source": "pcre2:testdata/testinput2:lines-6436-6437",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "OutOfScopeBySpec"
   },
   {
     "Id": "pcre2.testinput2.match-error-lookaround-k-sneaky-lookahead-runtime",
     "Source": "pcre2:testdata/testinput2:lines-6418-6419",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2145,28 +2145,28 @@
     "Id": "pcre2.testinput2.match-lookaround-k-duplicate-repeat.aaaaa",
     "Source": "pcre2:testdata/testinput2:lines-4622-4623",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput2.match-lookaround-k-not-sorted.abc",
     "Source": "pcre2:testdata/testinput2:lines-4633-4634",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput2.match-lookaround-k-overlap.abc",
     "Source": "pcre2:testdata/testinput2:lines-4629-4630",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput2.match-lookaround-k-runtime-conditional-safe",
     "Source": "pcre2:testdata/testinput2:lines-6439-6441",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2180,7 +2180,7 @@
     "Id": "pcre2.testinput2.match-lookaround-k-sneaky-lookahead-allow",
     "Source": "pcre2:testdata/testinput2:lines-6415-6416",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2194,14 +2194,14 @@
     "Id": "pcre2.testinput2.match-sneaky-global-lookbehind-define-first-branch",
     "Source": "pcre2:testdata/testinput2:lines-6429-6430",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput2.match-sneaky-lookbehind-define-first-branch",
     "Source": "pcre2:testdata/testinput2:lines-6425-6426",
     "SourceFile": "testdata/testinput2",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2866,14 +2866,14 @@
     "Id": "pcre2.testinput20.dupnames.barbar",
     "Source": "pcre2:testdata/testinput20:dupnames:subject-2",
     "SourceFile": "testdata/testinput20",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput20.dupnames.foofoo",
     "Source": "pcre2:testdata/testinput20:dupnames:subject-1",
     "SourceFile": "testdata/testinput20",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2894,7 +2894,7 @@
     "Id": "pcre2.testinput20.mark-skip.match-c",
     "Source": "pcre2:testdata/testinput20:mark-skip:subject-1",
     "SourceFile": "testdata/testinput20",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2915,7 +2915,7 @@
     "Id": "pcre2.testinput20.mark-skip.no-match-d",
     "Source": "pcre2:testdata/testinput20:mark-skip:no-match-1",
     "SourceFile": "testdata/testinput20",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2971,14 +2971,14 @@
     "Id": "pcre2.testinput6.branch-reset-nested-second-capture.xabcpqrx",
     "Source": "pcre2:testdata/testinput6:lines-4242-4243",
     "SourceFile": "testdata/testinput6",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput6.branch-reset-nested-second-capture.xxyzx",
     "Source": "pcre2:testdata/testinput6:lines-4242-4244",
     "SourceFile": "testdata/testinput6",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
@@ -2999,28 +2999,28 @@
     "Id": "pcre2.testinput6.branch-reset-nested.xabcx",
     "Source": "pcre2:testdata/testinput6:lines-4238-4239",
     "SourceFile": "testdata/testinput6",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput6.branch-reset-nested.xxyzx",
     "Source": "pcre2:testdata/testinput6:lines-4238-4240",
     "SourceFile": "testdata/testinput6",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput6.branch-reset.basic-abc",
     "Source": "pcre2:testdata/testinput6:branch-reset-basic:subject-1",
     "SourceFile": "testdata/testinput6",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {
     "Id": "pcre2.testinput6.branch-reset.basic-xyz",
     "Source": "pcre2:testdata/testinput6:branch-reset-basic:subject-2",
     "SourceFile": "testdata/testinput6",
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Status": "Active"
   },
   {

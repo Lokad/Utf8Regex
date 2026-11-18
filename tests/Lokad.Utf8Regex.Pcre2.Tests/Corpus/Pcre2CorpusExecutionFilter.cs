@@ -9,7 +9,7 @@ public static class Pcre2CorpusExecutionFilter
 
     public static bool CanExecuteMatch(Pcre2CorpusCase corpusCase)
         => corpusCase.Status == Pcre2CorpusCaseStatus.Active &&
-           corpusCase.Operation is Pcre2CorpusOperationKind.Match or Pcre2CorpusOperationKind.MatchDetailed;
+           corpusCase.Operation == Pcre2CorpusOperationKind.Match;
 
     public static bool CanExecuteProbeSubset(Pcre2CorpusCase corpusCase)
         => corpusCase.Status == Pcre2CorpusCaseStatus.Active && corpusCase.Operation == Pcre2CorpusOperationKind.Probe;

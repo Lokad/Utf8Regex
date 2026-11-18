@@ -113,7 +113,7 @@
     "MatchOptions": [],
     "InputText": "abcabczz",
     "StartOffsetInBytes": 0,
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Expected": {
       "Outcome": "FullMatch",
       "StartOffsetInBytes": 0,

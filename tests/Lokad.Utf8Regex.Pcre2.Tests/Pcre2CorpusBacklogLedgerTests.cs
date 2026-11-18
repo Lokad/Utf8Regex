@@ -20,7 +20,6 @@ public sealed class Pcre2CorpusBacklogLedgerTests
             manifests["local-backlog-match"].Entries,
             static entry => Assert.True(
                 entry.Operation is Pcre2CorpusOperationKind.Match or
-                    Pcre2CorpusOperationKind.MatchDetailed or
                     Pcre2CorpusOperationKind.Probe or
                     Pcre2CorpusOperationKind.Count or
                     Pcre2CorpusOperationKind.EnumerateMatches));

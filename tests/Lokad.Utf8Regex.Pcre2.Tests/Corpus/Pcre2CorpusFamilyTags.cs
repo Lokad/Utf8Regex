@@ -28,7 +28,7 @@ public static class Pcre2CorpusFamilyTags
             tags.Add(Compile);
         }
 
-        if (corpusCase.Operation is Pcre2CorpusOperationKind.Match or Pcre2CorpusOperationKind.MatchDetailed)
+        if (corpusCase.Operation == Pcre2CorpusOperationKind.Match)
         {
             tags.Add(Match);
         }

@@ -14,7 +14,7 @@
     "MatchOptions": [],
     "InputText": "xyzabc123pqr",
     "StartOffsetInBytes": 0,
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Expected": {
       "Outcome": "FullMatch",
       "StartOffsetInBytes": 6,
@@ -50,7 +50,7 @@
     "MatchOptions": [],
     "InputText": "xxxx123abczz",
     "StartOffsetInBytes": 0,
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Expected": {
       "Outcome": "FullMatch",
       "StartOffsetInBytes": 7,
@@ -86,7 +86,7 @@
     "MatchOptions": [],
     "InputText": "abcdef",
     "StartOffsetInBytes": 0,
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Expected": {
       "Outcome": "FullMatch",
       "StartOffsetInBytes": 3,
@@ -122,7 +122,7 @@
     "MatchOptions": [],
     "InputText": "defabcxyz",
     "StartOffsetInBytes": 0,
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Expected": {
       "Outcome": "NoMatch",
       "HasContiguousByteRange": true,
@@ -147,7 +147,7 @@
     "MatchOptions": [],
     "InputText": "abcdef",
     "StartOffsetInBytes": 0,
-    "Operation": "MatchDetailed",
+    "Operation": "Match",
     "Expected": {
       "Outcome": "FullMatch",
       "StartOffsetInBytes": 0,
