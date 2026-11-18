@@ -727,7 +727,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.True(capture.Success);
         Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString((capture.Success ? match3Input.Span.Slice(capture.StartOffsetInBytes, capture.EndOffsetInBytes - capture.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
 
-        Assert.True(match.TryGetFirstSetGroup("Bar", out var named));
+        Assert.True(match.TryGetGroup(1, out var named)); Assert.True(named.Success);
         Assert.True(named.Success);
         Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString((named.Success ? match3Input.Span.Slice(named.StartOffsetInBytes, named.EndOffsetInBytes - named.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }

@@ -1,7 +1,7 @@
 namespace Lokad.Utf8Regex.Pcre2;
 
 /// <summary>Owns explicit admission for one immutable PCRE2 byte-range result.</summary>
-/// <remarks>No finalizer. Dispose after retained users finish or take over admission for copies kept afterward. Already copied matches remain valid. Borrowed input is excluded; shared names and mark text are conservatively charged again.</remarks>
+/// <remarks>No finalizer. Dispose after retained users finish or take over admission for copies kept afterward. Already copied matches remain valid. Admission covers the capture array, the receipt and any retained MARK text. Subject memory remains borrowed.</remarks>
 public sealed class Utf8Pcre2RetainedRangeMatch : IDisposable
 {
     private Utf8Pcre2RangeMatch _match;

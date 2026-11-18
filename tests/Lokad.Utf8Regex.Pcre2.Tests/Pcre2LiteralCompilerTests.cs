@@ -25,7 +25,6 @@ public sealed class Pcre2LiteralCompilerTests
         Assert.Equal(1, match.Groups.Length);
         Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString((match.Groups[0].Success ? match1Input.Span.Slice(match.Groups[0].StartOffsetInBytes, match.Groups[0].EndOffsetInBytes - match.Groups[0].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(0, regex.NameEntryCount);
-        Assert.Equal(0, match.NameEntries.Length);
         Assert.All(new[] { program.Operations.IsMatch, program.Operations.Count, program.Operations.Match,
             program.Operations.Enumerate, program.Operations.Replace },
             operation => Assert.Same(program.Operations.Match, operation));

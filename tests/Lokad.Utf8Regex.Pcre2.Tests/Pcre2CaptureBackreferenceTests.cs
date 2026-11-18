@@ -178,7 +178,7 @@ public sealed class Pcre2CaptureBackreferenceTests
         Assert.Equal(1, regex.CopyNumbersForUtf8Name("word"u8, numbers, out var hasMoreNumbers));
         Assert.False(hasMoreNumbers);
         Assert.Equal(1, numbers[0]);
-        Assert.True(match.TryGetFirstSetGroup("word", out var word));
+        Assert.True(match.TryGetGroup(1, out var word)); Assert.True(word.Success);
         Assert.Equal("éé", System.Text.Encoding.UTF8.GetString((word.Success ? match6Input.Span.Slice(word.StartOffsetInBytes, word.EndOffsetInBytes - word.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
@@ -195,7 +195,11 @@ public sealed class Pcre2CaptureBackreferenceTests
         var match = match7Result;
 
         Assert.True(match.Success);
-        Assert.True(match.TryGetFirstSetGroup(name, out var capture));
+        Span<int> numbersByName = stackalloc int[1];
+        Assert.Equal(1, regex.CopyNumbersForUtf8Name(Encoding.UTF8.GetBytes(name), numbersByName, out var moreByName));
+        Assert.False(moreByName);
+        Assert.Equal(1, numbersByName[0]);
+        Assert.True(match.TryGetGroup(numbersByName[0], out var capture)); Assert.True(capture.Success);
         Assert.Equal("é", System.Text.Encoding.UTF8.GetString((capture.Success ? match7Input.Span.Slice(capture.StartOffsetInBytes, capture.EndOffsetInBytes - capture.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 

@@ -34,9 +34,6 @@ public sealed class Pcre2FullProbeCaptureTests
             Assert.Equal(System.Text.Encoding.UTF8.GetString((left.Success ? expected1Input.Span.Slice(left.StartOffsetInBytes, left.EndOffsetInBytes - left.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
             Assert.Equal((left.StartOffsetInBytes, left.EndOffsetInBytes), (right.StartOffsetInBytes, right.EndOffsetInBytes));
         }
-        Assert.Equal(regex.NameEntryCount, expected.NameEntries.Length);
-        foreach (var entry in expected.NameEntries)
-            Assert.Equal(expected.TryGetFirstSetGroup(entry.Name, out _), actual.TryGetFirstSetGroup(entry.Name, out _));
     }
 
     [Fact]
@@ -60,7 +57,7 @@ public sealed class Pcre2FullProbeCaptureTests
         var regex = Create(capacity);
         var retained = regex.Probe("xdogsbody dog"u8, Pcre2PartialMode.Soft, 1).GetMatch();
         Assert.Equal((1, 9), (retained.GetGroup(0).StartOffsetInBytes, retained.GetGroup(0).EndOffsetInBytes));
-        Assert.True(retained.TryGetFirstSetGroup("tail", out var named));
+        Assert.True(retained.TryGetGroup(1, out var named)); Assert.True(named.Success);
         Assert.Equal("sbody", System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         var next = regex.Probe("dog"u8, Pcre2PartialMode.Soft).GetMatch();
         Assert.Equal(2, next.CaptureSlotCount);

@@ -9,7 +9,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.Pcre2;
 
 /// <summary>Maps a PCRE2 group name to one numeric capture slot.</summary>
-public readonly struct Pcre2NameEntry
+internal readonly struct Pcre2NameEntry
 {
     /// <summary>Gets the capture-group name.</summary>
     public string Name { get; init; }
@@ -110,24 +110,21 @@ public readonly ref struct Utf8Pcre2ValueMatch
         => new(input, data, mark);
 }
 
-/// <summary>Provides a stack-only detailed PCRE2 match view with numbered and duplicate-name-aware groups.</summary>
+/// <summary>Provides a stack-only detailed PCRE2 match view with numbered capture groups.</summary>
 /// <remarks>The context and returned spans must not outlive the original UTF-8 input.</remarks>
 public readonly ref struct Utf8Pcre2MatchContext
 {
     private readonly ReadOnlySpan<byte> _input;
     private readonly Pcre2GroupData[]? _groups;
-    private readonly Pcre2NameEntry[]? _nameEntries;
     private readonly string? _mark;
 
     private Utf8Pcre2MatchContext(
         ReadOnlySpan<byte> input,
         Pcre2GroupData[]? groups,
-        Pcre2NameEntry[]? nameEntries,
         string? mark)
     {
         _input = input;
         _groups = groups;
-        _nameEntries = nameEntries;
         _mark = mark;
     }
 
@@ -141,9 +138,6 @@ public readonly ref struct Utf8Pcre2MatchContext
 
     /// <summary>Gets the number of capture slots, including group zero.</summary>
     public int CaptureSlotCount => _groups?.Length ?? 0;
-
-    /// <summary>Gets the number of name-to-slot entries, including duplicate names.</summary>
-    public int NameEntryCount => _nameEntries?.Length ?? 0;
 
     /// <summary>Gets the last relevant PCRE2 <c>(*MARK)</c> value, if one was reported.</summary>
     public string? Mark => _mark;
@@ -173,90 +167,8 @@ public readonly ref struct Utf8Pcre2MatchContext
         return true;
     }
 
-    /// <summary>Copies name-to-slot entries into a caller-provided destination.</summary>
-    /// <param name="destination">The destination receiving entries in pattern order.</param>
-    /// <param name="isMore">Whether additional entries did not fit.</param>
-    /// <returns>The number of entries copied.</returns>
-    public int CopyNameEntries(Span<Pcre2NameEntry> destination, out bool isMore)
-    {
-        if (_nameEntries is null)
-        {
-            isMore = false;
-            return 0;
-        }
-
-        var written = Math.Min(destination.Length, _nameEntries.Length);
-        _nameEntries.AsSpan(0, written).CopyTo(destination);
-        isMore = _nameEntries.Length > written;
-        return written;
-    }
-
-    /// <summary>Copies every capture slot assigned to a possibly duplicated group name.</summary>
-    /// <param name="name">The case-sensitive PCRE2 group name.</param>
-    /// <param name="destination">The destination receiving slot numbers in pattern order.</param>
-    /// <param name="isMore">Whether additional numbers did not fit.</param>
-    /// <returns>The number of slot numbers copied.</returns>
-    public int CopyNumbersForName(string name, Span<int> destination, out bool isMore)
-    {
-        if (_nameEntries is null)
-        {
-            isMore = false;
-            return 0;
-        }
-
-        var count = 0;
-        foreach (var entry in _nameEntries)
-        {
-            if (!string.Equals(entry.Name, name, StringComparison.Ordinal)) continue;
-            if (count < destination.Length) destination[count] = entry.Number;
-            count++;
-        }
-
-        isMore = count > destination.Length;
-        return Math.Min(count, destination.Length);
-    }
-
-    /// <summary>Attempts to get the first participating capture slot assigned to a group name.</summary>
-    public bool TryGetFirstSetGroup(string name, out Utf8Pcre2GroupContext group)
-    {
-        if (_nameEntries is not null && _groups is not null)
-        {
-            foreach (var entry in _nameEntries)
-            {
-                if (string.Equals(entry.Name, name, StringComparison.Ordinal) &&
-                    entry.Number >= 0 &&
-                    entry.Number < _groups.Length &&
-                    _groups[entry.Number].Success)
-                {
-                    group = Utf8Pcre2GroupContext.Create(_input, _groups[entry.Number]);
-                    return true;
-                }
-            }
-        }
-
-        group = default;
-        return false;
-    }
-
-    internal static Utf8Pcre2MatchContext Create(
-        ReadOnlySpan<byte> input,
-        Pcre2GroupData[] groups,
-        Pcre2NameEntry[]? nameEntries,
-        string? mark)
-        => new(input, groups, nameEntries, mark);
-
-    internal static Utf8Pcre2MatchContext Create(ReadOnlySpan<byte> input, Pcre2GroupData[] groups)
-        => Create(input, groups, null, null);
-
-    internal static Utf8Pcre2MatchContext Create(ReadOnlySpan<byte> input, Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries)
-        => Create(input, groups, nameEntries, null);
-
-    // The probe borrows this already-owned immutable snapshot. Copying it
-    // again would allocate outside discovery's publication authority and lose
-    // the original name table/MARK.
-    internal Utf8Pcre2ProbeResult AsProbeResult() => _groups is { Length: > 0 } groups && groups[0].Success
-        ? Utf8Pcre2ProbeResult.CreateFullMatch(_input, groups, _nameEntries, _mark)
-        : Utf8Pcre2ProbeResult.CreateNoMatch(_input, _mark);
+    internal static Utf8Pcre2MatchContext Create(ReadOnlySpan<byte> input, Pcre2GroupData[] groups, string? mark)
+        => new(input, groups, mark);
 }
 
 /// <summary>Provides a stack-only view of one PCRE2 capture slot over the original UTF-8 input.</summary>
@@ -333,7 +245,6 @@ public readonly ref struct Utf8Pcre2ProbeResult
     private readonly Utf8Pcre2ProbeKind _kind;
     private readonly Pcre2GroupData _value;
     private readonly Pcre2GroupData[]? _groups;
-    private readonly Pcre2NameEntry[]? _nameEntries;
     private readonly string? _mark;
 
     private Utf8Pcre2ProbeResult(
@@ -341,14 +252,12 @@ public readonly ref struct Utf8Pcre2ProbeResult
         Utf8Pcre2ProbeKind kind,
         Pcre2GroupData value,
         Pcre2GroupData[]? groups,
-        Pcre2NameEntry[]? nameEntries,
         string? mark)
     {
         _input = input;
         _kind = kind;
         _value = value;
         _groups = groups;
-        _nameEntries = nameEntries;
         _mark = mark;
     }
 
@@ -365,7 +274,7 @@ public readonly ref struct Utf8Pcre2ProbeResult
     /// <exception cref="InvalidOperationException"><see cref="Kind"/> is not <see cref="Utf8Pcre2ProbeKind.FullMatch"/>.</exception>
     public Utf8Pcre2MatchContext GetMatch()
         => _kind == Utf8Pcre2ProbeKind.FullMatch
-            ? Utf8Pcre2MatchContext.Create(_input, _groups ?? [], _nameEntries, _mark)
+            ? Utf8Pcre2MatchContext.Create(_input, _groups ?? [], _mark)
             : throw new InvalidOperationException();
 
     /// <summary>Gets the partial-match context.</summary>
@@ -375,23 +284,17 @@ public readonly ref struct Utf8Pcre2ProbeResult
             ? Utf8Pcre2PartialMatchContext.Create(_input, _value, _mark)
             : throw new InvalidOperationException();
 
-    internal static Utf8Pcre2ProbeResult CreateFullMatch(ReadOnlySpan<byte> input, Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries, string? mark)
-        => new(input, Utf8Pcre2ProbeKind.FullMatch, groups[0], groups, nameEntries, mark);
-
-    internal static Utf8Pcre2ProbeResult CreateFullMatch(ReadOnlySpan<byte> input, Pcre2GroupData[] groups)
-        => CreateFullMatch(input, groups, null, null);
-
-    internal static Utf8Pcre2ProbeResult CreateFullMatch(ReadOnlySpan<byte> input, Pcre2GroupData[] groups, Pcre2NameEntry[]? nameEntries)
-        => CreateFullMatch(input, groups, nameEntries, null);
+    internal static Utf8Pcre2ProbeResult CreateFullMatch(ReadOnlySpan<byte> input, Pcre2GroupData[] groups, string? mark = null)
+        => new(input, Utf8Pcre2ProbeKind.FullMatch, groups[0], groups, mark);
 
     internal static Utf8Pcre2ProbeResult CreatePartial(ReadOnlySpan<byte> input, Pcre2GroupData value, string? mark)
-        => new(input, Utf8Pcre2ProbeKind.PartialMatch, value, null, null, mark);
+        => new(input, Utf8Pcre2ProbeKind.PartialMatch, value, null, mark);
 
     internal static Utf8Pcre2ProbeResult CreatePartial(ReadOnlySpan<byte> input, Pcre2GroupData value)
         => CreatePartial(input, value, null);
 
     internal static Utf8Pcre2ProbeResult CreateNoMatch(ReadOnlySpan<byte> input, string? mark)
-        => new(input, Utf8Pcre2ProbeKind.NoMatch, default, null, null, mark);
+        => new(input, Utf8Pcre2ProbeKind.NoMatch, default, null, mark);
 
     internal static Utf8Pcre2ProbeResult CreateNoMatch(ReadOnlySpan<byte> input)
         => CreateNoMatch(input, null);

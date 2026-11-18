@@ -18,22 +18,19 @@ public readonly struct Utf8Pcre2CaptureRange
 }
 
 /// <summary>Immutable PCRE2 last-capture byte ranges borrowing unchanged subject memory.</summary>
-/// <remarks>Metadata survives advances and cursor/program close. Keep subject bytes unchanged and their memory manager alive while accessing values. Duplicate names retain the profile's table order; no captured text or UTF-16 map is built.</remarks>
+/// <remarks>Captures and MARK survive advances and cursor/program close. Keep subject bytes unchanged and their memory manager alive while accessing values. Resolve capture names on the compiled expression.</remarks>
 public readonly struct Utf8Pcre2RangeMatch
 {
     private readonly ReadOnlyMemory<byte> _input;
     private readonly Utf8Pcre2CaptureRange[]? _groups;
-    private readonly Pcre2NameEntry[]? _names;
-    internal Utf8Pcre2RangeMatch(ReadOnlyMemory<byte> input, Utf8Pcre2CaptureRange[] groups, Pcre2NameEntry[] names, string? mark)
-    { _input = input; _groups = groups; _names = names; Mark = mark; }
+    internal Utf8Pcre2RangeMatch(ReadOnlyMemory<byte> input, Utf8Pcre2CaptureRange[] groups, string? mark)
+    { _input = input; _groups = groups; Mark = mark; }
     /// <summary>Whether group zero represents a successful match.</summary>
     public bool Success => _groups is { Length: > 0 } && _groups[0].Success;
     /// <summary>The whole-match range, or default after no match.</summary>
     public Utf8Pcre2CaptureRange Value => Success ? _groups![0] : default;
     /// <summary>Last captures in slot order, including unmatched slots.</summary>
     public ReadOnlySpan<Utf8Pcre2CaptureRange> Groups => _groups;
-    /// <summary>The immutable duplicate-preserving name table.</summary>
-    public ReadOnlySpan<Pcre2NameEntry> NameEntries => _names;
     /// <summary>The PCRE2 mark returned by this successful match, if any.</summary>
     public string? Mark { get; }
     /// <summary>Gets an existing numeric slot, including unmatched slots.</summary>
@@ -41,14 +38,6 @@ public readonly struct Utf8Pcre2RangeMatch
     {
         if (_groups is null || (uint)number >= (uint)_groups.Length) { group = default; return false; }
         group = _groups[number]; return true;
-    }
-    /// <summary>Gets the first participating slot associated with a name.</summary>
-    public bool TryGetFirstSetGroup(string name, out Utf8Pcre2CaptureRange group)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-        foreach (var entry in NameEntries)
-            if (string.Equals(entry.Name, name, StringComparison.Ordinal) && TryGetGroup(entry.Number, out group) && group.Success) return true;
-        group = default; return false;
     }
     /// <summary>Gets borrowed whole-match bytes. Check Value.IsUtf8SliceWellFormed before decoding a \C result.</summary>
     public ReadOnlyMemory<byte> GetValueMemory() => Success

@@ -46,14 +46,14 @@ public sealed class Pcre2ProbePublicationAuthorityTests
     }
 
     [Fact]
-    public void NonPartialProbePreservesOwnedNamesMarkAndRetainedCaptures()
+    public void NonPartialProbePreservesMarkAndRetainedCaptures()
     {
         var regex = new Utf8Pcre2Regex(@"(?<v>\x41)(😀)");
         var result = regex.Probe("A😀"u8, Pcre2PartialMode.None);
         var retained = result.GetMatch();
-        Assert.True(retained.TryGetFirstSetGroup("v", out var named));
+        Assert.True(retained.TryGetGroup(1, out var named)); Assert.True(named.Success);
         Assert.Equal("A", System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
-        Assert.Equal(1, retained.NameEntryCount);
+        Assert.Equal(1, regex.NameEntryCount);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(2).GetValueBytes()));
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, regex.Probe("xA😀"u8, Pcre2PartialMode.None).Kind);
         Assert.Equal("A😀", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));

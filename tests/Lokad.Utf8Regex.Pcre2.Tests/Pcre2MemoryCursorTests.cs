@@ -61,17 +61,6 @@ public sealed class Pcre2MemoryCursorTests
                 Assert.Equal(old.EndOffsetInBytes, group.EndOffsetInBytes); Assert.Equal(old.IsUtf8SliceWellFormed, group.IsUtf8SliceWellFormed);
                 Assert.Equal((old.Success ? input.AsSpan(old.StartOffsetInBytes, old.EndOffsetInBytes - old.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty).ToArray(), first.GetGroupMemory(slot).ToArray());
             }
-            Assert.Equal(regex.NameEntryCount, first.NameEntries.Length);
-            for (var index = 0; index < regex.NameEntryCount; index++)
-            {
-                var expectedName = Encoding.UTF8.GetBytes(first.NameEntries[index].Name);
-                var nameBytes = new byte[expectedName.Length];
-                Assert.Equal(System.Buffers.OperationStatus.Done,
-                    regex.TryCopyNameEntryUtf8(index, nameBytes, out var bytesRequired, out var groupNumber));
-                Assert.Equal(expectedName, nameBytes);
-                Assert.Equal(expectedName.Length, bytesRequired);
-                Assert.Equal(first.NameEntries[index].Number, groupNumber);
-            }
         }
         var enumerator = regex.EnumerateMatches(input, start, matchOptions);
         if (moved) { Assert.True(enumerator.MoveNext()); Assert.Equal(enumerator.Current.StartOffsetInBytes, first.Value.StartOffsetInBytes); }
@@ -88,14 +77,23 @@ public sealed class Pcre2MemoryCursorTests
     public void DuplicateNamesLastCapturesAndUnmatchedSlotsStayDistinct()
     {
         var regex = new Utf8Pcre2Regex("(?J)(?:(?<x>a)+|(?<x>b)+)(?<empty>)(?<missing>c)?");
+        Span<int> numbers = stackalloc int[2];
+        Assert.Equal(2, regex.CopyNumbersForUtf8Name("x"u8, numbers, out var more));
+        Assert.False(more);
+        Assert.Equal([1, 2], numbers.ToArray());
         using var cursor = regex.CreateMatchCursor("aaa bb"u8.ToArray());
-        Assert.True(cursor.MoveNext(out var first)); Assert.True(first.TryGetFirstSetGroup("x", out var a));
+        Assert.True(cursor.MoveNext(out var first)); Assert.True(first.TryGetGroup(numbers[0], out var a));
         Assert.Equal(1, a.Number); Assert.Equal(2, a.StartOffsetInBytes); Assert.Equal(3, a.EndOffsetInBytes);
         Assert.True(first.TryGetGroup(3, out var empty)); Assert.True(empty.Success); Assert.Equal(empty.StartOffsetInBytes, empty.EndOffsetInBytes);
         Assert.True(first.TryGetGroup(4, out var missing)); Assert.False(missing.Success);
-        Assert.True(cursor.MoveNext(out var second)); Assert.True(second.TryGetFirstSetGroup("x", out var b)); Assert.Equal(2, b.Number);
-        Assert.Equal("b"u8.ToArray(), second.GetGroupMemory(2).ToArray()); Assert.Equal(4, first.NameEntries.Length);
-        Assert.False(first.TryGetFirstSetGroup("missing", out _)); Assert.False(first.TryGetGroup(99, out _));
+        Assert.True(cursor.MoveNext(out var second)); Assert.True(second.TryGetGroup(numbers[1], out var b)); Assert.Equal(2, b.Number);
+        Assert.True(b.Success);
+        Assert.False(second.Groups[numbers[0]].Success);
+        Assert.False(first.Groups[numbers[1]].Success);
+        Assert.Equal("b"u8.ToArray(), second.GetGroupMemory(b.Number).ToArray());
+        Assert.Equal(4, regex.NameEntryCount);
+        Assert.False(first.Groups[4].Success);
+        Assert.False(first.TryGetGroup(99, out _));
     }
 
     [Theory]
@@ -161,7 +159,34 @@ public sealed class Pcre2MemoryCursorTests
         Assert.True(alias.MoveNext(out _)); Assert.False(cursor.MoveNext(out _)); Assert.Equal(0UL, programs.Used);
         Assert.Equal(0UL, working.Used); Assert.Equal(receipt.ChargedBytes, root.Used); cursor.Dispose(); Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
         receipt.Dispose(); receipt.Dispose(); Assert.Equal(0UL, root.Used);
-        Assert.Equal("😀😀"u8.ToArray(), copied.GetValueMemory().ToArray()); Assert.Throws<ObjectDisposedException>(() => receipt.Match);
+        Assert.Equal("😀😀"u8.ToArray(), copied.GetValueMemory().ToArray());
+        Assert.Throws<ObjectDisposedException>(() => receipt.Match);
+    }
+
+    [Fact]
+    public void RetainedChargeExcludesCaptureNamesAndIncludesMark()
+    {
+        var root = new Root();
+        var working = new Account(root);
+        ulong Charge(string pattern, string? expectedMark)
+        {
+            using var regex = new Utf8Pcre2Regex(pattern);
+            using var cursor = regex.CreateMatchCursor("a"u8.ToArray(), workingMemoryAllowance: working);
+            Assert.True(cursor.MoveNextRetained(out var receipt));
+            using (receipt)
+            {
+                cursor.Dispose();
+                regex.Dispose();
+                Assert.Equal(expectedMark, receipt.Match.Mark);
+                Assert.True(receipt.Match.GetGroupMemory(1).Span.SequenceEqual("a"u8));
+                return receipt.ChargedBytes;
+            }
+        }
+
+        var shortName = Charge("(?<x>a)", null);
+        Assert.Equal(shortName, Charge($"(?<{new string('x', 128)}>a)", null));
+        Assert.True(Charge("(*MARK:tag)(?<x>a)", "tag") > shortName);
+        Assert.Equal(0UL, root.Used);
     }
 
     [Fact]

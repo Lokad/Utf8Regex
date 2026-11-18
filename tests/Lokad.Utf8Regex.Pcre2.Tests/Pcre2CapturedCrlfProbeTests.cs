@@ -116,7 +116,7 @@ public sealed class Pcre2CapturedCrlfProbeTests
         }
         if (pattern.Contains("?<part>"))
         {
-            Assert.True(actual.TryGetFirstSetGroup("part", out var named));
+            Assert.True(actual.TryGetGroup(1, out var named)); Assert.True(named.Success);
             Assert.Equal(System.Text.Encoding.UTF8.GetString(actual.Value.GetValueBytes()), System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         }
     }
@@ -140,7 +140,7 @@ public sealed class Pcre2CapturedCrlfProbeTests
         { _ = Create(capacity - 1).Probe("a\r\n"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         var regex = Create(capacity);
         var retained = regex.Probe("a\r\n"u8, Pcre2PartialMode.Soft).GetMatch();
-        Assert.True(retained.TryGetFirstSetGroup("part", out var alias));
+        Assert.True(retained.TryGetGroup(1, out var alias)); Assert.True(alias.Success);
         Assert.Equal((0, 1), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal("a\r", System.Text.Encoding.UTF8.GetString(regex.Probe("a\r😀"u8, Pcre2PartialMode.Soft).GetMatch().Value.GetValueBytes()));
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));

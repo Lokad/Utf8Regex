@@ -169,7 +169,7 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
                     using var result1Cursor = regex.CreateMatchCursor(result1Input);
                     result1Cursor.MoveNext(out var result1Result);
                     result1Cursor.Dispose();
-                    Assert.True(result1Result.TryGetFirstSetGroup("g", out var group));
+                    Assert.True(result1Result.TryGetGroup(1, out var group)); Assert.True(group.Success);
                     Assert.Equal(segments[0], System.Text.Encoding.UTF8.GetString((group.Success ? result1Input.Span.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
                 }
             }

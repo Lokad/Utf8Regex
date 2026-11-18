@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- PCRE2 match snapshots and full probes publish numbered captures and MARK.
+  Resolve duplicate names on the compiled regex and check the resulting slots
+  in order. Retained admission excludes the program's name table.
+
 - PythonRe cursor snapshots carry numbered captures and `LastIndex`. Capture
   names stay on the compiled regex, eliminating the per-match name-table copy.
 

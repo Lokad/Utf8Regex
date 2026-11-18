@@ -178,7 +178,7 @@ public sealed class Pcre2IntrinsicAnchorProbeTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var retained = regex.Probe("aaab"u8, Pcre2PartialMode.Soft).GetMatch();
-        Assert.True(retained.TryGetFirstSetGroup("last", out var alias));
+        Assert.True(retained.TryGetGroup(1, out var alias)); Assert.True(alias.Success);
         Assert.Equal((2, 3), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("xaaab"u8, Pcre2PartialMode.Soft, 1).Kind);
         Assert.Equal("aaab", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));

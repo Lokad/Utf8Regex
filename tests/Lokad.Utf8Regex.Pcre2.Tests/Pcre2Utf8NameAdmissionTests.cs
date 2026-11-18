@@ -26,7 +26,11 @@ public sealed class Pcre2Utf8NameAdmissionTests
         Assert.True(match.Success);
         Assert.Equal((2, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
         Assert.Equal(2, match.Groups.Length);
-        Assert.True(match.TryGetFirstSetGroup(name, out var group));
+        Span<int> numbersByName = stackalloc int[1];
+        Assert.Equal(1, regex.CopyNumbersForUtf8Name(Encoding.UTF8.GetBytes(name), numbersByName, out var moreByName));
+        Assert.False(moreByName);
+        Assert.Equal(1, numbersByName[0]);
+        Assert.True(match.TryGetGroup(numbersByName[0], out var group)); Assert.True(group.Success);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((group.Success ? match1Input.Span.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal((2, 6), (group.StartOffsetInBytes, group.EndOffsetInBytes));
         var nameBytes = new byte[128];

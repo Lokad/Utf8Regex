@@ -128,7 +128,7 @@ public sealed class Pcre2CompoundCandidateProbeTests
         { _ = Create(capacity - 1).Probe("😀xabcabc"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         var regex = Create(capacity);
         var retained = regex.Probe("😀xabcabc"u8, Pcre2PartialMode.Soft).GetMatch();
-        Assert.True(retained.TryGetFirstSetGroup("unit", out var alias));
+        Assert.True(retained.TryGetGroup(1, out var alias)); Assert.True(alias.Success);
         Assert.Equal((5, 11), (retained.GetGroup(0).StartOffsetInBytes, retained.GetGroup(0).EndOffsetInBytes));
         Assert.Equal((5, 8), (alias.StartOffsetInBytes, alias.EndOffsetInBytes));
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("abcx"u8, Pcre2PartialMode.Soft).Kind);

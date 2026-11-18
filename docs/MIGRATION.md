@@ -55,8 +55,7 @@ destination, out bytesRequired, out groupNumber, token)`. Iterate `NameEntryCoun
 to export caller-owned UTF-8 names and numbers in declaration order. Duplicate
 names for distinct numbers remain separate entries; branch-reset reuse of the
 same name and number remains one entry. Entry indices are not capture slots.
-Probe/result name tables retain their existing lifetimes. A short destination is
-unchanged and reports both length and number; original cancellation precedes
+A short destination is unchanged and reports both length and number. Original cancellation precedes
 funded-open and index checks. No host text or collection is allocated by copying.
 Each probe/copy checks program access independently; exporting multiple entries
 is not an atomic snapshot across concurrent funded disposal. Resolve metadata
@@ -517,8 +516,14 @@ Replace regex-level `CopyNumbersForName(string, ...)` with
 UTF-8 literals need no conversion. The existing byte-key entry preserves table
 order, duplicate numbers, truncation and untouched unused destination slots.
 It validates the complete name before writing and accepts a cancellation token.
-Unknown/empty names copy zero. The match-context string method remains available
-on partial-probe results; funded regex metadata still requires an open producer.
+Unknown and empty names copy zero. Funded regex metadata requires an open producer.
+
+PCRE2 cursor snapshots and full probe contexts expose numbered captures. Use
+`CopyNumbersForUtf8Name` on the regex in place of result-side `NameEntries`,
+`CopyNameEntries`, `CopyNumbersForName` and `TryGetFirstSetGroup`. Check the returned
+numbers in order and take the first participating slot. Resolve once if the slots
+will be read after the regex closes. Retained result admission covers captures,
+the receipt and MARK. The compiled expression owns capture-name storage.
 
 ### PCRE2 operation signatures
 
@@ -658,8 +663,5 @@ whole values, but rejects new calls. Primary Match now also preserves MARK on
 hits and misses through `Utf8Pcre2ValueMatch.Mark`, without allocating a capture
 result or repeating discovery. Probe/detailed value projections keep that label;
 span enumeration publishes ranges only. Immutable labels survive later calls and
-program disposal. Recompile consumers for the changed value view. Remove regex-level
-`TryGetFirstSetGroup` calls: use primary
-caller-owned captures plus UTF8 name-number metadata, or the metadata methods on
-an existing persistent cursor result. Full named metadata remains on existing
-cursors and detailed/probe results.
+program disposal. Recompile consumers for the changed value view. Use compiled
+UTF-8 name-to-number metadata with caller-owned captures or numbered snapshots.

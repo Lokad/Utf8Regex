@@ -9,9 +9,6 @@ class Pcre2MatchException : Exception, Runtime.Serialization.ISerializable
   ctor Pcre2MatchException(String message, Pcre2ErrorKind errorKind)
   property Pcre2ErrorKind ErrorKind { get; }
 [Flags] enum Pcre2MatchOptions : Int32 { Anchored = 1, EndAnchored = 2, None = 0, NotBol = 4, NotEmpty = 16, NotEmptyAtStart = 32, NotEol = 8 }
-readonly struct Pcre2NameEntry
-  property Int32 Number { get; init; }
-  property String Name { get; init; }
 enum Pcre2NewlineConvention : Int32 { Any = 4, AnyCrlf = 5, Cr = 1, Crlf = 3, Default = 0, Lf = 2, Nul = 6 }
 enum Pcre2PartialMode : Int32 { Hard = 2, None = 0, Soft = 1 }
 class Pcre2SubstitutionException : Exception, Runtime.Serialization.ISerializable
@@ -58,13 +55,9 @@ readonly ref struct Utf8Pcre2GroupContext
 readonly ref struct Utf8Pcre2MatchContext
   property Boolean Success { get; }
   property Int32 CaptureSlotCount { get; }
-  property Int32 NameEntryCount { get; }
   property String Mark { get; }
   property Utf8Pcre2ValueMatch Value { get; }
-  method Boolean TryGetFirstSetGroup(String name, out Utf8Pcre2GroupContext group)
   method Boolean TryGetGroup(Int32 number, out Utf8Pcre2GroupContext group)
-  method Int32 CopyNameEntries(Span<Pcre2NameEntry> destination, out Boolean isMore)
-  method Int32 CopyNumbersForName(String name, Span<Int32> destination, out Boolean isMore)
   method Utf8Pcre2GroupContext GetGroup(Int32 number)
 sealed class Utf8Pcre2MatchCursor : IDisposable
   method Boolean MoveNext(out Utf8Pcre2RangeMatch match, Threading.CancellationToken cancellationToken = default)
@@ -83,11 +76,9 @@ readonly ref struct Utf8Pcre2ProbeResult
   method Utf8Pcre2PartialMatchContext GetPartial()
 readonly struct Utf8Pcre2RangeMatch
   property Boolean Success { get; }
-  property ReadOnlySpan<Pcre2NameEntry> NameEntries { get; }
   property ReadOnlySpan<Utf8Pcre2CaptureRange> Groups { get; }
   property String Mark { get; }
   property Utf8Pcre2CaptureRange Value { get; }
-  method Boolean TryGetFirstSetGroup(String name, out Utf8Pcre2CaptureRange group)
   method Boolean TryGetGroup(Int32 number, out Utf8Pcre2CaptureRange group)
   method ReadOnlyMemory<Byte> GetGroupMemory(Int32 number)
   method ReadOnlyMemory<Byte> GetValueMemory()

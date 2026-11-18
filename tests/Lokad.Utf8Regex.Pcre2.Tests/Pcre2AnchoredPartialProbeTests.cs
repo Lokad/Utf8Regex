@@ -120,7 +120,7 @@ public sealed class Pcre2AnchoredPartialProbeTests
         { _ = Create(capacity - 1).Probe("😀abbb"u8, Pcre2PartialMode.Soft, 4, Pcre2MatchOptions.Anchored); }).ErrorKind);
         var regex = Create(capacity);
         var retained = regex.Probe("😀abbb"u8, Pcre2PartialMode.Soft, 4, Pcre2MatchOptions.Anchored).GetMatch();
-        Assert.True(retained.TryGetFirstSetGroup("head", out var alias));
+        Assert.True(retained.TryGetGroup(1, out var alias)); Assert.True(alias.Success);
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("😀abbb"u8, Pcre2PartialMode.Hard, 0, Pcre2MatchOptions.Anchored).Kind);
         Assert.Equal("abbb", System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(alias.GetValueBytes()));

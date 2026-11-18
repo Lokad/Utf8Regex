@@ -359,7 +359,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     }
 
     // Full probing reuses the original subject and invocation authority.
-    private Utf8Pcre2MatchContext MatchFullProbe(ReadOnlySpan<byte> input,
+    private Utf8Pcre2ProbeResult MatchFullProbe(ReadOnlySpan<byte> input,
         scoped ref Utf8ValidatedInput subject, Utf8BytePosition start,
         Pcre2MatchOptions matchOptions, scoped ref Utf8SliceInvocation invocation)
     {
@@ -372,10 +372,9 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                 out var directGroups,
                 out var directMark))
         {
-            return directGroups.Length != 0 || directMark is not null
-                ? Utf8Pcre2MatchContext.Create(input, directGroups,
-                    NameEntries, directMark)
-                : default;
+            return directGroups is { Length: > 0 } && directGroups[0].Success
+                ? Utf8Pcre2ProbeResult.CreateFullMatch(input, directGroups, directMark)
+                : Utf8Pcre2ProbeResult.CreateNoMatch(input, directMark);
         }
 
         throw CreateUnsupportedPatternException();
@@ -492,12 +491,12 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                  (_program.Request.Options & Pcre2CompileOptions.EndAnchored) == 0))
             {
                 var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
-                var runner = new Pcre2PartialProbeRunner(subject, _program, NameEntries, matchOptions, budget);
+                var runner = new Pcre2PartialProbeRunner(subject, _program, matchOptions, budget);
                 return runner.Probe(partialMode, startOffsetInBytes, _program, matchOptions);
             }
 
             if (partialMode == Pcre2PartialMode.None)
-                return MatchFullProbe(input, ref subject, start, matchOptions, ref invocation).AsProbeResult();
+                return MatchFullProbe(input, ref subject, start, matchOptions, ref invocation);
 
             // Ordinary matching can prove a Soft full result, but cannot decide
             // Hard partial priority or infer absence of a partial from MARK.
@@ -507,7 +506,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                     ref invocation, out var directGroups, out var directMark))
             {
                 if (directGroups.Length != 0)
-                    return Utf8Pcre2ProbeResult.CreateFullMatch(input, directGroups, NameEntries, directMark);
+                    return Utf8Pcre2ProbeResult.CreateFullMatch(input, directGroups, directMark);
             }
 
             throw CreateUnsupportedProbeException();

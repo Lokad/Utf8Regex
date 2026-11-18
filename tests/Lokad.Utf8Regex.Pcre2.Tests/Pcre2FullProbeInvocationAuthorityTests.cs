@@ -68,7 +68,7 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
         { _ = Create(pattern, 3).Probe(input, Pcre2PartialMode.None).GetMatch(); }).ErrorKind);
         var retained = Create(pattern, 100000).Probe(input, Pcre2PartialMode.None).GetMatch();
         Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.Value.GetValueBytes()));
-        Assert.True(retained.TryGetFirstSetGroup("x", out var named));
+        Assert.True(retained.TryGetGroup(1, out var named)); Assert.True(named.Success);
         Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(pattern, 100000, result: 1).Probe(input, Pcre2PartialMode.None).GetMatch(); }).ErrorKind);
@@ -93,7 +93,7 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
                 var retained = regex.Probe(input, Pcre2PartialMode.None, lead + 4, flags).GetMatch();
                 var whole = retained.GetGroup(0);
                 Assert.Equal((lead + 4, input.Length), (whole.StartOffsetInBytes, whole.EndOffsetInBytes));
-                Assert.True(retained.TryGetFirstSetGroup("x", out var named));
+                Assert.True(retained.TryGetGroup(1, out var named)); Assert.True(named.Success);
                 Assert.Equal(capture, System.Text.Encoding.UTF8.GetString(named.GetValueBytes()));
                 Assert.Throws<ArgumentOutOfRangeException>(() => { _ = regex.Probe(input, Pcre2PartialMode.None, lead + 1, flags).GetMatch(); });
                 _ = regex.Probe(Encoding.UTF8.GetBytes(text), Pcre2PartialMode.None).GetMatch();

@@ -103,7 +103,8 @@ without another search, captured-result array or producer-owned text payload.
 The reference stays valid after later calls and program close. Full/partial probe
 value projections preserve their existing MARK too. Span enumeration publishes
 ranges only and does not report MARK; use primary Match or a persistent cursor.
-Full named metadata remains on capture cursors and actual probe contexts.
+Capture cursors and full probe contexts expose numbered slots. The compiled regex
+exports capture names.
 
 Compile an expression once and invoke its instance methods. Static IsMatch,
 Match and Replace convenience overloads are removed; they previously compiled a
@@ -162,9 +163,8 @@ with a byte offset. Keys are admitted/encoded once and compared ordinally withou
 normalization or key strings. Vector lookup is linear with bounded token checks;
 matching timeout/numeric limits do not govern this explicit metadata operation.
 The funded owner retains its existing use during access. No key alias escapes.
-The redundant regex-level string `CopyNumbersForName` is removed. Hosts encode
-string keys before lookup. Match-context name copies remain available on
-partial-probe results without another regex execution.
+Hosts encode string keys before lookup and can reuse the copied numbers across
+matches and probes, including after the compiled expression closes.
 
 Capture slots follow declaration order, including named groups. Names start with
 a Unicode letter or underscore, then letters/digits/underscores; numeric names
@@ -179,14 +179,10 @@ numbers; branch-reset declarations with the same name and number share an entry.
 The index is not a capture slot. A short destination is unchanged and reports the
 required length and capture number. Original cancellation precedes funded-open
 and index checks. Metadata copying is independent of matching limits; exported
-bytes remain valid after disposal. The regex-level string-bearing
-`CopyNameEntries` is removed; internal and result/probe tables remain live.
-`CopyNumbersForUtf8Name` resolves all numbers for a UTF-8 name;
-context/range-result `TryGetFirstSetGroup` returns the first set slot for a name.
-The regex-level one-shot named matcher is removed: match into caller-owned slots
-and use UTF-8 name-to-number metadata, or resolve names on an existing persistent
-cursor result. Neither form invents Core numeric-name aliases or sparse numeric
-definitions.
+bytes remain valid after disposal. To find the first participating capture for a
+name, resolve its numbers with `CopyNumbersForUtf8Name`, then inspect the numbered
+slots in the returned order and take the first with `Success` set. The same rule
+works with caller-owned slots, cursor snapshots and full probe contexts.
 
 Default simple-fold equivalence is symmetric over scalars, including Kelvin,
 long S, Greek variants and titlecase partners. Dotted/dotless I remain distinct.
@@ -515,9 +511,8 @@ across host waits; other lexical VM scratch releases per advance. This can retai
 working admission longer than standalone calls. EOF, failure and Dispose drop
 exclusive roots and release all remaining loans/program use synchronously.
 
-`MoveNext(out Utf8Pcre2RangeMatch)` returns immutable last-capture byte slots,
-duplicate-preserving names and Mark, without captured text or mandatory UTF-16
-projection. Existing native literal/character/repeat finders remain eligible;
+`MoveNext(out Utf8Pcre2RangeMatch)` returns immutable numbered last-capture byte
+slots and MARK. Existing native literal/character/repeat finders remain eligible;
 captured cases use existing scalar or PCRE2 VMs with a final byte result shape.
 PCRE2 flags retain their existing admitted VM route; empty retries can borrow
 the scalar runner's anchored nonempty attempt under the original anchor origin.
@@ -540,8 +535,9 @@ working admission for results; continued host retention has separate scope.
 `Utf8Pcre2RetainedRangeMatch`. Default publication transfers the existing capture/
 metadata loan without reacquisition. A separate result account admits its charge
 before working staging refunds, including conservative overlap without a funding
-gap. Shared names/mark text count again for independent retention. Refusal is
-terminal. Receipt close refunds once; copied ranges remain valid afterward, with
+gap. The result charge includes its capture array and receipt, plus MARK text if
+present. Program admission covers capture names. Refusal is terminal. Receipt
+close refunds once; copied ranges remain valid afterward, with
 continued admission then the caller's responsibility. Numeric result traffic is
 cumulative regardless of live refunds. Native pattern compilation, source copying
 and UTF-8 template preparation are implemented. Funded caller-destination replacement

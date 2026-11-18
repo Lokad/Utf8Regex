@@ -159,7 +159,7 @@ public sealed class Pcre2ResetOptionExecutionTests
         Assert.True(match.Success);
         Assert.Equal(3, match.Groups.Length);
         Assert.Equal(2, regex.NameEntryCount);
-        Assert.True(match.TryGetFirstSetGroup("x", out var group));
+        Assert.True(match.TryGetGroup(text == "a" ? 1 : 2, out var group)); Assert.True(group.Success);
         Assert.Equal(text, System.Text.Encoding.UTF8.GetString((group.Success ? match4Input.Span.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 

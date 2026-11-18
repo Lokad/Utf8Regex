@@ -141,10 +141,10 @@ public sealed class Pcre2ExtendedModeExecutionTests
             var match = match2Result;
             Assert.True(match.Success);
             Assert.Equal((5, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
-            Assert.True(match.TryGetFirstSetGroup("g", out var first));
+            Assert.True(match.TryGetGroup(1, out var first)); Assert.True(first.Success);
             Assert.Equal("aa", System.Text.Encoding.UTF8.GetString((first.Success ? match2Input.Span.Slice(first.StartOffsetInBytes, first.EndOffsetInBytes - first.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             Assert.Equal((5, 7), (first.StartOffsetInBytes, first.EndOffsetInBytes));
-            Assert.True(match.TryGetFirstSetGroup("h", out var second));
+            Assert.True(match.TryGetGroup(2, out var second)); Assert.True(second.Success);
             Assert.Equal(" bb", System.Text.Encoding.UTF8.GetString((second.Success ? match2Input.Span.Slice(second.StartOffsetInBytes, second.EndOffsetInBytes - second.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             Assert.Equal((7, 10), (second.StartOffsetInBytes, second.EndOffsetInBytes));
             Assert.Equal("😀 <aa| bb>\t", System.Text.Encoding.UTF8.GetString(regex.Replace("😀 aa bb\t"u8, "<$1|$2>")));

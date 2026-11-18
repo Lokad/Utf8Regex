@@ -47,7 +47,6 @@ public sealed class Pcre2NativePatternTests
         {
             Assert.True(actual.MoveNext(out var rightMatch));
             Assert.Equal(leftMatch.Groups.Length, rightMatch.Groups.Length);
-            Assert.Equal(leftMatch.NameEntries.ToArray(), rightMatch.NameEntries.ToArray());
             for (var slot = 0; slot < leftMatch.Groups.Length; slot++)
             {
                 Assert.True(leftMatch.TryGetGroup(slot, out var left));

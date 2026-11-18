@@ -116,10 +116,9 @@ slots require no producer-owned result capacity. Match also returns the last
 relevant `Mark` on hits and misses, reusing the immutable compiled label without
 another search or capture array. The label survives subsequent calls and program
 close. Shared working admission and funded Match use the same numeric limits,
-token and deadline. Capture cursors retain named metadata; span enumeration only
-publishes ranges. Borrowed subjects must remain unchanged. The regex-level
-TryGetFirstSetGroup matcher is removed; resolve names on cursor results or copy
-UTF-8 name-to-number metadata for caller-owned capture slots.
+token and deadline. Capture cursors and full probes expose numbered slots. Resolve
+names on the compiled regex before using those slots. Span enumeration publishes
+whole-match ranges. Borrowed subjects must remain unchanged.
 Use `CopyNumbersForUtf8Name` for regex-level number copies; the redundant string
 variant is removed. Host key encoding is outside the call. Complete key validation
 precedes destination writes, and the optional token remains synchronous.

@@ -135,7 +135,7 @@ public sealed class Pcre2InlineOptionAdmissionTests
         Assert.Equal((1, input.Length), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         Assert.Equal(first, System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained3Input.Span.Slice(retained.Groups[1].StartOffsetInBytes, retained.Groups[1].EndOffsetInBytes - retained.Groups[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(second, System.Text.Encoding.UTF8.GetString((retained.Groups[2].Success ? retained3Input.Span.Slice(retained.Groups[2].StartOffsetInBytes, retained.Groups[2].EndOffsetInBytes - retained.Groups[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(retained.TryGetFirstSetGroup("n", out var named));
+        Assert.True(retained.TryGetGroup(1, out var named)); Assert.True(named.Success);
         Assert.Equal(first, System.Text.Encoding.UTF8.GetString((named.Success ? retained3Input.Span.Slice(named.StartOffsetInBytes, named.EndOffsetInBytes - named.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("q" + first + "/" + second, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "$1/$2")));
         Assert.Equal(1, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));

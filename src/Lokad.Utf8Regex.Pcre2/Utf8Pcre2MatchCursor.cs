@@ -111,12 +111,13 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
                 if (!outcome.Success) { _progress.AfterMiss(ref subject, _program!.Request, _options); continue; }
                 _progress.Accept(outcome.StartOffsetInBytes, outcome.EndOffsetInBytes,
                     outcome.ConsumedStartOffsetInBytes, outcome.ConsumedEndOffsetInBytes);
-                var completed = new Utf8Pcre2RangeMatch(_input, groups, _program!.NameEntries, outcome.Mark);
+                var completed = new Utf8Pcre2RangeMatch(_input, groups, outcome.Mark);
                 Utf8Pcre2RetainedRangeMatch? receipt = null;
                 var allowance = resultAllowance ?? _budget.WorkingInvocation.Ledger.MemoryAllowance;
                 if (retain)
                 {
-                    ReserveMetadata(outcome.Mark, ref results);
+                    if (outcome.Mark is { } mark)
+                        results.ReserveSharedStorage(Utf8ConstructionBudget.StringBytes(mark.Length), ref _budget.WorkingInvocation);
                     receipt = results.AllocateObject((Match: completed, Allowance: allowance!),
                         static state => new Utf8Pcre2RetainedRangeMatch(state.Match, state.Allowance), ref _budget.WorkingInvocation);
                 }
@@ -148,17 +149,6 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
             }
         }
         Close(Pcre2CursorStatus.Ended); return false;
-    }
-
-    private void ReserveMetadata(string? mark, ref Utf8InvocationResultLedger results)
-    {
-        results.ReserveSharedStorage(Utf8ConstructionBudget.ArrayBytes<Pcre2NameEntry>(_program!.NameEntries.Length), ref _budget.WorkingInvocation);
-        for (var index = 0; index < _program.NameEntries.Length; index++)
-        {
-            if ((index & 255) == 0) Checkpoint();
-            results.ReserveSharedStorage(Utf8ConstructionBudget.StringBytes(_program.NameEntries[index].Name.Length), ref _budget.WorkingInvocation);
-        }
-        if (mark is not null) results.ReserveSharedStorage(Utf8ConstructionBudget.StringBytes(mark.Length), ref _budget.WorkingInvocation);
     }
 
     private void Checkpoint()

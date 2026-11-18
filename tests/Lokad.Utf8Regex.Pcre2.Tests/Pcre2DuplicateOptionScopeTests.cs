@@ -44,8 +44,18 @@ public sealed class Pcre2DuplicateOptionScopeTests
         match1Cursor.Dispose();
         var match = match1Result;
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString((match.Value.Success ? match1Input.Span.Slice(match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(match.TryGetFirstSetGroup("x", out var capture));
-        Assert.True(capture.Success);
+        Span<int> numbers = stackalloc int[3];
+        var count = regex.CopyNumbersForUtf8Name("x"u8, numbers, out var more, cancellation.Token);
+        Assert.False(more);
+        var selected = 0;
+        foreach (var number in numbers[..count])
+        {
+            Assert.True(match.TryGetGroup(number, out var capture));
+            if (!capture.Success) continue;
+            selected = capture.Number;
+            break;
+        }
+        Assert.NotEqual(0, selected);
     }
 
     [Theory]

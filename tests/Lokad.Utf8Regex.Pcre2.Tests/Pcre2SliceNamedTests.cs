@@ -87,7 +87,7 @@ public sealed class Pcre2SliceNamedTests
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed.Groups[1].Success ? detailed2Input.Span.Slice(detailed.Groups[1].StartOffsetInBytes, detailed.Groups[1].EndOffsetInBytes - detailed.Groups[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("c", System.Text.Encoding.UTF8.GetString((detailed.Groups[2].Success ? detailed2Input.Span.Slice(detailed.Groups[2].StartOffsetInBytes, detailed.Groups[2].EndOffsetInBytes - detailed.Groups[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(detailed.TryGetFirstSetGroup("b", out var bee));
+        Assert.True(detailed.TryGetGroup(1, out var bee)); Assert.True(bee.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((bee.Success ? detailed2Input.Span.Slice(bee.StartOffsetInBytes, bee.EndOffsetInBytes - bee.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
@@ -173,7 +173,7 @@ public sealed class Pcre2SliceNamedTests
         var detailed = detailed3Result;
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed.Groups[1].Success ? detailed3Input.Span.Slice(detailed.Groups[1].StartOffsetInBytes, detailed.Groups[1].EndOffsetInBytes - detailed.Groups[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.True(detailed.TryGetFirstSetGroup("word", out var word));
+        Assert.True(detailed.TryGetGroup(1, out var word)); Assert.True(word.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((word.Success ? detailed3Input.Span.Slice(word.StartOffsetInBytes, word.EndOffsetInBytes - word.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(regex.DebugCompiledProgram is not null);
     }

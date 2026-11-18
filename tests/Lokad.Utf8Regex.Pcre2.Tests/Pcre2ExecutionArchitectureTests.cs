@@ -362,7 +362,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         optionalMatch1Cursor.MoveNext(out var optionalMatch1Result);
         optionalMatch1Cursor.Dispose();
         var optionalMatch = optionalMatch1Result;
-        Assert.True(optionalMatch.TryGetFirstSetGroup("Bar", out var optionalGroup));
+        Assert.True(optionalMatch.TryGetGroup(1, out var optionalGroup)); Assert.True(optionalGroup.Success);
         Assert.Equal("BAR", System.Text.Encoding.UTF8.GetString((optionalGroup.Success ? optionalMatch1Input.Span.Slice(optionalGroup.StartOffsetInBytes, optionalGroup.EndOffsetInBytes - optionalGroup.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
@@ -399,14 +399,14 @@ public sealed class Pcre2ExecutionArchitectureTests
         duplicateMatch3Cursor.MoveNext(out var duplicateMatch3Result);
         duplicateMatch3Cursor.Dispose();
         var duplicateMatch = duplicateMatch3Result;
-        Assert.True(duplicateMatch.TryGetFirstSetGroup("n", out var duplicateGroup));
+        Assert.True(duplicateMatch.TryGetGroup(1, out var duplicateGroup)); Assert.True(duplicateGroup.Success);
         Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((duplicateGroup.Success ? duplicateMatch3Input.Span.Slice(duplicateGroup.StartOffsetInBytes, duplicateGroup.EndOffsetInBytes - duplicateGroup.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         ReadOnlyMemory<byte> followupMatch4Input = ("aaaccccaaa"u8).ToArray();
         using var followupMatch4Cursor = branchResetFollowup.CreateMatchCursor(followupMatch4Input);
         followupMatch4Cursor.MoveNext(out var followupMatch4Result);
         followupMatch4Cursor.Dispose();
         var followupMatch = followupMatch4Result;
-        Assert.True(followupMatch.TryGetFirstSetGroup("a", out var followupGroup));
+        Assert.True(followupMatch.TryGetGroup(1, out var followupGroup)); Assert.True(followupGroup.Success);
         Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString((followupGroup.Success ? followupMatch4Input.Span.Slice(followupGroup.StartOffsetInBytes, followupGroup.EndOffsetInBytes - followupGroup.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 

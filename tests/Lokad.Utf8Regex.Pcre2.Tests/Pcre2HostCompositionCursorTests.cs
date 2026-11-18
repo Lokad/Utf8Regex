@@ -96,11 +96,14 @@ public sealed class Pcre2HostCompositionCursorTests
     {
         var input = "foo fooBAR x"u8.ToArray();
         var regex = new Utf8Pcre2Regex("foo(?<Bar>BAR)?");
+        Span<int> numbers = stackalloc int[1];
+        Assert.Equal(1, regex.CopyNumbersForUtf8Name("Bar"u8, numbers, out var more));
+        Assert.False(more);
         using var cursor = regex.CreateMatchCursor(input);
         var values = new List<string>();
         while (cursor.MoveNext(out var match))
         {
-            var named = match.TryGetFirstSetGroup("Bar", out var range)
+            var named = match.TryGetGroup(numbers[0], out var range) && range.Success
                 ? Encoding.UTF8.GetString(input.AsSpan(range.StartOffsetInBytes, range.EndOffsetInBytes - range.StartOffsetInBytes))
                 : "none";
             values.Add($"{Encoding.UTF8.GetString(match.GetValueMemory().Span)}|{named}");

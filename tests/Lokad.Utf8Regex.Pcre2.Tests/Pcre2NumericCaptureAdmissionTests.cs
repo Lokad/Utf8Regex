@@ -141,7 +141,7 @@ public sealed class Pcre2NumericCaptureAdmissionTests
         Assert.Equal("x"u8.ToArray(), nameBytes);
         Assert.Equal(1, bytesRequired);
         Assert.Equal(nameSlot, groupNumber);
-        Assert.True(match.TryGetFirstSetGroup("x", out var named));
+        Assert.True(match.TryGetGroup(nameSlot, out var named)); Assert.True(named.Success);
         Assert.Equal(nameSlot == 1 ? left : right, System.Text.Encoding.UTF8.GetString((named.Success ? match3Input.Span.Slice(named.StartOffsetInBytes, named.EndOffsetInBytes - named.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         {
             using var cursor = regex.CreateMatchCursor(input);
@@ -150,7 +150,6 @@ public sealed class Pcre2NumericCaptureAdmissionTests
             Assert.Equal(left, Encoding.UTF8.GetString(range.GetGroupMemory(1).Span));
             Assert.Equal(right ?? "", Encoding.UTF8.GetString(range.GetGroupMemory(2).Span));
             Assert.Equal(right is not null, range.Groups[2].Success);
-            Assert.Equal(nameSlot, range.NameEntries[0].Number);
         }
     }
 

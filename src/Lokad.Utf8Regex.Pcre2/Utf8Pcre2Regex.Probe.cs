@@ -11,7 +11,6 @@ public sealed partial class Utf8Pcre2Regex
 {
     private Utf8ValidatedInput _input;
     private Pcre2ResourceBudget _budget;
-    private readonly Pcre2NameEntry[] _names;
     private readonly Pcre2BacktrackingProgram? _captureProgram;
     private readonly bool _anchored;
     private readonly Pcre2MatchOptions _matchOptions;
@@ -22,13 +21,12 @@ public sealed partial class Utf8Pcre2Regex
     private int _candidateLimit;
 
     internal Pcre2PartialProbeRunner(Utf8ValidatedInput input, Pcre2CompiledProgram program,
-        Pcre2NameEntry[] names, Pcre2MatchOptions matchOptions, Pcre2ResourceBudget budget)
+        Pcre2MatchOptions matchOptions, Pcre2ResourceBudget budget)
     {
         _input = input;
         // Transfer the validation authority into this one-shot runner. Controlled
         // counters share the original owner; unlimited state stays inline.
         _budget = budget;
-        _names = names;
         _matchOptions = matchOptions;
         _compiled = program;
         _anchored = (matchOptions & Pcre2MatchOptions.Anchored) != 0 ||
@@ -915,7 +913,7 @@ public sealed partial class Utf8Pcre2Regex
                     throw new InvalidOperationException("The full probe range disagrees with its admitted capture program.");
                 _budget.CheckDeadline();
                 return Utf8Pcre2ProbeResult.CreateFullMatch(_input.Bytes,
-                    detailed.CaptureResult.ProjectedGroups, _names, detailed.Mark);
+                    detailed.CaptureResult.ProjectedGroups, detailed.Mark);
             }
             finally { detailed.CaptureResult.DetachProjectedWorking(ref _budget); }
         }
@@ -926,7 +924,7 @@ public sealed partial class Utf8Pcre2Regex
         {
             var owned = groups.ToArray();
             _budget.CheckDeadline();
-            return Utf8Pcre2ProbeResult.CreateFullMatch(_input.Bytes, owned, _names);
+            return Utf8Pcre2ProbeResult.CreateFullMatch(_input.Bytes, owned);
         }
         finally { _budget.ReleaseWorking(bytes); }
     }
