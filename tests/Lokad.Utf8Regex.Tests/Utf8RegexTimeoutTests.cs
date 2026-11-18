@@ -84,7 +84,7 @@ public sealed class Utf8RegexTimeoutTests
         Array.Fill(input, (byte)'a');
         input[^1] = (byte)'!';
 
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, "z"));
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, "z"u8));
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
 
-        Assert.Equal(oracle.Replace(text, "z"), Encoding.UTF8.GetString(regex.Replace(input, "z")));
+        Assert.Equal(oracle.Replace(text, "z"), Encoding.UTF8.GetString(regex.Replace(input, "z"u8)));
 
         var expectedIndexes = new List<int>();
         foreach (Match match in oracle.Matches(text))
@@ -198,7 +198,7 @@ public sealed class Utf8RegexTimeoutTests
         Assert.True(regex.IsMatch(input));
         Assert.True(regex.Match(input).Success);
         Assert.Equal(1, regex.Count(input));
-        Assert.Equal(Encoding.UTF8.GetBytes("xxZxx"), regex.Replace(input, "Z"));
+        Assert.Equal(Encoding.UTF8.GetBytes("xxZxx"), regex.Replace(input, "Z"u8));
         var matches = 0;
         foreach (var item in regex.EnumerateMatches(input))
         {
@@ -242,9 +242,9 @@ public sealed class Utf8RegexTimeoutTests
             var enumerator = regex.EnumerateMatches(input);
             _ = enumerator.MoveNext();
         });
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, "z"));
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, "z"u8));
         var destination = new byte[65536];
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.TryReplace(input, "z", destination, out var bytesWritten));
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.TryReplace(input, "z"u8, destination, out var bytesWritten));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -361,7 +361,7 @@ public sealed class Utf8RegexTimeoutTests
         Assert.Equal(text, splitException.Input);
         Assert.Equal("(a+)+$", splitException.Pattern);
         Assert.Equal(timeout, splitException.MatchTimeout);
-        var replaceException = Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, "z"));
+        var replaceException = Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, "z"u8));
         Assert.Equal(text, replaceException.Input);
         Assert.Equal("(a+)+$", replaceException.Pattern);
         Assert.Equal(timeout, replaceException.MatchTimeout);

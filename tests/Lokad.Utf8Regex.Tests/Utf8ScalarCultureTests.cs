@@ -69,8 +69,8 @@ public sealed class Utf8ScalarCultureTests
                     foreach (var split in regex.EnumerateSplits(input, int.MaxValue)) splits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
                     Assert.Equal(expectedSplits, splits);
                     var output = oracle.Replace(text, "[$&]");
-                    Assert.Equal(Encoding.UTF8.GetBytes(output), regex.Replace(input, "[$&]"));
-                    Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "[$&]", destination, out var written));
+                    Assert.Equal(Encoding.UTF8.GetBytes(output), regex.Replace(input, "[$&]"u8));
+                    Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "[$&]"u8, destination, out var written));
                     Assert.Equal(Encoding.UTF8.GetBytes(output), destination[..written].ToArray());
                     AssertOwned(regex);
                 }
@@ -110,7 +110,7 @@ public sealed class Utf8ScalarCultureTests
                 Assert.Equal(length, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
                 Assert.False(cursor.MoveNext());
                 var replacement = "<" + value + ">" + (all ? "" : "\U0001f600");
-                Assert.Equal(Encoding.UTF8.GetBytes(replacement), regex.Replace(input, "<$&>", source.Token));
+                Assert.Equal(Encoding.UTF8.GetBytes(replacement), regex.Replace(input, "<$&>"u8, source.Token));
                 var splits = new List<string>();
                 foreach (var split in regex.EnumerateSplits(input, int.MaxValue, source.Token)) splits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
                 Assert.Equal(rtl ? new[] { all ? "" : "\U0001f600", "" } : new[] { "", all ? "" : "\U0001f600" }, splits);
@@ -130,7 +130,7 @@ public sealed class Utf8ScalarCultureTests
                 Assert.Equal(input.Length, (found.Value.EndOffsetInBytes - found.Value.StartOffsetInBytes));
                 Assert.Equal("\U00010428", System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(1).Span));
                 Assert.Equal(1, regex.Count(input, source.Token));
-                Assert.Equal("\U00010428", Encoding.UTF8.GetString(regex.Replace(input, "$1", source.Token)));
+                Assert.Equal("\U00010428", Encoding.UTF8.GetString(regex.Replace(input, "$1"u8, source.Token)));
                 AssertOwned(regex);
             }
 

@@ -31,7 +31,7 @@ public sealed class Utf8ConcurrentSharedInstanceTests
         var regex = new Utf8Regex("[a-z]+@[a-z]+", options: RegexOptions.CultureInvariant);
         var hit = Encoding.UTF8.GetBytes("mail a@b ok");
         var miss = Encoding.UTF8.GetBytes("no address here 123");
-        var expectedReplacement = regex.Replace(hit, "Z");
+        var expectedReplacement = regex.Replace(hit, "Z"u8);
 
         Parallel.For(0, 256, iteration =>
         {
@@ -43,7 +43,7 @@ public sealed class Utf8ConcurrentSharedInstanceTests
             Assert.Equal(expected ? 1 : 0, regex.Count(input));
             if (expected)
             {
-                Assert.Equal(expectedReplacement, regex.Replace(input, "Z"));
+                Assert.Equal(expectedReplacement, regex.Replace(input, "Z"u8));
             }
         });
     }

@@ -97,12 +97,12 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var actual = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(Subject);
 
-        Assert.Equal(expected, Encoding.UTF8.GetString(actual.Replace(input, replacement)));
         Assert.Equal(expected, Encoding.UTF8.GetString(actual.Replace(input, "X"u8)));
-        Assert.Equal(expected, Encoding.UTF8.GetString(actual.Replace(input, replacement)));
+        Assert.Equal(expected, Encoding.UTF8.GetString(actual.Replace(input, "X"u8)));
+        Assert.Equal(expected, Encoding.UTF8.GetString(actual.Replace(input, "X"u8)));
 
         Span<byte> destination = stackalloc byte[32];
-        var status = actual.TryReplace(input, replacement, destination, out var bytesWritten);
+        var status = actual.TryReplace(input, "X"u8, destination, out var bytesWritten);
         Assert.Equal(OperationStatus.Done, status);
         Assert.Equal(expected, Encoding.UTF8.GetString(destination[..bytesWritten]));
 
@@ -190,7 +190,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
 
         Assert.Equal(expectedRanges, actualRanges);
-        Assert.Equal(expected.Replace(subject, "X"), Encoding.UTF8.GetString(actual.Replace(input, "X")));
+        Assert.Equal(expected.Replace(subject, "X"), Encoding.UTF8.GetString(actual.Replace(input, "X"u8)));
         var actualSplits = new List<string>();
         foreach (var split in actual.EnumerateSplits(input))
         {
@@ -245,7 +245,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
 
         Assert.Equal(expectedRanges, actualRanges);
-        Assert.Equal(expected.Replace(subject, "X"), Encoding.UTF8.GetString(actual.Replace(input, "X")));
+        Assert.Equal(expected.Replace(subject, "X"), Encoding.UTF8.GetString(actual.Replace(input, "X"u8)));
 
         var actualSplits = new List<string>();
         foreach (var split in actual.EnumerateSplits(input))
@@ -497,7 +497,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -533,7 +533,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

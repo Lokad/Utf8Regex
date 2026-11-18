@@ -18,10 +18,10 @@ public sealed class Utf8SliceReplaceTests
         {
             var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-            Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
+            Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(replacement))));
             Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(replacement))));
             using var source = new CancellationTokenSource();
-            Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement, source.Token)));
+            Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(replacement), source.Token)));
         }
     }
 
@@ -62,7 +62,7 @@ public sealed class Utf8SliceReplaceTests
     public void OwnedReplaceNeverConstructsBclFallback()
     {
         var regex = new Utf8Regex("(a+)(b+)", options: RegexOptions.CultureInvariant);
-        var result = regex.Replace(Encoding.UTF8.GetBytes("xxaaabbyy"), "[$1]");
+        var result = regex.Replace(Encoding.UTF8.GetBytes("xxaaabbyy"), "[$1]"u8);
         Assert.Equal("xx[aaa]yy", Encoding.UTF8.GetString(result));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -75,7 +75,7 @@ public sealed class Utf8SliceReplaceTests
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         Assert.Throws<OperationCanceledException>(
-            () => regex.Replace(Encoding.UTF8.GetBytes("xxaaabbyy"), "Z", canceled.Token));
+            () => regex.Replace(Encoding.UTF8.GetBytes("xxaaabbyy"), "Z"u8, canceled.Token));
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AstralSliceReplaceOwnedCases()
@@ -111,13 +111,13 @@ public sealed class Utf8SliceReplaceTests
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(oracle, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(oracle, Encoding.UTF8.GetString(destination[..bytesWritten]));
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -145,7 +145,7 @@ public sealed class Utf8SliceReplaceTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout).Replace(text, template);
         var stringRegex = new Utf8Regex(pattern, options: options);
         Assert.True(stringRegex.Inspection.DebugUsesOwnedSliceProgram);
-        Assert.Equal(oracle, Encoding.UTF8.GetString(stringRegex.Replace(input, template)));
+        Assert.Equal(oracle, Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template))));
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -180,12 +180,12 @@ public sealed class Utf8SliceReplaceTests
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var stringRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle, Encoding.UTF8.GetString(stringRegex.Replace(input, template)));
+        Assert.Equal(oracle, Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template))));
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(oracle, Encoding.UTF8.GetString(destination[..bytesWritten]));
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);

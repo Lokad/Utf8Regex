@@ -16,36 +16,7 @@ public sealed partial class Utf8Regex
         internal bool IsUncontrolled => Deadline.IsInfinite && !Token.CanBeCanceled;
     }
 
-    private Utf8AnalyzedReplacement GetParsedReplacement(string replacement, ReplacementPreparationControl control)
-    {
-        // Reject the public null template before observing elapsed preparation
-        // time (pre-cancellation is checked at the API).
-        if (replacement is null) throw new ArgumentNullException(nameof(replacement));
-        try
-        {
-            if (control.IsUncontrolled) return GetParsedReplacement(replacement);
-            return _replacementCache.GetOrAdd(replacement, (Self: this, Control: control),
-                static (text, state) => state.Self.PrepareReplacement(text, state.Control), control);
-        }
-        catch (OperationCanceledException failure) when (failure.CancellationToken != control.Token)
-        {
-            // A pending factory may belong to another caller. Observe our own
-            // authority and prepare once, rather than inheriting its failure.
-            control.Check();
-            return PrepareReplacement(replacement, control);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            control.Check();
-            return PrepareReplacement(replacement, control);
-        }
-    }
-
-    private Utf8AnalyzedReplacement PrepareReplacement(object replacement, ReplacementPreparationControl control)
-        => PrepareBorrowedReplacement(replacement is byte[] bytes ? new Utf8ConstructionPattern(bytes)
-            : new Utf8ConstructionPattern((string)replacement), control);
-
-    private Utf8AnalyzedReplacement PrepareBorrowedReplacement(Utf8ConstructionPattern replacement, ReplacementPreparationControl control)
+    private Utf8AnalyzedReplacement PrepareBorrowedReplacement(ReadOnlySpan<byte> replacement, ReplacementPreparationControl control)
     {
         using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
             ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
@@ -129,12 +100,12 @@ public sealed partial class Utf8Regex
         catch (OperationCanceledException failure) when (failure.CancellationToken != control.Token)
         {
             control.Check();
-            return PrepareBorrowedReplacement(new Utf8ConstructionPattern(validatedTemplate), control);
+            return PrepareBorrowedReplacement(validatedTemplate, control);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             control.Check();
-            return PrepareBorrowedReplacement(new Utf8ConstructionPattern(validatedTemplate), control);
+            return PrepareBorrowedReplacement(validatedTemplate, control);
         }
     }
 
@@ -147,7 +118,7 @@ public sealed partial class Utf8Regex
         {
             var key = FreezeNativeReplacement(validatedTemplate, construction.Budget, control);
             var result = _replacementCache.GetOrAdd(key, (Self: this, Control: control),
-                static (source, state) => state.Self.PrepareReplacement(source, state.Control), control);
+                static (source, state) => state.Self.PrepareBorrowedReplacement(source, state.Control), control);
             construction.Complete();
             return result;
         }
@@ -178,7 +149,7 @@ public sealed partial class Utf8Regex
                 // array and nested parser overlap share this admission owner.
                 var key = FreezeNativeReplacement(validatedTemplate, budget, control);
                 var result = _replacementCache.GetOrAdd(key, (Self: this, Control: control),
-                    static (source, state) => state.Self.PrepareReplacement(source, state.Control), control);
+                    static (source, state) => state.Self.PrepareBorrowedReplacement(source, state.Control), control);
                 control.Check();
                 construction.Complete();
                 return result;

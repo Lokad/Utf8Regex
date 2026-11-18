@@ -29,7 +29,7 @@ public sealed class Utf8ReplacementAliasingTests
             var status = utf8Template
                 ? regex.TryReplace(storage.AsSpan(inputStart, input.Length), Encoding.UTF8.GetBytes(template),
                     storage.AsSpan(destinationStart), out var written)
-                : regex.TryReplace(storage.AsSpan(inputStart, input.Length), template,
+                : regex.TryReplace(storage.AsSpan(inputStart, input.Length), Encoding.UTF8.GetBytes(template),
                     storage.AsSpan(destinationStart), out written);
 
             Assert.Equal(OperationStatus.Done, status);
@@ -65,7 +65,7 @@ public sealed class Utf8ReplacementAliasingTests
 
         var status = utf8Template
             ? regex.TryReplace(storage, "LONG"u8, storage, out var written)
-            : regex.TryReplace(storage, "LONG", storage, out written);
+            : regex.TryReplace(storage, "LONG"u8, storage, out written);
 
         Assert.Equal(OperationStatus.DestinationTooSmall, status);
         Assert.Equal(0, written);
@@ -92,7 +92,7 @@ public sealed class Utf8ReplacementAliasingTests
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             if (utf8Template) regex.TryReplace(storage.AsSpan(0, 7), "LONG"u8, storage, out _);
-            else regex.TryReplace(storage.AsSpan(0, 7), "LONG", storage, out _);
+            else regex.TryReplace(storage.AsSpan(0, 7), "LONG"u8, storage, out _);
         });
 
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);

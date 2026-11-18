@@ -28,9 +28,9 @@ public sealed class Utf8OwnedReplacementInteropTests
             var expected = oracle.Replace(text, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template)));
             var expectedBytes = Encoding.UTF8.GetBytes(expected);
             var input = Encoding.UTF8.GetBytes(text);
-            Assert.Equal(expectedBytes, regex.Replace(input, template, source.Token));
+            Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(template), source.Token));
             var destination = new byte[expectedBytes.Length + 3];
-            Assert.Equal(OperationStatus.Done, regex.TryReplace(input, template, destination, out var written, source.Token));
+            Assert.Equal(OperationStatus.Done, regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var written, source.Token));
             Assert.Equal(expectedBytes.Length, written);
             Assert.Equal(expectedBytes, destination.AsSpan(0, written).ToArray());
             if (expectedBytes.Length != 0)
@@ -38,7 +38,7 @@ public sealed class Utf8OwnedReplacementInteropTests
                 var shortDestination = new byte[expectedBytes.Length - 1];
                 Array.Fill(shortDestination, (byte)0xa5);
                 Assert.Equal(OperationStatus.DestinationTooSmall,
-                    regex.TryReplace(input, template, shortDestination, out written, source.Token));
+                    regex.TryReplace(input, Encoding.UTF8.GetBytes(template), shortDestination, out written, source.Token));
                 Assert.Equal(0, written);
                 Assert.All(shortDestination, b => Assert.Equal((byte)0xa5, b));
             }
@@ -71,7 +71,7 @@ public sealed class Utf8OwnedReplacementInteropTests
             var regex = new Utf8Regex(pattern, options: options);
             var input = Encoding.UTF8.GetBytes(text);
             var expected = oracle.Replace(text, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template)));
-            Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, template));
+            Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, Encoding.UTF8.GetBytes(template)));
             AssertOwned(regex);
         }
     }
@@ -240,9 +240,9 @@ public sealed class Utf8OwnedReplacementInteropTests
                 {
                     switch (operation)
                     {
-                        case "bytes-string": _ = regex.Replace(input, template, source.Token); break;
+                        case "bytes-string": _ = regex.Replace(input, Encoding.UTF8.GetBytes(template), source.Token); break;
                         case "bytes-pattern": _ = regex.Replace(input, templateBytes, source.Token); break;
-                        case "destination-string": _ = regex.TryReplace(input, template, destination, out _, source.Token); break;
+                        case "destination-string": _ = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out _, source.Token); break;
                         case "destination-pattern": _ = regex.TryReplace(input, templateBytes, destination, out _, source.Token); break;
                     }
                 });
@@ -251,7 +251,7 @@ public sealed class Utf8OwnedReplacementInteropTests
             }
             finally { session.Complete(); }
             Assert.True(destination.AsSpan().IndexOfAnyExcept((byte)0xa5) < 0);
-            Assert.Equal("QQ", Encoding.UTF8.GetString(regex.Replace(input, "Q")));
+            Assert.Equal("QQ", Encoding.UTF8.GetString(regex.Replace(input, "Q"u8)));
             AssertOwned(regex);
         }
     }

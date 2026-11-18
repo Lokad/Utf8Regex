@@ -40,10 +40,10 @@ public sealed class Utf8TemplateFinalCaptureTests
                 MaxResultBytes = 8 << 20
             }
         });
-        Assert.Equal(bytes, regex.Replace(input, template));
+        Assert.Equal(bytes, regex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(bytes, regex.Replace(input, Encoding.UTF8.GetBytes(template)));
         var output = new byte[bytes.Length];
-        Assert.Equal(OperationStatus.Done, regex.TryReplace(input, template, output, out var written));
+        Assert.Equal(OperationStatus.Done, regex.TryReplace(input, Encoding.UTF8.GetBytes(template), output, out var written));
         Assert.Equal(bytes.Length, written); Assert.Equal(bytes, output);
     }
 

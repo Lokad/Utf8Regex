@@ -223,7 +223,7 @@ public sealed class Utf8WindowByteBoundsTests
                 count++;
             }
             Assert.Equal(2, count);
-            Assert.Equal("!X!X!", Encoding.UTF8.GetString(regex.Replace(input, "X")));
+            Assert.Equal("!X!X!", Encoding.UTF8.GetString(regex.Replace(input, "X"u8)));
             var splits = new List<string>();
             foreach (var split in regex.EnumerateSplits(input)) splits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
             Assert.Equal(new[] { "!", "!", "!" }, splits);

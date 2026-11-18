@@ -69,15 +69,15 @@ public class Utf8CoreNoMatchOutputBenchmarks
     [Benchmark]
     public byte[] FiniteBytesWithToken() => _finite.Replace(_input, "tiger"u8, _cancellation.Token);
     [Benchmark]
-    public int FiniteDestination() => _finite.TryReplace(_input, "tiger", _destination, out var written)
+    public int FiniteDestination() => _finite.TryReplace(_input, "tiger"u8, _destination, out var written)
         == OperationStatus.Done ? written : throw new InvalidOperationException("Destination too small.");
     [Benchmark]
-    public byte[] NativeGroupedBytes() => _nativeGrouped.Replace(_input, "$1-$2");
+    public byte[] NativeGroupedBytes() => _nativeGrouped.Replace(_input, "$1-$2"u8);
     [Benchmark]
-    public int NativeGroupedDestination() => _nativeGrouped.TryReplace(_input, "$1-$2", _destination, out var written)
+    public int NativeGroupedDestination() => _nativeGrouped.TryReplace(_input, "$1-$2"u8, _destination, out var written)
         == OperationStatus.Done ? written : throw new InvalidOperationException("Destination too small.");
     [Benchmark]
-    public byte[] MatchedNativeGroupedBytes() => _nativeGrouped.Replace("cat"u8, "$1-$2");
+    public byte[] MatchedNativeGroupedBytes() => _nativeGrouped.Replace("cat"u8, "$1-$2"u8);
     [Benchmark]
     public byte[] NativeBytes() => _native.Replace(_input, "tiger"u8);
     [Benchmark]

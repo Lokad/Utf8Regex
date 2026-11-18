@@ -334,8 +334,8 @@ public sealed class Utf8CoreResultPolicyTests
         Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, overflow.TryChargeResultBytes(1));
         Assert.Equal(ulong.MaxValue, overflow.ResultBytes);
         Assert.Equal(Utf8ExecutionLimitKind.ResultBytes, overflow.TryChargeResultBytes(0));
-        AssertResultFailure(() => Encoding.UTF8.GetString(Create("ab", 1, work: 100000).Replace("ab"u8, "Z")), 1);
-        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => Encoding.UTF8.GetString(Create("ab", 100000, work: 1).Replace("ab"u8, "Z")));
+        AssertResultFailure(() => Encoding.UTF8.GetString(Create("ab", 1, work: 100000).Replace("ab"u8, "Z"u8)), 1);
+        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => Encoding.UTF8.GetString(Create("ab", 100000, work: 1).Replace("ab"u8, "Z"u8)));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
     }
 
@@ -355,7 +355,7 @@ public sealed class Utf8CoreResultPolicyTests
         var canceled = Assert.Throws<OperationCanceledException>(() =>
         {
             using var already = new CancellationTokenSource(); already.Cancel();
-            Encoding.UTF8.GetString(Create("ab", 1).Replace("ab"u8, "Z", already.Token));
+            Encoding.UTF8.GetString(Create("ab", 1).Replace("ab"u8, "Z"u8, already.Token));
         });
         Assert.True(canceled.CancellationToken.IsCancellationRequested);
     }
@@ -379,10 +379,10 @@ public sealed class Utf8CoreResultPolicyTests
         var input = "é😀ab"u8.ToArray();
         var regex = Create("ab", 1000000);
         var context = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-        AssertResultFailure(() => Encoding.UTF8.GetString(Create("ab", 1).Replace(input, "Z")), 1);
+        AssertResultFailure(() => Encoding.UTF8.GetString(Create("ab", 1).Replace(input, "Z"u8)), 1);
         Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(context.GetValueMemory().Span));
         var destination = new byte[] { 0x7f };
-        Assert.Equal(OperationStatus.DestinationTooSmall, regex.TryReplace(input, "longer", destination, out var written));
+        Assert.Equal(OperationStatus.DestinationTooSmall, regex.TryReplace(input, "longer"u8, destination, out var written));
         Assert.Equal(0, written);
         Assert.Equal(new byte[] { 0x7f }, destination);
         Assert.Equal(5, (int)Utf8ResourceLimitKind.ExecutionResultBytes);

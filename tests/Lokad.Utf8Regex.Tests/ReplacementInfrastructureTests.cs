@@ -15,21 +15,21 @@ public sealed class ReplacementInfrastructureTests
         var regex = new Utf8Regex("foo");
         var tooSmall = Enumerable.Repeat((byte)0xCC, 7).ToArray();
 
-        var status = regex.TryReplace("foofoo"u8, "long", tooSmall, out var bytesWritten);
+        var status = regex.TryReplace("foofoo"u8, "long"u8, tooSmall, out var bytesWritten);
 
         Assert.Equal(OperationStatus.DestinationTooSmall, status);
         Assert.Equal(0, bytesWritten);
         Assert.All(tooSmall, static value => Assert.Equal(0xCC, value));
 
         Span<byte> exact = stackalloc byte[8];
-        status = regex.TryReplace("foofoo"u8, "long", exact, out bytesWritten);
+        status = regex.TryReplace("foofoo"u8, "long"u8, exact, out bytesWritten);
         Assert.Equal(OperationStatus.Done, status);
         Assert.Equal(8, bytesWritten);
         Assert.True(exact.SequenceEqual("longlong"u8));
 
         Span<byte> oversized = stackalloc byte[12];
         oversized.Fill(0xCC);
-        status = regex.TryReplace("foofoo"u8, "x", oversized, out bytesWritten);
+        status = regex.TryReplace("foofoo"u8, "x"u8, oversized, out bytesWritten);
         Assert.Equal(OperationStatus.Done, status);
         Assert.Equal(2, bytesWritten);
         Assert.True(oversized[..2].SequenceEqual("xx"u8));
@@ -42,13 +42,13 @@ public sealed class ReplacementInfrastructureTests
         var regex = new Utf8Regex("foo");
         var input = System.Text.Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo-", 128)));
         var destination = new byte[input.Length];
-        _ = regex.TryReplace(input, "bar", destination, out _);
+        _ = regex.TryReplace(input, "bar"u8, destination, out _);
 
         var allSucceeded = true;
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < 100; i++)
         {
-            var status = regex.TryReplace(input, "bar", destination, out var written);
+            var status = regex.TryReplace(input, "bar"u8, destination, out var written);
             allSucceeded &= status == OperationStatus.Done && written == input.Length;
         }
 
@@ -61,7 +61,7 @@ public sealed class ReplacementInfrastructureTests
     public void RangeLedgerReturnsItsBufferWhenSizingThrowsAfterGrowth()
     {
         Assert.Throws<InvalidOperationException>(GrowLedgerAndThrow);
-        var followup = new Utf8Regex("a").Replace("aaaa"u8, "b");
+        var followup = new Utf8Regex("a").Replace("aaaa"u8, "b"u8);
         Assert.True(followup.AsSpan().SequenceEqual("bbbb"u8));
     }
 
@@ -78,7 +78,7 @@ public sealed class ReplacementInfrastructureTests
         var regex = new Utf8Regex("foo");
         for (var i = 0; i < 100; i++)
         {
-            _ = regex.Replace("foo"u8, $"replacement-{i}");
+            _ = regex.Replace("foo"u8, System.Text.Encoding.UTF8.GetBytes($"replacement-{i}-$&"));
         }
 
         Assert.InRange(regex.Inspection.DebugReplacementCacheEntryCount, 1, Utf8ReplacementPlanCache.Capacity);

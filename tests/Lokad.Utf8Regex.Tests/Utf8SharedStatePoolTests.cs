@@ -303,11 +303,11 @@ public sealed class Utf8SharedStatePoolTests
                     var replacementRegex = new Utf8Regex("foo");
                     var replacementInput = System.Text.Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo-", 128)));
                     var replacementDestination = new byte[replacementInput.Length];
-                    _ = replacementRegex.TryReplace(replacementInput, "bar", replacementDestination, out _);
+                    _ = replacementRegex.TryReplace(replacementInput, "bar"u8, replacementDestination, out _);
                     var replacementBefore = GC.GetAllocatedBytesForCurrentThread();
                     for (var index = 0; index < 100; index++)
                         Assert.Equal(System.Buffers.OperationStatus.Done,
-                            replacementRegex.TryReplace(replacementInput, "bar", replacementDestination, out _));
+                            replacementRegex.TryReplace(replacementInput, "bar"u8, replacementDestination, out _));
                     Assert.True(GC.GetAllocatedBytesForCurrentThread() - replacementBefore > 128 * 100);
                 }
                 catch (Exception error) { failure = error; }

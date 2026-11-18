@@ -11,6 +11,7 @@ internal sealed class Utf8Pcre2BenchmarkContext
         BenchmarkCase = benchmarkCase;
         InputString = benchmarkCase.Input;
         InputBytes = Encoding.UTF8.GetBytes(benchmarkCase.Input);
+        ReplacementUtf8 = Encoding.UTF8.GetBytes(benchmarkCase.Replacement);
         Utf8Pcre2Regex = new Utf8Pcre2Regex(            benchmarkCase.Pattern, options:             Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options), compileSettings:             benchmarkCase.CompileSettings, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
@@ -40,4 +41,5 @@ internal sealed class Utf8Pcre2BenchmarkContext
     public Regex? Regex { get; }
 
     public string Replacement => BenchmarkCase.Replacement;
+    public byte[] ReplacementUtf8 { get; }
 }

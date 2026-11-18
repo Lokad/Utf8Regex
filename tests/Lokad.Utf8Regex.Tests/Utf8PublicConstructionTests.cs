@@ -83,7 +83,7 @@ public sealed class Utf8PublicConstructionTests
         Assert.True(match.Success);
         Assert.Equal((1, 8), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         // First template use happens after the construction authority has ended.
-        Assert.Equal("x😀y"u8.ToArray(), regex.Replace("x😀😀y"u8, "${x}"));
+        Assert.Equal("x😀y"u8.ToArray(), regex.Replace("x😀😀y"u8, "${x}"u8));
 
         using var invocationCancellation = new CancellationTokenSource();
         invocationCancellation.Cancel();

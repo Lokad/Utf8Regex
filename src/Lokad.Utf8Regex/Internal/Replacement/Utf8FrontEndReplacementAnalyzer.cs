@@ -1,26 +1,9 @@
-using Lokad.Utf8Regex.Internal.FrontEnd;
-
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal static class Utf8FrontEndReplacementAnalyzer
 {
-    public static Utf8AnalyzedReplacement Analyze(string replacement)
-    {
-        return Analyze(replacement, [], []);
-    }
-
-    public static Utf8AnalyzedReplacement Analyze(
-        string replacement,
-        ReadOnlySpan<int> validGroupNumbers,
-        ReadOnlySpan<string> validGroupNames)
-        => Analyze(replacement, validGroupNumbers, validGroupNames, false);
-
-    internal static Utf8AnalyzedReplacement Analyze(string replacement, ReadOnlySpan<int> validGroupNumbers,
-        ReadOnlySpan<string> validGroupNames, bool ecma)
-        => Analyze(new Utf8ConstructionPattern(replacement), validGroupNumbers, validGroupNames, ecma);
-
-    internal static Utf8AnalyzedReplacement Analyze(Utf8ConstructionPattern replacement, ReadOnlySpan<int> validGroupNumbers,
-        ReadOnlySpan<string> validGroupNames, bool ecma)
+    internal static Utf8AnalyzedReplacement Analyze(ReadOnlySpan<byte> replacement, ReadOnlySpan<int> validGroupNumbers = default,
+        ReadOnlySpan<string> validGroupNames = default, bool ecma = false)
     {
         using var owner = Utf8ConstructionScope.Enter();
         using var storage = Utf8ConstructionSession.Create(owner.Budget);

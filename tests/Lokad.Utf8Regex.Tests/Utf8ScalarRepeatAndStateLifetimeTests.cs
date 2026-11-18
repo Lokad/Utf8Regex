@@ -76,7 +76,7 @@ public sealed class Utf8ScalarRepeatAndStateLifetimeTests
         foreach (var text in new[] { "abcacbx", "abcacbx\n", "abcacbx\n\n", "abcacbx\nrest", "\nabcacbx\n", "\r\nabcacbx\n" })
         {
             var input = Encoding.ASCII.GetBytes(text);
-            Assert.Equal(Encoding.ASCII.GetBytes(oracle.Replace(text, "Q")), regex.Replace(input, "Q"));
+            Assert.Equal(Encoding.ASCII.GetBytes(oracle.Replace(text, "Q")), regex.Replace(input, "Q"u8));
             var expected = oracle.EnumerateMatches(text);
             var actual = regex.EnumerateMatches(input);
             while (expected.MoveNext())

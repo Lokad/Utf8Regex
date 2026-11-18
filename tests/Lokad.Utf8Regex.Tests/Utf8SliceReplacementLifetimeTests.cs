@@ -53,7 +53,7 @@ public sealed class Utf8SliceReplacementLifetimeTests
                     var destination = new byte[expectedBytes.Length - 1];
                     Array.Fill(destination, (byte)0xa5);
                     Assert.Equal(OperationStatus.DestinationTooSmall,
-                        regex.TryReplace(input, replacement, destination, out var written, source.Token));
+                        regex.TryReplace(input, Encoding.UTF8.GetBytes(replacement), destination, out var written, source.Token));
                     Assert.Equal(0, written);
                     Assert.All(destination, b => Assert.Equal((byte)0xa5, b));
                 }
@@ -174,7 +174,7 @@ public sealed class Utf8SliceReplacementLifetimeTests
         switch (operation)
         {
             case "bytes-string":
-                return Encoding.UTF8.GetString(token.HasValue ? regex.Replace(input, replacement, token.Value) : regex.Replace(input, replacement));
+                return Encoding.UTF8.GetString(token.HasValue ? regex.Replace(input, Encoding.UTF8.GetBytes(replacement), token.Value) : regex.Replace(input, Encoding.UTF8.GetBytes(replacement)));
             case "bytes-pattern":
                 var patternBytes = Encoding.UTF8.GetBytes(replacement);
                 return Encoding.UTF8.GetString(token.HasValue ? regex.Replace(input, patternBytes, token.Value) : regex.Replace(input, patternBytes));
@@ -185,8 +185,8 @@ public sealed class Utf8SliceReplacementLifetimeTests
                 if (operation == "destination-string")
                 {
                     status = token.HasValue
-                        ? regex.TryReplace(input, replacement, destination, out written, token.Value)
-                        : regex.TryReplace(input, replacement, destination, out written);
+                        ? regex.TryReplace(input, Encoding.UTF8.GetBytes(replacement), destination, out written, token.Value)
+                        : regex.TryReplace(input, Encoding.UTF8.GetBytes(replacement), destination, out written);
                 }
                 else
                 {

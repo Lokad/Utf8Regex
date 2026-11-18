@@ -88,7 +88,7 @@ public sealed class Utf8FoldedPunctuationSearchTests
                     Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
                     Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
                     Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
-                    Assert.Equal(reference.Replace(text, "X"), Encoding.UTF8.GetString(regex.Replace(input, "X")));
+                    Assert.Equal(reference.Replace(text, "X"), Encoding.UTF8.GetString(regex.Replace(input, "X"u8)));
         }
     }
 

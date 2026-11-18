@@ -76,7 +76,7 @@ public sealed class Utf8ParseTreeRetentionTests
             var hit = Utf8MatchSequence.First(regex.CreateMatchCursor("İ😀"u8.ToArray()));
             Assert.Equal((0, 6), (hit.Value.StartOffsetInBytes, (hit.Value.EndOffsetInBytes - hit.Value.StartOffsetInBytes)));
             Assert.Equal("İ😀", System.Text.Encoding.UTF8.GetString(hit.GetGroupMemory(regex.GroupNumberFromUtf8Name("n"u8)).Span));
-            Assert.Equal("<İ😀>", Encoding.UTF8.GetString(regex.Replace("İ😀"u8, "<${n}>")));
+            Assert.Equal("<İ😀>", Encoding.UTF8.GetString(regex.Replace("İ😀"u8, "<${n}>"u8)));
             Assert.Same(catalog, regex.Inspection.PreparedRegex.ScalarProgram?.CaptureCatalog);
             Assert.DoesNotContain(InspectLibraryGraph(regex), static value => value is Utf8OwnedRegexTree or Utf8TreeNode);
         }

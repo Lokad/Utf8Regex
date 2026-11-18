@@ -1271,7 +1271,7 @@ var rangeResult61356 = enumerator.Current;
                 Utf8Pcre2BenchmarkOperation.IsMatch => () => context.Utf8Regex.IsMatch(context.InputBytes) ? 1 : 0,
                 Utf8Pcre2BenchmarkOperation.Count => () => context.Utf8Regex.Count(context.InputBytes),
                 Utf8Pcre2BenchmarkOperation.EnumerateMatches => () => ExecuteUtf8Pcre2Utf8EnumeratorRangeSink(context),
-                Utf8Pcre2BenchmarkOperation.Replace => () => context.Utf8Regex.Replace(context.InputBytes, context.Replacement).Length,
+                Utf8Pcre2BenchmarkOperation.Replace => () => context.Utf8Regex.Replace(context.InputBytes, context.ReplacementUtf8).Length,
                 _ => throw new ArgumentOutOfRangeException(nameof(operation)),
             });
         }

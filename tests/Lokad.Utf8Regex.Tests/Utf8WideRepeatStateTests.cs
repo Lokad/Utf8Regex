@@ -74,7 +74,7 @@ public sealed class Utf8WideRepeatStateTests
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("😀a"u8.ToArray()));
         Assert.Equal((0, 5), (retained.Value.StartOffsetInBytes, (retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes)));
         Assert.Equal((options & RegexOptions.RightToLeft) == 0 ? "a" : "😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
-        Assert.Equal("XX", Encoding.UTF8.GetString(regex.Replace("😀a"u8, "X")));
+        Assert.Equal("XX", Encoding.UTF8.GetString(regex.Replace("😀a"u8, "X"u8)));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         Assert.Throws<OperationCanceledException>(() => regex.Count("😀a"u8, cancellation.Token));

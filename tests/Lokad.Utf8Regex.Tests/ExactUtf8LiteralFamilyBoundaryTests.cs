@@ -248,7 +248,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             var match = regex.Match("𐐀 x𐐀x"u8);
             Assert.True(match.Success);
             Assert.Equal((byteIndex, 4), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
-            Assert.Equal(byteIndex == 0 ? "<> x𐐀x" : "𐐀 x<>x", Encoding.UTF8.GetString(regex.Replace("𐐀 x𐐀x"u8, "<>")));
+            Assert.Equal(byteIndex == 0 ? "<> x𐐀x" : "𐐀 x<>x", Encoding.UTF8.GetString(regex.Replace("𐐀 x𐐀x"u8, "<>"u8)));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }
@@ -327,6 +327,6 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         Assert.Equal(expectedSplits, actualSplits);
         Assert.Equal(
             subject.Restore(expected.Replace(subject.Projected, "<$&>")),
-            Encoding.UTF8.GetString(actual.Replace(bytes, "<$&>")));
+            Encoding.UTF8.GetString(actual.Replace(bytes, "<$&>"u8)));
     }
 }

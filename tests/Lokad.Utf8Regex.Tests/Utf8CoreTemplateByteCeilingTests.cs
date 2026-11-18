@@ -10,11 +10,9 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CoreTemplateByteCeilingTests
 {
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void EmptyInputCannotPrepareAnOversizedTemplate(bool bytes, bool liveToken)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EmptyInputCannotPrepareAnOversizedTemplate(bool liveToken)
     {
         var regex = Create("a", 4096);
         var text = new string('x', 65536);
@@ -30,10 +28,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         {
             var spent = parent.Budget.WorkSteps;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            {
-                if (bytes) _ = regex.Replace([], template, liveToken ? token.Token : default);
-                else _ = regex.Replace([], text, liveToken ? token.Token : default);
-            });
+                regex.Replace([], template, liveToken ? token.Token : default));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.True(failure.Requested > failure.Limit);
             Assert.Equal(0, Cache(regex).Count);
@@ -44,20 +39,21 @@ public sealed class Utf8CoreTemplateByteCeilingTests
             Assert.True(parent.Budget.WorkSteps > spent);
             Assert.Equal(17, held.Length);
         }
-        Assert.Empty(regex.Replace([], ""));
+        Assert.Empty(regex.Replace([], ""u8));
         Assert.Equal(1, Cache(regex).Count);
     }
 
     [Fact]
-    public void WarmUtf8LookupStillAdmitsItsDecodedKey()
+    public void WarmLookupBorrowsItsBytesWhileAMissRequiresAdmission()
     {
         var regex = Create("(?<x>a)", 1 << 20);
         var text = new string('x', 512) + "${x}";
         var bytes = Encoding.UTF8.GetBytes(text);
-        Assert.Empty(regex.Replace([], text));
+        Assert.Empty(regex.Replace([], bytes));
         using var parent = Utf8ConstructionScope.RestrictAdditionalBytes(1);
         var maximum = parent.Budget.MaximumBytes;
-        Assert.Empty(regex.Replace([], text)); // An existing text key needs no copy.
+        Assert.Empty(regex.Replace([], bytes));
+        bytes[0] = (byte)'y';
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace([], bytes));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(0ul, parent.Budget.ReservedBytes);
@@ -70,15 +66,15 @@ public sealed class Utf8CoreTemplateByteCeilingTests
     {
         var regex = Create("(?<x>😀|a)", 1 << 20);
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("😀a"u8.ToArray()));
-        Assert.Equal("<😀><a>"u8.ToArray(), regex.Replace("😀a"u8, "<${x}>"));
+        Assert.Equal("<😀><a>"u8.ToArray(), regex.Replace("😀a"u8, "<${x}>"u8));
         Assert.Equal("<😀><a>"u8.ToArray(), regex.Replace("😀a"u8, "<${x}>"u8));
         var count = Cache(regex).Count;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            regex.Replace([], new string('x', 1 << 20)));
+            regex.Replace([], Encoding.UTF8.GetBytes(new string('x', 1 << 20))));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(count, Cache(regex).Count);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
-        Assert.Equal("<😀><a>", Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<${x}>")));
+        Assert.Equal("<😀><a>", Encoding.UTF8.GetString(regex.Replace("😀a"u8, "<${x}>"u8)));
     }
 
     [Theory]
@@ -201,7 +197,7 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         var failure = Record.Exception(() =>
         {
             if (bytes) regex.Replace("😀a"u8, "<${x}>"u8, caller.Token);
-            else regex.Replace("😀a"u8, "<${x}>", caller.Token);
+            else regex.Replace("😀a"u8, "<${x}>"u8, caller.Token);
         });
         if (authority < 2)
             Assert.Equal(authority == 0 ? caller.Token : parentToken.Token,

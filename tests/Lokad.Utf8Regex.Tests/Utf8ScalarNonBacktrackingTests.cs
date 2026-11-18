@@ -81,7 +81,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         var ranges = new List<(int, int)>();
         foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(oracle.Matches(text).Select(match => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(match.Index, match.Length)))), ranges);
-        Assert.Equal(oracle.Replace(text, "<$0:$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$0:$1>")));
+        Assert.Equal(oracle.Replace(text, "<$0:$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$0:$1>"u8)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -116,7 +116,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.Equal(1, match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.Equal((5, 4), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
-        Assert.Equal("aQb", Encoding.UTF8.GetString(regex.Replace(input, "Q")));
+        Assert.Equal("aQb", Encoding.UTF8.GetString(regex.Replace(input, "Q"u8)));
         using var cursor = regex.CreateMatchCursor(input, 5);
         Assert.True(cursor.MoveNext(out var fromOffset));
         Assert.Equal((5, 9), (fromOffset.Value.StartOffsetInBytes, fromOffset.Value.EndOffsetInBytes));

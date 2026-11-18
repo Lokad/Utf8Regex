@@ -338,7 +338,7 @@ public sealed class Utf8SliceCategorySetTests
         Assert.Equal(expected, oracle.Replace(inputText, "<$&>"));
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$&>"u8)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 

@@ -257,8 +257,8 @@ public sealed class Utf8SmallFamilyAdmissionTests
                 if (pattern == "tempus|magna|semper" && options is RegexOptions.None or RegexOptions.Compiled)
                     Assert.True(regex.TryGetSmallAsciiLiteralFamilySearch(input, out _));
                 var expected = reference.Replace(text, "[😀]");
-                Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, "[😀]"));
-                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "[😀]")));
+                Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, "[😀]"u8));
+                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "[😀]"u8)));
             }
         }
     }
@@ -275,8 +275,8 @@ public sealed class Utf8SmallFamilyAdmissionTests
             var regex = new Utf8Regex(pattern, options: flags);
             Assert.False(regex.TryGetSmallAsciiLiteralFamilySearch(input, out _));
             var expected = new Regex(pattern, flags).Replace(text, "[x]");
-            Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, "[x]"));
-            Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "[x]")));
+            Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, "[x]"u8));
+            Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "[x]"u8)));
         }
     }
 
@@ -289,10 +289,10 @@ public sealed class Utf8SmallFamilyAdmissionTests
         var interrupted = new InvalidOperationException("Search checkpoint reached.");
         var observed = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ => { observed = true; throw interrupted; });
-        try { Assert.Same(interrupted, Assert.Throws<InvalidOperationException>(() => regex.Replace(input, "x"))); }
+        try { Assert.Same(interrupted, Assert.Throws<InvalidOperationException>(() => regex.Replace(input, "x"u8))); }
         finally { session.Complete(); }
         Assert.True(observed);
-        Assert.Equal("x x x", Encoding.UTF8.GetString(regex.Replace("tempus magna semper"u8, "x")));
+        Assert.Equal("x x x", Encoding.UTF8.GetString(regex.Replace("tempus magna semper"u8, "x"u8)));
     }
 
     private sealed class Box(int value) { internal readonly int Value = value; }

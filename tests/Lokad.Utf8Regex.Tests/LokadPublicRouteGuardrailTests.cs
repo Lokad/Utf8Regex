@@ -67,7 +67,7 @@ public sealed class LokadPublicRouteGuardrailTests
         var count = 0;
         while (enumerator.MoveNext()) { Assert.Equal(11, (enumerator.Current.EndOffsetInBytes - enumerator.Current.StartOffsetInBytes)); count++; }
         Assert.Equal(2, count);
-        Assert.Equal("!X!X!", Encoding.UTF8.GetString(regex.Replace(input, "X")));
+        Assert.Equal("!X!X!", Encoding.UTF8.GetString(regex.Replace(input, "X"u8)));
         var splits = new List<string>();
         foreach (var split in regex.EnumerateSplits(input)) splits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         Assert.Equal(new[] { "!", "!", "!" }, splits);

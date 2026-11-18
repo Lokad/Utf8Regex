@@ -1188,32 +1188,6 @@ public sealed partial class Utf8Regex : IDisposable
         }
     }
 
-    /// <summary>Replaces all matches and returns newly allocated UTF-8 bytes, observing cancellation during validation, matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="replacement">The replacement text.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public byte[] Replace(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        using var programUse = _programMemory?.Enter();
-        try
-        {
-            return ReplaceStringCore(input, replacement, cancellationToken);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
-    }
-
-    private byte[] ReplaceStringCore(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken)
-    {
-        var deadline = CreateExecutionBudget();
-        var analyzed = GetParsedReplacement(replacement, new(deadline, cancellationToken));
-        return ReplaceCore(input, analyzed, cancellationToken, deadline);
-    }
-
     /// <summary>Replaces all matches using a .NET replacement pattern encoded as well-formed UTF-8, observing cancellation during validation, matching and required result processing.</summary>
     /// <param name="input">The well-formed UTF-8 input to match against.</param>
     /// <param name="replacementPatternUtf8">The replacement pattern encoded as well-formed UTF-8.</param>
@@ -1225,7 +1199,7 @@ public sealed partial class Utf8Regex : IDisposable
         using var programUse = _programMemory?.Enter();
         try
         {
-            return ReplaceUtf8Core(input, replacementPatternUtf8, cancellationToken);
+            return ReplaceUtf8(input, replacementPatternUtf8, cancellationToken);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -1233,12 +1207,11 @@ public sealed partial class Utf8Regex : IDisposable
         }
     }
 
-    private byte[] ReplaceUtf8Core(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, CancellationToken cancellationToken)
+    private byte[] ReplaceUtf8(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, CancellationToken cancellationToken)
     {
         var deadline = CreateExecutionBudget();
         var control = new ReplacementPreparationControl(deadline, cancellationToken);
         ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
-
 
         if ((_preparedRegex.ExecutionKind is NativeExecutionKind.FallbackRegex ? _ownedSliceProgram : GetOwnedSliceProgram(input, cancellationToken) ??
             (input.IsEmpty || _ownedSliceProgram is { CanMatchEmpty: true } &&
@@ -1247,7 +1220,6 @@ public sealed partial class Utf8Regex : IDisposable
             return OwnedSliceReplace(input, ownedProgram,
                 GetParsedReplacement(replacementPatternUtf8, control), Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
         }
-
 
         var validation = CanUseAsciiDirectInput(input)
             ? default
@@ -1282,21 +1254,12 @@ public sealed partial class Utf8Regex : IDisposable
         return ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline);
     }
 
-    private OperationStatus TryReplaceStringCore(
-        ReadOnlySpan<byte> input, string replacement, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken)
-    {
-        var deadline = CreateExecutionBudget();
-        var analyzed = GetParsedReplacement(replacement, new(deadline, cancellationToken));
-        return TryReplaceCore(input, analyzed, destination, out bytesWritten, cancellationToken, deadline);
-    }
-
     private OperationStatus TryReplaceUtf8Core(
         ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken)
     {
         var deadline = CreateExecutionBudget();
         var control = new ReplacementPreparationControl(deadline, cancellationToken);
         ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
-
 
         if (!input.Overlaps(destination) &&
             _preparedRegex.ExecutionKind is not (NativeExecutionKind.FallbackRegex) &&
@@ -1315,27 +1278,6 @@ public sealed partial class Utf8Regex : IDisposable
 
         var replacementPattern = GetParsedReplacement(replacementPatternUtf8, control);
         return TryReplaceCore(input, replacementPattern, destination, out bytesWritten, cancellationToken, deadline);
-    }
-
-    /// <summary>Attempts to write a replacement result into a caller-provided UTF-8 destination, observing cancellation during validation, matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="replacement">The replacement text.</param>
-    /// <param name="destination">The destination buffer for the UTF-8 replacement result.</param>
-    /// <param name="bytesWritten">When this method returns, the number of bytes written to the destination.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public OperationStatus TryReplace(ReadOnlySpan<byte> input, string replacement, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        using var programUse = _programMemory?.Enter();
-        try
-        {
-            return TryReplaceStringCore(input, replacement, destination, out bytesWritten, cancellationToken);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
     }
 
     /// <summary>Attempts to apply a UTF-8-encoded replacement pattern into a caller-provided UTF-8 destination, observing cancellation during validation, matching and required result processing.</summary>

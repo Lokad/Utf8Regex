@@ -27,7 +27,7 @@ public class Utf8Pcre2ReplaceBenchmarks
     [Benchmark]
     public byte[] Utf8Regex()
     {
-        return _context.Utf8Regex!.Replace(_context.InputBytes, _context.Replacement);
+        return _context.Utf8Regex!.Replace(_context.InputBytes, _context.ReplacementUtf8);
     }
 
     [Benchmark]

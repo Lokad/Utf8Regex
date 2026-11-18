@@ -127,7 +127,7 @@ public sealed class Utf8ResourcePolicyTests
         Assert.Equal(expectedMatch.StartOffsetInBytes, actualMatch.StartOffsetInBytes);
         Assert.Equal((expectedMatch.EndOffsetInBytes - expectedMatch.StartOffsetInBytes), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         Assert.Equal(baseline.Count(input), explicitUnlimited.Count(input));
-        Assert.Equal(baseline.Replace(input, "Z"), explicitUnlimited.Replace(input, "Z"));
+        Assert.Equal(baseline.Replace(input, "Z"u8), explicitUnlimited.Replace(input, "Z"u8));
 
         var expectedMatches = 0;
         foreach (var item in baseline.EnumerateMatches(input))

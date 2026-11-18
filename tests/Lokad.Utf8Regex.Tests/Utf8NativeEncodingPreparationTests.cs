@@ -242,7 +242,7 @@ public sealed class Utf8NativeEncodingPreparationTests
             Assert.Equal(match.StartOffsetInBytes, Utf8MatchSequence.First(regex.CreateMatchCursor(bytes)).Value.StartOffsetInBytes);
             if (row.Pattern == "(é😀)") Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(bytes)).GetGroupMemory(1).Span));
             var count = 0; foreach (var item in regex.EnumerateMatches(bytes)) { Assert.True((item.EndOffsetInBytes - item.StartOffsetInBytes) > 0); count++; }
-            Assert.Equal(row.Count, count); Assert.Equal(row.Replaced, Encoding.UTF8.GetString(regex.Replace(bytes, "X")));
+            Assert.Equal(row.Count, count); Assert.Equal(row.Replaced, Encoding.UTF8.GetString(regex.Replace(bytes, "X"u8)));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }

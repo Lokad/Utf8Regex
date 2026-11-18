@@ -69,6 +69,7 @@ internal sealed class LokadPublicBenchmarkContext
     {
         CaseId = caseId;
         (InputString, Replacement, Pattern, Options) = Resolve(caseId);
+        _replacementUtf8 = Encoding.UTF8.GetBytes(Replacement);
         Operation = GetOperation(caseId);
         InputBytes = Encoding.UTF8.GetBytes(InputString);
         Utf8Regex = new Utf8Regex(Pattern, options: Options);
@@ -81,6 +82,7 @@ internal sealed class LokadPublicBenchmarkContext
     private readonly bool HasCompiledLiteralFamilyRawMatch;
     private readonly int _compiledLiteralFamilyRawIndex;
     private readonly int _compiledLiteralFamilyRawLength;
+    private readonly byte[] _replacementUtf8;
 
     public string CaseId { get; }
 
@@ -235,7 +237,7 @@ internal sealed class LokadPublicBenchmarkContext
             LokadPublicBenchmarkOperation.Count => regex.Count(InputBytes),
             LokadPublicBenchmarkOperation.IsMatch => regex.IsMatch(InputBytes) ? 1 : 0,
             LokadPublicBenchmarkOperation.Match => MeasureMatch(regex.Match(InputBytes)),
-            LokadPublicBenchmarkOperation.Replace => regex.Replace(InputBytes, Replacement).Length,
+            LokadPublicBenchmarkOperation.Replace => regex.Replace(InputBytes, _replacementUtf8).Length,
             LokadPublicBenchmarkOperation.Split => CountUtf8Splits(regex, InputBytes),
             _ => throw new ArgumentOutOfRangeException(),
         };

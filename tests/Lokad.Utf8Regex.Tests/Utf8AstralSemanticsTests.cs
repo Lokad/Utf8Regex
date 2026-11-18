@@ -143,11 +143,11 @@ public sealed class Utf8AstralSemanticsTests
             {
                 var replacement = ReplaceExpected(input, expected, reverse, template == "x" ? _ => "x" :
                     template == "$&" ? range => Value(input, range) : range => "<" + Value(input, range) + ">");
-                Assert.Equal(replacement, Encoding.UTF8.GetString(regex.Replace(input, template, token)));
+                Assert.Equal(replacement, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template), token)));
                 var bytes = Encoding.UTF8.GetBytes(replacement);
-                Assert.Equal(bytes, regex.Replace(input, template, token));
+                Assert.Equal(bytes, regex.Replace(input, Encoding.UTF8.GetBytes(template), token));
                 var destination = new byte[bytes.Length + 1];
-                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, template, destination, out var written, token));
+                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var written, token));
                 Assert.Equal(bytes, destination.AsSpan(0, written).ToArray());
             }
         }

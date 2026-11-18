@@ -2,10 +2,9 @@ using Lokad.Utf8Regex.Internal.Caching;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
-internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<object, Utf8AnalyzedReplacement>
+internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<byte[], Utf8AnalyzedReplacement>
 {
-    public ulong GetKeyCharge(object key) => key is byte[] bytes
-        ? Utf8ConstructionBudget.ArrayBytes<byte>(bytes.Length) : Utf8ConstructionBudget.StringBytes(((string)key).Length);
+    public ulong GetKeyCharge(byte[] key) => Utf8ConstructionBudget.ArrayBytes<byte>(key.Length);
 
     public bool TryGetValueCharge<TControl>(Utf8AnalyzedReplacement value, ulong maximum, TControl control, out ulong charge)
         where TControl : struct, IUtf8ConstructionTextControl

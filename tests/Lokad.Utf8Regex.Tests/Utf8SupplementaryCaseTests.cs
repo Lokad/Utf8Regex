@@ -57,7 +57,7 @@ public sealed class Utf8SupplementaryCaseTests
                         Assert.Equal((1, 4), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                         Assert.Equal(1, regex.Count(input, source.Token));
                 Assert.Equal(small, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray(), cancellationToken: source.Token)).GetValueMemory().Span));
-                Assert.Equal("!x!", Encoding.UTF8.GetString(regex.Replace(input, "x", source.Token)));
+                Assert.Equal("!x!", Encoding.UTF8.GetString(regex.Replace(input, "x"u8, source.Token)));
             }
             var reference = new Utf8Regex(reverse ? @"^\1(.)$" : @"^(.)\1$", options:                 options, policy: new Utf8RegexPolicy
             {

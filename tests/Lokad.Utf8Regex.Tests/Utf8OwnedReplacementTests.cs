@@ -460,11 +460,13 @@ public sealed class Utf8OwnedReplacementTests
     [MemberData(nameof(ParseCases))]
     public void OwnedReplacementParseMatchesPinnedFacts(string template, string expectedTokens, bool expectedLiteralOk, string expectedLiteral)
     {
-        var owned = Utf8ReplacementPattern.Parse(template);
+        using var owner = Utf8ConstructionScope.Enter();
+        using var storage = Utf8ConstructionSession.Create(owner.Budget);
+        var owned = Utf8ReplacementPattern.Parse(storage, Encoding.UTF8.GetBytes(template), [], false);
         Assert.Equal(expectedTokens, DumpOwnedTokens(owned.Tokens));
         var literal = owned.Tokens.All(token => token.Kind == Utf8ReplacementTokenKind.Literal);
         Assert.Equal(expectedLiteralOk, literal);
-        Assert.Equal(expectedLiteral, literal ? string.Concat(owned.Tokens.Select(token => token.Literal)) : string.Empty);
+        Assert.Equal(expectedLiteral, literal ? string.Concat(owned.Tokens.Select(token => Encoding.UTF8.GetString(token.LiteralBytes!))) : string.Empty);
     }
 
     [Theory]
@@ -473,12 +475,12 @@ public sealed class Utf8OwnedReplacementTests
     {
         var numbers = GroupNumbers[context];
         var names = GroupNames[context];
-        var owned = Utf8ReplacementPattern.Parse(template);
         using var owner = Utf8ConstructionScope.Enter();
         using var storage = Utf8ConstructionSession.Create(owner.Budget);
+        var owned = Utf8ReplacementPattern.Parse(storage, Encoding.UTF8.GetBytes(template), [], false);
         var resolved = owned.ResolveTokens(storage, numbers, names);
         Assert.Equal(expectedTokens, DumpOwnedTokens(resolved.Span));
-        var analyzed = Utf8FrontEndReplacementAnalyzer.Analyze(template, numbers, names);
+        var analyzed = Utf8FrontEndReplacementAnalyzer.Analyze(Encoding.UTF8.GetBytes(template), numbers, names);
         Assert.Equal(expectedLiteralOk, analyzed.IsLiteral);
         Assert.Equal(expectedLiteral, analyzed.IsLiteral ? Encoding.UTF8.GetString(analyzed.LiteralUtf8) : string.Empty);
     }
@@ -496,7 +498,7 @@ public sealed class Utf8OwnedReplacementTests
             }
 
             first = false;
-            builder.Append(token.Kind.ToString()).Append(':').Append(token.Literal ?? string.Empty).Append(':').Append(token.GroupNumber).Append(':').Append(token.IsBraceEnclosed ? 'b' : '-');
+            builder.Append(token.Kind.ToString()).Append(':').Append(token.LiteralBytes is { } bytes ? Encoding.UTF8.GetString(bytes) : token.Name ?? string.Empty).Append(':').Append(token.GroupNumber).Append(':').Append(token.IsBraceEnclosed ? 'b' : '-');
         }
 
         return builder.Append(']').ToString();

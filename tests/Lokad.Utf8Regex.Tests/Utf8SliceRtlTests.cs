@@ -527,7 +527,7 @@ public sealed class Utf8SliceRtlOperationTests
         Assert.Equal(expected, oracle.Replace(inputText, template));
         var regex = new Utf8Regex(pattern, options: RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, template)));
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template))));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
@@ -679,13 +679,13 @@ public sealed class Utf8SliceRtlOperationTests
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);

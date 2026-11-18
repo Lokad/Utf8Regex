@@ -1271,7 +1271,7 @@ public sealed class Utf8RegexConstructionTests
         var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
-        Assert.Equal(Regex.Replace(input, pattern, replacement), Encoding.UTF8.GetString(compiled.Replace(bytes, replacement)));
+        Assert.Equal(Regex.Replace(input, pattern, replacement), Encoding.UTF8.GetString(compiled.Replace(bytes, "amoveatur"u8)));
     }
 
     [Fact]

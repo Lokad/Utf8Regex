@@ -16,50 +16,6 @@ namespace Lokad.Utf8Regex;
 /// <summary>Replacement execution cores for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    private byte[] ReplaceCore(
-        ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
-    {
-        if (GetOwnedReplacementProgram(input, replacement, cancellationToken) is { } ownedProgram)
-        {
-            return OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
-        }
-
-        var validation = Utf8InputAnalyzer.Describe(input);
-        var budget = deadline;
-        if (TryReplaceViaNativePlan(input, validation, replacement, budget, out var nativeResult))
-        {
-            return nativeResult;
-        }
-
-        if (!TryGetNativeReplacementBytes(replacement, out var replacementBytes))
-        {
-            return OwnedSliceReplace(input, _ownedSliceProgram, replacement, Utf8SliceReplacementResultKind.Bytes,
-                default, cancellationToken, deadline).Bytes;
-        }
-
-        return ReplaceLiteralBytesCore(input, validation, replacementBytes, deadline);
-    }
-
-    private Utf8AnalyzedReplacement GetParsedReplacement(string replacement)
-    {
-        return _replacementCache.GetOrAdd(
-            replacement,
-            this,
-            static (replacementText, self) =>
-            {
-                if (self.ResourcePolicy.MaxWorkingBytes is not { } maximumBytes)
-                    return Utf8FrontEndReplacementAnalyzer.Analyze((string)replacementText, self._groupNumbers,
-                        self._groupNames, (self.Options & RegexOptions.ECMAScript) != 0);
-                // A cache miss needs numeric byte admission, but this lane has
-                // no invocation interruption to forward through a work hook.
-                using var construction = Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes);
-                var result = Utf8FrontEndReplacementAnalyzer.Analyze((string)replacementText, self._groupNumbers,
-                    self._groupNames, (self.Options & RegexOptions.ECMAScript) != 0);
-                construction.Complete();
-                return result;
-            });
-    }
-
     private static bool TryGetNativeReplacementBytes(
         Utf8AnalyzedReplacement replacement, out byte[] replacementBytes)
     {

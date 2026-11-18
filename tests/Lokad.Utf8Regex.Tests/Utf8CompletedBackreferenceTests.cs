@@ -48,7 +48,7 @@ public sealed class Utf8CompletedBackreferenceTests
         using var token = new CancellationTokenSource();
         Assert.Equal(expected.Count, regex.Count(input, token.Token));
         Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input, token.Token));
-        Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
+        Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$1>"u8)));
         var index = 0;
         foreach (var actual in regex.EnumerateMatches(input))
         {

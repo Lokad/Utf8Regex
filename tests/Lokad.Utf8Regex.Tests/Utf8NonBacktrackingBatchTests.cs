@@ -35,7 +35,7 @@ public sealed class Utf8NonBacktrackingBatchTests
             var matches = oracle.Matches(text);
             Assert.Equal(matches.Count, regex.Count(input));
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
-            Assert.Equal(oracle.Replace(text, "<$0:$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$0:$1>")));
+            Assert.Equal(oracle.Replace(text, "<$0:$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$0:$1>"u8)));
             using var cursor = regex.CreateMatchCursor(input);
             foreach (Match expected in matches)
             {
@@ -82,7 +82,7 @@ public sealed class Utf8NonBacktrackingBatchTests
             var regex = new Utf8Regex(pattern, options: options | RegexOptions.NonBacktracking);
             Assert.Equal(ordinary.Count(input), regex.Count(input));
             Assert.Equal(ordinary.IsMatch(input), regex.IsMatch(input));
-            Assert.Equal(Encoding.UTF8.GetString(ordinary.Replace(input, "<$0>")), Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+            Assert.Equal(Encoding.UTF8.GetString(ordinary.Replace(input, "<$0>"u8)), Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
             using var expected = ordinary.CreateMatchCursor(input);
             using var actual = regex.CreateMatchCursor(input);
             while (expected.MoveNext(out var wanted))
@@ -118,7 +118,7 @@ public sealed class Utf8NonBacktrackingBatchTests
             {
                 var input = Encoding.UTF8.GetBytes(text);
                 Assert.Equal(oracle.Count(text), regex.Count(input));
-                Assert.Equal(oracle.Replace(text, "<$0>"), Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
+                Assert.Equal(oracle.Replace(text, "<$0>"), Encoding.UTF8.GetString(regex.Replace(input, "<$0>"u8)));
                 var matches = oracle.Matches(text);
                 var cursor = regex.EnumerateMatches(input);
                 var alias = cursor.GetEnumerator();
@@ -214,12 +214,12 @@ public sealed class Utf8NonBacktrackingBatchTests
         foreach (var match in regex.EnumerateMatches(input, 4)) fromOffset.Add(match.StartOffsetInBytes);
         Assert.Equal(new[] { 4, 8 }, fromOffset);
         Assert.Throws<ArgumentOutOfRangeException>(() => { var cursor = regex.EnumerateMatches(input, 1); cursor.MoveNext(); });
-        Assert.Equal("Q😀Q😀Q", Encoding.UTF8.GetString(regex.Replace(input, "Q")));
+        Assert.Equal("Q😀Q😀Q", Encoding.UTF8.GetString(regex.Replace(input, "Q"u8)));
         var pieces = new List<string>();
         foreach (var piece in regex.EnumerateSplits(input)) pieces.Add(Encoding.UTF8.GetString(piece.GetValueBytes()));
         Assert.Equal(new[] { "", "😀", "😀", "" }, pieces);
         var shared = new Utf8Regex("(?<x>a(?<x>b)c)", options: options);
-        Assert.Equal("<abc>", Encoding.UTF8.GetString(shared.Replace("abc"u8, "<${x}>")));
+        Assert.Equal("<abc>", Encoding.UTF8.GetString(shared.Replace("abc"u8, "<${x}>"u8)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(shared.Inspection.PreparedRegex.ScalarProgram is not null);
     }

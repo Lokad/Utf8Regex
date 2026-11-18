@@ -18,44 +18,8 @@ internal readonly struct Utf8ReplacementInstruction
 
     public int GroupNumber { get; }
 
-    internal static Utf8ReplacementInstruction Literal(Utf8ConstructionSession storage, string literalText)
-    {
-        // Each literal fragment is an independent scalar encoding boundary.
-        // Repair unpaired template surrogates before captures can be appended.
-        storage.Budget.ChargeWork((ulong)literalText.Length);
-        var count = 0;
-        for (var offset = 0; offset < literalText.Length;)
-        {
-            if (offset != 0) storage.Budget.ChargeWork(0);
-            var length = LiteralChunkLength(literalText.AsSpan(offset));
-            count = checked(count + Encoding.UTF8.GetByteCount(literalText.AsSpan(offset, length)));
-            offset += length;
-        }
-        var bytes = storage.Allocate<byte>(count, true);
-        storage.Budget.ChargeWork((ulong)literalText.Length + (ulong)count);
-        var written = 0;
-        for (var offset = 0; offset < literalText.Length;)
-        {
-            if (offset != 0) storage.Budget.ChargeWork(0);
-            var length = LiteralChunkLength(literalText.AsSpan(offset));
-            written += Encoding.UTF8.GetBytes(literalText.AsSpan(offset, length), bytes.AsSpan(written));
-            offset += length;
-        }
-        return Literal(bytes);
-    }
-
     internal static Utf8ReplacementInstruction Literal(byte[] admittedUtf8)
         => new(Utf8ReplacementInstructionKind.Literal, admittedUtf8, -1);
-
-    private static int LiteralChunkLength(ReadOnlySpan<char> text)
-    {
-        var length = Math.Min(2048, text.Length);
-        // Keep BCL bulk encoding and its repair rules, without splitting a
-        // valid pair into two replacement characters at a checkpoint boundary.
-        if (length < text.Length && char.IsHighSurrogate(text[length - 1]) && char.IsLowSurrogate(text[length]))
-            length++;
-        return length;
-    }
 
     public static Utf8ReplacementInstruction Group(int groupNumber) =>
         new(Utf8ReplacementInstructionKind.Group, [], groupNumber);

@@ -175,7 +175,7 @@ public sealed class RightToLeftEnumerationTests
         Assert.Equal(expectedSplits, actualSplits);
         Assert.Equal(
             expected.Replace(input, "<$&>"),
-            Encoding.UTF8.GetString(actual.Replace(bytes, "<$&>")));
+            Encoding.UTF8.GetString(actual.Replace(bytes, "<$&>"u8)));
     }
 
 }

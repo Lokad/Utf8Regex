@@ -2333,12 +2333,12 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         {
             return new PythonReBenchmarkReplacementResult(
                 string.Empty,
-                regex.Replace(InputBytes, _case.Replacement),
+                regex.Replace(InputBytes, _replacementBytes),
                 replacementCount);
         }
 
         return new PythonReBenchmarkReplacementResult(
-            Encoding.UTF8.GetString(regex.Replace(InputBytes, _case.Replacement)),
+            Encoding.UTF8.GetString(regex.Replace(InputBytes, _replacementBytes)),
             null,
             replacementCount);
     }
@@ -2381,10 +2381,10 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         return IsUtf8ReplacementOperation
             ? new PythonReBenchmarkReplacementResult(
                 string.Empty,
-                regex.Replace(InputBytes, _case.Replacement),
+                regex.Replace(InputBytes, _replacementBytes),
                 null)
             : new PythonReBenchmarkReplacementResult(
-                Encoding.UTF8.GetString(regex.Replace(InputBytes, _case.Replacement)),
+                Encoding.UTF8.GetString(regex.Replace(InputBytes, _replacementBytes)),
                 null,
                 null);
     }

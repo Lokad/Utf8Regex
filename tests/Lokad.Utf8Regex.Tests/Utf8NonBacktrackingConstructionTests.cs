@@ -53,7 +53,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
                 }
             }
         }
-        Assert.Equal(Encoding.UTF8.GetString(ordinary.Replace(input, "<$0:${x}>")), Encoding.UTF8.GetString(regex.Replace(input, "<$0:${x}>")));
+        Assert.Equal(Encoding.UTF8.GetString(ordinary.Replace(input, "<$0:${x}>"u8)), Encoding.UTF8.GetString(regex.Replace(input, "<$0:${x}>"u8)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ordinary.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -77,7 +77,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         Assert.True(group.Success);
         Assert.Equal(1, Utf8MatchSequence.First(huge.CreateMatchCursor("😀"u8.ToArray())).GetCaptures(huge.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.Equal((0, 0), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
-        Assert.Equal("Q😀Q", Encoding.UTF8.GetString(huge.Replace("😀"u8, "Q")));
+        Assert.Equal("Q😀Q", Encoding.UTF8.GetString(huge.Replace("😀"u8, "Q"u8)));
         Assert.True(huge.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -162,7 +162,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
             Assert.Equal(wanted.Success ? 1 : 0, actual.GetCaptures(number).Length);
             if (found.Success) Assert.Equal(System.Text.Encoding.UTF8.GetString(expected.GetGroupMemory(number).Span), System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(number).Span));
         }
-        Assert.Equal(Encoding.UTF8.GetString(ordinary.Replace(input, "<$0:$1>")), Encoding.UTF8.GetString(regex.Replace(input, "<$0:$1>")));
+        Assert.Equal(Encoding.UTF8.GetString(ordinary.Replace(input, "<$0:$1>"u8)), Encoding.UTF8.GetString(regex.Replace(input, "<$0:$1>"u8)));
         if (!text.Any(char.IsSurrogate))
         {
             // The interpreted comparator avoids the known compiled finite-lazy
@@ -208,7 +208,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         var ranges = new List<(int, int)>();
         foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(new[] { (0, input.Length) }, ranges);
-        Assert.Equal("<" + text + ">", Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
+        Assert.Equal("<" + text + ">", Encoding.UTF8.GetString(regex.Replace(input, "<$&>"u8)));
         Assert.Equal(Encoding.UTF8.GetBytes("<" + text + ">"), regex.Replace(input, "<$&>"u8));
         var splits = new List<(int, int)>();
         foreach (var split in regex.EnumerateSplits(input)) splits.Add((split.IndexInBytes, split.LengthInBytes));

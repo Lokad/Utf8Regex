@@ -33,9 +33,8 @@ public sealed class Utf8NativeTemplatePreparationTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var regex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(expectedBytes, regex.Replace(input, "[$1]"));
             Assert.Equal(expectedBytes, regex.Replace(input, "[$1]"u8));
-            Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "[$1]")));
+            Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "[$1]"u8)));
             var destination = new byte[expectedBytes.Length];
             Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "[$1]"u8, destination, out var written));
             Assert.Equal(destination.Length, written);
@@ -49,9 +48,7 @@ public sealed class Utf8NativeTemplatePreparationTests
     {
         var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant);
         var subject = Encoding.UTF8.GetBytes(input); var native = Encoding.UTF8.GetBytes(template);
-        var expected = regex.Replace(subject, template);
-        Assert.Equal(expected, regex.Replace(subject, native));
-        Assert.Equal(Encoding.UTF8.GetString(expected), Encoding.UTF8.GetString(regex.Replace(subject, template)));
+        var expected = regex.Replace(subject, native);
         var destination = new byte[expected.Length + 4]; destination.AsSpan().Fill(0xcc);
         Assert.Equal(OperationStatus.Done, regex.TryReplace(subject, native, destination, out var written));
         Assert.Equal(expected.Length, written); Assert.Equal(expected, destination[..written]);
@@ -82,8 +79,6 @@ public sealed class Utf8NativeTemplatePreparationTests
             Assert.Equal((ulong)"é${word}😀"u8.Length, owner.Budget.WorkSteps);
         }
         Assert.Equal(entries, regex.Inspection.DebugReplacementCacheEntryCount);
-        Assert.Equal("éaaa😀"u8.ToArray(), regex.Replace("aaa"u8, "é${word}😀"));
-        Assert.Equal(entries + 1, regex.Inspection.DebugReplacementCacheEntryCount);
     }
 
     [Theory]
@@ -109,7 +104,7 @@ public sealed class Utf8NativeTemplatePreparationTests
     public void MappedCaptureOutputKeepsBytePiecesAndFinalTextProjection(string pattern, string subject, string template, string expected)
     {
         var regex = new Utf8Regex(pattern); var input = Encoding.UTF8.GetBytes(subject);
-        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, template)));
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template))));
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, Encoding.UTF8.GetBytes(template)));
     }
 }

@@ -210,7 +210,7 @@ public sealed class Utf8CoreWorkPolicyTests
                 Run(Create(pattern, 100000), operation, [], default, 0));
         var regex = Create("ab", 100000);
         var destination = new byte[] { 0x7f };
-        Assert.Equal(OperationStatus.DestinationTooSmall, regex.TryReplace("ab"u8, "longer", destination, out var written));
+        Assert.Equal(OperationStatus.DestinationTooSmall, regex.TryReplace("ab"u8, "longer"u8, destination, out var written));
         Assert.Equal(0, written);
         Assert.Equal(new byte[] { 0x7f }, destination);
         Assert.ThrowsAny<ArgumentException>(() => Create("[invalid", 100));
@@ -339,14 +339,14 @@ public sealed class Utf8CoreWorkPolicyTests
                 var pieces = new List<string>();
                 while (split.MoveNext()) pieces.Add(Convert.ToHexString(split.Current.GetValueBytes()));
                 return string.Join("|", pieces);
-            case "replace": return Encoding.UTF8.GetString(live ? regex.Replace(input, "<$&>", token) : regex.Replace(input, "<$&>"));
+            case "replace": return Encoding.UTF8.GetString(live ? regex.Replace(input, "<$&>"u8, token) : regex.Replace(input, "<$&>"u8));
             case "replace-bytes": return Encoding.UTF8.GetString(live ? regex.Replace(input, "<$&>"u8, token) : regex.Replace(input, "<$&>"u8));
             case "destination":
             case "destination-bytes":
                 var destination = new byte[4096];
                 OperationStatus status;
                 int written;
-                if (operation == "destination") status = live ? regex.TryReplace(input, "<$&>", destination, out written, token) : regex.TryReplace(input, "<$&>", destination, out written);
+                if (operation == "destination") status = live ? regex.TryReplace(input, "<$&>"u8, destination, out written, token) : regex.TryReplace(input, "<$&>"u8, destination, out written);
                 else status = live ? regex.TryReplace(input, "<$&>"u8, destination, out written, token) : regex.TryReplace(input, "<$&>"u8, destination, out written);
                 Assert.Equal(OperationStatus.Done, status);
                 return Encoding.UTF8.GetString(destination.AsSpan(0, written));

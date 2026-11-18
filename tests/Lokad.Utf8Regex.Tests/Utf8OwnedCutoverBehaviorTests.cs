@@ -176,7 +176,7 @@ public sealed class Utf8OwnedCutoverBehaviorTests
                 }
 
                 var expectedReplaced = b.Replace(input, "$0");
-                var actualReplaced = Encoding.UTF8.GetString(p.Replace(bytes, "$0"));
+                var actualReplaced = Encoding.UTF8.GetString(p.Replace(bytes, "$0"u8));
                 if (!string.Equals(expectedReplaced, actualReplaced, StringComparison.Ordinal))
                 {
                     return tag + "input '" + input + "':replace bcl=[" + expectedReplaced + "]/product=[" + actualReplaced + "]";

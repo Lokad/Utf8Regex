@@ -116,7 +116,7 @@ public sealed class Utf8ScalarClassPreparationTests
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); Assert.Equal(match.StartOffsetInBytes, detailed.Value.StartOffsetInBytes);
             Assert.Equal(rtl ? "Other" : "Name", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
             var count = 0; foreach (var item in regex.EnumerateMatches(input)) { Assert.True((item.EndOffsetInBytes - item.StartOffsetInBytes) > 0); count++; }
-            Assert.Equal(2, count); Assert.Equal("😀X中X😀", Encoding.UTF8.GetString(regex.Replace(input, "X")));
+            Assert.Equal(2, count); Assert.Equal("😀X中X😀", Encoding.UTF8.GetString(regex.Replace(input, "X"u8)));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }

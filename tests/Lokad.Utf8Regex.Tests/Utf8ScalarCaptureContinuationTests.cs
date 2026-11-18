@@ -117,7 +117,7 @@ public sealed class Utf8ScalarCaptureContinuationTests
         Assert.Equal(3, match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.Equal(rtl ? "a" : "𐐨", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
         Assert.Equal(rtl ? (0, 1) : (5, 4), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
-        Assert.Equal(rtl ? "<a>" : "<𐐨>", Encoding.UTF8.GetString(regex.Replace(input, "<${x}>")));
+        Assert.Equal(rtl ? "<a>" : "<𐐨>", Encoding.UTF8.GetString(regex.Replace(input, "<${x}>"u8)));
     }
 
     public static IEnumerable<object[]> PublicCases()

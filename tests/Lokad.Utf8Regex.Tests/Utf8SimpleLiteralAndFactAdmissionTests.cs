@@ -483,7 +483,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             var match = regex.Match(input); Assert.Equal(4, match.StartOffsetInBytes); Assert.Equal(row.Pattern == @"\." ? 1 : 2, (match.EndOffsetInBytes - match.StartOffsetInBytes));
             Assert.Equal(match.StartOffsetInBytes, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Value.StartOffsetInBytes);
             var count = 0; foreach (var item in regex.EnumerateMatches(input)) { Assert.Equal((match.EndOffsetInBytes - match.StartOffsetInBytes), (item.EndOffsetInBytes - item.StartOffsetInBytes)); count++; }
-            Assert.Equal(2, count); Assert.Equal(row.Replaced, Encoding.UTF8.GetString(regex.Replace(input, "X")));
+            Assert.Equal(2, count); Assert.Equal(row.Replaced, Encoding.UTF8.GetString(regex.Replace(input, "X"u8)));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null); Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         }
     }

@@ -201,7 +201,7 @@ public sealed class Utf8ScalarSubjectTests
                 edge = range.Index + range.Length;
             }
             output.AddRange(input.AsSpan(edge).ToArray());
-            Assert.Equal(output, regex.Replace(input, "X", token));
+            Assert.Equal(output, regex.Replace(input, "X"u8, token));
         }
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

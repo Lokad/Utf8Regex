@@ -4,7 +4,6 @@ using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Replacement;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -14,7 +13,7 @@ public sealed class Utf8ReplacementCacheChargeTests
     private static ulong ArrayBytes<T>(int count) => count == 0 ? 0 : 32UL + (((ulong)Unsafe.SizeOf<T>() * (ulong)count + 15) & ~15UL);
     private static Utf8AnalyzedReplacement Prepare(string template)
     {
-        return Utf8FrontEndReplacementAnalyzer.Analyze(template, [0, 1], ["0", "word"]);
+        return Utf8FrontEndReplacementAnalyzer.Analyze(Encoding.UTF8.GetBytes(template), [0, 1], ["0", "word"]);
     }
 
     private static ulong PhysicalBytes(Utf8AnalyzedReplacement value)
@@ -33,16 +32,12 @@ public sealed class Utf8ReplacementCacheChargeTests
     }
 
     [Theory]
-    [InlineData("", false)] [InlineData("é😀", false)] [InlineData("${word}", false)] [InlineData("x$1y$01z", false)]
-    [InlineData("$&$`$'$+$$_", false)] [InlineData("é${missing}😀$999", false)]
-    [InlineData("", true)] [InlineData("é😀", true)] [InlineData("${word}", true)] [InlineData("x$1y$01z", true)]
-    [InlineData("$&$`$'$+$$_", true)] [InlineData("é${missing}😀$999", true)]
-    public void ClosedChargesCoverPhysicalPayloadsAndExactCacheBoundaries(string template, bool native)
+    [InlineData("")] [InlineData("é😀")] [InlineData("${word}")] [InlineData("x$1y$01z")]
+    [InlineData("$&$`$'$+$$_")] [InlineData("é${missing}😀$999")]
+    public void ClosedChargesCoverPhysicalPayloadsAndExactCacheBoundaries(string template)
     {
-        object key = native ? Encoding.UTF8.GetBytes(template) : template;
-        var value = native
-            ? Utf8FrontEndReplacementAnalyzer.Analyze(new Utf8ConstructionPattern((byte[])key), [0, 1], ["0", "word"], false)
-            : Prepare(template);
+        var key = Encoding.UTF8.GetBytes(template);
+        var value = Utf8FrontEndReplacementAnalyzer.Analyze(key, [0, 1], ["0", "word"]);
         var physical = PhysicalBytes(value);
         var storage = default(Utf8ReplacementRetainedStorage);
         using var owner = Utf8ConstructionScope.Enter();
@@ -51,12 +46,11 @@ public sealed class Utf8ReplacementCacheChargeTests
         Assert.True(storage.TryGetValueCharge(value, charge, default(Utf8ConstructionTextNoControl), out var exact)); Assert.Equal(charge, exact);
         Assert.False(storage.TryGetValueCharge(value, charge - 1, default(Utf8ConstructionTextNoControl), out _));
         var keyCharge = storage.GetKeyCharge(key);
-        Assert.Equal(native ? ArrayBytes<byte>(((byte[])key).Length)
-            : Utf8ConstructionBudget.StringBytes(template.Length), keyCharge);
+        Assert.Equal(ArrayBytes<byte>(key.Length), keyCharge);
         foreach (var allow in new[] { false, true })
         {
             var maximum = keyCharge + charge - (allow ? 0UL : 1UL);
-            var cache = Utf8BoundedPreparationCache<object, Utf8AnalyzedReplacement>.CreateRetained(2, Utf8ReplacementKeyComparer.Instance, 65536, maximum);
+            var cache = Utf8BoundedPreparationCache<byte[], Utf8AnalyzedReplacement>.CreateRetained(2, Utf8ReplacementKeyComparer.Instance, 65536, maximum);
             var result = cache.GetOrAdd(key, value, static (_, value) => value, default(Utf8ConstructionTextNoControl), storage);
             Assert.Same(value.Plan, result.Plan); Assert.Equal(allow ? 1 : 0, cache.Count);
             Assert.Equal(allow ? maximum : 0UL, cache.PayloadBytes);

@@ -80,14 +80,14 @@ public sealed class Utf8ResidualScalarRouteTests
             using var source = new CancellationTokenSource();
             var token = liveToken ? source.Token : CancellationToken.None;
             var regex = new Utf8Regex(pattern, options: Options(compiled));
-            Assert.Equal(expectedBytes, regex.Replace(input, "Q", token));
             Assert.Equal(expectedBytes, regex.Replace(input, "Q"u8, token));
-            Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "Q", token)));
+            Assert.Equal(expectedBytes, regex.Replace(input, "Q"u8, token));
+            Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "Q"u8, token)));
             var destination = new byte[expectedBytes.Length];
-            Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "Q", destination, out var written, token));
+            Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "Q"u8, destination, out var written, token));
             Assert.Equal(expectedBytes.Length, written);
             Assert.Equal(expectedBytes, destination);
-            Assert.Equal(input, regex.Replace(input, "$&", token));
+            Assert.Equal(input, regex.Replace(input, "$&"u8, token));
             AssertOwned(regex);
         }
     }

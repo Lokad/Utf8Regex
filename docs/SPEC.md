@@ -378,13 +378,11 @@ no result-byte capacity. Callers can decode the segment returned by
 
 Replacement uses .NET-style `$1`, `${name}`, `$&`, prefix/suffix, `$+`,
 `$_` and `$$` forms with the supported numeric parsing rules. RTL discovery
-assembles output in subject order. UTF-8 template overloads parse/cache source
-bytes directly; no whole-template string is required. Selected capture-name
+assembles output in subject order. `Replace` and `TryReplace` take strict
+UTF-8 templates. Preparation parses and caches bytes directly. Selected capture-name
 lexemes may project text under the existing name grammar. Prepared instructions
-retain byte literals and original syntax flags, without retaining parser tokens,
-literal text or a duplicate source. Each string literal is encoded independently: an unpaired
-surrogate becomes U+FFFD and cannot join a fragment from another substitution.
-Subjects are caller-valid; template bytes remain strict.
+retain byte literals and original syntax flags. The cache keeps the lowered plan
+and the admitted template key.
 
 General-pattern replacements use the existing scalar byte
 template engine for both allocated and caller-owned output. They select that
@@ -880,10 +878,9 @@ retain their existing preparation.
 Cold replacement preparation has separate construction backstops under the
 original invocation token/deadline. Finite working bytes additionally cap covered
 cold parser/key capacity; a denial can be `ConstructionBytes` before execution.
-Warm text and byte keys skip cold parsing. Native hits borrow the caller span;
+Warm hits borrow the template span and skip parsing;
 misses admit/copy immutable byte keys under the same construction owner as parser
-capacity. Text/native entries share one bounded cache with independent keys,
-allowing earlier eviction. Retained values contain only the lowered byte plan,
+capacity. Retained values contain only the lowered byte plan,
 literal payload and original flags. Shared payload slots still count again in
 conservative cache charges; no identity collector is needed. Eliminating unused
 preparation or compacting plan descriptors can lower charged work and capacities.

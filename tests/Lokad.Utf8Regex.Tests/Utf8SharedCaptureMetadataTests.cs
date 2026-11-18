@@ -77,7 +77,7 @@ public sealed class Utf8SharedCaptureMetadataTests
         Assert.Empty(miss.GroupNumbers.ToArray());
         Assert.False(miss.TryGetGroup(0, out var groupZero));
         Assert.False(groupZero.Success);
-        Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(subject, replacement)), regex.Replace(input, replacement));
+        Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(subject, replacement)), regex.Replace(input, Encoding.UTF8.GetBytes(replacement)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

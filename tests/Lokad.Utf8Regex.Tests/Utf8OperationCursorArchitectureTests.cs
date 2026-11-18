@@ -62,7 +62,7 @@ public sealed class Utf8OperationCursorArchitectureTests
         Assert.Equal(interpreted.Count(input), compiled.Count(input));
         Assert.Equal(CollectMatches(interpreted, input), CollectMatches(compiled, input));
         Assert.Equal(CollectSplits(interpreted, input), CollectSplits(compiled, input));
-        Assert.Equal(interpreted.Replace(input, "<$&>"), compiled.Replace(input, "<$&>"));
+        Assert.Equal(interpreted.Replace(input, "<$&>"u8), compiled.Replace(input, "<$&>"u8));
     }
 
     private static List<Utf8CaptureRange> CollectMatches(Utf8Regex regex, byte[] input)

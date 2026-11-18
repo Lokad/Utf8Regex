@@ -122,7 +122,7 @@ public sealed class Utf8SliceNonCapturingTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Replace(inputText, replacement);
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
+        Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(replacement))));
         if (regex.Inspection.DebugUsesOwnedSliceProgram)
         {
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);

@@ -75,7 +75,7 @@ public sealed class Utf8NoMatchReplacementTests
             input.CopyTo(storage, inputStart);
             var original = storage.ToArray();
             var regex = Create(options, Controls);
-            var status = regex.TryReplace(storage.AsSpan(inputStart, input.Length), "tiger",
+            var status = regex.TryReplace(storage.AsSpan(inputStart, input.Length), "tiger"u8,
                 storage.AsSpan(destinationStart, input.Length - (tooSmall ? 1 : 0)), out var written);
             Assert.Equal(tooSmall ? OperationStatus.DestinationTooSmall : OperationStatus.Done, status);
             Assert.Equal(tooSmall ? 0 : input.Length, written);
@@ -90,7 +90,7 @@ public sealed class Utf8NoMatchReplacementTests
     public void EmptyMatchesAndEmptyExpansionStillUseMatchedSemantics(string pattern, string text, string template, string expected)
     {
         var regex = Create(RegexOptions.None, 1 << 20, pattern);
-        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(text), template)));
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(text), Encoding.UTF8.GetBytes(template))));
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public sealed class Utf8NoMatchReplacementTests
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         var failure = Assert.Throws<OperationCanceledException>(() =>
-            Encoding.UTF8.GetString(regex.Replace("dog"u8, "tiger", cancellation.Token)));
+            Encoding.UTF8.GetString(regex.Replace("dog"u8, "tiger"u8, cancellation.Token)));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
     }
 }

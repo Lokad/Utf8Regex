@@ -174,7 +174,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     {
         var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        var actual = regex.Replace(input, replacement);
+        var actual = regex.Replace(input, Encoding.UTF8.GetBytes(replacement));
         var oracle = new Regex(pattern, options);
         Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(inputText, replacement)), actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

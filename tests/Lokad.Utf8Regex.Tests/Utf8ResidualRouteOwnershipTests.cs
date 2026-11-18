@@ -111,7 +111,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
             Assert.Equal(success, value.Success);
             if (success) Assert.Equal((0, bytes.Length), (value.StartOffsetInBytes, (value.EndOffsetInBytes - value.StartOffsetInBytes)));
             Assert.Equal(success, Utf8MatchSequence.First(regex.CreateMatchCursor(bytes)).Success);
-            Assert.Equal(success ? "Q" : text, Encoding.UTF8.GetString(regex.Replace(bytes, "Q")));
+            Assert.Equal(success ? "Q" : text, Encoding.UTF8.GetString(regex.Replace(bytes, "Q"u8)));
             AssertNoBclEngine(regex);
         }
     }

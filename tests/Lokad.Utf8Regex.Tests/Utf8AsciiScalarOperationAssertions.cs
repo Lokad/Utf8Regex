@@ -139,7 +139,7 @@ internal static class Utf8AsciiScalarOperationAssertions
             Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template))));
         var bytes = Encoding.UTF8.GetBytes(replacement);
         var byteReplace = new Utf8Regex(pattern, options: options);
-        Assert.Equal(bytes, byteReplace.Replace(subject.Input, template));
+        Assert.Equal(bytes, byteReplace.Replace(subject.Input, Encoding.UTF8.GetBytes(template)));
         var utf8Replace = new Utf8Regex(pattern, options: options);
         var utf8Template = Encoding.UTF8.GetBytes(template);
         Assert.Equal(bytes, utf8Replace.Replace(subject.Input, utf8Template));
@@ -148,7 +148,7 @@ internal static class Utf8AsciiScalarOperationAssertions
             var destinationRegex = new Utf8Regex(pattern, options: options);
             var destination = new byte[bytes.Length + 1];
             var status = utf8 ? destinationRegex.TryReplace(subject.Input, utf8Template, destination, out var written)
-                : destinationRegex.TryReplace(subject.Input, template, destination, out written);
+                : destinationRegex.TryReplace(subject.Input, Encoding.UTF8.GetBytes(template), destination, out written);
             Assert.Equal(OperationStatus.Done, status);
             Assert.Equal(bytes, destination.AsSpan(0, written).ToArray());
             Owned(destinationRegex);
@@ -164,7 +164,7 @@ internal static class Utf8AsciiScalarOperationAssertions
             subject.Input, index => subject.ByteBoundaries[index]);
         Sequence(subject, expected, live.EnumerateMatches(subject.Input, cancellationToken: source.Token));
         Splits(subject, oracle.EnumerateSplits(subject.Projected), live.EnumerateSplits(subject.Input, cancellationToken: source.Token));
-        Assert.Equal(bytes, live.Replace(subject.Input, template, source.Token));
+        Assert.Equal(bytes, live.Replace(subject.Input, Encoding.UTF8.GetBytes(template), source.Token));
     }
 
     internal static void Offset(string pattern, RegexOptions options, string text, int offset)

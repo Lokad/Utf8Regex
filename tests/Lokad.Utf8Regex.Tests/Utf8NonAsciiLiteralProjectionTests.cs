@@ -202,7 +202,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             const int count = int.MaxValue;
             var replaceRegex = new Utf8Regex(pattern, options: options);
             var expectedReplaced = oracle.Replace(text, "x");
-            var actualReplaced = Encoding.UTF8.GetString(replaceRegex.Replace(input, "x"));
+            var actualReplaced = Encoding.UTF8.GetString(replaceRegex.Replace(input, "x"u8));
             Assert.Equal(expectedReplaced, actualReplaced);
             Assert.Equal(expectOwnedReplacement, replaceRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 

@@ -32,7 +32,7 @@ public sealed class Utf8ScalarReplacementOutputTests
                 Assert.Throws<ArgumentException>(() => regex.TryReplace(input, template, destination, out _, source.Token));
                 Assert.All(destination, value => Assert.Equal((byte)0xa5, value));
             }
-            Assert.Equal("q😀q", Encoding.UTF8.GetString(regex.Replace("a😀a"u8, "q", source.Token)));
+            Assert.Equal("q😀q", Encoding.UTF8.GetString(regex.Replace("a😀a"u8, "q"u8, source.Token)));
         }
     }
 
@@ -48,11 +48,10 @@ public sealed class Utf8ScalarReplacementOutputTests
         foreach (var text in new[] { "\U0001f600", "a\U0001f600b", "\u00e9\U0001f600" })
         {
             var input = Encoding.UTF8.GetBytes(text);
-            const string template = "\ud83d${x}\ude00|$&";
+            var template = "\ufffd${x}\ufffd|$&"u8;
             var expected = string.Concat(text.EnumerateRunes().Select(scalar => $"\ufffd{scalar}\ufffd|{scalar}"));
             var expectedBytes = Encoding.UTF8.GetBytes(expected);
             Assert.Equal(expectedBytes, regex.Replace(input, template, source.Token));
-            Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(template), source.Token));
             var destination = new byte[expectedBytes.Length];
             Assert.Equal(OperationStatus.Done, regex.TryReplace(input, template, destination, out var written, source.Token));
             Assert.Equal(expectedBytes.Length, written);
@@ -70,10 +69,10 @@ public sealed class Utf8ScalarReplacementOutputTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void EmptySubstitutionsCannotCompleteLiteralSurrogates(bool compiled, bool rtl)
+    public void EmptySubstitutionsPreserveAdjacentUnicodeLiterals(bool compiled, bool rtl)
     {
         var regex = new Utf8Regex("()", options: Options(compiled, rtl));
-        const string template = "\ud83d$1\ude00";
+        var template = "\ufffd$1\ufffd"u8;
         const string expected = "\ufffd\ufffd\U0001f600\ufffd\ufffd";
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace("\U0001f600"u8, template));
         AssertOwned(regex);
@@ -107,9 +106,9 @@ public sealed class Utf8ScalarReplacementOutputTests
         {
             switch (operation)
             {
-                case "bytes": Assert.Equal(input, regex.Replace(input, "$1")); break;
+                case "bytes": Assert.Equal(input, regex.Replace(input, "$1"u8)); break;
                 case "destination":
-                    Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "$1", destination, out var written));
+                    Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "$1"u8, destination, out var written));
                     Assert.Equal(input.Length, written);
                     Assert.Equal(input, destination);
                     break;

@@ -118,7 +118,7 @@ public sealed class Utf8CancellationTests
     {
         var regex = new Utf8Regex("cat|horse");
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "pet", token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "pet"u8, token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -137,7 +137,7 @@ public sealed class Utf8CancellationTests
         var regex = new Utf8Regex("cat|horse");
         var token = CanceledToken();
         var destination = new byte[64];
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.TryReplace(s_input, "pet", destination, out _, token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.TryReplace(s_input, "pet"u8, destination, out _, token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -169,7 +169,7 @@ public sealed class Utf8CancellationTests
         Assert.Equal(regex.IsMatch(s_input), regex.IsMatch(s_input, token));
         Assert.Equal(regex.Count(s_input), regex.Count(s_input, token));
         Assert.Equal((regex.Match(s_input).StartOffsetInBytes, (regex.Match(s_input).EndOffsetInBytes - regex.Match(s_input).StartOffsetInBytes)), (regex.Match(s_input, cancellationToken: token).StartOffsetInBytes, (regex.Match(s_input, cancellationToken: token).EndOffsetInBytes - regex.Match(s_input, cancellationToken: token).StartOffsetInBytes)));
-        Assert.Equal(Encoding.UTF8.GetString(regex.Replace(s_input, "pet")), Encoding.UTF8.GetString(regex.Replace(s_input, "pet", token)));
+        Assert.Equal(Encoding.UTF8.GetString(regex.Replace(s_input, "pet"u8)), Encoding.UTF8.GetString(regex.Replace(s_input, "pet"u8, token)));
     }
 
 }

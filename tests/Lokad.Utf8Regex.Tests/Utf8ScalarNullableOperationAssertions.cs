@@ -64,9 +64,9 @@ internal static class Utf8ScalarNullableOperationAssertions
             foreach (var (template, expected) in new[] { ("Q", "Q😀QQ😀Q"), ("$&", text) })
             {
                 var bytes = Encoding.UTF8.GetBytes(expected);
-                Assert.Equal(bytes, regex.Replace(input, template, token));
+                Assert.Equal(bytes, regex.Replace(input, Encoding.UTF8.GetBytes(template), token));
                 var destination = new byte[bytes.Length + 1];
-                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, template, destination, out var written, token));
+                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var written, token));
                 Assert.Equal(bytes, destination.AsSpan(0, written).ToArray());
                 Assert.Equal(bytes, regex.Replace(input, Encoding.UTF8.GetBytes(template), token));
                 Assert.Equal(OperationStatus.Done, regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out written, token));

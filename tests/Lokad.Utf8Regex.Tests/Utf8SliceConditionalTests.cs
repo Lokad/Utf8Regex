@@ -347,7 +347,7 @@ public sealed class Utf8SliceConditionalOperationTests
         Assert.Equal(expected, oracle.Replace(inputText, "<$&>"));
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$&>"u8)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
@@ -370,7 +370,7 @@ public sealed class Utf8SliceConditionalOperationTests
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var stringRegex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(stringRegex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(oracle.Replace(inputText, template), Encoding.UTF8.GetString(stringRegex.Replace(input, template)));
+        Assert.Equal(oracle.Replace(inputText, template), Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template))));
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 

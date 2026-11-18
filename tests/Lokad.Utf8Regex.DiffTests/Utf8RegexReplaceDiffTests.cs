@@ -28,7 +28,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -59,7 +59,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -73,7 +73,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -87,7 +87,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -101,7 +101,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -115,7 +115,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -129,7 +129,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -143,7 +143,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -157,7 +157,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -172,7 +172,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -191,7 +191,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -205,7 +205,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -244,7 +244,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -258,7 +258,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -273,7 +273,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -293,7 +293,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -306,7 +306,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -320,7 +320,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, actual);
     }
@@ -424,7 +424,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.Replace(input, pattern, replacement, options);
-        var actual = Encoding.UTF8.GetString(utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement));
+        var actual = Encoding.UTF8.GetString(utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement)));
 
         Assert.Equal(expected, actual);
     }
@@ -442,7 +442,7 @@ public sealed class Utf8RegexReplaceDiffTests
         var utf8Regex = new Utf8Regex(string.Empty, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, string.Empty, replacement, options));
-        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
+        var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), "-"u8);
 
         Assert.Equal(expected, actual);
     }

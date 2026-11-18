@@ -34,7 +34,7 @@ public sealed class Utf8ScalarOnlyPreparationTests
         foreach (var value in regex.EnumerateMatches(input))
         { Assert.Equal(8, (value.EndOffsetInBytes - value.StartOffsetInBytes)); count++; }
         Assert.Equal(2, count);
-        Assert.Equal("😀<abab>中<abab>", Encoding.UTF8.GetString(regex.Replace(input, "<${x}>")));
+        Assert.Equal("😀<abab>中<abab>", Encoding.UTF8.GetString(regex.Replace(input, "<${x}>"u8)));
         var parts = new List<string>();
         foreach (var part in regex.EnumerateSplits(input)) parts.Add(Encoding.UTF8.GetString(part.GetValueBytes()));
         Assert.Equal(new[] { "😀", "中", "" }, parts);

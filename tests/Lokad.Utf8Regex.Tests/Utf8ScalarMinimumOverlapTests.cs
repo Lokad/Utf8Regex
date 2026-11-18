@@ -137,10 +137,10 @@ public sealed class Utf8ScalarMinimumOverlapTests
             {
                 var expectedReplacement = oracle.Replace(text, replacement);
                 var expectedBytes = Encoding.UTF8.GetBytes(expectedReplacement);
-                Assert.Equal(expectedBytes, regex.Replace(input, replacement));
+                Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(replacement)));
                 Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(replacement)));
                 var destination = new byte[expectedBytes.Length];
-                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, replacement, destination, out var written));
+                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, Encoding.UTF8.GetBytes(replacement), destination, out var written));
                 Assert.Equal(expectedBytes.Length, written);
                 Assert.Equal(expectedBytes, destination);
             }
@@ -200,7 +200,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var oracle = new Regex(pattern, options);
             var regex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(oracle.Replace(text, template), Encoding.UTF8.GetString(regex.Replace(input, template)));
+            Assert.Equal(oracle.Replace(text, template), Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template))));
         }
     }
 
@@ -219,7 +219,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
             Assert.Equal(0, regex.Count(input));
             Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
             Assert.False(regex.EnumerateMatches(input).GetEnumerator().MoveNext());
-            Assert.Equal(text, Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
+            Assert.Equal(text, Encoding.UTF8.GetString(regex.Replace(input, "<$1>"u8)));
             AssertOwned(regex);
         }
     }

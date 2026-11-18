@@ -180,9 +180,9 @@ public sealed class Utf8ScalarClassRepresentationTests
             };
             var output = Encoding.UTF8.GetBytes(expectedText);
             Assert.Equal(output, regex.Replace(input, "Q"u8));
-            Assert.Equal(expectedText, Encoding.UTF8.GetString(regex.Replace(input, "Q")));
+            Assert.Equal(expectedText, Encoding.UTF8.GetString(regex.Replace(input, "Q"u8)));
             var destination = new byte[output.Length];
-            Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "Q", destination, out var written));
+            Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "Q"u8, destination, out var written));
             Assert.Equal(output.Length, written); Assert.Equal(output, destination);
             var parts = new List<(int, int)>();
             foreach (var part in regex.EnumerateSplits(input)) parts.Add((part.IndexInBytes, part.LengthInBytes));
@@ -243,7 +243,7 @@ public sealed class Utf8ScalarClassRepresentationTests
             var regex = new Utf8Regex("[" + (negated ? "^" : "") + RepeatedCategories + "]", options: Options(compiled, false));
             Assert.Equal(negated ? 2 : 1, regex.Count("\U00010400\U00010428\U0001f600"u8));
             Assert.Equal(negated ? "\U00010400QQ" : "Q\U00010428\U0001f600",
-                Encoding.UTF8.GetString(regex.Replace("\U00010400\U00010428\U0001f600"u8, "Q")));
+                Encoding.UTF8.GetString(regex.Replace("\U00010400\U00010428\U0001f600"u8, "Q"u8)));
             using var canceled = new CancellationTokenSource(); canceled.Cancel();
             Assert.Equal(canceled.Token, Assert.ThrowsAny<OperationCanceledException>(() =>
                 regex.Count("\U00010400"u8, canceled.Token)).CancellationToken);
@@ -340,7 +340,7 @@ public sealed class Utf8ScalarClassRepresentationTests
             Assert.Equal(expected[0], (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
             Assert.Equal(expected[0], ((match.TryGetGroup(1, out var range1) ? range1.StartOffsetInBytes : default), ((match.TryGetGroup(1, out var range2) ? range2.EndOffsetInBytes : default) - (match.TryGetGroup(1, out var range3) ? range3.StartOffsetInBytes : default))));
             var replaced = singles ? "x<\U0001f600><\U00010400>y" : "x<\U0001f600\U00010400>y";
-            Assert.Equal(replaced, Encoding.UTF8.GetString(regex.Replace(input, "<${x}>")));
+            Assert.Equal(replaced, Encoding.UTF8.GetString(regex.Replace(input, "<${x}>"u8)));
             Assert.False(regex.IsMatch("\U0001f601\U0001f601"u8));
             AssertOwned(regex);
         }

@@ -62,8 +62,8 @@ internal sealed class RegexParityContext
 
         var expected = Encoding.UTF8.GetBytes(DotNet.Replace(Case.Input, replacement));
         var expectedCompiled = Encoding.UTF8.GetBytes(DotNetCompiled.Replace(Case.Input, replacement));
-        var actual = Utf8.Replace(bytes, replacement);
-        var actualCompiled = Utf8Compiled.Replace(bytes, replacement);
+        var actual = Utf8.Replace(bytes, Encoding.UTF8.GetBytes(replacement));
+        var actualCompiled = Utf8Compiled.Replace(bytes, Encoding.UTF8.GetBytes(replacement));
 
         Assert.Equal(expected, expectedCompiled);
         Assert.Equal(expected, actual);

@@ -178,7 +178,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -565,7 +565,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
@@ -617,7 +617,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             var regex = new Utf8Regex(pattern, options: options);
             var expected = oracle.Replace(text, "q$&q");
-            var actual = Encoding.UTF8.GetString(regex.Replace(input, "q$&q"));
+            var actual = Encoding.UTF8.GetString(regex.Replace(input, "q$&q"u8));
             Assert.Equal(expected, actual);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }

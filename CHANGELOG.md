@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Core `Replace` and `TryReplace` take UTF-8 templates. The existing byte
+  substitution grammar, strict template validation and funded destination
+  support remain available.
+
 - PythonRe `Replace`, `Subn` and `SubnRetained` take UTF-8 templates.
   Use an `u8` literal or encode dynamic text before calling. Strict template
   validation, capture expansion and retained-output funding remain in place.

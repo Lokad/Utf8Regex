@@ -30,11 +30,11 @@ public sealed class Utf8ReplacementLiteralGuidanceTests
         var regex = Create("(cat)", options, 1024);
         var miss = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("dog fox bird ", 512)));
         Assert.Equal(0, regex.Count(miss));
-        Assert.Equal(Encoding.UTF8.GetString(miss), Encoding.UTF8.GetString(regex.Replace(miss, "[$1]")));
+        Assert.Equal(Encoding.UTF8.GetString(miss), Encoding.UTF8.GetString(regex.Replace(miss, "[$1]"u8)));
         Assert.Equal(miss, regex.Replace(miss, "[$1]"u8));
         var gap = new string('x', 4096);
         var text = gap + "cat" + gap + "cat😀";
-        Assert.Equal(gap + "[cat]" + gap + "[cat]😀", Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(text), "[$1]")));
+        Assert.Equal(gap + "[cat]" + gap + "[cat]😀", Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(text), "[$1]"u8)));
     }
 
     [Theory]
@@ -51,7 +51,7 @@ public sealed class Utf8ReplacementLiteralGuidanceTests
     {
         var regex = Create(pattern);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, template)));
+        Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template))));
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, Encoding.UTF8.GetBytes(template)));
     }
 
@@ -60,7 +60,7 @@ public sealed class Utf8ReplacementLiteralGuidanceTests
     {
         var gap = new string('é', 2048);
         var regex = Create("(😀)", work: 1024);
-        Assert.Equal(gap + "[😀]" + gap, Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(gap + "😀" + gap), "[$1]")));
+        Assert.Equal(gap + "[😀]" + gap, Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(gap + "😀" + gap), "[$1]"u8)));
     }
 
     [Theory]
@@ -83,12 +83,12 @@ public sealed class Utf8ReplacementLiteralGuidanceTests
         });
         try
         {
-            if (timeout) Assert.Throws<RegexMatchTimeoutException>(() => Encoding.UTF8.GetString(regex.Replace(input, "x")));
+            if (timeout) Assert.Throws<RegexMatchTimeoutException>(() => Encoding.UTF8.GetString(regex.Replace(input, "x"u8)));
             else Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
-                Encoding.UTF8.GetString(regex.Replace(input, "x", cancellation.Token))).CancellationToken);
+                Encoding.UTF8.GetString(regex.Replace(input, "x"u8, cancellation.Token))).CancellationToken);
             Assert.True(entered);
         }
         finally { session.Complete(); }
-        Assert.Equal("cat", Encoding.UTF8.GetString(regex.Replace("cat"u8, "$1")));
+        Assert.Equal("cat", Encoding.UTF8.GetString(regex.Replace("cat"u8, "$1"u8)));
     }
 }

@@ -494,7 +494,7 @@ public sealed class GroupedLiteralCaptureTests
         Assert.Equal(expected, bytesActual);
 
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
     }
 
@@ -563,7 +563,7 @@ public sealed class GroupedLiteralCaptureTests
         Assert.Equal(expected, bytesActual);
 
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
     }
 
@@ -581,7 +581,7 @@ public sealed class GroupedLiteralCaptureTests
                 var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
                 var regex = new Utf8Regex(pattern, options: options);
                 var expected = oracle.Replace(text, template);
-                var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+                var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
                 Assert.Equal(expected, actual);
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -617,7 +617,7 @@ public sealed class GroupedLiteralCaptureTests
         Assert.Equal(expected, bytesActual);
 
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
     }
 
@@ -634,7 +634,7 @@ public sealed class GroupedLiteralCaptureTests
         Assert.Equal(expected, bytesActual);
 
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
     }
 
@@ -686,7 +686,7 @@ public sealed class GroupedLiteralCaptureTests
         Assert.Equal(expected, bytesActual);
 
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
     }
 
@@ -741,7 +741,7 @@ public sealed class GroupedLiteralCaptureTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
     }
@@ -756,7 +756,7 @@ public sealed class GroupedLiteralCaptureTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
     }
@@ -771,7 +771,7 @@ public sealed class GroupedLiteralCaptureTests
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
         var destination = new byte[4096];
-        var status = regex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
 
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
@@ -809,7 +809,7 @@ public sealed class GroupedLiteralCaptureTests
         {
             MatchTimeout = timeout
         });
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, actual);
     }
     public static System.Collections.Generic.IEnumerable<object?[]> NestedInvariantAlternationCases()
@@ -964,7 +964,7 @@ public sealed class GroupedLiteralCaptureTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
     }
@@ -1101,7 +1101,7 @@ public sealed class GroupedLiteralCaptureTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
     }
@@ -1115,7 +1115,7 @@ public sealed class GroupedLiteralCaptureTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
     }
@@ -1130,7 +1130,7 @@ public sealed class GroupedLiteralCaptureTests
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
         var destination = new byte[4096];
-        var status = regex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
 
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));

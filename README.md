@@ -19,7 +19,7 @@ ReadOnlySpan<byte> input = "Order AB1234 is ready."u8;
 bool found = regex.IsMatch(input);              // true
 int count = regex.Count(input);                 // 1
 Utf8CaptureRange first = regex.Match(input, 0, []); // bytes [6, 12)
-byte[] redacted = regex.Replace(input, "[order]");
+byte[] redacted = regex.Replace(input, "[order]"u8);
 ```
 
 Use `EnumerateMatches` to visit whole matches and `CreateMatchCursor` over

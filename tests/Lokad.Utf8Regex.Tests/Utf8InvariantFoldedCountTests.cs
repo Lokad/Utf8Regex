@@ -34,8 +34,8 @@ public sealed class Utf8InvariantFoldedCountTests
                     Assert.Equal(expected, actual);
             var first = regex.Match(bytes);
                     Assert.Equal(expected[0], (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
-                    Assert.Equal(reference.Replace(text, "$0:X"), Encoding.UTF8.GetString(regex.Replace(bytes, "$0:X")));
-            Assert.Equal(reference.Replace(text, "X"), Encoding.UTF8.GetString(regex.Replace(bytes, "X")));
+                    Assert.Equal(reference.Replace(text, "$0:X"), Encoding.UTF8.GetString(regex.Replace(bytes, "$0:X"u8)));
+            Assert.Equal(reference.Replace(text, "X"), Encoding.UTF8.GetString(regex.Replace(bytes, "X"u8)));
             if (mode != RegexOptions.RightToLeft)
             {
                 var parts = new List<string>();

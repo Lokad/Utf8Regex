@@ -7,7 +7,7 @@ public sealed class ReplacementCachePayloadTests
     {
         var regex = new Utf8Regex("x");
         var template = new string('a', 2 * 1024 * 1024);
-        var result = regex.Replace("x"u8, template);
+        var result = regex.Replace("x"u8, System.Text.Encoding.UTF8.GetBytes(template));
         Assert.Equal(template.Length, result.Length);
         Assert.All(result, value => Assert.Equal((byte)'a', value));
         var field = typeof(Utf8Regex).GetField("_replacementCache", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);

@@ -75,11 +75,11 @@ public sealed class AsciiSimplePatternTests
         }
 
         Span<byte> destination = stackalloc byte[utf8.Length];
-        var replaceStatus = actual.TryReplace(utf8, "#", destination, out var bytesWritten);
+        var replaceStatus = actual.TryReplace(utf8, "#"u8, destination, out var bytesWritten);
         var expectedReplacement = expected.Replace(input, "#");
         Assert.Equal(expected.Count(input), actual.Count(utf8));
         Assert.Equal(expected.Matches(input).Select(static match => match.Value), actualMatches);
-        Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(actual.Replace(utf8, "#")));
+        Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(actual.Replace(utf8, "#"u8)));
         Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(actual.Replace(utf8, "#"u8)));
         Assert.Equal(System.Buffers.OperationStatus.Done, replaceStatus);
         Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(destination[..bytesWritten]));
@@ -772,7 +772,7 @@ public sealed class AsciiSimplePatternTests
         Utf8AsciiScalarOperationAssertions.Owned(bytesRegex);
 
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
     }
 
@@ -1109,7 +1109,7 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1142,7 +1142,7 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1254,7 +1254,7 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1270,7 +1270,7 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1286,7 +1286,7 @@ public sealed class AsciiSimplePatternTests
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
         var destination = new byte[4096];
-        var status = regex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
 
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
@@ -1404,7 +1404,7 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1419,7 +1419,7 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1435,7 +1435,7 @@ public sealed class AsciiSimplePatternTests
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
         var destination = new byte[4096];
-        var status = regex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
 
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
@@ -1551,7 +1551,7 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1566,7 +1566,7 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1582,7 +1582,7 @@ public sealed class AsciiSimplePatternTests
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
         var destination = new byte[4096];
-        var status = regex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
 
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
@@ -1724,7 +1724,7 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1739,7 +1739,7 @@ public sealed class AsciiSimplePatternTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, template));
+        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
 
         Assert.Equal(expected, actual);
         Utf8AsciiScalarOperationAssertions.Owned(regex);
@@ -1755,7 +1755,7 @@ public sealed class AsciiSimplePatternTests
         var regex = new Utf8Regex(pattern, options: options);
         var expected = oracle.Replace(text, template);
         var destination = new byte[4096];
-        var status = regex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
 
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
@@ -1805,11 +1805,11 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expected, bytesActual);
         Utf8AsciiScalarOperationAssertions.Owned(bytesRegex);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expected, Encoding.UTF8.GetString(destination[..bytesWritten]));
     }
@@ -1879,7 +1879,7 @@ public sealed class AsciiSimplePatternTests
         }
         Assert.Equal(expectedSplits, actualSplits);
         var templateRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(templateRegex.Replace(input, "<$1>")));
+        Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(templateRegex.Replace(input, "<$1>"u8)));
     }
     public static System.Collections.Generic.IEnumerable<object?[]> SupplementaryScalarDiscoveryOwnedCases()
     {
@@ -2104,11 +2104,11 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expected, bytesActual);
         Utf8AsciiScalarOperationAssertions.Owned(bytesRegex);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expected, Encoding.UTF8.GetString(destination[..bytesWritten]));
     }
@@ -2171,12 +2171,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Utf8AsciiScalarOperationAssertions.Owned(bytesRegex);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, "<$1>"));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, "<$1>"u8));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         // Group templates can expand output past the input length on multi-hit rows.
         Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
-        var status = destinationRegex.TryReplace(input, "<$1>", destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, "<$1>"u8, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         var detailedRegex = new Utf8Regex(pattern, options: options);
@@ -2259,11 +2259,11 @@ public sealed class AsciiSimplePatternTests
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
     }
@@ -2290,7 +2290,7 @@ public sealed class AsciiSimplePatternTests
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = CreateSupplementaryScalarOverlapOracle(pattern, options);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Replace(text, template), Encoding.UTF8.GetString(stringRegex.Replace(input, template)));
+        Assert.Equal(oracle.Replace(text, template), Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template))));
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -2929,12 +2929,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -3200,12 +3200,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, "Q"));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, "Q"u8));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
-        var status = destinationRegex.TryReplace(input, "Q", destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, "Q"u8, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -3279,7 +3279,7 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
         Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Replace(text, "Q"), Encoding.UTF8.GetString(stringRegex.Replace(input, "Q")));
+        Assert.Equal(oracle.Replace(text, "Q"), Encoding.UTF8.GetString(stringRegex.Replace(input, "Q"u8)));
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -3381,12 +3381,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -3608,15 +3608,15 @@ public sealed class AsciiSimplePatternTests
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var bytesRegex = new Utf8Regex(pattern, options: options);
-        var bytesActual = bytesRegex.Replace(input, template);
+        var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
         Utf8AsciiScalarOperationAssertions.Owned(bytesRegex);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         var utf8Regex = new Utf8Regex(pattern, options: options);
@@ -3833,14 +3833,14 @@ public sealed class AsciiSimplePatternTests
         var expected = oracle.Replace(text, template);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var bytesRegex = new Utf8Regex(pattern, options: options);
-        var bytesActual = bytesRegex.Replace(input, template);
+        var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         var utf8Regex = new Utf8Regex(pattern, options: options);
@@ -4242,12 +4242,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -4350,12 +4350,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -4442,12 +4442,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -4559,12 +4559,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -4659,11 +4659,11 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(expectedBytes, bytesActual);
             Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var stringRegex = new Utf8Regex(pattern, options: options);
-            var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+            var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
             Assert.Equal(expected, stringActual);
             Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var destinationRegex = new Utf8Regex(pattern, options: options);
-            var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+            var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
             Assert.Equal(System.Buffers.OperationStatus.Done, status);
             Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
             Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -4766,11 +4766,11 @@ public sealed class AsciiSimplePatternTests
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
     }
@@ -14556,12 +14556,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -14724,12 +14724,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -14806,11 +14806,11 @@ public sealed class AsciiSimplePatternTests
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 4 + 16];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
     }
@@ -14952,12 +14952,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -15043,11 +15043,11 @@ public sealed class AsciiSimplePatternTests
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
     }
@@ -15114,12 +15114,12 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -15301,11 +15301,11 @@ public sealed class AsciiSimplePatternTests
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
     }
@@ -15364,11 +15364,11 @@ public sealed class AsciiSimplePatternTests
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
     }
@@ -15480,11 +15480,11 @@ public sealed class AsciiSimplePatternTests
         var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
         Assert.Equal(expectedBytes, bytesActual);
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * capacityFactor + capacityPadding];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
     }

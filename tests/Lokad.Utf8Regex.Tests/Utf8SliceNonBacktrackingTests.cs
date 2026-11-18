@@ -324,11 +324,11 @@ public sealed class Utf8SliceNonBacktrackingTests
             Assert.Equal(expectedBytes, bytesActual);
             Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var stringRegex = new Utf8Regex(pattern, options: options);
-            var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+            var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
             Assert.Equal(expected, stringActual);
             Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var destinationRegex = new Utf8Regex(pattern, options: options);
-            var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+            var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
             Assert.Equal(System.Buffers.OperationStatus.Done, status);
             Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
             Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);

@@ -13,6 +13,7 @@ public class DotNetPerformanceRegexCommonBenchmarks
     private string _input = string.Empty;
     private byte[] _inputBytes = [];
     private string _replacement = string.Empty;
+    private byte[] _replacementUtf8 = [];
 
     [ParamsSource(nameof(CaseIds))]
     public string CaseId { get; set; } = string.Empty;
@@ -67,6 +68,7 @@ public class DotNetPerformanceRegexCommonBenchmarks
         };
 
         _inputBytes = Encoding.UTF8.GetBytes(_input);
+        _replacementUtf8 = Encoding.UTF8.GetBytes(_replacement);
         _regex = new Regex(pattern, Options, Regex.InfiniteMatchTimeout);
         _utf8Regex = new Utf8Regex(pattern, options: Options);
     }
@@ -76,7 +78,7 @@ public class DotNetPerformanceRegexCommonBenchmarks
     {
         return CaseId switch
         {
-            "replace-words" => _utf8Regex.Replace(_inputBytes, _replacement).Length,
+            "replace-words" => _utf8Regex.Replace(_inputBytes, _replacementUtf8).Length,
             "split-words" => CountUtf8Splits(_utf8Regex, _inputBytes),
             "match-word" => MeasureMatch(_utf8Regex.Match(_inputBytes)),
             "backtracking" or "one-node-backtracking" or "email-match" or "email-miss" or "date-match" or "date-miss" or "ip-match" or "ip-miss" or "uri-match" or "uri-miss"

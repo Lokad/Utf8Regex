@@ -405,6 +405,8 @@ Successful supplied arrays retain their documented identity. Mutable
 output arrays remain independent even when immutable equal-range strings share.
 
 Core removes `ReplaceToString`, callback replacement and both evaluator delegates.
+Pass UTF-8 templates to `Replace` and `TryReplace`, using an `u8` literal for
+fixed text or encoding dynamic templates in the host.
 Use `CreateMatchCursor` to read byte ranges and capture histories, then assemble
 custom output in the host. Byte-template replacement and destination output keep
 their resource controls and original cancellation/deadline. Their scalar worker

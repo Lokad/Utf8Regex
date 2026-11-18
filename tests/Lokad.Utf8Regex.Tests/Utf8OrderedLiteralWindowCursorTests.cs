@@ -72,11 +72,11 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
             {
                 var expected = oracle.Replace(text, replacement);
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
-                Assert.Equal(expectedBytes, regex.Replace(input, replacement));
                 Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(replacement)));
-                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
+                Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(replacement)));
+                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(replacement))));
                 var destination = new byte[expectedBytes.Length];
-                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, replacement, destination, out var written));
+                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, Encoding.UTF8.GetBytes(replacement), destination, out var written));
                 Assert.Equal(expectedBytes.Length, written);
                 Assert.Equal(expectedBytes, destination);
                 AssertOwned(regex);
@@ -84,7 +84,7 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
                 {
                     var shortDestination = Enumerable.Repeat((byte)0xcc, expectedBytes.Length - 1).ToArray();
                     Assert.Equal(OperationStatus.DestinationTooSmall,
-                        regex.TryReplace(input, replacement, shortDestination, out written));
+                        regex.TryReplace(input, Encoding.UTF8.GetBytes(replacement), shortDestination, out written));
                     Assert.Equal(0, written);
                     Assert.All(shortDestination, value => Assert.Equal((byte)0xcc, value));
                 }
@@ -93,7 +93,7 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
             if (!finiteTimeout)
             {
                 const string template = "<$&>:$`:$':$_:$$";
-                Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(text, template)), regex.Replace(input, template));
+                Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(text, template)), regex.Replace(input, "<$&>:$`:$':$_:$$"u8));
                 AssertOwned(regex);
             }
         }

@@ -51,7 +51,7 @@ public sealed class Utf8ScalarCultureCleanupTests
                 System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(patternId == 0 ? "col" : "before"))).Span));
             Assert.Equal(patternId == 0 ? "23" : "\U0001f600",
                 System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(patternId == 0 ? "row" : patternId == 1 ? "tab" : "name"))).Span));
-            Assert.Equal("<" + text + ">", Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
+            Assert.Equal("<" + text + ">", Encoding.UTF8.GetString(regex.Replace(input, "<$&>"u8)));
             var cursor = regex.EnumerateMatches(input);
             Assert.True(cursor.MoveNext());
             Assert.Equal(input.Length, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
@@ -96,7 +96,7 @@ public sealed class Utf8ScalarCultureCleanupTests
                 var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
                 Assert.Equal(wanted.Success, found.Success);
                 if (wanted.Success) Assert.Equal(wanted.Groups["x"].Value, System.Text.Encoding.UTF8.GetString(found.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
-                Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$1>")));
+                Assert.Equal(oracle.Replace(text, "<$1>"), Encoding.UTF8.GetString(regex.Replace(input, "<$1>"u8)));
                 var positions = new List<(int, int)>();
                 foreach (var match in regex.EnumerateMatches(input)) positions.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
                 Assert.Equal(oracle.Matches(text).Select(m => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)))), positions);

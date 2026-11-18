@@ -121,11 +121,11 @@ public sealed class LazyFallbackConstructionTests
         Touch(Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
         _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, 0))));
 
-        _ = regex.Replace(input, "X");
+        _ = regex.Replace(input, "X"u8);
         _ = regex.Replace(input, Encoding.UTF8.GetBytes("X"));
-        _ = Encoding.UTF8.GetString(regex.Replace(input, "X"));
+        _ = Encoding.UTF8.GetString(regex.Replace(input, "X"u8));
         var destination = new byte[Math.Max(input.Length * 4, 16)];
-        _ = regex.TryReplace(input, "X", destination, out _);
+        _ = regex.TryReplace(input, "X"u8, destination, out _);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern + " options=" + options.ToString() + " input=" + inputText);
         Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog), "pattern=" + pattern + " options=" + options.ToString() + " input=" + inputText);
     }
@@ -459,13 +459,13 @@ public sealed class LazyFallbackConstructionTests
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
+        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(stringRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, stringRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
         var destinationRegex = new Utf8Regex(pattern, options: options);
         Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
+        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
         Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);

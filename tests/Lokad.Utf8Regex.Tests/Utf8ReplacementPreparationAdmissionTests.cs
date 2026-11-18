@@ -22,17 +22,16 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         yield return ["$2147483648${2147483648}${unclosed", false];
         yield return ["$123$701$001", true];
         yield return ["${missing}${absent}x$0012", true];
-        yield return ["\ud83d$1\ude00", false];
     }
 
     private static Utf8AnalyzedReplacement Create(string template, bool ecma) =>
-        Utf8FrontEndReplacementAnalyzer.Analyze(template, [0, 1, 7, 12], ["zero", "one", "seven", "twelve"], ecma);
+        Utf8FrontEndReplacementAnalyzer.Analyze(System.Text.Encoding.UTF8.GetBytes(template), [0, 1, 7, 12], ["zero", "one", "seven", "twelve"], ecma);
 
     [Fact]
     public void PublishedReplacementHoldersAndMajorArraysFitAdmission()
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var result = Utf8FrontEndReplacementAnalyzer.Analyze("a${missing}$1$1z", [0, 1], ["zero", "one"]);
+        var result = Utf8FrontEndReplacementAnalyzer.Analyze("a${missing}$1$1z"u8, [0, 1], ["zero", "one"]);
         Assert.NotEmpty(result.Plan.Instructions);
         Assert.True(owner.Budget.ReservedBytes >= 256ul +
             Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementInstruction>(result.Plan.Instructions.Count));
@@ -237,7 +236,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         Assert.Same(result.Plan.Instructions[0].LiteralUtf8, result.LiteralUtf8);
         Assert.Equal("${missing}$00123", System.Text.Encoding.UTF8.GetString(result.LiteralUtf8));
         var regex = new Utf8Regex("(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)(l)");
-        Assert.Equal("gaglabcdefghijkl", System.Text.Encoding.UTF8.GetString(regex.Replace("abcdefghijkl"u8, "$7$1$7$12$0")));
+        Assert.Equal("gaglabcdefghijkl", System.Text.Encoding.UTF8.GetString(regex.Replace("abcdefghijkl"u8, "$7$1$7$12$0"u8)));
     }
 
     [Theory]
@@ -334,14 +333,22 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
     {
         switch (stage)
         {
-            case "parse": return () => Utf8ReplacementPattern.Parse("é$$${missing}$0012");
-            case "named": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a${x}$0012z", [0, 1, 7], ["zero", "one", "x"]);
-            case "unknown-literal": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a${x}$0012z");
-            case "numeric": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a$1z", [0, 1], ["zero", "one"]);
-            case "literal-text": return () => Utf8FrontEndReplacementAnalyzer.Analyze("é\ud83d$literal\ude00");
+            case "parse": return () =>
+            {
+                using var child = Utf8ConstructionScope.Enter();
+                using var storage = Utf8ConstructionSession.Create(child.Budget);
+                var parsed = Utf8ReplacementPattern.Parse(storage, "é$$${missing}$0012"u8, [], false);
+                storage.Complete();
+                child.Complete();
+                return parsed;
+            };
+            case "named": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a${x}$0012z"u8, [0, 1, 7], ["zero", "one", "x"]);
+            case "unknown-literal": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a${x}$0012z"u8);
+            case "numeric": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a$1z"u8, [0, 1], ["zero", "one"]);
+            case "literal-text": return () => Utf8FrontEndReplacementAnalyzer.Analyze("é😀$literalé"u8);
             default:
                 var regex = new Utf8Regex(stage == "rewrite-simple" ? "(abc)" : stage == "rewrite-tree" ? "((?:ab|cd))" : "(a+)b");
-                var plan = Utf8FrontEndReplacementAnalyzer.Analyze("x$1$1z", [0, 1], ["zero", "one"]).Plan;
+                var plan = Utf8FrontEndReplacementAnalyzer.Analyze("x$1$1z"u8, [0, 1], ["zero", "one"]).Plan;
                 var method = typeof(Utf8Regex).GetMethod("RewriteWholeLiteralCapturePlan", BindingFlags.Instance | BindingFlags.NonPublic)
                     ?? throw new InvalidOperationException();
                 return () =>

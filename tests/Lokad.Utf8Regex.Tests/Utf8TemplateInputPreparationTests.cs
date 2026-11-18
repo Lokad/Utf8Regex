@@ -28,14 +28,14 @@ public sealed class Utf8TemplateInputPreparationTests
                 var output = new byte[expected.Length];
                 var status = utf8Template
                     ? regex.TryReplace(input, "<$1>"u8, output, out var written)
-                    : regex.TryReplace(input, template, output, out written);
+                    : regex.TryReplace(input, "<$1>"u8, output, out written);
                 Assert.Equal(OperationStatus.Done, status);
                 Assert.Equal(expected.Length, written);
                 Assert.Equal(expected, output);
             }
             else
             {
-                Assert.Equal(expected, utf8Template ? regex.Replace(input, "<$1>"u8) : regex.Replace(input, template));
+                Assert.Equal(expected, utf8Template ? regex.Replace(input, "<$1>"u8) : regex.Replace(input, "<$1>"u8));
             }
         }
         finally { session.Complete(); }

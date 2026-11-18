@@ -123,11 +123,11 @@ public sealed class Utf8SliceUnicodeAtomTests
                 // become U+FFFD before substitution, including an empty match.
                 var scalarTemplate = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template));
                 var expected = subject.Restore(oracle.Replace(subject.Projected, scalarTemplate));
-                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, template, source.Token)));
+                Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template), source.Token)));
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
-                Assert.Equal(expectedBytes, regex.Replace(input, template, source.Token));
+                Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(template), source.Token));
                 var destination = new byte[expectedBytes.Length + 1];
-                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, template, destination, out var written, source.Token));
+                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var written, source.Token));
                 Assert.Equal(expectedBytes, destination.AsSpan(0, written).ToArray());
             }
             AssertOwned(regex);
@@ -170,7 +170,7 @@ public sealed class Utf8SliceUnicodeAtomTests
         AssertMatch(text, oracle.Match(text), regex.Match(input));
         AssertDetailed(new FixtureSubject(text, projectSupplementary: false), oracle.Match(text), Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
         AssertSequence(text, oracle.EnumerateMatches(text), regex.EnumerateMatches(input));
-        Assert.Equal(oracle.Replace(text, "[$1]"), Encoding.UTF8.GetString(regex.Replace(input, "[$1]")));
+        Assert.Equal(oracle.Replace(text, "[$1]"), Encoding.UTF8.GetString(regex.Replace(input, "[$1]"u8)));
         AssertOwned(regex);
     }
 
@@ -221,7 +221,7 @@ public sealed class Utf8SliceUnicodeAtomTests
                                 case 0: _ = regex.Count(input, source.Token); break;
                                 case 1: _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)); break;
                                 case 2: _ = regex.EnumerateMatches(input, cancellationToken: source.Token).MoveNext(); break;
-                                case 3: _ = Encoding.UTF8.GetString(regex.Replace(input, "Q", source.Token)); break;
+                                case 3: _ = Encoding.UTF8.GetString(regex.Replace(input, "Q"u8, source.Token)); break;
                             }
                         });
                         Assert.True(entered);

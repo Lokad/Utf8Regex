@@ -99,7 +99,7 @@ public class Utf8OrderedLiteralWindowCursorBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("Replace")]
-    public byte[] ReplaceUtf8() => _utf8.Replace(_input, "Q");
+    public byte[] ReplaceUtf8() => _utf8.Replace(_input, "Q"u8);
 
     [Benchmark(Baseline = true)]
     [BenchmarkCategory("Replace")]
