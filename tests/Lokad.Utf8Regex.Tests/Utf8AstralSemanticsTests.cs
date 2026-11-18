@@ -133,9 +133,8 @@ public sealed class Utf8AstralSemanticsTests
                 {
                     Assert.True(splits.MoveNext());
                     var split = splits.Current;
-                    Assert.Equal(split.GetValueBytes().ToArray(), global::System.Text.Encoding.UTF8.GetBytes(split.GetValueString()));
                     Assert.Equal(range, (split.IndexInBytes, split.LengthInBytes));
-                    Assert.Equal(Value(input, range), split.GetValueString());
+                    Assert.Equal(Value(input, range), Encoding.UTF8.GetString(split.GetValueBytes()));
                 }
                 Assert.False(splits.MoveNext());
             }

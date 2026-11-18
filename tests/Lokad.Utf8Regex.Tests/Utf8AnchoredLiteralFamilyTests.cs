@@ -39,7 +39,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -95,7 +95,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -139,7 +139,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -493,7 +493,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
         var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -525,7 +525,7 @@ public sealed class Utf8AnchoredLiteralFamilyTests
             var actual = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
             foreach (var split in regex.EnumerateSplits(input, count))
             {
-                actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+                actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
             }
 
             Assert.Equal(expected, actual);

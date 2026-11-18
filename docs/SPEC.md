@@ -372,8 +372,8 @@ Removing split maps lowers modeled working admission; match-state buffers and
 bounded work, cancellation and deadline checks remain. Views stay valid after
 EOF or interruption while their original input remains unchanged and alive.
 Publishing a borrowed split view allocates no result payload and therefore spends
-no result-byte capacity. A host's explicit `GetValueString` decoding is outside
-that capacity, like other borrowed-view getters.
+no result-byte capacity. Callers can decode the segment returned by
+`GetValueBytes()` in their own code and account for the resulting text there.
 
 Replacement uses .NET-style `$1`, `${name}`, `$&`, prefix/suffix, `$+`,
 `$_` and `$$` forms with the supported numeric parsing rules. RTL discovery

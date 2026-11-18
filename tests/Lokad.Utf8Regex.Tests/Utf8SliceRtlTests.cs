@@ -576,8 +576,7 @@ public sealed class Utf8SliceRtlOperationTests
         var actual = new List<(string Value, int ByteIndex, int ByteLength)>();
         foreach (var split in regex.EnumerateSplits(subject.Input, count))
         {
-            Assert.Equal(split.GetValueBytes().ToArray(), global::System.Text.Encoding.UTF8.GetBytes(split.GetValueString()));
-            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
         Assert.Equal(expected, actual);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -667,7 +666,7 @@ public sealed class Utf8SliceRtlOperationTests
         var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
         foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
         {
-            actualSplits.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            actualSplits.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
         Assert.Equal(expectedSplits, actualSplits);
         Assert.Equal(!splitFallback, splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);

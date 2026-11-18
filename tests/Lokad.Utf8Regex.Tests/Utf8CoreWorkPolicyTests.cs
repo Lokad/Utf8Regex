@@ -251,7 +251,7 @@ public sealed class Utf8CoreWorkPolicyTests
         try { alias.MoveNext(); Assert.Fail("A split copy must share cumulative work."); }
         catch (Utf8ResourceLimitExceededException error) { CheckFailure(error, cap); }
         Assert.Equal(alias.DebugInvocationSteps, cursor.DebugInvocationSteps);
-        Assert.Equal("é😀 ", retained.GetValueString());
+        Assert.Equal("é😀 ", Encoding.UTF8.GetString(retained.GetValueBytes()));
         Assert.Equal("é😀 "u8.ToArray(), retained.GetValueBytes().ToArray());
     }
 

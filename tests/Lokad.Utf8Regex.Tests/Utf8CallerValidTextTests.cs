@@ -50,7 +50,7 @@ public sealed class Utf8CallerValidTextTests
             Assert.Equal(whole, offsetMatches.Current);
             var splits = regex.EnumerateSplits(input, cancellationToken: source.Token);
             Assert.True(splits.MoveNext());
-            Assert.Equal("é", splits.Current.GetValueString());
+            Assert.Equal("é", Encoding.UTF8.GetString(splits.Current.GetValueBytes()));
             }
             finally { session.Complete(); }
         }

@@ -1285,7 +1285,7 @@ public sealed class Utf8RegexConstructionTests
 
         foreach (var split in compiled.EnumerateSplits(bytes))
         {
-            actual.Add(split.GetValueString());
+            actual.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
 
         Assert.Equal(expected, actual);
@@ -1316,7 +1316,7 @@ public sealed class Utf8RegexConstructionTests
                 $"Expected small ASCII literal-family Split route for '{testCase.Pattern}'.");
             foreach (var split in regex.EnumerateSplits(bytes))
             {
-                actual.Add(split.GetValueString());
+                actual.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
             }
 
             Assert.Equal(Regex.Split(testCase.Input, testCase.Pattern, options), actual);
@@ -1344,7 +1344,7 @@ public sealed class Utf8RegexConstructionTests
         var actual = new List<string>();
         foreach (var split in regex.EnumerateSplits(bytes, count))
         {
-            actual.Add(split.GetValueString());
+            actual.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
 
         Assert.Equal(managed.Split(input, count), actual);
@@ -1399,7 +1399,7 @@ public sealed class Utf8RegexConstructionTests
             Assert.False(regex.TryGetSmallAsciiLiteralFamilySearch(bytes, out _));
             foreach (var split in regex.EnumerateSplits(bytes))
             {
-                actual.Add(split.GetValueString());
+                actual.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
             }
 
             Assert.Equal(Regex.Split(testCase.Input, testCase.Pattern, options), actual);

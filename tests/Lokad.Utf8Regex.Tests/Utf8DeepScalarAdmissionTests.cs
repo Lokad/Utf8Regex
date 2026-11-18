@@ -71,7 +71,7 @@ public sealed class Utf8DeepScalarAdmissionTests
         Assert.Equal((index, length), (cursor.Current.StartOffsetInBytes, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes)));
         Assert.False(cursor.MoveNext());
         var splits = new List<string>();
-        foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
+        foreach (var split in regex.EnumerateSplits(input)) splits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         Assert.Equal(family == "behind" ? rtl ? new[] { "", "\U0001f600" } : new[] { "\U0001f600", "" }
             : new[] { "", "" }, splits);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

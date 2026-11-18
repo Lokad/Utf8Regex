@@ -128,7 +128,7 @@ internal static class Utf8AsciiScalarOperationAssertions
                 var cursor = split.EnumerateSplits(subject.Input, maximum);
                 Assert.True(cursor.MoveNext());
                 Assert.Equal((0, subject.Input.Length), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
-                Assert.Equal(text, cursor.Current.GetValueString());
+                Assert.Equal(text, Encoding.UTF8.GetString(cursor.Current.GetValueBytes()));
                 Assert.False(cursor.MoveNext());
             }
             else
@@ -238,7 +238,7 @@ internal static class Utf8AsciiScalarOperationAssertions
             Assert.True(actual.MoveNext());
             var (index, length) = expected.Current.GetOffsetAndLength(subject.Projected.Length);
             Assert.Equal(subject.Bytes(index, length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
-            Assert.Equal(subject.Value(index, length), actual.Current.GetValueString());
+            Assert.Equal(subject.Value(index, length), Encoding.UTF8.GetString(actual.Current.GetValueBytes()));
         }
         Assert.False(actual.MoveNext());
     }

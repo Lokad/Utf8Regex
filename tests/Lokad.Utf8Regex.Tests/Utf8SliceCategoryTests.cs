@@ -445,7 +445,7 @@ public sealed class Utf8SliceCategoryTests
         var actual = new List<string>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add(split.GetValueString());
+            actual.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
 
         Assert.Equal(expected, actual.ToArray());

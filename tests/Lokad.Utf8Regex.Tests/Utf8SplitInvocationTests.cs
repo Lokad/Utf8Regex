@@ -129,17 +129,17 @@ public sealed class Utf8SplitInvocationTests
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
         var view = FinishSplit(regex, input, count, ref invocation, out var cursor);
-        var value = view.GetValueString();
+        var value = view.GetValueBytes().ToArray();
         const ulong held = 7;
         Assert.Equal(held, cursor.DebugInvocationReservedBytes);
-        Assert.Equal(value, view.GetValueString());
+        Assert.True(view.GetValueBytes().SequenceEqual(value));
         source.Cancel();
         var canceled = false;
         try { _ = cursor.MoveNext(); }
         catch (OperationCanceledException exception) { Assert.Equal(source.Token, exception.CancellationToken); canceled = true; }
         Assert.True(canceled);
         Assert.Equal(held, cursor.DebugInvocationReservedBytes);
-        Assert.Equal(value, view.GetValueString());
+        Assert.True(view.GetValueBytes().SequenceEqual(value));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

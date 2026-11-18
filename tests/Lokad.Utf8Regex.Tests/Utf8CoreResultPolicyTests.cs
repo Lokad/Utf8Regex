@@ -288,7 +288,7 @@ public sealed class Utf8CoreResultPolicyTests
         Assert.True(splits.MoveNext());
         var view = splits.Current;
         while (splits.MoveNext()) { }
-        Assert.Equal("é😀 ", view.GetValueString());
+        Assert.Equal("é😀 ", Encoding.UTF8.GetString(view.GetValueBytes()));
     }
 
     [Fact]

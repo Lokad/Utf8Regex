@@ -28,8 +28,6 @@ public sealed class Utf8ValueSplitTests
         var byteRanges = new List<(int, int)>();
         foreach (var split in regex.EnumerateSplits("😀"u8))
         {
-            Assert.Equal(split.GetValueBytes().ToArray(), global::System.Text.Encoding.UTF8.GetBytes(split.GetValueString()));
-            Assert.Equal("", split.GetValueString());
             Assert.True(split.GetValueBytes().IsEmpty);
             byteRanges.Add((split.IndexInBytes, split.LengthInBytes));
         }

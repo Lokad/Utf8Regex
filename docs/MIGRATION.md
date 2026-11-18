@@ -122,7 +122,8 @@ Split results now expose only `IndexInBytes` and `LengthInBytes`. Remove uses of
 segments already follow scalar boundaries. Controlled splits no longer allocate
 subject coordinate maps, so their modeled working requirements can decrease.
 Count/empty/RTL order, borrowed-view lifetimes and cumulative interruption remain.
-Decode a requested segment explicitly with `GetValueString` when needed.
+Replace `split.GetValueString()` with `Encoding.UTF8.GetString(split.GetValueBytes())`
+when the host needs a string.
 
 Core also removes `CountFromUtf16Offset`. Keep using `Count` for the whole subject;
 for a partial count, aggregate one byte-start enumeration:

@@ -113,7 +113,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var actualSplits = new List<string>();
         foreach (var split in actual.EnumerateSplits(input))
         {
-            actualSplits.Add(split.GetValueString());
+            actualSplits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
 
         Assert.Equal(expectedRegex.Split(Subject), actualSplits);
@@ -194,7 +194,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var actualSplits = new List<string>();
         foreach (var split in actual.EnumerateSplits(input))
         {
-            actualSplits.Add(split.GetValueString());
+            actualSplits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
 
         Assert.Equal(expected.Split(subject), actualSplits);
@@ -250,7 +250,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var actualSplits = new List<string>();
         foreach (var split in actual.EnumerateSplits(input))
         {
-            actualSplits.Add(split.GetValueString());
+            actualSplits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
 
         Assert.Equal(expected.Split(subject), actualSplits);
@@ -292,7 +292,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
             actualSplits.Add((
                 split.IndexInBytes,
                 split.LengthInBytes,
-                split.GetValueString()));
+                Encoding.UTF8.GetString(split.GetValueBytes())));
         }
 
         Assert.Equal(expectedSplits, actualSplits);
@@ -418,7 +418,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var actual = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -456,7 +456,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var actual = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);

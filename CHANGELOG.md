@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove Core split `GetValueString`. Hosts can decode the bytes returned by
+  `GetValueBytes`.
+
 - Replace PCRE2 regex CopyNameEntries with caller-buffer TryCopyNameEntryUtf8,
   preserving ordered name/number pairs, duplicate names and branch-reset reuse.
 

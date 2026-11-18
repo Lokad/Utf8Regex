@@ -155,7 +155,7 @@ public sealed class Utf8ScalarCountTests
             Assert.False(cursor.MoveNext());
         }
         var pieces = new List<string>();
-        foreach (var piece in regex.EnumerateSplits(input)) pieces.Add(piece.GetValueString());
+        foreach (var piece in regex.EnumerateSplits(input)) pieces.Add(Encoding.UTF8.GetString(piece.GetValueBytes()));
         Assert.Equal(reverse ? expectedPieces.Reverse() : expectedPieces, pieces);
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "|")));
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, "|"u8));

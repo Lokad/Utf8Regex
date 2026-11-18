@@ -216,7 +216,7 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Throws<ArgumentOutOfRangeException>(() => { var cursor = regex.EnumerateMatches(input, 1); cursor.MoveNext(); });
         Assert.Equal("Q😀Q😀Q", Encoding.UTF8.GetString(regex.Replace(input, "Q")));
         var pieces = new List<string>();
-        foreach (var piece in regex.EnumerateSplits(input)) pieces.Add(piece.GetValueString());
+        foreach (var piece in regex.EnumerateSplits(input)) pieces.Add(Encoding.UTF8.GetString(piece.GetValueBytes()));
         Assert.Equal(new[] { "", "😀", "😀", "" }, pieces);
         var shared = new Utf8Regex("(?<x>a(?<x>b)c)", options: options);
         Assert.Equal("<abc>", Encoding.UTF8.GetString(shared.Replace("abc"u8, "<${x}>")));

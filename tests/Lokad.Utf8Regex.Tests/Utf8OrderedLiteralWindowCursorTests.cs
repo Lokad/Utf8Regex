@@ -62,7 +62,7 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
                 var actualSplits = new List<(string, int, int)>();
                 foreach (var split in regex.EnumerateSplits(input, count))
                 {
-                    actualSplits.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+                    actualSplits.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
                 }
                 Assert.Equal(expectedSplits, actualSplits);
                 AssertOwned(regex);

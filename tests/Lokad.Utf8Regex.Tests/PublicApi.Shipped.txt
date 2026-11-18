@@ -95,7 +95,6 @@ readonly ref struct Utf8ValueSplit
   property Int32 IndexInBytes { get; }
   property Int32 LengthInBytes { get; }
   method ReadOnlySpan<Byte> GetValueBytes()
-  method String GetValueString()
 ref struct Utf8ValueSplitEnumerator
   property Utf8ValueSplit Current { get; }
   method Boolean MoveNext()

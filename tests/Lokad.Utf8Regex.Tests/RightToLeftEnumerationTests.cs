@@ -169,7 +169,7 @@ public sealed class RightToLeftEnumerationTests
         var actualSplits = new List<string>();
         foreach (var split in actual.EnumerateSplits(bytes))
         {
-            actualSplits.Add(split.GetValueString());
+            actualSplits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
 
         Assert.Equal(expectedSplits, actualSplits);

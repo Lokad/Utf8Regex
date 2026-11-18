@@ -304,17 +304,17 @@ public sealed class Utf8CursorCopyWorkTests
         Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
         Assert.True(copy.MoveNext());
         var retained = copy.Current;
-        var retainedValue = retained.GetValueString();
+        var retainedValue = Encoding.UTF8.GetString(retained.GetValueBytes());
         // EnumerateSplits excludes captured delimiters; compare copies directly.
-        var originalValues = new List<string> { original.Current.GetValueString() };
-        while (original.MoveNext()) originalValues.Add(original.Current.GetValueString());
+        var originalValues = new List<string> { Encoding.UTF8.GetString(original.Current.GetValueBytes()) };
+        while (original.MoveNext()) originalValues.Add(Encoding.UTF8.GetString(original.Current.GetValueBytes()));
         Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
-        var copyValues = new List<string> { copy.Current.GetValueString() };
-        while (copy.MoveNext()) copyValues.Add(copy.Current.GetValueString());
+        var copyValues = new List<string> { Encoding.UTF8.GetString(copy.Current.GetValueBytes()) };
+        while (copy.MoveNext()) copyValues.Add(Encoding.UTF8.GetString(copy.Current.GetValueBytes()));
         Assert.Equal(originalValues, copyValues);
         Assert.Equal(original.DebugInvocationSteps, copy.DebugInvocationSteps);
         source.Cancel();
-        Assert.Equal(retainedValue, retained.GetValueString());
+        Assert.Equal(retainedValue, Encoding.UTF8.GetString(retained.GetValueBytes()));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

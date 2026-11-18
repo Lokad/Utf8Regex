@@ -57,7 +57,7 @@ public sealed class Utf8ScalarCultureCleanupTests
             Assert.Equal(input.Length, (cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
             Assert.False(cursor.MoveNext());
             var splits = new List<string>();
-            foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
+            foreach (var split in regex.EnumerateSplits(input)) splits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
             Assert.Equal(new[] { "", "" }, splits);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

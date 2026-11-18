@@ -518,7 +518,7 @@ public sealed class Utf8SliceUnicodeAtomTests
             var (start, length) = expected.Current.GetOffsetAndLength(subject.Projected.Length);
             var range = subject.Coordinates(start, length);
             Assert.Equal((range.ByteStart, range.ByteLength), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
-            Assert.Equal(subject.Value(start, length), actual.Current.GetValueString());
+            Assert.Equal(subject.Value(start, length), Encoding.UTF8.GetString(actual.Current.GetValueBytes()));
         }
         Assert.False(actual.MoveNext());
     }

@@ -36,7 +36,7 @@ public sealed class Utf8ScalarOnlyPreparationTests
         Assert.Equal(2, count);
         Assert.Equal("😀<abab>中<abab>", Encoding.UTF8.GetString(regex.Replace(input, "<${x}>")));
         var parts = new List<string>();
-        foreach (var part in regex.EnumerateSplits(input)) parts.Add(part.GetValueString());
+        foreach (var part in regex.EnumerateSplits(input)) parts.Add(Encoding.UTF8.GetString(part.GetValueBytes()));
         Assert.Equal(new[] { "😀", "中", "" }, parts);
         using var source = new CancellationTokenSource(); source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);

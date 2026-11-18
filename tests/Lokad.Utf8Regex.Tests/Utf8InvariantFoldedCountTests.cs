@@ -39,7 +39,7 @@ public sealed class Utf8InvariantFoldedCountTests
             if (mode != RegexOptions.RightToLeft)
             {
                 var parts = new List<string>();
-                foreach (var part in regex.EnumerateSplits(bytes)) parts.Add(part.GetValueString());
+                foreach (var part in regex.EnumerateSplits(bytes)) parts.Add(Encoding.UTF8.GetString(part.GetValueBytes()));
                 Assert.Equal(reference.Split(text), parts);
             }
         }

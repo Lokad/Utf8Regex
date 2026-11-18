@@ -65,7 +65,7 @@ public sealed class Utf8CaretPrefixScopeTests
             expectedSplits.Add(text[end..]);
             var splits = new List<string>();
             foreach (var item in regex.EnumerateSplits(input))
-                splits.Add(item.GetValueString());
+                splits.Add(Encoding.UTF8.GetString(item.GetValueBytes()));
             Assert.Equal(expectedSplits, splits);
         }
     }

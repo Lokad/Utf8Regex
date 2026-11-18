@@ -199,7 +199,7 @@ public sealed class Utf8SliceReplaceTests
         var actualSplits = new System.Collections.Generic.List<string>();
         foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
         {
-            actualSplits.Add(split.GetValueString());
+            actualSplits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
         Assert.Equal(oracleSplits, actualSplits);
         Assert.True(splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);

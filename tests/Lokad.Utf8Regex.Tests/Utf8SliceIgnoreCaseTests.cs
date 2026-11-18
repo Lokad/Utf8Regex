@@ -202,7 +202,7 @@ public sealed class Utf8SliceIgnoreCaseTests
         var actualSegments = new List<string>();
         foreach (var split in regex.EnumerateSplits(input, expected))
         {
-            actualSegments.Add(split.GetValueString());
+            actualSegments.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
 
         Assert.Equal(expectedSegments, actualSegments);

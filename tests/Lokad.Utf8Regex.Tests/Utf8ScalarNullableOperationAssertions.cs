@@ -58,7 +58,7 @@ internal static class Utf8ScalarNullableOperationAssertions
             foreach (var count in new[] { 0, 1, 2 })
             {
                 var pieces = new List<string>();
-                foreach (var piece in regex.EnumerateSplits(input, count, token)) pieces.Add(piece.GetValueString());
+                foreach (var piece in regex.EnumerateSplits(input, count, token)) pieces.Add(Encoding.UTF8.GetString(piece.GetValueBytes()));
                 Assert.Equal(count == 1 ? [text] : count == 2 ? ["", text] : new[] { "", "😀", "", "😀", "" }, pieces);
             }
             foreach (var (template, expected) in new[] { ("Q", "Q😀QQ😀Q"), ("$&", text) })

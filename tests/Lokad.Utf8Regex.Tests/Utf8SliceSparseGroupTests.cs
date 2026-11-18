@@ -166,7 +166,7 @@ public sealed class Utf8SliceSparseGroupTests
                         Assert.Equal(new[] { subject.Projected }, oracle.Split(subject.Projected, count));
                         Assert.True(actual.MoveNext());
                         Assert.Equal((0, input.Length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
-                        Assert.Equal(text, actual.Current.GetValueString());
+                        Assert.Equal(text, Encoding.UTF8.GetString(actual.Current.GetValueBytes()));
                         Assert.False(actual.MoveNext());
                         continue;
                     }
@@ -176,7 +176,7 @@ public sealed class Utf8SliceSparseGroupTests
                         Assert.True(actual.MoveNext());
                         var (index, length) = expected.Current.GetOffsetAndLength(subject.Projected.Length);
                         Assert.Equal(subject.ByteRange(index, length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
-                        Assert.Equal(subject.Value(index, length), actual.Current.GetValueString());
+                        Assert.Equal(subject.Value(index, length), Encoding.UTF8.GetString(actual.Current.GetValueBytes()));
                     }
                     Assert.False(actual.MoveNext());
                 }

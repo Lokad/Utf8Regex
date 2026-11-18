@@ -113,7 +113,7 @@ public sealed class Utf8CompiledScalarConsumerTests
         var cursor = Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(prepared, input,
             validation, int.MaxValue, Utf8ExecutionDeadline.Infinite);
         var pieces = new List<string>();
-        while (cursor.MoveNext()) pieces.Add(cursor.Current.GetValueString());
+        while (cursor.MoveNext()) pieces.Add(Encoding.UTF8.GetString(cursor.Current.GetValueBytes()));
         Assert.Equal(rtl ? new[] { "z", "x", "é" } : ["é", "x", "z"], pieces);
     }
 

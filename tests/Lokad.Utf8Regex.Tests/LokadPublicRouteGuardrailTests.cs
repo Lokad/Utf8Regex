@@ -69,7 +69,7 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.Equal(2, count);
         Assert.Equal("!X!X!", Encoding.UTF8.GetString(regex.Replace(input, "X")));
         var splits = new List<string>();
-        foreach (var split in regex.EnumerateSplits(input)) splits.Add(split.GetValueString());
+        foreach (var split in regex.EnumerateSplits(input)) splits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         Assert.Equal(new[] { "!", "!", "!" }, splits);
         Assert.False(regex.IsMatch("Holmes"u8));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

@@ -64,7 +64,6 @@ public sealed class Utf8RegexSliceSplitDiffTests
         var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(expected, EnumerateUtf8Splits(regex, input, int.MaxValue));
         foreach (var split in regex.EnumerateSplits(Encoding.UTF8.GetBytes(input), int.MaxValue))
-            Assert.Equal(split.GetValueBytes().ToArray(), global::System.Text.Encoding.UTF8.GetBytes(split.GetValueString()));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -92,7 +91,7 @@ public sealed class Utf8RegexSliceSplitDiffTests
         var values = new List<(string Value, int Index, int Length)>();
         foreach (var split in utf8Regex.EnumerateSplits(bytes, count))
         {
-            values.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            values.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
 
         return values;

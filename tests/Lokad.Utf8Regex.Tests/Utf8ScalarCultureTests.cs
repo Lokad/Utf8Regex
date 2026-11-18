@@ -66,7 +66,7 @@ public sealed class Utf8ScalarCultureTests
                     var expectedSplits = new List<string>();
                     foreach (var range in oracle.EnumerateSplits(text, int.MaxValue)) expectedSplits.Add(text[range]);
                     var splits = new List<string>();
-                    foreach (var split in regex.EnumerateSplits(input, int.MaxValue)) splits.Add(split.GetValueString());
+                    foreach (var split in regex.EnumerateSplits(input, int.MaxValue)) splits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
                     Assert.Equal(expectedSplits, splits);
                     var output = oracle.Replace(text, "[$&]");
                     Assert.Equal(Encoding.UTF8.GetBytes(output), regex.Replace(input, "[$&]"));
@@ -112,7 +112,7 @@ public sealed class Utf8ScalarCultureTests
                 var replacement = "<" + value + ">" + (all ? "" : "\U0001f600");
                 Assert.Equal(Encoding.UTF8.GetBytes(replacement), regex.Replace(input, "<$&>", source.Token));
                 var splits = new List<string>();
-                foreach (var split in regex.EnumerateSplits(input, int.MaxValue, source.Token)) splits.Add(split.GetValueString());
+                foreach (var split in regex.EnumerateSplits(input, int.MaxValue, source.Token)) splits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
                 Assert.Equal(rtl ? new[] { all ? "" : "\U0001f600", "" } : new[] { "", all ? "" : "\U0001f600" }, splits);
                 AssertOwned(regex);
             }

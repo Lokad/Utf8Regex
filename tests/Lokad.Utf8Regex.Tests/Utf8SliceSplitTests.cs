@@ -91,7 +91,7 @@ public sealed class Utf8SliceSplitTests
             var actual = new List<(string Value, int Index, int Length)>();
             foreach (var split in regex.EnumerateSplits(input, count))
             {
-                actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+                actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
             }
 
             Assert.Equal(expected, actual);
@@ -127,7 +127,7 @@ public sealed class Utf8SliceSplitTests
         var actual = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);
@@ -151,7 +151,7 @@ public sealed class Utf8SliceSplitTests
         var segments = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, 1))
         {
-            segments.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            segments.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal([(inputText, 0, inputText.Length)], segments);
@@ -195,7 +195,7 @@ public sealed class Utf8SliceSplitTests
         var actual = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
-            actual.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+            actual.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
 
         Assert.Equal(expected, actual);

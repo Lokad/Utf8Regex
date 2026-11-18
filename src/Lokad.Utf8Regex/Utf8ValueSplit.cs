@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace Lokad.Utf8Regex;
 
 /// <summary>Provides a stack-only byte view of one split segment over the original UTF-8 input.</summary>
@@ -23,7 +21,4 @@ public readonly ref struct Utf8ValueSplit
 
     /// <summary>Gets the segment bytes from the original UTF-8 input.</summary>
     public ReadOnlySpan<byte> GetValueBytes() => _input.Slice(IndexInBytes, LengthInBytes);
-
-    /// <summary>Decodes only this segment to a string.</summary>
-    public string GetValueString() => Encoding.UTF8.GetString(GetValueBytes());
 }

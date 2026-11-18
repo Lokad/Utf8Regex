@@ -86,7 +86,7 @@ public sealed class Utf8OperationCursorArchitectureTests
             splits.Add((
                 split.IndexInBytes,
                 split.LengthInBytes,
-                split.GetValueString()));
+                Encoding.UTF8.GetString(split.GetValueBytes())));
         }
 
         return splits;

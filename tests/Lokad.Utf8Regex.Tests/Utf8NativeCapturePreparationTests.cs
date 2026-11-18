@@ -37,7 +37,7 @@ public sealed class Utf8NativeCapturePreparationTests
         Assert.Equal((9, 6), (next.StartOffsetInBytes, (next.EndOffsetInBytes - next.StartOffsetInBytes)));
         Assert.Equal("z<😀ab:😀ab> z<中def:中def>", Encoding.UTF8.GetString(regex.Replace(input, "<${2}:${1}>")));
         var parts = new List<string>();
-        foreach (var part in regex.EnumerateSplits(input)) parts.Add(part.GetValueString());
+        foreach (var part in regex.EnumerateSplits(input)) parts.Add(Encoding.UTF8.GetString(part.GetValueBytes()));
         Assert.Equal(new[] { "z", " z", "" }, parts);
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, canceled.Token)).CancellationToken);

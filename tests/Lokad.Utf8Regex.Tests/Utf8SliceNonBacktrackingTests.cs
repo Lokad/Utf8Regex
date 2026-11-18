@@ -227,7 +227,7 @@ public sealed class Utf8SliceNonBacktrackingTests
         var actualSplits = new List<string>();
         foreach (var split in splitRegex.EnumerateSplits(Encoding.UTF8.GetBytes("baab"), 0))
         {
-            actualSplits.Add(split.GetValueString());
+            actualSplits.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
         }
 
         Assert.Equal(expectedSplits, actualSplits);
@@ -313,7 +313,7 @@ public sealed class Utf8SliceNonBacktrackingTests
             var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
             foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
             {
-                actualSplits.Add((split.GetValueString(), split.IndexInBytes, split.LengthInBytes));
+                actualSplits.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
             }
             Assert.Equal(expectedSplits, actualSplits);
             Assert.True(splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);
