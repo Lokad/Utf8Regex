@@ -263,7 +263,8 @@ internal static partial class PythonReScalarCompiler
                 throw new InvalidOperationException("The validated Python atom has no owned scalar tree.");
             var balancing = false;
             var lazyCaptures = false;
-            return Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, arena, ref balancing, ref lazyCaptures)
+            return Utf8OwnedTreeSliceLowerer.TryConvertRoot(tree.Root, catalog, arena, Utf8ScalarCaseBehavior.Invariant,
+                ref balancing, ref lazyCaptures)
                 ?? throw new InvalidOperationException("The validated Python atom has no owned scalar lowering.");
         }
         finally { arena.Budget.ReleaseArray(fragment, false); }

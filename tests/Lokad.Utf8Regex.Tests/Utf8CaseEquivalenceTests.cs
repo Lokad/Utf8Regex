@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -24,9 +26,47 @@ public sealed class Utf8CaseEquivalenceTests
     [InlineData(@"\153at")]
     public void FoldedBracketAndEscapedLiteralsIncludeKelvin(string pattern)
     {
+        foreach (var engine in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
+        {
+            using var regex = Utf8Regex.Compile(pattern, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | engine);
+            var program = regex.Inspection.AvailableOwnedSliceProgram;
+            Assert.Empty(program.CategorySetMembers);
+            Assert.Contains(program.Instructions, instruction => instruction is { Kind: Utf8SliceInstructionKind.Set, C: 1 });
+            Assert.Equal(2, regex.Count("Kat KAT"u8));
+            Assert.Equal(5, regex.Match("Kat"u8).EndOffsetInBytes);
+        }
+    }
+
+    [Theory]
+    [InlineData("[^k]at")]
+    [InlineData("[ak-[k]]at")]
+    public void FoldedMaskPreservesNegationAndSubtraction(string pattern)
+    {
         using var regex = Utf8Regex.Compile(pattern, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-        Assert.Equal(2, regex.Count("Kat KAT"u8));
-        Assert.Equal(5, regex.Match("Kat"u8).EndOffsetInBytes);
+        Assert.False(regex.IsMatch("Kat KAT"u8));
+        var match = regex.Match("Kat Aat"u8);
+        Assert.True(match.Success);
+        Assert.Equal(6, match.StartOffsetInBytes);
+        Assert.Equal(9, match.EndOffsetInBytes);
+    }
+
+    [Theory]
+    [InlineData("en-US", 3)]
+    [InlineData("tr-TR", 2)]
+    public void FoldedMaskUsesTheProgramsCaseBehavior(string culture, int count)
+    {
+        var previous = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+            using var regex = Utf8Regex.Compile("[I]", RegexOptions.IgnoreCase);
+            Assert.Empty(regex.Inspection.AvailableOwnedSliceProgram.CategorySetMembers);
+            Assert.Equal(count, regex.Count("I ı i İ"u8));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = previous;
+        }
     }
 
     [Theory]

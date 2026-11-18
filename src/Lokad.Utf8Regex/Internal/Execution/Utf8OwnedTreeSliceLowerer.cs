@@ -1,3 +1,4 @@
+using System.Text;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -26,19 +27,21 @@ internal static class Utf8OwnedTreeSliceLowerer
         // range on aaabab after a later match. Regression oracles use the
         // ordinary engine for this diagnosed case, per the user's guidance.
         var hasCaptureWritingLazyRange = false;
-        var root = TryConvertRoot(tree.Root, catalog, arena, ref hasBalancing, ref hasCaptureWritingLazyRange);
+        var caseBehavior = Utf8SliceCaseEquivalences.GetBehavior(tree.Culture, options);
+        var root = TryConvertRoot(tree.Root, catalog, arena, caseBehavior, ref hasBalancing, ref hasCaptureWritingLazyRange);
         var program = root is null ? null : Utf8SliceLowerer.Lower(root, catalog.GroupNames,
             hasBalancing, tree.UsesIgnoreCase || (options & RegexOptions.IgnoreCase) != 0,
             (options & RegexOptions.RightToLeft) != 0, catalog,
             (options & RegexOptions.Compiled) != 0 && hasCaptureWritingLazyRange,
-            tree.UsesLiteralClassBracketSyntax, Utf8SliceCaseEquivalences.GetBehavior(tree.Culture, options),
+            tree.UsesLiteralClassBracketSyntax, caseBehavior,
             (options & RegexOptions.NonBacktracking) != 0);
         if (program is not null) { arena.Complete(); construction.Complete(); }
         return program;
     }
 
     internal static Utf8SliceNode? TryConvertRoot(Utf8TreeNode root, Utf8CaptureCatalog catalog,
-        Utf8ConstructionArena arena, ref bool hasBalancing, ref bool hasCaptureWritingLazyRange)
+        Utf8ConstructionArena arena, Utf8ScalarCaseBehavior caseBehavior,
+        ref bool hasBalancing, ref bool hasCaptureWritingLazyRange)
     {
         using var nodes = new Utf8ConstructionMap<Utf8TreeNode, Utf8SliceNode?>(arena.Budget, ReferenceEqualityComparer.Instance);
         using var writes = new Utf8ConstructionMap<Utf8TreeNode, bool>(arena.Budget, ReferenceEqualityComparer.Instance);
@@ -61,13 +64,14 @@ internal static class Utf8OwnedTreeSliceLowerer
                 captures |= writes[node.Child(index)];
             }
             writes[node] = captures;
-            nodes[node] = ConvertNode(node, catalog, frame.Depth, nodes, writes, arena, ref hasBalancing, ref hasCaptureWritingLazyRange);
+            nodes[node] = ConvertNode(node, catalog, frame.Depth, nodes, writes, arena, caseBehavior,
+                ref hasBalancing, ref hasCaptureWritingLazyRange);
         }
         return nodes[root];
 
         static Utf8SliceNode? ConvertNode(Utf8TreeNode node, Utf8CaptureCatalog catalog, int depth,
             Utf8ConstructionMap<Utf8TreeNode, Utf8SliceNode?> nodes, Utf8ConstructionMap<Utf8TreeNode, bool> writes,
-            Utf8ConstructionArena arena,
+            Utf8ConstructionArena arena, Utf8ScalarCaseBehavior caseBehavior,
             ref bool hasBalancing, ref bool hasCaptureWritingLazyRange)
         {
             var foldCase = node.MatchCaseInsensitive;
@@ -81,7 +85,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                 case Utf8TreeNodeKind.One:
                     return new Utf8SliceNode.LiteralNode(node.Ch, foldCase);
                 case Utf8TreeNodeKind.Set:
-                    return node.ScalarClass is { } set ? DecodeClass(set, foldCase, arena) : null;
+                    return node.ScalarClass is { } set ? DecodeClass(set, foldCase, caseBehavior, arena) : null;
                 case Utf8TreeNodeKind.Multi:
                     if (node.LiteralUtf8 is { } utf8)
                     {
@@ -151,7 +155,7 @@ internal static class Utf8OwnedTreeSliceLowerer
                     {
                         Utf8TreeNodeKind.Oneloop or Utf8TreeNodeKind.Onelazy =>
                             new Utf8SliceNode.LiteralNode(node.Ch, foldCase),
-                        _ => node.ScalarClass is { } loopSet ? DecodeClass(loopSet, foldCase, arena) : null,
+                        _ => node.ScalarClass is { } loopSet ? DecodeClass(loopSet, foldCase, caseBehavior, arena) : null,
                     };
                     if (atom is null) return null;
                     return new Utf8SliceNode.RepeatNode(atom, node.M, node.IsUnboundedRepeat ? long.MaxValue : node.N,
@@ -230,7 +234,8 @@ internal static class Utf8OwnedTreeSliceLowerer
                     return null;
             }
         }
-        static Utf8SliceNode? DecodeClass(Utf8ScalarClass scalarClass, bool foldCase, Utf8ConstructionArena arena)
+        static Utf8SliceNode? DecodeClass(Utf8ScalarClass scalarClass, bool foldCase,
+            Utf8ScalarCaseBehavior caseBehavior, Utf8ConstructionArena arena)
         {
             var data = scalarClass.Data.AsSpan();
             if (data.SequenceEqual([0, 2, 0, 0, 0x110000])) return new Utf8SliceNode.DotNode(true);
@@ -285,7 +290,18 @@ internal static class Utf8OwnedTreeSliceLowerer
                     }
                 }
                 if (pendingLow >= 0) AppendRange(unicode, pendingLow, pendingHigh);
-                if (unicode.Count != 0)
+
+                // A singleton such as Kelvin is already accepted by a folded
+                // mask containing K/k. Keep the complete class in the parser
+                // and omit its redundant Unicode table from the VM.
+                var needsUnicodeRanges = unicode.Count != 0;
+                if (foldCase && unicode.Count == 2 && unicode[1] == unicode[0] + 1 &&
+                    Rune.TryCreate(unicode[0], out var alias))
+                {
+                    Utf8ConstructionScope.ChargeWork(1);
+                    needsUnicodeRanges = !Utf8SliceScalarClasses.MatchesMask(alias, mask, true, caseBehavior);
+                }
+                if (needsUnicodeRanges)
                     categories.Add(Utf8SliceNode.CategorySetMember.Create(
                         Utf8SliceCategoryTable.ForScalarRanges(arena.Take(unicode, true)), false));
                 // Hybrid instructions consult the precomputed mask on ASCII;
