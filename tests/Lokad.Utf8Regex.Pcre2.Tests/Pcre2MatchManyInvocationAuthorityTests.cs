@@ -5,20 +5,17 @@ using Lokad.Utf8Regex.Internal.Input;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 [Collection(Pcre2AllocationTestCollection.Name)]
-public sealed class Pcre2OutputInvocationAuthorityTests
+public sealed class Pcre2MatchManyInvocationAuthorityTests
 {
     public static IEnumerable<object[]> Routes()
     {
-        foreach (var helper in new[] { false, true })
-        {
-            yield return ["(?<x>a)b", "ab", helper];
-            yield return [@"(?<x>a)\k<x>", "aa", helper];
-            yield return [@"(?<x>\x41+)", "AAA", helper];
-        }
+        yield return ["(?<x>a)b", "ab"];
+        yield return [@"(?<x>a)\k<x>", "aa"];
+        yield return [@"(?<x>\x41+)", "AAA"];
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void EntryAndDiscoveryKeepOriginalToken(string pattern, string text, bool helper)
+    public void EntryAndDiscoveryKeepOriginalToken(string pattern, string text)
     {
         foreach (var atRead in new[] { 2, 5 })
         foreach (var hit in new[] { false, true })
@@ -34,40 +31,40 @@ public sealed class Pcre2OutputInvocationAuthorityTests
             var input = Encoding.UTF8.GetBytes(hit ? text : "zzz");
             var destination = new Utf8Pcre2MatchData[4];
             var failure = Assert.Throws<OperationCanceledException>(() =>
-            { _ = Run(regex, input, destination, helper, source.Token); });
+            { _ = regex.MatchMany(input, destination, out _, cancellationToken: source.Token); });
             Assert.Equal(source.Token, failure.CancellationToken);
         }
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void SearchStopsAtWorkDenial(string pattern, string text, bool helper)
+    public void SearchStopsAtWorkDenial(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(new string('x', 16385) + text);
         var destination = new Utf8Pcre2MatchData[4];
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
-        { _ = Run(Create(pattern, 3), input, destination, helper); }).ErrorKind);
+        { _ = Create(pattern, 3).MatchMany(input, destination, out _); }).ErrorKind);
         Assert.All(destination, item => Assert.False(item.Success));
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void WholeSubjectValidityAndFreshSufficientCallsPreserveNamesAndRanges(string pattern, string text, bool helper)
+    public void FreshSufficientCallsPreserveBorrowedNamesAndRanges(string pattern, string text)
     {
         var regex = Create(pattern, 100000);
         var prefix = "😀";
         var input = Encoding.UTF8.GetBytes(prefix + text);
         var destination = new Utf8Pcre2MatchData[4];
-        Assert.Equal(1, Run(regex, input, destination, helper));
-        if (!helper)
-            Assert.Equal((4, input.Length), (destination[0].StartOffsetInBytes, destination[0].EndOffsetInBytes));
-        var match = regex.MatchDetailed(input);
+        Assert.Equal(1, regex.MatchMany(input, destination, out _));
+        Assert.Equal((4, input.Length), (destination[0].StartOffsetInBytes, destination[0].EndOffsetInBytes));
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var match));
         Assert.True(match.TryGetFirstSetGroup("x", out var retained));
-        var captured = System.Text.Encoding.UTF8.GetString(retained.GetValueBytes());
-        Assert.Equal(1, Run(regex, input, destination, helper));
-        Assert.Equal(captured, System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
+        var captured = Encoding.UTF8.GetString(match.GetGroupMemory(retained.Number).Span);
+        Assert.Equal(1, regex.MatchMany(input, destination, out _));
+        Assert.Equal(captured, Encoding.UTF8.GetString(match.GetGroupMemory(retained.Number).Span));
     }
 
     [Theory] [MemberData(nameof(Routes))]
-    public void WorkingAndResultAdmissionPreserveCallerStorageAndFreshInvocations(string pattern, string text, bool helper)
+    public void WorkingAndResultAdmissionPreserveCallerStorageAndFreshInvocations(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var destination = new Utf8Pcre2MatchData[4];
@@ -84,20 +81,16 @@ public sealed class Pcre2OutputInvocationAuthorityTests
         });
         // Native MatchMany publishes value ranges into caller storage without
         // acquiring owned scratch. A tiny heap allowance must not deny that path.
-        if (!helper && pattern == "(?<x>a)b")
-            Assert.Equal(1, Run(Policy(1, 1 << 20), input, destination, false));
+        if (pattern == "(?<x>a)b")
+            Assert.Equal(1, Policy(1, 1 << 20).MatchMany(input, destination, out _));
         else
         {
             Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
-            { _ = Run(Policy(1, 1 << 20), input, destination, helper); }).ErrorKind);
+            { _ = Policy(1, 1 << 20).MatchMany(input, destination, out _); }).ErrorKind);
             Assert.All(destination, item => Assert.False(item.Success));
         }
-        if (helper)
-            Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
-            { _ = Run(Policy(1 << 20, 1), input, destination, true); }).ErrorKind);
-        else
-            Assert.Equal(1, Run(Policy(1 << 20, 1), input, destination, false));
-        Assert.Equal(1, Run(Policy(1 << 20, 1 << 20), input, destination, helper));
+        Assert.Equal(1, Policy(1 << 20, 1).MatchMany(input, destination, out _));
+        Assert.Equal(1, Policy(1 << 20, 1 << 20).MatchMany(input, destination, out _));
     }
 
     [Theory]
@@ -149,8 +142,4 @@ public sealed class Pcre2OutputInvocationAuthorityTests
         MatchTimeout = Timeout.InfiniteTimeSpan
     });
 
-    private static int Run(Utf8Pcre2Regex regex, byte[] input, Utf8Pcre2MatchData[] destination,
-        bool helper, CancellationToken token = default) => helper
-        ? (regex.TryGetFirstSetGroup(input, "x", out _, 0, Pcre2MatchOptions.None, token) ? 1 : 0)
-        : regex.MatchMany(input, destination, out _, 0, Pcre2MatchOptions.None, token);
 }

@@ -110,18 +110,6 @@ public sealed class Pcre2CancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeTryGetFirstSetGroup()
-    {
-        var regex = new Utf8Pcre2Regex("(?<w>foo)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
-        });
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.TryGetFirstSetGroup(s_input, "w", out _, cancellationToken: token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void CancellationBeatsValidation()
     {
         var regex = Create();

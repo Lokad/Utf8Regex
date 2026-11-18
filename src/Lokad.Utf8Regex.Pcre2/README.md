@@ -107,9 +107,14 @@ var match = regex.Match("abc-123"u8, captures: captures);
 ```
 
 Short destinations keep the same match; excess slots stay untouched. Caller-owned
-slots require no producer-owned result capacity. Shared working admission and
-funded-owner Match use the same numeric limits, token and deadline. Capture
-cursors retain MARK/named metadata; borrowed subjects must remain unchanged.
+slots require no producer-owned result capacity. Match also returns the last
+relevant `Mark` on hits and misses, reusing the immutable compiled label without
+another search or capture array. The label survives subsequent calls and program
+close. Shared working admission and funded Match use the same numeric limits,
+token and deadline. Capture cursors retain named metadata; span enumeration only
+publishes ranges. Borrowed subjects must remain unchanged. The regex-level
+TryGetFirstSetGroup matcher is removed; resolve names on cursor results or copy
+UTF-8 name-to-number metadata for caller-owned capture slots.
 
 ```csharp
 using System.Text;

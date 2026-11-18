@@ -577,5 +577,12 @@ keeps the whole-only path; available slots are filled without an intermediate
 result array or result-byte charge. Numeric working limits and shared admission
 still apply. Funded owners now expose the same Match operation and keep program
 admission during the call. Closing an owner preserves returned ranges and borrowed
-whole values, but rejects new calls. MARK/full named metadata remains on existing
+whole values, but rejects new calls. Primary Match now also preserves MARK on
+hits and misses through `Utf8Pcre2ValueMatch.Mark`, without allocating a capture
+result or repeating discovery. Probe/detailed value projections keep that label;
+span enumeration publishes ranges only. Immutable labels survive later calls and
+program disposal. Recompile consumers for the changed value view. Remove regex-level
+`TryGetFirstSetGroup` calls: use primary
+caller-owned captures plus UTF8 name-number metadata, or the metadata methods on
+an existing persistent cursor result. Full named metadata remains on existing
 cursors and detailed/probe results.

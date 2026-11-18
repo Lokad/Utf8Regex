@@ -64,10 +64,10 @@ public sealed class Pcre2Utf8NameAdmissionTests
     {
         Assert.Equal(255, Encoding.UTF8.GetByteCount(label));
         var regex = new Utf8Pcre2Regex("(*MARK:" + label + ")a");
-        var match = regex.MatchDetailed("a"u8);
+        var match = regex.Match("a"u8);
         Assert.True(match.Success);
         Assert.Equal(label, match.Mark);
-        Assert.Equal(1, match.CaptureSlotCount);
+        Assert.Equal(0, regex.CaptureGroupCount);
     }
 
     public static IEnumerable<object[]> OverlongLabels()

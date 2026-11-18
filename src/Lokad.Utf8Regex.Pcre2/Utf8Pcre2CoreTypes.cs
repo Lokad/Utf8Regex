@@ -45,15 +45,21 @@ public readonly ref struct Utf8Pcre2ValueMatch
     private readonly int _endOffsetInBytes;
     private readonly bool _isUtf8SliceWellFormed;
     private readonly bool _success;
+    private readonly string? _mark;
 
-    private Utf8Pcre2ValueMatch(ReadOnlySpan<byte> input, Pcre2GroupData data)
+    private Utf8Pcre2ValueMatch(ReadOnlySpan<byte> input, Pcre2GroupData data, string? mark)
     {
         _input = input;
         _startOffsetInBytes = data.Success ? data.StartOffsetInBytes : 0;
         _endOffsetInBytes = data.Success ? data.EndOffsetInBytes : 0;
         _isUtf8SliceWellFormed = data.IsUtf8SliceWellFormed;
         _success = data.Success;
+        _mark = mark;
     }
+
+    /// <summary>Gets the last relevant PCRE2 MARK from primary matching or full/partial probing, including a failed search.</summary>
+    /// <remarks>The immutable compiled label remains valid after later calls or program close. Span enumeration publishes ranges only and does not report MARK.</remarks>
+    public string? Mark => _mark;
 
     /// <summary>Gets whether the operation found a full or partial match.</summary>
     public bool Success
@@ -100,8 +106,8 @@ public readonly ref struct Utf8Pcre2ValueMatch
         return _input[StartOffsetInBytes..EndOffsetInBytes];
     }
 
-    internal static Utf8Pcre2ValueMatch Create(ReadOnlySpan<byte> input, Pcre2GroupData data)
-        => new(input, data);
+    internal static Utf8Pcre2ValueMatch Create(ReadOnlySpan<byte> input, Pcre2GroupData data, string? mark = null)
+        => new(input, data, mark);
 }
 
 /// <summary>Stores the reported byte endpoints and value status of one PCRE2 match.</summary>
@@ -159,10 +165,10 @@ public readonly ref struct Utf8Pcre2MatchContext
     /// <summary>Gets whether group zero represents a successful full match.</summary>
     public bool Success => _groups is { Length: > 0 } && _groups[0].Success;
 
-    /// <summary>Gets the group-zero match view, or its default value after no match.</summary>
+    /// <summary>Gets the group-zero match view, or an unsuccessful byte view retaining MARK after no match.</summary>
     public Utf8Pcre2ValueMatch Value => _groups is { Length: > 0 } groups && groups[0].Success
-        ? Utf8Pcre2ValueMatch.Create(_input, groups[0])
-        : default;
+        ? Utf8Pcre2ValueMatch.Create(_input, groups[0], _mark)
+        : Utf8Pcre2ValueMatch.Create(_input, default, _mark);
 
     /// <summary>Gets the number of capture slots, including group zero.</summary>
     public int CaptureSlotCount => _groups?.Length ?? 0;
@@ -381,7 +387,7 @@ public readonly ref struct Utf8Pcre2ProbeResult
     public Utf8Pcre2ProbeKind Kind => _kind;
 
     /// <summary>Gets the full or partial value coordinates, or a default unsuccessful view after no match.</summary>
-    public Utf8Pcre2ValueMatch Value => Utf8Pcre2ValueMatch.Create(_input, _value);
+    public Utf8Pcre2ValueMatch Value => Utf8Pcre2ValueMatch.Create(_input, _value, _mark);
 
     /// <summary>Gets the last relevant PCRE2 <c>(*MARK)</c> value, if one was reported.</summary>
     public string? Mark => _mark;
@@ -438,7 +444,7 @@ public readonly ref struct Utf8Pcre2PartialMatchContext
     }
 
     /// <summary>Gets the reported partial-match coordinates and projection flags.</summary>
-    public Utf8Pcre2ValueMatch Value => Utf8Pcre2ValueMatch.Create(_input, _value);
+    public Utf8Pcre2ValueMatch Value => Utf8Pcre2ValueMatch.Create(_input, _value, _mark);
 
     /// <summary>Gets the last relevant PCRE2 <c>(*MARK)</c> value, if one was reported.</summary>
     public string? Mark => _mark;

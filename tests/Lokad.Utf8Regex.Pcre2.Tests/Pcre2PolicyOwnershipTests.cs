@@ -53,7 +53,6 @@ public sealed class Pcre2PolicyOwnershipTests
         Assert.Throws<ObjectDisposedException>(() => regex.CreateMatchCursor("a"u8.ToArray()));
         Assert.Throws<ObjectDisposedException>(() => regex.Probe("a"u8, Pcre2PartialMode.None));
         Assert.Throws<ObjectDisposedException>(() => regex.MatchMany("a"u8, new Utf8Pcre2MatchData[1], out _));
-        Assert.Throws<ObjectDisposedException>(() => regex.TryGetFirstSetGroup("a"u8, "x", out _));
         Assert.Throws<ObjectDisposedException>(() => regex.Replace("a"u8, "x"));
         Assert.Throws<ObjectDisposedException>(() => regex.Replace("a"u8, "x"u8));
         Assert.Throws<ObjectDisposedException>(() => regex.TryReplace("a"u8, "x"u8, new byte[1], out _));

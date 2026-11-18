@@ -147,7 +147,7 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     public void MarkFollowsTheSuccessfulPathAndFeedsProbeAndReplacement()
     {
         var regex = new Utf8Pcre2Regex("(*MARK:A)ac|(*MARK:B)(b)");
-        var match = regex.MatchDetailed("b"u8);
+        var match = regex.Match("b"u8);
         var probe = regex.Probe("b"u8, Pcre2PartialMode.Soft);
 
         Assert.Equal("B", match.Mark);
@@ -156,10 +156,10 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     }
 
     [Fact]
-    public void DetailedFailuresReportTheLastEncounteredMark()
+    public void PrimaryFailuresReportTheLastEncounteredMark()
     {
         var regex = new Utf8Pcre2Regex("(*MARK:A)a|b");
-        var match = regex.MatchDetailed("c"u8);
+        var match = regex.Match("c"u8);
         var probe = regex.Probe("c"u8, Pcre2PartialMode.None);
 
         Assert.False(match.Success);
@@ -174,7 +174,7 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     [Fact]
     public void SuccessfulAssertionsPropagateTheirMark()
     {
-        var match = new Utf8Pcre2Regex("(?=(*MARK:A)a)a").MatchDetailed("a"u8);
+        var match = new Utf8Pcre2Regex("(?=(*MARK:A)a)a").Match("a"u8);
 
         Assert.True(match.Success);
         Assert.Equal("A", match.Mark);
@@ -233,7 +233,7 @@ public sealed class Pcre2BacktrackingControlCompilerTests
         {
             var input = index % 2 == 0 ? "aaa"u8 : "b"u8;
             var expectedMark = index % 2 == 0 ? "A" : "B";
-            Assert.Equal(expectedMark, regex.MatchDetailed(input).Mark);
+            Assert.Equal(expectedMark, regex.Match(input).Mark);
         });
     }
 }

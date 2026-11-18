@@ -277,7 +277,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         {
             var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-            if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, ref invocation, out var directMatch))
+            if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, ref invocation, out var directMatch, out var mark))
             {
                 if (!output.IsEmpty)
                     output[0] = directMatch.Success ? new(0, true, directMatch.StartOffsetInBytes,
@@ -288,7 +288,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                     invocation.Budget.CheckDeadline();
                     invocation.Budget.ThrowIfCancellationRequested();
                 }
-                return Utf8Pcre2ValueMatch.Create(input, directMatch);
+                return Utf8Pcre2ValueMatch.Create(input, directMatch, mark);
             }
             throw CreateUnsupportedPatternException();
         }
@@ -303,7 +303,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     }
 
     /// <summary>Finds the first match and optionally writes caller-owned byte capture slots zero onward.</summary>
-    /// <remarks>Short output cannot change selection; excess slots stay untouched. No match or failure clears the supplied prefix, except entry cancellation leaves it unchanged. Caller-owned slots do not consume result-byte capacity. Null working admission inherits program funding; explicit admission overrides only working storage. Byte fragments and noncontiguous ranges keep their explicit validity status.</remarks>
+    /// <remarks>Short output cannot change selection; excess slots stay untouched. No match or failure clears the supplied prefix, except entry cancellation leaves it unchanged. Caller-owned slots do not consume result-byte capacity. Null working admission inherits program funding; explicit admission overrides only working storage. MARK is returned on both hits and misses without capture materialization. Byte fragments and noncontiguous ranges keep their explicit validity status.</remarks>
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0,
         scoped Span<Utf8Pcre2CaptureRange> captures = default, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None,
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
@@ -341,7 +341,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             {
                 Success = match.Success, StartOffsetInBytes = match.StartOffsetInBytes,
                 EndOffsetInBytes = match.EndOffsetInBytes, Utf8SliceIsWellFormed = output[0].IsUtf8SliceWellFormed
-            });
+            }, match.Mark);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         { throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout); }
@@ -694,24 +694,6 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
 
         isMore = count > destination.Length;
         return Math.Min(count, destination.Length);
-    }
-
-    /// <summary>Attempts to find the first participating named slot using explicit start and per-match options, observing cancellation during matching and capture publication.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
-    /// <param name="name">The capture group name.</param>
-    /// <param name="group">When this method returns, the first participating capture slot.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The original token retained through detailed matching and group publication.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
-    public bool TryGetFirstSetGroup(ReadOnlySpan<byte> input, string name, out Utf8Pcre2GroupContext group, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        using var programUse = _programMemory?.Enter();
-        var context = MatchDetailedCore(input, startOffsetInBytes, matchOptions, cancellationToken);
-        var found = context.TryGetFirstSetGroup(name, out group);
-        cancellationToken.ThrowIfCancellationRequested();
-        return found;
     }
 
     private int MatchManyCore(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore,

@@ -56,10 +56,10 @@ public sealed class Pcre2ControlVerbLabelTests
             });
             foreach (var regex in new[] { text, bytes })
             {
-                var match = regex.MatchDetailed("a"u8);
+                var match = regex.Match("a"u8);
                 Assert.True(match.Success);
-                Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));
-                Assert.Equal(1, match.CaptureSlotCount);
+                Assert.Equal("a", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+                Assert.Equal(0, regex.CaptureGroupCount);
                 Assert.Equal(mark, match.Mark);
             }
         }

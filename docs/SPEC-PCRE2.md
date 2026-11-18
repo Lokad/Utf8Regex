@@ -71,15 +71,21 @@ Captures retain numeric slot, participation, byte endpoints and UTF-8 slice
 validity, including opted-in byte fragments and noncontiguous reported ranges.
 Caller-owned slots consume publication work but no producer-owned result-byte
 capacity. Matching buffers still require working admission. Null working
-admission keeps numeric controls; funded owners inherit their program account.
-The owner's Match retains program use until the synchronous call finishes;
-closed owners reject new calls without changing output. Copied ranges and whole
+admission inherits program funding, or keeps numeric controls when unfunded.
+Funded Match retains program use until the synchronous call finishes;
+closed expressions reject new calls without changing output. Copied ranges and whole
 values remain valid under their original borrowed-input lifetime.
 
 Whole-only matching retains its existing native paths. Capture output uses the
 existing byte-range runner and the same publication loop as immutable snapshots,
-without allocating a temporary result array. MARK and full named metadata remain
-on capture cursors and existing detailed/probe results.
+without allocating a temporary result array. Primary `Utf8Pcre2ValueMatch.Mark`
+preserves the last relevant MARK on success and failure, including short capture
+destinations. It reuses the VM's already-computed immutable label reference,
+without another search, captured-result array or producer-owned text payload.
+The reference stays valid after later calls and program close. Probe/detailed
+value projections preserve their existing MARK too. Span enumeration publishes
+ranges only and does not report MARK; use primary Match or a persistent cursor.
+Full named metadata remains on capture cursors and actual detailed/probe results.
 
 Compile an expression once and invoke its instance methods. Static IsMatch,
 Match and Replace convenience overloads are removed; they previously compiled a
@@ -145,8 +151,11 @@ Capture names are limited to **128 UTF-8 bytes**, verb labels to **255 UTF-8 byt
 
 Detailed results expose the last value per slot, not Core capture history.
 `CopyNameEntries` and `CopyNumbersForName` expose the name table;
-`TryGetFirstSetGroup` returns the first set slot for a name. It does not invent
-Core numeric-name aliases or sparse numeric definitions.
+Context/range-result `TryGetFirstSetGroup` returns the first set slot for a name.
+The regex-level one-shot named matcher is removed: match into caller-owned slots
+and use UTF-8 name-to-number metadata, or resolve names on an existing persistent
+cursor result. Neither form invents Core numeric-name aliases or sparse numeric
+definitions.
 
 Default simple-fold equivalence is symmetric over scalars, including Kelvin,
 long S, Greek variants and titlecase partners. Dotted/dotless I remain distinct.

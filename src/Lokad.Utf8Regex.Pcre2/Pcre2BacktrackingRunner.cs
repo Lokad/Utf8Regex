@@ -159,8 +159,9 @@ internal static class Pcre2BacktrackingRunner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        ref Pcre2ResourceBudget budget)
-        => MatchCore(
+        ref Pcre2ResourceBudget budget, out string? mark)
+    {
+        var match = MatchCore(
             program,
             candidateSearch,
             ref input,
@@ -168,7 +169,10 @@ internal static class Pcre2BacktrackingRunner
             start,
             matchOptions,
             Pcre2CaptureMaterialization.None,
-            ref budget).ToCharacterMatch();
+            ref budget);
+        mark = match.Mark;
+        return match.ToCharacterMatch();
+    }
 
     internal static Pcre2InvocationStateStack<Pcre2BacktrackingFrame> CreateFrames(
         scoped ref Pcre2ResourceBudget budget, int depthBase)

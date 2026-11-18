@@ -1415,7 +1415,7 @@ internal static partial class Pcre2Runner
                 ref input,
                 start,
                 matchOptions,
-                ref budget).Success;
+                ref budget, out _).Success;
             return true;
         }
 
@@ -1468,7 +1468,7 @@ internal static partial class Pcre2Runner
                 ref input,
                 start,
                 matchOptions,
-                ref budget).Success;
+                ref budget, out _).Success;
             return true;
         }
 
@@ -1482,7 +1482,7 @@ internal static partial class Pcre2Runner
                     ref input,
                     start,
                     matchOptions,
-                    ref budget).Success;
+                    ref budget, out _).Success;
                 return true;
             }
 
@@ -1513,8 +1513,9 @@ internal static partial class Pcre2Runner
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         scoped ref Utf8SliceInvocation invocation,
-        out Pcre2GroupData result)
+        out Pcre2GroupData result, out string? mark)
     {
+        mark = null;
         var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
         Pcre2CharacterMatch directMatch;
         if (compiledProgram.Operations.Match is Pcre2SliceDirectProgram sliceProgram)
@@ -1527,7 +1528,7 @@ internal static partial class Pcre2Runner
                     ref input,
                     start,
                     matchOptions,
-                    ref budget);
+                    ref budget, out mark);
             }
             else
             {
@@ -1564,7 +1565,7 @@ internal static partial class Pcre2Runner
                 ref input,
                 start,
                 matchOptions,
-                ref budget);
+                ref budget, out mark);
         }
         else         {
             result = default;

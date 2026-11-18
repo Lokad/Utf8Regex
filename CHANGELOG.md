@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Preserve PCRE2 MARK on primary Match results, including misses and short caller
+  capture output, without another search or result array. Remove the redundant
+  regex-level TryGetFirstSetGroup matcher; use capture slots or cursor metadata.
+
 - Unify PCRE2 construction/funding on Utf8RegexPolicy and disposable Utf8Pcre2Regex;
   remove Create, long Compile families and the program-owner facade. Preserve
   admitted calls/persistent cursors; funded span enumeration borrows an open
