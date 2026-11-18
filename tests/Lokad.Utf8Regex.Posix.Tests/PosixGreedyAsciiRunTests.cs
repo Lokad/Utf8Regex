@@ -58,7 +58,7 @@ public sealed class PosixGreedyAsciiRunTests
             Assert.False(PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase).FirstAcceptanceIsLongest);
         var rewind = PosixProgram.Compile("^([a-z]+)([[:space:]]+)$", PosixCompileOptions.Newline);
         Assert.True(rewind.FirstAcceptanceIsLongest);
-        Assert.False(rewind.DirectGreedyRuns);
+        Assert.True(rewind.DirectGreedyRuns);
     }
 
     [Theory]
@@ -93,15 +93,17 @@ public sealed class PosixGreedyAsciiRunTests
     }
 
     [Theory]
-    [InlineData("^([a]+)([[:space:]]+)$", PosixCompileOptions.Newline)]
-    [InlineData("([a]+)([[:space:]]+)$", PosixCompileOptions.Newline)]
-    [InlineData("^(([a]{1,2}))([[:space:]]{1,3})$", PosixCompileOptions.Newline)]
-    [InlineData("([a]+)$([\n]+)", PosixCompileOptions.Newline)]
-    [InlineData("([a]+)$([\n]+)$", PosixCompileOptions.Newline)]
-    [InlineData("([a]+)([\n]+)^", PosixCompileOptions.Newline)]
-    [InlineData("([\n]+)^([a]+)$", PosixCompileOptions.Newline)]
-    [InlineData("^([k]+)([[:space:]]+)$", PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase)]
-    public void LineEndScalarRewindAgreesWithGeneralSelectionAtEveryFloorAndOutputWidth(string pattern, PosixCompileOptions options)
+    [InlineData("^([a]+)([[:space:]]+)$", PosixCompileOptions.Newline, true)]
+    [InlineData("([a]+)([[:space:]]+)$", PosixCompileOptions.Newline, true)]
+    [InlineData("^(([a]{1,2}))([[:space:]]{1,3})$", PosixCompileOptions.Newline, true)]
+    [InlineData("^([a]+)([[:space:]]+$)()", PosixCompileOptions.Newline, true)]
+    [InlineData("([a]+)$([\n]+)", PosixCompileOptions.Newline, false)]
+    [InlineData("([a]+)$([\n]+)$", PosixCompileOptions.Newline, false)]
+    [InlineData("([a]+)([\n]+)^", PosixCompileOptions.Newline, true)]
+    [InlineData("([\n]+)^([a]+)$", PosixCompileOptions.Newline, false)]
+    [InlineData("^([k]+)([[:space:]]+)$", PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase, true)]
+    [InlineData("^([k\n]{2,3})$", PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase, true)]
+    public void LineAnchorsAgreeWithGeneralSelectionAtEveryFloorAndOutputWidth(string pattern, PosixCompileOptions options, bool directReplay)
     {
         // In Newline mode $. cannot consume: $ requires EOF or LF, while dot
         // rejects LF. This impossible alternative forces the production general
@@ -109,11 +111,12 @@ public sealed class PosixGreedyAsciiRunTests
         var contrast = pattern + "|$.";
         var program = PosixProgram.Compile(pattern, options);
         Assert.True(program.FirstAcceptanceIsLongest);
-        Assert.Equal(!pattern.Contains('$'), program.DirectGreedyRuns);
+        Assert.Equal(directReplay, program.DirectGreedyRuns);
         Assert.False(PosixProgram.Compile(contrast, options).FirstAcceptanceIsLongest);
         var regex = new Utf8PosixRegex(pattern, options: options);
         var general = new Utf8PosixRegex(contrast, options: options);
-        foreach (var text in Subjects().Concat(new[] { "a \n\nb", "😀a \n\nb", "KK \nb", "a\na\n", "\na\n\na \nb" }))
+        foreach (var text in Subjects().Concat(new[] { "a \n\nb", "😀a \n\nb", "KK \nb", "a\na\n", "\na\n\na \nb",
+            "K\nKx", "KK\nKx", "KKK\nK", "KK\n", "K\n\nKx" }))
         {
             var input = Encoding.UTF8.GetBytes(text);
             for (var floor = 0; floor <= input.Length; floor++)

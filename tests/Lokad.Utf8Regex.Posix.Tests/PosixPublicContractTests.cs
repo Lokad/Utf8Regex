@@ -195,7 +195,7 @@ public sealed class PosixPublicContractTests
             ResourcePolicy = new()
             {
                 MaxWorkSteps = 10000,
-                MaxDepth = 1024,
+                MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
             }
@@ -758,7 +758,7 @@ public sealed class PosixPublicContractTests
             fixedFolded ? Encoding.UTF8.GetBytes("Z" + string.Concat(Enumerable.Repeat("K", 8192))) :
             sparseGreedy ? Encoding.UTF8.GetBytes(new string('!', 8192) + "K007") :
             foldedGreedy ? Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("K", 8192)) + "007") :
-            rewind ? Encoding.UTF8.GetBytes(new string('a', 8192) + " \nb") :
+            rewind ? Encoding.UTF8.GetBytes("a" + new string(' ', 8192) + "\nb") :
             Encoding.ASCII.GetBytes(new string('x', 1_000_000) + "a");
         var triggered = false;
         // Construction is complete and these small workspaces reach the first

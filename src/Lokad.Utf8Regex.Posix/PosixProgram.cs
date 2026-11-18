@@ -8,12 +8,14 @@ namespace Lokad.Utf8Regex.Posix;
 // parts. Final public capture slots alone cannot order repeated POSIX parses.
 internal sealed partial class PosixProgram
 {
-    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool directGreedyRuns, int firstRequiredRunAtom,
+    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool directGreedyRuns,
+        int firstRequiredRunAtom, int terminalLineEndRepeat,
         ChartNode[] chart, Utf8SliceNode.CategorySetNode[] chartClasses)
     {
         Scalar = scalar; Parents = parents; CaptureTags = captureTags;
         FirstAcceptanceIsLongest = firstAcceptanceIsLongest; DirectGreedyRuns = directGreedyRuns;
         FirstRequiredRunAtom = firstRequiredRunAtom;
+        TerminalLineEndRepeat = terminalLineEndRepeat;
         Chart = chart; ChartClasses = chartClasses;
     }
 
@@ -23,6 +25,7 @@ internal sealed partial class PosixProgram
     internal bool FirstAcceptanceIsLongest { get; }
     internal bool DirectGreedyRuns { get; }
     internal int FirstRequiredRunAtom { get; }
+    internal int TerminalLineEndRepeat { get; }
     internal ChartNode[] Chart { get; }
     internal Utf8SliceNode.CategorySetNode[] ChartClasses { get; }
 
@@ -123,7 +126,9 @@ internal sealed partial class PosixProgram
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
         var canReplayDirectly = true;
         var firstRunAtom = -1;
-        var greedyRuns = scalar.RepeatCount > 0 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget, out canReplayDirectly, out firstRunAtom);
+        var terminalLineEndRepeat = -1;
+        var greedyRuns = scalar.RepeatCount > 0 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget,
+            out canReplayDirectly, out firstRunAtom, out terminalLineEndRepeat);
         var directGreedyRuns = greedyRuns && canReplayDirectly;
         var firstRequiredRunAtom = greedyRuns && (!directGreedyRuns || scalar.IgnoreCase) ? firstRunAtom : -1;
         if (!firstAcceptanceIsLongest)
@@ -132,8 +137,9 @@ internal sealed partial class PosixProgram
         var chart = !firstAcceptanceIsLongest && groups != 0 ? CreateChart(root, budget)
             : (Nodes: Array.Empty<ChartNode>(), Classes: Array.Empty<Utf8SliceNode.CategorySetNode>());
         var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest, directGreedyRuns, firstRequiredRunAtom,
-                chart.Nodes, chart.Classes),
-            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest, x.directGreedyRuns, x.firstRequiredRunAtom, x.Nodes, x.Classes));
+                terminalLineEndRepeat, chart.Nodes, chart.Classes),
+            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest, x.directGreedyRuns,
+                x.firstRequiredRunAtom, x.terminalLineEndRepeat, x.Nodes, x.Classes));
         construction.Complete();
         return result;
     }
@@ -289,7 +295,7 @@ internal sealed partial class PosixProgram
     }
 
     private static bool CanSelectGreedyRuns(Utf8SliceProgram program, ReadOnlySpan<int> publicTags, Utf8ConstructionBudget budget,
-        out bool canReplayDirectly, out int firstRequiredRunAtom)
+        out bool canReplayDirectly, out int firstRequiredRunAtom, out int terminalLineEndRepeat)
     {
         // Greedy runs maximize each earlier concatenation part. An overlapping
         // successor must be nullable: it can still consume the suffix of any
@@ -299,6 +305,7 @@ internal sealed partial class PosixProgram
         // Public tags outside bodies occur once; no history can change the split.
         canReplayDirectly = true;
         firstRequiredRunAtom = -1;
+        terminalLineEndRepeat = -1;
         Span<byte> seen = stackalloc byte[16];
         seen.Clear();
         Span<byte> literalMask = stackalloc byte[16];
@@ -307,6 +314,7 @@ internal sealed partial class PosixProgram
         var hasLineEndAnchor = false;
         var hasNullableRun = false;
         var canRewindAtLineStart = false;
+        var precedingLineFeedRepeat = -1;
         const int lineFeedOctet = '\n' >> 3;
         const byte lineFeedBit = 1 << ('\n' & 7);
         var code = program.Instructions;
@@ -318,7 +326,12 @@ internal sealed partial class PosixProgram
             if (instruction.Kind == Utf8SliceInstructionKind.Anchor)
             {
                 hasAnchor = true;
-                hasLineEndAnchor |= instruction.A == (int)Utf8SliceAnchorKind.End && instruction.B != 0;
+                var lineEnd = instruction.A == (int)Utf8SliceAnchorKind.End && instruction.B != 0;
+                // Only a sole line end after a repeat, with no later assertion
+                // or consuming piece, can use that repeat's last legal exit.
+                terminalLineEndRepeat = lineEnd && !hasLineEndAnchor ? precedingLineFeedRepeat : -1;
+                precedingLineFeedRepeat = -1;
+                hasLineEndAnchor |= lineEnd;
                 // A mixed run can consume past its last LF. Only the ordinary
                 // scalar loop can return to the earlier beginning-of-line boundary.
                 if (instruction.A == (int)Utf8SliceAnchorKind.Beginning && instruction.B != 0 && canRewindAtLineStart)
@@ -330,12 +343,13 @@ internal sealed partial class PosixProgram
                 // Nullable pieces can require rewind to satisfy an interior
                 // anchor, e.g. (a*)^(a*). Keep all such anchored programs general.
                 // Positive disjoint runs have unique intervening boundaries.
-                // Ordinary greedy rewind tries the longest valid final endpoint
-                // first, including an earlier LF before a line-end anchor. The
-                // direct loop cannot rewind, so only that shortcut declines.
-                if (hasLineEndAnchor && (seen[lineFeedOctet] & lineFeedBit) != 0) canReplayDirectly = false;
+                // A sole terminal line end needs only the final run's latest
+                // eligible LF/EOF exit. Other line ends can require rewind.
+                if (hasLineEndAnchor && terminalLineEndRepeat < 0 && (seen[lineFeedOctet] & lineFeedBit) != 0)
+                    canReplayDirectly = false;
                 return pieces > 0 && index == code.Length - 1 && !(hasAnchor && hasNullableRun);
             }
+            terminalLineEndRepeat = -1;
             var repeated = instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy;
             var required = !repeated || instruction.RepeatMinimum != 0;
             var atomIndex = index;
@@ -406,8 +420,10 @@ internal sealed partial class PosixProgram
                 if (repeated) seen[octet] |= mask[octet];
             }
             if (!nonempty) return false;
-            canRewindAtLineStart = repeated && instruction.RepeatMinimum < instruction.RepeatMaximum &&
-                (mask[lineFeedOctet] & lineFeedBit) != 0 && hasOtherByte;
+            var canShortenAtLineFeed = repeated && instruction.RepeatMinimum < instruction.RepeatMaximum &&
+                (mask[lineFeedOctet] & lineFeedBit) != 0;
+            precedingLineFeedRepeat = canShortenAtLineFeed ? index : -1;
+            canRewindAtLineStart = canShortenAtLineFeed && hasOtherByte;
             if (pieces == 0 && required) firstRequiredRunAtom = atomIndex;
             pieces++;
             index = exitIndex;

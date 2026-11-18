@@ -156,6 +156,9 @@ internal partial struct PosixWorkspace
                         var literal = atom.Kind == Utf8SliceInstructionKind.Literal ? atom.A : -1;
                         var mask = literal < 0 ? _program.Scalar.SetMasks[atom.A] : Array.Empty<byte>();
                         var limit = (int)Math.Min(input.Length - (long)at, instruction.RepeatMaximum);
+                        var runMinimum = instruction.RepeatMinimum;
+                        var trackLineEnd = pc == _program.TerminalLineEndRepeat;
+                        var lastLineEnd = -1;
                         var consumed = 0;
                         if (atom.B == 0)
                         {
@@ -167,6 +170,7 @@ internal partial struct PosixWorkspace
                                 var value = input[at];
                                 if (value >= 128 || (literal >= 0 ? value != literal :
                                     (mask[value >> 3] & (1 << (value & 7))) == 0)) break;
+                                if (trackLineEnd && value == '\n' && at - runStart >= runMinimum) lastLineEnd = at;
                                 at++;
                             }
                             consumed = at - runStart;
@@ -179,11 +183,17 @@ internal partial struct PosixWorkspace
                                 if (Rune.DecodeFromUtf8(input[at..], out var rune, out var size) != OperationStatus.Done ||
                                     !(literal >= 0 ? MatchesLiteral(rune, literal) :
                                         Utf8SliceScalarClasses.MatchesMask(rune, mask, true, _program.Scalar.CaseBehavior))) break;
+                                if (trackLineEnd && rune.Value == '\n' && consumed >= runMinimum) lastLineEnd = at;
                                 at += size;
                                 consumed++;
                             }
                         }
-                        if (consumed < instruction.RepeatMinimum) { failed = true; break; }
+                        if (consumed < runMinimum) { failed = true; break; }
+                        if (trackLineEnd && at != input.Length && input[at] != '\n')
+                        {
+                            if (lastLineEnd < 0) { failed = true; break; }
+                            at = lastLineEnd;
+                        }
                         pc = instruction.A + 1; // Skip the unused counter reset.
                         break;
                     }
