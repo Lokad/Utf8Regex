@@ -83,6 +83,16 @@ public sealed class Utf8CoreWorkingPolicyTests
     }
 
     [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void SmallFixedCompoundRepeatFitsWithoutACounterJournal(RegexOptions options)
+    {
+        const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
+        using var regex = Create(pattern, 600, options);
+        Assert.True(regex.IsMatch("012.200.033.199"u8));
+    }
+
+    [Theory]
     [InlineData(Utf8ResourceLimitKind.ExecutionWorkSteps)]
     [InlineData(Utf8ResourceLimitKind.ExecutionDepth)]
     [InlineData(Utf8ResourceLimitKind.ExecutionWorkingBytes)]

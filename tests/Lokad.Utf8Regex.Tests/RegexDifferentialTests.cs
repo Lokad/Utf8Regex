@@ -45,6 +45,7 @@ public sealed class RegexDifferentialTests
         @"\b(?:LogError|LogWarning|LogInformation)\s*\(",
         @"\bpublic\s+async\b", @"\bawait\b\s+.{0,60}\bConfigureAwait\b",
         @"ab[0-9]d", @"ab.[0-9]d", @"a[A-Za-z]cd", @"ab[0-9]cd", @"abc[0-9]defg", @"ab[0-9][0-9]cd",
+        @"(?<x>(?:ab|aba){2})d", @"(?<x>ab|aba){2}d",
     };
 
     private static readonly string[] Tokens =
@@ -80,6 +81,7 @@ public sealed class RegexDifferentialTests
             "class Alpha struct Beta record Gamma", "éclass Nope class Goodé", "public\tasync", "xpublic async",
             "ab1d-ab2d-ab3d", "ab1cd-ab7cd-", "abc1defg-abc7defg-", "ab12cd ab34cd ab5cd ab567cd", "aZcd ab_3d ab!7d",
             "ab\n3d abé3d ab_٣d", "ab0d", "ab0", "ab_3", "ab0d\n",
+            "ababd", "abaabad", "éabaabadax ababaz", "abaabax",
             "LogError( LogWarning \t( LogInformation\n(", "xLogError( LogErrorx(", "await x.ConfigureAwait", "await\nConfigureAwait",
             .. Enumerable.Range(0, 96).Select(_ => string.Concat(Enumerable.Range(0, random.Next(1, 13))
                 .Select(_ => Tokens[random.Next(Tokens.Length)])))];

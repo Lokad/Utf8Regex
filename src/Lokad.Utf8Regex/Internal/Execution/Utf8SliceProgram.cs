@@ -1413,6 +1413,23 @@ internal static class Utf8SliceLowerer
                             foreach (var exit in remainingExits) { Budget.ChargeWork(1); Patch(exit, Instructions.Count); }
                         break;
                     }
+                    if (frame.Stage == 0 && !MirrorExecute && repeat.Minimum is 2 or 3 && repeat.Minimum == repeat.Maximum &&
+                        repeat.Body is Utf8SliceNode.ConcatNode or Utf8SliceNode.AlternationNode &&
+                        !Facts[repeat.Body].CanMatchEmpty)
+                    {
+                        // Re-emit small consuming bodies without the repeat journal.
+                        // Bound both the proof and emitted copies. Each copy still
+                        // uses the ordinary work and instruction-buffer admission.
+                        var remaining = 32;
+                        if (IsSmallPureBody(repeat.Body, ref remaining)) frame.Stage = 2;
+                    }
+                    if (frame.Stage == 2)
+                    {
+                        if (frame.Index == repeat.Minimum) break;
+                        frame.Index++;
+                        request = new(repeat.Body, false, false, 0);
+                        return true;
+                    }
                     // Zero or one iteration needs a branch, not a counter or
                     // rollback journal. Preserve single-atom repeats for the
                     // existing no-rewind/terminal kernels; compound bodies keep
@@ -1657,6 +1674,39 @@ internal static class Utf8SliceLowerer
                     throw new ArgumentException($"Unsupported slice node {node.GetType().Name}.", nameof(node));
             }
             return false;
+        }
+
+        private bool IsSmallPureBody(Utf8SliceNode node, ref int remaining)
+        {
+            if (--remaining < 0) return false;
+            Budget.ChargeWork(1);
+            switch (node)
+            {
+                case Utf8SliceNode.LiteralNode or Utf8SliceNode.SetNode or Utf8SliceNode.ShorthandNode or
+                    Utf8SliceNode.CategorySetNode or Utf8SliceNode.DotNode:
+                    return true;
+                case Utf8SliceNode.ConcatNode concat:
+                    foreach (var child in concat.Children)
+                        if (!IsSmallPureBody(child, ref remaining)) return false;
+                    return true;
+                case Utf8SliceNode.AlternationNode alternate:
+                    foreach (var branch in alternate.Branches)
+                    {
+                        // Each preceding branch adds a fork and jump.
+                        remaining -= 2;
+                        if (remaining < 0) return false;
+                        foreach (var child in branch)
+                            if (!IsSmallPureBody(child, ref remaining)) return false;
+                    }
+                    return true;
+                case Utf8SliceNode.RepeatNode { Minimum: 0, Maximum: 1, Body:
+                    Utf8SliceNode.LiteralNode or Utf8SliceNode.SetNode or Utf8SliceNode.ShorthandNode or
+                    Utf8SliceNode.CategorySetNode or Utf8SliceNode.DotNode }:
+                    remaining -= 3;
+                    return remaining >= 0;
+                default:
+                    return false;
+            }
         }
 
         private void CompleteNullableNonBacktrackingIteration(ref EmissionFrame frame, int continueAt)
