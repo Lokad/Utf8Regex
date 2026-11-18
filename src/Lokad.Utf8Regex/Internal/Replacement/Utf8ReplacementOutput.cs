@@ -8,6 +8,7 @@ internal ref struct Utf8ReplacementRangeLedger
 {
     private Utf8InvocationStateBuffer<Utf8ReplacementRange> _ranges;
     internal readonly int Count => _ranges.Count;
+    internal readonly ulong PendingGrowthBytes => _ranges.PendingGrowthBytes;
     internal readonly Utf8ReplacementRange this[int index] => _ranges[index];
     internal readonly ReadOnlySpan<Utf8ReplacementRange> WrittenRanges => _ranges.WrittenItems;
 
@@ -82,6 +83,25 @@ internal ref struct Utf8ReplacementOutputSink
 
 internal static class Utf8ReplacementOutput
 {
+    internal static void CopyLiteralRanges(
+        ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacement, Span<byte> destination,
+        ReadOnlySpan<Utf8ReplacementRange> matches, bool reverse, scoped Utf8InvocationBufferControl control)
+    {
+        var sourcePosition = 0;
+        var sink = new Utf8ReplacementOutputSink(destination);
+        // Matching order is preserved during discovery. Emit in subject order,
+        // including the empty RTL match before a nonempty range with that start.
+        for (var index = 0; index < matches.Length; index++)
+        {
+            var match = matches[reverse ? matches.Length - index - 1 : index];
+            sink.AppendSlice(input, sourcePosition, match.Start - sourcePosition, control);
+            sink.Append(replacement, control);
+            sourcePosition = match.Start + match.Length;
+        }
+
+        sink.Append(input[sourcePosition..], control);
+    }
+
     internal static bool TryCopyUnchanged<TControl>(
         ReadOnlySpan<byte> input,
         Span<byte> destination,

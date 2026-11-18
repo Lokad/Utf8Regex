@@ -214,11 +214,9 @@ public sealed class Utf8OwnedReplacementInteropTests
     }
 
     [Theory]
-    [InlineData("bytes-string")]
-    [InlineData("bytes-pattern")]
-    [InlineData("destination-string")]
-    [InlineData("destination-pattern")]
-    public void LargeTemplateOutputCanBeCanceledAfterShortMatchingHasFinished(string operation)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LargeTemplateOutputCanBeCanceledAfterShortMatchingHasFinished(bool destinationOutput)
     {
         foreach (var compiled in new[] { false, true })
         foreach (var rtl in new[] { false, true })
@@ -227,8 +225,8 @@ public sealed class Utf8OwnedReplacementInteropTests
                 (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
             var regex = new Utf8Regex("(.)", options: options);
             var input = "\U0001f600x"u8.ToArray();
-            var template = new string('Q', 500000);
-            var templateBytes = Encoding.UTF8.GetBytes(template);
+            var templateBytes = new byte[500000];
+            Array.Fill(templateBytes, (byte)'Q');
             var destination = new byte[1500000];
             Array.Fill(destination, (byte)0xa5);
             using var source = new CancellationTokenSource();
@@ -238,19 +236,23 @@ public sealed class Utf8OwnedReplacementInteropTests
             {
                 var exception = Assert.Throws<OperationCanceledException>(() =>
                 {
-                    switch (operation)
-                    {
-                        case "bytes-string": _ = regex.Replace(input, Encoding.UTF8.GetBytes(template), source.Token); break;
-                        case "bytes-pattern": _ = regex.Replace(input, templateBytes, source.Token); break;
-                        case "destination-string": _ = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out _, source.Token); break;
-                        case "destination-pattern": _ = regex.TryReplace(input, templateBytes, destination, out _, source.Token); break;
-                    }
+                    if (destinationOutput)
+                        _ = regex.TryReplace(input, templateBytes, destination, out _, source.Token);
+                    else
+                        _ = regex.Replace(input, templateBytes, source.Token);
                 });
                 Assert.True(entered);
                 Assert.Equal(source.Token, exception.CancellationToken);
             }
             finally { session.Complete(); }
-            Assert.True(destination.AsSpan().IndexOfAnyExcept((byte)0xa5) < 0);
+            if (destinationOutput)
+            {
+                var copied = destination.AsSpan().IndexOf((byte)0xa5);
+                Assert.InRange(copied, 4096, templateBytes.Length - 1);
+                Assert.Equal(0, copied % 4096);
+                Assert.True(destination.AsSpan(0, copied).IndexOfAnyExcept((byte)'Q') < 0);
+                Assert.True(destination.AsSpan(copied).IndexOfAnyExcept((byte)0xa5) < 0);
+            }
             Assert.Equal("QQ", Encoding.UTF8.GetString(regex.Replace(input, "Q"u8)));
             AssertOwned(regex);
         }

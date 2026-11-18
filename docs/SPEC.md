@@ -405,6 +405,9 @@ there is no thread-local callback writer or implicit output-scope discovery.
 bytes and leaves the destination unchanged. Input/template overlap is supported;
 overlapping input stages output. Other failures throw, and interruption during
 the final copy can leave partial destination contents.
+For a large literal template with a nonoverlapping destination, scalar matching
+can retain admitted match ranges and publish directly after sizing. Its resource
+charges cover the retained ranges and bounded publication work.
 
 ## Cancellation, deadlines and resource limits
 

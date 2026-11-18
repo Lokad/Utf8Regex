@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -45,9 +46,19 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement, Utf8SliceReplacementResultKind resultKind, Span<byte> destination,
         Utf8SliceInvocation initialInvocation)
     {
+        // A range costs less than staging a large literal for each hit. The
+        // prepared template owns its bytes, so only subject overlap can
+        // prevent direct publication. Short and structured templates use the
+        // existing writer, as does allocated output.
+        const int minimumRangeOutputLiteralBytes = 256;
+        var publishRanges = resultKind == Utf8SliceReplacementResultKind.Destination &&
+            replacement.IsLiteral && replacement.LiteralUtf8.Length >= minimumRangeOutputLiteralBytes &&
+            !input.Overlaps(destination);
+        var scope = publishRanges ? null : CreateOwnedOutputScope(initialInvocation);
+        ref var invocation = ref (scope is null ? ref initialInvocation : ref scope.Invocation);
         var expansion = new Utf8SliceTemplateExpansion(replacement, _program.CaptureCatalog);
-        var scope = CreateOwnedOutputScope(initialInvocation);
-        ref var invocation = ref scope.Invocation;
+        var ranges = new Utf8ReplacementRangeLedger();
+        var outputLength = (long)input.Length;
         var slots = new Utf8SliceSlots([], []);
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         Utf8NonBacktrackingSearchState? batch = null;
@@ -60,7 +71,7 @@ public sealed partial class Utf8Regex
                 var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out batch);
                 if (breach != Utf8ExecutionLimitKind.None) throw new InvalidOperationException($"Owned replacement preparation exceeded {breach}.");
             }
-            var writer = scope.CreateBuffer();
+            var writer = scope?.CreateBuffer();
             slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
             var position = program.RightToLeft ? input.Length : 0;
             var edgeByte = position;
@@ -88,16 +99,26 @@ public sealed partial class Utf8Regex
                         throw new InvalidOperationException("Owned replacement execution exceeded the invocation budget.");
                     if (!outcome.Found) break;
                     anyMatch = true;
-                    if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, outcome.StartByte - edgeByte));
-                    expansion.Append(input, outcome, slots, writer, ref invocation);
-                    scope.Retain(writer);
-                    if (program.RightToLeft)
+                    if (writer is null)
                     {
-                        writer.Append(input.Slice(outcome.EndByte, edgeByte - outcome.EndByte));
-                        writer.MarkPiece();
-                        edgeByte = outcome.StartByte;
+                        var matchLength = outcome.EndByte - outcome.StartByte;
+                        var growth = ranges.PendingGrowthBytes;
+                        if (growth != 0) Utf8SliceBufferWork.ChargeResultBytes(growth, ref invocation);
+                        ranges.Add(new(outcome.StartByte, matchLength), new Utf8InvocationBufferControl(ref invocation));
+                        outputLength += (long)replacement.LiteralUtf8.Length - matchLength;
                     }
-                    else edgeByte = outcome.EndByte;
+                    else
+                    {
+                        if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, outcome.StartByte - edgeByte));
+                        expansion.Append(input, outcome, slots, writer, ref invocation);
+                        scope!.Retain(writer);
+                        if (program.RightToLeft)
+                        {
+                            writer.Append(input.Slice(outcome.EndByte, edgeByte - outcome.EndByte));
+                            writer.MarkPiece();
+                        }
+                    }
+                    edgeByte = program.RightToLeft ? outcome.StartByte : outcome.EndByte;
                     position = outcome.EndByte > outcome.StartByte ? edgeByte : Utf8SliceRunner.AdvancePastScalar(input, edgeByte, program.RightToLeft);
                     if (outcome.EndByte > outcome.StartByte) anchor = edgeByte;
                 }
@@ -108,6 +129,17 @@ public sealed partial class Utf8Regex
             workspace.Release(ref invocation);
             if (!anyMatch)
                 return CompleteUnchangedOwnedReplacement(input, resultKind, destination, ref invocation);
+            if (writer is null)
+            {
+                Utf8SliceBufferWork.Checkpoint(ref invocation);
+                if (outputLength > destination.Length)
+                    return new([], OperationStatus.DestinationTooSmall, 0);
+                // Scalar-aligned gaps and a strictly validated literal each
+                // contain complete scalars.
+                Utf8ReplacementOutput.CopyLiteralRanges(input, replacement.LiteralUtf8, destination,
+                    ranges.WrittenRanges, program.RightToLeft, new Utf8InvocationBufferControl(ref invocation));
+                return new([], OperationStatus.Done, (int)outputLength);
+            }
             if (program.RightToLeft)
             {
                 writer.Append(input.Slice(0, edgeByte));
@@ -135,7 +167,8 @@ public sealed partial class Utf8Regex
             workspace.Release(ref invocation);
             batch?.Release(ref invocation);
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
-            scope.Release();
+            ranges.Dispose(new Utf8InvocationBufferControl(ref invocation));
+            scope?.Release();
         }
     }
 

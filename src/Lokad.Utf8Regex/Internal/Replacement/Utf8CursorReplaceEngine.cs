@@ -16,7 +16,8 @@ internal static class Utf8CursorReplaceEngine
             replacementCount = ledger.Count;
             var output = Utf8InvocationOutput.AllocateBytes(outputLength.Value, cursor.WorkingBufferControl, out outputReservation);
             if (ledger.Count == 0) Utf8InvocationOutput.Copy(input, output, cursor.WorkingBufferControl);
-            else Emit(input, replacement, output, ledger.WrittenRanges, reverse, cursor.WorkingBufferControl);
+            else Utf8ReplacementOutput.CopyLiteralRanges(input, replacement, output,
+                ledger.WrittenRanges, reverse, cursor.WorkingBufferControl);
             return output;
         }
         finally
@@ -45,7 +46,8 @@ internal static class Utf8CursorReplaceEngine
                 return false;
             }
 
-            Emit(input, replacement, destination, ledger.WrittenRanges, reverse, cursor.WorkingBufferControl);
+            Utf8ReplacementOutput.CopyLiteralRanges(input, replacement, destination,
+                ledger.WrittenRanges, reverse, cursor.WorkingBufferControl);
             bytesWritten = outputLength.Value;
             return true;
         }
@@ -68,23 +70,5 @@ internal static class Utf8CursorReplaceEngine
         }
 
         return outputLength;
-    }
-
-    private static void Emit(
-        ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacement, Span<byte> destination, ReadOnlySpan<Utf8ReplacementRange> matches, bool reverse, scoped Utf8InvocationBufferControl control)
-    {
-        var sourcePosition = 0;
-        var sink = new Utf8ReplacementOutputSink(destination);
-        // Matching order is preserved during discovery. Emit in subject order,
-        // including the empty RTL match before a nonempty range with that start.
-        for (var index = 0; index < matches.Length; index++)
-        {
-            var match = matches[reverse ? matches.Length - index - 1 : index];
-            sink.AppendSlice(input, sourcePosition, match.Start - sourcePosition, control);
-            sink.Append(replacement, control);
-            sourcePosition = match.Start + match.Length;
-        }
-
-        sink.Append(input[sourcePosition..], control);
     }
 }

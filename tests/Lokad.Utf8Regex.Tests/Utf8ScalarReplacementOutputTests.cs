@@ -7,6 +7,64 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ScalarReplacementOutputTests
 {
     [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    [InlineData(RegexOptions.RightToLeft)]
+    [InlineData(RegexOptions.NonBacktracking)]
+    public void LargeLiteralUsesCallerStorageInScalarMatchOrder(RegexOptions engine)
+    {
+        const string pattern = "(?<run>a+)|";
+        var options = engine | RegexOptions.CultureInvariant;
+        var template = Encoding.UTF8.GetBytes(new string('中', 513));
+        var baseline = new Utf8Regex(pattern, options);
+        using var live = new CancellationTokenSource();
+        var expected = baseline.Replace("éaa😀a"u8, template, live.Token);
+        var regex = new Utf8Regex(pattern, options, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy { MaxResultBytes = 4096 }
+        });
+
+        // The destination also contains the original template. Prepared
+        // literal bytes remain valid throughout publication.
+        var destination = new byte[expected.Length + 1];
+        template.CopyTo(destination.AsSpan(1));
+        Assert.Equal(OperationStatus.Done,
+            regex.TryReplace("éaa😀a"u8, destination.AsSpan(1, template.Length), destination, out var written, live.Token));
+        Assert.Equal(expected.Length, written);
+        Assert.Equal(expected, destination.AsSpan(0, written).ToArray());
+        Assert.Equal(0, destination[^1]);
+
+        var shortDestination = Enumerable.Repeat((byte)0xa5, expected.Length - 1).ToArray();
+        Assert.Equal(OperationStatus.DestinationTooSmall,
+            regex.TryReplace("éaa😀a"u8, template, shortDestination, out written, live.Token));
+        Assert.Equal(0, written);
+        Assert.All(shortDestination, value => Assert.Equal((byte)0xa5, value));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LargeLiteralStorageDenialLeavesCallerBytesUntouched(bool overlappingSubject)
+    {
+        var limit = overlappingSubject ? 4096UL : 1UL;
+        var regex = new Utf8Regex("a", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy { MaxResultBytes = limit }
+        });
+        var destination = new byte[6000];
+        "a"u8.CopyTo(destination);
+        var template = Encoding.UTF8.GetBytes(new string('中', 1600));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+        {
+            var subject = overlappingSubject ? destination.AsSpan(0, 1) : "a"u8;
+            regex.TryReplace(subject, template, destination, out _);
+        });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
+        Assert.Equal((byte)'a', destination[0]);
+        Assert.All(destination.Skip(1), value => Assert.Equal((byte)0, value));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void MalformedByteTemplatesFailBeforeOutputAndDoNotPreventReuse(bool finite)
