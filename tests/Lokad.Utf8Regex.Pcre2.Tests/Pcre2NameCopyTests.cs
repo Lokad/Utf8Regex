@@ -38,15 +38,24 @@ public sealed class Pcre2NameCopyTests
             regex.CopyNumbersForName("n", numbers, out _);
             match.CopyNumbersForName("n", numbers, out _);
         }
+        // Warm the measured batch itself as well as its production callees.
+        // Keep setup/assertions outside the exact allocation window.
+        MeasureCopies(regex, match, numbers, out _);
+        var allocated = MeasureCopies(regex, match, numbers, out var copied);
+        Assert.Equal(200, copied);
+        Assert.Equal(0, allocated);
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static long MeasureCopies(Utf8Pcre2Regex regex, Utf8Pcre2MatchContext match, Span<int> numbers, out int copied)
+    {
+        copied = 0;
         var allocated = GC.GetAllocatedBytesForCurrentThread();
-        var copied = 0;
         for (var i = 0; i < 100; i++)
         {
             copied += regex.CopyNumbersForName("n", numbers, out _);
             copied += match.CopyNumbersForName("n", numbers, out _);
         }
-        allocated = GC.GetAllocatedBytesForCurrentThread() - allocated;
-        Assert.Equal(200, copied);
-        Assert.Equal(0, allocated);
+        return GC.GetAllocatedBytesForCurrentThread() - allocated;
     }
 }
