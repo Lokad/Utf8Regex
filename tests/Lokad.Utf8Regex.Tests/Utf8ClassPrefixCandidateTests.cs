@@ -289,6 +289,34 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal("ok://ok", Encoding.UTF8.GetString(next.GetValueMemory().Span));
     }
 
+    [Fact]
+    public void RepeatedClassPrefixRetainsStartsBeforeAnEarlierLiteral()
+    {
+        const string pattern = @"(?<first>\w+)\s+\w+\s+Holmes";
+        const string first = "é\u0085Holmes\u2028Holmes";
+        const string second = "Ω\u3000東\tHolmes";
+        var prefix = new string('!', 100_000) + "😀";
+        var input = Encoding.UTF8.GetBytes(prefix + first + "!" + second);
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with { MaxWorkSteps = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        var match = regex.Match(input, 17, [], source.Token);
+        Assert.Equal((Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(prefix + first)),
+            (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal(2, regex.Count(input, source.Token));
+
+        using var cursor = regex.CreateMatchCursor(input, 17, source.Token);
+        Assert.True(cursor.MoveNext(out var initial));
+        Assert.True(cursor.MoveNext(out var next));
+        Assert.False(cursor.MoveNext(out _));
+        Assert.True(initial.GetValueMemory().Span.SequenceEqual("é\u0085Holmes\u2028Holmes"u8));
+        Assert.True(initial.GetGroupMemory(1).Span.SequenceEqual("é"u8));
+        Assert.True(next.GetValueMemory().Span.SequenceEqual("Ω\u3000東\tHolmes"u8));
+    }
+
     [Theory]
     [InlineData(96)]
     [InlineData(512)]

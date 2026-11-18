@@ -515,6 +515,7 @@ internal static partial class Utf8SliceRunner
         var leadingClass = -1;
         var classLiteral = -1;
         var classSearch = default(PreparedSubstringSearch?);
+        var repeatPrefixAscii = default(Utf8SearchAsciiSet);
         long classGapMaximum = 0;
         var directClassLiteral = false;
         var singleWindowAttempt = false;
@@ -537,6 +538,12 @@ internal static partial class Utf8SliceRunner
                 }
                 if (singleWindowAttempt || wideInput && (directClassLiteral || classSearch is not null))
                     classLiteral = literal;
+            }
+            if (classLiteral < 0 && wideInput &&
+                GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefixAscii) is { } prefixSearch)
+            {
+                classSearch = prefixSearch;
+                classLiteral = prefixSearch.Needle[0];
             }
         }
         // Keep existing literal guidance when available. A decimal set can
@@ -570,7 +577,7 @@ internal static partial class Utf8SliceRunner
             {
                 var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                     (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
-                    ref position, ref invocation, out classWindowEnd);
+                    ref position, ref invocation, out classWindowEnd, repeatPrefixAscii);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
@@ -828,6 +835,7 @@ internal static partial class Utf8SliceRunner
         // consuming instructions separate the repeat from its delimiter.
         var literalImmediatelyAfterRepeat = whitespaceLiteralIndex == leadingClass + 3;
         var classSearch = default(PreparedSubstringSearch?);
+        var repeatPrefixAscii = default(Utf8SearchAsciiSet);
         var singleWindowAttempt = false;
         if (whitespaceLiteral >= 0 && leadingClass >= 0)
         {
@@ -839,6 +847,13 @@ internal static partial class Utf8SliceRunner
                     ref invocation, out singleWindowAttempt);
                 if (proofBreach != Utf8ExecutionLimitKind.None) return new(count, proofBreach);
             }
+        }
+        if (whitespaceLiteral < 0 && leadingAsciiFirst < 0 && !seekLiteral && !program.RightToLeft &&
+            !program.IgnoreCase && !program.HasContiguousAnchor && input.Length - fromByte >= 256 &&
+            GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefixAscii) is { } prefixSearch)
+        {
+            classSearch = prefixSearch;
+            whitespaceLiteral = prefixSearch.Needle[0];
         }
         // Keep the existing wide delimiter search when it applies. Otherwise
         // the short window also makes decimal-or-wide-scalar seeking worthwhile.
@@ -888,11 +903,11 @@ internal static partial class Utf8SliceRunner
                 }
                 while (whitespaceLiteral >= 0 && position > whitespaceWindowEnd)
                 {
-                    if (leadingClass >= 0)
+                    if (leadingClass >= 0 || repeatPrefixAscii.HasValue)
                     {
                         var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                             (byte)whitespaceLiteral, classSearch, whitespaceGapMaximum, literalImmediatelyAfterRepeat,
-                            ref position, ref invocation, out whitespaceWindowEnd);
+                            ref position, ref invocation, out whitespaceWindowEnd, repeatPrefixAscii);
                         if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     }
                     else

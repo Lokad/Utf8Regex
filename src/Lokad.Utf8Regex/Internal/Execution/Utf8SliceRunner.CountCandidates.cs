@@ -345,6 +345,43 @@ internal static partial class Utf8SliceRunner
         => candidatePlan.LiteralSearch is { IgnoreCase: false } search &&
             LiteralStartsAtInstruction(program, index, search.Needle) ? search : null;
 
+    private static PreparedSubstringSearch? GetRepeatPrefixSearch(Utf8SliceProgram program,
+        in Utf8SearchPlan candidatePlan, out Utf8SearchAsciiSet prefixAscii)
+    {
+        prefixAscii = default;
+        if (candidatePlan.LiteralSearch is not { IgnoreCase: false, Length: > 1 } search) return null;
+        var code = program.Instructions.AsSpan();
+        ulong low = 0, high = 0;
+        var index = 0;
+        while (index < code.Length && index < 64)
+        {
+            if (code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+            {
+                index++;
+                continue;
+            }
+            if (!IsSingleClassRepeat(code, index)) break;
+            var atom = code[index + 1];
+            if (program.TryGetUnfoldedAsciiSet(atom, out var ascii, out _))
+            {
+                low |= ascii.Low;
+                high |= ascii.High;
+            }
+            else if (TryGetPositiveCategorySet(program, atom, out _, out var atomLow, out var atomHigh))
+            {
+                low |= atomLow;
+                high |= atomHigh;
+            }
+            else return null;
+            index += 4;
+        }
+
+        if ((low | high) == 0 || (low & high) == ulong.MaxValue || index >= 64 ||
+            !LiteralStartsAtInstruction(program, index, search.Needle)) return null;
+        prefixAscii = Utf8SearchAsciiSet.FromMasks(low, high);
+        return search;
+    }
+
     private static Utf8ExecutionLimitKind TryProveSingleWindowAttempt(Utf8SliceProgram program, int leadingClass,
         byte delimiter, ref Utf8SliceInvocation invocation, out bool singleAttempt)
     {
@@ -480,7 +517,8 @@ internal static partial class Utf8SliceRunner
 
     internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
-        long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd)
+        long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
+        Utf8SearchAsciiSet prefixAscii = default)
     {
         var floor = position;
         var breach = search is { } prepared && (prepared.Length > 1 || !direct)
@@ -489,6 +527,29 @@ internal static partial class Utf8SliceRunner
             : TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
         windowEnd = position;
         if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
+        if (prefixAscii.HasValue)
+        {
+            // Even if this hit is inside a repeat and the actual delimiter is
+            // later, every byte from its viable start to here can occur in the
+            // prefix. Only an excluded ASCII byte proves a barrier. Rewind no
+            // earlier than the last verified floor and keep all wider scalars.
+            while (position > floor)
+            {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                var length = Math.Min(256, position - floor);
+                position -= length;
+                var block = input.Slice(position, length);
+                for (var offset = block.Length - 1; offset >= 0; offset--)
+                {
+                    var value = block[offset];
+                    if (value >= 128 || prefixAscii.Contains(value)) continue;
+                    position += offset + 1;
+                    return invocation.TryChargeInputStep();
+                }
+            }
+            return invocation.TryChargeInputStep();
+        }
         return TryRewindClassWhitespace(program, input, floor, leadingClass, gapMaximum, direct, ref position, ref invocation);
     }
 
