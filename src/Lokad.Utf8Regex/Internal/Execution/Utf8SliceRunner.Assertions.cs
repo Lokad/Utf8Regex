@@ -223,36 +223,63 @@ internal static partial class Utf8SliceRunner
     {
         matched = false;
         breach = Utf8ExecutionLimitKind.None;
-        var body = assertion.Body;
-        var code = body.Instructions.AsSpan();
-        // A bounded, side-effect-free body needs no child cursor or trail.
-        // Capture writes, folding and every other instruction keep the VM.
-        if (code.Length is < 2 or > 33 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return false;
-        var length = code.Length - 1;
-        for (var index = 0; index < length; index++)
-            if (code[index] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal || (uint)literal.A >= 128)
-                return false;
+        var prefixLength = assertion.InlineLiteralPrefixLength;
+        if (prefixLength < 0) return false;
         // Fixed-forward lookbehind keeps its original scalar rewind and end
         // constraint, without suspending the parent for this bounded body.
         int? requiredEnd = assertion.ForwardScalarCount.HasValue ? start : null;
         breach = TryRewindAssertionStart(input, assertion.ForwardScalarCount,
             ref start, ref invocation, out var available);
         if (breach != Utf8ExecutionLimitKind.None || !available) return true;
-        breach = invocation.TryChargeInputStep();
+        var body = assertion.Body;
+        breach = TryMatchInlineLiteralAssertion(body.Instructions, 0, body.Instructions.Length - 1, prefixLength,
+            input, start, body.RightToLeft, requiredEnd, depth, ref invocation, out matched);
+        return true;
+    }
+
+    private static Utf8ExecutionLimitKind TryMatchInlineLiteralAssertion(ReadOnlySpan<Utf8SliceInstruction> code,
+        int first, int end, int prefixLength, ReadOnlySpan<byte> input, int start, bool reverse,
+        int? requiredEnd, uint depth, ref Utf8SliceInvocation invocation, out bool matched)
+    {
+        matched = false;
+        var breach = invocation.TryChargeInputStep();
         if (breach == Utf8ExecutionLimitKind.None) breach = invocation.Budget.TryNoteDepth(depth);
-        if (breach != Utf8ExecutionLimitKind.None) return true;
-        var reverse = body.RightToLeft;
-        if ((uint)start <= (uint)input.Length && (reverse ? start >= length : length <= input.Length - start))
-        {
-            var bytes = input.Slice(reverse ? start - length : start, length);
-            matched = true;
-            for (var index = 0; index < length; index++)
-                if (bytes[reverse ? length - 1 - index : index] != code[index].A) { matched = false; break; }
-            if (matched && requiredEnd.HasValue)
-                matched = (reverse ? start - length : start + length) == requiredEnd.Value;
-        }
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        matched = MatchInlineLiteralAssertion(code, first, end, prefixLength, input, start, reverse, requiredEnd);
         breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
+        return breach;
+    }
+
+    private static bool MatchInlineLiteralAssertion(ReadOnlySpan<Utf8SliceInstruction> code,
+        int first, int end, int prefixLength,
+        ReadOnlySpan<byte> input, int start, bool reverse, int? requiredEnd)
+    {
+        var position = first + prefixLength;
+        if (position == end) return MatchAsciiLiterals(code[first..end], input, start, reverse, requiredEnd);
+        if (prefixLength != 0 && !MatchAsciiLiterals(code[first..position], input, start, reverse, null)) return false;
+        start += reverse ? -prefixLength : prefixLength;
+
+        // Every fork has a straight literal arm and a jump to the assertion
+        // end. Only the input edge is local to an arm.
+        while (position < end && code[position].Kind == Utf8SliceInstructionKind.Fork)
+        {
+            var next = code[position].A;
+            if (MatchAsciiLiterals(code[(position + 1)..(next - 1)], input, start, reverse, requiredEnd)) return true;
+            position = next;
+        }
+        return MatchAsciiLiterals(code[position..end], input, start, reverse, requiredEnd);
+    }
+
+    private static bool MatchAsciiLiterals(ReadOnlySpan<Utf8SliceInstruction> literals, ReadOnlySpan<byte> input,
+        int start, bool reverse, int? requiredEnd)
+    {
+        var length = literals.Length;
+        if ((uint)start > (uint)input.Length || (reverse ? start < length : length > input.Length - start)) return false;
+        if (requiredEnd is int end && end != (reverse ? start - length : start + length)) return false;
+        var bytes = input.Slice(reverse ? start - length : start, length);
+        for (var index = 0; index < length; index++)
+            if (bytes[reverse ? length - 1 - index : index] != literals[index].A) return false;
         return true;
     }
 

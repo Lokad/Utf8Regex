@@ -224,25 +224,62 @@ internal readonly struct Utf8SliceInstruction
 /// The body shares the parent capture slots at run time.</summary>
 internal sealed class Utf8SliceAssertion
 {
-    private Utf8SliceAssertion(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind, uint? forwardScalarCount)
+    private Utf8SliceAssertion(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind,
+        uint? forwardScalarCount, int inlineLiteralPrefixLength)
     {
         Body = body;
         MinLengthBytes = minLengthBytes;
         MaxLengthBytes = maxLengthBytes;
         IsLookbehind = isLookbehind;
         ForwardScalarCount = forwardScalarCount;
+        InlineLiteralPrefixLength = inlineLiteralPrefixLength;
     }
 
-    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<(Utf8SliceProgram, int, int, bool, uint?)>();
+    internal static ulong ObjectBytes => Utf8ConstructionBudget.ObjectBytes<(Utf8SliceProgram, int, int, bool, uint?, int)>();
     internal static Utf8SliceAssertion Create(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind)
         => Create(body, minLengthBytes, maxLengthBytes, isLookbehind, null);
 
     internal static Utf8SliceAssertion Create(Utf8SliceProgram body, int minLengthBytes, int maxLengthBytes, bool isLookbehind, uint? forwardScalarCount)
     {
         using var owner = Utf8ConstructionScope.Enter();
-        var result = owner.Budget.AllocateObject((body, minLengthBytes, maxLengthBytes, isLookbehind, forwardScalarCount),
-            static state => new Utf8SliceAssertion(state.body, state.minLengthBytes, state.maxLengthBytes, state.isLookbehind, state.forwardScalarCount));
+        var code = body.Instructions;
+        var inlineLiteralPrefixLength = code.Length != 0 && code[^1].Kind == Utf8SliceInstructionKind.Accept
+            ? FindInlineLiteralPrefixLength(code, 0, code.Length - 1, owner.Budget) : -1;
+        var result = owner.Budget.AllocateObject(
+            (body, minLengthBytes, maxLengthBytes, isLookbehind, forwardScalarCount, inlineLiteralPrefixLength),
+            static state => new Utf8SliceAssertion(state.body, state.minLengthBytes, state.maxLengthBytes,
+                state.isLookbehind, state.forwardScalarCount, state.inlineLiteralPrefixLength));
         owner.Complete(); return result;
+    }
+
+    internal static int FindInlineLiteralPrefixLength(ReadOnlySpan<Utf8SliceInstruction> code,
+        int first, int end, Utf8ConstructionBudget budget)
+    {
+        var length = end - first;
+        if (length is < 1 or > 32) return -1;
+        budget.ChargeWork((ulong)length);
+        var prefixEnd = EndOfAsciiLiterals(code, first, end);
+        var position = prefixEnd;
+        while (position < end)
+        {
+            // Flat alternatives rejoin at the assertion end. No path can update captures,
+            // repeat or suspend the parent for a nested assertion.
+            if (code[position] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0 } choice ||
+                choice.A <= position + 1 || choice.A > end ||
+                EndOfAsciiLiterals(code, position + 1, end) != choice.A - 1 ||
+                code[choice.A - 1].Kind != Utf8SliceInstructionKind.Jump || code[choice.A - 1].A != end)
+                return -1;
+            position = EndOfAsciiLiterals(code, choice.A, end);
+            if (position != end && position != choice.A) return -1;
+        }
+        return prefixEnd - first;
+    }
+
+    private static int EndOfAsciiLiterals(ReadOnlySpan<Utf8SliceInstruction> code, int position, int end)
+    {
+        while (position < end && code[position] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
+            position++;
+        return position;
     }
 
     internal Utf8SliceProgram Body { get; }
@@ -250,6 +287,7 @@ internal sealed class Utf8SliceAssertion
     internal int MaxLengthBytes { get; }
     internal bool IsLookbehind { get; }
     internal uint? ForwardScalarCount { get; }
+    internal int InlineLiteralPrefixLength { get; }
 }
 
 internal sealed class Utf8SliceProgram
@@ -1749,6 +1787,8 @@ internal static class Utf8SliceLowerer
                 Emit(new(Utf8SliceInstructionKind.Lookahead, index, positive ? 1 : 0, 0, 0));
                 return false;
             }
+            var inlinePrefixLength = Utf8SliceAssertion.FindInlineLiteralPrefixLength(Instructions.Span,
+                frame.Mark + 1, Instructions.Count, Budget);
             Emit(new(Utf8SliceInstructionKind.Commit, 0, 0, 0, 0));
             if (positive)
             {
@@ -1763,6 +1803,14 @@ internal static class Utf8SliceLowerer
             {
                 Emit(new(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
                 Patch(frame.Mark, Instructions.Count);
+            }
+            // Preserve the emitted edges for program analyses. The runner can
+            // evaluate a proved body at the fork without materializing its frame.
+            if (inlinePrefixLength >= 0)
+            {
+                var target = Instructions[frame.Mark].A;
+                Instructions[frame.Mark] = new(Utf8SliceInstructionKind.Fork, target, 1,
+                    inlinePrefixLength + 1, positive ? 1 : 0);
             }
             return false;
         }

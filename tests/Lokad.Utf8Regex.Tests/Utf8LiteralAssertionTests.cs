@@ -13,6 +13,9 @@ public sealed class Utf8LiteralAssertionTests
     [InlineData("(?<!foo)bar")]
     [InlineData("bar(?=foo)")]
     [InlineData("bar(?!foo)")]
+    [InlineData("bar(?=foo|go|baz)")]
+    [InlineData("bar(?!foo|go|baz)")]
+    [InlineData("bar(?=(foo|go))")]
     [InlineData("(?:foo|fo)(?<=foo)bar")]
     [InlineData("(?<=(?<x>foo))bar")]
     [InlineData("(?<=foo|goo)bar")]
@@ -56,6 +59,22 @@ public sealed class Utf8LiteralAssertionTests
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("😀" + prefix[..^1] + "bar")));
     }
 
+    [Theory]
+    [InlineData("(?=foo|bar)bar", "bar", 0)]
+    [InlineData("(?!foo|goo)bar", "bar", 0)]
+    [InlineData("(?<=foo|goo)bar", "goobar", 3)]
+    public void LiteralChoicesNeedOnlyLogicalAssertionDepth(string pattern, string text, int start)
+    {
+        using var regex = Utf8Regex.Compile(pattern);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var invocation = new Utf8SliceInvocation(new(100000, 1, 1), Timeout.InfiniteTimeSpan, default);
+        var result = Utf8SliceRunner.TryMatchAt(program, Encoding.UTF8.GetBytes(text), start, [], [], true, ref invocation);
+        Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
+        Assert.True(result.IsMatch);
+        Assert.Equal(1u, invocation.Budget.PeakDepth);
+        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+    }
+
     [Fact]
     public void LogicalAssertionDepthAndOriginalLoansSurviveTheShortcut()
     {
@@ -80,6 +99,8 @@ public sealed class Utf8LiteralAssertionTests
     [Theory]
     [InlineData("(?<=foo)bar", true)]
     [InlineData("(?<!foo)bar", false)]
+    [InlineData("(?<=goo|foo)bar", true)]
+    [InlineData("(?<!goo|foo)bar", false)]
     public void EveryWorkCutoffKeepsTheExistingLoan(string pattern, bool expected)
     {
         var program = new Utf8Regex(pattern).Inspection.AvailableOwnedSliceProgram!;
@@ -98,13 +119,16 @@ public sealed class Utf8LiteralAssertionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void RepeatedAssertionsKeepOriginalInterruption(bool expire)
+    [InlineData("(?:foo(?<=foo)){1000}bar", false)]
+    [InlineData("(?:foo(?<=foo)){1000}bar", true)]
+    [InlineData("(?:(?=foo|goo)foo){1000}bar", false)]
+    [InlineData("(?:(?=foo|goo)foo){1000}bar", true)]
+    public void RepeatedAssertionsKeepOriginalInterruption(string pattern, bool expire)
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo", 1000)) + "bar");
         using var token = new CancellationTokenSource(); long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex("(?:foo(?<=foo)){1000}bar", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new Utf8ResourcePolicy

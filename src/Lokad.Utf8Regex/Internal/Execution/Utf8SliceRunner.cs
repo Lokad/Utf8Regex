@@ -1116,6 +1116,19 @@ internal static partial class Utf8SliceRunner
                     break;
 
                 case Utf8SliceInstructionKind.Fork:
+                    if (instruction is { B: 1, C: > 0 })
+                    {
+                        // Both forward-lookahead layouts end their body two
+                        // instructions before the failed-body target.
+                        var assertionBreach = TryMatchInlineLiteralAssertion(instructions,
+                            programIndex + 1, instruction.A - 2, instruction.C - 1, input, inputIndex,
+                            false, null, (uint)stacks.FrameCount + 1, ref invocation, out var matched);
+                        if (assertionBreach != Utf8ExecutionLimitKind.None)
+                            { failure = assertionBreach; goto Failure; }
+                        failed = matched != (instruction.D != 0);
+                        if (!failed) programIndex = instruction.A + instruction.D;
+                        break;
+                    }
                     // A required exact ASCII literal can disprove a branch
                     // before its frame/rollback storage is needed. Reuse the
                     // bounded capture-marker proof; opaque branches keep frames.
