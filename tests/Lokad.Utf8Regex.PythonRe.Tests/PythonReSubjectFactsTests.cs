@@ -11,12 +11,12 @@ public sealed class PythonReSubjectFactsTests
         var input = Encoding.UTF8.GetBytes("é" + new string('x', 1 << 20));
         using var regex = new Utf8PythonRegex("([a-zé])",
             resourcePolicy: new() { MaxWorkSteps = 64, MaxWorkingBytes = 32768, MaxResultBytes = 512 });
-        var value = regex.Search(input);
+        var value = regex.Match(input,mode: Utf8PythonMatchMode.Search);
         Assert.True(value.Success);
         Assert.Equal((0,2),(value.StartOffsetInBytes,value.EndOffsetInBytes));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
-        var error = Assert.Throws<OperationCanceledException>(() => regex.Search(input, 0, cancellation.Token));
+        var error = Assert.Throws<OperationCanceledException>(() => regex.Match(input,0,cancellationToken: cancellation.Token,mode: Utf8PythonMatchMode.Search));
         Assert.Equal(cancellation.Token, error.CancellationToken);
     }
 
@@ -35,11 +35,11 @@ public sealed class PythonReSubjectFactsTests
                 MaxResultBytes = 128
             });
         using var cancellation = new CancellationTokenSource();
-        PythonReMatchAssert.Equal(value, regex.Match(input, 6, cancellation.Token));
-        PythonReMatchAssert.Equal(value, regex.Search(input, 6, cancellation.Token));
+        PythonReMatchAssert.Equal(value, regex.Match(input,6,cancellationToken: cancellation.Token));
+        PythonReMatchAssert.Equal(value, regex.Match(input,6,cancellationToken: cancellation.Token,mode: Utf8PythonMatchMode.Search));
 
         cancellation.Cancel();
-        var failure = Assert.Throws<OperationCanceledException>(() => regex.Match(input, 6, cancellation.Token));
+        var failure = Assert.Throws<OperationCanceledException>(() => regex.Match(input,6,cancellationToken: cancellation.Token));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
     }
 
@@ -69,11 +69,11 @@ public sealed class PythonReSubjectFactsTests
                 MaxWorkingBytes = 32768,
                 MaxResultBytes = 1
             });
-        var retained = regex.Match(input, 6);
+        var retained = regex.Match(input,6);
         PythonReMatchAssert.Equal(expected, retained);
-        PythonReMatchAssert.Equal(expected, regex.Search(input, 6));
-        PythonReMatchAssert.Equal(expected, regex.FullMatch(input, 6));
-        PythonReMatchAssert.Equal(expected, regex.FullMatch(Encoding.UTF8.GetBytes(expected)));
+        PythonReMatchAssert.Equal(expected, regex.Match(input,6,mode: Utf8PythonMatchMode.Search));
+        PythonReMatchAssert.Equal(expected, regex.Match(input,6,mode: Utf8PythonMatchMode.FullMatch));
+        PythonReMatchAssert.Equal(expected, regex.Match(Encoding.UTF8.GetBytes(expected),mode: Utf8PythonMatchMode.FullMatch));
         PythonReMatchAssert.Equal(expected, retained);
     }
     [Fact]
@@ -100,11 +100,11 @@ public sealed class PythonReSubjectFactsTests
     {
         var input = "é😀 item-1234"u8.ToArray();
         var regex = new Utf8PythonRegex("(item)-([0-9]+)");
-        var value = regex.Search(input);
+        var value = regex.Match(input,mode: Utf8PythonMatchMode.Search);
         Assert.True(value.Success);
         Assert.Equal((7,16),(value.StartOffsetInBytes,value.EndOffsetInBytes));
         Assert.False(regex.Match(input).Success);
-        Assert.True(regex.FullMatch(input, 7).Success);
+        Assert.True(regex.Match(input,7,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(new[] { "item", "1234" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues[0]);
     }
     [Theory]

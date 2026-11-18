@@ -128,8 +128,8 @@ public sealed class PythonReFiniteDepthPolicyTests
     {
         var regex = Create("ab", 1, bytes);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("😀ab"u8, 1));
-        Assert.Equal(4, regex.Search("😀ab"u8, 4).StartOffsetInBytes);
-        Assert.Equal(6, regex.Search("😀ab"u8, 4).EndOffsetInBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8,1,mode: Utf8PythonMatchMode.Search));
+        Assert.Equal(4, regex.Match("😀ab"u8,4,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Equal(6, regex.Match("😀ab"u8,4,mode: Utf8PythonMatchMode.Search).EndOffsetInBytes);
     }
 }

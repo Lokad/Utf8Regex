@@ -148,7 +148,7 @@ public sealed class PythonReScalarConversionAdmissionTests
         Assert.True(owner.Budget.ReservedBytes >= Utf8ConstructionBudget.ArrayBytes<string>(program.GroupNames.Length)
             + Utf8ConstructionBudget.StringBytes(program.GroupNames[1].Length)
             + Utf8ConstructionBudget.StringBytes(program.GroupNames[2].Length));
-        PythonReMatchAssert.Equal("ab😀", new Utf8PythonRegex("(a)(b)(?P<é>.)").FullMatch("ab😀"u8));
+        PythonReMatchAssert.Equal("ab😀", new Utf8PythonRegex("(a)(b)(?P<é>.)").Match("ab😀"u8,mode: Utf8PythonMatchMode.FullMatch));
         Assert.Equal(0ul, owner.Budget.Depth);
     }
 

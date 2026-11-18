@@ -174,7 +174,7 @@ pre-cancellation and excess entries leave caller storage unchanged.
 ### Caller-owned compiled expressions
 
 PythonRe removes `SearchToString`, `MatchToString` and `FullMatchToString`.
-Call `Search`, `Match` or `FullMatch`, check `Success`, then use the borrowed
+Call `Match` with the desired Utf8PythonMatchMode, check `Success`, then use the borrowed
 `GetValueBytes()` span. Optional host decoding is outside regex resource limits
 and cancellation; keep the subject unchanged while accessing the result.
 
@@ -372,9 +372,10 @@ results are removed as described below.
 
 SearchDetailedData, MatchDetailedData, FullMatchDetailedData, FindIterDetailed,
 Utf8PythonDetailedMatchData and Utf8PythonGroupMatchData are removed. For a
-synchronous match, use SearchDetailed/MatchDetailed/FullMatchDetailed and read
-their borrowed byte capture contexts. For incremental or retained captures, use
-CreateMatchCursor and its real range/retained advances. Keep subject bytes unchanged
+synchronous range-only capture match, use Match with caller-owned capture slots.
+For closing-order metadata or incremental/retained captures, use CreateMatchCursor
+and its real range/retained advances with the desired mode. The detailed context
+methods and carriers are removed. Keep subject bytes unchanged
 and their manager alive while reading borrowed bytes.
 
 Decode selected capture bytes and collect results in the host. Regex resource
@@ -464,3 +465,17 @@ Recompile consumers against the changed factory signature.
 One-shot capture consumers now pay persistent cursor setup and allocation; the
 stack-only whole-match value APIs retain their native routes when captures and
 completion metadata are unnecessary.
+
+### PythonRe one-shot Match and capture slots
+
+Search and FullMatch methods are removed. Match defaults to anchored matching;
+select mode: Utf8PythonMatchMode.Search or FullMatch for the other operations.
+Recompile old binaries and name former third-position tokens cancellationToken:.
+Pass a scoped Span<Utf8PythonCaptureRange> for the required numbered slot prefix;
+omit it for whole-match bytes. Short buffers do not change matching, excess slots
+stay untouched, and whole-match values remain valid after slot reuse. Caller slots
+allocate no result arrays and consume no result-byte quota; VM scratch remains
+admitted. Pre-cancellation preserves output; later failure clears the requested
+prefix. Optional endOffsetInBytes is a scalar boundary and retains absolute prefix
+context. Optional working admission inherits program/numeric funding when null;
+supplied refusal is terminal. Use a capture cursor for LastIndex/LastGroup.

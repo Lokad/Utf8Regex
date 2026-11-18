@@ -28,7 +28,7 @@ public sealed class PythonReLookbehindReferenceAdmissionTests
             Assert.Equal(position, error.Position);
             Assert.False(Utf8ConstructionScope.IsActive);
         }
-        Assert.True(new Utf8PythonRegex("(a)(?<=(?(1)a|b))b").FullMatch("ab"u8).Success);
+        Assert.True(new Utf8PythonRegex("(a)(?<=(?(1)a|b))b").Match("ab"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]

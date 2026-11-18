@@ -78,7 +78,7 @@ public sealed class PythonReZeroWidthCandidateTests
                 Assert.Equal(expected.Count, matches.Length);
                 for (var index = 0; index < matches.Length; index++)
                     Assert.Equal(expected[index], (matches[index].Value.StartOffsetInBytes, matches[index].Value.EndOffsetInBytes));
-                var match = owner.Match(input, start, token.Token);
+                var match = owner.Match(input,start,cancellationToken: token.Token);
                 Assert.Equal(expected.Count != 0 && expected[0].Start == start, match.Success);
             }
         }

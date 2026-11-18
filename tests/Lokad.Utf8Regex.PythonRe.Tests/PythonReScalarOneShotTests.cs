@@ -42,7 +42,7 @@ public sealed class PythonReScalarOneShotTests
                     {
                         var start = Encoding.UTF8.GetByteCount(text.AsSpan(0, index));
                         var expected = oracle.Match(text, index);
-                        var actual = full ? regex.FullMatch(input, start, token) : regex.Match(input, start, token);
+                        var actual = full ? regex.Match(input,start,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch): regex.Match(input,start,cancellationToken: token);
                         Assert.Equal(expected.Success, actual.Success);
                         if (!expected.Success) continue;
                         Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
@@ -87,7 +87,7 @@ public sealed class PythonReScalarOneShotTests
         });
         try
         {
-            void Run() { if (full) _ = regex.FullMatch(input, 0, source.Token); else _ = regex.Match(input, 0, source.Token); }
+            void Run() { if (full) _ = regex.Match(input,0,cancellationToken: source.Token,mode: Utf8PythonMatchMode.FullMatch); else _ = regex.Match(input,0,cancellationToken: source.Token); }
             if (expire)
             {
                 var failure = Assert.Throws<RegexMatchTimeoutException>(Run);
@@ -98,6 +98,6 @@ public sealed class PythonReScalarOneShotTests
             Assert.True(entered);
         }
         finally { session.Complete(); }
-        Assert.True(full ? regex.FullMatch("pre😀post"u8).Success : regex.Match("prefix123"u8).Success);
+        Assert.True(full ? regex.Match("pre😀post"u8,mode: Utf8PythonMatchMode.FullMatch).Success : regex.Match("prefix123"u8).Success);
     }
 }

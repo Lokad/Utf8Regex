@@ -27,8 +27,8 @@ public sealed class PythonReFamilyByteUnionTests
         Assert.Equal(2, matches.Length);
         Assert.Equal(Encoding.UTF8.GetByteCount(prefix) + 7, matches[0].Value.StartOffsetInBytes);
         Assert.Equal("12", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
-        Assert.False(regex.Match(input, 4).Success);
-        Assert.True(regex.FullMatch(input, matches[1].Value.StartOffsetInBytes).Success);
+        Assert.False(regex.Match(input,4).Success);
+        Assert.True(regex.Match(input,matches[1].Value.StartOffsetInBytes,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(new[] { "345" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, matches[1].Value.StartOffsetInBytes)).ScalarValues);
 
     }

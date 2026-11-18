@@ -25,7 +25,7 @@ public sealed class PythonReShortFoldedPrefixTests
             using var owner = new Utf8PythonRegex("(?P<n>sherlock)", PythonReCompileOptions.IgnoreCase,
                 Timeout.InfiniteTimeSpan, policy);
             var expected = start == bytes.Length ? Array.Empty<string>() : ["ſherlocK", "SHERLOCK"];
-            var actual = owner.Search(input, start, token.Token);
+            var actual = owner.Match(input,start,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search);
             Assert.Equal(expected.Length != 0, actual.Success);
             if (actual.Success)
             {
@@ -47,7 +47,7 @@ public sealed class PythonReShortFoldedPrefixTests
         {
             using var owner = new Utf8PythonRegex("(?P<n>" + pattern + ")", PythonReCompileOptions.IgnoreCase,
                 Timeout.InfiniteTimeSpan, policy);
-            PythonReMatchAssert.Equal(expected, owner.Search(Encoding.UTF8.GetBytes(text)));
+            PythonReMatchAssert.Equal(expected, owner.Match(Encoding.UTF8.GetBytes(text),mode: Utf8PythonMatchMode.Search));
         }
     }
 
@@ -59,9 +59,9 @@ public sealed class PythonReShortFoldedPrefixTests
             Timeout.InfiniteTimeSpan, new() {
                 MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1
             });
-        Assert.False(owner.Search("prefix watson suffix"u8, 0, token.Token).Success);
-        Assert.True(owner.Search("SHERLOCK"u8, 0, token.Token).Success);
-        PythonReMatchAssert.Equal("SHERLOCK", owner.Search("SHERLOCK"u8, 0, token.Token));
+        Assert.False(owner.Match("prefix watson suffix"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(owner.Match("SHERLOCK"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).Success);
+        PythonReMatchAssert.Equal("SHERLOCK", owner.Match("SHERLOCK"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search));
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class PythonReShortFoldedPrefixTests
 
             using var token = new CancellationTokenSource(); token.Cancel();
             Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(
-                () => owner.Search("SHERLOCK"u8, 0, token.Token)).CancellationToken);
+                () => owner.Match("SHERLOCK"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
         }
     }
 }

@@ -43,10 +43,10 @@ public sealed class PythonReScalarRenderingTests
         foreach (var token in new[] { CancellationToken.None, source.Token })
         {
             Assert.Equal(expected, regex.IsMatch(input, 0, token));
-            var found = regex.Search(input, 0, token);
+            var found = regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.Search);
             Assert.Equal(expected, found.Success);
-            Assert.Equal(expected, regex.Match(input, 0, token).Success);
-            Assert.Equal(expected, regex.FullMatch(input, 0, token).Success);
+            Assert.Equal(expected, regex.Match(input,0,cancellationToken: token).Success);
+            Assert.Equal(expected, regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch).Success);
             Assert.Equal(expected ? 1 : 0, regex.Count(input, 0, token));
             if (found.Success)
             {
@@ -80,7 +80,7 @@ public sealed class PythonReScalarRenderingTests
     {
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
-        Assert.Equal(expected, regex.FullMatch(input).Success);
+        Assert.Equal(expected, regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(expected ? new[] { subject } : [], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
     }
 
@@ -107,7 +107,7 @@ public sealed class PythonReScalarRenderingTests
     public void SurrogateAtomCanRepeatZeroTimesWithScalarEmptyProgress(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.True(regex.FullMatch(ReadOnlySpan<byte>.Empty).Success);
+        Assert.True(regex.Match(ReadOnlySpan<byte>.Empty,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(2, regex.Count("😀"u8));
     }
 

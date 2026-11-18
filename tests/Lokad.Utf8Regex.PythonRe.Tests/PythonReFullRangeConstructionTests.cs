@@ -39,8 +39,8 @@ public sealed class PythonReFullRangeConstructionTests
         Assert.Equal(accepts ? scalars : [], regex.FindAllToUtf8(input, 0, cancellation.Token)
             .ScalarValues.Select(Encoding.UTF8.GetString));
         foreach (var scalar in scalars)
-            Assert.Equal(accepts, regex.FullMatch(Encoding.UTF8.GetBytes(scalar)).Success);
-        Assert.False(regex.FullMatch([]).Success);
+            Assert.Equal(accepts, regex.Match(Encoding.UTF8.GetBytes(scalar),mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match([],mode: Utf8PythonMatchMode.FullMatch).Success);
 
 
         // This rendering remains live for comparators and timeout pattern text.

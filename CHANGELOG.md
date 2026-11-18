@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Unify PythonRe value matching on Match with explicit Search/Match/FullMatch mode,
+  optional caller-owned capture slots, byte end bound and shared working admission.
+  Search/FullMatch methods are removed; recompile callers and name positional tokens.
+  Closing-order metadata remains on capture cursors.
+
 - Replace PythonRe detailed/context APIs with capture cursor Search/Match/FullMatch
   modes and optional scalar-aligned byte end bounds. Preserve Python closing-order
   metadata, immutable snapshots and borrowed-input lifetimes. Null cursor working

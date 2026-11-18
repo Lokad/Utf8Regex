@@ -31,7 +31,7 @@ whole-subject descriptions are not a prerequisite for byte-only discovery.
 
 | Family | Contract |
 | --- | --- |
-| Search / Match / FullMatch | Stack-only whole-match values: search from the byte floor / match at it / match the entire remaining suffix. |
+| Match | Stack-only whole-match value plus optional caller-owned capture slots. Utf8PythonMatchMode selects Search / anchored Match (default) / FullMatch. |
 | IsMatch / Count | Boolean/count using the profile's discovery and empty-match rules |
 | FindAllToUtf8 | Owned UTF-8 whole values with no captures, group values with one, tuple rows with several |
 | CreateMatchCursor | Immutable capture snapshots borrowing ReadOnlyMemory<byte>; Search advances successively, Match/FullMatch publish at most one result; explicit disposal on early stop |
@@ -49,7 +49,10 @@ Refusal remains terminal and original-token cancellation takes precedence.
 
 `startOffsetInBytes` follows Python `pos` semantics: discovery starts at or
 after the floor, while anchors, boundaries and lookarounds retain complete prefix
-and suffix context. FullMatch covers [pos,end). There is no `endpos` parameter.
+and suffix context within the selected end bound. FullMatch covers [pos,end).
+The optional endOffsetInBytes must be a scalar-aligned byte boundary with
+0 <= start <= end <= input.Length. It preserves prefix/lookbehind origin and
+limits lookahead. Python character endpos/clamping is not exposed.
 An early result needs no validity scan of the remaining text.
 
 Nonempty scalar programs can reject an absent mandatory exact literal, proved by
@@ -318,25 +321,33 @@ with result admission and bounded interruption checks. It neither sizes nor
 decodes the selected text. Discovery and final publication retain the original
 invocation's authority.
 
-One-shot `Search`, `Match` and `FullMatch` return borrowed byte ranges over
+One-shot `Match` in Search/Match/FullMatch mode returns borrowed byte ranges over
 caller-guaranteed valid text. `SearchToString`, `MatchToString` and
 `FullMatchToString` are removed, together with their separate decoding/admission
 path. Check `Success` to distinguish no match from a successful empty range.
 The host can decode `GetValueBytes()` when needed; that caller allocation is
 outside the regex invocation's memory/work/interruption controls. Discovery and
 publication retain their original authority and useful limits. No whole-subject
-coordinate or character-count scan is required for these values. Other output
-operations keep their documented allocation and decoding admission until removed.
-Exact ASCII-literal substitution does not describe the subject or replacement
-in UTF-16 before byte discovery/output. Replacement validity remains checked
-independently. String output uses the shared ledger on its actual completed
-bytes, including the unchanged subject on a miss. Its unknown short Unicode
-lengths use the same conservative capacity bound; larger text retains bounded
-exact sizing. Byte output needs neither character counts nor ASCII classification.
-Counting/decoding use bounded blocks and the original
-invocation, with string capacity admitted before allocation and held through
-publication. Numerical work requirements can change. The caller supplies valid unchanged UTF-8 text; matching and output work retain
-their original interruption/admission authority.
+coordinate or character-count scan is required for these values. Caller-owned
+capture spans request a prefix of numbered last-capture slots including zero.
+Short buffers do not alter matching and excess slots remain untouched. Pre-canceled
+entry preserves output; no match or later failure clears the requested prefix.
+The result does not borrow output slots, so whole-match bytes survive slot reuse.
+Caller destinations add no result-array allocation or result-byte charge; the
+existing VM still admits its major scratch and observes bounded projection checks.
+No-closing-metadata callers can avoid cursor snapshots. LastIndex/LastGroup remain
+available through the capture cursor, never inferred from participating slot order.
+Search/FullMatch methods are removed; use mode and recompile callers. Name old
+positional tokens cancellationToken: because captures is now the third parameter.
+Match accepts optional working admission; null inherits program/numeric funding,
+and supplied refusal is terminal. Pattern/template validation remain independent.
+
+Owned byte output retains independent admission and bounded copying. Exact
+ASCII-literal substitution does not describe the subject or replacement in
+UTF-16 before byte discovery/output. Replacement validation remains separate.
+Byte output needs neither character counts nor whole-subject ASCII classification.
+Caller-valid unchanged text, original interruption and meaningful work/memory
+controls remain authoritative through publication.
 
 Supported families include literals/classes/standard escapes, ordered alternatives,
 greedy/lazy/possessive repetition, captures/named groups, references,

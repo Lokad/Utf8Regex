@@ -12,7 +12,7 @@ public sealed class Utf8PythonRegexConstructionTests
         var regex = new Utf8PythonRegex("(?<=ab)c");
 
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.False(regex.FullMatch("abc"u8).Success);
+        Assert.False(regex.Match("abc"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
     }
 
@@ -21,8 +21,8 @@ public sealed class Utf8PythonRegexConstructionTests
     {
         var regex = new Utf8PythonRegex("(?<=a)a");
 
-        Assert.True(regex.FullMatch("aa"u8, 1).Success);
-        Assert.False(regex.FullMatch("ba"u8, 1).Success);
+        Assert.True(regex.Match("aa"u8,1,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match("ba"u8,1,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class Utf8PythonRegexConstructionTests
     {
         var regex = new Utf8PythonRegex("foo");
 
-        Assert.True(regex.FullMatch("foo"u8).Success);
+        Assert.True(regex.Match("foo"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class Utf8PythonRegexConstructionTests
 
         Assert.True(regex.IsMatch("xxfooyy"u8));
         Assert.Equal(2, regex.Count("foo xx foo"u8));
-        Assert.True(regex.Search("xxfoo"u8).Success);
+        Assert.True(regex.Match("xxfoo"u8,mode: Utf8PythonMatchMode.Search).Success);
         Assert.True(regex.Match("foo xx"u8).Success);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }

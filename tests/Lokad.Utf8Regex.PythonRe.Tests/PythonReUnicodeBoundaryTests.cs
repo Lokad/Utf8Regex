@@ -61,9 +61,9 @@ public sealed class PythonReUnicodeBoundaryTests
                         collectedRanges2.ToArray().Select(x => x.Value));
                     Assert.Equal(control.Count(input, offset, token.Token), actual.Count(input, offset, token.Token));
                     Assert.Equal(control.IsMatch(input, offset, token.Token), actual.IsMatch(input, offset, token.Token));
-                    AssertRange(control.Search(input, offset), actual.Search(input, offset));
-                    AssertRange(control.Match(input, offset), actual.Match(input, offset));
-                    AssertRange(control.FullMatch(input, offset), actual.FullMatch(input, offset));
+                    AssertRange(control.Match(input,offset,mode: Utf8PythonMatchMode.Search), actual.Match(input,offset,mode: Utf8PythonMatchMode.Search));
+                    AssertRange(control.Match(input,offset), actual.Match(input,offset));
+                    AssertRange(control.Match(input,offset,mode: Utf8PythonMatchMode.FullMatch), actual.Match(input,offset,mode: Utf8PythonMatchMode.FullMatch));
                     foreach (var limit in new[] { 0, 1, 2 })
                         Assert.Equal(PythonReSplitAssert.Decode(input, control.SplitRanges(input, limit, offset, token.Token)), PythonReSplitAssert.Decode(input, actual.SplitRanges(input, limit, offset, token.Token)));
                     Assert.Equal(PythonReSubstitutionAssert.Decode(control.Subn(input, "-", 0, offset, token.Token)).ResultText,

@@ -8,16 +8,13 @@ namespace Lokad.Utf8Regex.PythonRe;
 public sealed partial class Utf8PythonRegex
 {
     private PythonReScalarMatchCursor CreateScalarCursor(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        CancellationToken cancellationToken)
-        => CreateScalarCursor(input, startOffsetInBytes, 0, cancellationToken);
-
-    private PythonReScalarMatchCursor CreateScalarCursor(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        int kind, CancellationToken cancellationToken)
+        CancellationToken cancellationToken, int kind = 0, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
         // Capture the invocation before cold full-match preparation. Preparation
         // keeps its fixed backstop, but its elapsed time cannot reset the deadline.
-        var invocation = CreateInvocation(cancellationToken);
+        var invocation = workingMemoryAllowance is null ? CreateInvocation(cancellationToken)
+            : new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
         var program = kind == 2 ? GetScalarFullProgram(input, invocation.Budget.Deadline, cancellationToken) : ScalarProgram;
         return new PythonReScalarMatchCursor(input, program,
             startOffsetInBytes, MatchTimeout, _utf8Regex, this, invocation, prepareSearch: kind == 0);
@@ -134,13 +131,21 @@ public sealed partial class Utf8PythonRegex
     }
 
     private Utf8PythonValueMatch MatchValueScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        int kind, CancellationToken cancellationToken)
+        int kind, CancellationToken cancellationToken, scoped Span<Utf8PythonCaptureRange> captures = default,
+        IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, kind, cancellationToken);
+        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken, kind, workingMemoryAllowance);
         try
         {
             var completed = kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition();
             var result = completed ? Utf8PythonValueMatch.Create(input, cursor.SnapshotValueData()) : default;
+            for (var number = 0; number < captures.Length; number++)
+            {
+                if ((number & 255) == 0) cursor.Checkpoint();
+                captures[number] = !completed ? default : cursor.TryGetCaptureByteRange(number, out var start, out var end)
+                    ? new Utf8PythonCaptureRange { Number = number, Success = true, StartOffsetInBytes = start, EndOffsetInBytes = end }
+                    : new Utf8PythonCaptureRange { Number = number };
+            }
             cursor.Checkpoint();
             return result;
         }

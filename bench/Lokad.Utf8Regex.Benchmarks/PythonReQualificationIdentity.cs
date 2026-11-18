@@ -48,10 +48,10 @@ internal static partial class PythonReBenchmarkReporter
         PythonReBenchmarkOperation operation) => ComputePythonReSha256(operation switch
         {
             PythonReBenchmarkOperation.IsMatch => "managed-ismatch-scalar-v2",
-            PythonReBenchmarkOperation.Search => "managed-search-consumed-group-zero-v2",
-            PythonReBenchmarkOperation.SearchFromOffset => "managed-search-from-offset-consumed-group-zero-v2",
-            PythonReBenchmarkOperation.Match => "managed-match-consumed-group-zero-v2",
-            PythonReBenchmarkOperation.FullMatch => "managed-fullmatch-consumed-group-zero-v2",
+            PythonReBenchmarkOperation.Search => "managed-unified-search-consumed-group-zero-v3",
+            PythonReBenchmarkOperation.SearchFromOffset => "managed-unified-search-from-offset-consumed-group-zero-v3",
+            PythonReBenchmarkOperation.Match => "managed-unified-match-consumed-group-zero-v3",
+            PythonReBenchmarkOperation.FullMatch => "managed-unified-fullmatch-consumed-group-zero-v3",
             PythonReBenchmarkOperation.SearchDetailed => "managed-search-range-cursor-host-captures-v3",
             PythonReBenchmarkOperation.Count => "managed-count-scalar-v2",
             PythonReBenchmarkOperation.FindAllStrings => "managed-findall-utf8-host-strings-eager-v4",

@@ -18,7 +18,7 @@ public sealed class PythonReTimeoutTests
     public void CatastrophicSearchHonorsTimeout()
     {
         var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
-        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Search(CreateCatastrophicInput()));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Match(CreateCatastrophicInput(),mode: Utf8PythonMatchMode.Search));
     }
 
     [Fact]
@@ -41,10 +41,10 @@ public sealed class PythonReTimeoutTests
         // Recovery includes the first substitution call. Give its cold path
         // scheduling headroom while still forcing a real catastrophic timeout.
         var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(100));
-        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Search(CreateCatastrophicInput()));
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Match(CreateCatastrophicInput(),mode: Utf8PythonMatchMode.Search));
 
         var input = Encoding.UTF8.GetBytes("aaabaaa");
-        Assert.True(regex.Search(input).Success);
+        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.Search).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.Equal("aaab-", PythonReSubstitutionAssert.Decode(regex.Subn(input, "-")).ResultText);
     }
@@ -57,7 +57,7 @@ public sealed class PythonReTimeoutTests
         var regex = new Utf8PythonRegex("abc", PythonReCompileOptions.None, TimeSpan.FromSeconds(1));
         var input = Encoding.UTF8.GetBytes("xxabcxx");
 
-        Assert.True(regex.Search(input).Success);
+        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.Search).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.Equal(1, regex.FindAllToUtf8(input).Count);
         Assert.Equal("xxZxx", PythonReSubstitutionAssert.Decode(regex.Subn(input, "Z")).ResultText);

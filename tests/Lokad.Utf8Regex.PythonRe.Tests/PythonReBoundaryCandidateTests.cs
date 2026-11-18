@@ -161,8 +161,8 @@ public sealed class PythonReBoundaryCandidateTests
     {
         using var regex = new Utf8PythonRegex(@"\b[0-9]+X\b");
         var input = Encoding.UTF8.GetBytes("a" + new string('1', count) + "X 😀 22X");
-        PythonReMatchAssert.Equal("22X", regex.Search(input));
-        PythonReMatchAssert.Equal("22X", regex.Search(input, count));
+        PythonReMatchAssert.Equal("22X", regex.Match(input,mode: Utf8PythonMatchMode.Search));
+        PythonReMatchAssert.Equal("22X", regex.Match(input,count,mode: Utf8PythonMatchMode.Search));
         var invalid = input.Concat(new byte[] { 0xff }).ToArray();
 
     }

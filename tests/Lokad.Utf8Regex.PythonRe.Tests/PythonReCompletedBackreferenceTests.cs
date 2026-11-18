@@ -36,7 +36,7 @@ public sealed class PythonReCompletedBackreferenceTests
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, Funded })
         {
             var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan, policy);
-            Assert.Equal(reference.FullMatch(input).Success, regex.FullMatch(input, 0, source.Token).Success);
+            Assert.Equal(reference.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success, regex.Match(input,0,cancellationToken: source.Token,mode: Utf8PythonMatchMode.FullMatch).Success);
             Utf8PythonRangeMatch snapshot1 = default;
             using (var captureCursor1 = reference.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
             {

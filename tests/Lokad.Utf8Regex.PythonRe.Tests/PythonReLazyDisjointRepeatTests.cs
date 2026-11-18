@@ -24,7 +24,7 @@ public sealed class PythonReLazyDisjointRepeatTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8PythonRegex(pattern);
-        var match = regex.Search(input);
+        var match = regex.Match(input,mode: Utf8PythonMatchMode.Search);
         Assert.True(match.Success);
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         Assert.Equal(expected, Encoding.UTF8.GetString(match.GetValueBytes()));
@@ -40,11 +40,11 @@ public sealed class PythonReLazyDisjointRepeatTests
 
         var working = new Utf8PythonRegex("a+?b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
-        Assert.True(working.Search("aaab"u8).Success);
+        Assert.True(working.Match("aaab"u8,mode: Utf8PythonMatchMode.Search).Success);
         var work = new Utf8PythonRegex("a+?b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxWorkSteps = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Search("aaab"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Match("aaab"u8,mode: Utf8PythonMatchMode.Search)).ResourceKind);
         var results = new Utf8PythonRegex("a+?b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxResultBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
@@ -75,14 +75,14 @@ public sealed class PythonReLazyDisjointRepeatTests
         try
         {
             if (expire)
-                Assert.Equal("a+?b", Assert.Throws<RegexMatchTimeoutException>(() => regex.Search(input)).Pattern);
+                Assert.Equal("a+?b", Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input,mode: Utf8PythonMatchMode.Search)).Pattern);
             else
                 Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
-                    regex.Search(input, 0, cancellation.Token)).CancellationToken);
+                    regex.Match(input,0,cancellationToken: cancellation.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
         }
         finally { session.Complete(); }
         Assert.True(entered);
         ticks = 0;
-        Assert.True(regex.Search("ab"u8).Success);
+        Assert.True(regex.Match("ab"u8,mode: Utf8PythonMatchMode.Search).Success);
     }
 }

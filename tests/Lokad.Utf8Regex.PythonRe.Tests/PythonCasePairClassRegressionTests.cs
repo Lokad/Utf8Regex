@@ -18,7 +18,7 @@ public sealed class PythonCasePairClassRegressionTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Encoding.UTF8.GetBytes(inputText);
-        Assert.Equal(expected, regex.Search(input).Success);
+        Assert.Equal(expected, regex.Match(input,mode: Utf8PythonMatchMode.Search).Success);
         Assert.Equal(expected ? 1 : 0, regex.Count(input));
     }
 }

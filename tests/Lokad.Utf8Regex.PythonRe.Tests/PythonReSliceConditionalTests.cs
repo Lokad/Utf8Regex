@@ -38,7 +38,7 @@ public sealed class PythonReSliceConditionalTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -85,6 +85,6 @@ public sealed class PythonReSliceConditionalTests
     public void ConditionalCpythonFullMatchMatchesManaged(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

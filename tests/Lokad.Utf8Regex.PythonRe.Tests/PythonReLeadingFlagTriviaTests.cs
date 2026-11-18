@@ -58,7 +58,7 @@ public sealed class PythonReLeadingFlagTriviaTests
     [InlineData(@"\(\?\#", "(?#")]
     public void CommentsAreTriviaRatherThanRepeatableAtoms(string pattern, string text)
     {
-        Assert.True(new Utf8PythonRegex(pattern).FullMatch(Encoding.UTF8.GetBytes(text)).Success);
+        Assert.True(new Utf8PythonRegex(pattern).Match(Encoding.UTF8.GetBytes(text),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -94,7 +94,7 @@ public sealed class PythonReLeadingFlagTriviaTests
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.Equal(0ul, owner.Budget.ReservedBytes);
         }
-        Assert.True(new Utf8PythonRegex("(?i)a").FullMatch("A"u8).Success);
+        Assert.True(new Utf8PythonRegex("(?i)a").Match("A"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]

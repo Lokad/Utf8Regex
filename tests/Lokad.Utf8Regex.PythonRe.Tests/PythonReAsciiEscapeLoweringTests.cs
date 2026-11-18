@@ -84,7 +84,7 @@ public sealed class PythonReAsciiEscapeLoweringTests
                 Assert.Equal(text, System.Text.Encoding.UTF8.GetString((actual.Groups[1].Success ? actual.GetGroupMemory(actual.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
                 Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
             }
-            Assert.False(regex.FullMatch(ReadOnlySpan<byte>.Empty).Success);
+            Assert.False(regex.Match(ReadOnlySpan<byte>.Empty,mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
     [Theory]

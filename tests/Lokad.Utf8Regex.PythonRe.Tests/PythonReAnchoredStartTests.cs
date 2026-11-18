@@ -19,7 +19,7 @@ public sealed class PythonReAnchoredStartTests
         {
             using var regex = new Utf8PythonRegex(pattern);
             Assert.False(regex.Match(input).Success);
-            Assert.False(regex.FullMatch(input).Success);
+            Assert.False(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
             Assert.False(regex.Match(input).Success);
             Utf8PythonRangeMatch snapshot1 = default;
             using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Match))
@@ -27,7 +27,7 @@ public sealed class PythonReAnchoredStartTests
                 captureCursor1.MoveNext(out snapshot1);
             }
             Assert.False(snapshot1.Success);
-            Assert.True(regex.Search(input).Success);
+            Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.Search).Success);
         }
     }
     [Theory]
@@ -44,7 +44,7 @@ public sealed class PythonReAnchoredStartTests
         var input = Encoding.UTF8.GetBytes(text);
         {
             using var regex = new Utf8PythonRegex(pattern);
-            var match = regex.Match(input, start);
+            var match = regex.Match(input,start);
             Assert.True(match.Success);
             Assert.Equal(start, match.StartOffsetInBytes);
             Assert.Equal(start + Encoding.UTF8.GetByteCount(expected), match.EndOffsetInBytes);
@@ -54,7 +54,7 @@ public sealed class PythonReAnchoredStartTests
                 captureCursor2.MoveNext(out snapshot2);
             }
             Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(snapshot2.GetValueMemory().Span));
-            PythonReMatchAssert.Equal(expected, regex.FullMatch(input, start));
+            PythonReMatchAssert.Equal(expected, regex.Match(input,start,mode: Utf8PythonMatchMode.FullMatch));
         }
     }
     [Fact]
@@ -85,7 +85,7 @@ public sealed class PythonReAnchoredStartTests
             MaxResultBytes = 1 << 20
         });
         Assert.False(regex.Match(input).Success);
-        Assert.False(regex.FullMatch(input).Success);
+        Assert.False(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
     [Theory]
     [InlineData(false)]
@@ -100,7 +100,7 @@ public sealed class PythonReAnchoredStartTests
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1 << 20
         });
-        Assert.False(full ? regex.FullMatch(input).Success : regex.Match(input).Success);
+        Assert.False(full ? regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success : regex.Match(input).Success);
     }
     [Fact]
 
@@ -109,7 +109,7 @@ public sealed class PythonReAnchoredStartTests
         using var regex = new Utf8PythonRegex("(needle)");
         using var token = new CancellationTokenSource();
         token.Cancel();
-        var failure = Assert.Throws<OperationCanceledException>(() => regex.Match("x"u8, 0, token.Token));
+        var failure = Assert.Throws<OperationCanceledException>(() => regex.Match("x"u8,0,cancellationToken: token.Token));
         Assert.Equal(token.Token, failure.CancellationToken);
         Assert.False(regex.Match("x"u8).Success);
         long ticks = 0;
@@ -124,7 +124,7 @@ public sealed class PythonReAnchoredStartTests
     public void AnchoredRejectionDoesNotHideInvalidOffsets(int start)
     {
         using var regex = new Utf8PythonRegex("(needle)");
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("é"u8, start));
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.FullMatch("é"u8, start));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("é"u8,start));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("é"u8,start,mode: Utf8PythonMatchMode.FullMatch));
     }
 }

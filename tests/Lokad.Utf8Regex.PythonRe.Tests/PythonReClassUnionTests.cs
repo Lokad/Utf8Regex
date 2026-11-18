@@ -19,7 +19,7 @@ public sealed class PythonReClassUnionTests
         foreach (var rune in text.EnumerateRunes())
         {
             var bytes = Encoding.UTF8.GetBytes(rune.ToString());
-            var hit = regex.FullMatch(bytes).Success;
+            var hit = regex.Match(bytes,mode: Utf8PythonMatchMode.FullMatch).Success;
             Assert.Equal(hit ? 1 : 0, regex.Count(bytes));
             if (hit) actual.Add(rune.Value);
         }
@@ -42,7 +42,7 @@ public sealed class PythonReClassUnionTests
     public void FoldingAndComplementOperandsRetainLexicalSemantics(string pattern, string text, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.Equal(expected, regex.FullMatch(Encoding.UTF8.GetBytes(text)).Success);
+        Assert.Equal(expected, regex.Match(Encoding.UTF8.GetBytes(text),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]

@@ -136,9 +136,9 @@ public sealed class PythonReLeadingAsciiRangeTests
         var prefix = new string('9', padding);
         var input = Encoding.UTF8.GetBytes(prefix + " SHERLOCK x sherlock!");
         Assert.Equal(new[] { "SHERLOCK", "sherlock" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
-        Assert.Equal(padding + 1, regex.Search(input).StartOffsetInBytes);
-        Assert.Equal(padding + 12, regex.Search(input, padding + 2).StartOffsetInBytes);
-        Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
+        Assert.Equal(padding + 1, regex.Match(input,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Equal(padding + 12, regex.Match(input,padding + 2,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.False(regex.Match(input).Success); Assert.False(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(new[] { prefix + " ", "SHERLOCK", " x ", "sherlock", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         Assert.Equal(prefix + " [SHERLOCK] x [sherlock]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
@@ -164,10 +164,10 @@ public sealed class PythonReLeadingAsciiRangeTests
         var input = Encoding.UTF8.GetBytes(prefix + " aaa x aa!");
         using var token = new CancellationTokenSource();
         Assert.Equal(new[] { "aaa", "aa" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
-        Assert.Equal(padding + 1, regex.Search(input, 0, token.Token).StartOffsetInBytes);
-        Assert.Equal(padding + 2, regex.Search(input, padding + 2).StartOffsetInBytes);
-        Assert.Equal(padding + 7, regex.Search(input, padding + 4).StartOffsetInBytes);
-        Assert.False(regex.Match(input).Success); Assert.False(regex.FullMatch(input).Success);
+        Assert.Equal(padding + 1, regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Equal(padding + 2, regex.Match(input,padding + 2,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Equal(padding + 7, regex.Match(input,padding + 4,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.False(regex.Match(input).Success); Assert.False(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(new[] { prefix + " ", "aaa", " x ", "aa", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         Assert.Equal(prefix + " [aaa] x [aa]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
         var collectedRanges2 = new List<Utf8PythonRangeMatch>();
@@ -302,8 +302,8 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Equal(1, first.LastIndex); Assert.Equal("word", first.LastGroup);
         Assert.Equal(new[] { "beta", "gamma" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, matches[1].Value.StartOffsetInBytes, token.Token)).ScalarValues);
         Assert.False(regex.Match(input).Success);
-        Assert.False(regex.FullMatch(input).Success);
-        Assert.True(regex.Match(input, first.Value.StartOffsetInBytes).Success);
+        Assert.False(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match(input,first.Value.StartOffsetInBytes).Success);
         Assert.ThrowsAny<ArgumentException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, padding + 1)));
         Assert.Equal("alpha", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
     }

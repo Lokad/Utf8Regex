@@ -183,9 +183,9 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.Equal(oracle.Replace(text, "$2:$1"), System.Text.Encoding.UTF8.GetString(owner.Replace(input, @"\2:\1")));
         Assert.Equal(oracle.Split(text), PythonReSplitAssert.Decode(input, owner.SplitRanges(input, 0, 0, default)));
         var floor = Encoding.UTF8.GetByteCount("é😀") + prefix + 1;
-        Assert.True(owner.Match(input, floor).Success);
+        Assert.True(owner.Match(input,floor).Success);
         Assert.False(owner.Match(input).Success);
-        Assert.False(owner.FullMatch(input, floor).Success);
+        Assert.False(owner.Match(input,floor,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal("item", System.Text.Encoding.UTF8.GetString((first.Groups[1].Success ? first.GetGroupMemory(first.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
@@ -286,10 +286,10 @@ public sealed class PythonReClassDelimiterWindowTests
     {
         using var owner = new Utf8PythonRegex("([a-z]+)-([0-9]+)");
         var valid = Encoding.UTF8.GetBytes("😀" + new string('x', 256) + " item-123");
-        Assert.Throws<ArgumentOutOfRangeException>(() => owner.Search(valid, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => owner.Match(valid,1,mode: Utf8PythonMatchMode.Search));
         Assert.Equal("😀" + new string('x', 256) + " 123:item", System.Text.Encoding.UTF8.GetString(owner.Replace(valid, @"\2:\1")));
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Search(valid, 0, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Match(valid,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
     }
 
     [Theory]
@@ -323,9 +323,9 @@ public sealed class PythonReClassDelimiterWindowTests
             }
             Assert.Equal((at, length), (first.Value.StartOffsetInBytes, first.Value.EndOffsetInBytes));
             Assert.Equal(new[] { "item-1", "item", "1" }, PythonReCaptureAssert.Values(first));
-            Assert.Equal(at + 1, owner.Search(input, at + 1, token.Token).StartOffsetInBytes);
+            Assert.Equal(at + 1, owner.Match(input,at + 1,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
             Assert.False(owner.Match(input).Success);
-            Assert.False(owner.FullMatch(input).Success);
+            Assert.False(owner.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
 

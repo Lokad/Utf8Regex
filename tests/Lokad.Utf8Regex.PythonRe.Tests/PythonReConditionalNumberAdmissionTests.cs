@@ -24,7 +24,7 @@ public sealed class PythonReConditionalNumberAdmissionTests
             Assert.Equal(3, failure.Position);
             Assert.False(Utf8ConstructionScope.IsActive);
         }
-        Assert.True(new Utf8PythonRegex("(?(1)a|b)(c)").FullMatch("bc"u8).Success);
+        Assert.True(new Utf8PythonRegex("(?(1)a|b)(c)").Match("bc"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]

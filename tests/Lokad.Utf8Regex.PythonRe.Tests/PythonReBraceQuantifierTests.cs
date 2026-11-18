@@ -60,7 +60,7 @@ public sealed class PythonReBraceQuantifierTests
             Assert.Equal(text, System.Text.Encoding.UTF8.GetString(actual.GetValueMemory().Span));
             Assert.Equal(0, actual.Value.StartOffsetInBytes);
             Assert.Equal(input.Length, actual.Value.EndOffsetInBytes);
-            Assert.True(regex.FullMatch(input).Success);
+            Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
 
@@ -129,6 +129,6 @@ public sealed class PythonReBraceQuantifierTests
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
         Assert.False(Utf8ConstructionScope.IsActive);
-        Assert.True(new Utf8PythonRegex("a{foo}").FullMatch("a{foo}"u8).Success);
+        Assert.True(new Utf8PythonRegex("a{foo}").Match("a{foo}"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

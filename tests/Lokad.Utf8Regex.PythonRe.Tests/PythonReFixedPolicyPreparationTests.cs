@@ -28,7 +28,7 @@ public sealed class PythonReFixedPolicyPreparationTests
         var input = "é😀 abc xyz abc"u8.ToArray();
         Assert.True(regex.IsMatch(input));
         Assert.Equal(3, regex.Count(input));
-        PythonReMatchAssert.Equal("abc", regex.Search(input));
+        PythonReMatchAssert.Equal("abc", regex.Match(input,mode: Utf8PythonMatchMode.Search));
         Assert.Equal(["abc", "xyz", "abc"], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         Assert.Equal("é😀 ! ! !", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!")));
         Utf8PythonRangeMatch snapshot1 = default;
@@ -37,7 +37,7 @@ public sealed class PythonReFixedPolicyPreparationTests
             captureCursor1.MoveNext(out snapshot1);
         }
         Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(snapshot1.GetValueMemory().Span));
-        Assert.True(regex.FullMatch("xyz"u8).Success);
+        Assert.True(regex.Match("xyz"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
@@ -53,7 +53,7 @@ public sealed class PythonReFixedPolicyPreparationTests
         var prefix = new Utf8PythonRegex("prefix[0-9]+", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
         var full = new Utf8PythonRegex("pre.*post", PythonReCompileOptions.DotAll, Timeout.InfiniteTimeSpan, policy);
         Assert.True(prefix.Match("prefix123"u8).Success);
-        Assert.True(full.FullMatch("pre😀post"u8).Success);
-        PythonReMatchAssert.Equal("pre😀post", full.FullMatch("pre😀post"u8));
+        Assert.True(full.Match("pre😀post"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        PythonReMatchAssert.Equal("pre😀post", full.Match("pre😀post"u8,mode: Utf8PythonMatchMode.FullMatch));
     }
 }

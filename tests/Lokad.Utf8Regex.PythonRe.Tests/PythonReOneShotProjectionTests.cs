@@ -32,7 +32,7 @@ public sealed class PythonReOneShotProjectionTests
         using var token = new CancellationTokenSource();
         foreach (var cancellation in new[] { CancellationToken.None, token.Token })
         {
-            var value = kind switch { 0 => regex.Search(input, start, cancellation), 1 => regex.Match(input, start, cancellation), _ => regex.FullMatch(input, start, cancellation) };
+            var value = kind switch { 0 => regex.Match(input,start,cancellationToken: cancellation,mode: Utf8PythonMatchMode.Search), 1 => regex.Match(input,start,cancellationToken: cancellation), _ => regex.Match(input,start,cancellationToken: cancellation,mode: Utf8PythonMatchMode.FullMatch)};
             Assert.True(value.Success);
             Assert.Equal((startBytes, endBytes), (value.StartOffsetInBytes, value.EndOffsetInBytes));
             Assert.Equal(Encoding.UTF8.GetBytes(text), value.GetValueBytes().ToArray());
@@ -42,7 +42,7 @@ public sealed class PythonReOneShotProjectionTests
             Assert.True(context.Success);
             Assert.Equal((startBytes, endBytes), (context.Value.StartOffsetInBytes, context.Value.EndOffsetInBytes));
             Assert.Equal(text, System.Text.Encoding.UTF8.GetString(context.GetValueMemory().Span));
-            if (regex.IsMatch(input, start, cancellation)) Assert.True(regex.Search(input, start, cancellation).Success);
+            if (regex.IsMatch(input, start, cancellation)) Assert.True(regex.Match(input,start,cancellationToken: cancellation,mode: Utf8PythonMatchMode.Search).Success);
         }
     }
 
@@ -60,11 +60,11 @@ public sealed class PythonReOneShotProjectionTests
             var bytes = Encoding.UTF8.GetBytes(text);
             byte[] storage = [0xff, 0xff, 0xff, .. bytes, 0xff];
             var input = storage.AsSpan(3, bytes.Length);
-            var value = regex.FullMatch(input);
+            var value = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch);
             Assert.True(value.Success);
             Assert.Equal((0, bytes.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
             Assert.True(value.GetValueBytes().SequenceEqual(bytes));
-            PythonReMatchAssert.Equal(text, regex.FullMatch(input));
+            PythonReMatchAssert.Equal(text, regex.Match(input,mode: Utf8PythonMatchMode.FullMatch));
         }
     }
 
@@ -90,11 +90,11 @@ public sealed class PythonReOneShotProjectionTests
                 var expected = Encoding.UTF8.GetBytes(text);
                 foreach (var regex in new[] { native, scalar })
                 {
-                    var value = regex.FullMatch(input, start, ReferenceEquals(regex, native) ? default : token.Token);
+                    var value = regex.Match(input,start,cancellationToken: ReferenceEquals(regex, native) ? default : token.Token,mode: Utf8PythonMatchMode.FullMatch);
                     Assert.True(value.Success);
                     Assert.Equal((start, bytes.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
                     Assert.True(value.GetValueBytes().SequenceEqual(expected));
-                    Assert.False(regex.FullMatch("no"u8).Success);
+                    Assert.False(regex.Match("no"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
                     Assert.True(value.GetValueBytes().SequenceEqual(expected));
                 }
             }
@@ -153,10 +153,10 @@ public sealed class PythonReOneShotProjectionTests
         var input = "é😀"u8.ToArray();
         long ticks = 0;
         using var stable = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        Assert.True(regex.FullMatch(input).Success); // Prepare before counting warm-call clock reads.
+        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success); // Prepare before counting warm-call clock reads.
         var total = 0;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => { total++; return 0; }))
-            Assert.True(regex.FullMatch(input).Success);
+            Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         using var token = new CancellationTokenSource();
         var reads = 0;
         using var injection = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
@@ -164,9 +164,9 @@ public sealed class PythonReOneShotProjectionTests
             if (++reads == total) { if (expire) ticks = 50; else token.Cancel(); }
             return ticks;
         });
-        if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.FullMatch(input, 0, token.Token));
+        if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch));
         else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
-            regex.FullMatch(input, 0, token.Token)).CancellationToken);
+            regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch)).CancellationToken);
     }
 
     [Theory]
@@ -180,7 +180,7 @@ public sealed class PythonReOneShotProjectionTests
         using (var cursor = regex.CreateMatchCursor("é"u8.ToArray(), mode: (Utf8PythonMatchMode)kind))
             cursor.MoveNext(out context);
         Assert.False(context.Success); Assert.Equal(0, context.Groups.Length);
-        Assert.Empty(context.NameEntries.ToArray()); var value = kind switch { 0 => regex.Search("é"u8), 1 => regex.Match("é"u8), _ => regex.FullMatch("é"u8) };
+        Assert.Empty(context.NameEntries.ToArray()); var value = kind switch { 0 => regex.Match("é"u8,mode: Utf8PythonMatchMode.Search), 1 => regex.Match("é"u8), _ => regex.Match("é"u8,mode: Utf8PythonMatchMode.FullMatch)};
         Assert.False(value.Success);
         Assert.False(regex.IsMatch("é"u8));
     }
@@ -219,11 +219,11 @@ public sealed class PythonReOneShotProjectionTests
         for (var index = 0; index < 3; index++)
         {
             Assert.True(regex.IsMatch(input, 0, token.Token));
-            Assert.True(regex.Search(input, 0, token.Token).Success);
+            Assert.True(regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).Success);
         }
         var before = GC.GetAllocatedBytesForCurrentThread();
         var found = regex.IsMatch(input, 0, token.Token);
-        var value = regex.Search(input, 0, token.Token);
+        var value = regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.True(found); Assert.True(value.Success); Assert.Equal(1 << 20, value.StartOffsetInBytes);
         Assert.True(allocated < 65536, $"Unexpected subject-sized projection: {allocated} bytes.");

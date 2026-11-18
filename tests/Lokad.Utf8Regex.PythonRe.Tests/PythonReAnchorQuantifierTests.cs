@@ -80,17 +80,17 @@ public sealed class PythonReAnchorQuantifierTests
             var negative = new Utf8PythonRegex("[^" + escape + "]", options);
             var controlInput = Encoding.UTF8.GetBytes(new string(control, 2));
             var letterInput = Encoding.UTF8.GetBytes(letter.ToString());
-            Assert.True(positive.FullMatch(controlInput).Success);
-            Assert.False(positive.FullMatch(letterInput).Success);
-            Assert.True(negative.FullMatch(letterInput).Success);
-            Assert.False(negative.FullMatch(controlInput.AsSpan(0, 1)).Success);
+            Assert.True(positive.Match(controlInput,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.False(positive.Match(letterInput,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.True(negative.Match(letterInput,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.False(negative.Match(controlInput.AsSpan(0, 1),mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
 
     [Fact]
     public void ControlEscapesAlsoSupplyActualClassRangeEndpoints()
     {
-        Assert.True(new Utf8PythonRegex(@"[\b-\r]+").FullMatch("\b\t\n\v\f\r"u8).Success);
-        Assert.False(new Utf8PythonRegex(@"[\b-\r]+").FullMatch("bfnrtv"u8).Success);
+        Assert.True(new Utf8PythonRegex(@"[\b-\r]+").Match("\b\t\n\v\f\r"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(new Utf8PythonRegex(@"[\b-\r]+").Match("bfnrtv"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

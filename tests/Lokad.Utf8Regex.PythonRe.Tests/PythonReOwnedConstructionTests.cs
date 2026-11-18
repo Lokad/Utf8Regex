@@ -39,7 +39,7 @@ public sealed class PythonReOwnedConstructionTests
         var regex = new Utf8PythonRegex(pattern);
         var input = System.Text.Encoding.UTF8.GetBytes(inputText);
         Assert.True(regex.IsMatch(input));
-        Assert.True(regex.Search(input).Success);
+        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Theory]

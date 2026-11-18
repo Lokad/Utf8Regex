@@ -15,8 +15,8 @@ public sealed class PythonReFullMatchByteCeilingTests
                 PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
                 new() { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = maximum, MaxResultBytes = 4096 },
                 default, Timeout.InfiniteTimeSpan, default);
-            Assert.True(regex.FullMatch("ABC123"u8).Success);
-            Assert.False(regex.FullMatch("ABC12x"u8).Success);
+            Assert.True(regex.Match("ABC123"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.False(regex.Match("ABC12x"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
 
@@ -29,10 +29,10 @@ public sealed class PythonReFullMatchByteCeilingTests
             PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new() { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = allow ? 256UL : 1UL, MaxResultBytes = 4096 },
             default, Timeout.InfiniteTimeSpan, default);
-        if (allow) Assert.True(regex.FullMatch("ABC123"u8).Success);
+        if (allow) Assert.True(regex.Match("ABC123"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
         else
         {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FullMatch("ABC123"u8));
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("ABC123"u8,mode: Utf8PythonMatchMode.FullMatch));
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
         }
     }
@@ -56,7 +56,7 @@ public sealed class PythonReFullMatchByteCeilingTests
         {
             var spent = parent.Budget.WorkSteps;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                regex.FullMatch([], 0, liveToken ? token.Token : default));
+                regex.Match([],0,cancellationToken: liveToken ? token.Token : default,mode: Utf8PythonMatchMode.FullMatch));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.True(failure.Requested > failure.Limit);
             Assert.False(regex.DebugIsScalarFullProgramValueCreated);
@@ -77,7 +77,7 @@ public sealed class PythonReFullMatchByteCeilingTests
             new() { MaxWorkSteps = 16000000, MaxDepth = 4096, MaxInstructionCapacity = 1048576, MaxBytes = 8 << 20 },
             TimeSpan.FromSeconds(30), CancellationToken.None);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FullMatch([]));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match([],mode: Utf8PythonMatchMode.FullMatch));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
         Assert.Equal(4096ul, failure.Limit);
     }
@@ -107,7 +107,7 @@ public sealed class PythonReFullMatchByteCeilingTests
             if (cancel) token.Cancel(); else ticks = 25;
         };
         parent.Budget.CheckpointHook = hook;
-        var failure = Record.Exception(() => regex.FullMatch("😀a"u8, 0, token.Token));
+        var failure = Record.Exception(() => regex.Match("😀a"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch));
         if (cancel)
             Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
@@ -131,7 +131,7 @@ public sealed class PythonReFullMatchByteCeilingTests
         Assert.True(retained.Success);
         Assert.Equal("x", retained.LastGroup);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.True(regex.FullMatch("😀a"u8).Success);
+        Assert.True(regex.Match("😀a"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 }

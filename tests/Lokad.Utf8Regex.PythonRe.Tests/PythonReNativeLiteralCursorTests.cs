@@ -23,7 +23,7 @@ public sealed class PythonReNativeLiteralCursorTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         var input = Encoding.UTF8.GetBytes(text);
-        var match = regex.Search(input, start);
+        var match = regex.Match(input,start,mode: Utf8PythonMatchMode.Search);
         Assert.True(match.Success);
         Assert.Equal((byteStart,byteEnd),            (match.StartOffsetInBytes,match.EndOffsetInBytes));
     }
@@ -65,15 +65,15 @@ public sealed class PythonReNativeLiteralCursorTests
     {
         var regex = new Utf8PythonRegex("cat|dog");
         Assert.False(regex.Match("xcat"u8).Success);
-        Assert.True(regex.Match("xcat"u8, 1).Success);
-        Assert.False(regex.FullMatch("cat tail"u8).Success);
-        Assert.True(regex.FullMatch("dog"u8).Success);
+        Assert.True(regex.Match("xcat"u8,1).Success);
+        Assert.False(regex.Match("cat tail"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("dog"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("😀cat"u8, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀cat"u8,1,mode: Utf8PythonMatchMode.Search));
         var bounded = new Utf8PythonRegex("cat|dog", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
             new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Search("cat"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Match("cat"u8,mode: Utf8PythonMatchMode.Search)).ResourceKind);
     }
 
     [Theory]
@@ -87,7 +87,7 @@ public sealed class PythonReNativeLiteralCursorTests
     public void NecessaryHintsDoNotOverrideAssertionsFoldingEmptyOrLargerFamilies(
         string pattern, string text, int start, int end)
     {
-        var match = new Utf8PythonRegex(pattern).Search(Encoding.UTF8.GetBytes(text));
+        var match = new Utf8PythonRegex(pattern).Match(Encoding.UTF8.GetBytes(text),mode: Utf8PythonMatchMode.Search);
         Assert.True(match.Success);
         Assert.Equal((start, end), (match.StartOffsetInBytes, match.EndOffsetInBytes));
     }

@@ -31,10 +31,10 @@ public sealed class PythonReLaterAsciiCandidateTests
         Assert.Equal(second, matches[1].Value.StartOffsetInBytes);
         Assert.Equal("45", System.Text.Encoding.UTF8.GetString(matches[1].GetGroupMemory(1).Span));
         Assert.Equal(new[] { "3", "45" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
-        Assert.Equal(second, regex.Search(input, start + 1).StartOffsetInBytes);
+        Assert.Equal(second, regex.Match(input,start + 1,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
         Assert.False(regex.Match(input).Success);
-        Assert.True(regex.Match(input, start).Success);
-        Assert.True(regex.FullMatch(input.AsSpan(start, width + 1)).Success);
+        Assert.True(regex.Match(input,start).Success);
+        Assert.True(regex.Match(input.AsSpan(start, width + 1),mode: Utf8PythonMatchMode.FullMatch).Success);
         _ = PythonReFindAllAssert.Decode(regex.FindAllToUtf8("unrelated"u8));
         Assert.Equal("3", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
     }
@@ -46,7 +46,7 @@ public sealed class PythonReLaterAsciiCandidateTests
         var skipped = "é" + new string('a', 62) + "3!";
         using var regex = new Utf8PythonRegex(prefix + "([0-9]+)");
         var input = Encoding.UTF8.GetBytes(skipped + prefix + "7");
-        Assert.Equal(Encoding.UTF8.GetByteCount(skipped), regex.Search(input).StartOffsetInBytes);
+        Assert.Equal(Encoding.UTF8.GetByteCount(skipped), regex.Match(input,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
         Assert.Equal(new[] { "7" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
     }
 

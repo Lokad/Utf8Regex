@@ -30,7 +30,6 @@ public sealed partial class Utf8PythonRegex
 
     private Utf8PythonValueMatch SearchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        using var programUse = EnterProgramUse();
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 && _utf8Regex is not null)
         {
             return MatchValueNative(input, startOffsetInBytes, 0, cancellationToken);
@@ -38,20 +37,8 @@ public sealed partial class Utf8PythonRegex
         return MatchValueScalar(input, startOffsetInBytes, 0, cancellationToken);
     }
 
-    /// <summary>Finds the first match at or after a zero-based UTF-8 byte offset, observing cancellation during matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8PythonValueMatch Search(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return SearchCore(input, startOffsetInBytes, cancellationToken);
-    }
-
     private Utf8PythonValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        using var programUse = EnterProgramUse();
         if (_canUseZeroOffsetUtf8SearchValueFastPath && startOffsetInBytes == 0 &&
             !HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan && _utf8Regex is not null)
         {
@@ -60,20 +47,45 @@ public sealed partial class Utf8PythonRegex
         return MatchValueScalar(input, startOffsetInBytes, 1, cancellationToken);
     }
 
-    /// <summary>Matches exactly at a zero-based UTF-8 byte offset, observing cancellation during matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8PythonValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
+    /// <summary>Matches a Unicode scalar subject and optionally fills caller-owned last-capture byte ranges.</summary>
+    /// <remarks>Match anchors at the byte start; Search seeks from it, FullMatch requires the complete remaining prefix through end. Start/end preserve absolute prefix and lookbehind context and must fall on scalar boundaries. Short capture buffers request prefix slots including zero; excess entries stay untouched. Caller storage is excluded from result-byte admission. Pre-cancellation leaves output unchanged; later failure clears the requested prefix. Returned value bytes borrow unchanged input independently of capture-slot reuse. Completion-order metadata remains available on CreateMatchCursor. A null working account inherits program/numeric funding; supplied refusal is terminal.</remarks>
+    public Utf8PythonValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0,
+        scoped Span<Utf8PythonCaptureRange> captures = default, CancellationToken cancellationToken = default,
+        IUtf8MemoryAllowance? workingMemoryAllowance = null, Utf8PythonMatchMode mode = Utf8PythonMatchMode.Match,
+        int? endOffsetInBytes = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return MatchCore(input, startOffsetInBytes, cancellationToken);
+        using var programUse = EnterProgramUse();
+        var output = captures[..Math.Min(captures.Length, _scalarProgram.GroupCount + 1)];
+        try
+        {
+            if ((uint)mode > (uint)Utf8PythonMatchMode.FullMatch)
+                throw new ArgumentOutOfRangeException(nameof(mode));
+            var end = GetScalarEndOffset(input, endOffsetInBytes);
+            var subject = input[..end];
+            if (workingMemoryAllowance is null && (output.IsEmpty || _scalarProgram.GroupCount == 0))
+            {
+                // Keep genuine no-capture native/repeat workers and their original
+                // interruption/admission intent. A sole group-zero slot needs no VM arrays.
+                var result = mode switch
+                {
+                    Utf8PythonMatchMode.Search => SearchCore(subject, startOffsetInBytes, cancellationToken),
+                    Utf8PythonMatchMode.FullMatch => FullMatchCore(subject, startOffsetInBytes, cancellationToken),
+                    _ => MatchCore(subject, startOffsetInBytes, cancellationToken)
+                };
+                if (!output.IsEmpty)
+                    output[0] = result.Success ? new Utf8PythonCaptureRange { Success = true,
+                        StartOffsetInBytes = result.StartOffsetInBytes, EndOffsetInBytes = result.EndOffsetInBytes } : default;
+                return result;
+            }
+            return MatchValueScalar(subject, startOffsetInBytes, (int)mode, cancellationToken,
+                output, workingMemoryAllowance);
+        }
+        catch { output.Clear(); throw; }
     }
 
     private Utf8PythonValueMatch FullMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        using var programUse = EnterProgramUse();
         ValidateScalarStartOffset(input, startOffsetInBytes);
         if (CanUseLiteralFullMatch)
         {
@@ -92,17 +104,6 @@ public sealed partial class Utf8PythonRegex
     {
         var invocation = CreateInvocation(cancellationToken);
         return MaterializeNativeMatchValue(input, startOffsetInBytes, kind, ref invocation);
-    }
-
-    /// <summary>Matches the complete UTF-8 suffix beginning at a zero-based byte offset, observing cancellation during matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public Utf8PythonValueMatch FullMatch(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        return FullMatchCore(input, startOffsetInBytes, cancellationToken);
     }
 
     private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, CancellationToken cancellationToken)

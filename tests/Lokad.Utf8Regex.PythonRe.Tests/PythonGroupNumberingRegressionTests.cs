@@ -77,7 +77,7 @@ public sealed class PythonGroupNumberingRegressionTests
         var regex = new Utf8PythonRegex(pattern);
         AssertSearch(regex, input, expectedSuccess, expectedStart, expectedEnd);
         Assert.Equal(expectedSuccess, regex.Match(Utf8(input)).Success);
-        Assert.Equal(expectedSuccess, regex.FullMatch(Utf8(input)).Success);
+        Assert.Equal(expectedSuccess, regex.Match(Utf8(input),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -194,7 +194,7 @@ public sealed class PythonGroupNumberingRegressionTests
 
     private static void AssertSearch(Utf8PythonRegex regex, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var match = regex.Search(Encoding.UTF8.GetBytes(input));
+        var match = regex.Match(Encoding.UTF8.GetBytes(input),mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {

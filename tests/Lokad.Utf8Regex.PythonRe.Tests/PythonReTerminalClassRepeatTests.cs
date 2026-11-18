@@ -76,7 +76,7 @@ public sealed class PythonReTerminalClassRepeatTests
     {
         var regex = Create(@"\w+", 1, 1 << 20);
         Assert.Equal(1, regex.Count("😀é² ab"u8, 9));
-        Assert.Equal(9, regex.Search("😀é² ab"u8, 9).StartOffsetInBytes);
+        Assert.Equal(9, regex.Match("😀é² ab"u8,9,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀é² ab"u8, 1));
 
         Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes("\u1c89\U0001e5f1")));
@@ -104,10 +104,10 @@ public sealed class PythonReTerminalClassRepeatTests
     public void FullMatchAnchoringAndFollowingFailureRetainTheirGeneralPaths()
     {
         var regex = Create(@"\w+", 256, 1 << 20);
-        Assert.True(regex.FullMatch("é²"u8).Success);
-        Assert.False(regex.FullMatch("abc!"u8).Success);
+        Assert.True(regex.Match("é²"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match("abc!"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.False(regex.Match("😀abc"u8).Success);
-        Assert.Equal(4, regex.Search("😀abc"u8).StartOffsetInBytes);
+        Assert.Equal(4, regex.Match("😀abc"u8,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
         Assert.Equal("abcZ", Encoding.UTF8.GetString(Create(@"\w+Z", 256, 1 << 20).FindAllToUtf8("abcZ"u8).ScalarValues[0]));
         Assert.Equal("XYZ", Encoding.UTF8.GetString(Create(@"(?<=\w{2})\w+", 256, 1 << 20).FindAllToUtf8("abXYZ"u8).ScalarValues[0]));
     }

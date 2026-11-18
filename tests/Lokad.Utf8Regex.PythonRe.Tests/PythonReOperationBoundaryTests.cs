@@ -63,7 +63,7 @@ public sealed class PythonReOperationBoundaryTests
         switch (operation)
         {
             case 0: _ = regex.IsMatch(input, 0, token); break;
-            case 1: _ = regex.Search(input, 0, token); break;
+            case 1: _ = regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.Search); break;
             case 2:
                 Utf8PythonRangeMatch snapshot1 = default;
                 using (var captureCursor1 = regex.CreateMatchCursor(input, 0, token, mode: Utf8PythonMatchMode.Search))
@@ -75,7 +75,7 @@ public sealed class PythonReOperationBoundaryTests
             case 7: _ = regex.FindAllToUtf8(input, 0, token); break;
             case 8: _ = regex.SplitRanges(input, 0, 0, token); break;
             case 10: _ = System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\2:\1", 0, 0, token)); break;
-            case 12: _ = regex.FullMatch(input, 0, token); break;
+            case 12: _ = regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch); break;
             case 13: _ = regex.Count(input, 0, token); break;
         }
     }

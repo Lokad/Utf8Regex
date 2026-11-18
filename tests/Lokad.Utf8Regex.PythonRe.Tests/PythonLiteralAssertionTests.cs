@@ -55,13 +55,13 @@ public sealed class PythonLiteralAssertionTests
             var regex = bytes ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None,
                 Timeout.InfiniteTimeSpan, policy) : new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
                 Timeout.InfiniteTimeSpan, policy);
-            var match = regex.Search(storage.AsSpan(1, input.Length));
+            var match = regex.Match(storage.AsSpan(1, input.Length),mode: Utf8PythonMatchMode.Search);
             Assert.Equal(success, match.Success);
             Assert.Equal(success ? 1 : 0, regex.Count(input));
             if (!success) continue;
             Assert.Equal(start, match.StartOffsetInBytes);
-            Assert.True(regex.Search(input, start).Success);
-            Assert.False(regex.Search(input, start + 1).Success);
+            Assert.True(regex.Match(input,start,mode: Utf8PythonMatchMode.Search).Success);
+            Assert.False(regex.Match(input,start + 1,mode: Utf8PythonMatchMode.Search).Success);
             Utf8PythonRangeMatch retained = default;
             using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
             {

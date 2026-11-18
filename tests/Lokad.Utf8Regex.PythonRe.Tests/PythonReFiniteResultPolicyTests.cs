@@ -239,7 +239,7 @@ public sealed class PythonReFiniteResultPolicyTests
     {
         Assert.True(Create(".", 1).IsMatch("😀"u8));
         Assert.Equal(2, Create(".", 1).Count("😀a"u8));
-        var range = Create(".", 1).Search("😀"u8);
+        var range = Create(".", 1).Match("😀"u8,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(4, range.EndOffsetInBytes);
         Denied(() =>
         {
@@ -251,8 +251,8 @@ public sealed class PythonReFiniteResultPolicyTests
 
             _ = snapshot2;
         }, 1);
-        PythonReMatchAssert.Equal("", Create("", 1).Search("😀"u8));
-        Assert.False(Create("missing", 1).Search("😀"u8).Success);
+        PythonReMatchAssert.Equal("", Create("", 1).Match("😀"u8,mode: Utf8PythonMatchMode.Search));
+        Assert.False(Create("missing", 1).Match("😀"u8,mode: Utf8PythonMatchMode.Search).Success);
         var regex = Create(".*?", 1000000);
         var collectedRanges3 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor3 = regex.CreateMatchCursor(("😀a"u8).ToArray(), 0, default))
@@ -261,8 +261,8 @@ public sealed class PythonReFiniteResultPolicyTests
                 collectedRanges3.Add(rangeMatch3);
         }
         Assert.Equal(new[] { "", "😀", "", "a", "" }, collectedRanges3.ToArray().Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)));
-        Assert.Equal(4, regex.Search("😀a"u8, 4).StartOffsetInBytes);
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("😀a"u8, 1));
+        Assert.Equal(4, regex.Match("😀a"u8,4,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀a"u8,1,mode: Utf8PythonMatchMode.Search));
         Utf8PythonRangeMatch context = default;
         using (var captureCursor3 = regex.CreateMatchCursor(("😀a"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
         {

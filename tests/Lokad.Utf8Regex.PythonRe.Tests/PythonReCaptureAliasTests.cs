@@ -46,7 +46,7 @@ public sealed class PythonReCaptureAliasTests
             Assert.True(regex.IsMatch(input));
             Assert.False(regex.IsMatch(absent));
             Assert.Equal(1, regex.Count(input));
-            Assert.True(regex.FullMatch(input).Success);
+            Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
             Utf8PythonRangeMatch retained = default;
             using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
             {

@@ -31,7 +31,7 @@ public sealed class PythonReAtomicRepeatCommitTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8PythonRegex(pattern);
-        var match = regex.Search(input);
+        var match = regex.Match(input,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expected is not null, match.Success);
         if (expected is null) return;
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
@@ -52,7 +52,7 @@ public sealed class PythonReAtomicRepeatCommitTests
         })
         {
             var denied = new Utf8PythonRegex("a++b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Search("aaab"u8)).ResourceKind);
+            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match("aaab"u8,mode: Utf8PythonMatchMode.Search)).ResourceKind);
         }
         var results = new Utf8PythonRegex("a++b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxResultBytes = 1 });
@@ -61,7 +61,7 @@ public sealed class PythonReAtomicRepeatCommitTests
         var depth = new Utf8PythonRegex("(?>x(?>a+))b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
             new Utf8ResourcePolicy { MaxDepth = 1 });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => depth.Search("xaaab"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => depth.Match("xaaab"u8,mode: Utf8PythonMatchMode.Search)).ResourceKind);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public sealed class PythonReAtomicRepeatCommitTests
         Assert.True(retained.Success);
         Assert.Equal("aaaa", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(held, allowance.Used);
-        Assert.False(regex.FullMatch("aaaabX"u8).Success);
+        Assert.False(regex.Match("aaaabX"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(held, allowance.Used);
         regex.Dispose();
         Assert.Equal(0UL, allowance.Used);
@@ -111,14 +111,14 @@ public sealed class PythonReAtomicRepeatCommitTests
         try
         {
             if (expire)
-                Assert.Equal("a++b", Assert.Throws<RegexMatchTimeoutException>(() => regex.Search(input)).Pattern);
+                Assert.Equal("a++b", Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input,mode: Utf8PythonMatchMode.Search)).Pattern);
             else
                 Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
-                    regex.Search(input, 0, cancellation.Token)).CancellationToken);
+                    regex.Match(input,0,cancellationToken: cancellation.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
         }
         finally { session.Complete(); }
         Assert.True(entered);
         ticks = 0;
-        Assert.True(regex.Search("ab"u8).Success);
+        Assert.True(regex.Match("ab"u8,mode: Utf8PythonMatchMode.Search).Success);
     }
 }

@@ -21,7 +21,7 @@ public sealed class PythonReLiteralConstructionTests
         Assert.True(allocated < 16 * 1024 * 1024, $"Literal construction allocated {allocated} bytes.");
         Assert.Equal(pattern, expression.Pattern);
         Assert.True(expression.DebugIsScalarFullProgramValueCreated);
-        Assert.True(expression.FullMatch(Encoding.UTF8.GetBytes(pattern)).Success);
+        Assert.True(expression.Match(Encoding.UTF8.GetBytes(pattern),mode: Utf8PythonMatchMode.FullMatch).Success);
         GC.KeepAlive(expression);
     }
 
@@ -39,9 +39,9 @@ public sealed class PythonReLiteralConstructionTests
     {
         var expression = Compile(pattern);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.True(expression.FullMatch(input).Success);
+        Assert.True(expression.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(1, expression.Count(input));
-        Assert.False(expression.FullMatch(Encoding.UTF8.GetBytes(text + "!")).Success);
+        Assert.False(expression.Match(Encoding.UTF8.GetBytes(text + "!"),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public sealed class PythonReLiteralConstructionTests
         Assert.True(match.Success);
         Assert.Equal("é", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("中", System.Text.Encoding.UTF8.GetString((match.Groups[2].Success ? match.GetGroupMemory(match.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
-        Assert.True(expression.FullMatch(input).Success);
+        Assert.True(expression.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -69,7 +69,7 @@ public sealed class PythonReLiteralConstructionTests
     {
         var pattern = escaped ? $@"\u{scalar:x4}" : new string((char)scalar, 1);
         var expression = Compile(pattern);
-        Assert.False(expression.FullMatch([]).Success);
+        Assert.False(expression.Match([],mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(0, expression.Count("😀�a"u8));
     }
 }

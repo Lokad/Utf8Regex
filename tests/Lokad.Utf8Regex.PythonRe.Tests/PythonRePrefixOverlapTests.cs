@@ -26,7 +26,7 @@ public sealed class PythonRePrefixOverlapTests
     public void OverlapPrefixSearchFindsCorrectStart(string pattern, PythonReCompileOptions options, string inputText, int expectedStart)
     {
         var regex = new Utf8PythonRegex(pattern, options);
-        var match = regex.Search(Encoding.UTF8.GetBytes(inputText));
+        var match = regex.Match(Encoding.UTF8.GetBytes(inputText),mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedStart >= 0, match.Success);
     }
 

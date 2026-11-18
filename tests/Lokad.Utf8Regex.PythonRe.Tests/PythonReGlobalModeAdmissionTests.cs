@@ -70,6 +70,6 @@ public sealed class PythonReGlobalModeAdmissionTests
             Assert.Equal(0ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
         }
-        Assert.True(new Utf8PythonRegex("(?a)a").FullMatch("a"u8).Success);
+        Assert.True(new Utf8PythonRegex("(?a)a").Match("a"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

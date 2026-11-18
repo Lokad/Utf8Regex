@@ -55,7 +55,7 @@ public sealed class PythonSyntaxParityRegressionTests
     public void BoundedLargeRepeatLookbehindWidthsDoNotWrap()
     {
         var regex = new Utf8PythonRegex("((a{46350}){46350})(?<=\\1)b");
-        Assert.True(regex.Search(Utf8("b")).Success == false);
+        Assert.True(regex.Match(Utf8("b"),mode: Utf8PythonMatchMode.Search).Success == false);
     }
 
     [Theory]
@@ -104,7 +104,7 @@ public sealed class PythonSyntaxParityRegressionTests
 
     private static void AssertSearch(Utf8PythonRegex regex, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var match = regex.Search(Encoding.UTF8.GetBytes(input));
+        var match = regex.Match(Encoding.UTF8.GetBytes(input),mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {

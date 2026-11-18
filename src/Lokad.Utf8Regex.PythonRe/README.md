@@ -31,7 +31,8 @@ the owned engine. `LastIndex`/`LastGroup` identify the last capture to close on 
 successful path; an unnamed last capture has a null name. Unmatched captures keep
 the documented null/empty shaping for each API.
 
-Search, Match and FullMatch expose borrowed byte values and capture contexts.
+Match exposes a borrowed whole-match byte value and optional caller-owned capture
+slots. Utf8PythonMatchMode selects anchored Match (default), Search or FullMatch.
 The range cursor supplies incremental captures with immutable byte metadata.
 `FindAllToUtf8` provides Python-shaped owned byte scalar/tuple outputs. Whole-match
 ranges and capture memories come from `CreateMatchCursor`; hosts collect them when
@@ -49,8 +50,9 @@ semantics. For example, `regex.Subn(input, "[\\g<word>]"u8)` returns owned bytes
 and a substitution count.
 
 Bytes-pattern semantics, LOCALE and `\N{...}` Unicode-name lookup are excluded.
-There is no `endpos` parameter. Start offsets follow the documented Python `pos`
-contract without resetting prefix/suffix assertion context. This is a selected
+The optional scalar-aligned byte endOffsetInBytes bounds the subject prefix; it
+does not implement Python character endpos clamping. Start/end retain absolute
+prefix/lookbehind context. This is a selected
 profile, not complete Python `re` equivalence. See the
 [profile specification](../../docs/SPEC-PYTHONRE.md).
 
@@ -66,10 +68,10 @@ Instances accept positive nullable `Utf8ResourcePolicy.MaxWorkSteps`, `MaxDepth`
 required shaping cumulatively. Depth admits live frames before acquisition;
 working/result controls admit modeled major capacities and growth overlap.
 Result/staging charges do not refund and may conservatively count storage again.
-Unknown string lengths up to 4096 UTF-8 bytes, including one-shot and literal
-replacement string results,
-use a byte-derived capacity bound before decoding; Unicode results can therefore
-reach a finite byte limit earlier. Larger results retain bounded exact sizing.
+Caller-owned Match slots require no result-array allocation or result-byte charge;
+short buffers request a prefix of the numbered slots and excess entries stay
+untouched. Pre-cancellation preserves caller output; failure after capture entry
+clears the requested prefix. Returned whole-match bytes survive slot reuse.
 Denials use `Utf8ResourceLimitExceededException` with the corresponding
 `Execution*` resource kind. This is not a total heap/RSS or caller-retention bound.
 
@@ -94,7 +96,8 @@ and [MIGRATION.md](../../docs/MIGRATION.md).
 
 Value/context/count and byte-output calls now take optional offsets/counts and
 cancellation on their existing long signature. For example,
-`regex.Search(subject.Span, cancellationToken: token)` starts at byte zero.
+`regex.Match(subject.Span, cancellationToken: token, mode: Utf8PythonMatchMode.Search)`
+searches from byte zero.
 Recompile old callers; adapt a short method-group delegate with an explicit
 lambda. Cursor funding overloads retain their distinct account/null contracts.
 Managed benchmark lanes that bind removed short overloads have new protocol
@@ -164,7 +167,7 @@ var regex = new Utf8PythonRegex(
     });
 
 bool isMatch = regex.IsMatch("foo-foo"u8);
-var first = regex.Search("xx foo-foo yy"u8);
+var first = regex.Match("xx foo-foo yy"u8, mode: Utf8PythonMatchMode.Search);
 int count = regex.Count("foo-foo x foo-foo"u8);
 byte[] replaced = regex.Replace("foo x foo"u8, "<\\g<word>>");
 using var matches = regex.CreateMatchCursor("foo-foo xx foo-foo"u8.ToArray());
@@ -175,7 +178,7 @@ while (matches.MoveNext(out var match))
 Utf8PythonCaptureRange[] parts = regex.SplitRanges("foo-foo xx foo-foo"u8);
 ```
 
-`Search`, `Match` and `FullMatch` return borrowed byte ranges. Their former
+`Match` returns borrowed byte values in all three modes. The former
 `ToString` operation variants are removed. Check `Success`, then decode
 `GetValueBytes()` in the host if text is needed; caller decoding is outside the
 regex invocation's resource and cancellation scope. `FindAllToStrings` is also
@@ -193,8 +196,9 @@ Dispose after consuming the desired result; snapshots remain valid. The former
 SearchDetailed/MatchDetailed/FullMatchDetailed APIs and context/group view types
 are removed. LastIndex/LastGroup retain Python's last-capture-to-close semantics.
 A cursor owns persistent discovery state, so one-shot capture materialization now
-pays cursor setup and allocation too. Use the stack-only value Search/Match/FullMatch
-operations when captures and completion metadata are unnecessary.
+pays cursor setup and allocation too. Use Match with caller-owned capture slots
+when only byte ranges are required, or omit slots for a whole-match value.
+Completion-order LastIndex/LastGroup remain on cursor snapshots.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one range result per
 advance without materializing a complete collection:

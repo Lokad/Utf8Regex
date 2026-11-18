@@ -110,8 +110,8 @@ public sealed class PythonReFundedProgramTests
         regex.Dispose();
         var input = "a"u8.ToArray();
         Action[] operations = [
-            () => regex.IsMatch(input), () => { _ = regex.Search(input); },
-            () => { _ = regex.Match(input); }, () => { _ = regex.FullMatch(input); },
+            () => regex.IsMatch(input), () => { _ = regex.Match(input,mode: Utf8PythonMatchMode.Search); },
+            () => { _ = regex.Match(input); }, () => { _ = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch); },
             () => regex.Count(input),
             () => { using var cursor = regex.CreateMatchCursor(input); cursor.MoveNext(out _); },
             () => { using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Match); cursor.MoveNext(out _); },

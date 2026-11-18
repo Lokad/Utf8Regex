@@ -162,8 +162,8 @@ public sealed class PythonReFundedExecutionTests
     }
 
     private static (string Name, Action Operation)[] Operations(Utf8PythonRegex regex, byte[] input) => [
-        ("IsMatch", () => regex.IsMatch(input)), ("Search", () => { _ = regex.Search(input); }),
-        ("Match", () => { _ = regex.Match(input); }), ("FullMatch", () => { _ = regex.FullMatch(input); }),
+        ("IsMatch", () => regex.IsMatch(input)), ("Search", () => { _ = regex.Match(input,mode: Utf8PythonMatchMode.Search); }),
+        ("Match", () => { _ = regex.Match(input); }), ("FullMatch", () => { _ = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch); }),
         ("Count", () => regex.Count(input)),
         ("CursorSearch", () => { using var cursor = regex.CreateMatchCursor(input); cursor.MoveNext(out _); }),
         ("CursorMatch", () => { using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Match); cursor.MoveNext(out _); }),

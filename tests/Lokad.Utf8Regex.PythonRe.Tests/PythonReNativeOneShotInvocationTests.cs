@@ -16,13 +16,13 @@ public sealed class PythonReNativeOneShotInvocationTests
             resourcePolicy: new() { MaxWorkSteps = 64, MaxWorkingBytes = 1, MaxResultBytes = 1 });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é😀", 65536)) + "needle");
         using var token = new CancellationTokenSource();
-        var value = regex.FullMatch(input, input.Length - 6, token.Token);
+        var value = regex.Match(input,input.Length - 6,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch);
         Assert.True(value.Success);
         Assert.Equal((input.Length - 6, input.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
         Assert.True(value.GetValueBytes().SequenceEqual("needle"u8));
         token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
-            regex.FullMatch(input, input.Length - 6, token.Token)).CancellationToken);
+            regex.Match(input,input.Length - 6,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch)).CancellationToken);
     }
 
     [Theory]
@@ -92,9 +92,9 @@ public sealed class PythonReNativeOneShotInvocationTests
             var regex = new Utf8PythonRegex(pattern, options);
             var value = kind switch
             {
-                0 => regex.Search(input, start, cancellation),
-                1 => regex.Match(input, start, cancellation),
-                _ => regex.FullMatch(input, start, cancellation),
+                0 => regex.Match(input,start,cancellationToken: cancellation,mode: Utf8PythonMatchMode.Search),
+                1 => regex.Match(input,start,cancellationToken: cancellation),
+                _ => regex.Match(input,start,cancellationToken: cancellation,mode: Utf8PythonMatchMode.FullMatch),
             };
             Assert.Equal(expected is not null, value.Success);
             Assert.Equal((first, last), (value.StartOffsetInBytes, value.EndOffsetInBytes));

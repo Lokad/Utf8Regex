@@ -27,7 +27,7 @@ public sealed class PythonUnicodeVersionTests
                     Regex.InfiniteMatchTimeout, policy);
                 Assert.False(regex.IsMatch(small, 0, source.Token));
                 Assert.Equal(0, regex.Count(small, 0, source.Token));
-                Assert.True(regex.FullMatch(Encoding.UTF8.GetBytes(capital), 0, source.Token).Success);
+                Assert.True(regex.Match(Encoding.UTF8.GetBytes(capital),0,cancellationToken: source.Token,mode: Utf8PythonMatchMode.FullMatch).Success);
             }
             var reference = new Utf8PythonRegex(@"^(.)\1$", PythonReCompileOptions.IgnoreCase,
                 Regex.InfiniteMatchTimeout, policy);
@@ -181,7 +181,7 @@ public sealed class PythonUnicodeVersionTests
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(expected, regex.Match(input).Success);
-        Assert.Equal(expected, regex.FullMatch(input).Success);
+        Assert.Equal(expected, regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch snapshot3 = default;
         using (var captureCursor3 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
         {
@@ -199,7 +199,7 @@ public sealed class PythonUnicodeVersionTests
     [InlineData(@"(?<!\B)a", 0)]
     public void NonBoundaryLookbehindHasZeroScalarWidth(string pattern, int expectedStart)
     {
-        var match = new Utf8PythonRegex(pattern).Search("aa"u8);
+        var match = new Utf8PythonRegex(pattern).Match("aa"u8,mode: Utf8PythonMatchMode.Search);
         Assert.True(match.Success);
         Assert.Equal(expectedStart, match.StartOffsetInBytes);
         Assert.Equal(expectedStart + 1, match.EndOffsetInBytes);

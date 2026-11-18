@@ -142,7 +142,7 @@ public sealed class PythonReFiniteWorkingPolicyTests
     {
         var regex = Create("ab", 1_048_576, bytePattern);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("😀ab"u8, 1));
-        Assert.Equal(4, regex.Search("😀ab"u8, 4).StartOffsetInBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8,1,mode: Utf8PythonMatchMode.Search));
+        Assert.Equal(4, regex.Match("😀ab"u8,4,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
     }
 }

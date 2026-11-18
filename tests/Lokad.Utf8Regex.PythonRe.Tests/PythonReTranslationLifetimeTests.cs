@@ -31,7 +31,7 @@ public sealed class PythonReTranslationLifetimeTests
                 matches.Select(match => match.Value.StartOffsetInBytes));
             Assert.Equal(7, matches[^1].Value.EndOffsetInBytes);
             Assert.Equal(count == 2 ? "XX" : "XX😀X!X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
-            Assert.Equal(count == 2, regex.FullMatch(input).Success);
+            Assert.Equal(count == 2, regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
             using var cancellation = new CancellationTokenSource();
             cancellation.Cancel();
             Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
@@ -45,9 +45,9 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.True(regex.DebugUsesUtf8RegexBackend);
         Assert.True(regex.DebugUsesZeroOffsetUtf8SearchValueFastPath);
         Assert.Equal(3, regex.Count("😀!"u8));
-        Assert.Equal(0, regex.Search("😀!"u8).EndOffsetInBytes);
-        Assert.True(regex.FullMatch(ReadOnlySpan<byte>.Empty).Success);
-        Assert.False(regex.FullMatch("😀!"u8).Success);
+        Assert.Equal(0, regex.Match("😀!"u8,mode: Utf8PythonMatchMode.Search).EndOffsetInBytes);
+        Assert.True(regex.Match(ReadOnlySpan<byte>.Empty,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match("😀!"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
     [Theory]
     [InlineData("distinct_native_literal_abc123")]
@@ -73,8 +73,8 @@ public sealed class PythonReTranslationLifetimeTests
             Assert.False(regex.DebugUsesUtf8RegexBackend);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(1, regex.Count(input));
-            Assert.True(regex.Search(input).Success);
-            Assert.True(regex.FullMatch(input).Success);
+            Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.Search).Success);
+            Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
             Utf8PythonRangeMatch snapshot1 = default;
             using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
             {
@@ -99,8 +99,8 @@ public sealed class PythonReTranslationLifetimeTests
         var regex = new Utf8PythonRegex(pattern);
         Assert.True(regex.IsMatch(input));
         Assert.Equal(1, regex.Count(input));
-        Assert.True(regex.Search(input).Success);
-        Assert.True(regex.FullMatch(input).Success);
+        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch snapshot2 = default;
         using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
         {
@@ -120,7 +120,7 @@ public sealed class PythonReTranslationLifetimeTests
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.DebugUsesUtf8RegexBackend);
-        Assert.True(regex.FullMatch(input).Success);
+        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(1, regex.Count(input));
         Utf8PythonRangeMatch snapshot3 = default;
         using (var captureCursor3 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
@@ -151,12 +151,12 @@ public sealed class PythonReTranslationLifetimeTests
             typeof(Utf8PythonRegex).GetField("_scalarProgram", fields)!.GetValue(regex));
         Assert.True(core.CanFindNativeLiteralForResult);
         Assert.True(PythonReScalarMatchState.CanUseCandidateRegex(program, core));
-        PythonReMatchAssert.Equal("needle", regex.Search("xxneedlebar"u8));
+        PythonReMatchAssert.Equal("needle", regex.Match("xxneedlebar"u8,mode: Utf8PythonMatchMode.Search));
         Assert.Equal(1, regex.Count("xxneedlebar"u8));
         Assert.Equal(["needle"], PythonReFindAllAssert.Decode(regex.FindAllToUtf8("xxneedlebar"u8)).ScalarValues);
         Assert.False(regex.IsMatch("needlex"u8));
-        Assert.False(regex.Search("xxneedlexbar"u8).Success);
-        Assert.False(regex.FullMatch("needlebar"u8).Success);
+        Assert.False(regex.Match("xxneedlexbar"u8,mode: Utf8PythonMatchMode.Search).Success);
+        Assert.False(regex.Match("needlebar"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
     [Fact]
     public void ScalarOnlyInstancesDoNotRetainUnusedRenderedPatterns()

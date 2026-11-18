@@ -102,7 +102,7 @@ public sealed class PythonUnicodeClassRegressionTests
     [Fact]
     public void UnicodeNonWordBoundaryRejectsMarkBoundaryLikeCpython()
     {
-        Assert.False(new Utf8PythonRegex(@"\B").Search(Encoding.UTF8.GetBytes("áb")).Success);
+        Assert.False(new Utf8PythonRegex(@"\B").Match(Encoding.UTF8.GetBytes("áb"),mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Theory]
@@ -111,7 +111,7 @@ public sealed class PythonUnicodeClassRegressionTests
     [InlineData(@"(?a:\w)", "a", true)]
     public void ScopedAsciiClassesKeepAsciiSemantics(string pattern, string input, bool expectedSuccess)
     {
-        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).Search(Encoding.UTF8.GetBytes(input)).Success);
+        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).Match(Encoding.UTF8.GetBytes(input),mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Theory]
@@ -122,7 +122,7 @@ public sealed class PythonUnicodeClassRegressionTests
     [InlineData(@"\D", "²", true)]
     public void UnicodeFullMatchFollowsCpython(string pattern, string input, bool expectedSuccess)
     {
-        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).FullMatch(Encoding.UTF8.GetBytes(input)).Success);
+        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).Match(Encoding.UTF8.GetBytes(input),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     // Supplementary category and boundary witnesses exercise the owned scalar
@@ -131,7 +131,7 @@ public sealed class PythonUnicodeClassRegressionTests
     public void AstralWordClassStaysPinnedToCpython()
     {
         var input = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400));
-        var match = new Utf8PythonRegex(@"\w").Search(input);
+        var match = new Utf8PythonRegex(@"\w").Match(input,mode: Utf8PythonMatchMode.Search);
         Assert.True(match.Success);
     }
 
@@ -139,39 +139,39 @@ public sealed class PythonUnicodeClassRegressionTests
     public void AstralBracketedWordClassStaysPinnedToCpython()
     {
         var input = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400));
-        var match = new Utf8PythonRegex(@"[\w]").Search(input);
+        var match = new Utf8PythonRegex(@"[\w]").Match(input,mode: Utf8PythonMatchMode.Search);
         Assert.True(match.Success);
     }
 
     [Fact]
     public void AstralWordFullMatchStaysPinnedToCpython()
     {
-        Assert.True(new Utf8PythonRegex(@"\w").FullMatch(Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400))).Success);
+        Assert.True(new Utf8PythonRegex(@"\w").Match(Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400)),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
     public void AstralDigitClassStaysPinnedToCpython()
     {
         var input = Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x1D7CE));
-        var match = new Utf8PythonRegex(@"\d").Search(input);
+        var match = new Utf8PythonRegex(@"\d").Match(input,mode: Utf8PythonMatchMode.Search);
         Assert.True(match.Success);
     }
 
     [Fact]
     public void AstralTrailingBoundaryStaysPinnedToCpython()
     {
-        Assert.False(new Utf8PythonRegex(@"x\b").Search(Encoding.UTF8.GetBytes("x" + char.ConvertFromUtf32(0x10400))).Success);
+        Assert.False(new Utf8PythonRegex(@"x\b").Match(Encoding.UTF8.GetBytes("x" + char.ConvertFromUtf32(0x10400)),mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Fact]
     public void AstralLeadingBoundaryStaysPinnedToCpython()
     {
-        Assert.False(new Utf8PythonRegex(@"\bx").Search(Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400) + "x")).Success);
+        Assert.False(new Utf8PythonRegex(@"\bx").Match(Encoding.UTF8.GetBytes(char.ConvertFromUtf32(0x10400) + "x"),mode: Utf8PythonMatchMode.Search).Success);
     }
 
     private static void AssertSearch(Utf8PythonRegex regex, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var match = regex.Search(Encoding.UTF8.GetBytes(input));
+        var match = regex.Match(Encoding.UTF8.GetBytes(input),mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {

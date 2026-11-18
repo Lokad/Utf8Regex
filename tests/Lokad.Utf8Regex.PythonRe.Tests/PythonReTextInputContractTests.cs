@@ -49,11 +49,11 @@ public sealed class PythonReTextInputContractTests
             Assert.True(regex.IsMatch(input));
             Assert.Equal(count, regex.Count(input));
             Assert.Equal(count, compiled.Count(input));
-            var first = regex.Search(input);
+            var first = regex.Match(input,mode: Utf8PythonMatchMode.Search);
             Assert.Equal(firstByte, first.StartOffsetInBytes);
             Assert.Equal(firstByte + firstLength, first.EndOffsetInBytes);
             _ = regex.Match(input);
-            _ = regex.FullMatch(input);
+            _ = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch);
             _ = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input));
             _ = regex.FindAllToUtf8(input);
             _ = PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default));

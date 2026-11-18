@@ -43,7 +43,7 @@ public sealed class PythonReSliceInlineTests
     {
         var regex = new Utf8PythonRegex("(?i)a+", PythonReCompileOptions.None);
         Assert.Equal("(?:[Aa])+", PythonReDotNetReference.Render(regex));
-        Assert.True(regex.FullMatch("aA"u8).Success);
+        Assert.True(regex.Match("aA"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public sealed class PythonReSliceInlineTests
         var regex = new Utf8PythonRegex("(?x:a b)+", PythonReCompileOptions.None);
         Assert.Equal("(?x:ab)+", PythonReDotNetReference.Render(regex));
         var input = Utf8("xababx");
-        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(regex.Search(input).GetValueBytes()));
+        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(regex.Match(input,mode: Utf8PythonMatchMode.Search).GetValueBytes()));
         Assert.Equal(1, regex.Count(input));
     }
 
@@ -81,7 +81,7 @@ public sealed class PythonReSliceInlineTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -105,7 +105,7 @@ public sealed class PythonReSliceInlineTests
             PythonReDotNetReference.Render(regex),
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase,
             Regex.InfiniteMatchTimeout).Match(inputText, 0);
-        var found = regex.Search(Utf8(inputText), startByte);
+        var found = regex.Match(Utf8(inputText),startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -145,7 +145,7 @@ public sealed class PythonReSliceInlineTests
     public void InlineMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     [Theory]
@@ -162,7 +162,7 @@ public sealed class PythonReSliceInlineTests
     public void InlineFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]

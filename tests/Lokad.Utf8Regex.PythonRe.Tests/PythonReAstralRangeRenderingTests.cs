@@ -43,7 +43,7 @@ public sealed class PythonReAstralRangeRenderingTests
             for (var index = 0; index < samples.Length; index++)
             {
                 var expected = (samples[index] >= low && samples[index] <= high) != negated;
-                Assert.Equal(expected, regex.FullMatch(Encoding.UTF8.GetBytes(texts[index])).Success);
+                Assert.Equal(expected, regex.Match(Encoding.UTF8.GetBytes(texts[index]),mode: Utf8PythonMatchMode.FullMatch).Success);
                 Assert.Equal(expected, managed.IsMatch(texts[index]));
             }
             var expectedValues = texts.Where((_, index) =>

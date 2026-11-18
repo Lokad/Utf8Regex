@@ -22,7 +22,7 @@ public sealed class PythonReNamedReferenceAdmissionTests
             Assert.Equal(position, error.Position);
             Assert.False(Utf8ConstructionScope.IsActive);
         }
-        Assert.True(new Utf8PythonRegex("(?P<x>a)(?P=x)").FullMatch("aa"u8).Success);
+        Assert.True(new Utf8PythonRegex("(?P<x>a)(?P=x)").Match("aa"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]

@@ -22,31 +22,31 @@ public sealed class PythonReFiniteValueSearchTests
         var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan, Policy);
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(text);
-        var match = regex.Search(input, 0, token.Token);
+        var match = regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(start >= 0, match.Success);
         if (start >= 0)
         {
             Assert.Equal((start, start + Encoding.UTF8.GetByteCount(pattern)), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-            Assert.False(regex.Search("other"u8, 0, token.Token).Success && pattern.Length != 0);
+            Assert.False(regex.Match("other"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).Success && pattern.Length != 0);
             Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
         byte[] invalid = [.. input, 0xff];
 
         token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Search(invalid, 0, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
     }
 
     [Fact]
     public void NonzeroFloorsAndUnprovedPatternsRetainScalarSemantics()
     {
         var literal = new Utf8PythonRegex("é", default, Timeout.InfiniteTimeSpan, Policy);
-        Assert.Equal(3, literal.Search("éxé"u8, 2).StartOffsetInBytes);
-        Assert.Throws<ArgumentOutOfRangeException>(() => literal.Search("éxé"u8, 1));
+        Assert.Equal(3, literal.Match("éxé"u8,2,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => literal.Match("éxé"u8,1,mode: Utf8PythonMatchMode.Search));
         Assert.False(new Utf8PythonRegex("needle(?=!)", default, Timeout.InfiniteTimeSpan,
-            Policy with { MaxWorkingBytes = 1 << 20, MaxDepth = 128 }).Search("needle"u8).Success);
+            Policy with { MaxWorkingBytes = 1 << 20, MaxDepth = 128 }).Match("needle"u8,mode: Utf8PythonMatchMode.Search).Success);
         var captured = new Utf8PythonRegex("(needle)", default, Timeout.InfiniteTimeSpan, Policy);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => captured.Search("needle"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => captured.Match("needle"u8,mode: Utf8PythonMatchMode.Search)).ResourceKind);
     }
 
     [Theory]
@@ -62,7 +62,7 @@ public sealed class PythonReFiniteValueSearchTests
         var reached = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ => { reached = true; if (deadline) ticks = 1000; else token.Cancel(); });
         Exception? failure = null;
-        try { _ = owner.Search(input, 0, token.Token); } catch (Exception error) { failure = error; }
+        try { _ = owner.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search); } catch (Exception error) { failure = error; }
         finally { session.Complete(); }
         Assert.True(reached);
         if (deadline) Assert.Equal("Шерлок", Assert.IsType<RegexMatchTimeoutException>(failure).Pattern);
@@ -117,11 +117,11 @@ public sealed class PythonReFiniteValueSearchTests
             using var owner = new Utf8PythonRegex(pattern, default,
                 mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
                 mode == 0 ? default : Policy);
-            var match = owner.Search(input, 0, mode == 0 ? default : token.Token);
+            var match = owner.Match(input,0,cancellationToken: mode == 0 ? default : token.Token,mode: Utf8PythonMatchMode.Search);
             Assert.True(match.Success);
             Assert.Equal((byteStart, byteStart + Encoding.UTF8.GetByteCount(pattern)),
                 (match.StartOffsetInBytes, match.EndOffsetInBytes));
-            Assert.False(owner.Search("absent"u8).Success);
+            Assert.False(owner.Match("absent"u8,mode: Utf8PythonMatchMode.Search).Success);
             Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
     }

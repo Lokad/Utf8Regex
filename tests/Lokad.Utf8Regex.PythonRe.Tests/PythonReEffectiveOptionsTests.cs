@@ -39,13 +39,13 @@ public sealed class PythonReEffectiveOptionsTests
     {
         var ascii = new Utf8PythonRegex(@"(?ai)\w");
         Assert.Equal(PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase, ascii.EffectiveOptions);
-        Assert.True(ascii.FullMatch("A"u8).Success);
-        Assert.False(ascii.FullMatch("é"u8).Success);
+        Assert.True(ascii.Match("A"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(ascii.Match("é"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
 
         var scoped = new Utf8PythonRegex(@"(?a:\w+)\s+(?u:\w+)");
         Assert.Equal(PythonReCompileOptions.Unicode, scoped.EffectiveOptions);
-        Assert.True(scoped.FullMatch("a é"u8).Success);
-        Assert.False(scoped.FullMatch("é é"u8).Success);
+        Assert.True(scoped.Match("a é"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(scoped.Match("é é"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
 
         var lines = new Utf8PythonRegex("(?x) # prefix\n(?#group)(?im) ^a$");
         Assert.True(lines.IsMatch("first\nA\nlast"u8));

@@ -45,7 +45,7 @@ public sealed class PythonReResultDefaultsTests
         Assert.True(retained.TryGetGroup(1, out var absent));
         Assert.False(absent.Success);
         Assert.Empty(System.Text.Encoding.UTF8.GetString((absent.Success ? retained.GetGroupMemory(absent.Number).Span : ReadOnlySpan<byte>.Empty)));
-        Assert.True(regex.FullMatch("a😀"u8).Success);
+        Assert.True(regex.Match("a😀"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.Equal((0, 4), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         Assert.False(retained.TryGetGroup(-1, out var missing));

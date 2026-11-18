@@ -19,7 +19,7 @@ public sealed class ProfileDifferentialTests
             {
                 var exists = regex.IsMatch(input, 0, token);
                 var count = regex.Count(input, 0, token);
-                var first = regex.Search(input, start, token);
+                var first = regex.Match(input, start, cancellationToken: token, mode: Utf8PythonMatchMode.Search);
                 var firstRange = first.Success ? new ByteRange(true, first.StartOffsetInBytes, first.EndOffsetInBytes) : default;
                 var matches = new List<ByteRange[]>();
                 using var cursor = regex.CreateMatchCursor(input, start, token);

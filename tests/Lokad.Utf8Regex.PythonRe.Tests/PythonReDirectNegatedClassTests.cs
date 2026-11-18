@@ -33,7 +33,7 @@ public sealed class PythonReDirectNegatedClassTests
     {
         using var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(expected, regex.FullMatch(input).Success);
+        Assert.Equal(expected, regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch snapshot1 = default;
         using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
         {

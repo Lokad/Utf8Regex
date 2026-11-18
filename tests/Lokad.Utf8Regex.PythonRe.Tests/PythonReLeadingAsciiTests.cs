@@ -88,10 +88,10 @@ public sealed class PythonReLeadingAsciiTests
         var regex = new Utf8PythonRegex(@"needle\d+", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous);
         var input = "π😀xneedle१२"u8;
         Assert.True(regex.IsMatch(input, 6));
-        Assert.False(regex.Match(input, 6).Success);
-        Assert.False(regex.FullMatch(input, 6).Success);
-        Assert.True(regex.Match(input, 7).Success);
-        Assert.True(regex.FullMatch(input, 7).Success);
+        Assert.False(regex.Match(input,6).Success);
+        Assert.False(regex.Match(input,6,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match(input,7).Success);
+        Assert.True(regex.Match(input,7,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]

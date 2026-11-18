@@ -83,7 +83,7 @@ public sealed class PythonReTranslationContinuationTests
         Assert.True(PythonReTranslator.IsExactLiteral(parse.Root));
         Assert.True(PythonReTranslator.CanUseUtf8IterationFastPath(parse.Root));
         var regex = new Utf8PythonRegex(pattern);
-        PythonReMatchAssert.Equal("éab", regex.Search("xéabz"u8));
+        PythonReMatchAssert.Equal("éab", regex.Match("xéabz"u8,mode: Utf8PythonMatchMode.Search));
     }
 
     public static IEnumerable<object[]> Walkers()
@@ -251,7 +251,7 @@ public sealed class PythonReTranslationContinuationTests
         Assert.True(PythonReTranslator.CanMatchEmpty(parse.Root, parse));
         Assert.False(PythonReTranslator.GetWidth(parse.Root, parse).Max > 0);
         var regex = new Utf8PythonRegex("(?<=(?:)*)x");
-        PythonReMatchAssert.Equal("x", regex.Search("😀x"u8));
+        PythonReMatchAssert.Equal("x", regex.Match("😀x"u8,mode: Utf8PythonMatchMode.Search));
     }
 
     private static object Run(int operation, PythonReParseResult parse) => operation switch

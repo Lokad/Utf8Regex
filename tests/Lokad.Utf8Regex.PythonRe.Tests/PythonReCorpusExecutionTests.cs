@@ -35,7 +35,7 @@ public sealed class PythonReCorpusExecutionTests
         {
             case PythonReCorpusOperationKind.Search:
             {
-                var match = regex.Search(input, corpusCase.StartOffsetInBytes);
+                var match = regex.Match(input,corpusCase.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search);
                 Assert.Equal(corpusCase.Expected.Success, match.Success);
                 if (match.Success)
                 {
@@ -46,7 +46,7 @@ public sealed class PythonReCorpusExecutionTests
             }
             case PythonReCorpusOperationKind.Match:
             {
-                var match = regex.Match(input, corpusCase.StartOffsetInBytes);
+                var match = regex.Match(input,corpusCase.StartOffsetInBytes);
                 Assert.Equal(corpusCase.Expected.Success, match.Success);
                 if (match.Success)
                 {
@@ -57,7 +57,7 @@ public sealed class PythonReCorpusExecutionTests
             }
             case PythonReCorpusOperationKind.FullMatch:
             {
-                var match = regex.FullMatch(input, corpusCase.StartOffsetInBytes);
+                var match = regex.Match(input,corpusCase.StartOffsetInBytes,mode: Utf8PythonMatchMode.FullMatch);
                 Assert.Equal(corpusCase.Expected.Success, match.Success);
                 if (match.Success)
                 {

@@ -28,9 +28,9 @@ public sealed class PythonReAtomicViabilityTests
         using var live = new CancellationTokenSource();
         foreach (var input in new[] { ""u8.ToArray(), "aaaa"u8.ToArray(), "😀éaaé😀"u8.ToArray() })
         {
-            Assert.False(regex.Search(input, 0, live.Token).Success);
-            Assert.False(regex.Match(input, 0, live.Token).Success);
-            Assert.False(regex.FullMatch(input, 0, live.Token).Success);
+            Assert.False(regex.Match(input,0,cancellationToken: live.Token,mode: Utf8PythonMatchMode.Search).Success);
+            Assert.False(regex.Match(input,0,cancellationToken: live.Token).Success);
+            Assert.False(regex.Match(input,0,cancellationToken: live.Token,mode: Utf8PythonMatchMode.FullMatch).Success);
             Assert.False(regex.IsMatch(input, 0, live.Token));
             Assert.Equal(0, regex.Count(input, 0, live.Token));
         }
@@ -51,7 +51,7 @@ public sealed class PythonReAtomicViabilityTests
     {
         var regex = new Utf8PythonRegex(pattern);
         Assert.NotEqual(Utf8SliceInstructionKind.Fail, Program(regex).Instructions[0].Kind);
-        Assert.Equal(success, regex.Search(Encoding.UTF8.GetBytes(text)).Success);
+        Assert.Equal(success, regex.Match(Encoding.UTF8.GetBytes(text),mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Fact]
@@ -69,8 +69,8 @@ public sealed class PythonReAtomicViabilityTests
         }
         Assert.True(negativeHit.Success); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((negativeHit.Groups[1].Success ? negativeHit.GetGroupMemory(negativeHit.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         var conditional = new Utf8PythonRegex("(?:(?P<x>a++a)|b)(?(x)c|d)");
-        Assert.True(conditional.FullMatch("bd"u8).Success);
-        Assert.False(conditional.FullMatch("bc"u8).Success);
+        Assert.True(conditional.Match("bd"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(conditional.Match("bc"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
         var allowance = new Allowance(16 << 20);
         using var branches = Utf8PythonRegex.Compile("(?P<dead>a++a)|(?P<live>é+)", PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance);
@@ -92,12 +92,12 @@ public sealed class PythonReAtomicViabilityTests
         using var regex = Utf8PythonRegex.Compile("a++a", PythonReCompileOptions.None,
             Timeout.InfiniteTimeSpan, Policy, default, Timeout.InfiniteTimeSpan, default, allowance);
         var held = allowance.Used; allowance.Maximum = held;
-        Assert.False(regex.Search("😀aaaa"u8, 4).Success); Assert.Equal(held, allowance.Used);
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Search("😀aaaa"u8, 1));
+        Assert.False(regex.Match("😀aaaa"u8,4,mode: Utf8PythonMatchMode.Search).Success); Assert.Equal(held, allowance.Used);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀aaaa"u8,1,mode: Utf8PythonMatchMode.Search));
         byte[] malformed = [.. "aaaa"u8, 0xf0, 0x9f];
 
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
-        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Search(malformed, 0, canceled.Token)).CancellationToken);
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed,0,cancellationToken: canceled.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
     }
 
@@ -109,7 +109,7 @@ public sealed class PythonReAtomicViabilityTests
         {
             var regex = new Utf8PythonRegex("a++a", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
                 Policy with { MaxWorkSteps = work });
-            try { Assert.False(regex.Search("aaaa"u8).Success); admitted = true; break; }
+            try { Assert.False(regex.Match("aaaa"u8,mode: Utf8PythonMatchMode.Search).Success); admitted = true; break; }
             catch (Utf8ResourceLimitExceededException error)
             { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); denied = true; }
         }
@@ -125,11 +125,11 @@ public sealed class PythonReAtomicViabilityTests
         using var token = new CancellationTokenSource();
         var reads = 0;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => { reads++; return 0; }))
-            Assert.False(regex.Search("aaaa"u8, 0, token.Token).Success);
+            Assert.False(regex.Match("aaaa"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).Success);
         var terminal = reads; Assert.True(terminal > 0); reads = 0; long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == terminal) { if (expire) ticks = 50; else token.Cancel(); } return ticks; });
-        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Search("aaaa"u8, 0, token.Token)).MatchTimeout);
-        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Search("aaaa"u8, 0, token.Token)).CancellationToken);
+        if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("aaaa"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search)).MatchTimeout);
+        else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match("aaaa"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
     }
 }

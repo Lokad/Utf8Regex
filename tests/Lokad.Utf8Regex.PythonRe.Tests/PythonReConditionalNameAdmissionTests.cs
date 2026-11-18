@@ -32,7 +32,7 @@ public sealed class PythonReConditionalNameAdmissionTests
             Assert.Equal(3, error.Position);
             Assert.False(Utf8ConstructionScope.IsActive);
         }
-        Assert.True(new Utf8PythonRegex("(?P<x>a)?(?(x)b|c)").FullMatch("ab"u8).Success);
+        Assert.True(new Utf8PythonRegex("(?P<x>a)?(?(x)b|c)").Match("ab"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]

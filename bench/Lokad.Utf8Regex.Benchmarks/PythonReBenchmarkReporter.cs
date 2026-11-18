@@ -1011,16 +1011,16 @@ internal static partial class PythonReBenchmarkReporter
             () =>
             {
                 var regex = new Utf8PythonRegex(pattern, options);
-                return regex.GetHashCode() ^ (regex.FullMatch(fullMatchInputUtf8).Success ? 1 : 0);
+                return regex.GetHashCode() ^ (regex.Match(fullMatchInputUtf8,mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0);
             },
             iterations,
             samples));
         PrintOperation("PreparedFullHit", MeasureOperation(
-            () => prepared.FullMatch(fullMatchInputUtf8).Success ? 1 : 0,
+            () => prepared.Match(fullMatchInputUtf8,mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0,
             reuseIterations,
             samples));
         PrintOperation("PreparedFullMiss", MeasureOperation(
-            () => prepared.FullMatch(fullMatchMissUtf8).Success ? 1 : 0,
+            () => prepared.Match(fullMatchMissUtf8,mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0,
             reuseIterations,
             samples));
         PrintOperation("DirectCoreFullHit", MeasureOperation(
@@ -1050,7 +1050,7 @@ internal static partial class PythonReBenchmarkReporter
             Regex.InfiniteMatchTimeout);
         var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        var pythonMatch = pythonRegex.FullMatch(input, startOffsetInBytes);
+        var pythonMatch = pythonRegex.Match(input,startOffsetInBytes,mode: Utf8PythonMatchMode.FullMatch);
         var pythonDetailedMiss = PythonReBenchmarkReporter.MaterializeDetailedFullMatch(pythonRegex,missInput, startOffsetInBytes);
         var managedResult = managedFullRegex.IsMatch(subject.AsSpan(prefix.Length));
         var managedMiss = managedFullRegex.IsMatch(missSubject.AsSpan(prefix.Length));
@@ -1068,7 +1068,7 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"Iterations         : {iterations} (capped at 2000)");
         Console.WriteLine($"Samples            : {samples} (capped at 15)");
         PrintOperation("PythonReFullMatch", MeasureOperation(
-            () => pythonRegex.FullMatch(input, startOffsetInBytes).EndOffsetInBytes,
+            () => pythonRegex.Match(input,startOffsetInBytes,mode: Utf8PythonMatchMode.FullMatch).EndOffsetInBytes,
             iterations,
             samples));
         PrintOperation("DecodeFullMatch", MeasureOperation(
@@ -1084,7 +1084,7 @@ internal static partial class PythonReBenchmarkReporter
             iterations,
             samples));
         PrintOperation("PythonReFullMiss", MeasureOperation(
-            () => pythonRegex.FullMatch(missInput, startOffsetInBytes).Success ? 1 : 0,
+            () => pythonRegex.Match(missInput,startOffsetInBytes,mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0,
             iterations,
             samples));
         PrintOperation("PythonReDetailedMiss", MeasureOperation(
@@ -2344,7 +2344,7 @@ internal sealed class PythonReBenchmarkContext
                 Utf8PythonValueMatch result = default;
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Search(InputBytes);
+                    result = _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search);
                 }
 
                 return Complete(
@@ -2358,7 +2358,7 @@ internal sealed class PythonReBenchmarkContext
                 Utf8PythonValueMatch result = default;
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Search(InputBytes, _case.Coverage.StartOffsetInBytes);
+                    result = _pythonRegex.Match(InputBytes,_case.Coverage.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search);
                 }
 
                 return Complete(
@@ -2386,7 +2386,7 @@ internal sealed class PythonReBenchmarkContext
                 Utf8PythonValueMatch result = default;
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.FullMatch(InputBytes);
+                    result = _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch);
                 }
 
                 return Complete(
@@ -2707,14 +2707,14 @@ internal sealed class PythonReBenchmarkContext
             case PythonReBenchmarkOperation.Search:
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Search(InputBytes);
+                    result = _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search);
                     consumptionChecksum += GetConsumptionToken(result);
                 }
                 break;
             case PythonReBenchmarkOperation.SearchFromOffset:
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Search(InputBytes, _case.Coverage.StartOffsetInBytes);
+                    result = _pythonRegex.Match(InputBytes,_case.Coverage.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search);
                     consumptionChecksum += GetConsumptionToken(result);
                 }
                 break;
@@ -2728,7 +2728,7 @@ internal sealed class PythonReBenchmarkContext
             case PythonReBenchmarkOperation.FullMatch:
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.FullMatch(InputBytes);
+                    result = _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch);
                     consumptionChecksum += GetConsumptionToken(result);
                 }
                 break;
@@ -2748,22 +2748,22 @@ internal sealed class PythonReBenchmarkContext
 
     internal ulong ExecutePythonReConsumptionToken() => _case.Operation switch
     {
-        PythonReBenchmarkOperation.Search => GetConsumptionToken(_pythonRegex.Search(InputBytes)),
+        PythonReBenchmarkOperation.Search => GetConsumptionToken(_pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.SearchFromOffset => GetConsumptionToken(
-            _pythonRegex.Search(InputBytes, _case.Coverage.StartOffsetInBytes)),
+            _pythonRegex.Match(InputBytes,_case.Coverage.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.Match => GetConsumptionToken(_pythonRegex.Match(InputBytes)),
-        PythonReBenchmarkOperation.FullMatch => GetConsumptionToken(_pythonRegex.FullMatch(InputBytes)),
+        PythonReBenchmarkOperation.FullMatch => GetConsumptionToken(_pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch)),
         _ => 0,
     };
 
     internal int ExecutePythonRe() => _case.Operation switch
     {
         PythonReBenchmarkOperation.IsMatch => _pythonRegex.IsMatch(InputBytes) ? 1 : 0,
-        PythonReBenchmarkOperation.Search => Checksum(_pythonRegex.Search(InputBytes)),
+        PythonReBenchmarkOperation.Search => Checksum(_pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.SearchFromOffset => Checksum(
-            _pythonRegex.Search(InputBytes, _case.Coverage.StartOffsetInBytes)),
+            _pythonRegex.Match(InputBytes,_case.Coverage.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.Match => Checksum(_pythonRegex.Match(InputBytes)),
-        PythonReBenchmarkOperation.FullMatch => Checksum(_pythonRegex.FullMatch(InputBytes)),
+        PythonReBenchmarkOperation.FullMatch => Checksum(_pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch)),
         PythonReBenchmarkOperation.SearchDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex,InputBytes)),
         PythonReBenchmarkOperation.Count => _pythonRegex.Count(InputBytes),
         PythonReBenchmarkOperation.CountFromOffset => _pythonRegex.Count(
@@ -2800,16 +2800,16 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.IsMatch(InputBytes)),
         PythonReBenchmarkOperation.Search => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Search(InputBytes)),
+            _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.SearchFromOffset => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Search(InputBytes, _case.Coverage.StartOffsetInBytes)),
+            _pythonRegex.Match(InputBytes,_case.Coverage.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.Match => SemanticDigest(
             _case.Operation,
             _pythonRegex.Match(InputBytes)),
         PythonReBenchmarkOperation.FullMatch => SemanticDigest(
             _case.Operation,
-            _pythonRegex.FullMatch(InputBytes)),
+            _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch)),
         PythonReBenchmarkOperation.SearchDetailed => SemanticDigest(
             _case.Operation,
 PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex,InputBytes)),
@@ -3333,9 +3333,9 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex,InputBytes)),
         EnsureOneShotPhases();
         var match = _case.Operation switch
         {
-            PythonReBenchmarkOperation.Search => _pythonRegex.Search(InputBytes),
+            PythonReBenchmarkOperation.Search => _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search),
             PythonReBenchmarkOperation.Match => _pythonRegex.Match(InputBytes),
-            PythonReBenchmarkOperation.FullMatch => _pythonRegex.FullMatch(InputBytes),
+            PythonReBenchmarkOperation.FullMatch => _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch),
             _ => throw new InvalidOperationException($"Unsupported one-shot operation {_case.Operation}."),
         };
         return match.Success

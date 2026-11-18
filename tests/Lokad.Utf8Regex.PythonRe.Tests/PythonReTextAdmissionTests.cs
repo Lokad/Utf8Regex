@@ -10,10 +10,10 @@ public sealed class PythonReTextAdmissionTests
         var subject = new string(' ', 8192);
         var regex = new Utf8PythonRegex(subject);
         var bytes = System.Text.Encoding.UTF8.GetBytes(subject);
-        var match = regex.FullMatch(bytes);
+        var match = regex.Match(bytes,mode: Utf8PythonMatchMode.FullMatch);
         Assert.True(match.Success);
         Assert.Equal((0, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-        Assert.False(regex.FullMatch(bytes.AsSpan(1)).Success);
+        Assert.False(regex.Match(bytes.AsSpan(1),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]

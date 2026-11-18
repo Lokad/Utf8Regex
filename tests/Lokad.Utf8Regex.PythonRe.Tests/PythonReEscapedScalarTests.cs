@@ -106,7 +106,7 @@ public sealed class PythonReEscapedScalarTests
             new() { MaxWorkSteps = 128 }, Timeout.InfiniteTimeSpan, CancellationToken.None));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
         Assert.False(Utf8ConstructionScope.IsActive);
-        Assert.True(new Utf8PythonRegex(@"\😀").FullMatch("😀"u8).Success);
+        Assert.True(new Utf8PythonRegex(@"\😀").Match("😀"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]

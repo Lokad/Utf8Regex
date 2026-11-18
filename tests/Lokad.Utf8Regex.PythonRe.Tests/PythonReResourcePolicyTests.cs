@@ -85,8 +85,8 @@ public sealed class PythonReResourcePolicyTests
         var explicitUnlimited = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, Utf8ResourcePolicy.Unlimited);
 
         Assert.Equal(baseline.Count(input), explicitUnlimited.Count(input));
-        var expectedSearch = baseline.Search(input);
-        var actualSearch = explicitUnlimited.Search(input);
+        var expectedSearch = baseline.Match(input,mode: Utf8PythonMatchMode.Search);
+        var actualSearch = explicitUnlimited.Match(input,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSearch.Success, actualSearch.Success);
         Assert.Equal(baseline.FindAllToUtf8(input).Count, explicitUnlimited.FindAllToUtf8(input).Count);
         Assert.Equal(PythonReSplitAssert.Decode(input, baseline.SplitRanges(input, 0, 0, default)).Length, PythonReSplitAssert.Decode(input, explicitUnlimited.SplitRanges(input, 0, 0, default)).Length);

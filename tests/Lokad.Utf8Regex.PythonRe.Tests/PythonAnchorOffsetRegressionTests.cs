@@ -53,7 +53,7 @@ public sealed class PythonAnchorOffsetRegressionTests
     public void AnchorFullMatchAgreesWithCpython(string pattern, string input, bool expectedSuccess)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.Equal(expectedSuccess, regex.FullMatch(Utf8(input)).Success);
+        Assert.Equal(expectedSuccess, regex.Match(Utf8(input),mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch snapshot1 = default;
         using (var captureCursor1 = regex.CreateMatchCursor(Utf8(input), mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -71,7 +71,7 @@ public sealed class PythonAnchorOffsetRegressionTests
     public void FullMatchOffsetFollowsPosContract(string pattern, string input, int startOffsetInBytes, bool expectedSuccess)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.Equal(expectedSuccess, regex.FullMatch(Utf8(input), startOffsetInBytes).Success);
+        Assert.Equal(expectedSuccess, regex.Match(Utf8(input),startOffsetInBytes,mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch snapshot3 = default;
         using (var captureCursor3 = regex.CreateMatchCursor(Utf8(input), startOffsetInBytes, mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -84,7 +84,7 @@ public sealed class PythonAnchorOffsetRegressionTests
     public void FullMatchOffsetKeepsLookbehindPrefixContext()
     {
         var regex = new Utf8PythonRegex("(?<=x)foo");
-        var value = regex.FullMatch(Utf8("xfoo"), 1);
+        var value = regex.Match(Utf8("xfoo"),1,mode: Utf8PythonMatchMode.FullMatch);
         Assert.True(value.Success);
         Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(value.GetValueBytes()));
         Utf8PythonRangeMatch detailed = default;
@@ -94,7 +94,7 @@ public sealed class PythonAnchorOffsetRegressionTests
         }
         Assert.True(detailed.Success);
         Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
-        PythonReMatchAssert.Equal("foo", regex.FullMatch(Utf8("xfoo"), 1));
+        PythonReMatchAssert.Equal("foo", regex.Match(Utf8("xfoo"),1,mode: Utf8PythonMatchMode.FullMatch));
     }
 
     [Theory]
@@ -104,7 +104,7 @@ public sealed class PythonAnchorOffsetRegressionTests
     public void FullMatchBacktracksIntoCoveringMatch(string pattern, string input, bool expectedSuccess)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.Equal(expectedSuccess, regex.FullMatch(Utf8(input)).Success);
+        Assert.Equal(expectedSuccess, regex.Match(Utf8(input),mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch snapshot6 = default;
         using (var captureCursor6 = regex.CreateMatchCursor(Utf8(input), mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -121,7 +121,7 @@ public sealed class PythonAnchorOffsetRegressionTests
     public void OffsetSearchKeepsFullStringContext(string pattern, string input, int startOffsetInBytes, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
         var regex = new Utf8PythonRegex(pattern);
-        var match = regex.Search(Utf8(input), startOffsetInBytes);
+        var match = regex.Match(Utf8(input),startOffsetInBytes,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, match.Success);
         if (match.Success)
         {
@@ -136,7 +136,7 @@ public sealed class PythonAnchorOffsetRegressionTests
     [InlineData("^foo", "xfoo", 1, false, 0, 0)]
     public void OffsetMatchKeepsFullStringContext(string pattern, string input, int startOffsetInBytes, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var match = new Utf8PythonRegex(pattern).Match(Utf8(input), startOffsetInBytes);
+        var match = new Utf8PythonRegex(pattern).Match(Utf8(input),startOffsetInBytes);
         Assert.Equal(expectedSuccess, match.Success);
         if (match.Success)
         {
@@ -155,7 +155,7 @@ public sealed class PythonAnchorOffsetRegressionTests
 
     private static void AssertSearch(Utf8PythonRegex regex, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var match = regex.Search(Encoding.UTF8.GetBytes(input));
+        var match = regex.Match(Encoding.UTF8.GetBytes(input),mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {

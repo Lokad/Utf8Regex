@@ -38,7 +38,7 @@ public sealed class PythonReSliceOwnershipTests
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var expected = Bcl(regex).Match(inputText, start);
-        var found = regex.Search(Utf8(inputText), start);
+        var found = regex.Match(Utf8(inputText),start,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expected.Success, found.Success);
 
     }
@@ -54,7 +54,7 @@ public sealed class PythonReSliceOwnershipTests
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, start);
         var expectedAtStart = expected.Success && expected.Index == start;
-        Assert.Equal(expectedAtStart, regex.Match(input, start).Success);
+        Assert.Equal(expectedAtStart, regex.Match(input,start).Success);
     }
 
     [Theory]
@@ -88,8 +88,8 @@ public sealed class PythonReSliceOwnershipTests
     public void FullMatchOwnsScalarProgram()
     {
         var regex = new Utf8PythonRegex("(a+)(b+)", PythonReCompileOptions.None);
-        Assert.True(regex.FullMatch(Utf8("aaabb")).Success);
-        Assert.False(regex.FullMatch(Utf8("xxaaabbyy")).Success);
+        Assert.True(regex.Match(Utf8("aaabb"),mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match(Utf8("xxaaabbyy"),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -131,11 +131,11 @@ public sealed class PythonReSliceOwnershipTests
             regex.IsMatch(input, start),
             regex.IsMatch(input, start, token));
         Assert.Equal(
-            regex.Search(input, start).Success,
-            regex.Search(input, start, token).Success);
+            regex.Match(input,start,mode: Utf8PythonMatchMode.Search).Success,
+            regex.Match(input,start,cancellationToken: token,mode: Utf8PythonMatchMode.Search).Success);
         Assert.Equal(
-            regex.Match(input, start).Success,
-            regex.Match(input, start, token).Success);
+            regex.Match(input,start).Success,
+            regex.Match(input,start,cancellationToken: token).Success);
         Assert.Equal(
             regex.Count(input, start),
             regex.Count(input, start, token));
@@ -149,8 +149,8 @@ public sealed class PythonReSliceOwnershipTests
         canceled.Cancel();
         var input = Utf8("xxaaabbyy");
         Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, 0, canceled.Token));
-        Assert.Throws<OperationCanceledException>(() => regex.Match(input, 0, canceled.Token));
-        Assert.Throws<OperationCanceledException>(() => regex.FullMatch(input, 0, canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => regex.Match(input,0,cancellationToken: canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => regex.Match(input,0,cancellationToken: canceled.Token,mode: Utf8PythonMatchMode.FullMatch));
     }
 
     // R03 anchors: dot-free anchor shapes (`^a|b$`) pass the translator
@@ -197,7 +197,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -216,7 +216,7 @@ public sealed class PythonReSliceOwnershipTests
             PythonReDotNetReference.Render(regex),
             RegexOptions.CultureInvariant | RegexOptions.Multiline,
             Regex.InfiniteMatchTimeout).Match("x\na");
-        var found = regex.Search(Utf8("x\na"), 0);
+        var found = regex.Match(Utf8("x\na"),0,mode: Utf8PythonMatchMode.Search);
         Assert.True(expected.Success);
         Assert.True(found.Success);
     }
@@ -238,7 +238,7 @@ public sealed class PythonReSliceOwnershipTests
     public void AnchorMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     [Theory]
@@ -249,7 +249,7 @@ public sealed class PythonReSliceOwnershipTests
     public void AnchorFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     // R03 classes: positive ASCII classes pass the translator through
@@ -298,7 +298,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -326,7 +326,7 @@ public sealed class PythonReSliceOwnershipTests
     public void ClassMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     [Theory]
@@ -336,7 +336,7 @@ public sealed class PythonReSliceOwnershipTests
     public void ClassFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     // R03 boundaries: the translator rewrites `\b`/`\B` into
@@ -381,7 +381,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -416,7 +416,7 @@ public sealed class PythonReSliceOwnershipTests
     public void BoundaryMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     [Theory]
@@ -425,7 +425,7 @@ public sealed class PythonReSliceOwnershipTests
     public void BoundaryFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     // R03 shorthands: bare and grouped digits pass the translator
@@ -494,7 +494,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -521,7 +521,7 @@ public sealed class PythonReSliceOwnershipTests
     public void ShorthandMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     [Theory]
@@ -530,7 +530,7 @@ public sealed class PythonReSliceOwnershipTests
     public void ShorthandFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
@@ -539,7 +539,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex("(a+)(b+)", PythonReCompileOptions.None);
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
-        Assert.Throws<OperationCanceledException>(() => regex.Search(Utf8("xxaaabbyy"), 0, canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => regex.Match(Utf8("xxaaabbyy"),0,cancellationToken: canceled.Token,mode: Utf8PythonMatchMode.Search));
         Assert.Throws<OperationCanceledException>(() => regex.Count(Utf8("xxaaabbyy"), 0, canceled.Token));
     }
 
@@ -586,7 +586,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -648,7 +648,7 @@ public sealed class PythonReSliceOwnershipTests
     public void DotMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     [Theory]
@@ -658,7 +658,7 @@ public sealed class PythonReSliceOwnershipTests
     public void DotFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -667,14 +667,14 @@ public sealed class PythonReSliceOwnershipTests
     public void DotNewlineSemanticsMatchCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Search(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0,mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Fact]
     public void DotAllSearchMatchesNewline()
     {
         var regex = new Utf8PythonRegex("a.*b", PythonReCompileOptions.DotAll);
-        Assert.True(regex.Search(Utf8("xxa\nbzz"), 0).Success);
+        Assert.True(regex.Match(Utf8("xxa\nbzz"),0,mode: Utf8PythonMatchMode.Search).Success);
     }
     // R03 backreferences: numeric backward references pass the translator
     // through verbatim (managed numbers equal Python numbers when no named
@@ -719,7 +719,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -750,7 +750,7 @@ public sealed class PythonReSliceOwnershipTests
     public void BackrefMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     [Theory]
@@ -761,7 +761,7 @@ public sealed class PythonReSliceOwnershipTests
     public void BackrefFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
     // R03 lookarounds: all four assertions pass the translator through
     // verbatim over ASCII bodies and run the owned core slice; rewritten
@@ -805,7 +805,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -834,7 +834,7 @@ public sealed class PythonReSliceOwnershipTests
     public void LookaroundMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     [Theory]
@@ -845,7 +845,7 @@ public sealed class PythonReSliceOwnershipTests
     public void LookaroundFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
     // R03 mixed-class shorthands: member shorthands are rewritten
     // scalar-exact by the translator (like bare shorthands). Bare digit,
@@ -892,7 +892,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -925,7 +925,7 @@ public sealed class PythonReSliceOwnershipTests
     public void HybridMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     [Theory]
@@ -934,7 +934,7 @@ public sealed class PythonReSliceOwnershipTests
     public void HybridFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
     // R03 named captures: (?P<name>...) passes the translator through
     // (managed numbers follow the translator permutation) and runs the
@@ -971,7 +971,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -1015,7 +1015,7 @@ public sealed class PythonReSliceOwnershipTests
     public void NamedMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     [Theory]
@@ -1024,7 +1024,7 @@ public sealed class PythonReSliceOwnershipTests
     public void NamedFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     // R03 transparent groups: (?:sub) passes the translator through verbatim
@@ -1057,7 +1057,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -1083,7 +1083,7 @@ public sealed class PythonReSliceOwnershipTests
     public void TransparentMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
     }
 
     // Profile scalar classes preserve Unicode and ASCII lexical scopes.
@@ -1103,7 +1103,7 @@ public sealed class PythonReSliceOwnershipTests
     public void AsciiScopeIgnoreCaseRoutesOwned(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase | PythonReCompileOptions.Ascii);
-        Assert.Equal(expected, regex.Search(Utf8(inputText), 0).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),0,mode: Utf8PythonMatchMode.Search).Success);
     }
 
     // R03 front ends: the translator strips verbose whitespace itself, so the
@@ -1131,7 +1131,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.Verbose);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -1169,7 +1169,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -1203,7 +1203,7 @@ public sealed class PythonReSliceOwnershipTests
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Search(input, startByte);
+        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -1220,6 +1220,6 @@ public sealed class PythonReSliceOwnershipTests
     public void TransparentFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.FullMatch(Utf8(inputText)).Success);
+        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

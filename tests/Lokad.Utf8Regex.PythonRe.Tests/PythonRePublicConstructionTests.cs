@@ -19,7 +19,7 @@ public sealed class PythonRePublicConstructionTests
             Timeout.InfiniteTimeSpan, CancellationToken.None);
         Assert.Equal(pattern, regex.Pattern);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.True(regex.FullMatch(bytes).Success);
+        Assert.True(regex.Match(bytes,mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(1, regex.Count(bytes));
         Assert.False(Utf8ConstructionScope.IsActive);
     }
@@ -166,7 +166,7 @@ public sealed class PythonRePublicConstructionTests
         Assert.True(result.Success);
         Assert.Equal("x", result.LastGroup);
         Assert.Equal(1, result.LastIndex);
-        Assert.True(regex.FullMatch("😀😀"u8).Success);
+        Assert.True(regex.Match("😀😀"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]

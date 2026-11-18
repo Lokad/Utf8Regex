@@ -60,10 +60,10 @@ public sealed partial class PythonReScalarFoldingTests
             var scalarEscape = $"\\U{row.Captured:X8}";
             var literal = new Utf8PythonRegex(scalarEscape, PythonReCompileOptions.IgnoreCase);
             var negative = new Utf8PythonRegex("[^" + scalarEscape + "]", PythonReCompileOptions.IgnoreCase);
-            Assert.True(literal.FullMatch(Encoding.UTF8.GetBytes(second)).Success,
+            Assert.True(literal.Match(Encoding.UTF8.GetBytes(second),mode: Utf8PythonMatchMode.FullMatch).Success,
                 $"literal U+{row.Captured:X}/U+{row.Referenced:X}");
-            Assert.False(negative.FullMatch(Encoding.UTF8.GetBytes(second)).Success);
-            Assert.True(literal.FullMatch(Encoding.UTF8.GetBytes(first)).Success);
+            Assert.False(negative.Match(Encoding.UTF8.GetBytes(second),mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.True(literal.Match(Encoding.UTF8.GetBytes(first),mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
 
@@ -99,9 +99,9 @@ public sealed partial class PythonReScalarFoldingTests
             {
                 switch (operation)
                 {
-                    case 0: regex.Search(input, 0, source.Token); break;
-                    case 1: regex.Match(input, 0, source.Token); break;
-                    case 2: regex.FullMatch(input, 0, source.Token); break;
+                    case 0: regex.Match(input,0,cancellationToken: source.Token,mode: Utf8PythonMatchMode.Search); break;
+                    case 1: regex.Match(input,0,cancellationToken: source.Token); break;
+                    case 2: regex.Match(input,0,cancellationToken: source.Token,mode: Utf8PythonMatchMode.FullMatch); break;
                     default:
                         using (var cursor = regex.CreateMatchCursor(input, 0, source.Token,
                             mode: (Utf8PythonMatchMode)(operation - 3)))
@@ -113,7 +113,7 @@ public sealed partial class PythonReScalarFoldingTests
             Assert.Equal(source.Token, error.CancellationToken);
         }
         finally { session.Complete(); }
-        Assert.True(regex.FullMatch("KK"u8).Success);
+        Assert.True(regex.Match("KK"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
@@ -150,14 +150,14 @@ public sealed partial class PythonReScalarFoldingTests
     public void FullMatchBacktracksAtTheOriginalByteStart()
     {
         var regex = new Utf8PythonRegex(@"(?<=x)(?i:k|kk)");
-        Assert.True(regex.FullMatch("xKK"u8, 1).Success);
-        Assert.False(regex.FullMatch("yKK"u8, 1).Success);
+        Assert.True(regex.Match("xKK"u8,1,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match("yKK"u8,1,mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch snapshot11 = default;
         using (var captureCursor11 = regex.CreateMatchCursor(("xKK"u8).ToArray(), 1, mode: Utf8PythonMatchMode.FullMatch))
         {
             captureCursor11.MoveNext(out snapshot11);
         }
         Assert.Equal("KK", System.Text.Encoding.UTF8.GetString(snapshot11.GetValueMemory().Span));
-        Assert.False(new Utf8PythonRegex(@"(?i:^kk)").FullMatch("xKK"u8, 1).Success);
+        Assert.False(new Utf8PythonRegex(@"(?i:^kk)").Match("xKK"u8,1,mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

@@ -62,7 +62,7 @@ public sealed class PythonReFullProgramReuseTests
     {
         var regex = new Utf8PythonRegex(pattern);
         var bytes = System.Text.Encoding.UTF8.GetBytes(input);
-        Assert.Equal(success, regex.FullMatch(bytes).Success);
+        Assert.Equal(success, regex.Match(bytes,mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch snapshot1 = default;
         using (var captureCursor1 = regex.CreateMatchCursor(bytes, mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -75,7 +75,7 @@ public sealed class PythonReFullProgramReuseTests
             captureCursor2.MoveNext(out snapshot2);
         }
         Assert.Equal(success, snapshot2.Success);
-        PythonReMatchAssert.Equal(success ? input : null, regex.FullMatch(bytes));
+        PythonReMatchAssert.Equal(success ? input : null, regex.Match(bytes,mode: Utf8PythonMatchMode.FullMatch));
     }
 
     [Theory]
