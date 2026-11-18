@@ -16,29 +16,29 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var width = Encoding.UTF8.GetByteCount(scalar);
         foreach (var (tailPattern, tail) in new[] { ("[bc]", "b"), (".", "é"), ("[^a]", "中"), ("[é中]", "é"),
             ("[bc]?", "b"), ("[bc]*", "bcc"), ("[bc]{1,3}", "bc"), ("[é中]*", "中é") })
-        foreach (var capturedTail in new[] { false, true })
-        foreach (var longerFirst in new[] { false, true })
-        foreach (var longer in new[] { scalar + scalar, scalar + "[^bcé中]", scalar + "[^bcé中#]", scalar + "[" + scalar + "☃]" })
-        {
-            // Each longer alternative consumes exactly two of these input
-            // scalars; the independent extent oracle does not inspect bytecode.
-            var alternatives = (longerFirst ? longer + "|" + scalar : scalar + "|" + longer) + (nullable ? "|" : "");
-            var regex = new Utf8PosixRegex($"(({alternatives})*)" + (capturedTail ? "(" + tailPattern + ")" : tailPattern));
-            for (var count = 0; count <= 8; count++)
-            foreach (var rest in new[] { "", "!", "#" })
-            {
-                var extents = Occurrences(0, int.MaxValue, nullable ? 0 : 1, 2, count)!;
-                var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + tail + rest);
-                var whole = new Utf8CaptureRange(floor, (floor) + (count * width + Encoding.UTF8.GetByteCount(tail)));
-                var groups = new Utf8CaptureRange[capturedTail ? 4 : 3];
-                Assert.Equal(whole, regex.Match(input, groups, floor));
-                Assert.Equal(new Utf8CaptureRange(floor, (floor) + (count * width)), groups[1]);
-                Assert.Equal(extents.Length == 0 ? default : new Utf8CaptureRange(floor + (count - extents[^1]) * width, (floor + (count - extents[^1]) * width) + (extents[^1] * width)), groups[2]);
-                if (capturedTail) Assert.Equal(new Utf8CaptureRange(floor + count * width, (floor + count * width) + (Encoding.UTF8.GetByteCount(tail))), groups[3]);
-                Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
-                Assert.Equal(whole, regex.Match(input, floor));
-            }
-        }
+            foreach (var capturedTail in new[] { false, true })
+                foreach (var longerFirst in new[] { false, true })
+                    foreach (var longer in new[] { scalar + scalar, scalar + "[^bcé中]", scalar + "[^bcé中#]", scalar + "[" + scalar + "☃]" })
+                    {
+                        // Each longer alternative consumes exactly two of these input
+                        // scalars; the independent extent oracle does not inspect bytecode.
+                        var alternatives = (longerFirst ? longer + "|" + scalar : scalar + "|" + longer) + (nullable ? "|" : "");
+                        var regex = new Utf8PosixRegex($"(({alternatives})*)" + (capturedTail ? "(" + tailPattern + ")" : tailPattern));
+                        for (var count = 0; count <= 8; count++)
+                            foreach (var rest in new[] { "", "!", "#" })
+                            {
+                                var extents = Occurrences(0, int.MaxValue, nullable ? 0 : 1, 2, count)!;
+                                var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + tail + rest);
+                                var whole = new Utf8CaptureRange(floor, (floor) + (count * width + Encoding.UTF8.GetByteCount(tail)));
+                                var groups = new Utf8CaptureRange[capturedTail ? 4 : 3];
+                                Assert.Equal(whole, regex.Match(input, captures: groups, startOffsetInBytes: floor));
+                                Assert.Equal(new Utf8CaptureRange(floor, (floor) + (count * width)), groups[1]);
+                                Assert.Equal(extents.Length == 0 ? default : new Utf8CaptureRange(floor + (count - extents[^1]) * width, (floor + (count - extents[^1]) * width) + (extents[^1] * width)), groups[2]);
+                                if (capturedTail) Assert.Equal(new Utf8CaptureRange(floor + count * width, (floor + count * width) + (Encoding.UTF8.GetByteCount(tail))), groups[3]);
+                                Assert.Equal(whole, regex.Match(input, captures: groups.AsSpan(0, 1), startOffsetInBytes: floor));
+                                Assert.Equal(whole, regex.Match(input, startOffsetInBytes: floor));
+                            }
+                    }
     }
     [Theory]
     [InlineData("((a|a[^!#])*)!*", "a", "!", PosixCompileOptions.None)]
@@ -62,26 +62,34 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var parentMatch = new Utf8CaptureRange(floor, (floor) + (Encoding.UTF8.GetByteCount(parent)));
         var lastMatch = new Utf8CaptureRange(floor + Encoding.UTF8.GetByteCount(parent) - Encoding.UTF8.GetByteCount(last), (floor + Encoding.UTF8.GetByteCount(parent) - Encoding.UTF8.GetByteCount(last)) + (Encoding.UTF8.GetByteCount(last)));
         {
-            var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8PosixRegex(pattern, options: options, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100_000,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var groups = new Utf8CaptureRange[regex.GroupCount + 1];
-            Assert.Equal(whole, regex.Match(input, groups, floor));
+            Assert.Equal(whole, regex.Match(input, captures: groups, startOffsetInBytes: floor));
             Assert.Equal(parentMatch, groups[1]); Assert.Equal(lastMatch, groups[2]);
             if (groups.Length > 3) Assert.Equal(new Utf8CaptureRange(floor + Encoding.UTF8.GetByteCount(body), (floor + Encoding.UTF8.GetByteCount(body)) + (Encoding.UTF8.GetByteCount(tail))), groups[3]);
-            Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
-            Assert.Equal(whole, regex.Match(input, floor));
+            Assert.Equal(whole, regex.Match(input, captures: groups.AsSpan(0, 1), startOffsetInBytes: floor));
+            Assert.Equal(whole, regex.Match(input, startOffsetInBytes: floor));
             var count = regex.Count(input, floor);
             Assert.Equal(pattern.Contains("(!|!!)", StringComparison.Ordinal) || options == PosixCompileOptions.Newline ? 1 : 3, count);
             using var cursor = regex.CreateMatchCursor(input, floor);
             var alias = cursor;
-            Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current);
+            Assert.True(cursor.MoveNext(captures: groups, match: out var current)); Assert.Equal(whole, current);
             var retained = groups[2];
             var observed = 1;
-            while (alias.MoveNext(out _)) observed++;
+            while (alias.MoveNext(match: out _)) observed++;
             Assert.Equal(count, observed);
             alias.Dispose();
             Assert.Equal(lastMatch, retained);
-            Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+            Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(match: out _));
         }
     }
     [Theory]
@@ -99,24 +107,32 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
         {
-            var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8PosixRegex(pattern, options: options, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100_000,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + tail);
             var expected = new Utf8CaptureRange(floor, (floor) + (count * width + Encoding.UTF8.GetByteCount(tail)));
             var groups = new Utf8CaptureRange[regex.GroupCount + 1];
-            Assert.Equal(expected, regex.Match(input, groups, floor));
+            Assert.Equal(expected, regex.Match(input, captures: groups, startOffsetInBytes: floor));
             Assert.Equal(new Utf8CaptureRange(floor, (floor) + (count * width)), groups[1]);
             var pair = new Utf8CaptureRange(floor + (count - 2) * width, (floor + (count - 2) * width) + (2 * width));
             Assert.Equal(pair, groups[2]);
             if (groups.Length > 3) Assert.Equal(new Utf8CaptureRange(floor + count * width, (floor + count * width) + (Encoding.UTF8.GetByteCount(tail))), groups[3]);
-            Assert.Equal(expected, regex.Match(input, groups.AsSpan(0, 1), floor));
-            Assert.Equal(expected, regex.Match(input, floor));
+            Assert.Equal(expected, regex.Match(input, captures: groups.AsSpan(0, 1), startOffsetInBytes: floor));
+            Assert.Equal(expected, regex.Match(input, startOffsetInBytes: floor));
             using var cursor = regex.CreateMatchCursor(input, floor);
             var alias = cursor;
-            Assert.True(cursor.MoveNext(groups, out var whole)); Assert.Equal(expected, whole);
+            Assert.True(cursor.MoveNext(captures: groups, match: out var whole)); Assert.Equal(expected, whole);
             var retained = groups[2]; cursor.Dispose();
             Assert.Equal(pair, retained);
-            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(match: out _));
         }
     }
     [Theory]
@@ -129,11 +145,16 @@ public sealed class PosixRepeatedCaptureSelectionTests
         const int count = 32;
         var width = Encoding.UTF8.GetByteCount(scalar);
         {
-            var regex = new Utf8PosixRegex($"(({scalar}|{scalar}{scalar})*{innerTail}){outerTail}",
-                resourcePolicy: new() { MaxWorkSteps = 100_000 });
+            var regex = new Utf8PosixRegex($"(({scalar}|{scalar}{scalar})*{innerTail}){outerTail}", policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100_000
+                }
+            });
             var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(scalar, count)) + "é😀");
             var groups = new Utf8CaptureRange[3];
-            Assert.Equal(new Utf8CaptureRange(0, 0 + (count * width + 6)), regex.Match(input, groups));
+            Assert.Equal(new Utf8CaptureRange(0, 0 + (count * width + 6)), regex.Match(input, captures: groups));
             Assert.Equal(new Utf8CaptureRange(0, 0 + (count * width + 2)), groups[1]);
             Assert.Equal(new Utf8CaptureRange((count - 2) * width, ((count - 2) * width) + (2 * width)), groups[2]);
         }
@@ -152,46 +173,54 @@ public sealed class PosixRepeatedCaptureSelectionTests
     [InlineData("((a|aa)*)[bc]?", "a")]
     [InlineData("((a|aa)*)[bc]*", "a")]
     [InlineData("((😀|😀😀)*)[ab]?", "😀")]
-    public void BoundedParentsAllowFiniteDescendantHistoryCompetition( string pattern, string scalar)
+    public void BoundedParentsAllowFiniteDescendantHistoryCompetition(string pattern, string scalar)
     {
         const int count = 32;
         const string prefix = "é😀!";
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
-        var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 4096,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         using var token = new CancellationTokenSource();
         foreach (var nonEof in new[] { false, true })
         {
             var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + "b" + (nonEof ? "!" : ""));
             var groups = new Utf8CaptureRange[regex.GroupCount + 1];
             var expected = new Utf8CaptureRange(floor, (floor) + (count * width + 1));
-            Assert.Equal(expected, regex.Match(input, groups, floor, token.Token));
+            Assert.Equal(expected, regex.Match(input, captures: groups, startOffsetInBytes: floor, cancellationToken: token.Token));
             for (var group = 1; group < groups.Length - 1; group++)
                 Assert.Equal(new Utf8CaptureRange(floor, (floor) + (count * width)), groups[group]);
             var retained = groups[^1];
             Assert.Equal(new Utf8CaptureRange(floor + (count - 2) * width, (floor + (count - 2) * width) + (2 * width)), retained);
-            Assert.Equal(expected, regex.Match(input, groups.AsSpan(0, 1), floor));
+            Assert.Equal(expected, regex.Match(input, captures: groups.AsSpan(0, 1), startOffsetInBytes: floor));
             var nullable = pattern is "(a|aa)*[bc]?" or "((a|aa)*)[bc]?" or "((a|aa)*)[bc]*" or "((😀|😀😀)*)[ab]?";
             var emptyMatches = nullable ? nonEof ? 2 : 1 : 0;
             var trailingMatch = nonEof && pattern is "((a|aa)*)." or "((a|aa)*)[^a]";
             Assert.Equal(1 + emptyMatches + (trailingMatch ? 1 : 0), regex.Count(input, floor));
             using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
             var alias = cursor;
-            Assert.True(cursor.MoveNext(groups, out var whole)); Assert.Equal(expected, whole);
+            Assert.True(cursor.MoveNext(captures: groups, match: out var whole)); Assert.Equal(expected, whole);
             for (var empty = 0; empty < emptyMatches; empty++)
             {
-                Assert.True(alias.MoveNext(groups, out var next));
+                Assert.True(alias.MoveNext(captures: groups, match: out var next));
                 Assert.Equal(new Utf8CaptureRange(expected.StartOffsetInBytes + (expected.EndOffsetInBytes - expected.StartOffsetInBytes) + empty, (expected.StartOffsetInBytes + (expected.EndOffsetInBytes - expected.StartOffsetInBytes) + empty) + 0), next);
             }
             if (trailingMatch)
             {
-                Assert.True(alias.MoveNext(groups, out var next));
+                Assert.True(alias.MoveNext(captures: groups, match: out var next));
                 Assert.Equal(new Utf8CaptureRange(expected.StartOffsetInBytes + (expected.EndOffsetInBytes - expected.StartOffsetInBytes), (expected.StartOffsetInBytes + (expected.EndOffsetInBytes - expected.StartOffsetInBytes)) + 1), next);
                 Assert.True(groups[1].Success); Assert.Equal(0, (groups[1].EndOffsetInBytes - groups[1].StartOffsetInBytes));
                 Assert.False(groups[2].Success);
             }
-            Assert.False(alias.MoveNext(groups, out _));
+            Assert.False(alias.MoveNext(captures: groups, match: out _));
             Assert.All(groups, group => Assert.False(group.Success));
             Assert.Equal(2 * width, (retained.EndOffsetInBytes - retained.StartOffsetInBytes));
         }
@@ -211,27 +240,34 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var body = string.Concat(Enumerable.Repeat(scalar, count));
         var input = Encoding.UTF8.GetBytes(prefix + body + tail + "中!");
         {
-            var regex = new Utf8PosixRegex($"((({scalar}|{scalar}{scalar}{(nullable ? "|" : "")})*).)",
-                resourcePolicy: new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 1 << 20, MaxDepth = 4096 });
+            var regex = new Utf8PosixRegex($"((({scalar}|{scalar}{scalar}{(nullable ? "|" : "")})*).)", policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100_000,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxDepth = 4096
+                }
+            });
             var groups = new Utf8CaptureRange[4];
             var whole = new Utf8CaptureRange(floor, (floor) + (Encoding.UTF8.GetByteCount(body + tail)));
-            Assert.Equal(whole, regex.Match(input, groups, floor));
+            Assert.Equal(whole, regex.Match(input, captures: groups, startOffsetInBytes: floor));
             Assert.Equal(whole, groups[1]);
             Assert.Equal(new Utf8CaptureRange(floor, (floor) + (Encoding.UTF8.GetByteCount(body))), groups[2]);
             var last = new Utf8CaptureRange(floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2, (floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2) + (Encoding.UTF8.GetByteCount(scalar) * 2));
             Assert.Equal(last, groups[3]);
-            Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
+            Assert.Equal(whole, regex.Match(input, captures: groups.AsSpan(0, 1), startOffsetInBytes: floor));
             Assert.Equal(3, regex.Count(input, floor));
             using var cursor = regex.CreateMatchCursor(input, floor);
             var alias = cursor;
-            Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current);
+            Assert.True(cursor.MoveNext(captures: groups, match: out var current)); Assert.Equal(whole, current);
             var retained = groups[3];
-            Assert.True(alias.MoveNext(groups, out _));
-            Assert.True(cursor.MoveNext(groups, out _));
-            Assert.False(alias.MoveNext(groups, out _));
+            Assert.True(alias.MoveNext(captures: groups, match: out _));
+            Assert.True(cursor.MoveNext(captures: groups, match: out _));
+            Assert.False(alias.MoveNext(captures: groups, match: out _));
             Assert.All(groups, group => Assert.False(group.Success));
             cursor.Dispose(); Assert.Equal(last, retained);
-            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(match: out _));
         }
     }
     [Theory]
@@ -258,29 +294,37 @@ public sealed class PosixRepeatedCaptureSelectionTests
         {
             var pattern = $"(({scalar}|{scalar}.{(nullable ? "|" : "")})*)!*";
             if (enclosed) pattern = "(" + pattern + ")";
-            var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8PosixRegex(pattern, options: options, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100_000,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var groups = new Utf8CaptureRange[regex.GroupCount + 1];
             var whole = new Utf8CaptureRange(floor, (floor) + (Encoding.UTF8.GetByteCount(body) + 1));
-            Assert.Equal(whole, regex.Match(input, groups, floor));
+            Assert.Equal(whole, regex.Match(input, captures: groups, startOffsetInBytes: floor));
             if (enclosed) Assert.Equal(whole, groups[1]);
             // Greedy pairs first leave ! to the suffix. A later history moves
             // it into the parent at the same whole end and must become best.
             Assert.Equal(whole, groups[enclosed ? 2 : 1]);
             var last = new Utf8CaptureRange(floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar), (floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar)) + (Encoding.UTF8.GetByteCount(scalar) + 1));
             Assert.Equal(last, groups[^1]);
-            Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
+            Assert.Equal(whole, regex.Match(input, captures: groups.AsSpan(0, 1), startOffsetInBytes: floor));
             Assert.True(regex.IsMatch(input.AsSpan(floor))); Assert.Equal(3, regex.Count(input, floor));
             using var cursor = regex.CreateMatchCursor(input, floor);
             var alias = cursor;
-            Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current);
+            Assert.True(cursor.MoveNext(captures: groups, match: out var current)); Assert.Equal(whole, current);
             var retained = groups[^1];
-            Assert.True(alias.MoveNext(out var empty)); Assert.Equal(floor + (whole.EndOffsetInBytes - whole.StartOffsetInBytes), empty.StartOffsetInBytes);
-            Assert.True(cursor.MoveNext(out empty)); Assert.Equal(input.Length, empty.StartOffsetInBytes);
-            Assert.False(alias.MoveNext(groups, out _));
+            Assert.True(alias.MoveNext(match: out var empty)); Assert.Equal(floor + (whole.EndOffsetInBytes - whole.StartOffsetInBytes), empty.StartOffsetInBytes);
+            Assert.True(cursor.MoveNext(match: out empty)); Assert.Equal(input.Length, empty.StartOffsetInBytes);
+            Assert.False(alias.MoveNext(captures: groups, match: out _));
             Assert.All(groups, group => Assert.False(group.Success));
             cursor.Dispose(); Assert.Equal(last, retained);
-            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(match: out _));
         }
     }
     [Theory]
@@ -299,37 +343,45 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var choice = $"({scalar}|{scalar}{scalar}{(nullable ? "|" : "")})";
         foreach (var options in new[] { default(PosixCompileOptions), PosixCompileOptions.Newline })
-        foreach (var reverse in new[] { false, true })
-        {
-            var left = choice + "*b";
-            var right = "(" + choice + "*).";
-            var pattern = reverse ? right + "|" + left : left + "|" + right;
-            var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+            foreach (var reverse in new[] { false, true })
+            {
+                var left = choice + "*b";
+                var right = "(" + choice + "*).";
+                var pattern = reverse ? right + "|" + left : left + "|" + right;
+                var regex = new Utf8PosixRegex(pattern, options: options, policy: new Utf8RegexPolicy()
+                {
+                    ResourcePolicy = new()
+                    {
+                        MaxWorkSteps = 100_000,
+                        MaxDepth = 4096,
+                        MaxWorkingBytes = 1 << 20,
+                        MaxResultBytes = 1
+                    }
+                });
                 var groups = new Utf8CaptureRange[regex.GroupCount + 1];
-            var whole = new Utf8CaptureRange(floor, (floor) + (Encoding.UTF8.GetByteCount(body) + 1));
-            var last = new Utf8CaptureRange(floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2, (floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2) + (Encoding.UTF8.GetByteCount(scalar) * 2));
-            Assert.Equal(whole, regex.Match(input, groups, floor));
-            if (reverse)
-            {
-                Assert.Equal(new Utf8CaptureRange(floor, (floor) + (Encoding.UTF8.GetByteCount(body))), groups[1]);
-                Assert.Equal(last, groups[2]); Assert.False(groups[3].Success);
+                var whole = new Utf8CaptureRange(floor, (floor) + (Encoding.UTF8.GetByteCount(body) + 1));
+                var last = new Utf8CaptureRange(floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2, (floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2) + (Encoding.UTF8.GetByteCount(scalar) * 2));
+                Assert.Equal(whole, regex.Match(input, captures: groups, startOffsetInBytes: floor));
+                if (reverse)
+                {
+                    Assert.Equal(new Utf8CaptureRange(floor, (floor) + (Encoding.UTF8.GetByteCount(body))), groups[1]);
+                    Assert.Equal(last, groups[2]); Assert.False(groups[3].Success);
+                }
+                else
+                {
+                    Assert.Equal(last, groups[1]); Assert.False(groups[2].Success); Assert.False(groups[3].Success);
+                }
+                Assert.Equal(whole, regex.Match(input, captures: groups.AsSpan(0, 1), startOffsetInBytes: floor));
+                Assert.Equal(2, regex.Count(input, floor));
+                using var cursor = regex.CreateMatchCursor(input, floor);
+                var alias = cursor;
+                Assert.True(cursor.MoveNext(captures: groups, match: out var current)); Assert.Equal(whole, current);
+                var retained = groups[reverse ? 2 : 1];
+                Assert.True(alias.MoveNext(match: out current)); Assert.Equal(floor + (whole.EndOffsetInBytes - whole.StartOffsetInBytes), current.StartOffsetInBytes);
+                Assert.False(cursor.MoveNext(captures: groups, match: out _)); Assert.All(groups, group => Assert.False(group.Success));
+                cursor.Dispose(); Assert.Equal(last, retained);
+                Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(match: out _));
             }
-            else
-            {
-                Assert.Equal(last, groups[1]); Assert.False(groups[2].Success); Assert.False(groups[3].Success);
-            }
-            Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
-            Assert.Equal(2, regex.Count(input, floor));
-            using var cursor = regex.CreateMatchCursor(input, floor);
-            var alias = cursor;
-            Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current);
-            var retained = groups[reverse ? 2 : 1];
-            Assert.True(alias.MoveNext(out current)); Assert.Equal(floor + (whole.EndOffsetInBytes - whole.StartOffsetInBytes), current.StartOffsetInBytes);
-            Assert.False(cursor.MoveNext(groups, out _)); Assert.All(groups, group => Assert.False(group.Success));
-            cursor.Dispose(); Assert.Equal(last, retained);
-            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
-        }
     }
     [Theory]
     [InlineData("a", false)]
@@ -349,37 +401,45 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var left = choice + "*b";
         var right = "(" + choice + "*).";
         foreach (var options in new[] { default(PosixCompileOptions), PosixCompileOptions.Newline })
-        foreach (var order in new[] { 0, 1, 2 })
-        {
-            var pattern = order == 0 ? "z|" + left + "|" + right : order == 1 ? left + "|" + right + "|z" : "|" + left + "|" + right;
-            var regex = new Utf8PosixRegex(pattern, options, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+            foreach (var order in new[] { 0, 1, 2 })
+            {
+                var pattern = order == 0 ? "z|" + left + "|" + right : order == 1 ? left + "|" + right + "|z" : "|" + left + "|" + right;
+                var regex = new Utf8PosixRegex(pattern, options: options, policy: new Utf8RegexPolicy()
+                {
+                    ResourcePolicy = new()
+                    {
+                        MaxWorkSteps = 100_000,
+                        MaxDepth = 4096,
+                        MaxWorkingBytes = 1 << 20,
+                        MaxResultBytes = 1
+                    }
+                });
                 var whole = new Utf8CaptureRange(floor, (floor) + (Encoding.UTF8.GetByteCount(body) + 1));
-            var last = new Utf8CaptureRange(floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2, (floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2) + (Encoding.UTF8.GetByteCount(scalar) * 2));
-            var expected = new[] { whole, last, default(Utf8CaptureRange), default(Utf8CaptureRange) };
-            var groups = new Utf8CaptureRange[4];
-            Assert.Equal(whole, regex.Match(input, groups, floor)); Assert.Equal(expected, groups);
-            Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
-            Assert.Equal(order == 2 ? 3 : 2, regex.Count(input, floor));
-            using var cursor = regex.CreateMatchCursor(input, floor);
-            var alias = cursor;
-            Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current); Assert.Equal(expected, groups);
-            var retained = groups[1];
-            Assert.True(alias.MoveNext(groups, out current)); Assert.Equal(floor + (whole.EndOffsetInBytes - whole.StartOffsetInBytes), current.StartOffsetInBytes);
-            Assert.Equal(1, (current.EndOffsetInBytes - current.StartOffsetInBytes)); Assert.False(groups[1].Success);
-            Assert.True(groups[2].Success); Assert.Equal(0, (groups[2].EndOffsetInBytes - groups[2].StartOffsetInBytes));
-            if (nullable)
+                var last = new Utf8CaptureRange(floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2, (floor + Encoding.UTF8.GetByteCount(body) - Encoding.UTF8.GetByteCount(scalar) * 2) + (Encoding.UTF8.GetByteCount(scalar) * 2));
+                var expected = new[] { whole, last, default(Utf8CaptureRange), default(Utf8CaptureRange) };
+                var groups = new Utf8CaptureRange[4];
+                Assert.Equal(whole, regex.Match(input, captures: groups, startOffsetInBytes: floor)); Assert.Equal(expected, groups);
+                Assert.Equal(whole, regex.Match(input, captures: groups.AsSpan(0, 1), startOffsetInBytes: floor));
+                Assert.Equal(order == 2 ? 3 : 2, regex.Count(input, floor));
+                using var cursor = regex.CreateMatchCursor(input, floor);
+                var alias = cursor;
+                Assert.True(cursor.MoveNext(captures: groups, match: out var current)); Assert.Equal(whole, current); Assert.Equal(expected, groups);
+                var retained = groups[1];
+                Assert.True(alias.MoveNext(captures: groups, match: out current)); Assert.Equal(floor + (whole.EndOffsetInBytes - whole.StartOffsetInBytes), current.StartOffsetInBytes);
+                Assert.Equal(1, (current.EndOffsetInBytes - current.StartOffsetInBytes)); Assert.False(groups[1].Success);
+                Assert.True(groups[2].Success); Assert.Equal(0, (groups[2].EndOffsetInBytes - groups[2].StartOffsetInBytes));
+                if (nullable)
                     Assert.Equal(new Utf8CaptureRange(floor + Encoding.UTF8.GetByteCount(body) + 1, (floor + Encoding.UTF8.GetByteCount(body) + 1) + 0), groups[3]);
                 else Assert.False(groups[3].Success);
-            if (order == 2)
-            {
-                Assert.True(cursor.MoveNext(groups, out current)); Assert.Equal(input.Length, current.StartOffsetInBytes);
-                Assert.Equal(0, (current.EndOffsetInBytes - current.StartOffsetInBytes)); Assert.All(groups.AsSpan(1).ToArray(), value => Assert.False(value.Success));
+                if (order == 2)
+                {
+                    Assert.True(cursor.MoveNext(captures: groups, match: out current)); Assert.Equal(input.Length, current.StartOffsetInBytes);
+                    Assert.Equal(0, (current.EndOffsetInBytes - current.StartOffsetInBytes)); Assert.All(groups.AsSpan(1).ToArray(), value => Assert.False(value.Success));
+                }
+                Assert.False(alias.MoveNext(captures: groups, match: out _)); Assert.All(groups, value => Assert.False(value.Success));
+                cursor.Dispose(); Assert.Equal(last, retained);
+                Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(match: out _));
             }
-            Assert.False(alias.MoveNext(groups, out _)); Assert.All(groups, value => Assert.False(value.Success));
-            cursor.Dispose(); Assert.Equal(last, retained);
-            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
-        }
     }
     [Fact]
 
@@ -387,23 +447,31 @@ public sealed class PosixRepeatedCaptureSelectionTests
     {
         const string prefix = "é😀!";
         var floor = Encoding.UTF8.GetByteCount(prefix);
-        var regex = new Utf8PosixRegex("(((a|aa)*)(b|cc))d*", resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8PosixRegex("(((a|aa)*)(b|cc))d*", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 4096,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes(prefix + new string('a', 32) + "bdd!");
         var groups = new Utf8CaptureRange[5];
         var whole = new Utf8CaptureRange(floor, (floor) + 35);
-        Assert.Equal(whole, regex.Match(input, groups, floor));
+        Assert.Equal(whole, regex.Match(input, captures: groups, startOffsetInBytes: floor));
         Assert.Equal(new Utf8CaptureRange(floor, (floor) + 33), groups[1]);
         Assert.Equal(new Utf8CaptureRange(floor, (floor) + 32), groups[2]);
         Assert.Equal(new Utf8CaptureRange(floor + 30, (floor + 30) + 2), groups[3]);
         Assert.Equal(new Utf8CaptureRange(floor + 32, (floor + 32) + 1), groups[4]);
-        Assert.Equal(whole, regex.Match(input, groups.AsSpan(0, 1), floor));
+        Assert.Equal(whole, regex.Match(input, captures: groups.AsSpan(0, 1), startOffsetInBytes: floor));
         Assert.Equal(1, regex.Count(input, floor));
         using var cursor = regex.CreateMatchCursor(input, floor);
         var alias = cursor;
-        Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current);
+        Assert.True(cursor.MoveNext(captures: groups, match: out var current)); Assert.Equal(whole, current);
         var retained = groups[3];
-        Assert.False(alias.MoveNext(groups, out _));
+        Assert.False(alias.MoveNext(captures: groups, match: out _));
         Assert.All(groups, group => Assert.False(group.Success));
         Assert.Equal(2, (retained.EndOffsetInBytes - retained.StartOffsetInBytes));
     }
@@ -412,28 +480,36 @@ public sealed class PosixRepeatedCaptureSelectionTests
     [InlineData("a", true)]
     [InlineData("😀", false)]
     [InlineData("😀", true)]
-    public void LongAmbiguousCaptureFitsFiniteWorkWithoutRescanningEqualOccurrences( string scalar, bool nonEof)
+    public void LongAmbiguousCaptureFitsFiniteWorkWithoutRescanningEqualOccurrences(string scalar, bool nonEof)
     {
         const int count = 1024;
         const string prefix = "é😀!";
         var width = Encoding.UTF8.GetByteCount(scalar);
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + (nonEof ? "!" : ""));
-        var regex = new Utf8PosixRegex($"({scalar}|{scalar}{scalar})*", resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8PosixRegex($"({scalar}|{scalar}{scalar})*", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 4096,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         using var token = new CancellationTokenSource();
         var groups = new Utf8CaptureRange[2];
         var expected = new Utf8CaptureRange(floor, (floor) + (count * width));
-        Assert.Equal(expected, regex.Match(input, groups, floor, token.Token));
+        Assert.Equal(expected, regex.Match(input, captures: groups, startOffsetInBytes: floor, cancellationToken: token.Token));
         var retained = groups[1];
         Assert.Equal(new Utf8CaptureRange(floor + (count - 2) * width, (floor + (count - 2) * width) + (2 * width)), retained);
-        Assert.Equal(expected, regex.Match(input, groups.AsSpan(0, 1), floor));
+        Assert.Equal(expected, regex.Match(input, captures: groups.AsSpan(0, 1), startOffsetInBytes: floor));
         using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
         var alias = cursor;
-        Assert.True(cursor.MoveNext(groups, out var whole)); Assert.Equal(expected, whole);
-        Assert.True(alias.MoveNext(out var empty)); Assert.Equal(floor + count * width, empty.StartOffsetInBytes);
-        if (nonEof) { Assert.True(cursor.MoveNext(out empty)); Assert.Equal(input.Length, empty.StartOffsetInBytes); }
-        Assert.False(alias.MoveNext(groups, out _));
+        Assert.True(cursor.MoveNext(captures: groups, match: out var whole)); Assert.Equal(expected, whole);
+        Assert.True(alias.MoveNext(match: out var empty)); Assert.Equal(floor + count * width, empty.StartOffsetInBytes);
+        if (nonEof) { Assert.True(cursor.MoveNext(match: out empty)); Assert.Equal(input.Length, empty.StartOffsetInBytes); }
+        Assert.False(alias.MoveNext(captures: groups, match: out _));
         Assert.All(groups, group => Assert.False(group.Success));
         Assert.Equal(2 * width, (retained.EndOffsetInBytes - retained.StartOffsetInBytes));
     }
@@ -444,38 +520,46 @@ public sealed class PosixRepeatedCaptureSelectionTests
     [InlineData("😀", "😀[^!]")]
     [InlineData("a", ".a")]
     [InlineData("😀", ".😀")]
-    public void AmbiguousCaptureFitsFiniteWorkWithoutKeepingEveryPartition( string scalar, string longer)
+    public void AmbiguousCaptureFitsFiniteWorkWithoutKeepingEveryPartition(string scalar, string longer)
     {
         var pair = scalar + scalar;
-        var regex = new Utf8PosixRegex($"({scalar}|{longer})*", resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8PosixRegex($"({scalar}|{longer})*", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         const string prefix = "é😀!";
         var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, 32)));
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
         var groups = new Utf8CaptureRange[2];
         using var token = new CancellationTokenSource();
-        var whole = regex.Match(input, groups, floor, token.Token);
+        var whole = regex.Match(input, captures: groups, startOffsetInBytes: floor, cancellationToken: token.Token);
         Assert.Equal(new Utf8CaptureRange(floor, (floor) + (32 * width)), whole);
         var retained = groups[1];
         Assert.Equal(new Utf8CaptureRange(floor + 30 * width, (floor + 30 * width) + (2 * width)), retained);
-        Assert.Equal(whole, regex.Match(input, floor, token.Token));
+        Assert.Equal(whole, regex.Match(input, startOffsetInBytes: floor, cancellationToken: token.Token));
         Assert.Equal(2, regex.Count(input, floor, token.Token));
         using (var wholeCursor = regex.CreateMatchCursor(input, floor, token.Token))
         {
             var alias = wholeCursor;
-            Assert.True(wholeCursor.MoveNext(out var first)); Assert.Equal(whole, first);
-            Assert.True(alias.MoveNext(groups, out var terminal));
+            Assert.True(wholeCursor.MoveNext(match: out var first)); Assert.Equal(whole, first);
+            Assert.True(alias.MoveNext(captures: groups, match: out var terminal));
             Assert.Equal(input.Length, terminal.StartOffsetInBytes); Assert.Equal(0, (terminal.EndOffsetInBytes - terminal.StartOffsetInBytes));
-            Assert.False(wholeCursor.MoveNext(out _));
+            Assert.False(wholeCursor.MoveNext(match: out _));
             Assert.Equal(2 * width, (retained.EndOffsetInBytes - retained.StartOffsetInBytes));
         }
         using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
-        Assert.True(cursor.MoveNext(groups, out var current));
+        Assert.True(cursor.MoveNext(captures: groups, match: out var current));
         Assert.Equal(whole, current); Assert.Equal(retained, groups[1]);
-        Assert.True(cursor.MoveNext(groups, out var empty));
+        Assert.True(cursor.MoveNext(captures: groups, match: out var empty));
         Assert.Equal(input.Length, empty.StartOffsetInBytes); Assert.Equal(0, (empty.EndOffsetInBytes - empty.StartOffsetInBytes));
-        Assert.False(cursor.MoveNext(groups, out _));
+        Assert.False(cursor.MoveNext(captures: groups, match: out _));
         Assert.All(groups, group => Assert.False(group.Success));
         Assert.Equal(2 * width, (retained.EndOffsetInBytes - retained.StartOffsetInBytes));
     }
@@ -484,10 +568,18 @@ public sealed class PosixRepeatedCaptureSelectionTests
     [InlineData("(a|a[ab])*", "a")]
     [InlineData("(é|éé)*", "é")]
     [InlineData("(😀|😀😀)*", "😀")]
-    public void ExcludedBoundariesKeepNonEofHistoryAndWholeOnlyCountsWithinFiniteWork( string pattern, string scalar)
+    public void ExcludedBoundariesKeepNonEofHistoryAndWholeOnlyCountsWithinFiniteWork(string pattern, string scalar)
     {
-        var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         const string prefix = "é😀!";
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
@@ -495,18 +587,18 @@ public sealed class PosixRepeatedCaptureSelectionTests
         {
             var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, 32)) + suffix);
             var groups = new Utf8CaptureRange[2];
-            var whole = regex.Match(input, groups, floor);
+            var whole = regex.Match(input, captures: groups, startOffsetInBytes: floor);
             Assert.Equal(new Utf8CaptureRange(floor, (floor) + (32 * width)), whole);
             Assert.Equal(new Utf8CaptureRange(floor + 30 * width, (floor + 30 * width) + (2 * width)), groups[1]);
             var retained = groups[1];
-            Assert.Equal(whole, regex.Match(input, floor));
+            Assert.Equal(whole, regex.Match(input, startOffsetInBytes: floor));
             Assert.Equal(3, regex.Count(input, floor));
             using var cursor = regex.CreateMatchCursor(input, floor);
             var alias = cursor;
-            Assert.True(cursor.MoveNext(groups, out var current)); Assert.Equal(whole, current);
-            Assert.True(alias.MoveNext(out var empty)); Assert.Equal(floor + 32 * width, empty.StartOffsetInBytes);
-            Assert.True(cursor.MoveNext(groups, out empty)); Assert.Equal(input.Length, empty.StartOffsetInBytes);
-            Assert.False(alias.MoveNext(out _));
+            Assert.True(cursor.MoveNext(captures: groups, match: out var current)); Assert.Equal(whole, current);
+            Assert.True(alias.MoveNext(match: out var empty)); Assert.Equal(floor + 32 * width, empty.StartOffsetInBytes);
+            Assert.True(cursor.MoveNext(captures: groups, match: out empty)); Assert.Equal(input.Length, empty.StartOffsetInBytes);
+            Assert.False(alias.MoveNext(match: out _));
             Assert.Equal(2 * width, (retained.EndOffsetInBytes - retained.StartOffsetInBytes));
         }
     }
@@ -527,7 +619,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
             // ERE interval numbers stay <=255, including this long fixed branch.
             var regex = new Utf8PosixRegex($"({scalar}|({scalar}{{128}}){{{length / 128}}}{scalar}{{{length % 128}}})");
             var captures = new Utf8CaptureRange[2];
-            Assert.Equal(new Utf8CaptureRange(0, 0 + (bytes)), regex.Match(input, captures));
+            Assert.Equal(new Utf8CaptureRange(0, 0 + (bytes)), regex.Match(input, captures: captures));
             Assert.Equal(bytes, (captures[1].EndOffsetInBytes - captures[1].StartOffsetInBytes));
             Assert.Equal(bytes, regex.Match(input).EndOffsetInBytes);
             Assert.Equal(1, regex.Count(input));
@@ -561,32 +653,32 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(scalar);
         for (var count = 0; count <= 8; count++)
-        foreach (var suffix in new[] { "", "!" })
-        {
-            // Reuse the independent scalar-extent oracle. These alternatives
-            // have exactly the 0/1/2 extents on this uniform scalar input; their
-            // branch order and instruction/tag layout do not select the winner.
-            var extents = Occurrences(0, int.MaxValue, nullable ? 0 : 1, 2, count)!;
-            var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + tail + suffix);
-            var body = new Utf8CaptureRange(floor, (floor) + (count * width));
-            var whole = new Utf8CaptureRange(floor, (floor) + (count * width + tail.Length));
-            var last = extents.Length == 0 ? default : new Utf8CaptureRange(floor + (count - extents[^1]) * width, (floor + (count - extents[^1]) * width) + (extents[^1] * width));
-            for (var index = 0; index < regexes.Count; index++)
+            foreach (var suffix in new[] { "", "!" })
             {
-                var shape = index % 4;
-                var regex = regexes[index];
-                var captures = new Utf8CaptureRange[shape < 2 ? 2 : 3];
-                Assert.Equal(whole, regex.Match(input, captures, floor));
-                Assert.Equal(whole, captures[0]);
-                Assert.Equal(shape == 2 ? body : last, captures[1]);
-                if (shape >= 2)
-                    Assert.Equal(shape == 2 || extents.Length > 0 && extents[^1] == 2 ? last : default, captures[2]);
-                var shortOutput = new Utf8CaptureRange[1];
-                Assert.Equal(whole, regex.Match(input, shortOutput, floor));
-                Assert.Equal(whole, shortOutput[0]);
-                Assert.Equal(whole, regex.Match(input, floor));
+                // Reuse the independent scalar-extent oracle. These alternatives
+                // have exactly the 0/1/2 extents on this uniform scalar input; their
+                // branch order and instruction/tag layout do not select the winner.
+                var extents = Occurrences(0, int.MaxValue, nullable ? 0 : 1, 2, count)!;
+                var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(scalar, count)) + tail + suffix);
+                var body = new Utf8CaptureRange(floor, (floor) + (count * width));
+                var whole = new Utf8CaptureRange(floor, (floor) + (count * width + tail.Length));
+                var last = extents.Length == 0 ? default : new Utf8CaptureRange(floor + (count - extents[^1]) * width, (floor + (count - extents[^1]) * width) + (extents[^1] * width));
+                for (var index = 0; index < regexes.Count; index++)
+                {
+                    var shape = index % 4;
+                    var regex = regexes[index];
+                    var captures = new Utf8CaptureRange[shape < 2 ? 2 : 3];
+                    Assert.Equal(whole, regex.Match(input, captures: captures, startOffsetInBytes: floor));
+                    Assert.Equal(whole, captures[0]);
+                    Assert.Equal(shape == 2 ? body : last, captures[1]);
+                    if (shape >= 2)
+                        Assert.Equal(shape == 2 || extents.Length > 0 && extents[^1] == 2 ? last : default, captures[2]);
+                    var shortOutput = new Utf8CaptureRange[1];
+                    Assert.Equal(whole, regex.Match(input, captures: shortOutput, startOffsetInBytes: floor));
+                    Assert.Equal(whole, shortOutput[0]);
+                    Assert.Equal(whole, regex.Match(input, startOffsetInBytes: floor));
+                }
             }
-        }
     }
     [Theory]
     [InlineData("(aa|a)(aab)*", "aaab", "a", "aab", null)]
@@ -605,7 +697,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var regex = new Utf8PosixRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         var captures = new Utf8CaptureRange[expected.Length + 1];
-        var whole = regex.Match(input, captures);
+        var whole = regex.Match(input, captures: captures);
         Assert.Equal(new Utf8CaptureRange(0, 0 + (input.Length)), whole);
         for (var group = 1; group < captures.Length; group++)
         {
@@ -626,7 +718,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
             var regex = new Utf8PosixRegex("(a|aa)*" + tail);
             var input = Encoding.ASCII.GetBytes("aaaaaaaa" + tail);
             var groups = new Utf8CaptureRange[2];
-            var whole = regex.Match(input, groups);
+            var whole = regex.Match(input, captures: groups);
             Assert.Equal(new Utf8CaptureRange(0, 0 + (input.Length)), whole);
             Assert.Equal(new Utf8CaptureRange(6, 6 + 2), groups[1]);
         }
@@ -635,14 +727,14 @@ public sealed class PosixRepeatedCaptureSelectionTests
     public void BoundedLiteralRunCapturesMatchAnIndependentOccurrenceOracle()
     {
         for (var outerMax = 0; outerMax <= 4; outerMax++)
-        for (var outerMin = 0; outerMin <= outerMax; outerMin++)
-        for (var innerMax = 0; innerMax <= 3; innerMax++)
-        for (var innerMin = 0; innerMin <= innerMax; innerMin++)
-        {
-            var regex = new Utf8PosixRegex($"(a{{{innerMin},{innerMax}}}){{{outerMin},{outerMax}}}");
-            for (var count = 0; count <= 10; count++)
-                Check(regex, outerMin, outerMax, innerMin, innerMax, count);
-        }
+            for (var outerMin = 0; outerMin <= outerMax; outerMin++)
+                for (var innerMax = 0; innerMax <= 3; innerMax++)
+                    for (var innerMin = 0; innerMin <= innerMax; innerMin++)
+                    {
+                        var regex = new Utf8PosixRegex($"(a{{{innerMin},{innerMax}}}){{{outerMin},{outerMax}}}");
+                        for (var count = 0; count <= 10; count++)
+                            Check(regex, outerMin, outerMax, innerMin, innerMax, count);
+                    }
     }
     [Theory]
     [InlineData(0, 4, 0, int.MaxValue)]
@@ -670,12 +762,12 @@ public sealed class PosixRepeatedCaptureSelectionTests
         // occurrences consume six and win whole-match selection.
         var lengths = new Utf8PosixRegex("(a{3,4})+");
         var captures = new Utf8CaptureRange[2];
-        Assert.Equal(6, lengths.Match("aaaaaa"u8, captures).EndOffsetInBytes);
+        Assert.Equal(6, lengths.Match("aaaaaa"u8, captures: captures).EndOffsetInBytes);
         Assert.Equal((3, 3), (captures[1].StartOffsetInBytes, (captures[1].EndOffsetInBytes - captures[1].StartOffsetInBytes)));
         // A saturated minimum-zero outer counter cannot distinguish its first
         // empty occurrence from a later redundant one. The shorter history wins.
         var nullable = new Utf8PosixRegex("(a?)*");
-        Assert.Equal(1, nullable.Match("a"u8, captures).EndOffsetInBytes);
+        Assert.Equal(1, nullable.Match("a"u8, captures: captures).EndOffsetInBytes);
         Assert.Equal((0, 1), (captures[1].StartOffsetInBytes, (captures[1].EndOffsetInBytes - captures[1].StartOffsetInBytes)));
     }
     [Fact]
@@ -700,16 +792,16 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var floor = Encoding.UTF8.GetByteCount(prefix);
         var width = Encoding.UTF8.GetByteCount(atom);
         var captures = new Utf8CaptureRange[2];
-        var whole = regex.Match(input, captures, floor);
+        var whole = regex.Match(input, captures: captures, startOffsetInBytes: floor);
         Assert.Equal(new Utf8CaptureRange(floor, (floor) + (width)), whole);
         var retained = captures[1];
         Assert.Equal(new Utf8CaptureRange(floor + width, (floor + width) + 0), retained);
         Span<Utf8CaptureRange> shortOutput = stackalloc Utf8CaptureRange[1];
-        Assert.Equal(whole, regex.Match(input, shortOutput, floor));
+        Assert.Equal(whole, regex.Match(input, captures: shortOutput, startOffsetInBytes: floor));
         Assert.Equal(whole, shortOutput[0]);
-        regex.Match(input, captures, floor + width);
+        regex.Match(input, captures: captures, startOffsetInBytes: floor + width);
         Assert.Equal(new Utf8CaptureRange(floor + width, (floor + width) + 0), retained);
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(storage.AsSpan(3, storage.Length - 6), captures, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(storage.AsSpan(3, storage.Length - 6), captures: captures, startOffsetInBytes: 1));
 
     }
     [Theory]
@@ -734,20 +826,28 @@ public sealed class PosixRepeatedCaptureSelectionTests
         var expected = new Utf8CaptureRange(floor, (floor) + (Encoding.UTF8.GetByteCount(text)));
         {
             using var token = new CancellationTokenSource();
-            var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100_000,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var input = storage.AsSpan(3, length);
-            Assert.Equal(expected, regex.Match(input, floor, token.Token));
+            Assert.Equal(expected, regex.Match(input, startOffsetInBytes: floor, cancellationToken: token.Token));
             var shortOutput = new Utf8CaptureRange[1];
-            Assert.Equal(expected, regex.Match(input, shortOutput, floor, token.Token));
+            Assert.Equal(expected, regex.Match(input, captures: shortOutput, startOffsetInBytes: floor, cancellationToken: token.Token));
             Assert.Equal(expected, shortOutput[0]);
             Assert.Equal(1, regex.Count(input, floor, token.Token));
             using var cursor = regex.CreateMatchCursor(storage.AsMemory(3, length), floor, token.Token);
             var alias = cursor;
-            Assert.True(cursor.MoveNext(out var first)); Assert.Equal(expected, first);
-            Assert.False(alias.MoveNext(out _)); cursor.Dispose();
+            Assert.True(cursor.MoveNext(match: out var first)); Assert.Equal(expected, first);
+            Assert.False(alias.MoveNext(match: out _)); cursor.Dispose();
             Assert.Equal(expected, first);
-            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(match: out _));
         }
     }
     [Theory]
@@ -774,7 +874,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
     [InlineData("a")]
     [InlineData("é")]
     [InlineData("😀")]
-    public void ConsumingAndRepeatedCaptureContextsFitFiniteWork( string scalar)
+    public void ConsumingAndRepeatedCaptureContextsFitFiniteWork(string scalar)
     {
         const int count = 32;
         const string prefix = "é😀!";
@@ -793,8 +893,16 @@ public sealed class PosixRepeatedCaptureSelectionTests
             ($"x(({scalar}|{scalar}{scalar})*)b", "x", "", false),
         })
         {
-            var regex = new Utf8PosixRegex(item.Pattern, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8PosixRegex(item.Pattern, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100_000,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var wholeText = item.Lead + run + "b" + item.Tail;
             var input = Encoding.UTF8.GetBytes(prefix + wholeText + "#");
             var storage = new byte[input.Length + 7]; input.CopyTo(storage.AsSpan(3));
@@ -804,20 +912,20 @@ public sealed class PosixRepeatedCaptureSelectionTests
             var last = new Utf8CaptureRange(floor + Encoding.UTF8.GetByteCount(item.Lead) + (count - 2) * width, (floor + Encoding.UTF8.GetByteCount(item.Lead) + (count - 2) * width) + (2 * width));
             var output = new Utf8CaptureRange[regex.GroupCount + 1];
             using var token = new CancellationTokenSource();
-            Assert.Equal(whole, regex.Match(storage.AsSpan(3, input.Length), output, floor, token.Token));
+            Assert.Equal(whole, regex.Match(storage.AsSpan(3, input.Length), captures: output, startOffsetInBytes: floor, cancellationToken: token.Token));
             Assert.Equal(whole, output[0]); Assert.Equal(outer, output[1]); Assert.Equal(last, output[2]);
             Assert.All(output.Skip(3), value => Assert.False(value.Success));
             var retained = output[2];
             Assert.Equal(1, regex.Count(input, floor, token.Token));
             Assert.True(regex.IsMatch(input, token.Token));
-            Assert.Equal(whole, regex.Match(input, output.AsSpan(0, 1), floor, token.Token));
+            Assert.Equal(whole, regex.Match(input, captures: output.AsSpan(0, 1), startOffsetInBytes: floor, cancellationToken: token.Token));
             using var cursor = regex.CreateMatchCursor(storage.AsMemory(3, input.Length), floor, token.Token);
             var alias = cursor;
-            Assert.True(cursor.MoveNext(output, out var value)); Assert.Equal(whole, value);
+            Assert.True(cursor.MoveNext(captures: output, match: out var value)); Assert.Equal(whole, value);
             Assert.Equal(outer, output[1]); Assert.Equal(last, output[2]);
-            Assert.False(alias.MoveNext(output, out _)); Assert.All(output, item => Assert.False(item.Success));
+            Assert.False(alias.MoveNext(captures: output, match: out _)); Assert.All(output, item => Assert.False(item.Success));
             cursor.Dispose(); Assert.Equal(last, retained);
-            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+            Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(match: out _));
         }
     }
 
@@ -825,7 +933,7 @@ public sealed class PosixRepeatedCaptureSelectionTests
     {
         var expected = Occurrences(outerMin, outerMax, innerMin, innerMax, count);
         var captures = new Utf8CaptureRange[2];
-        var actual = regex.Match(Encoding.ASCII.GetBytes(new string('a', count)), captures);
+        var actual = regex.Match(Encoding.ASCII.GetBytes(new string('a', count)), captures: captures);
         var total = expected?.Sum() ?? -1;
         var whole = expected is null ? default : new Utf8CaptureRange(0, 0 + (total));
         Assert.Equal(whole, actual);

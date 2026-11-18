@@ -17,11 +17,19 @@ public sealed class PosixWorkspaceTests
         var input = Encoding.UTF8.GetBytes(text);
         var expected = new Utf8CaptureRange(0, 0 + (input.Length));
         {
-            var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-            { MaxWorkSteps = 10_000, MaxDepth = 64, MaxWorkingBytes = 1024, MaxResultBytes = 1 });
+            var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 10_000,
+                    MaxDepth = 64,
+                    MaxWorkingBytes = 1024,
+                    MaxResultBytes = 1
+                }
+            });
             var output = new Utf8CaptureRange[2];
             var account = new Account(1024); Assert.True(account.TryReserve(17));
-            Assert.Equal(expected, regex.Match(input, output, workingMemoryAllowance: account));
+            Assert.Equal(expected, regex.Match(input, captures: output, workingMemoryAllowance: account));
             Assert.Equal(expected, output[0]); Assert.Equal(expected, output[1]);
             Assert.Equal(17UL, account.Used); account.Release(17);
         }
@@ -141,17 +149,17 @@ public sealed class PosixWorkspaceTests
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         var input = "πé😀!"u8.ToArray();
         var output = new Utf8CaptureRange[groups + 1];
-        var match = regex.Match(input, output);
+        var match = regex.Match(input, captures: output);
         Assert.Equal((2, 6), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.All(output, group => Assert.Equal(match, group));
         Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
         using var cursor = regex.CreateMatchCursor(input);
         var alias = cursor;
-        Assert.True(alias.MoveNext(output, out var fromCursor));
+        Assert.True(alias.MoveNext(captures: output, match: out var fromCursor));
         Assert.Equal(match, fromCursor);
         var retained = output[^1];
         alias.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
+        Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(match: out _));
         Assert.Equal(match, retained);
     }
     [Theory]
@@ -165,7 +173,8 @@ public sealed class PosixWorkspaceTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var fired = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps => {
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
             if (steps < 512) return;
             fired = true;
             if (timeout) ticks = 25; else source.Cancel();
@@ -195,15 +204,24 @@ public sealed class PosixWorkspaceTests
     [InlineData("(a*)(a*)", true)]
     public void UniqueClassRunRetainsOriginalInterruptionAndParentLoans(string pattern, bool timeout)
     {
-        var regex = new Utf8PosixRegex(pattern, matchTimeout: TimeSpan.FromMilliseconds(20),
-            resourcePolicy: new() { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 1 << 20 });
+        var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1 << 20
+            }
+        });
         var input = Encoding.ASCII.GetBytes(new string('a', 4096) + "0");
         var output = new Utf8CaptureRange[3];
         using var source = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var fired = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps => {
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
             if (steps < 512) return;
             fired = true;
             if (timeout) ticks = 25; else source.Cancel();
@@ -212,8 +230,7 @@ public sealed class PosixWorkspaceTests
         Assert.True(account.TryReserve(17));
         try
         {
-            var error = Record.Exception(() => regex.Match(input, output,
-                cancellationToken: source.Token, workingMemoryAllowance: account));
+            var error = Record.Exception(() => regex.Match(input, captures: output, cancellationToken: source.Token, workingMemoryAllowance: account));
             Assert.True(fired);
             if (timeout) Assert.IsType<System.Text.RegularExpressions.RegexMatchTimeoutException>(error);
             else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
@@ -228,16 +245,32 @@ public sealed class PosixWorkspaceTests
     {
         const string pattern = "^([a-z]+)([0-9]+)$";
         var input = Encoding.ASCII.GetBytes(new string('a', 4096) + "000");
-        var admitted = new Utf8PosixRegex(pattern, resourcePolicy: new()
-        { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 1024, MaxResultBytes = 1 });
+        var admitted = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1024,
+                MaxResultBytes = 1
+            }
+        });
         var output = new Utf8CaptureRange[3];
-        Assert.Equal(input.Length, admitted.Match(input, output).EndOffsetInBytes);
+        Assert.Equal(input.Length, admitted.Match(input, captures: output).EndOffsetInBytes);
         Assert.Equal(4096, (output[1].EndOffsetInBytes - output[1].StartOffsetInBytes)); Assert.Equal(3, (output[2].EndOffsetInBytes - output[2].StartOffsetInBytes));
-        var refused = new Utf8PosixRegex(pattern, resourcePolicy: new()
-        { MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 1024, MaxResultBytes = 1 });
+        var refused = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 64,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1024,
+                MaxResultBytes = 1
+            }
+        });
         var account = new Account(1024); Assert.True(account.TryReserve(17));
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            refused.Match(input, output, workingMemoryAllowance: account));
+            refused.Match(input, captures: output, workingMemoryAllowance: account));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         Assert.All(output, value => Assert.False(value.Success));
         Assert.Equal(17UL, account.Used); account.Release(17);
@@ -252,8 +285,16 @@ public sealed class PosixWorkspaceTests
     [InlineData("([a-z]+)[0-9]+([!]+)", "😀ab12!cd34!!", 2)]
     public void UniqueRunCapturePositionsFitStateOnlyAdmissionAndSurviveCursorClosure(string pattern, string text, int count)
     {
-        var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-        { MaxWorkingBytes = 128, MaxResultBytes = 1, MaxDepth = 1, MaxWorkSteps = 10000 });
+        var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 128,
+                MaxResultBytes = 1,
+                MaxDepth = 1,
+                MaxWorkSteps = 10000
+            }
+        });
         var account = new Account(128); Assert.True(account.TryReserve(17));
         var input = Encoding.UTF8.GetBytes(text);
         var output = new Utf8CaptureRange[regex.GroupCount + 2];
@@ -261,17 +302,17 @@ public sealed class PosixWorkspaceTests
         output[^1] = sentinel;
         using var cursor = regex.CreateMatchCursor(input, workingMemoryAllowance: account);
         var alias = cursor;
-        Assert.True(cursor.MoveNext(output, out var whole));
+        Assert.True(cursor.MoveNext(captures: output, match: out var whole));
         var retained = output.ToArray();
         Assert.Equal(4, whole.StartOffsetInBytes);
         Assert.Equal(whole, output[0]); Assert.Equal(sentinel, output[^1]);
-        for (var found = 1; found < count; found++) Assert.True(alias.MoveNext(output, out _));
-        Assert.False(alias.MoveNext(output, out _));
+        for (var found = 1; found < count; found++) Assert.True(alias.MoveNext(captures: output, match: out _));
+        Assert.False(alias.MoveNext(captures: output, match: out _));
         Assert.All(output[..^1], value => Assert.False(value.Success));
         Assert.Equal(sentinel, output[^1]); Assert.Equal(17UL, account.Used);
         cursor.Dispose(); alias.Dispose(); Assert.Equal(17UL, account.Used); account.Release(17);
         Assert.Equal(4, retained[1].StartOffsetInBytes); Assert.Equal(2, (retained[1].EndOffsetInBytes - retained[1].StartOffsetInBytes));
-        Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
+        Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(match: out _));
     }
 
     [Theory]
@@ -280,14 +321,21 @@ public sealed class PosixWorkspaceTests
     [InlineData("(a*)(a*)")]
     public void RunBodiesKeepPublicWorkRefusalAndOriginalCancellation(string pattern)
     {
-        var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-        { MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 1024 });
+        var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 64,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1024
+            }
+        });
         var input = Encoding.UTF8.GetBytes(new string('a', 8192) + "12");
         var sentinel = new Utf8CaptureRange(3, 3 + 4);
         var output = Enumerable.Repeat(sentinel, 2).ToArray();
         var account = new Account(1024); Assert.True(account.TryReserve(17));
         var refused = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            regex.Match(input, output, workingMemoryAllowance: account));
+            regex.Match(input, captures: output, workingMemoryAllowance: account));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, refused.ResourceKind);
         Assert.All(output, value => Assert.False(value.Success));
         Assert.Equal(17UL, account.Used);
@@ -299,12 +347,12 @@ public sealed class PosixWorkspaceTests
         regex = new Utf8PosixRegex(pattern);
         var denied = new Account(0);
         Assert.Throws<Utf8MemoryAdmissionException>(() =>
-            regex.Match("ab12"u8, output, workingMemoryAllowance: denied));
+            regex.Match("ab12"u8, captures: output, workingMemoryAllowance: denied));
         Assert.Equal(0UL, denied.Used);
         using var canceled = new CancellationTokenSource();
         account = new Account(1024) { AfterGrant = canceled.Cancel };
         var error = Assert.Throws<OperationCanceledException>(() =>
-            regex.Match("ab12"u8, output, cancellationToken: canceled.Token, workingMemoryAllowance: account));
+            regex.Match("ab12"u8, captures: output, cancellationToken: canceled.Token, workingMemoryAllowance: account));
         Assert.Equal(canceled.Token, error.CancellationToken);
         Assert.Equal(0UL, account.Used);
         Assert.All(output, value => Assert.False(value.Success));

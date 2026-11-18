@@ -487,7 +487,7 @@ Move the former matchTimeout, resourcePolicy, constructionPolicy,
 constructionTimeout and programMemoryAllowance arguments into its corresponding
 properties. Compile's cancellationToken remains a separate argument. Recompile
 callers; legacy long signatures are removed. Resource/timeout argument errors now
-name policy. Core, PCRE2 and POSIX compilation surfaces have not yet migrated.
+name policy. Core and PCRE2 compilation surfaces have not yet migrated.
 
 Null MatchTimeout uses PythonRe.DefaultMatchTimeout; null ConstructionTimeout means
 infinite. Explicit TimeSpan.Zero remains invalid. Compile eagerly prepares FullMatch;
@@ -502,3 +502,20 @@ construction owner. Explicit Compile or explicit construction/funding controls
 start one owner and reject replacing an active one. Constructor construction
 limits/deadlines are now enforceable through the same policy. Pattern/template
 checks remain separate from the caller-valid subject contract.
+
+### POSIX policy and capture signatures
+
+POSIX also accepts `Utf8RegexPolicy` on its constructor and Compile factory.
+Move timeout/resource/construction arguments into that policy; Compile retains a
+separate construction token. Both null timeouts mean infinite. Optional
+ProgramMemoryAllowance funds covered program storage before publication. Dispose
+funded expressions to close new operations; active calls/cursors retain admission
+until they finish or are disposed. Null working admission inherits program funding;
+unfunded disposal is a no-op. Numeric limits remain independent.
+
+Use `Match(input, startOffsetInBytes, captures, cancellationToken,
+workingMemoryAllowance)` and `cursor.MoveNext(out match, captures)`. Capture spans
+are optional; name `captures:` when omitting the start. The former forwarding
+overloads are removed, so recompile callers and adapt positional arguments or
+method-group delegates. Selection, original cursor interruption, alias progress,
+short/excess output and retained byte ranges keep their existing contracts.

@@ -20,14 +20,31 @@ internal sealed class PosixBenchmarkContext : IDisposable
     internal PosixBenchmarkContext(PosixBenchmarkCase benchmarkCase)
     {
         _case = benchmarkCase; _input = Encoding.UTF8.GetBytes(benchmarkCase.Input);
-        var finite = new Utf8ResourcePolicy { MaxWorkSteps = 10_000_000, MaxDepth = 4096,
-            MaxWorkingBytes = 16 << 20, MaxResultBytes = 1 };
+        var finite = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 10_000_000,
+            MaxDepth = 4096,
+            MaxWorkingBytes = 16 << 20,
+            MaxResultBytes = 1
+        };
         _managed =
         [
-            new(benchmarkCase.Pattern, benchmarkCase.Options),
-            new(benchmarkCase.Pattern, benchmarkCase.Options, Timeout.InfiniteTimeSpan, finite),
-            new(benchmarkCase.Pattern, benchmarkCase.Options, Timeout.InfiniteTimeSpan, finite),
-            new(benchmarkCase.Pattern, benchmarkCase.Options, TimeSpan.FromSeconds(30), finite),
+            new(benchmarkCase.Pattern, options: benchmarkCase.Options),
+            new(benchmarkCase.Pattern, options: benchmarkCase.Options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = finite
+            }),
+            new(benchmarkCase.Pattern, options: benchmarkCase.Options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = finite
+            }),
+            new(benchmarkCase.Pattern, options: benchmarkCase.Options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(30),
+                ResourcePolicy = finite
+            }),
         ];
         if (_managed[0].GroupCount > 4) throw new InvalidOperationException("The POSIX catalog destination supports four captures.");
         _groups = new Utf8CaptureRange[_managed[0].GroupCount + 1];
@@ -58,23 +75,23 @@ internal sealed class PosixBenchmarkContext : IDisposable
             case PosixBenchmarkOperation.Count:
                 return new(regex.Count(_input, _case.StartOffsetInBytes, token, account), default, default, default);
             case PosixBenchmarkOperation.Captures:
-            {
-                Utf8CaptureRange whole = default;
-                for (var record = 0; record < _case.Records; record++)
-                    whole = regex.Match(_input, _groups, _case.StartOffsetInBytes, token, account);
-                return Result(whole.Success ? _case.Records : 0, whole);
-            }
-            default:
-            {
-                var count = 0;
-                PosixBenchmarkResult result = default;
-                using (var cursor = regex.CreateMatchCursor(_input, _case.StartOffsetInBytes, token, account))
                 {
-                    while (cursor.MoveNext(_groups, out var match))
-                    { count++; result = Result(count, match); }
+                    Utf8CaptureRange whole = default;
+                    for (var record = 0; record < _case.Records; record++)
+                        whole = regex.Match(_input, captures: _groups, startOffsetInBytes: _case.StartOffsetInBytes, cancellationToken: token, workingMemoryAllowance: account);
+                    return Result(whole.Success ? _case.Records : 0, whole);
                 }
-                return result;
-            }
+            default:
+                {
+                    var count = 0;
+                    PosixBenchmarkResult result = default;
+                    using (var cursor = regex.CreateMatchCursor(_input, _case.StartOffsetInBytes, token, account))
+                    {
+                        while (cursor.MoveNext(captures: _groups, match: out var match))
+                        { count++; result = Result(count, match); }
+                    }
+                    return result;
+                }
         }
     }
 
@@ -93,7 +110,7 @@ internal sealed class PosixBenchmarkContext : IDisposable
         else
         {
             using var cursor = _managed[0].CreateMatchCursor(_input, _case.StartOffsetInBytes);
-            while (cursor.MoveNext(_groups, out var match))
+            while (cursor.MoveNext(captures: _groups, match: out var match))
             {
                 var value = Result(1, match);
                 result.Add(_case.Operation == PosixBenchmarkOperation.Count ? value with { Group1 = default, Group2 = default } : value);
@@ -112,8 +129,7 @@ internal sealed class PosixBenchmarkContext : IDisposable
             if (lane == 4) result[record] = NativeResult(_buffer.Match(_input, _case.StartOffsetInBytes, PcreMatchOptions.NoUtfCheck), _case.Records);
             else
             {
-                var whole = _managed[lane].Match(_input, _groups, _case.StartOffsetInBytes,
-                    lane == 0 ? default : _token.Token, lane == 2 ? _account : null);
+                var whole = _managed[lane].Match(_input, captures: _groups, startOffsetInBytes: _case.StartOffsetInBytes, cancellationToken: lane == 0 ? default : _token.Token, workingMemoryAllowance: lane == 2 ? _account : null);
                 result[record] = Result(whole.Success ? _case.Records : 0, whole);
             }
         }

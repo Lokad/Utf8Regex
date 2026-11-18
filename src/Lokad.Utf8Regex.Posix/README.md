@@ -14,15 +14,24 @@ using Lokad.Utf8Regex.Posix;
 
 var regex = new Utf8PosixRegex("(a|aa)(a*)");
 Span<Utf8CaptureRange> groups = stackalloc Utf8CaptureRange[3];
-var match = regex.Match("aaa"u8, groups);
+var match = regex.Match("aaa"u8, captures: groups);
 // Whole match: [0,3); group 1: [0,2); group 2: [2,3), all byte ranges.
 ```
 
 `IsMatch`, `Match`, `Count` and a disposable memory cursor accept cancellation
 and optional caller-owned working admission. Constructors also accept finite
-work/depth/working/result policies and a timeout. Values and caller-owned capture
+work/depth/working/result policies and a timeout through `Utf8RegexPolicy`, shared
+with PythonRe. `Compile(pattern, options, policy, cancellationToken)` adds a separate
+construction token; both creation forms accept construction bounds/deadlines.
+`ProgramMemoryAllowance` admits retained program storage before publication.
+Dispose funded expressions: new calls reject after close, while admitted calls
+and cursors retain funding until they finish. Null working admission inherits
+program funding; an explicit working allowance overrides it. Unfunded disposal
+is a no-op. Values and caller-owned capture
 spans survive later calls/disposal. Keep borrowed cursor input alive and unchanged;
-dispose on early termination to refund workspace. No finalizer is required.
+dispose on early termination to refund workspace and any closed program funding.
+Advance with `cursor.MoveNext(out var match, captures)`; aliases share progress
+and disposal. No finalizer reclaims admission.
 
 The default is case-sensitive, with scalar ranges and fixed ASCII named
 classes. `IgnoreCase` uses invariant Unicode 16.0 simple-lowercase equivalence

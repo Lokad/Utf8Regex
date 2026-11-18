@@ -1,9 +1,10 @@
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Posix;
 
 /// <summary>Exclusive incremental POSIX matching over borrowed unchanged memory.</summary>
-/// <remarks>Use one reference at a time. Aliases share progress and disposal; returned coordinate values survive either. Dispose on early termination to refund covered workspace.</remarks>
+/// <remarks>Use one reference at a time. Aliases share progress and disposal; returned coordinate values survive either. Dispose on early termination to refund covered workspace and any closed program funding.</remarks>
 public sealed class Utf8PosixMatchCursor : IDisposable
 {
     private Utf8PosixRegex? _regex;
@@ -13,10 +14,12 @@ public sealed class Utf8PosixMatchCursor : IDisposable
     private int[] _state = [];
     private int _position;
     private bool _completed;
+    private Utf8FundedStorage.Use? _programUse;
 
     internal Utf8PosixMatchCursor(Utf8PosixRegex regex, ReadOnlyMemory<byte> input, int start,
-        CancellationToken token, IUtf8MemoryAllowance? allowance)
+        CancellationToken token, IUtf8MemoryAllowance? allowance, Utf8FundedStorage.Use? programUse = null)
     {
+        _programUse = programUse;
         _invocation = regex.StartInvocation(token, allowance);
         _regex = regex; _input = input; _position = start;
         try
@@ -29,15 +32,12 @@ public sealed class Utf8PosixMatchCursor : IDisposable
         catch { Dispose(); throw; }
     }
 
-    /// <summary>Advances under the original invocation and returns selected whole-match coordinates.</summary>
-    public bool MoveNext(out Utf8CaptureRange match) => MoveNext(Span<Utf8CaptureRange>.Empty, out match);
-
     /// <summary>Advances and writes available capture slots zero onward, without changing selection for shorter output.</summary>
     /// <remarks>Excess slots stay untouched. No match clears the output window; failure clears partial publication and closes the cursor. Earlier retained values remain valid.</remarks>
-    public bool MoveNext(Span<Utf8CaptureRange> groups, out Utf8CaptureRange match)
+    public bool MoveNext(out Utf8CaptureRange match, Span<Utf8CaptureRange> captures = default)
     {
         var regex = _regex ?? throw new ObjectDisposedException(nameof(Utf8PosixMatchCursor));
-        var output = regex.OutputWindow(groups);
+        var output = regex.OutputWindow(captures);
         match = default;
         try
         {
@@ -67,6 +67,9 @@ public sealed class Utf8PosixMatchCursor : IDisposable
         _workspace.Release(ref _invocation);
         _state = [];
         _input = default;
+        var use = _programUse;
+        _programUse = null;
+        use?.Dispose();
     }
 
     /// <summary>Rejects further advances and synchronously releases covered storage; repeated disposal is harmless.</summary>

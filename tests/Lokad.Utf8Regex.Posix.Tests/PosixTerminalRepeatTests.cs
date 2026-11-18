@@ -35,13 +35,13 @@ public sealed class PosixTerminalRepeatTests
     [InlineData("Z([é中]*)中()", PosixCompileOptions.None)]
     public void ScalarTerminalSelectionAgreesWithGeneralExecutionAtEveryFloor(string pattern, PosixCompileOptions options)
     {
-        var regex = new Utf8PosixRegex(pattern, options);
+        var regex = new Utf8PosixRegex(pattern, options: options);
         // Consuming a cannot precede a beginning anchor, including Newline mode.
         // This impossible branch preserves language/capture numbering and uses
         // the production general selector as a contrast.
         var contrast = pattern + "|a^";
         Assert.False(PosixProgram.Compile(contrast, options).FirstAcceptanceIsLongest);
-        var general = new Utf8PosixRegex(contrast, options);
+        var general = new Utf8PosixRegex(contrast, options: options);
         foreach (var text in new[] { "", "Z", "Zé", "Zééééé!", "Z中中", "Z😀😀!", "😀!Zé中😀Zé",
             "ZKKk!", "ZÉéÉ!", "Zé\né!", "Z😀\n中!", "prefix\nZéé\nZé!" })
         {
@@ -56,7 +56,7 @@ public sealed class PosixTerminalRepeatTests
                 {
                     var expected = new Utf8CaptureRange[width];
                     var actual = new Utf8CaptureRange[width];
-                    Assert.Equal(general.Match(input.Span, expected, floor), regex.Match(input.Span, actual, floor));
+                    Assert.Equal(general.Match(input.Span, captures: expected, startOffsetInBytes: floor), regex.Match(input.Span, captures: actual, startOffsetInBytes: floor));
                     Assert.Equal(expected, actual);
                 }
                 Assert.Equal(general.Count(input.Span, floor), regex.Count(input.Span, floor));
@@ -68,15 +68,15 @@ public sealed class PosixTerminalRepeatTests
                 var expectedGroups = new Utf8CaptureRange[groups.Length];
                 Utf8CaptureRange[]? retained = null;
                 Utf8CaptureRange[]? expectedRetained = null;
-                while (expectedCursor.MoveNext(expectedGroups, out var expected))
+                while (expectedCursor.MoveNext(captures: expectedGroups, match: out var expected))
                 {
-                    Assert.True(alias.MoveNext(groups, out var actual));
+                    Assert.True(alias.MoveNext(captures: groups, match: out var actual));
                     Assert.Equal(expected, actual);
                     Assert.Equal(expectedGroups, groups);
                     retained ??= groups.ToArray();
                     expectedRetained ??= expectedGroups.ToArray();
                 }
-                Assert.False(cursor.MoveNext(groups, out _));
+                Assert.False(cursor.MoveNext(captures: groups, match: out _));
                 Assert.All(groups, value => Assert.False(value.Success));
                 if (retained is not null) Assert.Equal(expectedRetained, retained);
             }
@@ -91,16 +91,30 @@ public sealed class PosixTerminalRepeatTests
     {
         var text = "Z" + string.Concat(Enumerable.Repeat(scalar, 8192));
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8PosixRegex("Z(" + scalar + "+)()", resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 4096, MaxResultBytes = 1 });
+        var regex = new Utf8PosixRegex("Z(" + scalar + "+)()", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 4096,
+                MaxResultBytes = 1
+            }
+        });
         var groups = new Utf8CaptureRange[3];
-        var whole = regex.Match(input, groups);
+        var whole = regex.Match(input, captures: groups);
         Assert.Equal((0, input.Length), (whole.StartOffsetInBytes, (whole.EndOffsetInBytes - whole.StartOffsetInBytes)));
         Assert.Equal((1, input.Length - 1),
             (groups[1].StartOffsetInBytes, (groups[1].EndOffsetInBytes - groups[1].StartOffsetInBytes)));
         Assert.Equal((input.Length, 0),
             (groups[2].StartOffsetInBytes, (groups[2].EndOffsetInBytes - groups[2].StartOffsetInBytes)));
-        var limited = new Utf8PosixRegex("Z(" + scalar + "+)()", resourcePolicy: new() { MaxWorkSteps = 1 });
+        var limited = new Utf8PosixRegex("Z(" + scalar + "+)()", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input));
     }
 
@@ -113,16 +127,30 @@ public sealed class PosixTerminalRepeatTests
         var text = "Z" + string.Concat(Enumerable.Repeat(scalar, 128));
         var input = Encoding.UTF8.GetBytes(text);
         var pattern = "Z(" + scalar + "+)" + scalar + "()";
-        var regex = new Utf8PosixRegex(pattern, resourcePolicy: new()
-            { MaxWorkSteps = 100_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         var groups = new Utf8CaptureRange[3];
-        var whole = regex.Match(input, groups);
+        var whole = regex.Match(input, captures: groups);
         Assert.Equal((0, input.Length), (whole.StartOffsetInBytes, (whole.EndOffsetInBytes - whole.StartOffsetInBytes)));
         var width = Encoding.UTF8.GetByteCount(scalar);
         Assert.Equal((1, input.Length - 1 - width),
             (groups[1].StartOffsetInBytes, (groups[1].EndOffsetInBytes - groups[1].StartOffsetInBytes)));
         Assert.Equal((input.Length, 0), (groups[2].StartOffsetInBytes, (groups[2].EndOffsetInBytes - groups[2].StartOffsetInBytes)));
-        var shallow = new Utf8PosixRegex(pattern, resourcePolicy: new() { MaxDepth = 1 });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => shallow.Match(input, groups));
+        var shallow = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxDepth = 1
+            }
+        });
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => shallow.Match(input, captures: groups));
     }
 }

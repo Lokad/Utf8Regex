@@ -7,7 +7,7 @@ public sealed class Utf8RegexPolicy
     /// <summary>Gets invocation work, depth, working and result limits; default leaves them unlimited.</summary>
     public Utf8ResourcePolicy ResourcePolicy { get; init; }
 
-    /// <summary>Gets the timeout for each later operation, or null for the profile's DefaultMatchTimeout.</summary>
+    /// <summary>Gets the timeout for each later operation, or null for the profile's default match timeout.</summary>
     public TimeSpan? MatchTimeout { get; init; }
 
     /// <summary>Gets eager construction limits; default keeps the fixed backstops, with separate caller-funded byte admission when supplied.</summary>

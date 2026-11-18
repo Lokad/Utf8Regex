@@ -102,21 +102,21 @@ Historical interpretations identify ambiguity across implementations; see
 The rules and fixtures here choose one documented policy. Native implementations
 and ordered Core/.NET are not universal capture oracles.
 
-## Initial public surface and lifetimes
+## Public surface and lifetimes
 
 Namespace `Lokad.Utf8Regex.Posix`; immutable, reusable `Utf8PosixRegex`:
 
-- Constructors: pattern only; or pattern, `PosixCompileOptions`, timeout and
-  `Utf8ResourcePolicy`. Options contain `None`, `Newline` and `IgnoreCase`.
+- Constructor: `Utf8PosixRegex(pattern, options=None, policy=null)`, using the
+  shared immutable `Utf8RegexPolicy`. Options contain `None`, `Newline` and `IgnoreCase`.
   Properties expose `Pattern`, `Options`, `MatchTimeout` and `GroupCount`
   (capturing parentheses, excluding zero).
-- `Compile` additionally accepts `Utf8ConstructionPolicy`, a construction timeout
-  and original cancellation token. Use existing construction admission/backstops.
+- `Compile(pattern, options=None, policy=null, cancellationToken=default)` uses
+  the same policy and an independent construction token, checked before pattern
+  or policy work and not retained for matching.
 - `IsMatch(input, token=default, workingMemoryAllowance=null)` returns existence.
-- `Match(input, startOffsetInBytes=0, token=default, workingMemoryAllowance=null)`
-  returns `Utf8CaptureRange` for the selected whole match.
-- `Match(input, Span<Utf8CaptureRange> groups, startOffsetInBytes=0, token=default,
-  workingMemoryAllowance=null)` also writes slots zero onward. Clear supplied
+- `Match(input, startOffsetInBytes=0, captures=default, token=default,
+  workingMemoryAllowance=null)` returns `Utf8CaptureRange` for the selected whole
+  match and writes available slots zero onward into a caller-owned capture span. Clear supplied
   output slots before publication, including after no match; leave no partial
   result on refusal/interruption. Excess slots are untouched. A shorter or empty span cannot alter
   selection, capture priority or the whole match.
@@ -124,8 +124,8 @@ Namespace `Lokad.Utf8Regex.Posix`; immutable, reusable `Utf8PosixRegex`:
   counts nonoverlapping selected matches.
 - `CreateMatchCursor(ReadOnlyMemory<byte> input, startOffsetInBytes=0,
   token=default, workingMemoryAllowance=null)` returns a sealed disposable
-  `Utf8PosixMatchCursor`. `MoveNext(out Utf8CaptureRange match)` and
-  `MoveNext(Span<Utf8CaptureRange> groups, out Utf8CaptureRange match)` use the same
+  `Utf8PosixMatchCursor`. `MoveNext(out Utf8CaptureRange match,
+  Span<Utf8CaptureRange> captures=default)` uses the same
   selection and cumulative invocation. No copied value cursor or finalizer lease.
 
 This surface deliberately uses caller-owned capture spans and value coordinates.
@@ -136,6 +136,23 @@ Use a cursor from one caller at a time; concurrent advances/disposal are unsuppo
 Dispose refunds temporary workspace synchronously. Callers wanting text or owned
 arrays materialize them themselves. No replacement/split API, capture-history
 collection, RTL option or separate NonBacktracking mode is part of this subset.
+
+The policy's `ResourcePolicy` and `MatchTimeout` govern each invocation;
+`ConstructionPolicy` and `ConstructionTimeout` govern compilation. Null timeouts
+mean infinite; explicit zero timeouts are invalid. Default constructors inherit an
+existing internal construction authority. Explicit Compile or explicit
+construction/funding controls own one construction scope and cannot replace an
+active owner. Numeric bounds remain independent of shared memory admission.
+
+`ProgramMemoryAllowance` admits covered program storage before publication.
+Dispose funded regexes: closing rejects new matching calls but admitted calls and
+cursors retain funding until completion or disposal. A null per-operation working
+allowance inherits program funding; an explicit allowance overrides it for working
+storage only. Refusal is terminal. Dispose without program funding is a no-op.
+Scalar metadata and copied byte ranges remain valid after close. Cursor aliases
+share one lifetime; early termination requires disposal, with no finalizer or GC
+refund guarantee. Program charges use the existing conservative construction
+capacity model rather than exact live-object measurement.
 
 `Utf8CaptureRange` exposes `Success`, inclusive `StartOffsetInBytes` and exclusive
 `EndOffsetInBytes`. An absent capture is the default value; a participating empty

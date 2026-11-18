@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Unify POSIX creation on Utf8RegexPolicy, including construction controls and
+  program funding. Funded expressions close new operations on Dispose while
+  admitted calls/cursors retain storage. Consolidate Match and cursor MoveNext
+  onto one signature each; recompile callers and migrate positional arguments.
+
 - Simplify PythonRe constructors/Compile to one immutable Utf8RegexPolicy for
   execution, construction and program funding. Compile keeps a separate token;
   funded constructors prepare retained programs eagerly. Recompile callers and

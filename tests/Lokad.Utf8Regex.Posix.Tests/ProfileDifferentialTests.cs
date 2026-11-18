@@ -16,17 +16,17 @@ public sealed class ProfileDifferentialTests
         {
             // REG_NEWLINE and explicit-LF negated sets match this oracle's dot.
             var regex = new Utf8PosixRegex(pattern, PosixCompileOptions.Newline,
-                matchTimeout: timeout, resourcePolicy: policy);
+                policy: new Utf8RegexPolicy { MatchTimeout = timeout, ResourcePolicy = policy });
             return (input, start, token) =>
             {
                 var exists = regex.IsMatch(input, token);
                 var count = regex.Count(input, cancellationToken: token);
                 var captures = new Utf8CaptureRange[groups];
-                var first = regex.Match(input, captures, start, token);
+                var first = regex.Match(input, start, captures, token);
                 var firstRange = Range(first);
                 var matches = new List<ByteRange[]>();
                 using var cursor = regex.CreateMatchCursor(input, start, token);
-                while (cursor.MoveNext(captures, out _)) matches.Add(captures.Select(Range).ToArray());
+                while (cursor.MoveNext(captures: captures, match: out _)) matches.Add(captures.Select(Range).ToArray());
                 return new(exists, count, firstRange, matches);
             };
         });

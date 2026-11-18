@@ -1,10 +1,9 @@
 [Flags] enum Posix.PosixCompileOptions : Int32 { IgnoreCase = 2, Newline = 1, None = 0 }
 sealed class Posix.Utf8PosixMatchCursor : IDisposable
-  method Boolean MoveNext(Span<Utf8CaptureRange> groups, out Utf8CaptureRange match)
-  method Boolean MoveNext(out Utf8CaptureRange match)
+  method Boolean MoveNext(out Utf8CaptureRange match, Span<Utf8CaptureRange> captures = default)
   method Void Dispose()
-sealed class Posix.Utf8PosixRegex
-  ctor Utf8PosixRegex(String pattern, Posix.PosixCompileOptions options = 0, Nullable<TimeSpan> matchTimeout = null, Utf8ResourcePolicy resourcePolicy = default)
+sealed class Posix.Utf8PosixRegex : IDisposable
+  ctor Utf8PosixRegex(String pattern, Posix.PosixCompileOptions options = 0, Utf8RegexPolicy policy = null)
   property Int32 GroupCount { get; }
   property Posix.PosixCompileOptions Options { get; }
   property String Pattern { get; }
@@ -12,6 +11,6 @@ sealed class Posix.Utf8PosixRegex
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Posix.Utf8PosixMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Span<Utf8CaptureRange> groups, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method static Posix.Utf8PosixRegex Compile(String pattern, Posix.PosixCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
+  method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Span<Utf8CaptureRange> captures = default, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
+  method Void Dispose()
+  method static Posix.Utf8PosixRegex Compile(String pattern, Posix.PosixCompileOptions options = 0, Utf8RegexPolicy policy = null, Threading.CancellationToken cancellationToken = default)

@@ -39,7 +39,11 @@ public sealed class PosixParserTests
     {
         foreach (var input in new[] { "\ud800", "[\udc00]", "abc\ud800" })
             Assert.Throws<ArgumentException>(() => new Utf8PosixRegex(input));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PosixRegex("a", (PosixCompileOptions)4, Timeout.InfiniteTimeSpan, default));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PosixRegex("a", options: (PosixCompileOptions)4, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default
+        }));
     }
 
     [Fact]

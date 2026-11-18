@@ -6,48 +6,78 @@ namespace Lokad.Utf8Regex.Posix;
 
 /// <summary>Matches the invariant POSIX ERE subset over strict UTF-8 Unicode scalars.</summary>
 /// <remarks>Selected matches are leftmost-longest with hierarchical subpattern priority. Instances are immutable and reusable; there is no native or BCL matcher fallback.</remarks>
-public sealed class Utf8PosixRegex
+public sealed class Utf8PosixRegex : IDisposable
 {
-    /// <summary>Compiles an ERE over already-valid UTF-8 text.</summary>
-    /// <remarks>A null timeout means infinite. Work, depth and modeled major working/result bounds remain active; host storage is separate. Use Compile for explicit construction controls.</remarks>
-    public Utf8PosixRegex(string pattern, PosixCompileOptions options = PosixCompileOptions.None, TimeSpan? matchTimeout = null,
-        Utf8ResourcePolicy resourcePolicy = default)
+    /// <summary>Constructs an ERE with immutable construction, execution and optional program-funding settings.</summary>
+    /// <remarks>Null policy timeouts mean infinite. Default construction borrows existing internal admission; explicit construction/funding controls own one scope. Funded expressions reject new matching calls after close, while already-admitted calls/cursors retain program funding. Subjects remain caller-valid unchanged UTF-8.</remarks>
+    public Utf8PosixRegex(string pattern, PosixCompileOptions options = PosixCompileOptions.None,
+        Utf8RegexPolicy? policy = null) : this(pattern, options, policy, default, explicitCompile: false) { }
+
+    private Utf8PosixRegex(string pattern, PosixCompileOptions options, Utf8RegexPolicy? policy,
+        CancellationToken token, bool explicitCompile)
     {
+        token.ThrowIfCancellationRequested();
+        policy ??= Utf8RegexPolicy.Default;
+        var constructionTimeout = policy.ConstructionTimeout ?? Regex.InfiniteMatchTimeout;
+        var constructionPolicy = policy.ConstructionPolicy;
+        var account = policy.ProgramMemoryAllowance;
+        constructionPolicy.Validate(nameof(policy));
+        Utf8MatchTimeout.Validate(constructionTimeout, nameof(policy));
         ArgumentNullException.ThrowIfNull(pattern);
         if ((options & ~(PosixCompileOptions.Newline | PosixCompileOptions.IgnoreCase)) != 0) throw new ArgumentOutOfRangeException(nameof(options));
-        MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout ?? Regex.InfiniteMatchTimeout, nameof(matchTimeout));
-        resourcePolicy.Validate(nameof(resourcePolicy));
+        MatchTimeout = Utf8MatchTimeout.Validate(policy.MatchTimeout ?? Regex.InfiniteMatchTimeout, nameof(policy));
+        var resources = policy.ResourcePolicy;
+        resources.Validate(nameof(policy));
         Pattern = pattern; Options = options;
-        _limits = new(resourcePolicy.MaxWorkSteps ?? 0, resourcePolicy.MaxDepth ?? 0,
-            resourcePolicy.MaxWorkingBytes ?? 0, resourcePolicy.MaxResultBytes ?? 0);
-        _program = PosixProgram.Compile(pattern, options);
+        _limits = new(resources.MaxWorkSteps ?? 0, resources.MaxDepth ?? 0,
+            resources.MaxWorkingBytes ?? 0, resources.MaxResultBytes ?? 0);
+        var ownsConstruction = explicitCompile || account is not null ||
+            constructionPolicy != default || constructionTimeout != Regex.InfiniteMatchTimeout;
+        // PosixProgram already owns default construction and inherits a parent.
+        // Explicit controls need one outer owner, never a replacement parent.
+        using var construction = !ownsConstruction ? null : account is null
+            ? Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token)
+            : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token, account);
+        try
+        {
+            _program = PosixProgram.Compile(pattern, options);
+            GroupCount = _program.CaptureTags.Length - 1;
+            if (construction is not null)
+            {
+                if (account is not null)
+                {
+                    var owner = construction.Budget.AllocateObject(account,
+                        static allowance => new Utf8FundedStorage(allowance, nameof(Utf8PosixRegex)));
+                    construction.Budget.ChargeWork(0);
+                    owner.Retain(construction.Budget.TransferFundedBytes());
+                    _programMemory = owner;
+                }
+                else construction.Budget.ChargeWork(0);
+                construction.Complete();
+            }
+        }
+        catch (Utf8ExecutionDeadlineExpiredException) when (ownsConstruction)
+        { throw new RegexMatchTimeoutException(string.Empty, pattern, constructionTimeout); }
     }
 
-    // A synchronous vector never escapes its call. Keep its stack footprint
-    // bounded; the workspace admits the same conservative capacity first.
+    // Synchronous state remains bounded and admitted by the workspace.
     private const int StackStateLimit = 128;
     private readonly PosixProgram _program;
     private readonly Utf8ExecutionLimits _limits;
+    private readonly Utf8FundedStorage? _programMemory;
 
-    /// <summary>Compiles with separate bounded eager construction and execution controls.</summary>
-    public static Utf8PosixRegex Compile(string pattern, PosixCompileOptions options, TimeSpan matchTimeout,
-        Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy,
-        TimeSpan constructionTimeout, CancellationToken cancellationToken)
+    /// <summary>Compiles an ERE eagerly under one policy and an independent construction token.</summary>
+    /// <remarks>Entry cancellation precedes policy/pattern work. One construction owner covers admission and publication. The token is not retained for matching; later operations use their own deadlines and cancellation.</remarks>
+    public static Utf8PosixRegex Compile(string pattern, PosixCompileOptions options = PosixCompileOptions.None,
+        Utf8RegexPolicy? policy = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        constructionPolicy.Validate(nameof(constructionPolicy));
-        Utf8MatchTimeout.Validate(constructionTimeout, nameof(constructionTimeout));
-        using var owner = Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken);
-        try
-        {
-            var result = new Utf8PosixRegex(pattern, options, matchTimeout, resourcePolicy);
-            owner.Budget.ChargeWork(0);
-            owner.Complete();
-            return result;
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        { throw new RegexMatchTimeoutException(string.Empty, pattern, constructionTimeout); }
+        return new(pattern, options, policy, cancellationToken, explicitCompile: true);
     }
+
+    /// <summary>Closes a caller-funded program after its active calls/cursors finish.</summary>
+    /// <remarks>No-op without program funding. Closing rejects new matching calls but does not cancel existing ones. Retained scalar metadata and copied ranges remain valid. There is no finalizer.</remarks>
+    public void Dispose() => _programMemory?.Close();
 
     /// <summary>Gets the original ERE pattern.</summary>
     public string Pattern { get; }
@@ -56,12 +86,14 @@ public sealed class Utf8PosixRegex
     /// <summary>Gets the timeout for one invocation, including cursor advances.</summary>
     public TimeSpan MatchTimeout { get; }
     /// <summary>Gets the number of capturing parentheses, excluding whole-match slot zero.</summary>
-    public int GroupCount => _program.CaptureTags.Length - 1;
+    public int GroupCount { get; }
 
     /// <summary>Tests existence over valid UTF-8 text, with original interruption and optional working admission.</summary>
     public bool IsMatch(ReadOnlySpan<byte> input, CancellationToken cancellationToken = default,
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         var invocation = StartInvocation(cancellationToken, workingMemoryAllowance);
         PosixWorkspace workspace = default;
         try
@@ -75,18 +107,15 @@ public sealed class Utf8PosixRegex
         finally { workspace.Release(ref invocation); }
     }
 
-    /// <summary>Finds the selected whole match at or after a scalar-aligned byte floor.</summary>
-    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0,
-        CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
-        => Match(input, Span<Utf8CaptureRange>.Empty, startOffsetInBytes, cancellationToken, workingMemoryAllowance);
-
     /// <summary>Finds the selected match and writes available capture slots zero onward into caller-owned storage.</summary>
     /// <remarks>Short output cannot change selection. Excess slots are untouched. Written slots clear on no match or interrupted publication; retained values need no producer lifetime.</remarks>
-    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, Span<Utf8CaptureRange> groups, int startOffsetInBytes = 0,
+    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Span<Utf8CaptureRange> captures = default,
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         var invocation = StartInvocation(cancellationToken, workingMemoryAllowance);
-        var output = OutputWindow(groups);
+        var output = OutputWindow(captures);
         PosixWorkspace workspace = default;
         try
         {
@@ -107,6 +136,8 @@ public sealed class Utf8PosixRegex
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes = 0,
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         var invocation = StartInvocation(cancellationToken, workingMemoryAllowance);
         PosixWorkspace workspace = default;
         try
@@ -132,12 +163,17 @@ public sealed class Utf8PosixRegex
     /// <remarks>The original token, deadline and cumulative limits remain active across advances. Reference aliases share one cursor; disposal refunds covered workspace synchronously.</remarks>
     public Utf8PosixMatchCursor CreateMatchCursor(ReadOnlyMemory<byte> input, int startOffsetInBytes = 0,
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
-        => new(this, input, startOffsetInBytes, cancellationToken, workingMemoryAllowance);
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var programUse = _programMemory?.Enter();
+        try { return new(this, input, startOffsetInBytes, cancellationToken, workingMemoryAllowance, programUse); }
+        catch { programUse?.Dispose(); throw; }
+    }
 
     internal Utf8SliceInvocation StartInvocation(CancellationToken token, IUtf8MemoryAllowance? allowance)
     {
         token.ThrowIfCancellationRequested();
-        return new(_limits, MatchTimeout, token, allowance);
+        return new(_limits, MatchTimeout, token, allowance ?? _programMemory?.Allowance);
     }
 
     internal PosixWorkspace CreateWorkspace(ref Utf8SliceInvocation invocation, bool captureHistory = true)

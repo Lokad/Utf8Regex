@@ -21,8 +21,13 @@ public sealed class PosixLanguageTests
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
-            var regex = Utf8PosixRegex.Compile(pattern, PosixCompileOptions.IgnoreCase, Timeout.InfiniteTimeSpan,
-                default, default, Timeout.InfiniteTimeSpan, default);
+            var regex = Utf8PosixRegex.Compile(pattern, options: PosixCompileOptions.IgnoreCase, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = default,
+                ConstructionPolicy = default,
+                ConstructionTimeout = Timeout.InfiniteTimeSpan
+            }, cancellationToken: default);
             Assert.Equal(PosixCompileOptions.IgnoreCase, regex.Options);
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
             Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -67,8 +72,11 @@ public sealed class PosixLanguageTests
     [InlineData("a{2,3}", "a", false, false)]
     public void ScalarAtomsAndEreOperatorsRetainTheirAdmittedLanguage(string pattern, string input, bool newline, bool expected)
     {
-        var regex = new Utf8PosixRegex(pattern, newline ? PosixCompileOptions.Newline : default,
-            Timeout.InfiniteTimeSpan, default);
+        var regex = new Utf8PosixRegex(pattern, options: newline ? PosixCompileOptions.Newline : default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default
+        });
         Assert.Equal(expected, regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
     }
 
