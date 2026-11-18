@@ -90,6 +90,7 @@ public sealed class Utf8DeferredRepeatStateTests
     [Theory]
     [InlineData(@"a{1,3}?a\z", "aaaa")]
     [InlineData("a{1,3}(?=b{1,2}c)b+c", "aaabbc")]
+    [InlineData(@"\A(?:AB|(?:(?!STOP|HALT)[\s\S]))+ΩSTOP", "é😀ΩSTOP")]
     public void EveryWorkCutoffAndWorkingDenialRefundsTheEnclosingLoan(string pattern, string text)
     {
         var program = Program(pattern); var input = System.Text.Encoding.UTF8.GetBytes(text);

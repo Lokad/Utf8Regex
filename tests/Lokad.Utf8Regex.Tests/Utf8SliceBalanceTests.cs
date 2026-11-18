@@ -14,6 +14,41 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8SliceBalanceTests
 {
     [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CompoundScalarRunsRetainBalanceChoicesUnderWorkingCap(bool closed)
+    {
+        const string pattern = @"\ABEGIN(?:(?<seen>(?<open>BEGIN))|(?<-open>END)|(?:(?!BEGIN|END)[\s\S]))*END(?(open)(?!))";
+        var run = new string('x', 6000) + "😀é";
+        var text = "BEGIN" + run + "BEGIN" + run + "END" + run + (closed ? "END" : "tail");
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 32768, MaxDepth = 65536, MaxWorkSteps = 2000000 }
+        });
+        var expected = new Regex(pattern, RegexOptions.Compiled).Match(text);
+        Assert.Equal(closed, expected.Success);
+        Assert.Equal(closed ? 1 : 0, regex.Count(input, token.Token));
+        Assert.Equal(closed, regex.IsMatch(input, token.Token));
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
+    }
+
+    [Theory]
+    [InlineData(@"\A(?:a|ab|(?<seen>b))+(?(seen)(?!))\z", "ab")]
+    [InlineData(@"\A(?:(?<word>ab)|a|b)+\k<word>\z", "bbabbbbbab")]
+    public void CompoundRewindKeepsAlternativesAndRestoresCaptures(string pattern, string text)
+    {
+        var expected = new Regex(pattern).Match(text);
+        Assert.True(expected.Success);
+        using var regex = Utf8Regex.Compile(pattern);
+        var input = Encoding.UTF8.GetBytes(text);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
+    }
+
+    [Theory]
     [InlineData("(?=(?=(?<p>😀)(?<-p>é)))😀é")]
     [InlineData("(?:(?=(?<p>😀)(?<-p>é))Z|😀é)")]
     public void AssertionBalancingKeepsItsHeadsAndRollback(string pattern)

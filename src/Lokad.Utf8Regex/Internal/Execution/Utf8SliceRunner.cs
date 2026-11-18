@@ -1355,8 +1355,14 @@ internal static partial class Utf8SliceRunner
                     }
 
                 case Utf8SliceInstructionKind.RepeatEnd:
+                {
+                    var repeat = instructions[instruction.A];
+                    if (!program.RightToLeft && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+                        repeat.A == programIndex + 1 && instructions[repeat.A].B == 0)
+                        stacks.CompactScalarRepeatExit(frameBase, repeat.A, positions[repeat.B], input, inputIndex);
                     programIndex = instruction.A;
                     break;
+                }
                 case Utf8SliceInstructionKind.RepeatExit:
                     if (!SetRepeat(counts, positions, instruction.A, -1, -1, ref stacks, ref invocation))
                     {
@@ -2019,6 +2025,40 @@ internal static partial class Utf8SliceRunner
             return Push(ref _frameTables, ref _frameCount, FrameChunkCapacity, frame, ref invocation, ref _reservedBytes, out Breach);
         }
 
+        internal void CompactScalarRepeatExit(int frameBase, int exit, int start, ReadOnlySpan<byte> input, int end)
+        {
+            if (_frameCount <= frameBase) return;
+            ref var latest = ref FrameAt(_frameCount - 1);
+            // The repeat's own exit must be on top, with no surviving body
+            // alternative, capture change, or nested repeat mutation.
+            if (latest.ResumeKind != Utf8SliceResumeKind.RepeatUnwind || latest.Target != exit ||
+                latest.InputIndex != start || latest.TrailCount != _trailCount || latest.JournalCount != _journalCount - 1 ||
+                !TryGetScalarWidthEndingAt(input, end, out var width) || end - start != width)
+                return;
+
+            var mark = latest.JournalCount;
+            if (_journalTables[mark / JournalChunkCapacity][mark % JournalChunkCapacity].RepeatId != latest.Aux) return;
+            if (_frameCount - frameBase > 1)
+            {
+                ref var previous = ref FrameAt(_frameCount - 2);
+                if (previous.ResumeKind == Utf8SliceResumeKind.ScalarRepeatRewind && previous.Target == exit &&
+                    previous.InputIndex == start && previous.TrailCount == _trailCount && previous.JournalCount == mark - 1)
+                {
+                    // Keep the current counter for forward execution. The
+                    // oldest journal entry suffices on unwind: every saved
+                    // endpoint resumes at RepeatExit, which clears this slot.
+                    previous.InputIndex = end;
+                    _frameCount--;
+                    _journalCount--;
+                    return;
+                }
+            }
+
+            latest.ResumeKind = Utf8SliceResumeKind.ScalarRepeatRewind;
+            latest.Aux = start;
+            latest.InputIndex = end;
+        }
+
         internal bool PushTrail(int slot, int oldValue, int newValue, bool isStart, ref Utf8SliceInvocation invocation)
         {
             return Push(ref _trailTables, ref _trailCount, TrailChunkCapacity,
@@ -2099,10 +2139,12 @@ internal static partial class Utf8SliceRunner
                 return false;
             }
 
-            _frameCount--;
-            frame = _frameTables[_frameCount / FrameChunkCapacity][_frameCount % FrameChunkCapacity];
+            frame = FrameAt(--_frameCount);
             return true;
         }
+
+        private ref Utf8SliceFrame FrameAt(int index) =>
+            ref _frameTables[index / FrameChunkCapacity][index % FrameChunkCapacity];
 
         internal Utf8SliceTrailEntry TrailEntryAt(int index)
         {
