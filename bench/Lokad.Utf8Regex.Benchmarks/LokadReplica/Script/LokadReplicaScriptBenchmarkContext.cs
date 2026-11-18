@@ -97,8 +97,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             var expected = oracle.Match(text);
             var match = actual.Match(input);
             if (match.Success != expected.Success || expected.Success &&
-                (match.StartOffsetInBytes != expected.Index || (match.EndOffsetInBytes - match.StartOffsetInBytes) != expected.Length ||
-                 match.StartOffsetInBytes != Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)) ||
+                (match.StartOffsetInBytes != Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)) ||
                  (match.EndOffsetInBytes - match.StartOffsetInBytes) != Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))))
                 throw new InvalidOperationException("Lexer benchmark match ranges disagree after UTF-8 coordinate projection.");
             return expected;
