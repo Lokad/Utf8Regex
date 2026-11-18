@@ -66,7 +66,7 @@ internal static class Pcre2Compiler
                 Pcre2CompiledProgramOverlay.CanPrepareCore(request, backtracking.Root))
                 _ = TryCreateUtf8Regex(request, out core);
             var foundation = Pcre2CompiledProgramOverlay.CreateBacktracking(
-                request, backtracking.Root, backtracking.Program, core, backtracking.UsesBranchReset);
+                request, backtracking.Root, backtracking.Program, core);
             Pcre2ProgramInvariant.Validate(foundation);
             return foundation;
         }
@@ -459,7 +459,6 @@ internal sealed class Pcre2CompiledProgram
         Pcre2CandidateSearchProgram candidateSearch,
         Pcre2PartialProbeProgram partialProbe,
         IPcre2BacktrackingNode? probeRoot,
-        bool usesBranchReset,
         Pcre2NameEntry[] nameEntries,
         int captureGroupCount)
     {
@@ -469,7 +468,6 @@ internal sealed class Pcre2CompiledProgram
         CandidateSearchPlan = new Pcre2CandidateSearchPlan(candidateSearch);
         PartialProbe = partialProbe;
         ProbeRoot = probeRoot;
-        UsesBranchReset = usesBranchReset;
         // All producers transfer their internal immutable table. Public views
         // expose entries by copying, so the VM and compiled root can share it.
         NameEntries = nameEntries;
@@ -501,7 +499,6 @@ internal sealed class Pcre2CompiledProgram
 
     // Grammar metadata survives lowering even when captures are absent or
     // Match selects a specialized operation instead of the backtracking VM.
-    internal bool UsesBranchReset { get; }
 
     internal Pcre2NameEntry[] NameEntries { get; }
 
@@ -529,7 +526,6 @@ internal static class Pcre2CompiledProgramOverlay
             default,
             Pcre2PartialProbeProgram.None,
             null,
-            false,
             [],
             0);
     }
@@ -538,8 +534,7 @@ internal static class Pcre2CompiledProgramOverlay
         Pcre2CompileRequest request,
         IPcre2BacktrackingNode root,
         Pcre2BacktrackingProgram backtrackingProgram,
-        Utf8Regex? preparedCore,
-        bool usesBranchReset)
+        Utf8Regex? preparedCore)
     {
         request = backtrackingProgram.Request;
         var direct = new Pcre2BacktrackingDirectProgram(backtrackingProgram);
@@ -601,7 +596,6 @@ internal static class Pcre2CompiledProgramOverlay
             candidateSearch,
             partialProbe,
             partialProbe.Kind == Pcre2PartialProbeProgramKind.None ? null : root,
-            usesBranchReset,
             backtrackingProgram.NameEntries,
             backtrackingProgram.CaptureSlotCount - 1);
     }

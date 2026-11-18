@@ -228,15 +228,6 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     }
 
     [Fact]
-    public void AnalysisReportsGenericControlVerbPrograms()
-    {
-        var analysis = new Utf8Pcre2Regex("(?>a)(*MARK:A)b++(*PRUNE)").Analyze();
-
-        Assert.True(analysis.IsFullyNative);
-        Assert.True(analysis.UsesBacktrackingControlVerbs);
-    }
-
-    [Fact]
     public void ControlStateRemainsInvocationLocalUnderConcurrency()
     {
         var regex = new Utf8Pcre2Regex("(*MARK:A)(?>a+)|(*MARK:B)b++");

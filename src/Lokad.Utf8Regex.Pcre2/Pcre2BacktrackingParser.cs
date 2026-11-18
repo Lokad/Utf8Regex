@@ -36,7 +36,6 @@ internal sealed class Pcre2BacktrackingParser
 
     internal bool RequiresProfileOptions { get; private set; }
 
-    internal bool UsesBranchReset { get; private set; }
     internal bool HasExplicitCrOrLf { get; private set; }
 
     internal Pcre2NameEntry[] NameEntries => [.. _nameEntries];
@@ -1212,7 +1211,6 @@ internal sealed class Pcre2BacktrackingParser
 
     private bool TryParseBranchReset(out IPcre2BacktrackingNode node)
     {
-        UsesBranchReset = true;
         _offset += 3;
         var captureBase = _captureCount;
         var maximumCaptureCount = captureBase;

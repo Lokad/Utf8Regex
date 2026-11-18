@@ -92,8 +92,9 @@ Use capture byte endpoints and derive character positions in the host when neede
 that work is outside the regex invocation's resource and interruption controls.
 PythonRe borrowed value/group/match views also remove `GetValueString` and the
 `TryGet...ValueString` helpers. Read `GetValueBytes()` on a value, or
-`Value.GetValueBytes()` on a group/match context. Resolve groups with `TryGetGroup`
-or `TryGetFirstSetGroup` and check `Success` to distinguish unmatched from empty.
+`Value.GetValueBytes()` on a group/match context. Resolve names on the compiled
+regex and read numbered groups with `TryGetGroup`. Use `Success` to distinguish
+unmatched from empty.
 Decode the selected bytes in the host when required.
 Replace PythonRe `SplitToStrings` and `SplitDetailed` with `SplitRanges`.
 `Number == 0` denotes a segment; positive numbers identify captured separators.
@@ -524,6 +525,10 @@ PCRE2 cursor snapshots and full probe contexts expose numbered captures. Use
 numbers in order and take the first participating slot. Resolve once if the slots
 will be read after the regex closes. Retained result admission covers captures,
 the receipt and MARK. The compiled expression owns capture-name storage.
+
+`Utf8Pcre2Regex.Analyze()` and `Utf8Pcre2Analysis` are removed. Use the actual
+match's byte-slice properties and the documented limits on iteration. All
+supported matching routes execute in the owned managed engine.
 
 ### PCRE2 operation signatures
 

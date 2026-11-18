@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PCRE2 `Analyze()` and its diagnostic-only construction walk. Runtime
+  search bounds and byte-slice flags still apply.
+
 - PCRE2 match snapshots and full probes publish numbered captures and MARK.
   Resolve duplicate names on the compiled regex and check the resulting slots
   in order. Retained admission excludes the program's name table.

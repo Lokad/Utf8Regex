@@ -328,45 +328,6 @@ public readonly ref struct Utf8Pcre2PartialMatchContext
         => new(input, value, mark);
 }
 
-/// <summary>Describes the compiled execution and result-shaping characteristics of a managed PCRE2 expression.</summary>
-public readonly struct Utf8Pcre2Analysis
-{
-    /// <summary>Gets whether all supported operations execute in the owned managed engines without delegating matching to another regex implementation.</summary>
-    /// <remarks>This describes engine ownership; it does not identify native machine code or a particular fast path.</remarks>
-    public bool IsFullyNative { get; init; }
-
-    /// <summary>Gets whether the expression is one exact literal.</summary>
-    public bool IsExactLiteral { get; init; }
-
-    /// <summary>Gets a conservative lower bound on the subject bytes required for a match.</summary>
-    /// <remarks>The bound need not be attainable: a scalar token may contribute one byte even when its accepted scalars require more. Zero can mean that no positive bound was established.</remarks>
-    public int MinRequiredLengthInBytes { get; init; }
-
-    /// <summary>Gets whether multiple named groups share a name.</summary>
-    public bool HasDuplicateNames { get; init; }
-
-    /// <summary>Gets whether the pattern uses branch-reset groups.</summary>
-    public bool UsesBranchReset { get; init; }
-
-    /// <summary>Gets whether the pattern uses PCRE2 backtracking-control verbs.</summary>
-    public bool UsesBacktrackingControlVerbs { get; init; }
-
-    /// <summary>Gets whether the pattern uses recursion or subroutine calls.</summary>
-    public bool UsesRecursion { get; init; }
-
-    /// <summary>Gets whether byte-oriented constructs may return a value that is not well-formed UTF-8.</summary>
-    public bool MayProduceNonUtf8Slices { get; init; }
-
-    /// <summary>Gets whether reset-start constructs may report a start offset after the end offset.</summary>
-    public bool MayReportNonMonotoneMatchOffsets { get; init; }
-
-    /// <summary>Gets whether global iteration rejects nonmonotone match ranges.</summary>
-    public bool RejectsNonMonotoneIterativeMatches { get; init; }
-
-    /// <summary>Gets whether a supported operation can still fail during execution for pattern-dependent reasons.</summary>
-    public bool MayFailIterativeExecutionAtRuntime { get; init; }
-}
-
 /// <summary>Advances through non-overlapping PCRE2 matches without allocating a public match collection.</summary>
 /// <remarks>The stack-only cursor and its current value borrow the original UTF-8 input.
 /// Copies retain independent positions. Controlled native and owned-slice copies share their original cumulative

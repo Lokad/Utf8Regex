@@ -66,7 +66,6 @@ public sealed class Pcre2PolicyOwnershipTests
         Assert.Throws<ObjectDisposedException>(() => regex.TryCopyNameEntryUtf8(0, new byte[1], out _, out _));
         Assert.Throws<ObjectDisposedException>(() => regex.CopyNumbersForUtf8Name("x"u8, new int[1], out _));
         Assert.Throws<ObjectDisposedException>(() => regex.TryCopyPatternUtf8(new byte[20], out _));
-        Assert.Throws<ObjectDisposedException>(() => regex.Analyze());
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.Match("a"u8, captures: captures, cancellationToken: canceled.Token)).CancellationToken);

@@ -47,7 +47,6 @@ public sealed class Pcre2TimeoutIdentityTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
-        Assert.True(regex.Analyze().IsFullyNative);
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(CreateCatastrophicInput()));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
     }
@@ -59,7 +58,6 @@ public sealed class Pcre2TimeoutIdentityTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
-        Assert.True(regex.Analyze().IsFullyNative);
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(CreateCatastrophicInput()));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
     }
@@ -71,7 +69,6 @@ public sealed class Pcre2TimeoutIdentityTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
-        Assert.True(regex.Analyze().IsFullyNative);
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Replace(CreateCatastrophicInput(), "Z"));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
     }
@@ -83,7 +80,6 @@ public sealed class Pcre2TimeoutIdentityTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
-        Assert.True(regex.Analyze().IsFullyNative);
         Pcre2MatchException? caught = null;
         try
         {
@@ -109,7 +105,6 @@ public sealed class Pcre2TimeoutIdentityTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
-        Assert.True(regex.Analyze().IsFullyNative);
         var exception = Assert.Throws<Pcre2MatchException>(() =>
         {
             ReadOnlyMemory<byte> result2Input = CreateCatastrophicInput();

@@ -64,15 +64,20 @@ public sealed class Pcre2BacktrackingConstructionBoundsTests
     }
 
     [Fact]
-    public void ShallowSubroutineDependencyChainsHaveDepthAdmissionDuringAnalysis()
+    public void ShallowSubroutineDependenciesUseTheExecutionDepthLimit()
     {
         var definitions = string.Concat(Enumerable.Range(0, 24).Select(index =>
             $"(?<n{index}>" + (index == 23 ? "a" : $"(?{index + 2})") + ")"));
         var pattern = "(?J)(?(DEFINE)" + definitions + ")(?1)";
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            Compile(pattern, new() { MaxDepth = 8 }, false));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
-        Assert.True(Compile(pattern, Utf8ConstructionPolicy.Default, false).IsMatch("a"u8));
+        using var admitted = Compile(pattern, new() { MaxDepth = 8 }, false);
+        Assert.True(admitted.IsMatch("a"u8));
+        using var limited = Utf8Pcre2Regex.Compile(pattern, policy: new()
+        {
+            ConstructionPolicy = new() { MaxDepth = 8 },
+            ResourcePolicy = new() { MaxDepth = 8 }
+        });
+        Assert.Equal(Pcre2ErrorKind.DepthLimit,
+            Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("a"u8)).ErrorKind);
     }
 
     [Fact]

@@ -7,26 +7,25 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2BranchResetCompilerTests
 {
     [Theory]
-    [InlineData("(?|(a)|(b))", "b", true, 2)]
-    [InlineData("(?|(a)(b)|(c))", "c", true, 3)]
-    [InlineData("(?|(?<x>a)|(?<x>b))\\k<x>", "bb", true, 2)]
-    [InlineData("(?|a|b)", "a", true, 1)]
-    [InlineData("(?|)", "", true, 1)]
-    [InlineData("(?=(?|(a)|(b)))a", "a", true, 2)]
-    [InlineData("(?|(?|(a)|(b))|(c))\\1", "cc", true, 2)]
-    [InlineData("(a)|(b)", "b", false, 3)]
-    [InlineData(@"\(\?\|a\)", "(?|a)", false, 1)]
-    [InlineData(@"\Q(?|a)\E", "(?|a)", false, 1)]
-    [InlineData("[?|()]", "|", false, 1)]
-    [InlineData("(?# (?| )a", "a", false, 1)]
-    [InlineData("(?x)a # (?| ignored\n", "a", false, 1)]
-    public void AnalysisUsesParsedBranchResetSyntax(
-        string pattern, string input, bool usesBranchReset, int captureSlotCount)
+    [InlineData("(?|(a)|(b))", "b", 2)]
+    [InlineData("(?|(a)(b)|(c))", "c", 3)]
+    [InlineData("(?|(?<x>a)|(?<x>b))\\k<x>", "bb", 2)]
+    [InlineData("(?|a|b)", "a", 1)]
+    [InlineData("(?|)", "", 1)]
+    [InlineData("(?=(?|(a)|(b)))a", "a", 2)]
+    [InlineData("(?|(?|(a)|(b))|(c))\\1", "cc", 2)]
+    [InlineData("(a)|(b)", "b", 3)]
+    [InlineData(@"\(\?\|a\)", "(?|a)", 1)]
+    [InlineData(@"\Q(?|a)\E", "(?|a)", 1)]
+    [InlineData("[?|()]", "|", 1)]
+    [InlineData("(?# (?| )a", "a", 1)]
+    [InlineData("(?x)a # (?| ignored\n", "a", 1)]
+    public void BranchResetSyntaxKeepsCaptureSlotsDistinctFromLiteralSpellings(
+        string pattern, string input, int captureSlotCount)
     {
         var bytes = Encoding.UTF8.GetBytes(input);
         foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern)) })
         {
-            Assert.Equal(usesBranchReset, regex.Analyze().UsesBranchReset);
             ReadOnlySpan<byte> match1Input = bytes;
             var match1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
             var match = regex.Match(match1Input, captures: match1Captures);

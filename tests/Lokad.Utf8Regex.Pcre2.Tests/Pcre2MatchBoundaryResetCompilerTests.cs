@@ -96,20 +96,6 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
     }
 
     [Fact]
-    public void AnalysisUsesGenericResetSemantics()
-    {
-        var regex = new Utf8Pcre2Regex("(?=(?:a|aa)+\\K)", options: Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
-        });
-        var analysis = regex.Analyze();
-
-        Assert.True(analysis.IsFullyNative);
-        Assert.True(analysis.MayReportNonMonotoneMatchOffsets);
-        Assert.True(analysis.RejectsNonMonotoneIterativeMatches);
-    }
-
-    [Fact]
     public void ResetStateRemainsInvocationLocalUnderConcurrency()
     {
         var regex = new Utf8Pcre2Regex("(?:foo|bar)-\\K[0-9]+");

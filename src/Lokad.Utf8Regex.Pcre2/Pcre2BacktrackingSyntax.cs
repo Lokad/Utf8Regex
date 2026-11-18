@@ -323,7 +323,6 @@ internal sealed class Pcre2BacktrackingProgram
         int captureSlotCount,
         bool requiresCaptureState,
         bool hasCaptureWrites,
-        bool usesBacktrackingControlVerbs,
         bool usesMatchBoundaryReset,
         bool mayReportNonMonotoneMatchOffsets,
         bool mayThrowDeferredLookaroundReset,
@@ -337,7 +336,6 @@ internal sealed class Pcre2BacktrackingProgram
         string[] markNames,
         Pcre2NameEntry[] nameEntries,
         int minimumByteLength,
-        int analyzedMinimumByteLength,
         int minimumScalarLength,
         int maximumScalarLength,
         byte? leadingAsciiByte,
@@ -350,7 +348,6 @@ internal sealed class Pcre2BacktrackingProgram
         CaptureSlotCount = captureSlotCount;
         RequiresCaptureState = requiresCaptureState;
         HasCaptureWrites = hasCaptureWrites;
-        UsesBacktrackingControlVerbs = usesBacktrackingControlVerbs;
         UsesMatchBoundaryReset = usesMatchBoundaryReset ||
             instructions.Any(static instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.MatchBoundaryReset) ||
             assertionPrograms.Any(static program => program.UsesMatchBoundaryReset);
@@ -366,7 +363,6 @@ internal sealed class Pcre2BacktrackingProgram
         MarkNames = markNames;
         NameEntries = nameEntries;
         MinimumByteLength = minimumByteLength;
-        AnalyzedMinimumByteLength = analyzedMinimumByteLength;
         MinimumScalarLength = minimumScalarLength;
         MaximumScalarLength = maximumScalarLength;
         LeadingAsciiByte = leadingAsciiByte;
@@ -387,7 +383,6 @@ internal sealed class Pcre2BacktrackingProgram
 
     internal bool HasCaptureWrites { get; }
 
-    internal bool UsesBacktrackingControlVerbs { get; }
 
     internal bool UsesMatchBoundaryReset { get; }
 
@@ -415,7 +410,6 @@ internal sealed class Pcre2BacktrackingProgram
 
     internal int MinimumByteLength { get; }
 
-    internal int AnalyzedMinimumByteLength { get; }
 
     internal int MinimumScalarLength { get; }
 

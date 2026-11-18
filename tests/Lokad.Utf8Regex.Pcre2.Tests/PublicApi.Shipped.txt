@@ -15,18 +15,6 @@ class Pcre2SubstitutionException : Exception, Runtime.Serialization.ISerializabl
   ctor Pcre2SubstitutionException(String message, Pcre2ErrorKind errorKind)
   property Pcre2ErrorKind ErrorKind { get; }
 [Flags] enum Pcre2SubstitutionOptions : Int32 { Extended = 1, None = 0, SubstituteLiteral = 16, SubstituteMatched = 8, SubstituteOverflowLength = 32, SubstituteReplacementOnly = 64, UnknownUnset = 4, UnsetEmpty = 2 }
-readonly struct Utf8Pcre2Analysis
-  property Boolean HasDuplicateNames { get; init; }
-  property Boolean IsExactLiteral { get; init; }
-  property Boolean IsFullyNative { get; init; }
-  property Boolean MayFailIterativeExecutionAtRuntime { get; init; }
-  property Boolean MayProduceNonUtf8Slices { get; init; }
-  property Boolean MayReportNonMonotoneMatchOffsets { get; init; }
-  property Boolean RejectsNonMonotoneIterativeMatches { get; init; }
-  property Boolean UsesBacktrackingControlVerbs { get; init; }
-  property Boolean UsesBranchReset { get; init; }
-  property Boolean UsesRecursion { get; init; }
-  property Int32 MinRequiredLengthInBytes { get; init; }
 readonly struct Utf8Pcre2CaptureRange
   property Boolean IsUtf8SliceWellFormed { get; }
   property Boolean Success { get; }
@@ -102,7 +90,6 @@ sealed class Utf8Pcre2Regex : IDisposable
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes = 0, Pcre2SubstitutionOptions substitutionOptions = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
   method Int32 CopyNumbersForUtf8Name(ReadOnlySpan<Byte> nameUtf8, Span<Int32> destination, out Boolean isMore, Threading.CancellationToken cancellationToken = default)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Utf8Pcre2Analysis Analyze()
   method Utf8Pcre2MatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8Pcre2ProbeResult Probe(ReadOnlySpan<Byte> input, Pcre2PartialMode partialMode, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
   method Utf8Pcre2ValueMatch Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, scoped Span<Utf8Pcre2CaptureRange> captures = default, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)

@@ -631,35 +631,6 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         get { using var use = _programMemory?.Enter(); return NameEntries.Length; }
     }
 
-    /// <summary>Returns the compiled expression's execution and result-shaping characteristics.</summary>
-    public Utf8Pcre2Analysis Analyze()
-    {
-        using var programUse = _programMemory?.Enter();
-        var backtracking = (_program.Operations.Match as Pcre2BacktrackingDirectProgram)?.Program;
-        var literal = (_program.Operations.Match as Pcre2LiteralDirectProgram)?.Program;
-        return new Utf8Pcre2Analysis
-        {
-            // R05: every selectable program kind is owned; no BCL-direct kind remains.
-            IsFullyNative = true,
-            IsExactLiteral = literal is not null,
-            MinRequiredLengthInBytes = _program.Operations.Match switch
-            {
-                Pcre2LiteralDirectProgram program => program.Program.LiteralUtf8.Length,
-                Pcre2BacktrackingDirectProgram program => program.Program.AnalyzedMinimumByteLength,
-                Pcre2SliceDirectProgram program => program.Fallback.AnalyzedMinimumByteLength,
-                _ => 0,
-            },
-            HasDuplicateNames = NameEntries.GroupBy(static entry => entry.Name, StringComparer.Ordinal).Any(static group => group.Count() > 1),
-            UsesBranchReset = _program.UsesBranchReset,
-            UsesBacktrackingControlVerbs = backtracking?.UsesBacktrackingControlVerbs ?? false,
-            UsesRecursion = backtracking is not null && UsesSubroutines(backtracking),
-            MayProduceNonUtf8Slices = GenericProgramUsesCodeUnit,
-            MayReportNonMonotoneMatchOffsets = GenericBacktrackingMayReportNonMonotoneMatchOffsets,
-            RejectsNonMonotoneIterativeMatches = GenericBacktrackingMayReportNonMonotoneMatchOffsets,
-            MayFailIterativeExecutionAtRuntime = backtracking is not null && HasDeferredLookaroundReset(backtracking)
-        };
-    }
-
     private bool TryReplaceUsingLiteralDriver(
         ReadOnlySpan<byte> input,
         Utf8ValidatedInput subject,
@@ -1217,16 +1188,6 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             HasDeferredLookaroundReset(backtracking.Program);
     }
 
-    private static bool UsesSubroutines(Pcre2BacktrackingProgram program)
-    {
-        if (program.SubroutineTargets.Length != 0)
-        {
-            return true;
-        }
-
-        return program.AssertionPrograms.Any(UsesSubroutines);
-    }
-
     private static bool HasDeferredLookaroundReset(Pcre2BacktrackingProgram program)
     {
         if (program.MayThrowDeferredLookaroundReset)
@@ -1248,12 +1209,6 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         {
             Program.MayReportNonMonotoneMatchOffsets: true,
         };
-
-    private bool GenericProgramUsesCodeUnit => _program.Operations.Match switch
-    {
-        Pcre2BacktrackingDirectProgram { Program.UsesCodeUnit: true } => true,
-        _ => false,
-    };
 
     private void ThrowIfGenericIterationMayBeNonMonotone()
     {

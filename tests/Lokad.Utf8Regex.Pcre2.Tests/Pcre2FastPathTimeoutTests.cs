@@ -42,7 +42,6 @@ public sealed class Pcre2FastPathTimeoutTests
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
         var input = Encoding.UTF8.GetBytes("xxabcxx");
-        Assert.True(regex.Analyze().IsFullyNative);
         armed = true;
         if (expireAtRead != 0)
         {

@@ -24,7 +24,6 @@ internal sealed class Pcre2BacktrackingLowerer
     private int _repeatCount;
     private bool _requiresCaptureState;
     private bool _hasCaptureWrites;
-    private bool _usesBacktrackingControlVerbs;
     private bool _usesMatchBoundaryReset;
     private bool _mayReportNonMonotoneMatchOffsets;
     private bool _mayThrowDeferredLookaroundReset;
@@ -73,7 +72,6 @@ internal sealed class Pcre2BacktrackingLowerer
             _captureCount + 1,
             _requiresCaptureState,
             _hasCaptureWrites,
-            _usesBacktrackingControlVerbs,
             _usesMatchBoundaryReset,
             _mayReportNonMonotoneMatchOffsets,
             _mayThrowDeferredLookaroundReset,
@@ -87,7 +85,6 @@ internal sealed class Pcre2BacktrackingLowerer
             _markNames.Take(),
             _nameEntries,
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root),
-            Pcre2BacktrackingAnalysis.GetMinimumByteLength(root, _captureDefinitions, _nameSlots),
             Pcre2BacktrackingAnalysis.GetMinimumScalarLength(root),
             Pcre2BacktrackingAnalysis.GetMaximumScalarLength(root),
             Pcre2BacktrackingAnalysis.GetLeadingAsciiByte(root),
@@ -316,7 +313,6 @@ internal sealed class Pcre2BacktrackingLowerer
                     _assertionPrograms.Add(assertionProgram);
                     _requiresCaptureState |= assertionProgram.RequiresCaptureState;
                     _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
-                    _usesBacktrackingControlVerbs |= assertionProgram.UsesBacktrackingControlVerbs;
                     _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
                     _mayReportNonMonotoneMatchOffsets |= ContainsMatchBoundaryReset(assertion.Body);
                     _mayThrowDeferredLookaroundReset |=
@@ -399,7 +395,6 @@ internal sealed class Pcre2BacktrackingLowerer
 
     private void EmitControlVerb(Pcre2ControlVerbBacktrackingNode controlVerb)
     {
-        _usesBacktrackingControlVerbs = true;
         var nameId = GetMarkNameId(controlVerb.Name);
         switch (controlVerb.VerbKind)
         {
@@ -503,7 +498,6 @@ internal sealed class Pcre2BacktrackingLowerer
             _assertionPrograms.Add(assertionProgram);
             _requiresCaptureState |= assertionProgram.RequiresCaptureState;
             _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
-            _usesBacktrackingControlVerbs |= assertionProgram.UsesBacktrackingControlVerbs;
             _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
             _mayReportNonMonotoneMatchOffsets |= ContainsMatchBoundaryReset(assertion.Body);
             _mayThrowDeferredLookaroundReset |=

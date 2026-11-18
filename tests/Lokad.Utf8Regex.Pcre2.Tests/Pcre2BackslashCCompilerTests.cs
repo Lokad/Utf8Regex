@@ -33,7 +33,6 @@ public sealed class Pcre2BackslashCCompilerTests
         Assert.True(match.HasContiguousByteRange);
         Assert.False(match.IsUtf8SliceWellFormed);
         Assert.Equal(new byte[] { 0xc3 }, match.GetValueBytes().ToArray());
-        Assert.True(regex.Analyze().MayProduceNonUtf8Slices);
     }
 
     [Fact]

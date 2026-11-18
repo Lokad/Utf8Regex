@@ -33,18 +33,10 @@ recursion/subroutines, conditionals, atomic groups, backtracking control, `\K`,
 Unicode and opted-in `\C`. Normal operations include `IsMatch`, `Match`,
 `CreateMatchCursor`, `Count`, `EnumerateMatches` and substitution.
 `MatchDetailed` is removed: use caller-owned capture slots, or a persistent cursor
-for owned snapshots and named metadata. Dispose temporary cursors after the
+for owned snapshots. Dispose temporary cursors after the
 required results; returned ranges remain valid with unchanged subject memory.
 Cursor creation and owned publication have additional operating costs. First-only
 callers can retain reusable capture buffers and copy UTF-8 name numbers once.
-
-`Analyze().UsesBranchReset` reports parsed branch-reset syntax, including nested
-groups and groups without captures. `IsFullyNative` means all supported operations
-use the owned managed engines without delegation to another regex implementation;
-it does not identify machine code or a particular fast path.
-`MinRequiredLengthInBytes` is a conservative byte lower bound across the selected
-backends. A scalar token can contribute one byte even when its accepted scalars
-require more; zero can mean that no positive bound was established.
 
 Subjects follow the caller-valid input contract above. Normal character matching and
 empty-match progression use scalars and primary byte coordinates. Explicit `\C`
