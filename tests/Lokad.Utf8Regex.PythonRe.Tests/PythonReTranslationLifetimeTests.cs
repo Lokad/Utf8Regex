@@ -81,7 +81,14 @@ public sealed class PythonReTranslationLifetimeTests
                 captureCursor1.MoveNext(out snapshot1);
             }
             Assert.True(snapshot1.Success);
-            Assert.Equal(1, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).Count);
+            ReadOnlyMemory<byte> snapshots1Input = input;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            Assert.Equal(1, snapshots1.Count);
             Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
         }
     }
@@ -107,7 +114,14 @@ public sealed class PythonReTranslationLifetimeTests
             captureCursor2.MoveNext(out snapshot2);
         }
         Assert.True(snapshot2.Success);
-        Assert.Equal(1, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).Count);
+        ReadOnlyMemory<byte> snapshots2Input = input;
+        var snapshots2 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
+        {
+            while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                snapshots2.Add(snapshots2Match);
+        }
+        Assert.Equal(1, snapshots2.Count);
         Assert.Equal("X", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "X")));
     }
     [Theory]
@@ -156,7 +170,14 @@ public sealed class PythonReTranslationLifetimeTests
         Assert.True(PythonReScalarMatchState.CanUseCandidateRegex(program, core));
         PythonReMatchAssert.Equal("needle", regex.Match("xxneedlebar"u8, mode: Utf8PythonMatchMode.Search));
         Assert.Equal(1, regex.Count("xxneedlebar"u8));
-        Assert.Equal(["needle"], PythonReFindAllAssert.Decode(regex.FindAllToUtf8("xxneedlebar"u8)).ScalarValues);
+        ReadOnlyMemory<byte> snapshots3Input = ("xxneedlebar"u8).ToArray();
+        var snapshots3 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots3Cursor = regex.CreateMatchCursor(snapshots3Input, 0, default))
+        {
+            while (snapshots3Cursor.MoveNext(out var snapshots3Match))
+                snapshots3.Add(snapshots3Match);
+        }
+        Assert.Equal(["needle"], snapshots3.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         Assert.False(regex.IsMatch("needlex"u8));
         Assert.False(regex.Match("xxneedlexbar"u8, mode: Utf8PythonMatchMode.Search).Success);
         Assert.False(regex.Match("needlebar"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
@@ -227,19 +248,43 @@ public sealed class PythonReTranslationLifetimeTests
         pending.Push(root);
         while (pending.TryPop(out var value))
         {
-            if (!seen.Add(value)) continue;
-            if (value is string text) { yield return text; continue; }
+            if (!seen.Add(value))
+            {
+                continue;
+            }
+            if (value is string text)
+            {
+                yield return text;
+                continue;
+            }
             if (value is Array array)
             {
-                if (array.GetType().GetElementType()?.IsPrimitive == true) continue;
-                foreach (var item in array) if (item is not null) pending.Push(item);
+                if (array.GetType().GetElementType()?.IsPrimitive == true)
+                {
+                    continue;
+                }
+                foreach (var item in array)
+                {
+                    if (item is not null)
+                    {
+                        pending.Push(item);
+                    }
+                }
                 continue;
             }
             var type = value.GetType();
             if (type.IsPrimitive || type.IsEnum ||
-                type.Assembly != typeof(Utf8PythonRegex).Assembly && type.Assembly != typeof(Utf8Regex).Assembly) continue;
+                type.Assembly != typeof(Utf8PythonRegex).Assembly && type.Assembly != typeof(Utf8Regex).Assembly)
+            {
+                continue;
+            }
             foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-                if (field.GetValue(value) is { } item) pending.Push(item);
+            {
+                if (field.GetValue(value) is { } item)
+                {
+                    pending.Push(item);
+                }
+            }
         }
     }
 }

@@ -66,8 +66,22 @@ public sealed class PythonReCompletedBackreferenceTests
                     collectedRanges2.Add(rangeMatch2);
             }
             PythonReCaptureAssert.Equal(collectedRanges1.ToArray(), collectedRanges2.ToArray());
-            Assert.Equal(PythonReFindAllAssert.Decode(reference.FindAllToUtf8(repeated)).ScalarValues,
-                PythonReFindAllAssert.Decode(regex.FindAllToUtf8(repeated, 0, source.Token)).ScalarValues);
+            ReadOnlyMemory<byte> snapshots1Input = repeated;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = reference.CreateMatchCursor(snapshots1Input, 0, default))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            ReadOnlyMemory<byte> snapshots2Input = repeated;
+            var snapshots2 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, source.Token))
+            {
+                while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                    snapshots2.Add(snapshots2Match);
+            }
+            Assert.Equal(snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray(),
+                            snapshots2.Select(captureSnapshot2 => System.Text.Encoding.UTF8.GetString(captureSnapshot2.GetGroupMemory(captureSnapshot2.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
             Assert.Equal(System.Text.Encoding.UTF8.GetString(reference.Replace(repeated, "!")), System.Text.Encoding.UTF8.GetString(regex.Replace(repeated, "!")));
         }
     }
@@ -89,11 +103,22 @@ public sealed class PythonReCompletedBackreferenceTests
         using var cursor = regex.CreateMatchCursor("token-token token-token"u8.ToArray(), 0, source.Token);
         var alias = cursor;
         ref var invocation = ref cursor.WorkingInvocation;
-        ticks = 15; Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
+        ticks = 15;
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
         Assert.Equal("token", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
-        Assert.Equal(1, retained.LastIndex); Assert.Equal("word", retained.LastGroup);
-        if (expire) { ticks = 25; Assert.Throws<RegexMatchTimeoutException>(() => alias.MoveNext(out _)); }
-        else { source.Cancel(); Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => alias.MoveNext(out _)).CancellationToken); }
+        Assert.Equal(1, retained.LastIndex);
+        Assert.Equal("word", retained.LastGroup);
+        if (expire)
+        {
+            ticks = 25;
+            Assert.Throws<RegexMatchTimeoutException>(() => alias.MoveNext(out _));
+        }
+        else
+        {
+            source.Cancel();
+            Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => alias.MoveNext(out _)).CancellationToken);
+        }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         Assert.Equal("token", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
@@ -105,19 +130,21 @@ public sealed class PythonReCompletedBackreferenceTests
 
         foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkSteps = 1 },
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, new Utf8ResourcePolicy { MaxResultBytes = 1 } })
+        {
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-{
-    Utf8PythonRangeMatch snapshot3 = default;
-    using (var captureCursor3 = new Utf8PythonRegex(Pattern, options: default, policy: new Utf8RegexPolicy()
-    {
-        MatchTimeout = Timeout.InfiniteTimeSpan,
-        ResourcePolicy = policy
-    }).CreateMatchCursor("token-token"u8.ToArray(), mode: Utf8PythonMatchMode.FullMatch))
-    {
-        captureCursor3.MoveNext(out snapshot3);
-    }
+        {
+            Utf8PythonRangeMatch snapshot3 = default;
+            using (var captureCursor3 = new Utf8PythonRegex(Pattern, options: default, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            }).CreateMatchCursor("token-token"u8.ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+            {
+                captureCursor3.MoveNext(out snapshot3);
+            }
 
-    _ = snapshot3;
-});
+            _ = snapshot3;
+        });
+        }
     }
 }

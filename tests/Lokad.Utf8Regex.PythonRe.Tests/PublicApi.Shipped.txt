@@ -15,12 +15,6 @@ readonly struct PythonRe.Utf8PythonCaptureRange
   property Int32 EndOffsetInBytes { get; init; }
   property Int32 Number { get; init; }
   property Int32 StartOffsetInBytes { get; init; }
-enum PythonRe.Utf8PythonFindAllShape : Int32 { FullMatch = 0, GroupTuple = 2, SingleGroup = 1 }
-readonly struct PythonRe.Utf8PythonFindAllUtf8Result
-  property Byte[][] ScalarValues { get; init; }
-  property Byte[][][] TupleValues { get; init; }
-  property Int32 Count { get; }
-  property PythonRe.Utf8PythonFindAllShape Shape { get; init; }
 sealed class PythonRe.Utf8PythonMatchCursor : IDisposable
   method Boolean MoveNext(out PythonRe.Utf8PythonRangeMatch match, Threading.CancellationToken cancellationToken = default)
   method Boolean MoveNextRetained(out PythonRe.Utf8PythonRetainedRangeMatch match, Threading.CancellationToken cancellationToken = default)
@@ -54,7 +48,6 @@ sealed class PythonRe.Utf8PythonRegex : IDisposable
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 count = 0, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
   method PythonRe.Utf8PythonCaptureRange[] SplitRanges(ReadOnlySpan<Byte> input, Int32 maxSplit = 0, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
-  method PythonRe.Utf8PythonFindAllUtf8Result FindAllToUtf8(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
   method PythonRe.Utf8PythonMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null, PythonRe.Utf8PythonMatchMode mode = 0, Nullable<Int32> endOffsetInBytes = null)
   method PythonRe.Utf8PythonRetainedSubnResult SubnRetained(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementUtf8, Int32 count = 0, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)
   method PythonRe.Utf8PythonRetainedSubnResult SubnRetained(ReadOnlySpan<Byte> input, String replacement, Int32 count = 0, Int32 startOffsetInBytes = 0, Threading.CancellationToken cancellationToken = default)

@@ -334,11 +334,7 @@ internal static partial class PythonReBenchmarkReporter
 
             return position switch
             {
-                PythonReOneShotPosition.HitAtStart => match + new string('x', inputSize - match.Length),
-                PythonReOneShotPosition.HitLate => new string('x', inputSize - match.Length) + match,
-                PythonReOneShotPosition.Miss => incomplete + new string('x', inputSize - incomplete.Length),
-                _ => throw new ArgumentOutOfRangeException(nameof(position)),
-            };
+                PythonReOneShotPosition.HitAtStart => match + new string('x', inputSize - match.Length),                PythonReOneShotPosition.HitLate => new string('x', inputSize - match.Length) + match,                PythonReOneShotPosition.Miss => incomplete + new string('x', inputSize - incomplete.Length),                _ => throw new ArgumentOutOfRangeException(nameof(position))            };
         }
 
         var pattern = sourceCase.Pattern;
@@ -350,11 +346,7 @@ internal static partial class PythonReBenchmarkReporter
 
         return position switch
         {
-            PythonReOneShotPosition.HitAtStart => pattern + new string('x', inputSize - pattern.Length),
-            PythonReOneShotPosition.HitLate => new string('x', inputSize - pattern.Length) + pattern,
-            PythonReOneShotPosition.Miss => new string('x', inputSize),
-            _ => throw new ArgumentOutOfRangeException(nameof(position)),
-        };
+            PythonReOneShotPosition.HitAtStart => pattern + new string('x', inputSize - pattern.Length),            PythonReOneShotPosition.HitLate => new string('x', inputSize - pattern.Length) + pattern,            PythonReOneShotPosition.Miss => new string('x', inputSize),            _ => throw new ArgumentOutOfRangeException(nameof(position))        };
     }
 
     private static PythonReOneShotScalingFit FitOneShotScaling(
@@ -437,11 +429,7 @@ internal static partial class PythonReBenchmarkReporter
 
     private static string DescribeOneShotPosition(PythonReOneShotPosition position) => position switch
     {
-        PythonReOneShotPosition.HitAtStart => "hit-start",
-        PythonReOneShotPosition.HitLate => "hit-late",
-        PythonReOneShotPosition.Miss => "miss",
-        _ => throw new ArgumentOutOfRangeException(nameof(position)),
-    };
+        PythonReOneShotPosition.HitAtStart => "hit-start",        PythonReOneShotPosition.HitLate => "hit-late",        PythonReOneShotPosition.Miss => "miss",        _ => throw new ArgumentOutOfRangeException(nameof(position))    };
 }
 
 internal enum PythonReOneShotPosition : byte

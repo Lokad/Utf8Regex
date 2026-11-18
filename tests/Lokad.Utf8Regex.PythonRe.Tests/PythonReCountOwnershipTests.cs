@@ -48,7 +48,14 @@ public sealed class PythonReCountOwnershipTests
         var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
-        Assert.Equal(regex.FindAllToUtf8(input, startOffsetInBytes).Count, regex.Count(input, startOffsetInBytes));
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, startOffsetInBytes, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        Assert.Equal(snapshots1.Count, regex.Count(input, startOffsetInBytes));
     }
     [Fact]
     public void SplitBackendCountAgreesWithFindAll()
@@ -58,7 +65,14 @@ public sealed class PythonReCountOwnershipTests
         var regex = new Utf8PythonRegex("\\b|\\w+", options: PythonReCompileOptions.None);
         var input = Encoding.UTF8.GetBytes("\u00E9 skip y");
         Assert.Equal(3, regex.Count(input, 8));
-        Assert.Equal(3, regex.FindAllToUtf8(input, 8).Count);
+        ReadOnlyMemory<byte> snapshots2Input = input;
+        var snapshots2 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 8, default))
+        {
+            while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                snapshots2.Add(snapshots2Match);
+        }
+        Assert.Equal(3, snapshots2.Count);
     }
     [Theory]
     [InlineData("(?P<word>foo)-(?P=word)", PythonReCompileOptions.None, "xx foo-foo yy foo-foo", 3, 2)]
@@ -73,7 +87,12 @@ public sealed class PythonReCountOwnershipTests
     public void CapturedRepeatCountNeedsNoScratchAndPreservesActualCaptureValues()
     {
         var policy = new Utf8ResourcePolicy
-        { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+        {
+            MaxWorkSteps = 100000,
+            MaxDepth = 1,
+            MaxWorkingBytes = 1,
+            MaxResultBytes = 1
+        };
         const string pattern = "([A-Za-z]){2,3}";
         var count = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy()
         {
@@ -83,15 +102,28 @@ public sealed class PythonReCountOwnershipTests
         using var token = new CancellationTokenSource();
         Assert.Equal(3, count.Count(input));
         Assert.Equal(2, count.Count(input, 5, token.Token));
-        var values = PythonReFindAllAssert.Decode(new Utf8PythonRegex(pattern).FindAllToUtf8(input));
-        Assert.Equal(new[] { "c", "f", "b" }, values.ScalarValues);
+        var snapshots3Regex = new Utf8PythonRegex(pattern);
+        ReadOnlyMemory<byte> snapshots3Input = input;
+        var snapshots3 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots3Cursor = snapshots3Regex.CreateMatchCursor(snapshots3Input, 0, default))
+        {
+            while (snapshots3Cursor.MoveNext(out var snapshots3Match))
+                snapshots3.Add(snapshots3Match);
+        }
+        var values = snapshots3;
+        Assert.Equal(new[] { "c", "f", "b" }, values.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
     }
     [Fact]
 
     public void IndependentCapturedCountsNeedNoCaptureScratch()
     {
         var policy = new Utf8ResourcePolicy
-        { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1, MaxResultBytes = 1 };
+        {
+            MaxWorkSteps = 100000,
+            MaxDepth = 256,
+            MaxWorkingBytes = 1,
+            MaxResultBytes = 1
+        };
         foreach (var (pattern, text, expected, afterFirst) in new[]
         {
             ("([a-z]+)-([0-9]+)", "é😀item-12 other-345", 2, 14),
@@ -109,7 +141,10 @@ public sealed class PythonReCountOwnershipTests
             {
                 Assert.Equal(expected, regex.Count(input));
             }
-            finally { session.Complete(); }
+            finally
+            {
+                session.Complete();
+            }
             using var token = new CancellationTokenSource();
             Assert.Equal(1, regex.Count(input, afterFirst, token.Token));
             Assert.Equal(0, regex.Count(input, input.Length));
@@ -181,7 +216,8 @@ public sealed class PythonReCountOwnershipTests
             Assert.Throws<OperationCanceledException>(() => compound.Count("ababx abx"u8, 0, token.Token)).CancellationToken);
         account.AfterGrant = null;
         Assert.Equal(held, account.Used);
-        simple.Dispose(); compound.Dispose();
+        simple.Dispose();
+        compound.Dispose();
         Assert.Equal(17UL, account.Used);
         account.Release(17);
     }
@@ -206,7 +242,12 @@ public sealed class PythonReCountOwnershipTests
             });
             int? published = null;
             var failure = Record.Exception(() => published = regex.Count(input));
-            if (failure is null) { Assert.Equal(2, published); succeeded = true; break; }
+            if (failure is null)
+            {
+                Assert.Equal(2, published);
+                succeeded = true;
+                break;
+            }
             var denied = Assert.IsType<Utf8ResourceLimitExceededException>(failure);
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, denied.ResourceKind);
             Assert.Null(published);

@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PythonRe FindAllToUtf8, its shaped result carriers and duplicate
+  collector. Use capture cursors over stable subject memory; hosts own output
+  collections/copies, outside regex resource controls. Cursor snapshots preserve
+  admission, cancellation and retained-result lifetimes. Recompile consumers.
+
 - Remove PCRE2 MatchMany, its duplicate range-copy driver and whole-range carrier.
   Stream ranges through EnumerateMatches or retain a capture cursor; callers own
   buffering and request the next result explicitly.
@@ -89,8 +94,7 @@
   remain. Hosts own text decoding and keep borrowed subjects unchanged while read.
 
 - Remove PythonRe's legacy structural FindAll collector and Utf8PythonMatchData.
-  Use range cursors for whole-match metadata and FindAllToUtf8 for Python-shaped
-  byte values. Host aggregates and decoding remain outside regex controls.
+  Use range cursors for whole-match/capture metadata; hosts materialize values. Host aggregates and decoding remain outside regex controls.
 
 - Remove PCRE2 callback replacement, evaluator delegates and Core's former shared
   callback writer. Hosts compute custom output over range cursors. Byte templates
@@ -109,7 +113,7 @@
   the range cursor for custom output and decode returned bytes when needed.
 
 - Remove PythonRe FindAllToStrings and its text-only construction/canonicalization
-  machinery. FindAllToUtf8 retains Python-shaped owned byte results.
+  machinery. Hosts materialize values from retained capture cursors.
 
 - Remove PythonRe SplitToStrings, SplitDetailed and their text result type.
   SplitRanges retains segment/capture metadata; hosts decode selected bytes.

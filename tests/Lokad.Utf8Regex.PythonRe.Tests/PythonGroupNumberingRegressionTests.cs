@@ -59,7 +59,14 @@ public sealed class PythonGroupNumberingRegressionTests
             captureCursor2.MoveNext(out snapshot2);
         }
         AssertGroups(snapshot2);
-        Assert.Equal(values.Skip(1), Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        Assert.Equal(values.Skip(1), Assert.Single(snapshots1.Select(captureSnapshot1 => Enumerable.Range(1, captureSnapshot1.Groups.Length - 1).Select(captureNumber1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureNumber1).Span)).ToArray()).ToArray()));
         using var cursor = regex.CreateMatchCursor(input);
         Assert.True(cursor.MoveNext(out cursorRange));
         var retained = cursorRange;
@@ -161,7 +168,15 @@ public sealed class PythonGroupNumberingRegressionTests
     [Fact]
     public void FindAllTuplesFollowPythonSlotOrder()
     {
-        var tuples = PythonReFindAllAssert.Decode(new Utf8PythonRegex("(?P<x>a)(b)").FindAllToUtf8(Utf8("abab"))).TupleValues;
+        var snapshots2Regex = new Utf8PythonRegex("(?P<x>a)(b)");
+        ReadOnlyMemory<byte> snapshots2Input = Utf8("abab");
+        var snapshots2 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots2Cursor = snapshots2Regex.CreateMatchCursor(snapshots2Input, 0, default))
+        {
+            while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                snapshots2.Add(snapshots2Match);
+        }
+        var tuples = snapshots2.Select(captureSnapshot2 => Enumerable.Range(1, captureSnapshot2.Groups.Length - 1).Select(captureNumber2 => System.Text.Encoding.UTF8.GetString(captureSnapshot2.GetGroupMemory(captureNumber2).Span)).ToArray()).ToArray();
         Assert.Equal(2, tuples.Length);
         Assert.Equal(["a", "b"], tuples[0]);
         Assert.Equal(["a", "b"], tuples[1]);

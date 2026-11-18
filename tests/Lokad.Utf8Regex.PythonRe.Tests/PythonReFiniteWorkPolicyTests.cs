@@ -9,7 +9,8 @@ public sealed class PythonReFiniteWorkPolicyTests
     internal static IEnumerable<int> OperationIds()
     {
         for (var operation = 0; operation < 25; operation++)
-            if (operation is not (5 or 6 or 7 or 11 or 12 or 13 or 15 or 14 or 16 or 19 or 20 or 22 or 23 or 24)) yield return operation;
+            if (operation is not (5 or 6 or 7 or 11 or 12 or 13 or 15 or 14 or 16 or 17 or 19 or 20 or 22 or 23 or 24))
+                yield return operation;
     }
 
     public static IEnumerable<object[]> Operations()
@@ -52,7 +53,6 @@ public sealed class PythonReFiniteWorkPolicyTests
             2 => regex.Match(input, start, cancellationToken: token).Success.ToString(),
             3 => regex.Match(input, start, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch).Success.ToString(),
             4 => regex.Count(input, start, token).ToString(),
-            17 => regex.FindAllToUtf8(input, start, token).ScalarValues.Length.ToString(),
             18 => string.Join("|", regex.SplitRanges(input, 0, start, token).Select(x => $"{x.Number}:{x.Success}:{x.StartOffsetInBytes}:{x.EndOffsetInBytes}")),
             21 => Encoding.UTF8.GetString(regex.Subn(input, "<\\g<0>>", 0, start, token).ResultBytes),
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
@@ -81,8 +81,15 @@ public sealed class PythonReFiniteWorkPolicyTests
         while (high - low > 1)
         {
             var middle = (low + high) / 2;
-            try { Assert.Equal(expected, Run(RegexWith(pattern, middle), input, operation)); high = middle; }
-            catch (Utf8ResourceLimitExceededException) { low = middle; }
+            try
+            {
+                Assert.Equal(expected, Run(RegexWith(pattern, middle), input, operation));
+                high = middle;
+            }
+            catch (Utf8ResourceLimitExceededException)
+            {
+                low = middle;
+            }
         }
         Exhausted(() => Run(RegexWith(pattern, low), input, operation), low);
         Assert.Equal(expected, Run(RegexWith(pattern, high), input, operation));
@@ -117,7 +124,8 @@ public sealed class PythonReFiniteWorkPolicyTests
             catch (Utf8ResourceLimitExceededException error)
             {
                 Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-                Assert.Equal(limit, error.Limit); Assert.Equal(limit + 1, error.Requested);
+                Assert.Equal(limit, error.Limit);
+                Assert.Equal(limit + 1, error.Requested);
             }
         }
         Assert.Fail("The bounded fixture did not complete within 4096 steps.");
@@ -131,18 +139,22 @@ public sealed class PythonReFiniteWorkPolicyTests
         ulong firstSteps;
         using (var probe = RegexWith(".", ulong.MaxValue).CreateMatchCursor(input))
         {
-            Assert.True(probe.MoveNext(out _)); firstSteps = probe.WorkingInvocation.Budget.Steps;
-            Assert.True(probe.MoveNext(out _)); Assert.True(probe.WorkingInvocation.Budget.Steps > firstSteps);
+            Assert.True(probe.MoveNext(out _));
+            firstSteps = probe.WorkingInvocation.Budget.Steps;
+            Assert.True(probe.MoveNext(out _));
+            Assert.True(probe.WorkingInvocation.Budget.Steps > firstSteps);
         }
         using var cursor = RegexWith(".", firstSteps).CreateMatchCursor(input);
         var alias = cursor;
         var authority = cursor.WorkingInvocation;
-        Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
         Assert.Equal(4, retained.Value.EndOffsetInBytes);
         Exhausted(() => alias.MoveNext(out cursorRange), firstSteps);
         Assert.Equal(0UL, authority.Ledger.ReservedBytes);
         Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
-        alias.Dispose(); cursor.Dispose();
+        alias.Dispose();
+        cursor.Dispose();
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 
@@ -179,8 +191,15 @@ public sealed class PythonReFiniteWorkPolicyTests
         while (high - low > 1)
         {
             var middle = (low + high) / 2;
-            try { Assert.Equal(expected, Run(RegexWith("cat", middle), miss, operation)); high = middle; }
-            catch (Utf8ResourceLimitExceededException) { low = middle; }
+            try
+            {
+                Assert.Equal(expected, Run(RegexWith("cat", middle), miss, operation));
+                high = middle;
+            }
+            catch (Utf8ResourceLimitExceededException)
+            {
+                low = middle;
+            }
         }
         Exhausted(() => Run(RegexWith("cat", low), miss, operation), low);
         Assert.Equal(expected, Run(RegexWith("cat", high), miss, operation));
@@ -189,7 +208,8 @@ public sealed class PythonReFiniteWorkPolicyTests
     [Fact]
     public void CancellationAndExpiredDeadlineKeepTheirIdentity()
     {
-        using var token = new CancellationTokenSource(); token.Cancel();
+        using var token = new CancellationTokenSource();
+        token.Cancel();
         var regex = RegexWith("cat", 1);
         var error = Assert.Throws<OperationCanceledException>(() => regex.Match("cat"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search));
         Assert.Equal(token.Token, error.CancellationToken);

@@ -74,7 +74,14 @@ public sealed class PythonReTimeoutTests
 
         Assert.True(regex.Match(input, mode: Utf8PythonMatchMode.Search).Success);
         Assert.Equal(1, regex.Count(input));
-        Assert.Equal(1, regex.FindAllToUtf8(input).Count);
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        Assert.Equal(1, snapshots1.Count);
         Assert.Equal("xxZxx", PythonReSubstitutionAssert.Decode(regex.Subn(input, "Z")).ResultText);
         Assert.Equal(2, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)).Length);
     }

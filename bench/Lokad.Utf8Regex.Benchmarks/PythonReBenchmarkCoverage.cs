@@ -29,10 +29,7 @@ internal static partial class PythonReBenchmarkReporter
             section,
             section switch
             {
-                "Construction and first call" => snapshot.Lifecycle.Count,
-                "Scaling evidence" => snapshot.ScalingFamilies.Count,
-                _ => cases.Count(item => item.Coverage.Section.Equals(section, StringComparison.Ordinal)),
-            })));
+                "Construction and first call" => snapshot.Lifecycle.Count,                "Scaling evidence" => snapshot.ScalingFamilies.Count,                _ => cases.Count(item => item.Coverage.Section.Equals(section, StringComparison.Ordinal))            })));
         PrintCoverageGroups("Operations", Group(static item => item.Operation.ToString()));
         PrintCoverageGroups("Flags", Group(static item => item.Options.ToString()));
         PrintCoverageGroups("Feature families", Group(static item => item.Coverage.FeatureFamily));

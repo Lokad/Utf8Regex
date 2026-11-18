@@ -67,7 +67,14 @@ public sealed class PythonReCaptureAliasTests
             Assert.True(retained.TryGetFirstSetGroup(second, out var b));
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString((a.Success ? retained.GetGroupMemory(a.Number).Span : ReadOnlySpan<byte>.Empty)));
             Assert.Equal("b", System.Text.Encoding.UTF8.GetString((b.Success ? retained.GetGroupMemory(b.Number).Span : ReadOnlySpan<byte>.Empty)));
-            Assert.Equal(["a", "b"], Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
+            ReadOnlyMemory<byte> snapshots1Input = input;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            Assert.Equal(["a", "b"], Assert.Single(snapshots1.Select(captureSnapshot1 => Enumerable.Range(1, captureSnapshot1.Groups.Length - 1).Select(captureNumber1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureNumber1).Span)).ToArray()).ToArray()));
             Assert.Equal("a|b", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "\\g<" + first + ">|\\g<" + second + ">")));
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
             Assert.Equal("b", System.Text.Encoding.UTF8.GetString((retained.Groups[2].Success ? retained.GetGroupMemory(retained.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));

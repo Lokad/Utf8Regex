@@ -13,8 +13,15 @@ public sealed class PythonReUnicodeStringSizingTests
         var characters = Enumerable.Range(0, 128).Select(value => (char)value).ToArray();
         var text = new string(characters) + "é中😀";
         using var each = new Utf8PythonRegex("[\\s\\S]");
+        ReadOnlyMemory<byte> snapshots1Input = Encoding.UTF8.GetBytes(text);
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = each.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
         Assert.Equal(characters.Select(value => value.ToString()).Concat(["é", "中", "😀"]),
-            PythonReFindAllAssert.Decode(each.FindAllToUtf8(Encoding.UTF8.GetBytes(text))).ScalarValues);
+                    snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         using var split = new Utf8PythonRegex("([,;])");
         Assert.Equal(new string?[] { "α", ",", "😀", ";", "é", ",", "" },
             PythonReSplitAssert.Decode("α,😀;é,"u8, split.SplitRanges("α,😀;é,"u8, 0, 0, default)));
@@ -58,8 +65,15 @@ public sealed class PythonReUnicodeStringSizingTests
             Assert.Equal(new string?[] { word, "，", word, ",", "尾😀" }, PythonReSplitAssert.Decode(input, captured.SplitRanges(input, 0, 4, default)));
             Assert.Equal(new string?[] { word, word + ",尾😀" }, PythonReSplitAssert.Decode(input, plain.SplitRanges(input, 1, 4, default)));
             using var findall = new Utf8PythonRegex("([^,，]+)");
+            ReadOnlyMemory<byte> snapshots2Input = Encoding.UTF8.GetBytes(word + "，" + word + ",尾😀");
+            var snapshots2 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots2Cursor = findall.CreateMatchCursor(snapshots2Input, 0, default))
+            {
+                while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                    snapshots2.Add(snapshots2Match);
+            }
             Assert.Equal(new string?[] { word, word, "尾😀" },
-                PythonReFindAllAssert.Decode(findall.FindAllToUtf8(Encoding.UTF8.GetBytes(word + "，" + word + ",尾😀"))).ScalarValues);
+                            snapshots2.Select(captureSnapshot2 => System.Text.Encoding.UTF8.GetString(captureSnapshot2.GetGroupMemory(captureSnapshot2.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         }
     }
 }

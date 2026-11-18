@@ -157,54 +157,6 @@ public sealed partial class Utf8PythonRegex
         finally { cursor.Dispose(); }
     }
 
-    private void FindAllScalarUtf8(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        CancellationToken cancellationToken, out Utf8PythonFindAllUtf8Result result)
-    {
-        result = default;
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
-        Utf8InvocationResultBuffer<byte[]> scalars = default;
-        Utf8InvocationResultBuffer<byte[][]> tuples = default;
-        try
-        {
-            var count = CaptureGroupCount;
-            while (cursor.MoveNext())
-            {
-                if (count <= 1)
-                {
-                    var success = cursor.TryGetCaptureByteRange(count, out var start, out var end);
-                    cursor.AddResult(ref scalars, success ? cursor.GetBytes(start, end) : []);
-                }
-                else
-                {
-                    var tuple = cursor.AllocateResultArray<byte[]>(count);
-                    for (var i = 0; i < count; i++)
-                    {
-                        tuple[i] = cursor.TryGetCaptureByteRange(i + 1, out var start, out var end)
-                            ? cursor.GetBytes(start, end) : [];
-                        cursor.Checkpoint();
-                    }
-                    cursor.AddResult(ref tuples, tuple);
-                }
-                cursor.Checkpoint();
-            }
-            var completed = new Utf8PythonFindAllUtf8Result
-            {
-                Shape = count == 0 ? Utf8PythonFindAllShape.FullMatch : count == 1 ? Utf8PythonFindAllShape.SingleGroup : Utf8PythonFindAllShape.GroupTuple,
-                ScalarValues = cursor.CompleteResults(ref scalars),
-                TupleValues = cursor.CompleteResults(ref tuples)
-            };
-            cursor.Checkpoint();
-            result = completed;
-            return;
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        { throw cursor.TimeoutFailure(); }
-        finally { cursor.ReleaseResults(ref scalars); cursor.ReleaseResults(ref tuples); cursor.Dispose(); }
-    }
-
     private Utf8PythonCaptureRange[] SplitRangesScalar(ReadOnlySpan<byte> input, int maxSplit,
         int startOffsetInBytes, CancellationToken cancellationToken)
     {

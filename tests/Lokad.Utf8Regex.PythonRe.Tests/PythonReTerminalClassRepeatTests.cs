@@ -24,8 +24,15 @@ public sealed class PythonReTerminalClassRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
         Assert.Equal(expected.Length, regex.Count(input, 0, token.Token));
-        var values = regex.FindAllToUtf8(input, 0, token.Token);
-        Assert.Equal(expected, values.ScalarValues.Select(Encoding.UTF8.GetString).ToArray());
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, token.Token))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        var values = snapshots1;
+        Assert.Equal(expected, values.Select(captureSnapshot1 => captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray().Select(Encoding.UTF8.GetString).ToArray());
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, token.Token))
         {
@@ -40,7 +47,9 @@ public sealed class PythonReTerminalClassRepeatTests
             // These greedy atom roots cannot consume after an empty match at
             // the same start; the next empty result advances one scalar.
             if (i > 0 && expected[i - 1].Length == 0 && previous < text.Length)
+            {
                 previous += char.IsSurrogatePair(text, previous) ? 2 : 1;
+            }
             var start = text.IndexOf(expected[i], previous, StringComparison.Ordinal);
             Assert.True(start >= 0);
             Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), matches[i].Value.StartOffsetInBytes);
@@ -58,9 +67,31 @@ public sealed class PythonReTerminalClassRepeatTests
         Assert.Equal(2, Create(@"(\w+)", 1, 1 << 20).Count("abc ééé"u8));
         Assert.Equal(2, Create(@"(\w)+", 1, 1 << 20).Count("abc ééé"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"(\w)+", 1, 1 << 20).FindAllToUtf8("abc ééé"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            {
+                var snapshots2Regex = Create(@"(\w)+", 1, 1 << 20);
+                ReadOnlyMemory<byte> snapshots2Input = ("abc ééé"u8).ToArray();
+                var snapshots2 = new List<Utf8PythonRangeMatch>();
+                using (var snapshots2Cursor = snapshots2Regex.CreateMatchCursor(snapshots2Input, 0, default))
+                {
+                    while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                        snapshots2.Add(snapshots2Match);
+                }
+                return snapshots2;
+            }).ResourceKind);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"\w+", 1, 1).FindAllToUtf8("abc ééé"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            {
+                var snapshots3Regex = Create(@"\w+", 1, 1);
+                ReadOnlyMemory<byte> snapshots3Input = ("abc ééé"u8).ToArray();
+                var snapshots3 = new List<Utf8PythonRangeMatch>();
+                using (var snapshots3Cursor = snapshots3Regex.CreateMatchCursor(snapshots3Input, 0, default))
+                {
+                    while (snapshots3Cursor.MoveNext(out var snapshots3Match))
+                        snapshots3.Add(snapshots3Match);
+                }
+                return snapshots3;
+            }).ResourceKind);
         var tiny = new Utf8PythonRegex(@"\w+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
@@ -80,7 +111,17 @@ public sealed class PythonReTerminalClassRepeatTests
         });
         Assert.Equal(1, captured.Count("abc"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => captured.FindAllToUtf8("abc"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            {
+                ReadOnlyMemory<byte> snapshots4Input = ("abc"u8).ToArray();
+                var snapshots4 = new List<Utf8PythonRangeMatch>();
+                using (var snapshots4Cursor = captured.CreateMatchCursor(snapshots4Input, 0, default))
+                {
+                    while (snapshots4Cursor.MoveNext(out var snapshots4Match))
+                        snapshots4.Add(snapshots4Match);
+                }
+                return snapshots4;
+            }).ResourceKind);
     }
 
     [Fact]
@@ -120,8 +161,24 @@ public sealed class PythonReTerminalClassRepeatTests
         Assert.False(regex.Match("abc!"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.False(regex.Match("😀abc"u8).Success);
         Assert.Equal(4, regex.Match("😀abc"u8, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.Equal("abcZ", Encoding.UTF8.GetString(Create(@"\w+Z", 256, 1 << 20).FindAllToUtf8("abcZ"u8).ScalarValues[0]));
-        Assert.Equal("XYZ", Encoding.UTF8.GetString(Create(@"(?<=\w{2})\w+", 256, 1 << 20).FindAllToUtf8("abXYZ"u8).ScalarValues[0]));
+        var snapshots5Regex = Create(@"\w+Z", 256, 1 << 20);
+        ReadOnlyMemory<byte> snapshots5Input = ("abcZ"u8).ToArray();
+        var snapshots5 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots5Cursor = snapshots5Regex.CreateMatchCursor(snapshots5Input, 0, default))
+        {
+            while (snapshots5Cursor.MoveNext(out var snapshots5Match))
+                snapshots5.Add(snapshots5Match);
+        }
+        Assert.Equal("abcZ", Encoding.UTF8.GetString(snapshots5.Select(captureSnapshot2 => captureSnapshot2.GetGroupMemory(captureSnapshot2.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray()[0]));
+        var snapshots6Regex = Create(@"(?<=\w{2})\w+", 256, 1 << 20);
+        ReadOnlyMemory<byte> snapshots6Input = ("abXYZ"u8).ToArray();
+        var snapshots6 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots6Cursor = snapshots6Regex.CreateMatchCursor(snapshots6Input, 0, default))
+        {
+            while (snapshots6Cursor.MoveNext(out var snapshots6Match))
+                snapshots6.Add(snapshots6Match);
+        }
+        Assert.Equal("XYZ", Encoding.UTF8.GetString(snapshots6.Select(captureSnapshot3 => captureSnapshot3.GetGroupMemory(captureSnapshot3.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray()[0]));
     }
 
     private static Utf8PythonRegex Create(string pattern, uint depth, ulong results) => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()

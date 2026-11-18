@@ -10,7 +10,7 @@ public sealed class PythonReByteOffsetCollectionTests
     [InlineData("foo|bar", "é😀")]
     [InlineData("foo", "ascii ")]
     [InlineData("foo|bar", "ascii ")]
-    public void ByteCollectionsAndCursorRangesPreserveOriginalOffsets(string pattern, string prefix)
+    public void CursorRangesPreserveOriginalOffsets(string pattern, string prefix)
     {
         var input = Encoding.UTF8.GetBytes(prefix + " foo bar");
         var start = Encoding.UTF8.GetByteCount(prefix);
@@ -33,9 +33,7 @@ public sealed class PythonReByteOffsetCollectionTests
             Assert.Equal(expected, matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)));
             Assert.Equal(start + 1, matches[0].Value.StartOffsetInBytes);
             Assert.Equal(start + 4, matches[0].Value.EndOffsetInBytes);
-            Assert.Equal(expected, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, start, token)).ScalarValues);
-            Assert.Equal(expected, regex.FindAllToUtf8(input, start, token).ScalarValues.Select(Encoding.UTF8.GetString));
-            _ = regex.FindAllToUtf8("later foo"u8);
+            Assert.True(regex.Match("later foo"u8, mode: Utf8PythonMatchMode.Search).Success);
             Assert.Equal("foo", System.Text.Encoding.UTF8.GetString(matches[0].GetValueMemory().Span));
         }
     }
@@ -43,7 +41,7 @@ public sealed class PythonReByteOffsetCollectionTests
     [Theory]
     [InlineData("foo")]
     [InlineData("foo|bar")]
-    public void NativeCollectionStillValidatesBoundariesAndEntireSubject(string pattern)
+    public void CursorChecksScalarBoundariesAndOriginalAuthority(string pattern)
     {
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
@@ -53,11 +51,39 @@ public sealed class PythonReByteOffsetCollectionTests
             for (var interior = 1; interior < 4; interior++)
             {
                 var offset = interior;
-                Assert.Throws<ArgumentOutOfRangeException>(() => regex.FindAllToUtf8("😀 foo"u8, offset));
+                Assert.Throws<ArgumentOutOfRangeException>(() =>
+                {
+                    ReadOnlyMemory<byte> snapshots4Input = ("😀 foo"u8).ToArray();
+                    var snapshots4 = new List<Utf8PythonRangeMatch>();
+                    using (var snapshots4Cursor = regex.CreateMatchCursor(snapshots4Input, offset, default))
+                    {
+                        while (snapshots4Cursor.MoveNext(out var snapshots4Match))
+                            snapshots4.Add(snapshots4Match);
+                    }
+                    return snapshots4;
+                });
             }
-            Assert.Empty(regex.FindAllToUtf8("😀 foo"u8, "😀 foo"u8.Length).ScalarValues);
+            ReadOnlyMemory<byte> snapshots5Input = ("😀 foo"u8).ToArray();
+            int snapshots5Start = "😀 foo"u8.Length;
+            var snapshots5 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots5Cursor = regex.CreateMatchCursor(snapshots5Input, snapshots5Start, default))
+            {
+                while (snapshots5Cursor.MoveNext(out var snapshots5Match))
+                    snapshots5.Add(snapshots5Match);
+            }
+            Assert.Empty(snapshots5.Select(captureSnapshot3 => captureSnapshot3.GetGroupMemory(captureSnapshot3.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray());
 
-            var failure = Assert.Throws<OperationCanceledException>(() => regex.FindAllToUtf8("😀 foo"u8, 4, canceled.Token));
+            var failure = Assert.Throws<OperationCanceledException>(() =>
+            {
+                ReadOnlyMemory<byte> snapshots6Input = ("😀 foo"u8).ToArray();
+                var snapshots6 = new List<Utf8PythonRangeMatch>();
+                using (var snapshots6Cursor = regex.CreateMatchCursor(snapshots6Input, 4, canceled.Token))
+                {
+                    while (snapshots6Cursor.MoveNext(out var snapshots6Match))
+                        snapshots6.Add(snapshots6Match);
+                }
+                return snapshots6;
+            });
             Assert.Equal(canceled.Token, failure.CancellationToken);
         }
         var limited = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
@@ -68,21 +94,47 @@ public sealed class PythonReByteOffsetCollectionTests
                 MaxWorkSteps = 1
             }
         });
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.FindAllToUtf8("😀 foo"u8, 4));
+        Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+        {
+            ReadOnlyMemory<byte> snapshots7Input = ("😀 foo"u8).ToArray();
+            var snapshots7 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots7Cursor = limited.CreateMatchCursor(snapshots7Input, 4, default))
+            {
+                while (snapshots7Cursor.MoveNext(out var snapshots7Match))
+                    snapshots7.Add(snapshots7Match);
+            }
+            return snapshots7;
+        });
     }
 
     [Theory]
     [InlineData("foo")]
     [InlineData("foo|bar")]
-    public void NativeByteOffsetCollectionDoesNotAllocateASubjectSizedMap(string pattern)
+    public void ByteOffsetCursorDoesNotAllocateASubjectSizedMap(string pattern)
     {
         var regex = Create(pattern, false);
         var small = Encoding.UTF8.GetBytes("é" + new string('a', 63) + " foo");
         var large = Encoding.UTF8.GetBytes("é" + new string('a', 65_535) + " foo");
         for (var i = 0; i < 16; i++)
         {
-            _ = regex.FindAllToUtf8(small, small.Length - 4);
-            _ = regex.FindAllToUtf8(large, large.Length - 4);
+            ReadOnlyMemory<byte> snapshots8Input = small;
+            int snapshots8Start = small.Length - 4;
+            var snapshots8 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots8Cursor = regex.CreateMatchCursor(snapshots8Input, snapshots8Start, default))
+            {
+                while (snapshots8Cursor.MoveNext(out var snapshots8Match))
+                    snapshots8.Add(snapshots8Match);
+            }
+            _ = snapshots8;
+            ReadOnlyMemory<byte> snapshots9Input = large;
+            int snapshots9Start = large.Length - 4;
+            var snapshots9 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots9Cursor = regex.CreateMatchCursor(snapshots9Input, snapshots9Start, default))
+            {
+                while (snapshots9Cursor.MoveNext(out var snapshots9Match))
+                    snapshots9.Add(snapshots9Match);
+            }
+            _ = snapshots9;
         }
         var smallBytes = Measure(small);
         var largeBytes = Measure(large);
@@ -93,9 +145,17 @@ public sealed class PythonReByteOffsetCollectionTests
         long Measure(byte[] input)
         {
             var before = GC.GetAllocatedBytesForCurrentThread();
-            var values = regex.FindAllToUtf8(input, input.Length - 4);
+            ReadOnlyMemory<byte> snapshots10Input = input;
+            int snapshots10Start = input.Length - 4;
+            var snapshots10 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots10Cursor = regex.CreateMatchCursor(snapshots10Input, snapshots10Start, default))
+            {
+                while (snapshots10Cursor.MoveNext(out var snapshots10Match))
+                    snapshots10.Add(snapshots10Match);
+            }
+            var values = snapshots10;
             var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-            Assert.Equal("foo"u8.ToArray(), Assert.Single(values.ScalarValues));
+            Assert.Equal("foo"u8.ToArray(), Assert.Single(values.Select(captureSnapshot4 => captureSnapshot4.GetGroupMemory(captureSnapshot4.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray()));
             return allocated;
         }
     }

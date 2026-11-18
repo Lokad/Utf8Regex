@@ -18,7 +18,14 @@ public sealed class PythonReTerminalCaptureRepeatTests
     public void EmptyRetryKeepsNonemptyCaptureAndCompletionMetadata()
     {
         var regex = Create();
-        var values = PythonReFindAllAssert.Decode(regex.FindAllToUtf8("ab"u8)).ScalarValues;
+        ReadOnlyMemory<byte> snapshots1Input = ("ab"u8).ToArray();
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        var values = snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray();
         Assert.Equal(new[] { "", "ab", "" }, values);
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor1 = regex.CreateMatchCursor(("ab"u8).ToArray(), 0, default))

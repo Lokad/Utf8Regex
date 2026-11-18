@@ -90,26 +90,10 @@ internal static partial class BenchmarkInspectReporter
             var text = string.Concat(Enumerable.Repeat("ab ", count));
             var input = Encoding.UTF8.GetBytes(text);
             PythonReHostDetailedMatch[] detailed = [];
-            Utf8PythonFindAllUtf8Result values = default;
-            byte[][][] baselineValues = [];
             int Detailed(Utf8PythonRegex pattern, CancellationToken token)
             {
                 detailed = PythonReBenchmarkReporter.MaterializeDetailedMatches(pattern, input, 0, token);
                 return detailed.Length;
-            }
-            int Values(Utf8PythonRegex pattern, CancellationToken token)
-            {
-                values = pattern.FindAllToUtf8(input, 0, token);
-                return values.Count;
-            }
-            int BaselineValues(string subject)
-            {
-                baselineValues = baseline.Matches(subject).Select(match => new[]
-                {
-                    Encoding.UTF8.GetBytes(match.Groups[1].Value),
-                    Encoding.UTF8.GetBytes(match.Groups[2].Value),
-                }).ToArray();
-                return baselineValues.Length;
             }
             int Prefix(Utf8PythonRegex pattern, int maximum)
             {
@@ -123,7 +107,7 @@ internal static partial class BenchmarkInspectReporter
                 }
                 return found;
             }
-            if (Detailed(regex, default) != count || Values(regex, default) != count)
+            if (Detailed(regex, default) != count)
                 throw new InvalidOperationException("Unexpected handoff count.");
             for (var index = 0; index < count; index++)
             {
@@ -131,9 +115,7 @@ internal static partial class BenchmarkInspectReporter
                 if (match.Value.StartOffsetInBytes != index * 3 || match.Value.EndOffsetInBytes != index * 3 + 2 ||
                     match.Value.ValueText != "ab" || match.LastIndex != 2 ||
                     match.Groups.Length != 3 || match.Groups[1].ValueText != "a" ||
-                    match.Groups[2].ValueText != "b" ||
-                    !values.TupleValues[index][0].AsSpan().SequenceEqual("a"u8) ||
-                    !values.TupleValues[index][1].AsSpan().SequenceEqual("b"u8))
+                    match.Groups[2].ValueText != "b")
                     throw new InvalidOperationException("Unexpected handoff capture/range/value.");
             }
             Console.WriteLine("Case: matches=" + count + " inputBytes=" + input.Length);
@@ -148,13 +130,6 @@ internal static partial class BenchmarkInspectReporter
                 new("detailed", "python/finite", () => Detailed(finite, default), () => count),
                 new("detailed", "python/finite+token", () => Detailed(finite, source.Token), () => count),
             ], iterations, samples);
-            MeasureSlicePolicyOperation("FindAllToUtf8", [
-                new("values", "python/unlimited", () => Values(regex, default), () => count),
-                new("values", "python/finite", () => Values(finite, default), () => count),
-                new("values", "python/finite+token", () => Values(finite, source.Token), () => count),
-                new("values", "dotnet/predecoded", () => BaselineValues(text), () => count),
-                new("values", "dotnet/decode", () => BaselineValues(Encoding.UTF8.GetString(input)), () => count),
-            ], iterations, samples);
             // Prefix measurements include first-result discovery and early Dispose.
             var prefixIterations = Math.Max(iterations, 2_000);
             MeasureSlicePolicyOperation("CursorFirstAndDispose", [
@@ -166,8 +141,6 @@ internal static partial class BenchmarkInspectReporter
                 new("prefix", "python/finite", () => Prefix(finite, 10), () => 10),
             ], prefixIterations, samples);
             GC.KeepAlive(detailed);
-            GC.KeepAlive(values);
-            GC.KeepAlive(baselineValues);
         }
         return 0;
     }

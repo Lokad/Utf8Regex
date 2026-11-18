@@ -60,37 +60,6 @@ public readonly ref struct Utf8PythonValueMatch
     internal static Utf8PythonValueMatch Create(ReadOnlySpan<byte> input, PythonReGroupData data) => new(input, data);
 }
 
-/// <summary>Describes CPython <c>findall</c> result shaping from the pattern's capture count.</summary>
-public enum Utf8PythonFindAllShape
-{
-    /// <summary>Each item is the entire match because the pattern has no capture groups.</summary>
-    FullMatch,
-
-    /// <summary>Each item is the sole capture because the pattern has one capture group.</summary>
-    SingleGroup,
-
-    /// <summary>Each item is a capture tuple because the pattern has multiple capture groups.</summary>
-    GroupTuple,
-}
-
-/// <summary>Contains owned UTF-8 values returned with CPython <c>findall</c> shaping.</summary>
-public readonly struct Utf8PythonFindAllUtf8Result
-{
-    /// <summary>Gets whether each result is a scalar or capture tuple.</summary>
-    public Utf8PythonFindAllShape Shape { get; init; }
-
-    /// <summary>Gets full-match or single-group UTF-8 values for a scalar result shape.</summary>
-    public byte[][] ScalarValues { get; init; }
-
-    /// <summary>Gets UTF-8 capture tuples for the tuple result shape.</summary>
-    public byte[][][] TupleValues { get; init; }
-
-    /// <summary>Gets the number of matches represented by the active result collection.</summary>
-    public int Count => Shape == Utf8PythonFindAllShape.GroupTuple
-        ? TupleValues?.Length ?? 0
-        : ScalarValues?.Length ?? 0;
-}
-
 /// <summary>Contains the UTF-8 result and replacement count from a CPython <c>subn</c> operation.</summary>
 public readonly struct Utf8PythonSubnUtf8Result
 {

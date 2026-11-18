@@ -117,11 +117,21 @@ public sealed class PythonReCancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeFindAllToUtf8()
+    public void PreCanceledTokenThrowsBeforeCaptureCursor()
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.FindAllToUtf8(s_input, cancellationToken: token));
+        var exception = Assert.Throws<OperationCanceledException>(() =>
+        {
+            ReadOnlyMemory<byte> snapshots1Input = s_input;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, token))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            return snapshots1;
+        });
         Assert.Equal(token, exception.CancellationToken);
     }
 

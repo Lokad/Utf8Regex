@@ -21,7 +21,8 @@ public sealed class PythonReFundedProgramTests
     [InlineData(true)]
     public void ProgramStaysFundedUntilExplicitClosure(bool utf8)
     {
-        var allowance = new Allowance(16 << 20); Assert.True(allowance.TryReserve(13));
+        var allowance = new Allowance(16 << 20);
+        Assert.True(allowance.TryReserve(13));
         using var token = new CancellationTokenSource();
         using var regex = utf8 ? Utf8PythonRegex.Compile("(?P<x>é+)"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
@@ -31,14 +32,19 @@ public sealed class PythonReFundedProgramTests
             ConstructionTimeout = Timeout.InfiniteTimeSpan,
             ProgramMemoryAllowance = allowance
         }, cancellationToken: token.Token) : Compile("(?P<x>é+)", allowance, token.Token);
-        var held = allowance.Used; Assert.True(held > 13); token.Cancel();
-        Assert.Equal(1, regex.Count("éé"u8)); Assert.Equal(held, allowance.Used);
+        var held = allowance.Used;
+        Assert.True(held > 13);
+        token.Cancel();
+        Assert.Equal(1, regex.Count("éé"u8));
+        Assert.Equal(held, allowance.Used);
         Utf8PythonRangeMatch retained = default;
         using (var captureCursor1 = regex.CreateMatchCursor(("éé"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
         {
             captureCursor1.MoveNext(out retained);
         }
-        regex.Dispose(); regex.Dispose(); Assert.Equal(13UL, allowance.Used);
+        regex.Dispose();
+        regex.Dispose();
+        Assert.Equal(13UL, allowance.Used);
         Assert.Equal("éé", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Throws<ObjectDisposedException>(() => regex.Count("é"u8));
         allowance.Release(13);
@@ -60,12 +66,17 @@ public sealed class PythonReFundedProgramTests
             ConstructionTimeout = Timeout.InfiniteTimeSpan,
             ProgramMemoryAllowance = allowance
         }, cancellationToken: default) : Compile(pattern, allowance);
-        var held = allowance.Used; var destination = new byte[encoded.Length];
+        var held = allowance.Used;
+        var destination = new byte[encoded.Length];
         Assert.Equal(1, regex.CaptureGroupCount);
-        Assert.True(regex.TryGetGroupNumber("x"u8, out var number)); Assert.Equal(1, number);
+        Assert.True(regex.TryGetGroupNumber("x"u8, out var number));
+        Assert.Equal(1, number);
         Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryCopyPatternUtf8(destination, out var required));
-        Assert.Equal(encoded.Length, required); Assert.Equal(encoded, destination); Assert.Equal(held, allowance.Used);
-        regex.Dispose(); Assert.Equal(0UL, allowance.Used);
+        Assert.Equal(encoded.Length, required);
+        Assert.Equal(encoded, destination);
+        Assert.Equal(held, allowance.Used);
+        regex.Dispose();
+        Assert.Equal(0UL, allowance.Used);
         Assert.Throws<ObjectDisposedException>(() => regex.TryCopyPatternUtf8(destination, out _));
         Assert.Throws<ObjectDisposedException>(() => regex.TryGetGroupNumber("x"u8, out _));
         Assert.Equal(encoded, destination);
@@ -74,25 +85,35 @@ public sealed class PythonReFundedProgramTests
     [Fact]
     public void FailedAndCanceledCompilationRefundsOnlyItsOwnReservations()
     {
-        var allowance = new Allowance(16 << 20); Assert.True(allowance.TryReserve(13));
-        Assert.Throws<PythonRePatternException>(() => Compile("(?P<x>", allowance)); Assert.Equal(13UL, allowance.Used);
+        var allowance = new Allowance(16 << 20);
+        Assert.True(allowance.TryReserve(13));
+        Assert.Throws<PythonRePatternException>(() => Compile("(?P<x>", allowance));
+        Assert.Equal(13UL, allowance.Used);
         using var token = new CancellationTokenSource();
         allowance.AfterGrant = token.Cancel;
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => Compile("(a+)", allowance, token.Token)).CancellationToken);
-        Assert.Equal(13UL, allowance.Used); allowance.AfterGrant = null;
+        Assert.Equal(13UL, allowance.Used);
+        allowance.AfterGrant = null;
         allowance.Maximum = allowance.Used;
-        Assert.Throws<Utf8MemoryAdmissionException>(() => Compile("a", allowance)); Assert.Equal(13UL, allowance.Used);
+        Assert.Throws<Utf8MemoryAdmissionException>(() => Compile("a", allowance));
+        Assert.Equal(13UL, allowance.Used);
         allowance.Release(13);
     }
 
     [Fact]
     public void SuppliedAllowanceDoesNotAcquireAnUnrelatedDefaultByteCap()
     {
-        var allowance = new Allowance(16 << 20); ulong observed = 0;
+        var allowance = new Allowance(16 << 20);
+        ulong observed = 0;
         allowance.AfterGrant = () => observed = Utf8ConstructionScope.CurrentBudget.MaximumBytes;
-        using (var regex = Compile("a", allowance)) Assert.Equal(ulong.MaxValue, observed);
+        using (var regex = Compile("a", allowance))
+        {
+            Assert.Equal(ulong.MaxValue, observed);
+        }
         using (var regex = Compile("a", allowance, construction: new Utf8ConstructionPolicy { MaxBytes = 1 << 20 }))
+        {
             Assert.Equal(1UL << 20, observed);
+        }
         Assert.Equal(0UL, allowance.Used);
     }
 
@@ -101,17 +122,26 @@ public sealed class PythonReFundedProgramTests
     [InlineData(@"\b", "")]
     public async Task ExistingCursorKeepsProgramFundingAcrossClosureAndHostWaits(string pattern, string firstValue)
     {
-        var allowance = new Allowance(16 << 20); using var regex = Compile(pattern, allowance);
+        var allowance = new Allowance(16 << 20);
+        using var regex = Compile(pattern, allowance);
         var held = allowance.Used;
-        using var cursor = regex.CreateMatchCursor("é😀"u8.ToArray()); var alias = cursor;
-        var withCursor = allowance.Used; Assert.True(withCursor >= held);
-        regex.Dispose(); Assert.Equal(withCursor, allowance.Used);
+        using var cursor = regex.CreateMatchCursor("é😀"u8.ToArray());
+        var alias = cursor;
+        var withCursor = allowance.Used;
+        Assert.True(withCursor >= held);
+        regex.Dispose();
+        Assert.Equal(withCursor, allowance.Used);
         Assert.Throws<ObjectDisposedException>(() => regex.CreateMatchCursor("a"u8.ToArray()));
         await Task.Yield();
-        Assert.True(alias.MoveNext(out var first)); Assert.Equal(firstValue, Encoding.UTF8.GetString(first.GetValueMemory().Span));
-        Assert.True(cursor.MoveNext(out _)); Assert.True(allowance.Used >= withCursor);
-        Assert.False(alias.MoveNext(out _)); Assert.Equal(0UL, allowance.Used);
-        alias.Dispose(); cursor.Dispose(); Assert.Equal(0UL, allowance.Used);
+        Assert.True(alias.MoveNext(out var first));
+        Assert.Equal(firstValue, Encoding.UTF8.GetString(first.GetValueMemory().Span));
+        Assert.True(cursor.MoveNext(out _));
+        Assert.True(allowance.Used >= withCursor);
+        Assert.False(alias.MoveNext(out _));
+        Assert.Equal(0UL, allowance.Used);
+        alias.Dispose();
+        cursor.Dispose();
+        Assert.Equal(0UL, allowance.Used);
         Assert.Equal(firstValue, Encoding.UTF8.GetString(first.GetValueMemory().Span));
     }
 
@@ -126,17 +156,41 @@ public sealed class PythonReFundedProgramTests
         regex.Dispose();
         var input = "a"u8.ToArray();
         Action[] operations = [
-            () => regex.IsMatch(input), () => { _ = regex.Match(input,mode: Utf8PythonMatchMode.Search); },
-            () => { _ = regex.Match(input); }, () => { _ = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch); },
+            () => regex.IsMatch(input), () => {
+_ = regex.Match(input,mode: Utf8PythonMatchMode.Search);
+},
+            () => {
+_ = regex.Match(input);
+}, () => {
+_ = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch);
+},
             () => regex.Count(input),
-            () => { using var cursor = regex.CreateMatchCursor(input); cursor.MoveNext(out _); },
-            () => { using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Match); cursor.MoveNext(out _); },
-            () => { using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch); cursor.MoveNext(out _); },
-            () => regex.FindAllToUtf8(input), () => regex.SplitRanges(input),
+            () => {
+using var cursor = regex.CreateMatchCursor(input);
+cursor.MoveNext(out _);
+},
+            () => {
+using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Match);
+cursor.MoveNext(out _);
+},
+            () => {
+using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch);
+cursor.MoveNext(out _);
+},
+            () => {
+ReadOnlyMemory<byte> snapshots1Input = input;
+var snapshots1 = new List<Utf8PythonRangeMatch>();
+using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default)) {
+while (snapshots1Cursor.MoveNext(out var snapshots1Match)) snapshots1.Add(snapshots1Match);
+}
+_ = snapshots1;
+}, () => regex.SplitRanges(input),
             () => regex.Subn(input, "x"), () => regex.CreateMatchCursor(input),
         ];
         foreach (var operation in operations)
+        {
             Assert.Throws<ObjectDisposedException>(operation);
+        }
         Assert.Equal(0UL, allowance.Used);
     }
 
@@ -146,10 +200,18 @@ public sealed class PythonReFundedProgramTests
         var denied = 0;
         for (ulong capacity = 128; capacity <= 1 << 20; capacity *= 2)
         {
-            var allowance = new Allowance(capacity); Assert.True(allowance.TryReserve(13));
-            try { using var regex = Compile("(?P<word>[a-z]+)|(?P<number>[0-9]+)", allowance); }
-            catch (Utf8MemoryAdmissionException) { denied++; }
-            Assert.Equal(13UL, allowance.Used); allowance.Release(13);
+            var allowance = new Allowance(capacity);
+            Assert.True(allowance.TryReserve(13));
+            try
+            {
+                using var regex = Compile("(?P<word>[a-z]+)|(?P<number>[0-9]+)", allowance);
+            }
+            catch (Utf8MemoryAdmissionException)
+            {
+                denied++;
+            }
+            Assert.Equal(13UL, allowance.Used);
+            allowance.Release(13);
         }
         Assert.True(denied > 1);
         var malformed = new Allowance(1 << 20);
@@ -185,9 +247,14 @@ public sealed class PythonReFundedProgramTests
         var allowance = new Allowance(16 << 20);
         for (var i = 0; i < 100; i++)
         {
-            using (var regex = Compile("(?P<x>a{" + (i % 8 + 1) + "})", allowance)) Assert.True(allowance.Used > 0);
+            using (var regex = Compile("(?P<x>a{" + (i % 8 + 1) + "})", allowance))
+            {
+                Assert.True(allowance.Used > 0);
+            }
             Assert.Equal(0UL, allowance.Used);
         }
-        using var ordinary = new Utf8PythonRegex("a"); ordinary.Dispose(); Assert.Equal(1, ordinary.Count("a"u8));
+        using var ordinary = new Utf8PythonRegex("a");
+        ordinary.Dispose();
+        Assert.Equal(1, ordinary.Count("a"u8));
     }
 }

@@ -41,8 +41,22 @@ public sealed class PythonReCaptureCompletionTests
             Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((result.Groups[last].Success ? result.GetGroupMemory(result.Groups[last].Number).Span : ReadOnlySpan<byte>.Empty)));
 
             var expected = PythonReCaptureAssert.Values(result).Skip(1).ToArray();
-            Assert.Equal(expected, Assert.Single(PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues));
-            Assert.Equal(expected, Assert.Single(regex.FindAllToUtf8(input).TupleValues).Select(value => Encoding.UTF8.GetString(value)));
+            ReadOnlyMemory<byte> snapshots1Input = input;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            Assert.Equal(expected, Assert.Single(snapshots1.Select(captureSnapshot1 => Enumerable.Range(1, captureSnapshot1.Groups.Length - 1).Select(captureNumber1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureNumber1).Span)).ToArray()).ToArray()));
+            ReadOnlyMemory<byte> snapshots2Input = input;
+            var snapshots2 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
+            {
+                while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                    snapshots2.Add(snapshots2Match);
+            }
+            Assert.Equal(expected, Assert.Single(snapshots2.Select(captureSnapshot2 => Enumerable.Range(1, captureSnapshot2.Groups.Length - 1).Select(captureNumber2 => captureSnapshot2.GetGroupMemory(captureNumber2).ToArray()).ToArray()).ToArray()).Select(value => Encoding.UTF8.GetString(value)));
             Utf8PythonRangeMatch snapshot2 = default;
             using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
             {
@@ -90,8 +104,12 @@ public sealed class PythonReCaptureCompletionTests
     public static IEnumerable<object[]> SingleCases()
     {
         foreach (var row in Rows())
+        {
             for (var kind = 0; kind < 3; kind++)
+            {
                 yield return [row.GetProperty("id").GetInt32(), kind, row.GetRawText()];
+            }
+        }
     }
 
     public static IEnumerable<object[]> GlobalCases() => Rows().Select(row =>
@@ -109,7 +127,8 @@ public sealed class PythonReCaptureCompletionTests
         Assert.Equal(groups.GetArrayLength(), actual.Groups.Length);
         for (var number = 0; number < groups.GetArrayLength(); number++)
         {
-            var group = groups[number]; var value = actual.Groups[number];
+            var group = groups[number];
+            var value = actual.Groups[number];
             Assert.Equal(group.GetProperty("success").GetBoolean(), value.Success);
             Assert.Equal(group.GetProperty("text").GetString(), System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(number).Span));
             Assert.Equal(group.GetProperty("startByte").GetInt32(), value.StartOffsetInBytes);
@@ -120,7 +139,8 @@ public sealed class PythonReCaptureCompletionTests
     [MemberData(nameof(SingleCases))]
     public void CompleteOneShotCapturesFollowCpython(int id, int kind, string json)
     {
-        using var document = JsonDocument.Parse(json); var row = document.RootElement;
+        using var document = JsonDocument.Parse(json);
+        var row = document.RootElement;
         var pattern = row.GetProperty("pattern").GetString()!;
         var input = Encoding.UTF8.GetBytes(row.GetProperty("input").GetString()!);
         var expected = row.GetProperty("single")[kind];
@@ -155,7 +175,8 @@ public sealed class PythonReCaptureCompletionTests
     public void GlobalCursorAliasesPublishCompleteRetainableCaptures(int id, string json)
     {
         Utf8PythonRangeMatch cursorRange = default;
-        using var document = JsonDocument.Parse(json); var row = document.RootElement;
+        using var document = JsonDocument.Parse(json);
+        var row = document.RootElement;
         var regex = new Utf8PythonRegex(row.GetProperty("pattern").GetString()!);
         var input = Encoding.UTF8.GetBytes(row.GetProperty("input").GetString()!);
         var expected = row.GetProperty("global");
@@ -217,17 +238,22 @@ public sealed class PythonReCaptureCompletionTests
                     {
                         captureCursor6.MoveNext(out actual);
                     }
-                    Assert.Equal(expected.LastIndex, actual.LastIndex); last = cap;
+                    Assert.Equal(expected.LastIndex, actual.LastIndex);
+                    last = cap;
                 }
                 catch (Utf8ResourceLimitExceededException error)
-                { Assert.Equal(work ? Utf8ResourceLimitKind.ExecutionWorkSteps : Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind); first = cap + 1; }
+                {
+                    Assert.Equal(work ? Utf8ResourceLimitKind.ExecutionWorkSteps : Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
+                    first = cap + 1;
+                }
             }
             Utf8PythonRangeMatch result = default;
             using (var captureCursor7 = Create(first).CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
             {
                 captureCursor7.MoveNext(out result);
             }
-            Assert.Equal(expected.LastIndex, result.LastIndex); Assert.Equal(expected.LastGroup, result.LastGroup);
+            Assert.Equal(expected.LastIndex, result.LastIndex);
+            Assert.Equal(expected.LastGroup, result.LastGroup);
             PythonReCaptureAssert.Equal(expected, result);
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             {
@@ -259,14 +285,25 @@ public sealed class PythonReCaptureCompletionTests
         });
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), 0, source.Token);
         var invocation = cursor.WorkingInvocation;
-        ticks = 15; Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
-        Assert.Equal(1, retained.LastIndex); Assert.Equal(lastGroup, retained.LastGroup);
+        ticks = 15;
+        Assert.True(cursor.MoveNext(out cursorRange));
+        var retained = cursorRange;
+        Assert.Equal(1, retained.LastIndex);
+        Assert.Equal(lastGroup, retained.LastGroup);
         if (expire)
-        { ticks = 25; Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _)); }
+        {
+            ticks = 25;
+            Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
+        }
         else
-        { source.Cancel(); var error = Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)); Assert.Equal(source.Token, error.CancellationToken); }
+        {
+            source.Cancel();
+            var error = Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _));
+            Assert.Equal(source.Token, error.CancellationToken);
+        }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span)); Assert.Equal(lastGroup, retained.LastGroup);
+        Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
+        Assert.Equal(lastGroup, retained.LastGroup);
     }
     [Fact]
     public void DefaultDetailedResultsHaveNoCompletion()

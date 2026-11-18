@@ -57,6 +57,8 @@ internal static partial class PythonReBenchmarkReporter
         writer.WriteLine();
         writer.WriteLine("Tables rank the paired `PythonRe / CPython re` ratio from highest to lowest within each operation group; lower is better. Both displayed times come from the same paired evidence when available. Status retains the paired 95% interval and harness-floor qualification: a point ratio alone does not establish a winner. Unqualified observations appear last without a qualified ratio.");
         writer.WriteLine();
+        writer.WriteLine("FindAllStrings, FindAllUtf8 and FindAllStringsFromOffset rows are historical measurements of the removed FindAllToUtf8 API. They are no longer refreshed and do not qualify current cursor materialization. Structural rows compose the retained cursor in benchmark host code.");
+        writer.WriteLine();
         writer.WriteLine($"Snapshot SHA-256: `{snapshot.Evidence.SnapshotSha256}`. Catalog SHA-256: `{snapshot.CatalogSha256}`.");
         writer.WriteLine();
         writer.WriteLine($"Public Status: `{counts.GetValueOrDefault("ManagedFaster")}` managed faster, " +

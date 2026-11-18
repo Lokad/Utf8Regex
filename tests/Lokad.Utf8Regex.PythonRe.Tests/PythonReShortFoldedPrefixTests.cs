@@ -25,10 +25,13 @@ public sealed class PythonReShortFoldedPrefixTests
     public void PublicSearchAndCapturesKeepUnicodePartnersAndNonzeroStarts(int padding)
     {
         var text = "π" + new string('x', padding) + " watson sxx ſherlocK xx SHERLOCK";
-        var bytes = Encoding.UTF8.GetBytes(text); var storage = new byte[bytes.Length + 9]; bytes.CopyTo(storage, 5);
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var storage = new byte[bytes.Length + 9];
+        bytes.CopyTo(storage, 5);
         var input = storage.AsSpan(5, bytes.Length);
         var first = text.IndexOf('ſ');
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, Generous })
+        {
             foreach (var start in new[] { 0, 2, bytes.Length })
             {
                 using var token = new CancellationTokenSource();
@@ -46,8 +49,16 @@ public sealed class PythonReShortFoldedPrefixTests
                     Assert.Equal(Encoding.UTF8.GetByteCount(expected[0]), actual.EndOffsetInBytes - actual.StartOffsetInBytes);
                 }
                 Assert.Equal(expected.Length, owner.Count(input, start, token.Token));
-                Assert.Equal(expected, PythonReFindAllAssert.Decode(owner.FindAllToUtf8(input, start, token.Token)).ScalarValues);
+                ReadOnlyMemory<byte> snapshots1Input = (input).ToArray();
+                var snapshots1 = new List<Utf8PythonRangeMatch>();
+                using (var snapshots1Cursor = owner.CreateMatchCursor(snapshots1Input, start, token.Token))
+                {
+                    while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                        snapshots1.Add(snapshots1Match);
+                }
+                Assert.Equal(expected, snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
             }
+        }
     }
 
     [Theory]
@@ -98,7 +109,8 @@ public sealed class PythonReShortFoldedPrefixTests
                 ResourcePolicy = policy
             });
 
-            using var token = new CancellationTokenSource(); token.Cancel();
+            using var token = new CancellationTokenSource();
+            token.Cancel();
             Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(
                 () => owner.Match("SHERLOCK"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
         }

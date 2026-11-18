@@ -134,10 +134,7 @@ internal static partial class PythonReBenchmarkReporter
 
         var match = operation switch
         {
-            PythonReBenchmarkOperation.Match => adapter.Match(input),
-            PythonReBenchmarkOperation.FullMatch => adapter.Match(input, mode: Utf8PythonMatchMode.FullMatch),
-            _ => adapter.Match(input, mode: Utf8PythonMatchMode.Search),
-        };
+            PythonReBenchmarkOperation.Match => adapter.Match(input),            PythonReBenchmarkOperation.FullMatch => adapter.Match(input, mode: Utf8PythonMatchMode.FullMatch),            _ => adapter.Match(input, mode: Utf8PythonMatchMode.Search)        };
         return (match.Success, match.StartOffsetInBytes, match.EndOffsetInBytes);
     }
 

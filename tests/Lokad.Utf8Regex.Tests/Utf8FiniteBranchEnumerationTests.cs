@@ -137,58 +137,38 @@ public sealed class Utf8FiniteBranchEnumerationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         var input = "b12 ab34"u8.ToArray();
-        var measured = new Utf8Regex("a?b[0-9]{2}", options: options, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded()
-        }).EnumerateMatches(input);
-        while (measured.MoveNext()) { }
-        var fullCost = measured.DebugInvocationSteps;
-        var second = new Utf8Regex("a?b[0-9]{2}", options: options, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Funded()
-        }).EnumerateMatches(input);
-        Assert.True(second.MoveNext()); Assert.True(second.MoveNext());
-        var terminalCost = fullCost - second.DebugInvocationSteps;
-
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
-        ulong target = 0;
+        var armed = false;
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(step =>
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {
-            if (step != target || target == 0) return;
+            if (!armed) return 0;
             entered = true;
-            if (expire) ticks = 50; else source.Cancel();
+            if (expire) return 50;
+            source.Cancel();
+            return 0;
         });
-        try
+        var regex = new Utf8Regex("a?b[0-9]{2}", options: options, policy: new Utf8RegexPolicy
         {
-            var regex = new Utf8Regex("a?b[0-9]{2}", options: options, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = TimeSpan.FromMilliseconds(20),
-                ResourcePolicy = Funded()
-            });
-            var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token);
-            Assert.True(cursor.MoveNext()); Assert.True(cursor.MoveNext());
-            var retained = cursor.Current;
-            var invocation = cursor.ExportWorkingInvocation();
-            Assert.True(invocation.Ledger.TryReserve(1));
-            var padding = (64 - (invocation.Budget.Steps + terminalCost) % 64) % 64;
-            target = invocation.Budget.Steps + padding + terminalCost;
-            for (ulong i = 0; i < padding; i++)
-                Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-            Exception? observed = null;
-            try { cursor.MoveNext(); } catch (Exception error) { observed = error; }
-            Assert.True(entered);
-            if (expire) Assert.Equal(string.Empty, Assert.IsType<RegexMatchTimeoutException>(observed).Input);
-            else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(observed).CancellationToken);
-            Assert.Equal(retained, cursor.Current);
-            Assert.Equal(1UL, invocation.Ledger.ReservedBytes);
-            invocation.Ledger.Release(1);
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Funded()
+        });
+        var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token);
+        Assert.True(cursor.MoveNext());
+        Assert.True(cursor.MoveNext());
+        var retained = cursor.Current;
+        armed = true;
+        Exception? observed = null;
+        try { cursor.MoveNext(); } catch (Exception error) { observed = error; }
+        Assert.True(entered);
+        if (expire)
+        {
+            var failure = Assert.IsType<RegexMatchTimeoutException>(observed);
+            Assert.Empty(failure.Input);
+            Assert.Equal(TimeSpan.FromMilliseconds(20), failure.MatchTimeout);
         }
-        finally { session.Complete(); }
+        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(observed).CancellationToken);
+        Assert.Equal(retained, cursor.Current);
     }
 
     [Theory]

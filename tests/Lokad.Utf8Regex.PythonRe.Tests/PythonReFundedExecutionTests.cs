@@ -25,13 +25,15 @@ public sealed class PythonReFundedExecutionTests
     [InlineData("a.b", "a😀b aéb")]
     public void PublicOperationFamiliesRefundTheirTemporaryStorage(string pattern, string text)
     {
-        var account = new Allowance(16 << 20); using var regex = Compile(pattern, account);
+        var account = new Allowance(16 << 20);
+        using var regex = Compile(pattern, account);
         var input = Encoding.UTF8.GetBytes(text);
         regex.Subn(input, @"x\g<0>y"); // Retain the one template before observing temporary balances.
         var held = account.Used;
         foreach (var (name, operation) in Operations(regex, input))
         {
-            operation(); Assert.True(account.Used == held, name + " left temporary funding outstanding.");
+            operation();
+            Assert.True(account.Used == held, name + " left temporary funding outstanding.");
         }
         Utf8PythonRangeMatch retained = default;
         using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
@@ -39,15 +41,20 @@ public sealed class PythonReFundedExecutionTests
             captureCursor1.MoveNext(out retained);
         }
         Assert.True(retained.Success);
-        regex.Dispose(); Assert.Equal(0UL, account.Used); Assert.NotEmpty(System.Text.Encoding.UTF8.GetString((retained.Groups[0].Success ? retained.GetGroupMemory(retained.Groups[0].Number).Span : ReadOnlySpan<byte>.Empty)));
+        regex.Dispose();
+        Assert.Equal(0UL, account.Used);
+        Assert.NotEmpty(System.Text.Encoding.UTF8.GetString((retained.Groups[0].Success ? retained.GetGroupMemory(retained.Groups[0].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
     [Fact]
     public void ScalarFamiliesAdmitTheirActualWorkingStorage()
     {
-        var account = new Allowance(16 << 20); using var regex = Compile("(?P<x>a+)", account);
-        var input = "aaa"u8.ToArray(); PythonReSubstitutionAssert.Decode(regex.Subn(input, @"x\g<0>y"));
-        var held = account.Used; account.Maximum = held;
+        var account = new Allowance(16 << 20);
+        using var regex = Compile("(?P<x>a+)", account);
+        var input = "aaa"u8.ToArray();
+        PythonReSubstitutionAssert.Decode(regex.Subn(input, @"x\g<0>y"));
+        var held = account.Used;
+        account.Maximum = held;
         foreach (var (name, operation) in Operations(regex, input))
         {
             if (name == "Count")
@@ -57,7 +64,10 @@ public sealed class PythonReFundedExecutionTests
                 Assert.Equal(1, regex.Count(input));
                 Assert.Equal(reservations, account.Reservations);
             }
-            else Assert.IsType<Utf8MemoryAdmissionException>(Record.Exception(operation));
+            else
+            {
+                Assert.IsType<Utf8MemoryAdmissionException>(Record.Exception(operation));
+            }
             Assert.True(account.Used == held, name + " did not restore its refused account.");
         }
     }
@@ -66,34 +76,45 @@ public sealed class PythonReFundedExecutionTests
     [InlineData("cat")]
     [InlineData("cat|horse")]
     [InlineData("a.b")]
-    public void NativeCollectionRestoresPartialAndSuccessfulLoans(string pattern)
+    public void CaptureCursorRestoresRefusedAndSuccessfulLoans(string pattern)
     {
-        var account = new Allowance(16 << 20); using var regex = Compile(pattern, account);
+        var account = new Allowance(16 << 20);
+        using var regex = Compile(pattern, account);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("cat 😀 horse a😀b aéb ", 64)));
-        var held = account.Used; var refusals = 0; var successes = 0;
-        for (ulong remaining = 128; remaining <= 131072; remaining *= 2)
+        var held = account.Used;
+        var refusals = 0;
+        var successes = 0;
+        for (ulong remaining = 1; remaining <= 131072; remaining *= 2)
         {
             account.Maximum = held + remaining;
-            Action[] operations = [() => regex.FindAllToUtf8(input)];
-            foreach (var operation in operations)
+            try
             {
-                try { operation(); successes++; }
-                catch (Utf8MemoryAdmissionException) { refusals++; }
-                Assert.Equal(held, account.Used);
+                using var cursor = regex.CreateMatchCursor(input);
+                while (cursor.MoveNext(out _)) { }
+                successes++;
             }
+            catch (Utf8MemoryAdmissionException)
+            {
+                refusals++;
+            }
+            Assert.Equal(held, account.Used);
         }
-        Assert.True(refusals > 0); Assert.True(successes > 0);
+        Assert.True(refusals > 0);
+        Assert.True(successes > 0);
     }
-
-
 
     [Fact]
     public void ExactLiteralBooleanAndCountKeepTheirStorageFreeRoute()
     {
-        var account = new Allowance(16 << 20); using var regex = Compile("cat", account);
-        var held = account.Used; account.Maximum = held; var reservations = account.Reservations;
-        Assert.True(regex.IsMatch("😀 cat"u8)); Assert.Equal(2, regex.Count("cat 😀 cat"u8));
-        Assert.Equal(reservations, account.Reservations); Assert.Equal(held, account.Used);
+        var account = new Allowance(16 << 20);
+        using var regex = Compile("cat", account);
+        var held = account.Used;
+        account.Maximum = held;
+        var reservations = account.Reservations;
+        Assert.True(regex.IsMatch("😀 cat"u8));
+        Assert.Equal(2, regex.Count("cat 😀 cat"u8));
+        Assert.Equal(reservations, account.Reservations);
+        Assert.Equal(held, account.Used);
     }
 
     [Theory]
@@ -101,82 +122,163 @@ public sealed class PythonReFundedExecutionTests
     [InlineData("a.b")]
     public void BoundNativeOrScalarTimeoutDoesNotDecodeDiagnosticInput(string pattern)
     {
-        long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var account = new Allowance(16 << 20); using var regex = Compile(pattern, account, timeout: TimeSpan.FromMilliseconds(100));
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var account = new Allowance(16 << 20);
+        using var regex = Compile(pattern, account, timeout: TimeSpan.FromMilliseconds(100));
         var held = account.Used;
         var subject = Encoding.UTF8.GetBytes("cat a😀b " + new string('a', 262144));
         account.AfterGrant = () => ticks = 100;
-        var failure = Assert.Throws<RegexMatchTimeoutException>(() => regex.FindAllToUtf8(subject));
+        var failure = Assert.Throws<RegexMatchTimeoutException>(() =>
+        {
+            ReadOnlyMemory<byte> snapshots2Input = subject;
+            var snapshots2 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
+            {
+                while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                    snapshots2.Add(snapshots2Match);
+            }
+            return snapshots2;
+        });
         account.AfterGrant = null;
-        Assert.Empty(failure.Input); Assert.Equal(regex.Pattern, failure.Pattern); Assert.Equal(held, account.Used);
+        Assert.Empty(failure.Input);
+        Assert.Equal(regex.Pattern, failure.Pattern);
+        Assert.Equal(held, account.Used);
     }
 
     [Fact]
     public void DefaultCursorUsesProgramAccountAndStreamsWithoutTrafficQuota()
     {
-        var account = new Allowance(16 << 20); using var regex = Compile(".", account);
-        var held = account.Used; account.Maximum = held + 16384;
-        var input = new byte[500000]; input.AsSpan().Fill((byte)'x');
+        var account = new Allowance(16 << 20);
+        using var regex = Compile(".", account);
+        var held = account.Used;
+        account.Maximum = held + 16384;
+        var input = new byte[500000];
+        input.AsSpan().Fill((byte)'x');
         using var cursor = regex.CreateMatchCursor(input);
         var count = 0;
-        while (cursor.MoveNext(out var match)) { Assert.Equal(count, match.Value.StartOffsetInBytes); count++; }
-        Assert.Equal(500000, count); Assert.Equal(held, account.Used);
-        regex.Dispose(); Assert.Equal(0UL, account.Used);
+        while (cursor.MoveNext(out var match))
+        {
+            Assert.Equal(count, match.Value.StartOffsetInBytes);
+            count++;
+        }
+        Assert.Equal(500000, count);
+        Assert.Equal(held, account.Used);
+        regex.Dispose();
+        Assert.Equal(0UL, account.Used);
     }
 
     [Fact]
     public void ExplicitCursorWorkingAccountRemainsAnIndependentChoice()
     {
-        var program = new Allowance(16 << 20); var working = new Allowance(16384);
-        using var regex = Compile("(?P<x>.)", program); var held = program.Used; program.Maximum = held;
+        var program = new Allowance(16 << 20);
+        var working = new Allowance(16384);
+        using var regex = Compile("(?P<x>.)", program);
+        var held = program.Used;
+        program.Maximum = held;
         Assert.Throws<Utf8MemoryAdmissionException>(() => regex.CreateMatchCursor("é😀"u8.ToArray()));
         using var cursor = regex.CreateMatchCursor("é😀"u8.ToArray(), 0, default, working);
-        Assert.True(cursor.MoveNext(out var first)); Assert.True(working.Used > 0); Assert.Equal(held, program.Used);
-        cursor.Dispose(); Assert.Equal(0UL, working.Used);
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.True(working.Used > 0);
+        Assert.Equal(held, program.Used);
+        cursor.Dispose();
+        Assert.Equal(0UL, working.Used);
         Assert.Equal("é", Encoding.UTF8.GetString(first.GetValueMemory().Span));
     }
 
     [Fact]
     public void NumericWorkingDenialPrecedesSharedAdmission()
     {
-        var account = new Allowance(16 << 20); using var regex = Compile("(?P<x>a+)", account,
+        var account = new Allowance(16 << 20);
+        using var regex = Compile("(?P<x>a+)", account,
             new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
-        var held = account.Used; var reservations = account.Reservations;
+        var held = account.Used;
+        var reservations = account.Reservations;
         Assert.Equal(1, regex.Count("aaa"u8));
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.FindAllToUtf8("aaa"u8));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+        {
+            ReadOnlyMemory<byte> snapshots3Input = ("aaa"u8).ToArray();
+            var snapshots3 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots3Cursor = regex.CreateMatchCursor(snapshots3Input, 0, default))
+            {
+                while (snapshots3Cursor.MoveNext(out var snapshots3Match))
+                    snapshots3.Add(snapshots3Match);
+            }
+            return snapshots3;
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
-        Assert.Equal(reservations, account.Reservations); Assert.Equal(held, account.Used);
+        Assert.Equal(reservations, account.Reservations);
+        Assert.Equal(held, account.Used);
     }
 
     [Fact]
     public async Task ConcurrentExecutionsRefundTheirOwnLoansAndCancellation()
     {
-        var account = new Allowance(16 << 20); using var regex = Compile("(?P<x>a+)", account); var held = account.Used;
-        using var canceled = new CancellationTokenSource(); account.AfterGrant = canceled.Cancel;
-        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.FindAllToUtf8("aaa"u8, 0, canceled.Token)).CancellationToken);
+        var account = new Allowance(16 << 20);
+        using var regex = Compile("(?P<x>a+)", account);
+        var held = account.Used;
+        using var canceled = new CancellationTokenSource();
+        account.AfterGrant = canceled.Cancel;
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
+        {
+            ReadOnlyMemory<byte> snapshots4Input = ("aaa"u8).ToArray();
+            var snapshots4 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots4Cursor = regex.CreateMatchCursor(snapshots4Input, 0, canceled.Token))
+            {
+                while (snapshots4Cursor.MoveNext(out var snapshots4Match))
+                    snapshots4.Add(snapshots4Match);
+            }
+            return snapshots4;
+        }).CancellationToken);
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Count("aaa"u8, 0, canceled.Token)).CancellationToken);
-        account.AfterGrant = null; Assert.Equal(held, account.Used);
+        account.AfterGrant = null;
+        Assert.Equal(held, account.Used);
         await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(() =>
         {
             for (var i = 0; i < 32; i++)
             {
                 Assert.Equal(2, regex.Count("aaa aaa"u8));
-                Assert.Equal(2, regex.FindAllToUtf8("aaa aaa"u8).Count);
+                ReadOnlyMemory<byte> snapshots5Input = ("aaa aaa"u8).ToArray();
+                var snapshots5 = new List<Utf8PythonRangeMatch>();
+                using (var snapshots5Cursor = regex.CreateMatchCursor(snapshots5Input, 0, default))
+                {
+                    while (snapshots5Cursor.MoveNext(out var snapshots5Match))
+                        snapshots5.Add(snapshots5Match);
+                }
+                Assert.Equal(2, snapshots5.Count);
             }
         })));
         Assert.Equal(held, account.Used);
     }
 
     private static (string Name, Action Operation)[] Operations(Utf8PythonRegex regex, byte[] input) => [
-        ("IsMatch", () => regex.IsMatch(input)), ("Search", () => { _ = regex.Match(input,mode: Utf8PythonMatchMode.Search); }),
-        ("Match", () => { _ = regex.Match(input); }), ("FullMatch", () => { _ = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch); }),
+        ("IsMatch", () => regex.IsMatch(input)), ("Search", () => {
+_ = regex.Match(input,mode: Utf8PythonMatchMode.Search);
+}),
+        ("Match", () => {
+_ = regex.Match(input);
+}), ("FullMatch", () => {
+_ = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch);
+}),
         ("Count", () => regex.Count(input)),
-        ("CursorSearch", () => { using var cursor = regex.CreateMatchCursor(input); cursor.MoveNext(out _); }),
-        ("CursorMatch", () => { using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Match); cursor.MoveNext(out _); }),
-        ("CursorFullMatch", () => { using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch); cursor.MoveNext(out _); }),
-        ("FindAllToUtf8", () => regex.FindAllToUtf8(input)),
+        ("CursorSearch", () => {
+using var cursor = regex.CreateMatchCursor(input);
+cursor.MoveNext(out _);
+}),
+        ("CursorMatch", () => {
+using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Match);
+cursor.MoveNext(out _);
+}),
+        ("CursorFullMatch", () => {
+using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch);
+cursor.MoveNext(out _);
+}),
         ("SplitRanges", () => regex.SplitRanges(input)),
         ("Subn", () => regex.Subn(input, @"x\g<0>y")),
-        ("CursorAll", () => { using var cursor = regex.CreateMatchCursor(input); while (cursor.MoveNext(out _)) { } }),
+        ("CursorAll", () => {
+using var cursor = regex.CreateMatchCursor(input);
+while (cursor.MoveNext(out _)) {
+}
+}),
     ];
 }

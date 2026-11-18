@@ -1065,34 +1065,25 @@ internal static partial class PythonReBenchmarkReporter
             PythonReBenchmarkOperation.Search or
                 PythonReBenchmarkOperation.SearchFromOffset or
                 PythonReBenchmarkOperation.Match or
-                PythonReBenchmarkOperation.FullMatch => PythonReQualificationOneShotWarmupCalls,
-            PythonReBenchmarkOperation.FindAllStrings or
-                PythonReBenchmarkOperation.FindAllStringsFromOffset or
-                PythonReBenchmarkOperation.FindAllUtf8 or
-                PythonReBenchmarkOperation.FindAllStructural =>
+                PythonReBenchmarkOperation.FullMatch => PythonReQualificationOneShotWarmupCalls,PythonReBenchmarkOperation.FindAllStructural=>
                 calibratedIterations >= PythonReQualificationShortFindAllCalibrationIterations
                     ? PythonReQualificationShortFindAllWarmupCalls
-                    : PythonReQualificationFindAllWarmupCalls,
-            PythonReBenchmarkOperation.ReplaceString or
+                    : PythonReQualificationFindAllWarmupCalls,            PythonReBenchmarkOperation.ReplaceString or
                 PythonReBenchmarkOperation.ReplaceUtf8 or
                 PythonReBenchmarkOperation.ReplaceStringLimited or
                 PythonReBenchmarkOperation.SubnString or
                 PythonReBenchmarkOperation.SubnUtf8 =>
                 calibratedIterations >= PythonReQualificationShortReplacementCalibrationIterations
                     ? PythonReQualificationShortReplacementWarmupCalls
-                    : PythonReQualificationReplacementWarmupCalls,
-            PythonReBenchmarkOperation.ReplaceEvaluatorString or
+                    : PythonReQualificationReplacementWarmupCalls,            PythonReBenchmarkOperation.ReplaceEvaluatorString or
                 PythonReBenchmarkOperation.SubnEvaluatorString or
-                PythonReBenchmarkOperation.SubnEvaluatorUtf8 => PythonReQualificationReplacementWarmupCalls,
-            // Keep the long call floor for fast direct split routes. Materializing
+                PythonReBenchmarkOperation.SubnEvaluatorUtf8 => PythonReQualificationReplacementWarmupCalls,            // Keep the long call floor for fast direct split routes. Materializing
             // thousands of results 100,000 times can take minutes: use the measured
             // rate to cap that floor near one second, retaining the default floor.
             PythonReBenchmarkOperation.SplitStrings or
                 PythonReBenchmarkOperation.SplitStringsLimited or
                 PythonReBenchmarkOperation.SplitDetailed => Math.Min(PythonReQualificationSplitWarmupCalls,
-                    Math.Max(PythonReQualificationMinimumWarmupCalls, calibratedIterations * 20)),
-            _ => PythonReQualificationMinimumWarmupCalls,
-        };
+                    Math.Max(PythonReQualificationMinimumWarmupCalls, calibratedIterations * 20)),            _ => PythonReQualificationMinimumWarmupCalls        };
     }
 
     private static int ConfirmManagedSampleDuration(
@@ -1939,13 +1930,7 @@ internal static partial class PythonReBenchmarkReporter
 
     private static string FormatStatus(PythonRePublicStatus status) => status switch
     {
-        PythonRePublicStatus.Unqualified => "Unqualified",
-        PythonRePublicStatus.Inconclusive => "Inconclusive",
-        PythonRePublicStatus.Equivalent => "Equivalent",
-        PythonRePublicStatus.ManagedFaster => "Managed faster",
-        PythonRePublicStatus.CpythonFaster => "CPython faster",
-        _ => throw new ArgumentOutOfRangeException(nameof(status)),
-    };
+        PythonRePublicStatus.Unqualified => "Unqualified",        PythonRePublicStatus.Inconclusive => "Inconclusive",        PythonRePublicStatus.Equivalent => "Equivalent",        PythonRePublicStatus.ManagedFaster => "Managed faster",        PythonRePublicStatus.CpythonFaster => "CPython faster",        _ => throw new ArgumentOutOfRangeException(nameof(status))    };
 
     private static void PersistPythonReQualification(
         string caseId,

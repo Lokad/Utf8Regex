@@ -93,19 +93,27 @@ public sealed class PythonReEscapedScalarTests
             Assert.Equal((13, 17), (cursorRange.Value.StartOffsetInBytes, cursorRange.Value.EndOffsetInBytes));
             Assert.False(cursor.MoveNext(out cursorRange));
         }
-        finally { alias.Dispose(); }
+        finally
+        {
+            alias.Dispose();
+        }
         Assert.Equal("😀😁", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal(2, regex.Count(input, 0, cancellation.Token));
-        var values = regex.FindAllToUtf8(input, 0, cancellation.Token);
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, cancellation.Token))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        var values = snapshots1;
         Assert.Equal(2, values.Count);
-        Assert.True(values.ScalarValues[0].AsSpan().SequenceEqual("😀😁"u8));
+        Assert.True(values.Select(captureSnapshot1 => captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray()[0].AsSpan().SequenceEqual("😀😁"u8));
         cancellation.Cancel();
         Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.Count(input, 0, cancellation.Token)).CancellationToken);
         Assert.Equal("😀😁", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
-
-
 
     [Fact]
     public void RepeatedEscapedScalarsKeepConstructionWorkAdmissionAndRecovery()
@@ -142,15 +150,30 @@ public sealed class PythonReEscapedScalarTests
             owner.Budget.Deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(20));
             owner.Budget.CheckpointHook = steps =>
             {
-                if (steps < 128) return;
+                if (steps < 128)
+                {
+                    return;
+                }
                 entered = true;
-                if (expire) ticks = 50;
-                else cancellation.Cancel();
+                if (expire)
+                {
+                    ticks = 50;
+                }
+                else
+                {
+                    cancellation.Cancel();
+                }
             };
-            if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+            if (expire)
+            {
+                Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
                 new PythonReParser(pattern).Parse(PythonReCompileOptions.None));
-            else Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
-                new PythonReParser(pattern).Parse(PythonReCompileOptions.None)).CancellationToken);
+            }
+            else
+            {
+                Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+                            new PythonReParser(pattern).Parse(PythonReCompileOptions.None)).CancellationToken);
+            }
             Assert.True(entered);
             Assert.True(owner.Budget.PeakBytes > 0);
             Assert.Equal(0ul, owner.Budget.ReservedBytes);

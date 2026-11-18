@@ -33,12 +33,11 @@ whole-subject descriptions are not a prerequisite for byte-only discovery.
 | --- | --- |
 | Match | Stack-only whole-match value plus optional caller-owned capture slots. Utf8PythonMatchMode selects Search / anchored Match (default) / FullMatch. |
 | IsMatch / Count | Boolean/count using the profile's discovery and empty-match rules |
-| FindAllToUtf8 | Owned UTF-8 whole values with no captures, group values with one, tuple rows with several |
 | CreateMatchCursor | Immutable capture snapshots borrowing ReadOnlyMemory<byte>; Search advances successively, Match/FullMatch publish at most one result; explicit disposal on early stop |
 | Replace / Subn | Python template expansion into owned UTF-8 bytes; Subn includes replacement count |
 | SplitRanges | Python capture-aware split as byte ranges; slot number and participation distinguish captures, unmatched groups and ordinary segments |
 
-Value operations, Count, FindAllToUtf8 and derived byte outputs use one
+Value operations, Count and derived byte outputs use one
 token-bearing signature per supported input/template representation. Byte offsets,
 replacement/split counts default to zero; cancellation defaults to None. Entry
 cancellation remains before program use and argument/input work. Ordinary short
@@ -288,33 +287,20 @@ UTF-8 directly, preserving lexical flag scopes. Exact literal preparation and
 prefix proofs also retain bytes. Scalar/cursor setup borrows its expression for
 timeout diagnostics; successful operations do not implicitly request `Pattern`.
 
-`FindAllToStrings`, its shaped string result and text-only canonicalization are
-removed. `FindAllToUtf8` publishes admitted owned byte arrays with Python's
-scalar/tuple shaping and independently mutable capture slots. Host decoding is
-outside regex memory/work/interruption controls. Borrowed range results and
-retained-result lifetimes keep their existing contracts.
-The legacy structural `FindAll` overloads and `Utf8PythonMatchData` are also
-removed. Whole-match records and byte extents come from `CreateMatchCursor` over
-stable `ReadOnlyMemory<byte>`. The host collects or decodes those results when
-needed; its aggregate/string allocations are outside regex controls. Transient
-spans can still use `FindAllToUtf8` directly for Python-shaped byte values; a host
-needing durable whole-match ranges must retain suitable subject memory. Range
-metadata survives cursor advances/disposal, while byte views keep the unchanged
-borrowed-input contract. Owned detailed projections remain a separate surface.
+`FindAllToStrings`, `FindAllToUtf8`, their shaped result carriers and the legacy
+structural `FindAll`/`Utf8PythonMatchData` collector are removed. Whole-match and
+capture byte ranges come from `CreateMatchCursor` over stable
+`ReadOnlyMemory<byte>`. The host selects whole values or capture groups and
+collects, copies or decodes them as needed. Unmatched groups expose unsuccessful
+ranges and empty byte views; callers choose their output representation.
+Host collections, byte copies and strings are outside regex memory/work/
+interruption controls. Cursor discovery and immutable capture snapshots retain
+their cumulative work, working/result admission and original token/deadline.
+Callers with transient spans must retain suitable subject memory for the cursor.
+Range metadata survives advances, cursor disposal and program close; byte views
+continue to borrow unchanged input.
 Borrowed literal Count trusts the subject's valid-text contract without deriving
 discarded UTF-16 totals. No absolute-coordinate index is retained.
-
-String output trusts valid scalar ranges and reuses already-known lengths or
-coordinate facts. Unknown lengths up to 4096 UTF-8 bytes can use conservative
-byte-derived admission and checked decoding without a separate sizing pass.
-Larger ranges use the existing checked character counter in scalar-aligned blocks
-of at most 4096 bytes. Sizing/decoding share the invocation and interruption
-checks; result/working admission precedes string allocation and output lifetimes
-retain their contracts. This is not subject validation. Captured-text projection
-keeps its entry check before result admission and reuses the decoder's completion
-check under that same invocation. Omitting the duplicate final wrapper check can
-reduce numerical work by one step per decoded range; bounded decoding, allocation
-admission and final operation publication remain checked.
 
 Splitting stages byte ranges for segments and captures, including absent groups,
 with result admission and bounded interruption checks. It neither sizes nor

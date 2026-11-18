@@ -41,8 +41,6 @@ SEMANTIC_OPERATION_TAGS = {
     "FullMatch": 4,
     "SearchDetailed": 5,
     "Count": 6,
-    "FindAllStrings": 7,
-    "FindAllUtf8": 8,
     "FindIterDetailed": 9,
     "ReplaceString": 10,
     "ReplaceUtf8": 11,
@@ -58,7 +56,6 @@ SEMANTIC_OPERATION_TAGS = {
     "ReplaceEvaluatorString": 21,
     "SplitStringsLimited": 22,
     "SplitDetailed": 23,
-    "FindAllStringsFromOffset": 24,
 }
 
 
@@ -228,25 +225,6 @@ def detailed_checksum(match: DetailedMatch) -> int:
     return checksum
 
 
-def findall_checksum(values: list[Any], capture_count: int, encode_utf8: bool) -> int:
-    shape = 0 if capture_count == 0 else 1 if capture_count == 1 else 2
-    checksum = shape
-    if shape != 2:
-        for value in values:
-            checksum = combine(
-                checksum,
-                checksum_bytes(value) if encode_utf8 else checksum_string(value),
-            )
-        return checksum
-
-    for value_tuple in values:
-        checksum = combine(checksum, len(value_tuple))
-        for value in value_tuple:
-            checksum = combine(
-                checksum,
-                checksum_bytes(value) if encode_utf8 else checksum_string(value),
-            )
-    return checksum
 
 
 def digest_detailed(seed: int, match: DetailedMatch) -> int:
@@ -265,19 +243,6 @@ def digest_detailed(seed: int, match: DetailedMatch) -> int:
     return seed
 
 
-def digest_findall(seed: int, values: list[Any], capture_count: int, encode_utf8: bool) -> int:
-    shape = 0 if capture_count == 0 else 1 if capture_count == 1 else 2
-    seed = digest_add(seed, shape, len(values))
-    if shape != 2:
-        for value in values:
-            seed = digest_bytes(seed, value) if encode_utf8 else digest_string(seed, value)
-        return seed
-
-    for value_tuple in values:
-        seed = digest_add(seed, len(value_tuple))
-        for value in value_tuple:
-            seed = digest_bytes(seed, value) if encode_utf8 else digest_string(seed, value)
-    return seed
 
 
 def flags_from_options(options: int) -> re.RegexFlag:
@@ -356,12 +321,6 @@ class CaseRunner:
             return sum(1 for _ in self.pattern.finditer(input_text))
         if operation == "CountFromOffset":
             return sum(1 for _ in self.pattern.finditer(input_text, self.start_offset))
-        if operation == "FindAllStrings":
-            return self.pattern.findall(input_text)
-        if operation == "FindAllStringsFromOffset":
-            return self.pattern.findall(input_text, self.start_offset)
-        if operation == "FindAllUtf8":
-            return self.encode_findall(self.pattern.findall(input_text))
         if operation == "FindIterDetailed":
             return self.materialize_iter_detailed(input_text)
         if operation == "FindAllStructural":
@@ -423,23 +382,6 @@ class CaseRunner:
             start_offset = self.start_offset
             for _ in range(iterations):
                 result = sum(1 for _ in pattern.finditer(input_text, start_offset))
-        elif operation == "FindAllStrings":
-            for _ in range(iterations):
-                result = pattern.findall(input_text)
-        elif operation == "FindAllStringsFromOffset":
-            start_offset = self.start_offset
-            for _ in range(iterations):
-                result = pattern.findall(input_text, start_offset)
-        elif operation == "FindAllUtf8":
-            if pattern.groups <= 1:
-                for _ in range(iterations):
-                    result = [value.encode("utf-8") for value in pattern.findall(input_text)]
-            else:
-                for _ in range(iterations):
-                    result = [
-                        tuple(value.encode("utf-8") for value in item)
-                        for item in pattern.findall(input_text)
-                    ]
         elif operation == "FindIterDetailed":
             for _ in range(iterations):
                 result = self.materialize_iter_detailed(input_text)
@@ -640,10 +582,6 @@ class CaseRunner:
             result ^= invoke(iteration)
         return time.perf_counter_ns() - started, result
 
-    def encode_findall(self, values: list[Any]) -> list[Any]:
-        if self.pattern.groups <= 1:
-            return [value.encode("utf-8") for value in values]
-        return [tuple(value.encode("utf-8") for value in item) for item in values]
 
     def materialize_iter_detailed(self, input_text: str) -> list[DetailedMatch]:
         matches = list(self.pattern.finditer(input_text))
@@ -711,10 +649,6 @@ class CaseRunner:
             return detailed_checksum(result)
         if operation in {"Count", "CountFromOffset"}:
             return result
-        if operation in {"FindAllStrings", "FindAllStringsFromOffset"}:
-            return findall_checksum(result, self.pattern.groups, False)
-        if operation == "FindAllUtf8":
-            return findall_checksum(result, self.pattern.groups, True)
         if operation == "FindIterDetailed":
             checksum = len(result)
             for match in result:
@@ -782,10 +716,6 @@ class CaseRunner:
             return digest_detailed(digest, result)
         if operation in {"Count", "CountFromOffset"}:
             return digest_add(digest, result)
-        if operation in {"FindAllStrings", "FindAllStringsFromOffset"}:
-            return digest_findall(digest, result, self.pattern.groups, False)
-        if operation == "FindAllUtf8":
-            return digest_findall(digest, result, self.pattern.groups, True)
         if operation == "FindIterDetailed":
             digest = digest_add(digest, len(result))
             for match in result:

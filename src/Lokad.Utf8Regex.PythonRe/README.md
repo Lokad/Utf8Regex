@@ -34,9 +34,10 @@ the documented null/empty shaping for each API.
 Match exposes a borrowed whole-match byte value and optional caller-owned capture
 slots. Utf8PythonMatchMode selects anchored Match (default), Search or FullMatch.
 The range cursor supplies incremental captures with immutable byte metadata.
-`FindAllToUtf8` provides Python-shaped owned byte scalar/tuple outputs. Whole-match
-ranges and capture memories come from `CreateMatchCursor`; hosts collect them when
-needed. Split ranges and byte-template replacement include
+Whole-match ranges and capture memories come from `CreateMatchCursor`; hosts
+collect, copy or decode them when needed, outside regex resource controls.
+Cursor discovery and snapshots retain cumulative admission and interruption.
+Split ranges and byte-template replacement include
 capture-aware output shaping and substitution counts. Primary ranges are byte
 coordinates. Results have no UTF-16 offsets or byte-alignment flags; scalar
 positions are derived by the host when needed.
@@ -138,7 +139,7 @@ Fixed finite policies omit optional unmetered Core runtime/emission storage and
 native prefix buffers those instances cannot execute. Useful search/scalar
 preparation remains; lower construction charges can admit earlier-denied patterns.
 
-Optional Core preparations support native iteration, byte-output FindAll,
+Optional Core preparations support native iteration,
 literal values/results and scalar cursor start hints. The current
 grammar-level iteration flag can also retain Core for patterns whose operations
 decline it. Tightening that flag is deferred after a bounded cost experiment;
@@ -187,9 +188,9 @@ Utf8PythonCaptureRange[] parts = regex.SplitRanges("foo-foo xx foo-foo"u8);
 `Match` returns borrowed byte values in all three modes. The former
 `ToString` operation variants are removed. Check `Success`, then decode
 `GetValueBytes()` in the host if text is needed; caller decoding is outside the
-regex invocation's resource and cancellation scope. `FindAllToStrings` is also
-removed; decode selected `FindAllToUtf8` values in the host. The legacy structural
-`FindAll` collector and `Utf8PythonMatchData` are removed too. Cursor ranges borrow
+regex invocation's resource and cancellation scope. `FindAllToStrings`,
+`FindAllToUtf8`, their shaped result carriers and the legacy structural
+`FindAll`/`Utf8PythonMatchData` collector are removed. Cursor ranges borrow
 stable, unchanged subject memory; the host owns collected arrays/strings and
 their final admission/cancellation checks. `ReplaceToString`
 and `SubnToString` are removed too; decode the owned byte-template output when needed.
@@ -240,7 +241,7 @@ reference aliases share position/disposal. No finalizer-based lease is required.
 Read [release notes](../../CHANGELOG.md). Benchmark observations below retain their
 recorded source/runtime and qualification scope.
 
-Use `--measure-pythonre-paired-case findall/many-capture-strings 9` for the
+Use `--measure-pythonre-paired-case iteration/finditer-detailed 9` for the
 canonical preexisting-text comparison. The command prints labeled paired evidence
 without changing the recorded tables. There is no validation-policy matrix.
 
@@ -280,9 +281,10 @@ split rows explicitly decode those ranges in host code, including that work in
 timing and allocations to retain equal outputs against the comparators. Regex
 limits cover range metadata, while host strings remain outside them. Those rows
 have new operation identities; the tables below retain their historical text-API
-measurements until the next coherent refresh. FindAll string rows likewise now
-include explicit host decoding of owned UTF-8 outputs, with new operation
-identities; historical string-sharing measurements retain their old provenance.
+measurements until the next coherent refresh. The removed FindAllToUtf8 API's
+byte/string rows remain historical and are no longer executable refresh lanes.
+Current hosts collect and copy capture-cursor output; those costs require their
+own measurements. Historical string-sharing results retain their old provenance.
 
 Scaling rows now use the same timed coordinate projection as the canonical
 comparison. The complete refresh records their current source and protocol;
@@ -297,6 +299,8 @@ historical structural timings are not current performance evidence.
 Public PythonRe operations over strict UTF-8, compared with official CPython `re` over an already-decoded `str`. Times are microseconds per operation; startup and pattern compilation are excluded. Required result materialization is included. CPython uses a long-lived worker. Decode-inclusive and .NET controls remain in the [summary and raw-evidence reference](../../bench/Snapshots/PythonRe.json).
 
 Tables rank the paired `PythonRe / CPython re` ratio from highest to lowest within each operation group; lower is better. Both displayed times come from the same paired evidence when available. Status retains the paired 95% interval and harness-floor qualification: a point ratio alone does not establish a winner. Unqualified observations appear last without a qualified ratio.
+
+FindAllStrings, FindAllUtf8 and FindAllStringsFromOffset rows are historical measurements of the removed FindAllToUtf8 API. They are no longer refreshed and do not qualify current cursor materialization. Structural rows compose the retained cursor in benchmark host code.
 
 Snapshot SHA-256: `9992B19D3EA960F00F43E8F9599F9C7856C1D0C1A2F0D7B44C8A1372E14B820A`. Catalog SHA-256: `1345C0F6C42558E3F64186353C2DCA0A4506DA24155E69336C7945C78D563450`.
 

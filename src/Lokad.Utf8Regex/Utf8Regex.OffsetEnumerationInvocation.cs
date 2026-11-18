@@ -43,9 +43,8 @@ public sealed partial class Utf8Regex
     private bool CanUseNativeOffsetCursor(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation, out bool anchored, out Utf8ValidationResult validation)
     {
         var program = _ownedSliceProgram;
-        // Borrowed adapter invocations keep native eligibility even when their
-        // Core preparation carries finite policy. Public Core offset selectors
-        // apply their own lifetime-policy guard at the call boundary.
+        // The public offset selector applies its lifetime-policy guard before
+        // considering native eligibility.
         var eligible = !UsesRightToLeft() &&
             (Options & RegexOptions.NonBacktracking) == 0 && !_requiresKelvinSignFallback &&
             !program.HasBalancing && !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
@@ -69,41 +68,5 @@ public sealed partial class Utf8Regex
         var native = eligible && !program.IgnoreCase &&
             Utf8CompiledOperationCursorFactory.CanCreateInvocationMatchCursor(_preparedRegex, validation, ref invocation);
         return anchored || native;
-    }
-
-    // Python bulk collection borrows this invocation through admission, byte-floor
-    // discovery and publication. Native search keeps its existing algorithm.
-    internal Utf8ValueMatchEnumerator EnumerateMatchesForResult(ReadOnlySpan<byte> input, int startOffsetInBytes, scoped ref Utf8SliceInvocation invocation)
-    {
-        try
-        {
-            Utf8SliceBufferWork.Checkpoint(ref invocation);
-            _ = Utf8BytePosition.CreateChecked(input.Length, startOffsetInBytes, nameof(startOffsetInBytes));
-            if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
-                throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
-            Utf8OperationMatchCursor cursor;
-            if (CanUseNativeOffsetCursor(input, ref invocation, out var anchored, out var validation))
-            {
-
-                cursor = anchored
-                    ? new Utf8OperationMatchCursor(input, _anchoredLiteral.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _anchoredLiteral.Kind, invocation).WithStartFloor(startOffsetInBytes)
-                    : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, validation, invocation, startOffsetInBytes);
-            }
-            else
-            {
-                invocation.ShareStorageForCursor();
-                cursor = new Utf8OperationMatchCursor(_ownedSliceProgram, input, invocation, startOffsetInBytes);
-            }
-            return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
-        }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        {
-            throw CreateExecutionResourceFailure(ref invocation);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(invocation.Ledger.HasMemoryAllowance ? default : input,
-                Pattern, MatchTimeout, invocation.Budget.Limits);
-        }
     }
 }

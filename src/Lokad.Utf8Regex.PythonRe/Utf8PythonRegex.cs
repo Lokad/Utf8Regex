@@ -11,7 +11,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 namespace Lokad.Utf8Regex.PythonRe;
 
 /// <summary>Provides a culture-invariant CPython <c>re</c>-compatible surface over well-formed UTF-8 input.</summary>
-/// <remarks>The adapter preserves Python operation shaping while exposing UTF-8 byte ranges.</remarks>
+/// <remarks>The adapter preserves the supported Python grammar and capture semantics while exposing UTF-8 byte ranges.</remarks>
 public sealed partial class Utf8PythonRegex
 {
     /// <summary>Constructs an expression for caller-valid, unchanged UTF-8 subjects.</summary>
@@ -25,62 +25,6 @@ public sealed partial class Utf8PythonRegex
     public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options = PythonReCompileOptions.None,
         Utf8RegexPolicy? policy = null)
         : this(new Utf8ConstructionPattern(patternUtf8), options, policy, default, eager: false) { }
-
-    private readonly record struct PythonReUtf8MatchRange(
-        int IndexInBytes,
-        int LengthInBytes);
-
-    private ref struct PythonReUtf8MatchRangeBuffer
-    {
-        private Utf8InvocationResultBuffer<PythonReUtf8MatchRange> _ranges;
-        private Utf8SliceInvocation _invocation;
-        private Utf8InvocationResultLedger _results;
-
-        internal PythonReUtf8MatchRangeBuffer(Utf8SliceInvocation invocation)
-        {
-            _invocation = invocation;
-            _ranges = default;
-            _results = default;
-        }
-
-        internal readonly int Count => _ranges.Count;
-        internal readonly PythonReUtf8MatchRange this[int index] => _ranges[index];
-
-        internal void Add(PythonReUtf8MatchRange range)
-        {
-            var breach = _invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
-            _ranges.Add(range, ref _invocation);
-        }
-
-        internal T[] AllocateResultArray<T>(int count)
-            => _results.AllocateArray<T>(count, ref _invocation);
-
-        internal byte[] GetBytes(ReadOnlySpan<byte> input, PythonReUtf8MatchRange range)
-        {
-            var bytes = AllocateResultArray<byte>(range.LengthInBytes);
-            Utf8InvocationOutput.Copy(input.Slice(range.IndexInBytes, range.LengthInBytes), bytes,
-                new Utf8InvocationBufferControl(ref _invocation));
-            return bytes;
-        }
-
-        internal bool HasResourceFailure => _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None;
-        internal Utf8ResourceLimitExceededException ResourceFailure() => _invocation.Budget.CreateResourceFailure();
-
-        internal void Checkpoint() => Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref _invocation));
-
-        internal void Dispose()
-        {
-            _ranges.Release(ref _invocation);
-            _results.Release(ref _invocation);
-            // This private collector owns every Core enumerator copy, and only
-            // independent Python data escapes. Its remaining map/table loans
-            // cannot outlive publication. Public copied Core cursors keep their
-            // separate conservative invocation-long ownership contract.
-            if (_invocation.Ledger.HasMemoryAllowance)
-                _invocation.Ledger.Release(_invocation.Ledger.ReservedBytes);
-        }
-    }
 
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Utf8SliceProgram _scalarProgram;

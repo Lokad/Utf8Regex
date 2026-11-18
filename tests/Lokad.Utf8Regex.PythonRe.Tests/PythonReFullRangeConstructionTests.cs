@@ -44,12 +44,19 @@ public sealed class PythonReFullRangeConstructionTests
         var input = Encoding.UTF8.GetBytes(text);
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(accepts ? scalars.Length : 0, regex.Count(input, 0, cancellation.Token));
-        Assert.Equal(accepts ? scalars : [], regex.FindAllToUtf8(input, 0, cancellation.Token)
-            .ScalarValues.Select(Encoding.UTF8.GetString));
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, cancellation.Token))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        Assert.Equal(accepts ? scalars : [], snapshots1.Select(captureSnapshot1 => captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray().Select(Encoding.UTF8.GetString));
         foreach (var scalar in scalars)
+        {
             Assert.Equal(accepts, regex.Match(Encoding.UTF8.GetBytes(scalar), mode: Utf8PythonMatchMode.FullMatch).Success);
+        }
         Assert.False(regex.Match([], mode: Utf8PythonMatchMode.FullMatch).Success);
-
 
         // This rendering remains live for comparators and timeout pattern text.
         // Its surrogate-pair atom must still consume a supplementary scalar once.
@@ -89,7 +96,14 @@ public sealed class PythonReFullRangeConstructionTests
     public void EmptyComplementRepeatKeepsCapturesAndScalarEmptyProgression()
     {
         var regex = Compile(@"(?i)([^\x00-\U0010ffff]*)");
-        Assert.Equal(new[] { "", "", "" }, regex.FindAllToUtf8("é😀"u8).ScalarValues.Select(Encoding.UTF8.GetString));
+        ReadOnlyMemory<byte> snapshots2Input = ("é😀"u8).ToArray();
+        var snapshots2 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
+        {
+            while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                snapshots2.Add(snapshots2Match);
+        }
+        Assert.Equal(new[] { "", "", "" }, snapshots2.Select(captureSnapshot2 => captureSnapshot2.GetGroupMemory(captureSnapshot2.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray().Select(Encoding.UTF8.GetString));
         Utf8PythonRangeMatch empty = default;
         using (var captureCursor1 = regex.CreateMatchCursor(ReadOnlyMemory<byte>.Empty, mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -134,8 +148,14 @@ public sealed class PythonReFullRangeConstructionTests
 
     [Fact]
     public void NonconstantClassesStillUsePythonCasePartners()
-        => Assert.Equal(new[] { "K", "ſ", "İ", "ı" }, PythonReFindAllAssert.Decode(Compile(@"(?i)[a-z]")
-            .FindAllToUtf8("Kſİı"u8)).ScalarValues);
+    {
+        using var regex = Compile(@"(?i)[a-z]");
+        using var cursor = regex.CreateMatchCursor("Kſİı"u8.ToArray());
+        var values = new List<string>();
+        while (cursor.MoveNext(out var match))
+            values.Add(Encoding.UTF8.GetString(match.GetValueMemory().Span));
+        Assert.Equal(new[] { "K", "ſ", "İ", "ı" }, values);
+    }
 
     [Fact]
     public void TimeoutKeepsOriginalPatternAndDeadline()
@@ -156,7 +176,11 @@ public sealed class PythonReFullRangeConstructionTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var reached = false;
-        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => { reached = true; ticks = 50; });
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            reached = true;
+            ticks = 50;
+        });
         try
         {
             var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(new byte[1 << 20]));
@@ -165,6 +189,9 @@ public sealed class PythonReFullRangeConstructionTests
             Assert.Equal(TimeSpan.FromMilliseconds(20), error.MatchTimeout);
             Assert.Equal(string.Empty, error.Input);
         }
-        finally { diagnostics.Complete(); }
+        finally
+        {
+            diagnostics.Complete();
+        }
     }
 }

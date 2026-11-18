@@ -81,10 +81,19 @@ public sealed class PythonReNativeCountTests
         Assert.Equal(2, matches.Length);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
         Assert.Equal("b", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(2).Span));
-        Assert.Equal(2, matches[0].LastIndex); Assert.Null(matches[0].LastGroup);
+        Assert.Equal(2, matches[0].LastIndex);
+        Assert.Null(matches[0].LastGroup);
         Assert.Equal(6, matches[0].Value.StartOffsetInBytes);
-        var tuples = regex.FindAllToUtf8(input).TupleValues;
-        Assert.Equal("a"u8.ToArray(), tuples[0][0]); Assert.Equal("b"u8.ToArray(), tuples[0][1]);
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        var tuples = snapshots1.Select(captureSnapshot1 => Enumerable.Range(1, captureSnapshot1.Groups.Length - 1).Select(captureNumber1 => captureSnapshot1.GetGroupMemory(captureNumber1).ToArray()).ToArray()).ToArray();
+        Assert.Equal("a"u8.ToArray(), tuples[0][0]);
+        Assert.Equal("b"u8.ToArray(), tuples[0][1]);
         var generic = new Utf8PythonRegex("(a+)(b+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -99,8 +108,6 @@ public sealed class PythonReNativeCountTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => generic.Count(input)).ResourceKind);
     }
-
-
 
     [Fact]
     public void StartCancellationAndWorkFailureKeepPrecedence()
@@ -119,7 +126,8 @@ public sealed class PythonReNativeCountTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀ab"u8, 1));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count("ab"u8)).ResourceKind);
-        using var token = new CancellationTokenSource(); token.Cancel();
+        using var token = new CancellationTokenSource();
+        token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count("😀ab"u8, 1, token.Token)).CancellationToken);
     }
 
@@ -146,9 +154,19 @@ public sealed class PythonReNativeCountTests
         var interrupted = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps < 64) return;
+            if (steps < 64)
+            {
+                return;
+            }
             interrupted = true;
-            if (timeout) ticks = 25; else token.Cancel();
+            if (timeout)
+            {
+                ticks = 25;
+            }
+            else
+            {
+                token.Cancel();
+            }
         });
         try
         {
@@ -158,11 +176,18 @@ public sealed class PythonReNativeCountTests
             {
                 var error = Assert.IsType<RegexMatchTimeoutException>(failure);
                 Assert.Equal(TimeSpan.FromMilliseconds(20), error.MatchTimeout);
-                Assert.Equal("(a)(b)", error.Pattern); Assert.Empty(error.Input);
+                Assert.Equal("(a)(b)", error.Pattern);
+                Assert.Empty(error.Input);
             }
-            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+            else
+            {
+                Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+            }
         }
-        finally { diagnostics.Complete(); }
+        finally
+        {
+            diagnostics.Complete();
+        }
         Assert.Equal(1, regex.Count(input));
     }
 }

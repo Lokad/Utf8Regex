@@ -33,7 +33,14 @@ public sealed class PythonReFixedPolicyPreparationTests
         Assert.True(regex.IsMatch(input));
         Assert.Equal(3, regex.Count(input));
         PythonReMatchAssert.Equal("abc", regex.Match(input, mode: Utf8PythonMatchMode.Search));
-        Assert.Equal(["abc", "xyz", "abc"], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        Assert.Equal(["abc", "xyz", "abc"], snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         Assert.Equal("é😀 ! ! !", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!")));
         Utf8PythonRangeMatch snapshot1 = default;
         using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))

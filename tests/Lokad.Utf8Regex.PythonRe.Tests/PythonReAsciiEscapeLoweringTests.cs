@@ -11,8 +11,15 @@ public sealed class PythonReAsciiEscapeLoweringTests
     [InlineData('u')]
     public void AsciiBracketUnionsKeepResolvedOperandsAndScalarComplements(char kind)
     {
-        var body = kind switch { 'w' => @"\w.-", 'd' => @"\dA-F", 's' => @"\s\x1c-", _ => @"\w\d\s-" };
+        var body = kind switch
+        {
+            'w' => @"\w.-",
+            'd' => @"\dA-F",
+            's' => @"\s\x1c-",
+            _ => @"\w\d\s-"
+        };
         foreach (var negate in new[] { false, true })
+        {
             foreach (var bytes in new[] { false, true })
             {
                 var pattern = "(?ai:(?P<x>[" + (negate ? "^" : "") + body + "]))";
@@ -38,11 +45,15 @@ public sealed class PythonReAsciiEscapeLoweringTests
                         captureCursor1.MoveNext(out actual);
                     }
                     Assert.Equal(negate ? !positive : positive, actual.Success);
-                    if (!actual.Success) continue;
+                    if (!actual.Success)
+                    {
+                        continue;
+                    }
                     Assert.Equal(text, System.Text.Encoding.UTF8.GetString((actual.Groups[1].Success ? actual.GetGroupMemory(actual.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
                     Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
                 }
             }
+        }
     }
     [Theory]
     [InlineData('w')]
@@ -78,7 +89,10 @@ public sealed class PythonReAsciiEscapeLoweringTests
                     captureCursor2.MoveNext(out actual);
                 }
                 Assert.Equal(expected, actual.Success);
-                if (!expected) continue;
+                if (!expected)
+                {
+                    continue;
+                }
                 Assert.Equal(text, System.Text.Encoding.UTF8.GetString((actual.Groups[1].Success ? actual.GetGroupMemory(actual.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
                 Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
             }
@@ -95,7 +109,14 @@ public sealed class PythonReAsciiEscapeLoweringTests
             : @"(?ai:(\w))(?u:(\w))(?a:(\W))");
         var input = "aé😀 bé😀"u8.ToArray();
         Assert.Equal(2, regex.Count(input));
-        var actual = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues;
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        var actual = snapshots1.Select(captureSnapshot1 => Enumerable.Range(1, captureSnapshot1.Groups.Length - 1).Select(captureNumber1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureNumber1).Span)).ToArray()).ToArray();
         Assert.Equal(new[] { "a", "é", "😀" }, actual[0]);
         Assert.Equal(new[] { "b", "é", "😀" }, actual[1]);
         Assert.Equal(2, actual.Length);
@@ -107,6 +128,9 @@ public sealed class PythonReAsciiEscapeLoweringTests
             Assert.True(cursor.MoveNext(out cursorRange));
             Assert.False(cursor.MoveNext(out cursorRange));
         }
-        finally { cursor.Dispose(); }
+        finally
+        {
+            cursor.Dispose();
+        }
     }
 }

@@ -35,7 +35,11 @@ public sealed class PythonReBoundaryRetryTests
             Assert.False(cursor.MoveNext(out cursorRange));
             Assert.False(alias.MoveNext(out cursorRange));
         }
-        finally { cursor.Dispose(); alias.Dispose(); }
+        finally
+        {
+            cursor.Dispose();
+            alias.Dispose();
+        }
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         for (var i = 0; i < snapshots.Count; i++)
         {
@@ -49,13 +53,21 @@ public sealed class PythonReBoundaryRetryTests
     public void EmptyThenConsumingAlternativesStillRetryTheSameScalar()
     {
         var regex = new Utf8PythonRegex(@"(?a:\b)|a");
-        Assert.Equal(new[] { "", "a", "a", "" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8("aa"u8)).ScalarValues);
+        ReadOnlyMemory<byte> snapshots1Input = ("aa"u8).ToArray();
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        Assert.Equal(new[] { "", "a", "a", "" }, snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         Assert.Equal(4, regex.Count("aa"u8));
         Assert.Equal(new string?[] { "", "", "", "", "" }, PythonReSplitAssert.Decode("aa"u8, regex.SplitRanges("aa"u8, 0, 0, default)));
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void FinalEmptyRetryKeepsOriginalInterruptionAndParentLoan(bool expire)
     {
         Utf8PythonRangeMatch cursorRange = default;
@@ -67,9 +79,19 @@ public sealed class PythonReBoundaryRetryTests
         var observed = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (!armed) return;
+            if (!armed)
+            {
+                return;
+            }
             observed = true;
-            if (expire) ticks = 50; else source.Cancel();
+            if (expire)
+            {
+                ticks = 50;
+            }
+            else
+            {
+                source.Cancel();
+            }
         });
         try
         {
@@ -82,18 +104,29 @@ public sealed class PythonReBoundaryRetryTests
                 Assert.True(cursor.MoveNext(out cursorRange));
                 Assert.True(cursor.MoveNext(out cursorRange));
                 Assert.Equal(1, cursorRange.Value.StartOffsetInBytes);
-                while ((invocation.Budget.Steps & 63) != 63) invocation.TryChargeStep();
+                while ((invocation.Budget.Steps & 63) != 63)
+                    invocation.TryChargeStep();
                 armed = true;
                 if (expire)
+                {
                     Assert.Equal(timeout, Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _)).MatchTimeout);
+                }
                 else
+                {
                     Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)).CancellationToken);
+                }
                 Assert.True(observed);
             }
-            finally { cursor.Dispose(); }
+            finally
+            {
+                cursor.Dispose();
+            }
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
             invocation.Ledger.Release(13);
         }
-        finally { session.Complete(); }
+        finally
+        {
+            session.Complete();
+        }
     }
 }

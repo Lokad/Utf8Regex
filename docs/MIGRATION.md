@@ -89,15 +89,15 @@ Replace PythonRe `SplitToStrings` and `SplitDetailed` with `SplitRanges`.
 `Number == 0` denotes a segment; positive numbers identify captured separators.
 Check `Success` before slicing: unmatched captures differ from successful empty
 ones. Host decoding and string arrays are outside regex resource controls.
-Replace PythonRe `FindAllToStrings` with `FindAllToUtf8`. Its `Shape`, `Count`,
-scalar values and tuple order retain Python shaping; decode selected owned byte
-arrays in the host. Unmatched findall groups remain empty values. The former
-string-sharing/canonicalization behavior is removed; host text is outside limits.
-The separate structural `FindAll` overloads and `Utf8PythonMatchData` are removed.
-Use `CreateMatchCursor` for whole-match byte extents/captures, collecting ranges or
-decoding text in the host. It borrows stable `ReadOnlyMemory<byte>`; callers with
-only a transient span must retain suitable memory for those views. `FindAllToUtf8`
-still accepts spans directly and returns Python-shaped owned byte values.
+Replace PythonRe `FindAllToStrings`, `FindAllToUtf8` and structural `FindAll` with
+`CreateMatchCursor`. Their shaped/structural result carriers are removed. Read
+whole-match or numbered capture memories, and collect, copy or decode in the host.
+Check participation when distinguishing unmatched captures from successful empty
+ones. The cursor borrows stable `ReadOnlyMemory<byte>`; callers with transient
+spans must retain suitable memory. Snapshots survive advances, disposal and
+program close while subject bytes stay unchanged. Cursor discovery/snapshots
+retain useful cumulative limits and original interruption; host collections,
+copies and decoding are outside those controls.
 PCRE2 standalone views also remove `GetValueString`. Read `GetValueBytes()` on a
 value/group, or `Value.GetValueBytes()` on a match/partial context. Preserve status
 checks: opted-in `\C` can yield contiguous byte fragments that are not UTF-8 text,
@@ -457,7 +457,7 @@ and scalar matching remain independent of these constructor controls.
 
 ### PythonRe operation signatures
 
-Redundant short overloads are removed from value/context/count, FindAllToUtf8,
+Redundant short overloads are removed from value/context/count,
 string replacement/substitution, SplitRanges and cursor creation. Their existing
 long token-bearing entries now default offsets/counts to zero and cancellation to
 None. Ordinary short source calls still work. Previously compiled callers must

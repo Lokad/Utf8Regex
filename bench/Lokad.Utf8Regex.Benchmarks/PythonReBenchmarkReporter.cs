@@ -127,15 +127,6 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
-        if (args.Length >= 2 && args[0].Equals("--measure-pythonre-findall-phases", StringComparison.Ordinal))
-        {
-            exitCode = MeasureFindAllPhases(
-                args[1],
-                ParsePositive(args, 2, 200),
-                ParsePositive(args, 3, 7));
-            return true;
-        }
-
         if (args.Length >= 2 && args[0].Equals("--measure-pythonre-replacement-phases", StringComparison.Ordinal))
         {
             exitCode = MeasureReplacementPhases(
@@ -194,14 +185,6 @@ internal static partial class PythonReBenchmarkReporter
         if (args.Length >= 1 && args[0].Equals("--measure-pythonre-fullmatch-start-offset", StringComparison.Ordinal))
         {
             exitCode = MeasureFullMatchStartOffset(
-                Math.Min(ParsePositive(args, 1, 500), 2_000),
-                Math.Min(ParsePositive(args, 2, 9), 15));
-            return true;
-        }
-
-        if (args.Length >= 1 && args[0].Equals("--measure-pythonre-empty-global-shapes", StringComparison.Ordinal))
-        {
-            exitCode = MeasureEmptyGlobalShapes(
                 Math.Min(ParsePositive(args, 1, 500), 2_000),
                 Math.Min(ParsePositive(args, 2, 9), 15));
             return true;
@@ -473,208 +456,6 @@ internal static partial class PythonReBenchmarkReporter
         PrintOperation("PredecodedDirect", MeasureOperation(context.ExecutePredecodedRegex, effectiveIterations, samples));
         PrintOperation("DiscoveryOnly", MeasureOperation(context.ExecutePredecodedDetailedDiscovery, effectiveIterations, samples));
         PrintOperation("PredecodedStaged", MeasureOperation(context.ExecutePredecodedStagedDetailedProjection, effectiveIterations, samples));
-        return 0;
-    }
-
-    private static int MeasureFindAllPhases(string id, int iterations, int samples)
-    {
-        var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
-            candidate => candidate.Id.Equals(id, StringComparison.Ordinal));
-        if (benchmarkCase is null)
-        {
-            Console.Error.WriteLine($"Unknown PythonRe benchmark case '{id}'.");
-            return 1;
-        }
-
-        if (benchmarkCase.Operation is not PythonReBenchmarkOperation.FindAllStrings and
-            not PythonReBenchmarkOperation.FindAllStringsFromOffset and
-            not PythonReBenchmarkOperation.FindAllUtf8)
-        {
-            Console.Error.WriteLine(
-                $"PythonRe FindAll phase diagnostics require FindAllStrings, " +
-                $"FindAllStringsFromOffset, or FindAllUtf8; '{id}' uses {benchmarkCase.Operation}.");
-            return 1;
-        }
-
-        var effectiveIterations = GetEffectiveIterations(benchmarkCase, iterations);
-        using var processorScope = BenchmarkProcessorScope.EnterSingleHighestEfficiencyProcessor();
-        var context = new PythonReBenchmarkContext(benchmarkCase);
-        if (!context.SupportsCaptureFreeFindAllPhases && !context.SupportsCapturedFindAllPhases)
-        {
-            Console.Error.WriteLine(
-                $"PythonRe captured FindAll phase diagnostics require a pattern that cannot match empty; '{id}' is unsupported.");
-            return 1;
-        }
-
-        if (context.SupportsCapturedFindAllPhases)
-        {
-            return MeasureCapturedFindAllPhases(
-                benchmarkCase,
-                context,
-                processorScope,
-                effectiveIterations,
-                samples);
-        }
-
-        var expected = context.ExecutePythonRe();
-        var prepared = context.ExecutePreparedCoreRangeProjection();
-        var collected = context.ExecuteCoreCollectedProjection();
-        var streaming = context.ExecuteCoreStreamingProjection();
-        var repeatedValue = context.SupportsRepeatedCoreStringReplay
-            ? context.ExecuteRepeatedCoreStringProjection()
-            : expected;
-        var countedRepeatedValue = context.SupportsRepeatedCoreStringReplay
-            ? context.ExecuteCountedRepeatedCoreStringProjection()
-            : expected;
-        if (expected != prepared ||
-            expected != collected ||
-            expected != streaming ||
-            expected != repeatedValue ||
-            expected != countedRepeatedValue)
-        {
-            throw new InvalidOperationException(
-                $"PythonRe FindAll phase diagnostic '{id}' produced incomparable sinks: " +
-                $"public={expected}, prepared={prepared}, collected={collected}, streaming={streaming}, " +
-                $"repeated-value={repeatedValue}, counted-repeated-value={countedRepeatedValue}.");
-        }
-
-        Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
-        Console.WriteLine($"Operation          : {benchmarkCase.Operation}");
-        Console.WriteLine($"InputBytes         : {context.InputBytes.Length}");
-        Console.WriteLine($"MatchCount         : {context.PreparedCoreRangeCount}");
-        Console.WriteLine($"Iterations         : {effectiveIterations}");
-        Console.WriteLine($"Samples            : {samples}");
-        Console.WriteLine($"CpuPolicy          : {processorScope.Policy}");
-        Console.WriteLine($"CpuAffinityMask    : {processorScope.AffinityMask}");
-        Console.WriteLine("Phase model        : cumulative controls; phase timings are not additive");
-        if (benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllUtf8)
-        {
-            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(
-                context.ExecutePythonReFindAllUtf8,
-                effectiveIterations,
-                samples,
-                minimumWarmupCalls: 100_000));
-        }
-        else
-        {
-            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(
-                context.ExecutePythonReFindAllStrings,
-                effectiveIterations,
-                samples,
-                minimumWarmupCalls: 100_000));
-        }
-
-        PrintOperation("DecodeComparator", MeasurePhaseOperation(context.ExecuteDecodeThenRegex, effectiveIterations, samples));
-        PrintOperation("CoreEnumerateOnly", MeasurePhaseOperation(context.ExecuteCoreEnumerationOnly, effectiveIterations, samples));
-        PrintOperation("CoreCollectRanges", MeasureRetainedPhaseOperation(context.CollectCoreRangesArray, effectiveIterations, samples));
-        if (benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllUtf8)
-        {
-            PrintOperation("PreparedProjection", MeasureRetainedPhaseOperation(context.ProjectPreparedCoreUtf8, effectiveIterations, samples));
-            PrintOperation("CollectedProjection", MeasureRetainedPhaseOperation(context.ProjectCollectedCoreUtf8, effectiveIterations, samples));
-            PrintOperation("StreamingProjection", MeasureRetainedPhaseOperation(context.StreamCoreUtf8, effectiveIterations, samples));
-        }
-        else
-        {
-            PrintOperation("PreparedProjection", MeasureRetainedPhaseOperation(context.ProjectPreparedCoreStrings, effectiveIterations, samples));
-            PrintOperation("CollectedProjection", MeasureRetainedPhaseOperation(context.ProjectCollectedCoreStrings, effectiveIterations, samples));
-            PrintOperation("StreamingProjection", MeasureRetainedPhaseOperation(context.StreamCoreStrings, effectiveIterations, samples));
-            if (context.SupportsRepeatedCoreStringReplay)
-            {
-                PrintOperation("RepeatedValueProjection", MeasureRetainedPhaseOperation(context.ProjectRepeatedCoreStrings, effectiveIterations, samples));
-                PrintOperation("CountedRepeatedProjection", MeasureRetainedPhaseOperation(
-                    context.CountAndProjectRepeatedCoreStrings,
-                    effectiveIterations,
-                    samples,
-                    minimumWarmupCalls: 100_000));
-            }
-        }
-
-        PrintOperation("ChecksumTraversal", MeasurePhaseOperation(context.ExecutePreparedCoreChecksumTraversal, effectiveIterations, samples));
-        return 0;
-    }
-
-    private static int MeasureCapturedFindAllPhases(
-        PythonReBenchmarkCase benchmarkCase,
-        PythonReBenchmarkContext context,
-        BenchmarkProcessorScope processorScope,
-        int iterations,
-        int samples)
-    {
-        var expected = context.ExecutePythonRe();
-        var predecoded = context.ExecutePredecodedCapturedProjectionChecksum();
-        var prepared = context.ExecutePreparedCapturedProjectionChecksum();
-        var finalShape = context.ExecutePreparedCapturedFinalShapeChecksum();
-        var trailingCapture = context.SupportsTrailingCaptureReplay
-            ? context.ExecuteTrailingCaptureReplayChecksum()
-            : expected;
-        var separatedCaptures = context.SupportsSeparatedCapturesReplay
-            ? context.ExecuteSeparatedCapturesReplayChecksum()
-            : expected;
-        var optionalConstantCapture = context.SupportsOptionalConstantCaptureReplay
-            ? context.ExecuteOptionalConstantCaptureReplayChecksum()
-            : expected;
-        if (expected != predecoded ||
-            expected != prepared ||
-            expected != finalShape ||
-            expected != trailingCapture ||
-            expected != separatedCaptures ||
-            expected != optionalConstantCapture)
-        {
-            throw new InvalidOperationException(
-                $"PythonRe captured FindAll phase diagnostic '{benchmarkCase.Id}' produced incomparable sinks: " +
-                $"public={expected}, predecoded={predecoded}, prepared={prepared}, " +
-                $"final={finalShape}, trailing-capture={trailingCapture}, " +
-                $"separated-captures={separatedCaptures}, optional-constant-capture={optionalConstantCapture}.");
-        }
-
-        Console.WriteLine($"CaseId             : {benchmarkCase.Id}");
-        Console.WriteLine($"Operation          : {benchmarkCase.Operation}");
-        Console.WriteLine($"ManagedRoute       : {context.DescribeManagedRoute()}");
-        Console.WriteLine($"InputBytes         : {context.InputBytes.Length}");
-        Console.WriteLine($"CaptureCount       : {context.CaptureCount}");
-        Console.WriteLine($"MatchCount         : {context.PreparedCapturedMatchCount}");
-        Console.WriteLine($"OutputValueCount   : {context.PreparedCapturedValueCount}");
-        Console.WriteLine($"OutputUtf8Bytes    : {context.PreparedCapturedOutputUtf8Bytes}");
-        Console.WriteLine($"Iterations         : {iterations}");
-        Console.WriteLine($"Samples            : {samples}");
-        Console.WriteLine($"CpuPolicy          : {processorScope.Policy}");
-        Console.WriteLine($"CpuAffinityMask    : {processorScope.AffinityMask}");
-        Console.WriteLine("Phase model        : cumulative controls; phase timings are not additive");
-        PrintOperation("Utf8DecodeOnly", MeasureRetainedPhaseOperation(context.DecodeInput, iterations, samples));
-        PrintOperation("PredecodedDiscovery", MeasurePhaseOperation(context.ExecuteCapturedDiscoveryOnly, iterations, samples));
-        PrintOperation("CaptureRangeCollect", MeasureRetainedPhaseOperation(context.CollectCapturedRanges, iterations, samples));
-        if (benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllUtf8)
-        {
-            PrintOperation("CoordinateMapOnly", MeasureRetainedPhaseOperation(context.CreateUtf8CoordinateMap, iterations, samples));
-            PrintOperation("PreparedProjection", MeasureRetainedPhaseOperation(context.ProjectPreparedCapturedUtf8, iterations, samples));
-            PrintOperation("PreparedFinalShape", MeasureRetainedPhaseOperation(context.ShapePreparedCapturedUtf8, iterations, samples));
-            PrintOperation("PredecodedProjection", MeasureRetainedPhaseOperation(context.ProjectPredecodedCapturedUtf8, iterations, samples));
-            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReFindAllUtf8, iterations, samples));
-        }
-        else
-        {
-            PrintOperation("PreparedProjection", MeasureRetainedPhaseOperation(context.ProjectPreparedCapturedStrings, iterations, samples));
-            PrintOperation("PreparedFinalShape", MeasureRetainedPhaseOperation(context.ShapePreparedCapturedStrings, iterations, samples));
-            PrintOperation("PredecodedProjection", MeasureRetainedPhaseOperation(context.ProjectPredecodedCapturedStrings, iterations, samples));
-            if (context.SupportsTrailingCaptureReplay)
-            {
-                PrintOperation("TrailingCaptureReplay", MeasureRetainedPhaseOperation(context.ProjectTrailingCaptureStrings, iterations, samples));
-            }
-
-            if (context.SupportsSeparatedCapturesReplay)
-            {
-                PrintOperation("SeparatedCapturesReplay", MeasureRetainedPhaseOperation(context.ProjectSeparatedCaptureStrings, iterations, samples));
-            }
-
-            if (context.SupportsOptionalConstantCaptureReplay)
-            {
-                PrintOperation("OptionalCaptureReplay", MeasureRetainedPhaseOperation(context.ProjectOptionalConstantCaptureStrings, iterations, samples));
-            }
-
-            PrintOperation("PythonRePublic", MeasureRetainedPhaseOperation(context.ExecutePythonReFindAllStrings, iterations, samples));
-        }
-
-        PrintOperation("ChecksumTraversal", MeasurePhaseOperation(context.ExecutePreparedCapturedProjectionChecksum, iterations, samples));
         return 0;
     }
 
@@ -1110,168 +891,6 @@ internal static partial class PythonReBenchmarkReporter
         return 0;
     }
 
-    private static int MeasureEmptyGlobalShapes(int iterations, int samples)
-    {
-        const string pattern = "needle|needle-long";
-        var prefix = new string('x', 65_536) + "Ã©";
-        var subject = prefix + " no matching token";
-        var hitSubject = prefix + string.Concat(Enumerable.Repeat(" needle-long", 256));
-        var progressivePrefix = prefix + " ";
-        var progressiveSubject = progressivePrefix + "y";
-        var input = Encoding.UTF8.GetBytes(subject);
-        var hitInput = Encoding.UTF8.GetBytes(hitSubject);
-        var progressiveInput = Encoding.UTF8.GetBytes(progressiveSubject);
-        var startOffsetInBytes = Encoding.UTF8.GetByteCount(prefix);
-        var progressiveStartOffsetInBytes = Encoding.UTF8.GetByteCount(progressivePrefix);
-        var pythonRegex = new Utf8PythonRegex(pattern);
-        var capturedPythonRegex = new Utf8PythonRegex($"({pattern})");
-        var progressivePythonRegex = new Utf8PythonRegex(@"\b|\w+");
-        var managedRegex = new Regex(
-            pattern,
-            RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout);
-        var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-        string[] expectedProgression = [string.Empty, "y", string.Empty];
-        var progressiveStructural = PythonReBenchmarkReporter.MaterializeStructural(progressivePythonRegex, progressiveInput, progressiveStartOffsetInBytes)
-            .Select(static match => match.ValueText).ToArray();
-        var progressiveStrings = PythonReFindAllTextResult.Decode(progressivePythonRegex.FindAllToUtf8(progressiveInput, progressiveStartOffsetInBytes)).ScalarValues;
-        var progressiveUtf8 = progressivePythonRegex.FindAllToUtf8(progressiveInput, progressiveStartOffsetInBytes)
-            .ScalarValues.Select(Encoding.UTF8.GetString).ToArray();
-        var progressiveCount = progressivePythonRegex.Count(progressiveInput, progressiveStartOffsetInBytes);
-
-        if (PythonReBenchmarkReporter.MaterializeStructural(pythonRegex, input, startOffsetInBytes).Length != 0 ||
-            PythonReFindAllTextResult.Decode(pythonRegex.FindAllToUtf8(input, startOffsetInBytes)).Count != 0 ||
-            pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
-PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex, input, startOffsetInBytes).Length != 0 ||
-            pythonRegex.Count(input, startOffsetInBytes) != 0 ||
-            PythonReFindAllTextResult.Decode(capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes)).Count != 0 ||
-            capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
-            managedRegex.Match(subject, prefix.Length).Success ||
-            PythonReBenchmarkReporter.MaterializeStructural(pythonRegex, hitInput, startOffsetInBytes).Length != 256 ||
-            PythonReFindAllTextResult.Decode(pythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes)).Count != 256 ||
-            pythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count != 256 ||
-PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex, hitInput, startOffsetInBytes).Length != 256 ||
-            pythonRegex.Count(hitInput, startOffsetInBytes) != 256 ||
-            PythonReFindAllTextResult.Decode(capturedPythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes)).Count != 256 ||
-            capturedPythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count != 256 ||
-            !progressiveStructural.SequenceEqual(expectedProgression) ||
-            !progressiveStrings.SequenceEqual(expectedProgression) ||
-            !progressiveUtf8.SequenceEqual(expectedProgression) ||
-            progressiveCount != 3)
-        {
-            throw new InvalidOperationException(
-                "PythonRe empty global-shape diagnostic failed its result preflight. " +
-                $"Progressive structural=[{string.Join('|', progressiveStructural)}], " +
-                $"strings=[{string.Join('|', progressiveStrings)}], " +
-                $"utf8=[{string.Join('|', progressiveUtf8)}], count={progressiveCount}.");
-        }
-
-        Console.WriteLine($"Pattern            : {pattern}");
-        Console.WriteLine($"InputBytes         : {input.Length}");
-        Console.WriteLine($"StartOffsetInBytes : {startOffsetInBytes}");
-        Console.WriteLine($"StartOffsetInUtf16 : {prefix.Length}");
-        Console.WriteLine("Implementation     : owned UTF8 engine");
-        Console.WriteLine($"Iterations         : {iterations} (capped at 2000)");
-        Console.WriteLine($"Samples            : {samples} (capped at 15)");
-        PrintOperation("HostCursorStructuralEmpty", MeasureOperation(
-            () => PythonReBenchmarkReporter.MaterializeStructural(pythonRegex, input, startOffsetInBytes).Length,
-            iterations,
-            samples));
-        PrintOperation("FindAllStringsEmpty", MeasureOperation(
-            () => PythonReFindAllTextResult.Decode(pythonRegex.FindAllToUtf8(input, startOffsetInBytes)).Count,
-            iterations,
-            samples));
-        PrintOperation("FindAllUtf8Empty", MeasureOperation(
-            () => pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count,
-            iterations,
-            samples));
-        PrintOperation("CapturedStringsEmpty", MeasureOperation(
-            () => PythonReFindAllTextResult.Decode(capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes)).Count,
-            iterations,
-            samples));
-        PrintOperation("CapturedUtf8Empty", MeasureOperation(
-            () => capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count,
-            iterations,
-            samples));
-        PrintOperation("FindIterDetailedEmpty", MeasureOperation(
-            () => PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex, input, startOffsetInBytes).Length,
-            iterations,
-            samples));
-        PrintOperation("CountEmpty", MeasureOperation(
-            () => pythonRegex.Count(input, startOffsetInBytes),
-            iterations,
-            samples));
-        PrintOperation("DecodeSearchMiss", MeasureOperation(
-            () =>
-            {
-                var decoded = strictUtf8.GetString(input);
-                return managedRegex.Match(decoded, prefix.Length).Success ? 1 : 0;
-            },
-            iterations,
-            samples));
-        PrintOperation("PredecodedSearchMiss", MeasureOperation(
-            () => managedRegex.Match(subject, prefix.Length).Success ? 1 : 0,
-            iterations,
-            samples));
-        PrintOperation("DecodeCountEmpty", MeasureOperation(
-            () =>
-            {
-                var decoded = strictUtf8.GetString(input);
-                return managedRegex.Count(decoded, prefix.Length);
-            },
-            iterations,
-            samples));
-        PrintOperation("PredecodedCountEmpty", MeasureOperation(
-            () => managedRegex.Count(subject, prefix.Length),
-            iterations,
-            samples));
-        PrintOperation("HostCursorStructuralHit", MeasureOperation(
-            () => PythonReBenchmarkReporter.MaterializeStructural(pythonRegex, hitInput, startOffsetInBytes).Length,
-            iterations,
-            samples));
-        PrintOperation("FindAllStringsHit", MeasureOperation(
-            () => PythonReFindAllTextResult.Decode(pythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes)).Count,
-            iterations,
-            samples));
-        PrintOperation("FindAllUtf8Hit", MeasureOperation(
-            () => pythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count,
-            iterations,
-            samples));
-        PrintOperation("CapturedStringsHit", MeasureOperation(
-            () => PythonReFindAllTextResult.Decode(capturedPythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes)).Count,
-            iterations,
-            samples));
-        PrintOperation("CapturedUtf8Hit", MeasureOperation(
-            () => capturedPythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count,
-            iterations,
-            samples));
-        PrintOperation("FindIterDetailedHit", MeasureOperation(
-            () => PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex, hitInput, startOffsetInBytes).Length,
-            iterations,
-            samples));
-        PrintOperation("CountHit", MeasureOperation(
-            () => pythonRegex.Count(hitInput, startOffsetInBytes),
-            iterations,
-            samples));
-        PrintOperation("ProgressiveHostCursorStructural", MeasureOperation(
-            () => PythonReBenchmarkReporter.MaterializeStructural(progressivePythonRegex, progressiveInput, progressiveStartOffsetInBytes).Length,
-            iterations,
-            samples));
-        PrintOperation("ProgressiveStrings", MeasureOperation(
-            () => PythonReFindAllTextResult.Decode(progressivePythonRegex.FindAllToUtf8(progressiveInput, progressiveStartOffsetInBytes)).Count,
-            iterations,
-            samples));
-        PrintOperation("ProgressiveUtf8", MeasureOperation(
-            () => progressivePythonRegex.FindAllToUtf8(progressiveInput, progressiveStartOffsetInBytes).Count,
-            iterations,
-            samples));
-        PrintOperation("ProgressiveCount", MeasureOperation(
-            () => progressivePythonRegex.Count(progressiveInput, progressiveStartOffsetInBytes),
-            iterations,
-            samples));
-        return 0;
-    }
-
     private static int MeasureEmptyProgressionScaling(int baseTokenCount, int iterations, int samples)
     {
         const string pattern = @"\b|\w+";
@@ -1309,10 +928,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex, hitInput, star
                 samples));
             PrintOperation("FindAll", MeasureOperation(
                 () => PythonReBenchmarkReporter.MaterializeStructural(regex, input).Length,
-                iterations,
-                samples));
-            PrintOperation("FindAllStrings", MeasureOperation(
-                () => PythonReFindAllTextResult.Decode(regex.FindAllToUtf8(input)).Count,
                 iterations,
                 samples));
         }
@@ -1466,17 +1081,8 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex, hitInput, star
             PythonReBenchmarkOperation.SearchFromOffset or
             PythonReBenchmarkOperation.Match or
             PythonReBenchmarkOperation.FullMatch or
-            PythonReBenchmarkOperation.SearchDetailed => 5_000,
-            PythonReBenchmarkOperation.Count when benchmarkCase.Id == "zero-width/count" => 5_000,
-            PythonReBenchmarkOperation.Count or
-            PythonReBenchmarkOperation.CountFromOffset => 500,
-            PythonReBenchmarkOperation.FindAllStrings or
-            PythonReBenchmarkOperation.FindAllStringsFromOffset or
-            PythonReBenchmarkOperation.FindAllUtf8 or
-            PythonReBenchmarkOperation.FindIterDetailed or
-            PythonReBenchmarkOperation.FindAllStructural => 1_000,
-            _ => 2_000,
-        };
+            PythonReBenchmarkOperation.SearchDetailed => 5_000,            PythonReBenchmarkOperation.Count when benchmarkCase.Id == "zero-width/count" => 5_000,            PythonReBenchmarkOperation.Count or
+            PythonReBenchmarkOperation.CountFromOffset => 500,PythonReBenchmarkOperation.FindIterDetailed or PythonReBenchmarkOperation.FindAllStructural=> 1_000,            _ => 2_000        };
         return Math.Max(requestedIterations, minimum);
     }
 
@@ -1848,25 +1454,6 @@ internal sealed class PythonReBenchmarkContext
     private readonly Utf8PythonRegex _pythonRegex;
     private readonly Regex _regex;
     private readonly Regex _fullRegex;
-    private readonly Utf8Regex? _coreFindAllRegex;
-    private readonly PythonReBenchmarkRange[] _preparedCoreRanges;
-    private readonly PythonReFindAllTextResult _preparedCoreStrings;
-    private readonly Utf8PythonFindAllUtf8Result _preparedCoreUtf8;
-    private readonly bool _supportsRepeatedCoreStringReplay;
-    private readonly string _repeatedCoreString;
-    private readonly bool _supportsCapturedFindAllPhases;
-    private readonly PythonReBenchmarkCaptureRange[] _preparedCaptureRanges;
-    private readonly int[]? _preparedUtf8Offsets;
-    private readonly PythonReFindAllTextResult _preparedCapturedStrings;
-    private readonly Utf8PythonFindAllUtf8Result _preparedCapturedUtf8;
-    private readonly bool _supportsTrailingCaptureReplay;
-    private readonly int _trailingCapturePrefixLength;
-    private readonly bool _supportsSeparatedCapturesReplay;
-    private readonly char _captureSeparator;
-    private readonly bool _supportsOptionalConstantCaptureReplay;
-    private readonly int _optionalCapturePresentMatchLength;
-    private readonly int _optionalCaptureAbsentMatchLength;
-    private readonly string _optionalCaptureValue;
     private readonly bool _supportsReplacementPhases;
     private readonly Utf8Regex? _coreReplacementRegex;
     private readonly Regex? _replacementNonEmptyAtSamePositionRegex;
@@ -1926,181 +1513,6 @@ internal sealed class PythonReBenchmarkContext
                     parsed.CaptureGroupCount,
                     parsed.NamedGroups).ToDotNetReplacementString()
                 : benchmarkCase.Replacement;
-        if (benchmarkCase.Operation is
-                PythonReBenchmarkOperation.FindAllStrings or
-                PythonReBenchmarkOperation.FindAllStringsFromOffset or
-                PythonReBenchmarkOperation.FindAllUtf8 &&
-            _captureCount == 0)
-        {
-            _coreFindAllRegex = new Utf8Regex(translation.NativePatternUtf8, options: translation.NativeRegexOptions, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Timeout.InfiniteTimeSpan,
-                ResourcePolicy = default
-            });
-            _preparedCoreRanges = CollectCoreRanges().ToArray();
-            _preparedCoreStrings = ProjectCoreRangeStrings(_preparedCoreRanges);
-            _preparedCoreUtf8 = ProjectCoreRangeUtf8(_preparedCoreRanges);
-            _supportsRepeatedCoreStringReplay =
-                benchmarkCase.Operation is
-                    PythonReBenchmarkOperation.FindAllStrings or
-                    PythonReBenchmarkOperation.FindAllStringsFromOffset &&
-                _preparedCoreStrings.ScalarValues.Length > 0 &&
-                _preparedCoreStrings.ScalarValues.AsSpan(1).IndexOfAnyExcept(
-                    _preparedCoreStrings.ScalarValues[0]) < 0;
-            _repeatedCoreString = _supportsRepeatedCoreStringReplay
-                ? _preparedCoreStrings.ScalarValues[0]
-                : string.Empty;
-            _supportsCapturedFindAllPhases = false;
-            _preparedCaptureRanges = [];
-            _preparedUtf8Offsets = [];
-            _preparedCapturedStrings = default;
-            _preparedCapturedUtf8 = default;
-            _supportsTrailingCaptureReplay = false;
-            _trailingCapturePrefixLength = 0;
-            _supportsSeparatedCapturesReplay = false;
-            _captureSeparator = default;
-            _supportsOptionalConstantCaptureReplay = false;
-            _optionalCapturePresentMatchLength = 0;
-            _optionalCaptureAbsentMatchLength = 0;
-            _optionalCaptureValue = string.Empty;
-        }
-        else if (benchmarkCase.Operation is PythonReBenchmarkOperation.FindAllStrings or PythonReBenchmarkOperation.FindAllUtf8 &&
-                 _captureCount > 0 && !_regex.IsMatch(string.Empty))
-        {
-            _coreFindAllRegex = null;
-            _preparedCoreRanges = [];
-            _preparedCoreStrings = default;
-            _preparedCoreUtf8 = default;
-            _supportsRepeatedCoreStringReplay = false;
-            _repeatedCoreString = string.Empty;
-            _supportsCapturedFindAllPhases = true;
-            _preparedCaptureRanges = CollectCapturedRanges();
-            _preparedUtf8Offsets = GetUtf8Offsets(_decoded);
-            _preparedCapturedStrings = ProjectCapturedStrings(_preparedCaptureRanges);
-            _preparedCapturedUtf8 = ProjectCapturedUtf8(_preparedCaptureRanges, _preparedUtf8Offsets);
-            _supportsTrailingCaptureReplay = benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllStrings &&
-                _captureCount == 1;
-            var trailingCapturePrefixLength = -1;
-            if (_supportsTrailingCaptureReplay)
-            {
-                foreach (Match match in _regex.Matches(_decoded))
-                {
-                    var group = match.Groups[1];
-                    var prefixLength = group.Index - match.Index;
-                    if (!group.Success ||
-                        group.Index + group.Length != match.Index + match.Length ||
-                        trailingCapturePrefixLength >= 0 && trailingCapturePrefixLength != prefixLength)
-                    {
-                        _supportsTrailingCaptureReplay = false;
-                        break;
-                    }
-
-                    trailingCapturePrefixLength = prefixLength;
-                }
-            }
-
-            _trailingCapturePrefixLength = Math.Max(0, trailingCapturePrefixLength);
-            _supportsSeparatedCapturesReplay = benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllStrings &&
-                _captureCount == 2;
-            var captureSeparator = default(char);
-            var hasCaptureSeparator = false;
-            if (_supportsSeparatedCapturesReplay)
-            {
-                foreach (Match match in _regex.Matches(_decoded))
-                {
-                    var first = match.Groups[1];
-                    var second = match.Groups[2];
-                    var separatorIndex = first.Index + first.Length;
-                    if (!first.Success ||
-                        !second.Success ||
-                        first.Index != match.Index ||
-                        second.Index + second.Length != match.Index + match.Length ||
-                        second.Index - separatorIndex != 1 ||
-                        hasCaptureSeparator && _decoded[separatorIndex] != captureSeparator)
-                    {
-                        _supportsSeparatedCapturesReplay = false;
-                        break;
-                    }
-
-                    captureSeparator = _decoded[separatorIndex];
-                    hasCaptureSeparator = true;
-                }
-
-                _supportsSeparatedCapturesReplay &= hasCaptureSeparator;
-            }
-
-            _captureSeparator = captureSeparator;
-            _supportsOptionalConstantCaptureReplay = benchmarkCase.Operation == PythonReBenchmarkOperation.FindAllStrings &&
-                _captureCount == 1;
-            var optionalCapturePresentMatchLength = -1;
-            var optionalCaptureAbsentMatchLength = -1;
-            var optionalCaptureValue = string.Empty;
-            var sawPresentCapture = false;
-            var sawAbsentCapture = false;
-            if (_supportsOptionalConstantCaptureReplay)
-            {
-                foreach (Match match in _regex.Matches(_decoded))
-                {
-                    var group = match.Groups[1];
-                    if (group.Success)
-                    {
-                        if (sawPresentCapture &&
-                            (match.Length != optionalCapturePresentMatchLength ||
-                             !group.Value.Equals(optionalCaptureValue, StringComparison.Ordinal)))
-                        {
-                            _supportsOptionalConstantCaptureReplay = false;
-                            break;
-                        }
-
-                        sawPresentCapture = true;
-                        optionalCapturePresentMatchLength = match.Length;
-                        optionalCaptureValue = group.Value;
-                    }
-                    else
-                    {
-                        if (sawAbsentCapture && match.Length != optionalCaptureAbsentMatchLength)
-                        {
-                            _supportsOptionalConstantCaptureReplay = false;
-                            break;
-                        }
-
-                        sawAbsentCapture = true;
-                        optionalCaptureAbsentMatchLength = match.Length;
-                    }
-                }
-
-                _supportsOptionalConstantCaptureReplay &=
-                    sawPresentCapture &&
-                    sawAbsentCapture &&
-                    optionalCapturePresentMatchLength != optionalCaptureAbsentMatchLength;
-            }
-
-            _optionalCapturePresentMatchLength = Math.Max(0, optionalCapturePresentMatchLength);
-            _optionalCaptureAbsentMatchLength = Math.Max(0, optionalCaptureAbsentMatchLength);
-            _optionalCaptureValue = optionalCaptureValue;
-        }
-        else
-        {
-            _coreFindAllRegex = null;
-            _preparedCoreRanges = [];
-            _preparedCoreStrings = default;
-            _preparedCoreUtf8 = default;
-            _supportsRepeatedCoreStringReplay = false;
-            _repeatedCoreString = string.Empty;
-            _supportsCapturedFindAllPhases = false;
-            _preparedCaptureRanges = [];
-            _preparedUtf8Offsets = [];
-            _preparedCapturedStrings = default;
-            _preparedCapturedUtf8 = default;
-            _supportsTrailingCaptureReplay = false;
-            _trailingCapturePrefixLength = 0;
-            _supportsSeparatedCapturesReplay = false;
-            _captureSeparator = default;
-            _supportsOptionalConstantCaptureReplay = false;
-            _optionalCapturePresentMatchLength = 0;
-            _optionalCaptureAbsentMatchLength = 0;
-            _optionalCaptureValue = string.Empty;
-        }
 
         if (benchmarkCase.Operation is PythonReBenchmarkOperation.ReplaceString or
                 PythonReBenchmarkOperation.ReplaceUtf8 or
@@ -2194,26 +1606,7 @@ internal sealed class PythonReBenchmarkContext
 
     internal byte[] InputBytes { get; }
 
-    internal bool SupportsCaptureFreeFindAllPhases => _coreFindAllRegex is not null;
-
-    internal bool SupportsCapturedFindAllPhases => _supportsCapturedFindAllPhases;
-
-    internal bool SupportsRepeatedCoreStringReplay => _supportsRepeatedCoreStringReplay;
-
-    internal int PreparedCoreRangeCount => _preparedCoreRanges.Length;
-
     internal int CaptureCount => _captureCount;
-
-    internal int PreparedCapturedMatchCount => _captureCount == 0
-        ? 0
-        : _preparedCaptureRanges.Length / _captureCount;
-
-    internal int PreparedCapturedValueCount => _preparedCaptureRanges.Length;
-
-    internal int PreparedCapturedOutputUtf8Bytes => _preparedCaptureRanges.Sum(
-        range => range.Success
-            ? s_strictUtf8.GetByteCount(_decoded.AsSpan(range.StartOffsetInUtf16, range.LengthInUtf16))
-            : 0);
 
     internal bool SupportsReplacementPhases => _supportsReplacementPhases;
 
@@ -2225,12 +1618,6 @@ internal sealed class PythonReBenchmarkContext
 
     internal int PreparedSplitOutputUtf8Bytes => _preparedSplitStrings.Sum(
         static value => value is null ? 0 : s_strictUtf8.GetByteCount(value));
-
-    internal bool SupportsTrailingCaptureReplay => _supportsTrailingCaptureReplay;
-
-    internal bool SupportsOptionalConstantCaptureReplay => _supportsOptionalConstantCaptureReplay;
-
-    internal bool SupportsSeparatedCapturesReplay => _supportsSeparatedCapturesReplay;
 
     internal string ReplacementCoreExecutionKind => GetCoreReplacementRegex()
         .Inspection.ExecutionKind.ToString();
@@ -2255,71 +1642,39 @@ internal sealed class PythonReBenchmarkContext
     {
         PythonReBenchmarkOperation.IsMatch => DescribeBackend(
             _pythonRegex.DebugUtf8ExecutionKind,
-            "boolean result"),
-        PythonReBenchmarkOperation.Search => DescribeBackend(
+            "boolean result"),        PythonReBenchmarkOperation.Search => DescribeBackend(
             _pythonRegex.DebugUtf8ExecutionKind,
-            "value ranges"),
-        PythonReBenchmarkOperation.SearchFromOffset => DescribeBackend(
+            "value ranges"),        PythonReBenchmarkOperation.SearchFromOffset => DescribeBackend(
             _pythonRegex.DebugUtf8ExecutionKind,
-            "value ranges from a nonzero byte offset"),
-        PythonReBenchmarkOperation.Match => DescribeBackend(
+            "value ranges from a nonzero byte offset"),        PythonReBenchmarkOperation.Match => DescribeBackend(
             _pythonRegex.DebugUtf8ExecutionKind,
-            "anchored value ranges"),
-        PythonReBenchmarkOperation.FullMatch => DescribeBackend(
+            "anchored value ranges"),        PythonReBenchmarkOperation.FullMatch => DescribeBackend(
             "OwnedScalar",
-            "full-match value ranges"),
-        PythonReBenchmarkOperation.SearchDetailed => DescribeBackend(
+            "full-match value ranges"),        PythonReBenchmarkOperation.SearchDetailed => DescribeBackend(
             _pythonRegex.DebugUtf8ExecutionKind,
-            "detailed capture projection"),
-        PythonReBenchmarkOperation.Count when !_pythonRegex.DebugUsesZeroOffsetUtf8SearchValueFastPath =>
-            "owned scalar VM; byte-driven Python count progression",
-        PythonReBenchmarkOperation.Count => DescribeBackend(
+            "detailed capture projection"),        PythonReBenchmarkOperation.Count when !_pythonRegex.DebugUsesZeroOffsetUtf8SearchValueFastPath =>
+            "owned scalar VM; byte-driven Python count progression",        PythonReBenchmarkOperation.Count => DescribeBackend(
             _pythonRegex.DebugUtf8ExecutionKind,
-            "Python-style count progression"),
-        PythonReBenchmarkOperation.CountFromOffset =>
-            "owned scalar VM; byte-driven Python count from a nonzero offset",
-        PythonReBenchmarkOperation.FindAllStrings when _captureCount > 0 =>
-            "owned scalar VM; findall UTF-8 output and host string projection",
-        PythonReBenchmarkOperation.FindAllStrings => DescribeBackend(
+            "Python-style count progression"),        PythonReBenchmarkOperation.CountFromOffset =>
+            "owned scalar VM; byte-driven Python count from a nonzero offset",        PythonReBenchmarkOperation.FindIterDetailed =>
+            "owned scalar VM; detailed iteration shaping",        PythonReBenchmarkOperation.FindAllStructural => DescribeBackend(
             _pythonRegex.DebugUtf8ExecutionKind,
-            "findall UTF-8 output and host string projection"),
-        PythonReBenchmarkOperation.FindAllStringsFromOffset =>
-            "owned scalar VM or qualified native literal enumeration; findall string shaping from a nonzero byte offset",
-        PythonReBenchmarkOperation.FindAllUtf8 when _captureCount > 0 =>
-            "owned scalar VM; findall UTF-8 shaping",
-        PythonReBenchmarkOperation.FindAllUtf8 => DescribeBackend(
-            _pythonRegex.DebugUtf8ExecutionKind,
-            "findall UTF-8 shaping"),
-        PythonReBenchmarkOperation.FindIterDetailed =>
-            "owned scalar VM; detailed iteration shaping",
-        PythonReBenchmarkOperation.FindAllStructural => DescribeBackend(
-            _pythonRegex.DebugUtf8ExecutionKind,
-            "group-zero structural match shaping"),
-        PythonReBenchmarkOperation.ReplaceString or
+            "group-zero structural match shaping"),        PythonReBenchmarkOperation.ReplaceString or
             PythonReBenchmarkOperation.ReplaceStringLimited or
             PythonReBenchmarkOperation.SubnString =>
             DescribeBackend(
                 _pythonRegex.DebugUtf8ExecutionKind,
-                "replacement; string shaping"),
-        PythonReBenchmarkOperation.ReplaceUtf8 or
+                "replacement; string shaping"),        PythonReBenchmarkOperation.ReplaceUtf8 or
             PythonReBenchmarkOperation.SubnUtf8 =>
             DescribeBackend(
                 _pythonRegex.DebugUtf8ExecutionKind,
-                "replacement; UTF-8 shaping"),
-        PythonReBenchmarkOperation.SubnEvaluatorString =>
-            "owned scalar VM; callback replacement; string shaping",
-        PythonReBenchmarkOperation.ReplaceEvaluatorString =>
-            "owned scalar VM; callback replacement; string shaping without count",
-        PythonReBenchmarkOperation.SubnEvaluatorUtf8 =>
-            "owned scalar VM; callback replacement; UTF-8 shaping",
-        PythonReBenchmarkOperation.SplitStrings =>
-            "owned scalar VM; split; string shaping",
-        PythonReBenchmarkOperation.SplitStringsLimited =>
-            "owned scalar VM; bounded split; string shaping",
-        PythonReBenchmarkOperation.SplitDetailed =>
-            "owned scalar VM; split; item-metadata shaping",
-        _ => throw new ArgumentOutOfRangeException(),
-    };
+                "replacement; UTF-8 shaping"),        PythonReBenchmarkOperation.SubnEvaluatorString =>
+            "owned scalar VM; callback replacement; string shaping",        PythonReBenchmarkOperation.ReplaceEvaluatorString =>
+            "owned scalar VM; callback replacement; string shaping without count",        PythonReBenchmarkOperation.SubnEvaluatorUtf8 =>
+            "owned scalar VM; callback replacement; UTF-8 shaping",        PythonReBenchmarkOperation.SplitStrings =>
+            "owned scalar VM; split; string shaping",        PythonReBenchmarkOperation.SplitStringsLimited =>
+            "owned scalar VM; bounded split; string shaping",        PythonReBenchmarkOperation.SplitDetailed =>
+            "owned scalar VM; split; item-metadata shaping",        _ => throw new ArgumentOutOfRangeException()    };
 
     // Utf8Regex is the historical component label, not an operation route.
     private static string DescribeBackend(
@@ -2442,50 +1797,6 @@ internal sealed class PythonReBenchmarkContext
                         Stopwatch.GetTimestamp(),
                         GC.GetAllocatedBytesForCurrentThread(),
                         result,
-                        SemanticDigest(_case.Operation, result));
-                }
-            case PythonReBenchmarkOperation.FindAllStrings:
-                {
-                    PythonReFindAllTextResult result = default;
-                    for (var iteration = 0; iteration < iterations; iteration++)
-                    {
-                        result = PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(InputBytes));
-                    }
-
-                    return Complete(
-                        Stopwatch.GetTimestamp(),
-                        GC.GetAllocatedBytesForCurrentThread(),
-                        Checksum(result),
-                        SemanticDigest(_case.Operation, result));
-                }
-            case PythonReBenchmarkOperation.FindAllStringsFromOffset:
-                {
-                    PythonReFindAllTextResult result = default;
-                    for (var iteration = 0; iteration < iterations; iteration++)
-                    {
-                        result = PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(
-                            InputBytes,
-                            _case.Coverage.StartOffsetInBytes));
-                    }
-
-                    return Complete(
-                        Stopwatch.GetTimestamp(),
-                        GC.GetAllocatedBytesForCurrentThread(),
-                        Checksum(result),
-                        SemanticDigest(_case.Operation, result));
-                }
-            case PythonReBenchmarkOperation.FindAllUtf8:
-                {
-                    Utf8PythonFindAllUtf8Result result = default;
-                    for (var iteration = 0; iteration < iterations; iteration++)
-                    {
-                        result = _pythonRegex.FindAllToUtf8(InputBytes);
-                    }
-
-                    return Complete(
-                        Stopwatch.GetTimestamp(),
-                        GC.GetAllocatedBytesForCurrentThread(),
-                        Checksum(result),
                         SemanticDigest(_case.Operation, result));
                 }
             case PythonReBenchmarkOperation.FindIterDetailed:
@@ -2755,121 +2066,58 @@ internal sealed class PythonReBenchmarkContext
 
     internal ulong ExecutePythonReConsumptionToken() => _case.Operation switch
     {
-        PythonReBenchmarkOperation.Search => GetConsumptionToken(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search)),
-        PythonReBenchmarkOperation.SearchFromOffset => GetConsumptionToken(
-            _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search)),
-        PythonReBenchmarkOperation.Match => GetConsumptionToken(_pythonRegex.Match(InputBytes)),
-        PythonReBenchmarkOperation.FullMatch => GetConsumptionToken(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch)),
-        _ => 0,
-    };
+        PythonReBenchmarkOperation.Search => GetConsumptionToken(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search)),        PythonReBenchmarkOperation.SearchFromOffset => GetConsumptionToken(
+            _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search)),        PythonReBenchmarkOperation.Match => GetConsumptionToken(_pythonRegex.Match(InputBytes)),        PythonReBenchmarkOperation.FullMatch => GetConsumptionToken(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch)),        _ => 0    };
 
     internal int ExecutePythonRe() => _case.Operation switch
     {
-        PythonReBenchmarkOperation.IsMatch => _pythonRegex.IsMatch(InputBytes) ? 1 : 0,
-        PythonReBenchmarkOperation.Search => Checksum(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search)),
-        PythonReBenchmarkOperation.SearchFromOffset => Checksum(
-            _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search)),
-        PythonReBenchmarkOperation.Match => Checksum(_pythonRegex.Match(InputBytes)),
-        PythonReBenchmarkOperation.FullMatch => Checksum(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch)),
-        PythonReBenchmarkOperation.SearchDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex, InputBytes)),
-        PythonReBenchmarkOperation.Count => _pythonRegex.Count(InputBytes),
-        PythonReBenchmarkOperation.CountFromOffset => _pythonRegex.Count(
+        PythonReBenchmarkOperation.IsMatch => _pythonRegex.IsMatch(InputBytes) ? 1 : 0,        PythonReBenchmarkOperation.Search => Checksum(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search)),        PythonReBenchmarkOperation.SearchFromOffset => Checksum(
+            _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search)),        PythonReBenchmarkOperation.Match => Checksum(_pythonRegex.Match(InputBytes)),        PythonReBenchmarkOperation.FullMatch => Checksum(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch)),        PythonReBenchmarkOperation.SearchDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.Count => _pythonRegex.Count(InputBytes),        PythonReBenchmarkOperation.CountFromOffset => _pythonRegex.Count(
             InputBytes,
-            _case.Coverage.StartOffsetInBytes),
-        PythonReBenchmarkOperation.FindAllStrings => Checksum(PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(InputBytes))),
-        PythonReBenchmarkOperation.FindAllStringsFromOffset => Checksum(PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(
-            InputBytes,
-            _case.Coverage.StartOffsetInBytes))),
-        PythonReBenchmarkOperation.FindAllUtf8 => Checksum(_pythonRegex.FindAllToUtf8(InputBytes)),
-        PythonReBenchmarkOperation.FindIterDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
-        PythonReBenchmarkOperation.FindAllStructural => Checksum(PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),
-        PythonReBenchmarkOperation.ReplaceString => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),
-        PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(_pythonRegex.Replace(InputBytes, _case.Replacement)),
-        PythonReBenchmarkOperation.ReplaceStringLimited => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(
+            _case.Coverage.StartOffsetInBytes),        PythonReBenchmarkOperation.FindIterDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.FindAllStructural => Checksum(PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.ReplaceString => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),        PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(_pythonRegex.Replace(InputBytes, _case.Replacement)),        PythonReBenchmarkOperation.ReplaceStringLimited => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(
             InputBytes,
             _case.Replacement,
-            _case.Coverage.ReplacementCount))),
-        PythonReBenchmarkOperation.SubnString => Checksum(PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),
-        PythonReBenchmarkOperation.SubnUtf8 => Checksum(_pythonRegex.Subn(InputBytes, _case.Replacement)),
-        PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorString(),
-        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8(),
-        PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecutePythonReReplaceEvaluatorString(),
-        PythonReBenchmarkOperation.SplitStrings => Checksum(MaterializePythonSplitStrings()),
-        PythonReBenchmarkOperation.SplitStringsLimited => Checksum(MaterializePythonSplitStrings(_case.Coverage.MaxSplit)),
-        PythonReBenchmarkOperation.SplitDetailed => Checksum(MaterializePythonSplitDetailed()),
-        _ => throw new InvalidOperationException(),
-    };
+            _case.Coverage.ReplacementCount))),        PythonReBenchmarkOperation.SubnString => Checksum(PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),        PythonReBenchmarkOperation.SubnUtf8 => Checksum(_pythonRegex.Subn(InputBytes, _case.Replacement)),        PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorString(),        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8(),        PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecutePythonReReplaceEvaluatorString(),        PythonReBenchmarkOperation.SplitStrings => Checksum(MaterializePythonSplitStrings()),        PythonReBenchmarkOperation.SplitStringsLimited => Checksum(MaterializePythonSplitStrings(_case.Coverage.MaxSplit)),        PythonReBenchmarkOperation.SplitDetailed => Checksum(MaterializePythonSplitDetailed()),        _ => throw new InvalidOperationException()    };
 
     internal ulong ExecutePythonReSemanticDigest() => _case.Operation switch
     {
         PythonReBenchmarkOperation.IsMatch => SemanticDigest(
             _case.Operation,
-            _pythonRegex.IsMatch(InputBytes)),
-        PythonReBenchmarkOperation.Search => SemanticDigest(
+            _pythonRegex.IsMatch(InputBytes)),        PythonReBenchmarkOperation.Search => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search)),
-        PythonReBenchmarkOperation.SearchFromOffset => SemanticDigest(
+            _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search)),        PythonReBenchmarkOperation.SearchFromOffset => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search)),
-        PythonReBenchmarkOperation.Match => SemanticDigest(
+            _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search)),        PythonReBenchmarkOperation.Match => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Match(InputBytes)),
-        PythonReBenchmarkOperation.FullMatch => SemanticDigest(
+            _pythonRegex.Match(InputBytes)),        PythonReBenchmarkOperation.FullMatch => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch)),
-        PythonReBenchmarkOperation.SearchDetailed => SemanticDigest(
+            _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch)),        PythonReBenchmarkOperation.SearchDetailed => SemanticDigest(
             _case.Operation,
-PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex, InputBytes)),
-        PythonReBenchmarkOperation.Count => SemanticDigest(
+PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.Count => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Count(InputBytes)),
-        PythonReBenchmarkOperation.CountFromOffset => SemanticDigest(
+            _pythonRegex.Count(InputBytes)),        PythonReBenchmarkOperation.CountFromOffset => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Count(InputBytes, _case.Coverage.StartOffsetInBytes)),
-        PythonReBenchmarkOperation.FindAllStrings => SemanticDigest(
+            _pythonRegex.Count(InputBytes, _case.Coverage.StartOffsetInBytes)),        PythonReBenchmarkOperation.FindIterDetailed => SemanticDigest(
             _case.Operation,
-            PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(InputBytes))),
-        PythonReBenchmarkOperation.FindAllStringsFromOffset => SemanticDigest(
+PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.FindAllStructural => SemanticDigest(
             _case.Operation,
-            PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(InputBytes, _case.Coverage.StartOffsetInBytes))),
-        PythonReBenchmarkOperation.FindAllUtf8 => SemanticDigest(
+            PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),        PythonReBenchmarkOperation.ReplaceString => SemanticDigest(
             _case.Operation,
-            _pythonRegex.FindAllToUtf8(InputBytes)),
-        PythonReBenchmarkOperation.FindIterDetailed => SemanticDigest(
+            Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),        PythonReBenchmarkOperation.ReplaceUtf8 => SemanticDigest(
             _case.Operation,
-PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
-        PythonReBenchmarkOperation.FindAllStructural => SemanticDigest(
+            _pythonRegex.Replace(InputBytes, _case.Replacement)),        PythonReBenchmarkOperation.ReplaceStringLimited => SemanticDigest(
             _case.Operation,
-            PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),
-        PythonReBenchmarkOperation.ReplaceString => SemanticDigest(
+            Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement, _case.Coverage.ReplacementCount))),        PythonReBenchmarkOperation.SubnString => SemanticDigest(
             _case.Operation,
-            Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),
-        PythonReBenchmarkOperation.ReplaceUtf8 => SemanticDigest(
+            PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),        PythonReBenchmarkOperation.SubnUtf8 => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Replace(InputBytes, _case.Replacement)),
-        PythonReBenchmarkOperation.ReplaceStringLimited => SemanticDigest(
+            _pythonRegex.Subn(InputBytes, _case.Replacement)),        PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorStringSemanticDigest(),        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8SemanticDigest(),        PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecutePythonReReplaceEvaluatorStringSemanticDigest(),        PythonReBenchmarkOperation.SplitStrings => SemanticDigest(
             _case.Operation,
-            Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement, _case.Coverage.ReplacementCount))),
-        PythonReBenchmarkOperation.SubnString => SemanticDigest(
+            MaterializePythonSplitStrings()),        PythonReBenchmarkOperation.SplitStringsLimited => SemanticDigest(
             _case.Operation,
-            PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),
-        PythonReBenchmarkOperation.SubnUtf8 => SemanticDigest(
+            MaterializePythonSplitStrings(_case.Coverage.MaxSplit)),        PythonReBenchmarkOperation.SplitDetailed => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Subn(InputBytes, _case.Replacement)),
-        PythonReBenchmarkOperation.SubnEvaluatorString => ExecutePythonReEvaluatorStringSemanticDigest(),
-        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => ExecutePythonReEvaluatorUtf8SemanticDigest(),
-        PythonReBenchmarkOperation.ReplaceEvaluatorString => ExecutePythonReReplaceEvaluatorStringSemanticDigest(),
-        PythonReBenchmarkOperation.SplitStrings => SemanticDigest(
-            _case.Operation,
-            MaterializePythonSplitStrings()),
-        PythonReBenchmarkOperation.SplitStringsLimited => SemanticDigest(
-            _case.Operation,
-            MaterializePythonSplitStrings(_case.Coverage.MaxSplit)),
-        PythonReBenchmarkOperation.SplitDetailed => SemanticDigest(
-            _case.Operation,
-            MaterializePythonSplitDetailed()),
-        _ => throw new InvalidOperationException(),
-    };
+            MaterializePythonSplitDetailed()),        _ => throw new InvalidOperationException()    };
 
     internal int ExecuteDecodeThenRegex()
     {
@@ -2927,375 +2175,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
 
     internal string DecodeInput() => s_strictUtf8.GetString(InputBytes);
 
-    internal int[]? CreateUtf8CoordinateMap() => GetUtf8Offsets(_decoded);
-
-    internal int ExecuteCapturedDiscoveryOnly()
-    {
-        EnsureCapturedFindAllPhases();
-        var checksum = 0;
-        var matchCount = 0;
-        var searchIndex = 0;
-        while (searchIndex <= _decoded.Length)
-        {
-            var match = _regex.Match(_decoded, searchIndex);
-            if (!match.Success)
-            {
-                break;
-            }
-
-            matchCount++;
-            checksum = Combine(checksum, match.Index, match.Length);
-            searchIndex = checked(match.Index + match.Length);
-        }
-
-        return Combine(checksum, matchCount);
-    }
-
-    internal PythonReBenchmarkCaptureRange[] CollectCapturedRanges()
-    {
-        EnsureCapturedFindAllPhases();
-        var ranges = new List<PythonReBenchmarkCaptureRange>();
-        var searchIndex = 0;
-        while (searchIndex <= _decoded.Length)
-        {
-            var match = _regex.Match(_decoded, searchIndex);
-            if (!match.Success)
-            {
-                break;
-            }
-
-            for (var groupIndex = 1; groupIndex <= _captureCount; groupIndex++)
-            {
-                var group = match.Groups[groupIndex];
-                ranges.Add(new PythonReBenchmarkCaptureRange(
-                    group.Success,
-                    group.Index,
-                    group.Length));
-            }
-
-            searchIndex = checked(match.Index + match.Length);
-        }
-
-        return ranges.ToArray();
-    }
-
-    internal PythonReFindAllTextResult ProjectPreparedCapturedStrings() =>
-        ProjectCapturedStrings(_preparedCaptureRanges);
-
-    internal PythonReFindAllTextResult ProjectTrailingCaptureStrings()
-    {
-        if (!SupportsTrailingCaptureReplay)
-        {
-            throw new InvalidOperationException("The trailing-capture replay is not available for this case.");
-        }
-
-        List<string> values = new(_preparedCaptureRanges.Length);
-        foreach (var match in _regex.EnumerateMatches(_decoded, 0))
-        {
-            var captureStart = match.Index + _trailingCapturePrefixLength;
-            values.Add(_decoded.Substring(captureStart, match.Length - _trailingCapturePrefixLength));
-        }
-
-        return new PythonReFindAllTextResult
-        {
-            Shape = Utf8PythonFindAllShape.SingleGroup,
-            ScalarValues = values.ToArray(),
-            TupleValues = []
-        };
-    }
-
-    internal PythonReFindAllTextResult ProjectSeparatedCaptureStrings()
-    {
-        if (!SupportsSeparatedCapturesReplay)
-        {
-            throw new InvalidOperationException("The separated-captures replay is not available for this case.");
-        }
-
-        List<string[]> values = new(_preparedCaptureRanges.Length / _captureCount);
-        foreach (var match in _regex.EnumerateMatches(_decoded, 0))
-        {
-            var matched = _decoded.AsSpan(match.Index, match.Length);
-            var separatorIndex = matched.IndexOf(_captureSeparator);
-            if (separatorIndex < 0)
-            {
-                throw new InvalidOperationException("The prepared capture separator was not found in a replay match.");
-            }
-
-            values.Add([
-                new string(matched[..separatorIndex]),
-                new string(matched[(separatorIndex + 1)..]),
-            ]);
-        }
-
-        return new PythonReFindAllTextResult
-        {
-            Shape = Utf8PythonFindAllShape.GroupTuple,
-            ScalarValues = [],
-            TupleValues = values.ToArray()
-        };
-    }
-
-    internal PythonReFindAllTextResult ProjectOptionalConstantCaptureStrings()
-    {
-        if (!SupportsOptionalConstantCaptureReplay)
-        {
-            throw new InvalidOperationException("The optional constant-capture replay is not available for this case.");
-        }
-
-        List<string> values = new(_preparedCaptureRanges.Length);
-        foreach (var match in _regex.EnumerateMatches(_decoded, 0))
-        {
-            values.Add(match.Length switch
-            {
-                var length when length == _optionalCapturePresentMatchLength => _optionalCaptureValue,
-                var length when length == _optionalCaptureAbsentMatchLength => string.Empty,
-                _ => throw new InvalidOperationException(
-                    "The optional constant-capture replay encountered an unprepared full-match shape."),
-            });
-        }
-
-        return new PythonReFindAllTextResult
-        {
-            Shape = Utf8PythonFindAllShape.SingleGroup,
-            ScalarValues = values.ToArray(),
-            TupleValues = []
-        };
-    }
-
-    internal Utf8PythonFindAllUtf8Result ProjectPreparedCapturedUtf8() =>
-        ProjectCapturedUtf8(_preparedCaptureRanges, _preparedUtf8Offsets);
-
-    internal PythonReFindAllTextResult ShapePreparedCapturedStrings() => new()
-    {
-        Shape = _preparedCapturedStrings.Shape,
-        ScalarValues = [.. _preparedCapturedStrings.ScalarValues],
-        TupleValues = _preparedCapturedStrings.TupleValues
-            .Select(static tuple => tuple.ToArray())
-            .ToArray()
-    };
-
-    internal Utf8PythonFindAllUtf8Result ShapePreparedCapturedUtf8() => new()
-    {
-        Shape = _preparedCapturedUtf8.Shape,
-        ScalarValues = [.. _preparedCapturedUtf8.ScalarValues],
-        TupleValues = _preparedCapturedUtf8.TupleValues
-            .Select(static tuple => tuple.ToArray())
-            .ToArray()
-    };
-
-    internal BclFindAllResult ProjectPredecodedCapturedStrings()
-    {
-        EnsureCapturedFindAllPhases();
-        if (_captureCount == 1)
-        {
-            var values = new List<string>();
-            var searchIndex = 0;
-            while (searchIndex <= _decoded.Length)
-            {
-                var match = _regex.Match(_decoded, searchIndex);
-                if (!match.Success)
-                {
-                    break;
-                }
-
-                values.Add(match.Groups[1].Value);
-                searchIndex = checked(match.Index + match.Length);
-            }
-
-            return new BclFindAllResult(
-                Utf8PythonFindAllShape.SingleGroup,
-                values.ToArray(),
-                []);
-        }
-
-        var tuples = new List<string[]>();
-        var tupleSearchIndex = 0;
-        while (tupleSearchIndex <= _decoded.Length)
-        {
-            var match = _regex.Match(_decoded, tupleSearchIndex);
-            if (!match.Success)
-            {
-                break;
-            }
-
-            var tuple = new string[_captureCount];
-            for (var groupIndex = 0; groupIndex < tuple.Length; groupIndex++)
-            {
-                tuple[groupIndex] = match.Groups[groupIndex + 1].Value;
-            }
-
-            tuples.Add(tuple);
-            tupleSearchIndex = checked(match.Index + match.Length);
-        }
-
-        return new BclFindAllResult(
-            Utf8PythonFindAllShape.GroupTuple,
-            [],
-            tuples.ToArray());
-    }
-
-    internal BclFindAllUtf8Result ProjectPredecodedCapturedUtf8()
-    {
-        EnsureCapturedFindAllPhases();
-        return MaterializeFindAllUtf8(_decoded);
-    }
-
-    internal PythonReFindAllTextResult ExecutePythonReFindAllStrings()
-    {
-        return _case.Operation == PythonReBenchmarkOperation.FindAllStringsFromOffset
-            ? PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(InputBytes, _case.Coverage.StartOffsetInBytes))
-            : PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(InputBytes));
-    }
-
-    internal Utf8PythonFindAllUtf8Result ExecutePythonReFindAllUtf8()
-    {
-        return _pythonRegex.FindAllToUtf8(InputBytes);
-    }
-
-    internal int ExecutePredecodedCapturedProjectionChecksum() => _case.Operation switch
-    {
-        PythonReBenchmarkOperation.FindAllStrings => Checksum(ProjectPredecodedCapturedStrings()),
-        PythonReBenchmarkOperation.FindAllUtf8 => Checksum(ProjectPredecodedCapturedUtf8()),
-        _ => throw new InvalidOperationException(),
-    };
-
-    internal int ExecutePreparedCapturedProjectionChecksum() => _case.Operation switch
-    {
-        PythonReBenchmarkOperation.FindAllStrings => Checksum(_preparedCapturedStrings),
-        PythonReBenchmarkOperation.FindAllUtf8 => Checksum(_preparedCapturedUtf8),
-        _ => throw new InvalidOperationException(),
-    };
-
-    internal int ExecuteTrailingCaptureReplayChecksum() => Checksum(ProjectTrailingCaptureStrings());
-
-    internal int ExecuteSeparatedCapturesReplayChecksum() => Checksum(ProjectSeparatedCaptureStrings());
-
-    internal int ExecuteOptionalConstantCaptureReplayChecksum() => Checksum(ProjectOptionalConstantCaptureStrings());
-
-    internal int ExecutePreparedCapturedFinalShapeChecksum() => _case.Operation switch
-    {
-        PythonReBenchmarkOperation.FindAllStrings => Checksum(ShapePreparedCapturedStrings()),
-        PythonReBenchmarkOperation.FindAllUtf8 => Checksum(ShapePreparedCapturedUtf8()),
-        _ => throw new InvalidOperationException(),
-    };
-
-    private PythonReFindAllTextResult ProjectCapturedStrings(
-        ReadOnlySpan<PythonReBenchmarkCaptureRange> ranges)
-    {
-        EnsureCapturedFindAllPhases();
-        if (_captureCount == 1)
-        {
-            var values = new string[ranges.Length];
-            for (var index = 0; index < values.Length; index++)
-            {
-                var range = ranges[index];
-                values[index] = range.Success
-                    ? _decoded.AsSpan(range.StartOffsetInUtf16, range.LengthInUtf16).ToString()
-                    : string.Empty;
-            }
-
-            return new PythonReFindAllTextResult
-            {
-                Shape = Utf8PythonFindAllShape.SingleGroup,
-                ScalarValues = values,
-                TupleValues = []
-            };
-        }
-
-        var matchCount = ranges.Length / _captureCount;
-        var tuples = new string[matchCount][];
-        for (var matchIndex = 0; matchIndex < matchCount; matchIndex++)
-        {
-            var tuple = new string[_captureCount];
-            for (var groupIndex = 0; groupIndex < tuple.Length; groupIndex++)
-            {
-                var range = ranges[(matchIndex * _captureCount) + groupIndex];
-                tuple[groupIndex] = range.Success
-                    ? _decoded.AsSpan(range.StartOffsetInUtf16, range.LengthInUtf16).ToString()
-                    : string.Empty;
-            }
-
-            tuples[matchIndex] = tuple;
-        }
-
-        return new PythonReFindAllTextResult
-        {
-            Shape = Utf8PythonFindAllShape.GroupTuple,
-            ScalarValues = [],
-            TupleValues = tuples
-        };
-    }
-
-    private Utf8PythonFindAllUtf8Result ProjectCapturedUtf8(
-        ReadOnlySpan<PythonReBenchmarkCaptureRange> ranges,
-        int[]? utf8Offsets)
-    {
-        EnsureCapturedFindAllPhases();
-        if (_captureCount == 1)
-        {
-            var values = new byte[ranges.Length][];
-            for (var index = 0; index < values.Length; index++)
-            {
-                values[index] = GetCapturedUtf8Value(ranges[index], utf8Offsets);
-            }
-
-            return new Utf8PythonFindAllUtf8Result
-            {
-                Shape = Utf8PythonFindAllShape.SingleGroup,
-                ScalarValues = values,
-                TupleValues = []
-            };
-        }
-
-        var matchCount = ranges.Length / _captureCount;
-        var tuples = new byte[matchCount][][];
-        for (var matchIndex = 0; matchIndex < matchCount; matchIndex++)
-        {
-            var tuple = new byte[_captureCount][];
-            for (var groupIndex = 0; groupIndex < tuple.Length; groupIndex++)
-            {
-                tuple[groupIndex] = GetCapturedUtf8Value(
-                    ranges[(matchIndex * _captureCount) + groupIndex],
-                    utf8Offsets);
-            }
-
-            tuples[matchIndex] = tuple;
-        }
-
-        return new Utf8PythonFindAllUtf8Result
-        {
-            Shape = Utf8PythonFindAllShape.GroupTuple,
-            ScalarValues = [],
-            TupleValues = tuples
-        };
-    }
-
-    private byte[] GetCapturedUtf8Value(
-        PythonReBenchmarkCaptureRange range,
-        int[]? utf8Offsets)
-    {
-        if (!range.Success)
-        {
-            return [];
-        }
-
-        var startOffsetInBytes = utf8Offsets is null
-            ? range.StartOffsetInUtf16
-            : utf8Offsets[range.StartOffsetInUtf16];
-        var endOffsetInBytes = utf8Offsets is null
-            ? range.EndOffsetInUtf16
-            : utf8Offsets[range.EndOffsetInUtf16];
-        return InputBytes.AsSpan(startOffsetInBytes, endOffsetInBytes - startOffsetInBytes).ToArray();
-    }
-
-    private void EnsureCapturedFindAllPhases()
-    {
-        if (!SupportsCapturedFindAllPhases)
-        {
-            throw new InvalidOperationException("Captured FindAll phase controls are not available for this case.");
-        }
-    }
-
     internal Utf8ValidationResult ExecuteOneShotValidation()
     {
         EnsureOneShotPhases();
@@ -3340,11 +2219,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         EnsureOneShotPhases();
         var match = _case.Operation switch
         {
-            PythonReBenchmarkOperation.Search => _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search),
-            PythonReBenchmarkOperation.Match => _pythonRegex.Match(InputBytes),
-            PythonReBenchmarkOperation.FullMatch => _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch),
-            _ => throw new InvalidOperationException($"Unsupported one-shot operation {_case.Operation}."),
-        };
+            PythonReBenchmarkOperation.Search => _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search),            PythonReBenchmarkOperation.Match => _pythonRegex.Match(InputBytes),            PythonReBenchmarkOperation.FullMatch => _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch),            _ => throw new InvalidOperationException($"Unsupported one-shot operation {_case.Operation}.")        };
         return match.Success
             ? new PythonReBenchmarkValueResult(true, match.StartOffsetInBytes, match.EndOffsetInBytes)
             : default;
@@ -3534,24 +2409,18 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
             PythonReBenchmarkOperation.ReplaceString => new(
                 Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement)),
                 null,
-                null),
-            PythonReBenchmarkOperation.ReplaceUtf8 => new(
+                null),            PythonReBenchmarkOperation.ReplaceUtf8 => new(
                 string.Empty,
                 _pythonRegex.Replace(InputBytes, _case.Replacement),
-                null),
-            PythonReBenchmarkOperation.ReplaceStringLimited => new(
+                null),            PythonReBenchmarkOperation.ReplaceStringLimited => new(
                 Encoding.UTF8.GetString(_pythonRegex.Replace(
                     InputBytes,
                     _case.Replacement,
                     _case.Coverage.ReplacementCount)),
                 null,
-                null),
-            PythonReBenchmarkOperation.SubnString => CreateStringReplacementResult(
-                PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),
-            PythonReBenchmarkOperation.SubnUtf8 => CreateUtf8ReplacementResult(
-                _pythonRegex.Subn(InputBytes, _case.Replacement)),
-            _ => throw new InvalidOperationException(),
-        };
+                null),            PythonReBenchmarkOperation.SubnString => CreateStringReplacementResult(
+                PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement))),            PythonReBenchmarkOperation.SubnUtf8 => CreateUtf8ReplacementResult(
+                _pythonRegex.Subn(InputBytes, _case.Replacement)),            _ => throw new InvalidOperationException()        };
     }
 
     internal PythonReBenchmarkReplacementResult ExecuteBoundedExactLiteralReplacement()
@@ -3759,255 +2628,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         }
     }
 
-    internal int ExecuteCoreEnumerationOnly()
-    {
-        var checksum = 0;
-        var enumerator = EnumerateCoreMatches();
-        while (enumerator.MoveNext())
-        {
-            var match = enumerator.Current;
-            checksum = Combine(
-                checksum,
-                match.StartOffsetInBytes,
-                (match.EndOffsetInBytes - match.StartOffsetInBytes),
-                match.StartOffsetInBytes,
-                (match.EndOffsetInBytes - match.StartOffsetInBytes));
-        }
-
-        return checksum;
-    }
-
-    internal int ExecuteCoreRangeCollectionOnly()
-    {
-        var checksum = 0;
-        foreach (var range in CollectCoreRanges())
-        {
-            checksum = Combine(
-                checksum,
-                range.IndexInBytes,
-                range.LengthInBytes,
-                range.IndexInUtf16,
-                range.LengthInUtf16);
-        }
-
-        return checksum;
-    }
-
-    internal PythonReBenchmarkRange[] CollectCoreRangesArray() => CollectCoreRanges().ToArray();
-
-    internal int ExecutePreparedCoreRangeProjection() => ProjectCoreRanges(_preparedCoreRanges);
-
-    internal int ExecutePreparedCoreChecksumTraversal() => _case.Operation switch
-    {
-        PythonReBenchmarkOperation.FindAllStrings or
-        PythonReBenchmarkOperation.FindAllStringsFromOffset => Checksum(_preparedCoreStrings),
-        PythonReBenchmarkOperation.FindAllUtf8 => Checksum(_preparedCoreUtf8),
-        _ => throw new InvalidOperationException(),
-    };
-
-    internal PythonReFindAllTextResult ProjectPreparedCoreStrings() =>
-        ProjectCoreRangeStrings(_preparedCoreRanges);
-
-    internal int ExecuteRepeatedCoreStringProjection() => Checksum(ProjectRepeatedCoreStrings());
-
-    internal int ExecuteCountedRepeatedCoreStringProjection() =>
-        Checksum(CountAndProjectRepeatedCoreStrings());
-
-    internal PythonReFindAllTextResult ProjectRepeatedCoreStrings()
-    {
-        if (!SupportsRepeatedCoreStringReplay)
-        {
-            throw new InvalidOperationException("Repeated-value FindAll replay is not available for this case.");
-        }
-
-        var values = new string[_preparedCoreRanges.Length];
-        Array.Fill(values, _repeatedCoreString);
-        return new PythonReFindAllTextResult
-        {
-            Shape = Utf8PythonFindAllShape.FullMatch,
-            ScalarValues = values,
-            TupleValues = []
-        };
-    }
-
-    internal PythonReFindAllTextResult CountAndProjectRepeatedCoreStrings()
-    {
-        if (!SupportsRepeatedCoreStringReplay)
-        {
-            throw new InvalidOperationException("Counted repeated-value FindAll replay is not available for this case.");
-        }
-
-        var regex = GetCoreFindAllRegex();
-        var subject = Utf8ValidatedInput.Create(InputBytes);
-        var startOffsetInBytes = _case.Operation == PythonReBenchmarkOperation.FindAllStringsFromOffset
-            ? _case.Coverage.StartOffsetInBytes
-            : 0;
-        var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-        var count = regex.ByteOffsetExecution.CountPrepared(subject, start);
-        var values = new string[count];
-        Array.Fill(values, _repeatedCoreString);
-        return new PythonReFindAllTextResult
-        {
-            Shape = Utf8PythonFindAllShape.FullMatch,
-            ScalarValues = values,
-            TupleValues = []
-        };
-    }
-
-    internal Utf8PythonFindAllUtf8Result ProjectPreparedCoreUtf8() =>
-        ProjectCoreRangeUtf8(_preparedCoreRanges);
-
-    internal PythonReFindAllTextResult ProjectCollectedCoreStrings() =>
-        ProjectCoreRangeStrings(CollectionsMarshal.AsSpan(CollectCoreRanges()));
-
-    internal Utf8PythonFindAllUtf8Result ProjectCollectedCoreUtf8() =>
-        ProjectCoreRangeUtf8(CollectionsMarshal.AsSpan(CollectCoreRanges()));
-
-    internal int ExecuteCoreCollectedProjection()
-    {
-        var ranges = CollectCoreRanges();
-        return ProjectCoreRanges(CollectionsMarshal.AsSpan(ranges));
-    }
-
-    internal int ExecuteCoreStreamingProjection()
-    {
-        if (_case.Operation is
-            PythonReBenchmarkOperation.FindAllStrings or
-            PythonReBenchmarkOperation.FindAllStringsFromOffset)
-        {
-            return Checksum(StreamCoreStrings());
-        }
-
-        return Checksum(StreamCoreUtf8());
-    }
-
-    internal PythonReFindAllTextResult StreamCoreStrings()
-    {
-        var values = new List<string>();
-        foreach (var match in EnumerateCoreMatches())
-        {
-            var indexInBytes = match.StartOffsetInBytes;
-            var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
-            if (!match.Success)
-            {
-                throw new InvalidOperationException("Core FindAll phase model produced a non-contiguous byte range.");
-            }
-
-            values.Add(Encoding.UTF8.GetString(InputBytes.AsSpan(indexInBytes, lengthInBytes)));
-        }
-
-        return new PythonReFindAllTextResult
-        {
-            Shape = Utf8PythonFindAllShape.FullMatch,
-            ScalarValues = values.ToArray(),
-            TupleValues = []
-        };
-    }
-
-    internal Utf8PythonFindAllUtf8Result StreamCoreUtf8()
-    {
-        var byteValues = new List<byte[]>();
-        foreach (var match in EnumerateCoreMatches())
-        {
-            var indexInBytes = match.StartOffsetInBytes;
-            var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
-            if (!match.Success)
-            {
-                throw new InvalidOperationException("Core FindAll phase model produced a non-contiguous byte range.");
-            }
-
-            byteValues.Add(InputBytes.AsSpan(indexInBytes, lengthInBytes).ToArray());
-        }
-
-        return new Utf8PythonFindAllUtf8Result
-        {
-            Shape = Utf8PythonFindAllShape.FullMatch,
-            ScalarValues = byteValues.ToArray(),
-            TupleValues = []
-        };
-    }
-
-    private List<PythonReBenchmarkRange> CollectCoreRanges()
-    {
-        var ranges = new List<PythonReBenchmarkRange>();
-        foreach (var match in EnumerateCoreMatches())
-        {
-            var indexInBytes = match.StartOffsetInBytes;
-            var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
-            if (!match.Success)
-            {
-                throw new InvalidOperationException("Core FindAll phase model produced a non-contiguous byte range.");
-            }
-
-            ranges.Add(new PythonReBenchmarkRange(
-                indexInBytes,
-                lengthInBytes,
-                match.StartOffsetInBytes,
-                (match.EndOffsetInBytes - match.StartOffsetInBytes)));
-        }
-
-        return ranges;
-    }
-
-    private int ProjectCoreRanges(ReadOnlySpan<PythonReBenchmarkRange> ranges)
-    {
-        if (_case.Operation is
-            PythonReBenchmarkOperation.FindAllStrings or
-            PythonReBenchmarkOperation.FindAllStringsFromOffset)
-        {
-            return Checksum(ProjectCoreRangeStrings(ranges));
-        }
-
-        return Checksum(ProjectCoreRangeUtf8(ranges));
-    }
-
-    private Utf8ValueMatchEnumerator EnumerateCoreMatches()
-    {
-        var regex = GetCoreFindAllRegex();
-        return _case.Operation == PythonReBenchmarkOperation.FindAllStringsFromOffset
-            ? regex.EnumerateMatches(InputBytes, _case.Coverage.StartOffsetInBytes)
-            : regex.EnumerateMatches(InputBytes);
-    }
-
-    private PythonReFindAllTextResult ProjectCoreRangeStrings(
-        ReadOnlySpan<PythonReBenchmarkRange> ranges)
-    {
-        var values = new string[ranges.Length];
-        for (var index = 0; index < values.Length; index++)
-        {
-            var range = ranges[index];
-            values[index] = Encoding.UTF8.GetString(InputBytes.AsSpan(range.IndexInBytes, range.LengthInBytes));
-        }
-
-        return new PythonReFindAllTextResult
-        {
-            Shape = Utf8PythonFindAllShape.FullMatch,
-            ScalarValues = values,
-            TupleValues = []
-        };
-    }
-
-    private Utf8PythonFindAllUtf8Result ProjectCoreRangeUtf8(
-        ReadOnlySpan<PythonReBenchmarkRange> ranges)
-    {
-        var byteValues = new byte[ranges.Length][];
-        for (var index = 0; index < byteValues.Length; index++)
-        {
-            var range = ranges[index];
-            byteValues[index] = InputBytes.AsSpan(range.IndexInBytes, range.LengthInBytes).ToArray();
-        }
-
-        return new Utf8PythonFindAllUtf8Result
-        {
-            Shape = Utf8PythonFindAllShape.FullMatch,
-            ScalarValues = byteValues,
-            TupleValues = []
-        };
-    }
-
-    private Utf8Regex GetCoreFindAllRegex() => _coreFindAllRegex ??
-        throw new InvalidOperationException("Capture-free FindAll phase controls are not available for this case.");
-
     // Host-owned composition for constant-replacement callback comparisons.
     // Regex admission/interruption covers advances; host output is outside that policy.
     private Utf8PythonSubnUtf8Result ComposePythonReReplacement(Action<PythonReHostDetailedMatch>? observe = null)
@@ -4106,68 +2726,16 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
 
     private int ExecuteRegex(string input) => _case.Operation switch
     {
-        PythonReBenchmarkOperation.IsMatch => _regex.IsMatch(input) ? 1 : 0,
-        PythonReBenchmarkOperation.Search => Checksum(ProjectRegexValue(_regex.Match(input), input)),
-        PythonReBenchmarkOperation.SearchFromOffset => Checksum(ProjectRegexValue(_regex.Match(input, _startOffsetInUtf16), input)),
-        PythonReBenchmarkOperation.Match => Checksum(ProjectRegexValue(_regex.Match(input), input, true)),
-        PythonReBenchmarkOperation.FullMatch => Checksum(ProjectRegexValue(_fullRegex.Match(input), input)),
-        PythonReBenchmarkOperation.SearchDetailed => Checksum(MaterializeDetailed(_regex.Match(input), input, GetUtf8Offsets(input))),
-        PythonReBenchmarkOperation.Count => _regex.Count(input),
-        PythonReBenchmarkOperation.CountFromOffset => _regex.Count(input, _startOffsetInUtf16),
-        PythonReBenchmarkOperation.FindAllStrings => Checksum(MaterializeFindAllStrings(input)),
-        PythonReBenchmarkOperation.FindAllStringsFromOffset => Checksum(MaterializeFindAllStrings(
-            input,
-            _startOffsetInUtf16)),
-        PythonReBenchmarkOperation.FindAllUtf8 => Checksum(MaterializeFindAllUtf8(input)),
-        PythonReBenchmarkOperation.FindIterDetailed => Checksum(MaterializeFindIterDetailed(input)),
-        PythonReBenchmarkOperation.FindAllStructural => Checksum(MaterializeFindAllStructural(input)),
-        PythonReBenchmarkOperation.ReplaceString => Checksum(_regex.Replace(input, _dotNetReplacement)),
-        PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(Encoding.UTF8.GetBytes(_regex.Replace(input, _dotNetReplacement))),
-        PythonReBenchmarkOperation.ReplaceStringLimited => Checksum(_regex.Replace(
+        PythonReBenchmarkOperation.IsMatch => _regex.IsMatch(input) ? 1 : 0,        PythonReBenchmarkOperation.Search => Checksum(ProjectRegexValue(_regex.Match(input), input)),        PythonReBenchmarkOperation.SearchFromOffset => Checksum(ProjectRegexValue(_regex.Match(input, _startOffsetInUtf16), input)),        PythonReBenchmarkOperation.Match => Checksum(ProjectRegexValue(_regex.Match(input), input, true)),        PythonReBenchmarkOperation.FullMatch => Checksum(ProjectRegexValue(_fullRegex.Match(input), input)),        PythonReBenchmarkOperation.SearchDetailed => Checksum(MaterializeDetailed(_regex.Match(input), input, GetUtf8Offsets(input))),        PythonReBenchmarkOperation.Count => _regex.Count(input),        PythonReBenchmarkOperation.CountFromOffset => _regex.Count(input, _startOffsetInUtf16),        PythonReBenchmarkOperation.FindIterDetailed => Checksum(MaterializeFindIterDetailed(input)),        PythonReBenchmarkOperation.FindAllStructural => Checksum(MaterializeFindAllStructural(input)),        PythonReBenchmarkOperation.ReplaceString => Checksum(_regex.Replace(input, _dotNetReplacement)),        PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(Encoding.UTF8.GetBytes(_regex.Replace(input, _dotNetReplacement))),        PythonReBenchmarkOperation.ReplaceStringLimited => Checksum(_regex.Replace(
             input,
             _dotNetReplacement,
-            _case.Coverage.ReplacementCount)),
-        PythonReBenchmarkOperation.SubnString => Checksum(ReplaceAndCount(input, encodeUtf8: false, useEvaluator: false)),
-        PythonReBenchmarkOperation.SubnUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, useEvaluator: false)),
-        PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false, useEvaluator: true) with { CallbackChecksum = ComputeRegexCallbackChecksum(input) }),
-        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, useEvaluator: true) with { CallbackChecksum = ComputeRegexCallbackChecksum(input) }),
-        PythonReBenchmarkOperation.ReplaceEvaluatorString => ChecksumRegexReplaceEvaluator(input),
-        PythonReBenchmarkOperation.SplitStrings => Checksum(MaterializeSplitStrings(input)),
-        PythonReBenchmarkOperation.SplitStringsLimited => Checksum(MaterializeSplitStrings(
+            _case.Coverage.ReplacementCount)),        PythonReBenchmarkOperation.SubnString => Checksum(ReplaceAndCount(input, encodeUtf8: false, useEvaluator: false)),        PythonReBenchmarkOperation.SubnUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, useEvaluator: false)),        PythonReBenchmarkOperation.SubnEvaluatorString => Checksum(ReplaceAndCount(input, encodeUtf8: false, useEvaluator: true) with { CallbackChecksum = ComputeRegexCallbackChecksum(input) }),        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => Checksum(ReplaceAndCount(input, encodeUtf8: true, useEvaluator: true) with { CallbackChecksum = ComputeRegexCallbackChecksum(input) }),        PythonReBenchmarkOperation.ReplaceEvaluatorString => ChecksumRegexReplaceEvaluator(input),        PythonReBenchmarkOperation.SplitStrings => Checksum(MaterializeSplitStrings(input)),        PythonReBenchmarkOperation.SplitStringsLimited => Checksum(MaterializeSplitStrings(
             input,
-            _case.Coverage.MaxSplit)),
-        PythonReBenchmarkOperation.SplitDetailed => Checksum(MaterializeSplitDetailed(input)),
-        _ => throw new InvalidOperationException(),
-    };
+            _case.Coverage.MaxSplit)),        PythonReBenchmarkOperation.SplitDetailed => Checksum(MaterializeSplitDetailed(input)),        _ => throw new InvalidOperationException()    };
 
     internal PythonReBenchmarkBatch MeasureRegexBatch(int iterations, bool decode) => _case.Operation switch
     {
-        PythonReBenchmarkOperation.IsMatch => MeasureRegexBatch(iterations, decode, input => _regex.IsMatch(input) ? 1 : 0, result => result),
-        PythonReBenchmarkOperation.Search => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_regex.Match(input), input), Checksum),
-        PythonReBenchmarkOperation.SearchFromOffset => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_regex.Match(input, _startOffsetInUtf16), input), Checksum),
-        PythonReBenchmarkOperation.Match => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_regex.Match(input), input, true), Checksum),
-        PythonReBenchmarkOperation.FullMatch => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_fullRegex.Match(input), input), Checksum),
-        PythonReBenchmarkOperation.SearchDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeDetailed(_regex.Match(input), input, GetUtf8Offsets(input)), Checksum),
-        PythonReBenchmarkOperation.Count => MeasureRegexBatch(iterations, decode, input => _regex.Count(input), result => result),
-        PythonReBenchmarkOperation.CountFromOffset => MeasureRegexBatch(iterations, decode, input => _regex.Count(input, _startOffsetInUtf16), result => result),
-        PythonReBenchmarkOperation.FindAllStrings => MeasureRegexBatch(iterations, decode, input => MaterializeFindAllStrings(input), Checksum),
-        PythonReBenchmarkOperation.FindAllStringsFromOffset => MeasureRegexBatch(iterations, decode, input => MaterializeFindAllStrings(input, _startOffsetInUtf16), Checksum),
-        PythonReBenchmarkOperation.FindAllUtf8 => MeasureRegexBatch(iterations, decode, input => MaterializeFindAllUtf8(input), Checksum),
-        PythonReBenchmarkOperation.FindIterDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeFindIterDetailed(input), Checksum),
-        PythonReBenchmarkOperation.FindAllStructural => MeasureRegexBatch(iterations, decode, input => MaterializeFindAllStructural(input), Checksum),
-        PythonReBenchmarkOperation.ReplaceString => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _dotNetReplacement), Checksum),
-        PythonReBenchmarkOperation.ReplaceUtf8 => MeasureRegexBatch(iterations, decode, input => Encoding.UTF8.GetBytes(_regex.Replace(input, _dotNetReplacement)), Checksum),
-        PythonReBenchmarkOperation.ReplaceStringLimited => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _dotNetReplacement, _case.Coverage.ReplacementCount), Checksum),
-        PythonReBenchmarkOperation.SubnString => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: false, useEvaluator: false), Checksum),
-        PythonReBenchmarkOperation.SubnUtf8 => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: true, useEvaluator: false), Checksum),
-        PythonReBenchmarkOperation.SubnEvaluatorString => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: false, useEvaluator: true), result => Checksum(result with { CallbackChecksum = ComputeRegexCallbackChecksum(_decoded) })),
-        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: true, useEvaluator: true), result => Checksum(result with { CallbackChecksum = ComputeRegexCallbackChecksum(_decoded) })),
-        PythonReBenchmarkOperation.ReplaceEvaluatorString => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _constantDotNetEvaluator), result => Combine(Checksum(result), ComputeRegexCallbackChecksum(_decoded))),
-        PythonReBenchmarkOperation.SplitStrings => MeasureRegexBatch(iterations, decode, input => MaterializeSplitStrings(input), Checksum),
-        PythonReBenchmarkOperation.SplitStringsLimited => MeasureRegexBatch(iterations, decode, input => MaterializeSplitStrings(input, _case.Coverage.MaxSplit), Checksum),
-        PythonReBenchmarkOperation.SplitDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeSplitDetailed(input), Checksum),
-        _ => throw new InvalidOperationException(),
-    };
+        PythonReBenchmarkOperation.IsMatch => MeasureRegexBatch(iterations, decode, input => _regex.IsMatch(input) ? 1 : 0, result => result),        PythonReBenchmarkOperation.Search => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_regex.Match(input), input), Checksum),        PythonReBenchmarkOperation.SearchFromOffset => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_regex.Match(input, _startOffsetInUtf16), input), Checksum),        PythonReBenchmarkOperation.Match => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_regex.Match(input), input, true), Checksum),        PythonReBenchmarkOperation.FullMatch => MeasureRegexBatch(iterations, decode, input => ProjectRegexValue(_fullRegex.Match(input), input), Checksum),        PythonReBenchmarkOperation.SearchDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeDetailed(_regex.Match(input), input, GetUtf8Offsets(input)), Checksum),        PythonReBenchmarkOperation.Count => MeasureRegexBatch(iterations, decode, input => _regex.Count(input), result => result),        PythonReBenchmarkOperation.CountFromOffset => MeasureRegexBatch(iterations, decode, input => _regex.Count(input, _startOffsetInUtf16), result => result),        PythonReBenchmarkOperation.FindIterDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeFindIterDetailed(input), Checksum),        PythonReBenchmarkOperation.FindAllStructural => MeasureRegexBatch(iterations, decode, input => MaterializeFindAllStructural(input), Checksum),        PythonReBenchmarkOperation.ReplaceString => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _dotNetReplacement), Checksum),        PythonReBenchmarkOperation.ReplaceUtf8 => MeasureRegexBatch(iterations, decode, input => Encoding.UTF8.GetBytes(_regex.Replace(input, _dotNetReplacement)), Checksum),        PythonReBenchmarkOperation.ReplaceStringLimited => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _dotNetReplacement, _case.Coverage.ReplacementCount), Checksum),        PythonReBenchmarkOperation.SubnString => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: false, useEvaluator: false), Checksum),        PythonReBenchmarkOperation.SubnUtf8 => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: true, useEvaluator: false), Checksum),        PythonReBenchmarkOperation.SubnEvaluatorString => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: false, useEvaluator: true), result => Checksum(result with { CallbackChecksum = ComputeRegexCallbackChecksum(_decoded) })),        PythonReBenchmarkOperation.SubnEvaluatorUtf8 => MeasureRegexBatch(iterations, decode, input => ReplaceAndCount(input, encodeUtf8: true, useEvaluator: true), result => Checksum(result with { CallbackChecksum = ComputeRegexCallbackChecksum(_decoded) })),        PythonReBenchmarkOperation.ReplaceEvaluatorString => MeasureRegexBatch(iterations, decode, input => _regex.Replace(input, _constantDotNetEvaluator), result => Combine(Checksum(result), ComputeRegexCallbackChecksum(_decoded))),        PythonReBenchmarkOperation.SplitStrings => MeasureRegexBatch(iterations, decode, input => MaterializeSplitStrings(input), Checksum),        PythonReBenchmarkOperation.SplitStringsLimited => MeasureRegexBatch(iterations, decode, input => MaterializeSplitStrings(input, _case.Coverage.MaxSplit), Checksum),        PythonReBenchmarkOperation.SplitDetailed => MeasureRegexBatch(iterations, decode, input => MaterializeSplitDetailed(input), Checksum),        _ => throw new InvalidOperationException()    };
 
     private PythonReBenchmarkBatch MeasureRegexBatch<T>(int iterations, bool decode, Func<string, T> execute, Func<T, int> checksum)
     {
@@ -4179,61 +2747,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         var elapsed = Stopwatch.GetElapsedTime(started);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         return new PythonReBenchmarkBatch(elapsed, allocated, checksum(result), 0, 0);
-    }
-
-    private BclFindAllResult MaterializeFindAllStrings(string input, int startOffsetInUtf16 = 0)
-    {
-        if (_captureCount <= 1)
-        {
-            var values = new List<string>();
-            foreach (Match match in _regex.Matches(input, startOffsetInUtf16))
-            {
-                values.Add(_captureCount == 0 ? match.Value : match.Groups[1].Value);
-            }
-
-            return new BclFindAllResult(_captureCount == 0 ? Utf8PythonFindAllShape.FullMatch : Utf8PythonFindAllShape.SingleGroup, values.ToArray(), []);
-        }
-
-        var tuples = new List<string[]>();
-        foreach (Match match in _regex.Matches(input, startOffsetInUtf16))
-        {
-            var tuple = new string[_captureCount];
-            for (var group = 0; group < tuple.Length; group++)
-            {
-                tuple[group] = match.Groups[group + 1].Value;
-            }
-
-            tuples.Add(tuple);
-        }
-
-        return new BclFindAllResult(Utf8PythonFindAllShape.GroupTuple, [], tuples.ToArray());
-    }
-
-    private BclFindAllUtf8Result MaterializeFindAllUtf8(string input)
-    {
-        var strings = MaterializeFindAllStrings(input);
-        if (strings.Shape != Utf8PythonFindAllShape.GroupTuple)
-        {
-            var values = new byte[strings.ScalarValues.Length][];
-            for (var index = 0; index < values.Length; index++)
-            {
-                values[index] = Encoding.UTF8.GetBytes(strings.ScalarValues[index]);
-            }
-
-            return new BclFindAllUtf8Result(strings.Shape, values, []);
-        }
-
-        var tuples = new byte[strings.TupleValues.Length][][];
-        for (var match = 0; match < tuples.Length; match++)
-        {
-            tuples[match] = new byte[strings.TupleValues[match].Length][];
-            for (var group = 0; group < tuples[match].Length; group++)
-            {
-                tuples[match][group] = Encoding.UTF8.GetBytes(strings.TupleValues[match][group]);
-            }
-        }
-
-        return new BclFindAllUtf8Result(Utf8PythonFindAllShape.GroupTuple, [], tuples);
     }
 
     private BclDetailedMatch[] MaterializeFindIterDetailed(string input)
@@ -4268,10 +2781,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
 
     internal string?[] ExecutePythonReSplitStrings() => _case.Operation switch
     {
-        PythonReBenchmarkOperation.SplitStrings => MaterializePythonSplitStrings(),
-        PythonReBenchmarkOperation.SplitStringsLimited => MaterializePythonSplitStrings(_case.Coverage.MaxSplit),
-        _ => throw new InvalidOperationException(),
-    };
+        PythonReBenchmarkOperation.SplitStrings => MaterializePythonSplitStrings(),        PythonReBenchmarkOperation.SplitStringsLimited => MaterializePythonSplitStrings(_case.Coverage.MaxSplit),        _ => throw new InvalidOperationException()    };
 
     internal string?[] ExecutePredecodedSplitStrings() =>
         MaterializeSplitStrings(_decoded, GetSplitLimit());
@@ -4672,24 +3182,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         return digest.Value;
     }
 
-    private static ulong SemanticDigest(
-        PythonReBenchmarkOperation operation,
-        PythonReFindAllTextResult result)
-    {
-        var digest = new PythonReSemanticDigestBuilder(operation);
-        AppendFindAllSemanticDigest(ref digest, result.Shape, result.ScalarValues, result.TupleValues);
-        return digest.Value;
-    }
-
-    private static ulong SemanticDigest(
-        PythonReBenchmarkOperation operation,
-        Utf8PythonFindAllUtf8Result result)
-    {
-        var digest = new PythonReSemanticDigestBuilder(operation);
-        AppendFindAllSemanticDigest(ref digest, result.Shape, result.ScalarValues, result.TupleValues);
-        return digest.Value;
-    }
-
     private static ulong SemanticDigest(PythonReBenchmarkOperation operation, string value)
     {
         var digest = new PythonReSemanticDigestBuilder(operation);
@@ -4827,58 +3319,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         }
     }
 
-    private static void AppendFindAllSemanticDigest(
-        ref PythonReSemanticDigestBuilder digest,
-        Utf8PythonFindAllShape shape,
-        string[] scalarValues,
-        string[][] tupleValues)
-    {
-        digest.Add((int)shape);
-        var count = shape == Utf8PythonFindAllShape.GroupTuple
-            ? tupleValues.Length
-            : scalarValues.Length;
-        digest.Add(count);
-        foreach (var value in scalarValues)
-        {
-            digest.AddString(value);
-        }
-
-        foreach (var tuple in tupleValues)
-        {
-            digest.Add(tuple.Length);
-            foreach (var value in tuple)
-            {
-                digest.AddString(value);
-            }
-        }
-    }
-
-    private static void AppendFindAllSemanticDigest(
-        ref PythonReSemanticDigestBuilder digest,
-        Utf8PythonFindAllShape shape,
-        byte[][] scalarValues,
-        byte[][][] tupleValues)
-    {
-        digest.Add((int)shape);
-        var count = shape == Utf8PythonFindAllShape.GroupTuple
-            ? tupleValues.Length
-            : scalarValues.Length;
-        digest.Add(count);
-        foreach (var value in scalarValues)
-        {
-            digest.AddBytes(value);
-        }
-
-        foreach (var tuple in tupleValues)
-        {
-            digest.Add(tuple.Length);
-            foreach (var value in tuple)
-            {
-                digest.AddBytes(value);
-            }
-        }
-    }
-
     private PythonReBenchmarkValueResult ProjectRegexValue(Match match, string input, bool anchored = false)
     {
         if (!match.Success || anchored && match.Index != 0) return default;
@@ -4896,10 +3336,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
 
     private static int Checksum(Match match) => match.Success
         ? Combine(1, match.Index, match.Index + match.Length)
-        : 0;
-
-    private static int ChecksumAtStart(Match match) => match.Success && match.Index == 0
-        ? Checksum(match)
         : 0;
 
     private static int Checksum(PythonReHostDetailedMatch match)
@@ -4957,58 +3393,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         foreach (var match in matches)
         {
             checksum = Combine(checksum, Checksum(match));
-        }
-
-        return checksum;
-    }
-
-    private static int Checksum(PythonReFindAllTextResult result) =>
-        Checksum(result.Shape, result.ScalarValues, result.TupleValues);
-
-    private static int Checksum(BclFindAllResult result) =>
-        Checksum(result.Shape, result.ScalarValues, result.TupleValues);
-
-    private static int Checksum(Utf8PythonFindAllUtf8Result result) =>
-        Checksum(result.Shape, result.ScalarValues, result.TupleValues);
-
-    private static int Checksum(BclFindAllUtf8Result result) =>
-        Checksum(result.Shape, result.ScalarValues, result.TupleValues);
-
-    private static int Checksum(Utf8PythonFindAllShape shape, string[] scalarValues, string[][] tupleValues)
-    {
-        var checksum = (int)shape;
-        foreach (var value in scalarValues)
-        {
-            checksum = Combine(checksum, Checksum(value));
-        }
-
-        foreach (var tuple in tupleValues)
-        {
-            checksum = Combine(checksum, tuple.Length);
-            foreach (var value in tuple)
-            {
-                checksum = Combine(checksum, Checksum(value));
-            }
-        }
-
-        return checksum;
-    }
-
-    private static int Checksum(Utf8PythonFindAllShape shape, byte[][] scalarValues, byte[][][] tupleValues)
-    {
-        var checksum = (int)shape;
-        foreach (var value in scalarValues)
-        {
-            checksum = Combine(checksum, Checksum(value));
-        }
-
-        foreach (var tuple in tupleValues)
-        {
-            checksum = Combine(checksum, tuple.Length);
-            foreach (var value in tuple)
-            {
-                checksum = Combine(checksum, Checksum(value));
-            }
         }
 
         return checksum;
@@ -5098,10 +3482,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         Combine(Combine(Combine(Combine(seed, value1), value2), value3), value4);
 
 }
-
-internal sealed record BclFindAllResult(Utf8PythonFindAllShape Shape, string[] ScalarValues, string[][] TupleValues);
-
-internal sealed record BclFindAllUtf8Result(Utf8PythonFindAllShape Shape, byte[][] ScalarValues, byte[][][] TupleValues);
 
 internal sealed record BclDetailedMatch(BclDetailedGroup[] Groups);
 
@@ -5428,23 +3808,6 @@ internal sealed class CpythonBenchmarkEnvironment
     public required string Version { get; init; }
     public required string Executable { get; init; }
     public required string Platform { get; init; }
-}
-
-// Benchmark-owned text output, shared with comparator projections. Decoding is timed;
-// regex limits cover its owned byte result, not these later host allocations.
-internal readonly struct PythonReFindAllTextResult
-{
-    public Utf8PythonFindAllShape Shape { get; init; }
-    public string[] ScalarValues { get; init; }
-    public string[][] TupleValues { get; init; }
-    public int Count => Shape == Utf8PythonFindAllShape.GroupTuple ? TupleValues?.Length ?? 0 : ScalarValues?.Length ?? 0;
-
-    public static PythonReFindAllTextResult Decode(Utf8PythonFindAllUtf8Result result) => new()
-    {
-        Shape = result.Shape,
-        ScalarValues = result.ScalarValues.Select(value => Encoding.UTF8.GetString(value)).ToArray(),
-        TupleValues = result.TupleValues.Select(tuple => tuple.Select(value => Encoding.UTF8.GetString(value)).ToArray()).ToArray()
-    };
 }
 
 // Benchmark-host text shaping; byte-template admission ends before this decoding.

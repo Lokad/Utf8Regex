@@ -43,10 +43,10 @@ public sealed class PythonReScalarRenderingTests
         foreach (var token in new[] { CancellationToken.None, source.Token })
         {
             Assert.Equal(expected, regex.IsMatch(input, 0, token));
-            var found = regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.Search);
+            var found = regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.Search);
             Assert.Equal(expected, found.Success);
-            Assert.Equal(expected, regex.Match(input,0,cancellationToken: token).Success);
-            Assert.Equal(expected, regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.Equal(expected, regex.Match(input, 0, cancellationToken: token).Success);
+            Assert.Equal(expected, regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch).Success);
             Assert.Equal(expected ? 1 : 0, regex.Count(input, 0, token));
             if (found.Success)
             {
@@ -67,7 +67,14 @@ public sealed class PythonReScalarRenderingTests
                 Assert.Equal(subject, System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
             }
         }
-        Assert.Equal(expected ? new[] { subject } : [], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        Assert.Equal(expected ? new[] { subject } : [], snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
     }
 
     [Theory]
@@ -80,8 +87,15 @@ public sealed class PythonReScalarRenderingTests
     {
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
-        Assert.Equal(expected, regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.Equal(expected ? new[] { subject } : [], PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
+        Assert.Equal(expected, regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
+        ReadOnlyMemory<byte> snapshots2Input = input;
+        var snapshots2 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
+        {
+            while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                snapshots2.Add(snapshots2Match);
+        }
+        Assert.Equal(expected ? new[] { subject } : [], snapshots2.Select(captureSnapshot2 => System.Text.Encoding.UTF8.GetString(captureSnapshot2.GetGroupMemory(captureSnapshot2.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
     }
 
     [Fact]
@@ -107,7 +121,7 @@ public sealed class PythonReScalarRenderingTests
     public void SurrogateAtomCanRepeatZeroTimesWithScalarEmptyProgress(string pattern)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.True(regex.Match(ReadOnlySpan<byte>.Empty,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match(ReadOnlySpan<byte>.Empty, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(2, regex.Count("😀"u8));
     }
 

@@ -34,8 +34,22 @@ public sealed class PythonReLiteralAtomRepeatTests
                 ResourcePolicy = policy
             });
             using var token = new CancellationTokenSource();
-            Assert.Equal(expected, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token.Token)).ScalarValues);
-            Assert.Equal(expected, regex.FindAllToUtf8(input, 0, token.Token).ScalarValues.Select(Encoding.UTF8.GetString));
+            ReadOnlyMemory<byte> snapshots1Input = input;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, token.Token))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            Assert.Equal(expected, snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
+            ReadOnlyMemory<byte> snapshots2Input = input;
+            var snapshots2 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, token.Token))
+            {
+                while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                    snapshots2.Add(snapshots2Match);
+            }
+            Assert.Equal(expected, snapshots2.Select(captureSnapshot2 => captureSnapshot2.GetGroupMemory(captureSnapshot2.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray().Select(Encoding.UTF8.GetString));
             Assert.Equal(expected.Length, regex.Count(input, 0, token.Token));
             var collectedRanges1 = new List<Utf8PythonRangeMatch>();
             using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, token.Token))
@@ -89,7 +103,17 @@ public sealed class PythonReLiteralAtomRepeatTests
             }
         });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(result.FindAllToUtf8(input))).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            {
+                ReadOnlyMemory<byte> snapshots3Input = input;
+                var snapshots3 = new List<Utf8PythonRangeMatch>();
+                using (var snapshots3Cursor = result.CreateMatchCursor(snapshots3Input, 0, default))
+                {
+                    while (snapshots3Cursor.MoveNext(out var snapshots3Match))
+                        snapshots3.Add(snapshots3Match);
+                }
+                return snapshots3;
+            }).ResourceKind);
         Assert.Throws<ArgumentException>(() => small.Count(new byte[] { (byte)'y', 255 }));
     }
 }

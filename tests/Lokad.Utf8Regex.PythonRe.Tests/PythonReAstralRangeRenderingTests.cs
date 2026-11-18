@@ -62,8 +62,14 @@ public sealed class PythonReAstralRangeRenderingTests
             var expectedValues = texts.Where((_, index) =>
                 (samples[index] >= low && samples[index] <= high) != negated).ToArray();
             var input = Encoding.UTF8.GetBytes(subject);
-            Assert.Equal(expectedValues, regex.FindAllToUtf8(input, 0, cancellation.Token)
-                .ScalarValues.Select(Encoding.UTF8.GetString));
+            ReadOnlyMemory<byte> snapshots1Input = input;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, cancellation.Token))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            Assert.Equal(expectedValues, snapshots1.Select(captureSnapshot1 => captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray().Select(Encoding.UTF8.GetString));
             Assert.Equal(expectedValues.Length, regex.Count(input, 0, cancellation.Token));
 
         }
@@ -86,7 +92,11 @@ public sealed class PythonReAstralRangeRenderingTests
         Assert.Equal(new[] { first, second }, matches.Select(match => System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span)));
         Assert.Equal(new[] { 0, 9 }, matches.Select(match => match.Value.StartOffsetInBytes));
         Assert.Equal(new[] { 8, 17 }, matches.Select(match => match.Value.EndOffsetInBytes));
-        Assert.All(matches, match => { Assert.Equal(1, match.LastIndex); Assert.Equal("x", match.LastGroup); });
+        Assert.All(matches, match =>
+        {
+            Assert.Equal(1, match.LastIndex);
+            Assert.Equal("x", match.LastGroup);
+        });
         Assert.Equal(new[] { first, second }, new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant)
             .Matches(text).Select(match => match.Value));
     }

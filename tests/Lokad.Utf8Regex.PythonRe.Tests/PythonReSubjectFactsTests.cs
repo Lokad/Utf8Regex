@@ -67,10 +67,27 @@ public sealed class PythonReSubjectFactsTests
                 MaxResultBytes = 512
             }
         });
-        Assert.Equal(new[] { value }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        Assert.Equal(new[] { value }, snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
-        var error = Assert.Throws<OperationCanceledException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, cancellation.Token)));
+        var error = Assert.Throws<OperationCanceledException>(() =>
+        {
+            ReadOnlyMemory<byte> snapshots2Input = input;
+            var snapshots2 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, cancellation.Token))
+            {
+                while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                    snapshots2.Add(snapshots2Match);
+            }
+            return snapshots2;
+        });
         Assert.Equal(cancellation.Token, error.CancellationToken);
     }
     [Fact]
@@ -128,7 +145,14 @@ public sealed class PythonReSubjectFactsTests
         Assert.Equal((7, 16), (value.StartOffsetInBytes, value.EndOffsetInBytes));
         Assert.False(regex.Match(input).Success);
         Assert.True(regex.Match(input, 7, mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.Equal(new[] { "item", "1234" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues[0]);
+        ReadOnlyMemory<byte> snapshots3Input = input;
+        var snapshots3 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots3Cursor = regex.CreateMatchCursor(snapshots3Input, 0, default))
+        {
+            while (snapshots3Cursor.MoveNext(out var snapshots3Match))
+                snapshots3.Add(snapshots3Match);
+        }
+        Assert.Equal(new[] { "item", "1234" }, snapshots3.Select(captureSnapshot2 => Enumerable.Range(1, captureSnapshot2.Groups.Length - 1).Select(captureNumber2 => System.Text.Encoding.UTF8.GetString(captureSnapshot2.GetGroupMemory(captureNumber2).Span)).ToArray()).ToArray()[0]);
     }
     [Theory]
     [InlineData(false, 64)]

@@ -16,7 +16,8 @@ public sealed class PythonReClassDelimiterWindowTests
         int floor, int expectedStart, string expectedWhole, string first, string second)
     {
         var bytes = Encoding.UTF8.GetBytes(text);
-        var storage = new byte[bytes.Length + 7]; bytes.CopyTo(storage, 3);
+        var storage = new byte[bytes.Length + 7];
+        bytes.CopyTo(storage, 3);
         foreach (var finite in new[] { false, true })
         {
             using var token = new CancellationTokenSource();
@@ -118,21 +119,34 @@ public sealed class PythonReClassDelimiterWindowTests
             {
                 Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
                 var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
-                if (outcome.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-                if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                {
+                    throw invocation.Budget.CreateResourceFailure();
+                }
+                if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+                {
+                    throw invocation.Budget.CreateResourceFailure();
+                }
                 Assert.Equal(1, outcome.Count);
                 return invocation.Budget.Steps;
             }
             catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
                 invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-            { throw invocation.Budget.CreateResourceFailure(); }
-            finally { Assert.Equal(13UL, invocation.Ledger.ReservedBytes); }
+            {
+                throw invocation.Budget.CreateResourceFailure();
+            }
+            finally
+            {
+                Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+            }
         }
         var steps = Run(1_000_000);
         Assert.InRange(steps, 1UL, 1024UL);
         for (ulong cap = 1; cap < steps; cap++)
+        {
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(cap)).ResourceKind);
+                        Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(cap)).ResourceKind);
+        }
         Assert.Equal(steps, Run(steps));
     }
 
@@ -150,15 +164,35 @@ public sealed class PythonReClassDelimiterWindowTests
         });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaaa \t @bad ", 512)) + "b@z");
         var reached = false;
-        var session = Utf8SearchDiagnosticsSession.Start(_ => { reached = true; if (timeout) ticks = 1000; else token.Cancel(); });
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            reached = true;
+            if (timeout)
+            {
+                ticks = 1000;
+            }
+            else
+            {
+                token.Cancel();
+            }
+        });
         try
         {
             var error = Record.Exception(() => owner.Count(input, 0, token.Token));
             Assert.True(reached);
-            if (timeout) Assert.IsType<RegexMatchTimeoutException>(error);
-            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+            if (timeout)
+            {
+                Assert.IsType<RegexMatchTimeoutException>(error);
+            }
+            else
+            {
+                Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+            }
         }
-        finally { session.Complete(); }
+        finally
+        {
+            session.Complete();
+        }
     }
 
     [Theory]
@@ -196,7 +230,14 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, wanted.Index)), first.Value.StartOffsetInBytes);
         Assert.Equal(new[] { "item-123", "item", "123" }, PythonReCaptureAssert.Values(first));
         Assert.Equal(2, owner.Count(input));
-        Assert.Equal(new[] { "item", "123", "other", "45" }, PythonReFindAllAssert.Decode(owner.FindAllToUtf8(input)).TupleValues.SelectMany(row => row));
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = owner.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        Assert.Equal(new[] { "item", "123", "other", "45" }, snapshots1.Select(captureSnapshot1 => Enumerable.Range(1, captureSnapshot1.Groups.Length - 1).Select(captureNumber1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureNumber1).Span)).ToArray()).ToArray().SelectMany(row => row));
         Assert.Equal(oracle.Replace(text, "$2:$1"), System.Text.Encoding.UTF8.GetString(owner.Replace(input, @"\2:\1")));
         Assert.Equal(oracle.Split(text), PythonReSplitAssert.Decode(input, owner.SplitRanges(input, 0, 0, default)));
         var floor = Encoding.UTF8.GetByteCount("é😀") + prefix + 1;
@@ -262,13 +303,19 @@ public sealed class PythonReClassDelimiterWindowTests
                 state.Checkpoint();
                 return state.WorkingInvocation.Budget.Steps;
             }
-            finally { state.Dispose(); Assert.Equal(13UL, state.ReservedBytes); }
+            finally
+            {
+                state.Dispose();
+                Assert.Equal(13UL, state.ReservedBytes);
+            }
         }
         var steps = Run(1_000_000);
         Assert.InRange(steps, 1UL, 1024UL);
         for (ulong cap = 1; cap < steps; cap++)
+        {
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(cap)).ResourceKind);
+                        Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(cap)).ResourceKind);
+        }
         Assert.Equal(steps, Run(steps));
     }
 
@@ -287,15 +334,36 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.True(invocation.Ledger.TryReserve(13));
         var state = new PythonReScalarMatchState(input, program, 0, duration, "pattern", invocation, null);
         var reached = false;
-        state.WorkingInvocation.CheckpointHook = _ => { reached = true; if (timeout) ticks = 1000; else token.Cancel(); };
+        state.WorkingInvocation.CheckpointHook = _ =>
+        {
+            reached = true;
+            if (timeout)
+            {
+                ticks = 1000;
+            }
+            else
+            {
+                token.Cancel();
+            }
+        };
         try
         {
             var error = Record.Exception(() => state.MoveNext(input));
             Assert.True(reached);
-            if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
-            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+            if (timeout)
+            {
+                Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
+            }
+            else
+            {
+                Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+            }
         }
-        finally { state.Dispose(); Assert.Equal(13UL, state.ReservedBytes); }
+        finally
+        {
+            state.Dispose();
+            Assert.Equal(13UL, state.ReservedBytes);
+        }
     }
 
     [Fact]
@@ -305,7 +373,8 @@ public sealed class PythonReClassDelimiterWindowTests
         var valid = Encoding.UTF8.GetBytes("😀" + new string('x', 256) + " item-123");
         Assert.Throws<ArgumentOutOfRangeException>(() => owner.Match(valid, 1, mode: Utf8PythonMatchMode.Search));
         Assert.Equal("😀" + new string('x', 256) + " 123:item", System.Text.Encoding.UTF8.GetString(owner.Replace(valid, @"\2:\1")));
-        using var token = new CancellationTokenSource(); token.Cancel();
+        using var token = new CancellationTokenSource();
+        token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Match(valid, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
     }
 
@@ -319,8 +388,11 @@ public sealed class PythonReClassDelimiterWindowTests
     public void SubjectGateKeepsDetailedCapturesLaterFloorsAndAnchoredOperations(int length)
     {
         var text = new string('x', length - 7) + " item-1";
-        var bytes = Encoding.UTF8.GetBytes(text); var storage = new byte[bytes.Length + 7]; bytes.CopyTo(storage, 3);
-        var input = storage.AsSpan(3, bytes.Length); var at = length - 6;
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var storage = new byte[bytes.Length + 7];
+        bytes.CopyTo(storage, 3);
+        var input = storage.AsSpan(3, bytes.Length);
+        var at = length - 6;
         for (var mode = 0; mode < 3; mode++)
         {
             using var token = new CancellationTokenSource();
@@ -354,18 +426,25 @@ public sealed class PythonReClassDelimiterWindowTests
         Utf8PythonRangeMatch cursorRange = default;
         var input = "prefix item-123 other-45"u8.ToArray();
         using var owner = new Utf8PythonRegex("(?P<n>[a-z]+)-([0-9]+)");
-        var cursor = owner.CreateMatchCursor(input); var alias = cursor;
+        var cursor = owner.CreateMatchCursor(input);
+        var alias = cursor;
         try
         {
-            Assert.True(cursor.MoveNext(out cursorRange)); var first = cursorRange;
-            Assert.True(alias.MoveNext(out cursorRange)); var second = cursorRange;
-            Assert.False(cursor.MoveNext(out cursorRange)); alias.Dispose();
+            Assert.True(cursor.MoveNext(out cursorRange));
+            var first = cursorRange;
+            Assert.True(alias.MoveNext(out cursorRange));
+            var second = cursorRange;
+            Assert.False(cursor.MoveNext(out cursorRange));
+            alias.Dispose();
 
             Assert.Equal("item-123", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span));
             Assert.Equal("other-45", System.Text.Encoding.UTF8.GetString(second.GetValueMemory().Span));
             Assert.True(second.TryGetFirstSetGroup("n", out var group));
             Assert.Equal("other", System.Text.Encoding.UTF8.GetString((group.Success ? second.GetGroupMemory(group.Number) : default).Span));
         }
-        finally { cursor.Dispose(); }
+        finally
+        {
+            cursor.Dispose();
+        }
     }
 }

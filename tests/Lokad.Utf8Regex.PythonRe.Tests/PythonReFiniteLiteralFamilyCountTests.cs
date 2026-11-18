@@ -40,7 +40,10 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
             Assert.Equal(expected, regex.Count(input, start, cancellation.Token));
 
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, input.Length + 1));
-            if (input.Length > 1) Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 1));
+            if (input.Length > 1)
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, 1));
+            }
         }
     }
     [Theory]
@@ -94,7 +97,10 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     public void FourToEightLiteralCountsDiscardCaptureStorageForValidText(int width, bool captured)
     {
         var pattern = string.Join('|', Literals.Take(width));
-        if (captured) pattern = "(" + pattern + ")";
+        if (captured)
+        {
+            pattern = "(" + pattern + ")";
+        }
         var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
@@ -132,7 +138,14 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
                 ResourcePolicy = Generous
             });
             Assert.Equal(4, regex.Count(input));
-            Assert.Equal(new[] { "12", "3", "4", "5" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
+            ReadOnlyMemory<byte> snapshots1Input = input;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            Assert.Equal(new[] { "12", "3", "4", "5" }, snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         }
     }
     [Fact]
@@ -148,7 +161,10 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
             Assert.Equal(8, core.CountForResult(Encoding.UTF8.GetBytes(string.Join(' ', Literals)), 0, ref invocation));
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         }
-        finally { invocation.Ledger.Release(7); }
+        finally
+        {
+            invocation.Ledger.Release(7);
+        }
     }
     [Fact]
     public void LongLiteralWindowsAndLaterCapturedResultsKeepTheirSemantics()
@@ -235,20 +251,29 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         {
             var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(cap).Count(input));
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-            Assert.Equal(cap, error.Limit); Assert.True(error.Requested > cap);
+            Assert.Equal(cap, error.Limit);
+            Assert.True(error.Requested > cap);
         }
         Denied(1);
         ulong low = 1, high = 100_000;
         while (high - low > 1)
         {
             var middle = low + (high - low) / 2;
-            try { Assert.Equal(expected, Create(middle).Count(input)); high = middle; }
+            try
+            {
+                Assert.Equal(expected, Create(middle).Count(input));
+                high = middle;
+            }
             catch (Utf8ResourceLimitExceededException error)
-            { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); low = middle; }
+            {
+                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+                low = middle;
+            }
         }
         Denied(high - 1);
         var admitted = Create(high);
-        Assert.Equal(expected, admitted.Count(input)); Assert.Equal(expected, admitted.Count(input));
+        Assert.Equal(expected, admitted.Count(input));
+        Assert.Equal(expected, admitted.Count(input));
     }
     [Fact]
     public void DeadlineAtEntryUsesPythonDiagnosticLimits()
@@ -262,9 +287,11 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         long reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => reads++ == 0 ? 0 : 1000);
         var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(invalid, 1));
-        Assert.Empty(error.Input); Assert.Equal(regex.Pattern, error.Pattern);
+        Assert.Empty(error.Input);
+        Assert.Equal(regex.Pattern, error.Pattern);
         Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
-        using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
         Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.Count(invalid, 1, cancellation.Token)).CancellationToken);
     }
@@ -293,18 +320,38 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps <= validationSteps) return;
+            if (steps <= validationSteps)
+            {
+                return;
+            }
             entered = true;
-            if (expire) ticks = 50; else cancellation.Cancel();
+            if (expire)
+            {
+                ticks = 50;
+            }
+            else
+            {
+                cancellation.Cancel();
+            }
         });
         try
         {
-            if (expire) Assert.Empty(Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, 0)).Input);
-            else Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
-                regex.Count(input, 0, cancellation.Token)).CancellationToken);
+            if (expire)
+            {
+                Assert.Empty(Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, 0)).Input);
+            }
+            else
+            {
+                Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+                            regex.Count(input, 0, cancellation.Token)).CancellationToken);
+            }
         }
-        finally { session.Complete(); }
-        Assert.True(entered); ticks = 0;
+        finally
+        {
+            session.Complete();
+        }
+        Assert.True(entered);
+        ticks = 0;
         Assert.Equal(width * 512, regex.Count(input));
     }
 }

@@ -55,29 +55,13 @@ public sealed partial class PythonReScalarGlobalTests
                     var endByte = ranges[i][g][1].GetInt32();
                     Assert.Equal(startByte >= 0, group.Success);
                     Assert.Equal(expectedGroups[i][g].GetString(), System.Text.Encoding.UTF8.GetString(detailed[i].GetGroupMemory(g).Span));
-                    if (startByte < 0) continue;
+                    if (startByte < 0)
+                        continue;
                     Assert.Equal(startByte, group.StartOffsetInBytes);
                     Assert.Equal(endByte, group.EndOffsetInBytes);
                     Assert.True(startByte == input.Length || (input[startByte] & 0xc0) != 0x80);
                     Assert.True(endByte == input.Length || (input[endByte] & 0xc0) != 0x80);
                 }
-            }
-            var utf8 = regex.FindAllToUtf8(input, start, token);
-            var strings = PythonReFindAllAssert.Decode(utf8);
-            var findall = e.GetProperty("findall");
-            if (strings.Shape == Utf8PythonFindAllShape.GroupTuple)
-            {
-                var tuples = findall.Deserialize<string[][]>() ?? [];
-                Assert.Equal(tuples.Length, strings.TupleValues.Length);
-                for (var i = 0; i < tuples.Length; i++)
-                {
-                    Assert.Equal(tuples[i], strings.TupleValues[i]);
-                }
-            }
-            else
-            {
-                var scalars = findall.Deserialize<string[]>() ?? [];
-                Assert.Equal(scalars, strings.ScalarValues);
             }
             var split = e.GetProperty("split").Deserialize<string?[]>() ?? [];
             Assert.Equal(split, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, limit, start, token)));
@@ -92,7 +76,6 @@ public sealed partial class PythonReScalarGlobalTests
     }
 
     [Theory]
-    [InlineData(3)]
     [InlineData(4)]
     [InlineData(6)]
     [InlineData(8)]
@@ -110,7 +93,8 @@ public sealed partial class PythonReScalarGlobalTests
         {
             entered = true;
             source.Cancel();
-            if (steps >= 128) throw new InvalidOperationException("Global scalar operation dropped its token.");
+            if (steps >= 128)
+                throw new InvalidOperationException("Global scalar operation dropped its token.");
         });
         try
         {
@@ -118,17 +102,27 @@ public sealed partial class PythonReScalarGlobalTests
             {
                 switch (operation)
                 {
-                    case 3: regex.FindAllToUtf8(input, 0, source.Token); break;
-                    case 4: regex.SplitRanges(input, 0, 0, source.Token); break;
-                    case 6: regex.Replace(input, "x", 0, 0, source.Token); break;
-                    case 8: regex.Subn(input, "x", 0, 0, source.Token); break;
-                    default: PythonReSubstitutionAssert.Decode(regex.Subn(input, "x", 0, 0, source.Token)); break;
+                    case 4:
+                        regex.SplitRanges(input, 0, 0, source.Token);
+                        break;
+                    case 6:
+                        regex.Replace(input, "x", 0, 0, source.Token);
+                        break;
+                    case 8:
+                        regex.Subn(input, "x", 0, 0, source.Token);
+                        break;
+                    default:
+                        PythonReSubstitutionAssert.Decode(regex.Subn(input, "x", 0, 0, source.Token));
+                        break;
                 }
             });
             Assert.True(entered);
             Assert.Equal(source.Token, failure.CancellationToken);
         }
-        finally { session.Complete(); }
+        finally
+        {
+            session.Complete();
+        }
         var collectedRanges2 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor2 = regex.CreateMatchCursor(("\U0001f600\U0001f600"u8).ToArray(), 0, default))
         {

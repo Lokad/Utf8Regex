@@ -15,13 +15,6 @@ public sealed class Utf8CompiledScalarConsumerTests
     private static Utf8PreparedRegex Prepare(string pattern, RegexOptions options = RegexOptions.CultureInvariant)
         => Utf8FrontEnd.Compile(pattern, options);
 
-    private static void CollectReleasedCursorStorage()
-    {
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-    }
-
     [Theory]
     [InlineData(".+", "é😀a", false, 1, 0, 7, 0, 4)]
     [InlineData("(?<=é).(?=z)", "é😀z", false, 1, 2, 4, 1, 2)]
@@ -71,69 +64,43 @@ public sealed class Utf8CompiledScalarConsumerTests
     [InlineData(false)] [InlineData(true)]
     public void GeneralCompiledCursorOwnsReferencesAndEmptyScalarAdvancement(bool rtl)
     {
-        var invocation = ExerciseCompiledCursorCopies(rtl, out var retained);
-        CollectReleasedCursorStorage();
-        Assert.Equal(retained, invocation.Ledger.ReservedBytes);
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Utf8SliceInvocation ExerciseCompiledCursorCopies(bool rtl, out ulong retained)
-    {
         var pattern = rtl ? @"\k<x>(?<x>.)|$" : @"(?<x>.)\k<x>|$";
-        var prepared = Prepare(pattern, RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0));
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0),
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 } });
         var input = "é😀😀z"u8.ToArray();
-        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(prepared, input,
-            Utf8Validation.Validate(input), Utf8ExecutionDeadline.Infinite);
-        Assert.True(cursor.DebugIsOwnedSlice);
-        retained = cursor.DebugInvocationReservedBytes;
-        var invocation = cursor.ExportWorkingInvocation();
+        var cursor = regex.EnumerateMatches(input);
         var sibling = cursor;
         var ranges = new List<(int, int)>();
         while (cursor.MoveNext())
-        {
-            Assert.True(cursor.CurrentValueMatch.Success);
-            ranges.Add((cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
-        }
+            ranges.Add((cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes - cursor.Current.StartOffsetInBytes));
         Assert.Equal(rtl ? [(11, 0), (2, 8)] : new List<(int, int)> { (2, 8), (11, 0) }, ranges);
-        CollectReleasedCursorStorage();
-        Assert.Equal(retained, cursor.DebugInvocationReservedBytes);
+        Assert.Equal(cursor.DebugInvocationSteps, sibling.DebugInvocationSteps);
         Assert.True(sibling.MoveNext());
-        Assert.Equal(ranges[0], (sibling.CurrentValueMatch.StartOffsetInBytes, (sibling.CurrentValueMatch.EndOffsetInBytes - sibling.CurrentValueMatch.StartOffsetInBytes)));
+        Assert.Equal(ranges[0], (sibling.Current.StartOffsetInBytes, sibling.Current.EndOffsetInBytes - sibling.Current.StartOffsetInBytes));
         while (sibling.MoveNext()) { }
-        // Return only the ledger owner. All cursor and temporary table holders
-        // leave this scope, but published credits remain on the invocation.
-        return invocation;
+        Assert.Equal(cursor.DebugInvocationSteps, sibling.DebugInvocationSteps);
     }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void GeneralCursorOffsetRetainsFullAssertionContextAndNfaStart(bool nonBacktracking)
     {
-        var invocation = ExerciseOffsetCursorCopies(nonBacktracking, out var retained);
-        CollectReleasedCursorStorage();
-        Assert.Equal(retained, invocation.Ledger.ReservedBytes);
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Utf8SliceInvocation ExerciseOffsetCursorCopies(bool nonBacktracking, out ulong retained)
-    {
         var pattern = nonBacktracking ? "😀|z" : @"(?<=é).|z";
-        var prepared = Prepare(pattern, RegexOptions.CultureInvariant | (nonBacktracking ? RegexOptions.NonBacktracking : 0));
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | (nonBacktracking ? RegexOptions.NonBacktracking : 0),
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 } });
         var input = "é😀z"u8.ToArray();
-        var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, Utf8Validation.Validate(input), Utf8ExecutionDeadline.Infinite, 2);
-        Assert.True(cursor.DebugIsOwnedSlice);
-        retained = cursor.DebugInvocationReservedBytes;
-        var invocation = cursor.ExportWorkingInvocation();
+        var cursor = regex.EnumerateMatches(input, startOffsetInBytes: 2);
         var sibling = cursor;
-        Assert.True(cursor.MoveNext()); Assert.Equal((2, 4), (cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
-        Assert.True(cursor.MoveNext()); Assert.Equal((6, 1), (cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((2, 6), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((6, 7), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
         Assert.False(cursor.MoveNext());
-        CollectReleasedCursorStorage();
-        Assert.Equal(retained, cursor.DebugInvocationReservedBytes);
+        Assert.Equal(cursor.DebugInvocationSteps, sibling.DebugInvocationSteps);
         Assert.True(sibling.MoveNext());
-        Assert.Equal((2, 4), (sibling.CurrentValueMatch.StartOffsetInBytes, (sibling.CurrentValueMatch.EndOffsetInBytes - sibling.CurrentValueMatch.StartOffsetInBytes)));
+        Assert.Equal((2, 6), (sibling.Current.StartOffsetInBytes, sibling.Current.EndOffsetInBytes));
         while (sibling.MoveNext()) { }
-        return invocation;
+        Assert.Equal(cursor.DebugInvocationSteps, sibling.DebugInvocationSteps);
     }
 
     [Theory]

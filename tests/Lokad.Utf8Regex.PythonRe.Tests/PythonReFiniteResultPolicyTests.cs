@@ -8,7 +8,6 @@ public sealed class PythonReFiniteResultPolicyTests
 {
     [Theory]
     [InlineData(0)]
-    [InlineData(17)]
     [InlineData(18)]
     [InlineData(21)]
     public void ByteBoundedTimeoutOmitsSubjectAcrossPreparationAndResultOwners(int operation)
@@ -120,12 +119,14 @@ public sealed class PythonReFiniteResultPolicyTests
         var expected = Run(new(pattern), input, operation);
         using var source = new CancellationTokenSource();
         foreach (var bytes in new[] { false, true })
+        {
             foreach (var token in new[] { default, source.Token })
             {
                 Assert.Equal(expected, Run(Create(pattern, 1000000, bytes), input, operation, token: token));
                 Assert.Equal(expected, Run(Create(pattern, ulong.MaxValue, bytes), input, operation, token: token));
                 Assert.Equal(expected, Run(Create(pattern, 1000000, bytes, work: 1000000), input, operation, token: token));
             }
+        }
     }
 
     [Theory]
@@ -138,15 +139,32 @@ public sealed class PythonReFiniteResultPolicyTests
         while (first < last)
         {
             var cap = first + (last - first) / 2;
-            try { Assert.Equal(expected, Run(Create(pattern, cap), input, operation)); last = cap; }
-            catch (Utf8ResourceLimitExceededException error) { Check(error, cap); first = cap + 1; }
+            try
+            {
+                Assert.Equal(expected, Run(Create(pattern, cap), input, operation));
+                last = cap;
+            }
+            catch (Utf8ResourceLimitExceededException error)
+            {
+                Check(error, cap);
+                first = cap + 1;
+            }
         }
         Assert.Equal(expected, Run(Create(pattern, first), input, operation));
-        if (first > 1) Denied(() => Run(Create(pattern, first - 1), input, operation), first - 1);
+        if (first > 1)
+        {
+            Denied(() => Run(Create(pattern, first - 1), input, operation), first - 1);
+        }
         for (ulong cap = 1; cap <= 64; cap++)
         {
-            if (cap >= first) Assert.Equal(expected, Run(Create(pattern, cap), input, operation));
-            else Denied(() => Run(Create(pattern, cap), input, operation), cap);
+            if (cap >= first)
+            {
+                Assert.Equal(expected, Run(Create(pattern, cap), input, operation));
+            }
+            else
+            {
+                Denied(() => Run(Create(pattern, cap), input, operation), cap);
+            }
         }
     }
 
@@ -156,7 +174,8 @@ public sealed class PythonReFiniteResultPolicyTests
     {
         var input = Encoding.UTF8.GetBytes(text).Concat(new byte[] { 255 }).ToArray();
 
-        using var source = new CancellationTokenSource(); source.Cancel();
+        using var source = new CancellationTokenSource();
+        source.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() => Run(Create(pattern, 1), input, operation, token: source.Token));
         Assert.Equal(source.Token, canceled.CancellationToken);
         var valid = Encoding.UTF8.GetBytes(text);
@@ -202,13 +221,27 @@ public sealed class PythonReFiniteResultPolicyTests
     {
         var input = "😀a"u8.ToArray();
         var regex = Create("(?P<first>😀)|(?P<second>a)", 1000000);
-        var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input));
-        Assert.Equal(new[] { new[] { "😀", "" }, new[] { "", "a" } }, strings.TupleValues);
-        var bytes = regex.FindAllToUtf8(input);
-        Assert.Equal("😀"u8.ToArray(), bytes.TupleValues[0][0]);
-        Assert.Empty(bytes.TupleValues[0][1]);
-        Assert.Empty(bytes.TupleValues[1][0]);
-        Assert.Equal("a"u8.ToArray(), bytes.TupleValues[1][1]);
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        var strings = snapshots1;
+        Assert.Equal(new[] { new[] { "😀", "" }, new[] { "", "a" } }, strings.Select(captureSnapshot1 => Enumerable.Range(1, captureSnapshot1.Groups.Length - 1).Select(captureNumber1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureNumber1).Span)).ToArray()).ToArray());
+        ReadOnlyMemory<byte> snapshots2Input = input;
+        var snapshots2 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
+        {
+            while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                snapshots2.Add(snapshots2Match);
+        }
+        var bytes = snapshots2;
+        Assert.Equal("😀"u8.ToArray(), bytes.Select(captureSnapshot2 => Enumerable.Range(1, captureSnapshot2.Groups.Length - 1).Select(captureNumber2 => captureSnapshot2.GetGroupMemory(captureNumber2).ToArray()).ToArray()).ToArray()[0][0]);
+        Assert.Empty(bytes.Select(captureSnapshot3 => Enumerable.Range(1, captureSnapshot3.Groups.Length - 1).Select(captureNumber3 => captureSnapshot3.GetGroupMemory(captureNumber3).ToArray()).ToArray()).ToArray()[0][1]);
+        Assert.Empty(bytes.Select(captureSnapshot4 => Enumerable.Range(1, captureSnapshot4.Groups.Length - 1).Select(captureNumber4 => captureSnapshot4.GetGroupMemory(captureNumber4).ToArray()).ToArray()).ToArray()[1][0]);
+        Assert.Equal("a"u8.ToArray(), bytes.Select(captureSnapshot5 => Enumerable.Range(1, captureSnapshot5.Groups.Length - 1).Select(captureNumber5 => captureSnapshot5.GetGroupMemory(captureNumber5).ToArray()).ToArray()).ToArray()[1][1]);
         Utf8PythonRangeMatch retained = default;
         using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
         {
@@ -217,7 +250,18 @@ public sealed class PythonReFiniteResultPolicyTests
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.True(retained.TryGetFirstSetGroup("first", out var first));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((first.Success ? retained.GetGroupMemory(first.Number).Span : ReadOnlySpan<byte>.Empty)));
-        Denied(() => PythonReFindAllAssert.Decode(Create("(?P<first>😀)|(?P<second>a)", 1).FindAllToUtf8(input)), 1);
+        Denied(() =>
+        {
+            var snapshots3Regex = Create("(?P<first>😀)|(?P<second>a)", 1);
+            ReadOnlyMemory<byte> snapshots3Input = input;
+            var snapshots3 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots3Cursor = snapshots3Regex.CreateMatchCursor(snapshots3Input, 0, default))
+            {
+                while (snapshots3Cursor.MoveNext(out var snapshots3Match))
+                    snapshots3.Add(snapshots3Match);
+            }
+            _ = snapshots3;
+        }, 1);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.Equal(new string?[] { "", "😀", null, "", null, "a", "" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
     }
@@ -231,20 +275,24 @@ public sealed class PythonReFiniteResultPolicyTests
         ulong firstBytes;
         using (var probe = Create("(?P<x>.)", ulong.MaxValue).CreateMatchCursor(input))
         {
-            Assert.True(probe.MoveNext(out _)); firstBytes = probe.WorkingInvocation.Budget.ResultBytes;
-            Assert.True(probe.MoveNext(out _)); Assert.True(probe.WorkingInvocation.Budget.ResultBytes > firstBytes);
+            Assert.True(probe.MoveNext(out _));
+            firstBytes = probe.WorkingInvocation.Budget.ResultBytes;
+            Assert.True(probe.MoveNext(out _));
+            Assert.True(probe.WorkingInvocation.Budget.ResultBytes > firstBytes);
         }
         var regex = Create("(?P<x>.)", firstBytes);
         using var cursor = regex.CreateMatchCursor(input);
         var alias = cursor;
         var authority = cursor.WorkingInvocation;
-        Assert.True(alias.MoveNext(out cursorRange)); var retained = cursorRange;
+        Assert.True(alias.MoveNext(out cursorRange));
+        var retained = cursorRange;
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Denied(() => cursor.MoveNext(out cursorRange), firstBytes);
         Assert.Equal(0UL, authority.Ledger.ReservedBytes);
         Assert.True(authority.Budget.ResultBytes > firstBytes);
         Assert.Throws<InvalidOperationException>(() => alias.MoveNext(out _));
-        alias.Dispose(); cursor.Dispose();
+        alias.Dispose();
+        cursor.Dispose();
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
 
         // The instance policy is per invocation, not a shared host allowance.

@@ -90,19 +90,9 @@ internal static class PythonReQualificationFreshnessEvaluator
 
     internal static string Format(PythonReQualificationFreshness freshness) => freshness switch
     {
-        PythonReQualificationFreshness.Current => "current",
-        PythonReQualificationFreshness.NewCase => "new case",
-        PythonReQualificationFreshness.CaseChanged => "case changed",
-        PythonReQualificationFreshness.ManagedProductChanged => "managed product changed",
-        PythonReQualificationFreshness.ManagedOperationProtocolChanged =>
-            "managed operation protocol changed",
-        PythonReQualificationFreshness.CpythonOperationProtocolChanged =>
-            "CPython operation protocol changed",
-        PythonReQualificationFreshness.SharedProtocolChanged => "shared protocol changed",
-        PythonReQualificationFreshness.RuntimeChanged => "runtime changed",
-        PythonReQualificationFreshness.InterpreterChanged => "interpreter changed",
-        _ => throw new ArgumentOutOfRangeException(nameof(freshness)),
-    };
+        PythonReQualificationFreshness.Current => "current",        PythonReQualificationFreshness.NewCase => "new case",        PythonReQualificationFreshness.CaseChanged => "case changed",        PythonReQualificationFreshness.ManagedProductChanged => "managed product changed",        PythonReQualificationFreshness.ManagedOperationProtocolChanged =>
+            "managed operation protocol changed",        PythonReQualificationFreshness.CpythonOperationProtocolChanged =>
+            "CPython operation protocol changed",        PythonReQualificationFreshness.SharedProtocolChanged => "shared protocol changed",        PythonReQualificationFreshness.RuntimeChanged => "runtime changed",        PythonReQualificationFreshness.InterpreterChanged => "interpreter changed",        _ => throw new ArgumentOutOfRangeException(nameof(freshness))    };
 
     private static bool Equals(string left, string right) =>
         left.Equals(right, StringComparison.Ordinal);

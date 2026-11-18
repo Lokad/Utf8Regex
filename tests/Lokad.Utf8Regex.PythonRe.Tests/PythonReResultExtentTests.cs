@@ -40,11 +40,15 @@ public sealed class PythonReResultExtentTests
                 Assert.Equal(marker, cursor.ResultReservation);
                 Assert.Equal(resultTraffic, cursor.WorkingInvocation.Budget.ResultBytes);
                 count++;
-            } while (cursor.MoveNext(input));
+            }
+            while (cursor.MoveNext(input));
             Assert.Equal(1025, count);
             Assert.True(cursor.ReservedBytes < 65536); // Inline discovery retains bounded scratch until disposal.
         }
-        finally { cursor.Dispose(); }
+        finally
+        {
+            cursor.Dispose();
+        }
         Assert.Equal(0UL, cursor.ReservedBytes);
     }
 
@@ -65,7 +69,9 @@ public sealed class PythonReResultExtentTests
         var core = Assert.IsType<global::Lokad.Utf8Regex.Utf8Regex>(field.GetValue(regex));
         var input = Encoding.UTF8.GetBytes(new string('é', 20000));
         var invocation = new Utf8SliceInvocation(new(0, 0, 1UL << 24), timeout, CancellationToken.None);
-        invocation.CheckpointHook = _ => { };
+        invocation.CheckpointHook = _ =>
+        {
+        };
         var count = core.CountForResult(input, 0, ref invocation);
         Assert.Equal(20000, count);
         var countSteps = invocation.Budget.Steps;
@@ -73,16 +79,58 @@ public sealed class PythonReResultExtentTests
         var entered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps >= publicationHook) { entered = true; if (expire) ticks = 50; else throw new PublicationObservedException(); }
+            if (steps >= publicationHook)
+            {
+                entered = true;
+                if (expire)
+                {
+                    ticks = 50;
+                }
+                else
+                {
+                    throw new PublicationObservedException();
+                }
+            }
         });
         try
         {
-            if (expire) Assert.Throws<RegexMatchTimeoutException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)));
-            else Assert.Throws<PublicationObservedException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)));
+            if (expire)
+            {
+                Assert.Throws<RegexMatchTimeoutException>(() =>
+                {
+                    ReadOnlyMemory<byte> snapshots1Input = input;
+                    var snapshots1 = new List<Utf8PythonRangeMatch>();
+                    using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+                    {
+                        while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                            snapshots1.Add(snapshots1Match);
+                    }
+                    return snapshots1;
+                });
+            }
+            else
+            {
+                Assert.Throws<PublicationObservedException>(() =>
+                {
+                    ReadOnlyMemory<byte> snapshots2Input = input;
+                    var snapshots2 = new List<Utf8PythonRangeMatch>();
+                    using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
+                    {
+                        while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                            snapshots2.Add(snapshots2Match);
+                    }
+                    return snapshots2;
+                });
+            }
             Assert.True(entered);
         }
-        finally { diagnostics.Complete(); }
+        finally
+        {
+            diagnostics.Complete();
+        }
     }
 
-    private sealed class PublicationObservedException : Exception { }
+    private sealed class PublicationObservedException : Exception
+    {
+    }
 }

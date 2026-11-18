@@ -793,7 +793,7 @@ internal static partial class PythonReBenchmarkReporter
                 tokenCount * 3,
                 outputUtf8Bytes: 0,
                 @"\b|\w+",
-                PythonReBenchmarkOperation.FindAllStrings,
+                PythonReBenchmarkOperation.FindAllStructural,
                 string.Concat(Enumerable.Repeat("y ", tokenCount)),
                 string.Empty,
                 includesResultMaterialization: true,

@@ -30,7 +30,8 @@ public sealed class PythonReAtomLoweringTests
             Assert.Equal(expected.Length, regex.Count(input));
             using var cursor = regex.CreateMatchCursor(input);
             var values = new List<string>();
-            while (cursor.MoveNext(out cursorRange)) values.Add(System.Text.Encoding.UTF8.GetString(cursorRange.GetValueMemory().Span));
+            while (cursor.MoveNext(out cursorRange))
+                values.Add(System.Text.Encoding.UTF8.GetString(cursorRange.GetValueMemory().Span));
             Assert.Equal(expected, values);
         }
     }
@@ -59,7 +60,14 @@ public sealed class PythonReAtomLoweringTests
     : default
             });
             Assert.Equal(expected.Length, regex.Count(input));
-            Assert.Equal(expected, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
+            ReadOnlyMemory<byte> snapshots1Input = input;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            Assert.Equal(expected, snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         }
     }
 }

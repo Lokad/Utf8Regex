@@ -110,7 +110,17 @@ public sealed class PythonReAdjacentSetRepeatTests
             }
         });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(results.FindAllToUtf8("item   12345"u8))).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            {
+                ReadOnlyMemory<byte> snapshots1Input = ("item   12345"u8).ToArray();
+                var snapshots1 = new List<Utf8PythonRangeMatch>();
+                using (var snapshots1Cursor = results.CreateMatchCursor(snapshots1Input, 0, default))
+                {
+                    while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                        snapshots1.Add(snapshots1Match);
+                }
+                return snapshots1;
+            }).ResourceKind);
     }
 
     [Theory]
@@ -134,16 +144,35 @@ public sealed class PythonReAdjacentSetRepeatTests
         var interrupted = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps <= cutoff) return;
+            if (steps <= cutoff)
+            {
+                return;
+            }
             interrupted = true;
-            if (expire) ticks = 50; else token.Cancel();
+            if (expire)
+            {
+                ticks = 50;
+            }
+            else
+            {
+                token.Cancel();
+            }
         });
         try
         {
-            if (expire) Assert.Equal(pattern, Assert.Throws<RegexMatchTimeoutException>(() => owner.Match(input, mode: Utf8PythonMatchMode.Search)).Pattern);
-            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
+            if (expire)
+            {
+                Assert.Equal(pattern, Assert.Throws<RegexMatchTimeoutException>(() => owner.Match(input, mode: Utf8PythonMatchMode.Search)).Pattern);
+            }
+            else
+            {
+                Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
+            }
         }
-        finally { session.Complete(); }
+        finally
+        {
+            session.Complete();
+        }
         Assert.True(interrupted);
         ticks = 0;
         Assert.True(owner.Match(input, mode: Utf8PythonMatchMode.Search).Success);

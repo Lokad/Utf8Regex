@@ -65,7 +65,8 @@ public sealed class PythonReResourcePolicyTests
             ResourcePolicy = policy
         });
         Assert.Equal(policy, text.ResourcePolicy);
-        Assert.True(text.IsMatch("cat"u8)); Assert.True(bytes.IsMatch("cat"u8));
+        Assert.True(text.IsMatch("cat"u8));
+        Assert.True(bytes.IsMatch("cat"u8));
     }
 
     [Fact]
@@ -136,7 +137,21 @@ public sealed class PythonReResourcePolicyTests
         var expectedSearch = baseline.Match(input, mode: Utf8PythonMatchMode.Search);
         var actualSearch = explicitUnlimited.Match(input, mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSearch.Success, actualSearch.Success);
-        Assert.Equal(baseline.FindAllToUtf8(input).Count, explicitUnlimited.FindAllToUtf8(input).Count);
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = baseline.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        ReadOnlyMemory<byte> snapshots2Input = input;
+        var snapshots2 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots2Cursor = explicitUnlimited.CreateMatchCursor(snapshots2Input, 0, default))
+        {
+            while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                snapshots2.Add(snapshots2Match);
+        }
+        Assert.Equal(snapshots1.Count, snapshots2.Count);
         Assert.Equal(PythonReSplitAssert.Decode(input, baseline.SplitRanges(input, 0, 0, default)).Length, PythonReSplitAssert.Decode(input, explicitUnlimited.SplitRanges(input, 0, 0, default)).Length);
     }
 }

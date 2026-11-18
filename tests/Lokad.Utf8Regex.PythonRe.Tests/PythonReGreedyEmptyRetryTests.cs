@@ -52,10 +52,38 @@ public sealed class PythonReGreedyEmptyRetryTests
             var actual = collectedRanges2.ToArray();
             Assert.Equal(expected.Select(m => m.Value), actual.Select(m => m.Value));
             Assert.Equal(expected.Length, regex.Count(input, start, token.Token));
-            Assert.Equal(PythonReFindAllAssert.Decode(reference.FindAllToUtf8(input, start)).ScalarValues,
-                PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, start, token.Token)).ScalarValues);
-            Assert.Equal(reference.FindAllToUtf8(input, start).ScalarValues.Select(Convert.ToHexString),
-                regex.FindAllToUtf8(input, start, token.Token).ScalarValues.Select(Convert.ToHexString));
+            ReadOnlyMemory<byte> snapshots1Input = input;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = reference.CreateMatchCursor(snapshots1Input, start, default))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            ReadOnlyMemory<byte> snapshots2Input = input;
+            var snapshots2 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, start, token.Token))
+            {
+                while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                    snapshots2.Add(snapshots2Match);
+            }
+            Assert.Equal(snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray(),
+                            snapshots2.Select(captureSnapshot2 => System.Text.Encoding.UTF8.GetString(captureSnapshot2.GetGroupMemory(captureSnapshot2.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
+            ReadOnlyMemory<byte> snapshots3Input = input;
+            var snapshots3 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots3Cursor = reference.CreateMatchCursor(snapshots3Input, start, default))
+            {
+                while (snapshots3Cursor.MoveNext(out var snapshots3Match))
+                    snapshots3.Add(snapshots3Match);
+            }
+            ReadOnlyMemory<byte> snapshots4Input = input;
+            var snapshots4 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots4Cursor = regex.CreateMatchCursor(snapshots4Input, start, token.Token))
+            {
+                while (snapshots4Cursor.MoveNext(out var snapshots4Match))
+                    snapshots4.Add(snapshots4Match);
+            }
+            Assert.Equal(snapshots3.Select(captureSnapshot3 => captureSnapshot3.GetGroupMemory(captureSnapshot3.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray().Select(Convert.ToHexString),
+                            snapshots4.Select(captureSnapshot4 => captureSnapshot4.GetGroupMemory(captureSnapshot4.Groups.Length == 2 ? 1 : 0).ToArray()).ToArray().Select(Convert.ToHexString));
             Assert.Equal(PythonReSplitAssert.Decode(input, reference.SplitRanges(input, 0, start, default)), PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, start, default)));
             Assert.Equal(System.Text.Encoding.UTF8.GetString(reference.Replace(input, "!", 0, start)), System.Text.Encoding.UTF8.GetString(regex.Replace(input, "!", 0, start)));
 
@@ -71,7 +99,10 @@ public sealed class PythonReGreedyEmptyRetryTests
             }
             Assert.False(cursor.MoveNext(out cursorRange));
             Assert.False(alias.MoveNext(out cursorRange));
-            if (first is { } retained) PythonReCaptureAssert.Equal(expected[0], retained);
+            if (first is { } retained)
+            {
+                PythonReCaptureAssert.Equal(expected[0], retained);
+            }
         }
     }
 }

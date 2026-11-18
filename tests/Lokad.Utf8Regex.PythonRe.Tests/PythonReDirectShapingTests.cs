@@ -35,11 +35,10 @@ public sealed class PythonReDirectShapingTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public void ScalarOutputsKeepPythonShapesRangesAndOwnedValues(string pattern, string text, string golden)
+    public void CursorOutputsKeepPythonCaptureValuesAndRanges(string pattern, string text, string golden)
     {
         using var document = JsonDocument.Parse(golden);
         var expected = document.RootElement;
-        var shape = Enum.Parse<Utf8PythonFindAllShape>(expected.GetProperty("shape").GetString()!);
         var scalarValues = Strings(expected.GetProperty("scalars"));
         var tupleValues = expected.GetProperty("tuples").EnumerateArray().Select(Strings).ToArray();
         var ranges = expected.GetProperty("matches").EnumerateArray().ToArray();
@@ -76,12 +75,15 @@ public sealed class PythonReDirectShapingTests
                         Assert.Equal(ranges[i][1].GetInt32(), matches[i].Value.StartOffsetInBytes);
                         Assert.Equal(ranges[i][2].GetInt32(), matches[i].Value.EndOffsetInBytes);
                     }
-                    var bytes = regex.FindAllToUtf8(input, 0, token);
-                    Assert.Equal(shape, bytes.Shape);
-                    input.AsSpan().Fill((byte)'x');
-                    var strings = PythonReFindAllAssert.Decode(bytes);
-                    Assert.Equal(scalarValues, strings.ScalarValues);
-                    Assert.Equal(tupleValues, strings.TupleValues);
+                    if (regex.CaptureGroupCount > 1)
+                    {
+                        Assert.Equal(tupleValues.Length, matches.Length);
+                        for (var index = 0; index < matches.Length; index++)
+                            for (var number = 1; number <= regex.CaptureGroupCount; number++)
+                                Assert.Equal(tupleValues[index][number - 1], Encoding.UTF8.GetString(matches[index].GetGroupMemory(number).Span));
+                    }
+                    else
+                        Assert.Equal(scalarValues, matches.Select(match => Encoding.UTF8.GetString(match.GetGroupMemory(regex.CaptureGroupCount).Span)));
                     Assert.Equal(ranges.Select(x => (x[1].GetInt32(), x[2].GetInt32())),
                         matches.Select(x => (x.Value.StartOffsetInBytes, x.Value.EndOffsetInBytes)));
                 }
@@ -134,7 +136,10 @@ public sealed class PythonReDirectShapingTests
             }
             Assert.Equal(512, count);
         }
-        finally { cursor.Dispose(); }
+        finally
+        {
+            cursor.Dispose();
+        }
         Assert.Equal(0UL, cursor.ReservedBytes);
     }
 }

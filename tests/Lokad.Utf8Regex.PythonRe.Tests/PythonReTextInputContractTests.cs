@@ -25,6 +25,7 @@ public sealed class PythonReTextInputContractTests
         try
         {
             foreach (var length in new[] { 0, 63, 4096 })
+            {
                 foreach (var withMatches in new[] { false, true })
                 {
                     var text = new string('a', length) + (withMatches ? literal + " " + literal : "");
@@ -36,8 +37,12 @@ public sealed class PythonReTextInputContractTests
                     Assert.Equal(expected, regex.Count(storage.AsSpan(5, bytes.Length)));
                     Assert.Equal(expected, compiled.Count(storage.AsSpan(5, bytes.Length)));
                 }
+            }
         }
-        finally { session.Complete(); }
+        finally
+        {
+            session.Complete();
+        }
     }
 
     [Theory]
@@ -67,16 +72,34 @@ public sealed class PythonReTextInputContractTests
             Assert.Equal(firstByte + firstLength, first.EndOffsetInBytes);
             _ = regex.Match(input);
             _ = regex.Match(input, mode: Utf8PythonMatchMode.FullMatch);
-            _ = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input));
-            _ = regex.FindAllToUtf8(input);
+            ReadOnlyMemory<byte> snapshots1Input = input;
+            var snapshots1 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+            {
+                while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                    snapshots1.Add(snapshots1Match);
+            }
+            _ = snapshots1;
+            ReadOnlyMemory<byte> snapshots2Input = input;
+            var snapshots2 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
+            {
+                while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                    snapshots2.Add(snapshots2Match);
+            }
+            _ = snapshots2;
             _ = PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default));
             _ = regex.Replace(input, "X");
             using var cursor = regex.CreateMatchCursor(input);
             var observed = 0;
-            while (cursor.MoveNext(out _)) observed++;
+            while (cursor.MoveNext(out _))
+                observed++;
             Assert.Equal(count, observed);
         }
-        finally { session.Complete(); }
+        finally
+        {
+            session.Complete();
+        }
     }
 
     [Fact]

@@ -34,12 +34,15 @@ public sealed class PythonReLeadingAsciiRangeTests
     {
         var program = Compile(pattern);
         Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, false, out var low, out var high));
-        Assert.Equal(minimum, low); Assert.Equal(maximum, high);
+        Assert.Equal(minimum, low);
+        Assert.Equal(maximum, high);
         var mask = program.SetMasks[program.Instructions.First(instruction => instruction.Kind == Utf8SliceInstructionKind.Set).A];
         for (var scalar = 0; scalar < 128; scalar++)
         {
             if ((mask[scalar >> 3] & (1 << (scalar & 7))) != 0)
+            {
                 Assert.InRange(scalar, low, high);
+            }
         }
         Assert.NotEqual(0, mask[low >> 3] & (1 << (low & 7)));
         Assert.NotEqual(0, mask[high >> 3] & (1 << (high & 7)));
@@ -75,7 +78,8 @@ public sealed class PythonReLeadingAsciiRangeTests
     public void DistinctFirstConsumersShareANecessaryAsciiInterval(string pattern, int minimum, int maximum)
     {
         Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), false, out var low, out var high));
-        Assert.Equal(minimum, low); Assert.Equal(maximum, high);
+        Assert.Equal(minimum, low);
+        Assert.Equal(maximum, high);
     }
 
     [Theory]
@@ -87,7 +91,8 @@ public sealed class PythonReLeadingAsciiRangeTests
     public void ZeroWidthPrefixesConvergeOnTheSameMandatoryMask(string pattern)
     {
         Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), false, out var low, out var high));
-        Assert.Equal(97, low); Assert.Equal(122, high);
+        Assert.Equal(97, low);
+        Assert.Equal(122, high);
     }
 
     [Theory]
@@ -103,7 +108,8 @@ public sealed class PythonReLeadingAsciiRangeTests
     {
         var program = Compile(pattern);
         Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, true, out var low, out var high));
-        Assert.Equal(minimum, low); Assert.Equal(maximum, high);
+        Assert.Equal(minimum, low);
+        Assert.Equal(maximum, high);
         Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, false, out _, out _));
     }
 
@@ -124,7 +130,8 @@ public sealed class PythonReLeadingAsciiRangeTests
     {
         var program = Compile(pattern);
         Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, true, out var low, out var high));
-        Assert.Equal(minimum, low); Assert.Equal(maximum, high);
+        Assert.Equal(minimum, low);
+        Assert.Equal(maximum, high);
         Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, false, out _, out _));
     }
 
@@ -138,10 +145,18 @@ public sealed class PythonReLeadingAsciiRangeTests
         var regex = new Utf8PythonRegex("(?i:(?P<word>sherlock))");
         var prefix = new string('9', padding);
         var input = Encoding.UTF8.GetBytes(prefix + " SHERLOCK x sherlock!");
-        Assert.Equal(new[] { "SHERLOCK", "sherlock" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
+        ReadOnlyMemory<byte> snapshots1Input = input;
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
+        Assert.Equal(new[] { "SHERLOCK", "sherlock" }, snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         Assert.Equal(padding + 1, regex.Match(input, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
         Assert.Equal(padding + 12, regex.Match(input, padding + 2, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.False(regex.Match(input).Success); Assert.False(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match(input).Success);
+        Assert.False(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(new[] { prefix + " ", "SHERLOCK", " x ", "sherlock", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         Assert.Equal(prefix + " [SHERLOCK] x [sherlock]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
@@ -150,7 +165,6 @@ public sealed class PythonReLeadingAsciiRangeTests
             while (rangeCursor1.MoveNext(out var rangeMatch1))
                 collectedRanges1.Add(rangeMatch1);
         }
-
 
         // A non-ASCII subject keeps all CPython partners on the scalar route.
         var match = collectedRanges1.ToArray()[0];
@@ -179,11 +193,19 @@ public sealed class PythonReLeadingAsciiRangeTests
         var prefix = new string('9', padding);
         var input = Encoding.UTF8.GetBytes(prefix + " aaa x aa!");
         using var token = new CancellationTokenSource();
-        Assert.Equal(new[] { "aaa", "aa" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
+        ReadOnlyMemory<byte> snapshots2Input = input;
+        var snapshots2 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
+        {
+            while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                snapshots2.Add(snapshots2Match);
+        }
+        Assert.Equal(new[] { "aaa", "aa" }, snapshots2.Select(captureSnapshot2 => System.Text.Encoding.UTF8.GetString(captureSnapshot2.GetGroupMemory(captureSnapshot2.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         Assert.Equal(padding + 1, regex.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
         Assert.Equal(padding + 2, regex.Match(input, padding + 2, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
         Assert.Equal(padding + 7, regex.Match(input, padding + 4, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.False(regex.Match(input).Success); Assert.False(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match(input).Success);
+        Assert.False(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(new[] { prefix + " ", "aaa", " x ", "aa", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         Assert.Equal(prefix + " [aaa] x [aa]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
         var collectedRanges2 = new List<Utf8PythonRangeMatch>();
@@ -241,7 +263,9 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Equal(5, first.Value.StartOffsetInBytes);
         Assert.True(alias.MoveNext(out cursorRange));
         Assert.False(cursorRange.Groups[1].Success);
-        while (cursor.MoveNext(out cursorRange)) { }
+        while (cursor.MoveNext(out cursorRange))
+        {
+        }
         alias.Dispose();
         Assert.Equal(",;", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span));
         Assert.Equal(",", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
@@ -265,6 +289,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         var oracle = new Regex(pattern);
         string[] pieces = ["", ",", ";", "a", "Z", "z", "é", "😀"];
         foreach (var first in pieces)
+        {
             foreach (var second in pieces)
             {
                 var text = "x" + first + second + "abc!;Zza!;";
@@ -288,11 +313,14 @@ public sealed class PythonReLeadingAsciiRangeTests
                         {
                             Assert.Equal(expected[index].Groups[group].Success, actual[index].Groups[group].Success);
                             if (expected[index].Groups[group].Success)
+                            {
                                 Assert.Equal(expected[index].Groups[group].Value, System.Text.Encoding.UTF8.GetString(actual[index].GetGroupMemory(group).Span));
+                            }
                         }
                     }
                 }
             }
+        }
     }
 
     [Theory]
@@ -318,7 +346,14 @@ public sealed class PythonReLeadingAsciiRangeTests
             }
         });
         using var token = new CancellationTokenSource();
-        Assert.Equal(new[] { "alpha", "beta", "gamma" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token.Token)).ScalarValues);
+        ReadOnlyMemory<byte> snapshots3Input = input;
+        var snapshots3 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots3Cursor = regex.CreateMatchCursor(snapshots3Input, 0, token.Token))
+        {
+            while (snapshots3Cursor.MoveNext(out var snapshots3Match))
+                snapshots3.Add(snapshots3Match);
+        }
+        Assert.Equal(new[] { "alpha", "beta", "gamma" }, snapshots3.Select(captureSnapshot3 => System.Text.Encoding.UTF8.GetString(captureSnapshot3.GetGroupMemory(captureSnapshot3.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         var collectedRanges4 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor4 = regex.CreateMatchCursor(input, 0, token.Token))
         {
@@ -329,12 +364,32 @@ public sealed class PythonReLeadingAsciiRangeTests
         var first = matches[0];
         Assert.Equal(Encoding.UTF8.GetByteCount(prefix), first.Value.StartOffsetInBytes);
         Assert.Equal("alpha", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
-        Assert.Equal(1, first.LastIndex); Assert.Equal("word", first.LastGroup);
-        Assert.Equal(new[] { "beta", "gamma" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, matches[1].Value.StartOffsetInBytes, token.Token)).ScalarValues);
+        Assert.Equal(1, first.LastIndex);
+        Assert.Equal("word", first.LastGroup);
+        ReadOnlyMemory<byte> snapshots4Input = input;
+        int snapshots4Start = matches[1].Value.StartOffsetInBytes;
+        var snapshots4 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots4Cursor = regex.CreateMatchCursor(snapshots4Input, snapshots4Start, token.Token))
+        {
+            while (snapshots4Cursor.MoveNext(out var snapshots4Match))
+                snapshots4.Add(snapshots4Match);
+        }
+        Assert.Equal(new[] { "beta", "gamma" }, snapshots4.Select(captureSnapshot4 => System.Text.Encoding.UTF8.GetString(captureSnapshot4.GetGroupMemory(captureSnapshot4.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
         Assert.False(regex.Match(input).Success);
         Assert.False(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.True(regex.Match(input, first.Value.StartOffsetInBytes).Success);
-        Assert.ThrowsAny<ArgumentException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, padding + 1)));
+        Assert.ThrowsAny<ArgumentException>(() =>
+        {
+            ReadOnlyMemory<byte> snapshots5Input = input;
+            int snapshots5Start = padding + 1;
+            var snapshots5 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots5Cursor = regex.CreateMatchCursor(snapshots5Input, snapshots5Start, default))
+            {
+                while (snapshots5Cursor.MoveNext(out var snapshots5Match))
+                    snapshots5.Add(snapshots5Match);
+            }
+            return snapshots5;
+        });
         Assert.Equal("alpha", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
     }
 
@@ -352,12 +407,20 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData("([ACE]+)", "BDACEBDE", new[] { "ACE", "E" })]
     [InlineData(@"([a-cx-z]+)-\1", "mno ab-ab xyz-xyz", new[] { "ab", "xyz" })]
     public void VerificationRetainsMinimumTailNegationAndFolding(string pattern, string text, string[] expected)
-        => Assert.Equal(expected, PythonReFindAllAssert.Decode(new Utf8PythonRegex(pattern).FindAllToUtf8(Encoding.UTF8.GetBytes(text))).ScalarValues);
+    {
+        using var regex = new Utf8PythonRegex(pattern);
+        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text));
+        var values = new List<string>();
+        while (cursor.MoveNext(out var match))
+            values.Add(Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        Assert.Equal(expected, values);
+    }
 
     [Fact]
     public void ImpossibleStartsStillRespectOutputAdmission()
     {
         foreach (var pattern in new[] { Pattern, "(,)?;", "(?>(?P<word>[a-z]+))" })
+        {
             foreach (var resultLimit in new[] { true, false })
             {
                 var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
@@ -373,9 +436,20 @@ public sealed class PythonReLeadingAsciiRangeTests
             MaxWorkingBytes = 1
         }
                 });
-                var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8("999 alpha,;"u8)));
+                var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+                {
+                    ReadOnlyMemory<byte> snapshots6Input = ("999 alpha,;"u8).ToArray();
+                    var snapshots6 = new List<Utf8PythonRangeMatch>();
+                    using (var snapshots6Cursor = regex.CreateMatchCursor(snapshots6Input, 0, default))
+                    {
+                        while (snapshots6Cursor.MoveNext(out var snapshots6Match))
+                            snapshots6.Add(snapshots6Match);
+                    }
+                    return snapshots6;
+                });
                 Assert.Equal(resultLimit ? Utf8ResourceLimitKind.ExecutionResultBytes : Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
             }
+        }
     }
 
     [Theory]
@@ -414,12 +488,30 @@ public sealed class PythonReLeadingAsciiRangeTests
             }
         });
         var input = "999😀one-12 z-3 bad!"u8;
-        var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues;
-        var bytes = regex.FindAllToUtf8(input).TupleValues;
-        Assert.Equal(2, strings.Length); Assert.Equal(2, bytes.Length);
-        Assert.Equal(new[] { "one", "12" }, strings[0]); Assert.Equal(new[] { "z", "3" }, strings[1]);
+        ReadOnlyMemory<byte> snapshots7Input = (input).ToArray();
+        var snapshots7 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots7Cursor = regex.CreateMatchCursor(snapshots7Input, 0, default))
+        {
+            while (snapshots7Cursor.MoveNext(out var snapshots7Match))
+                snapshots7.Add(snapshots7Match);
+        }
+        var strings = snapshots7.Select(captureSnapshot5 => Enumerable.Range(1, captureSnapshot5.Groups.Length - 1).Select(captureNumber5 => System.Text.Encoding.UTF8.GetString(captureSnapshot5.GetGroupMemory(captureNumber5).Span)).ToArray()).ToArray();
+        ReadOnlyMemory<byte> snapshots8Input = (input).ToArray();
+        var snapshots8 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots8Cursor = regex.CreateMatchCursor(snapshots8Input, 0, default))
+        {
+            while (snapshots8Cursor.MoveNext(out var snapshots8Match))
+                snapshots8.Add(snapshots8Match);
+        }
+        var bytes = snapshots8.Select(captureSnapshot6 => Enumerable.Range(1, captureSnapshot6.Groups.Length - 1).Select(captureNumber6 => captureSnapshot6.GetGroupMemory(captureNumber6).ToArray()).ToArray()).ToArray();
+        Assert.Equal(2, strings.Length);
+        Assert.Equal(2, bytes.Length);
+        Assert.Equal(new[] { "one", "12" }, strings[0]);
+        Assert.Equal(new[] { "z", "3" }, strings[1]);
         for (var index = 0; index < strings.Length; index++)
+        {
             Assert.Equal(strings[index], bytes[index].Select(Encoding.UTF8.GetString));
+        }
         var collectedRanges5 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor5 = regex.CreateMatchCursor((input).ToArray(), 0, default))
         {
@@ -436,7 +528,13 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData(3)]
     public void WorkDenialInCandidateSearchKeepsItsAuthorityAndReleasesStorage(int kind)
     {
-        var pattern = kind switch { 1 => @"\b(?P<digits>\d+)\b", 2 => "(,)?;", 3 => "(?P<word>[éa]+)", _ => Pattern };
+        var pattern = kind switch
+        {
+            1 => @"\b(?P<digits>\d+)\b",
+            2 => "(,)?;",
+            3 => "(?P<word>[éa]+)",
+            _ => Pattern
+        };
         var program = Compile(pattern);
         var input = Encoding.UTF8.GetBytes(new string(kind > 0 ? 'x' : '9', 8192) +
             (kind == 1 ? " 123" : kind == 2 ? ",;" : kind == 3 ? "aaa" : "alpha"));
@@ -447,9 +545,18 @@ public sealed class PythonReLeadingAsciiRangeTests
         var cursor = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
             null, pattern, new(new(constructionWork + 1, 32, 1 << 20, 1 << 20), Timeout.InfiniteTimeSpan, default));
         Exception? error = null;
-        try { cursor.MoveNext(); }
-        catch (Exception failure) { error = failure; }
-        finally { cursor.Dispose(); }
+        try
+        {
+            cursor.MoveNext();
+        }
+        catch (Exception failure)
+        {
+            error = failure;
+        }
+        finally
+        {
+            cursor.Dispose();
+        }
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
         Assert.Equal(0UL, cursor.ReservedBytes);
     }
@@ -473,7 +580,15 @@ public sealed class PythonReLeadingAsciiRangeTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
-        var pattern = kind switch { 1 => "(?P<word>[A-Za-z_]+)", 2 => @"\b(?P<digits>\d+)\b", 3 => "(?P<sep>,)?;", 4 => "(?>ab+)c", 5 => "(?P<word>[éa]+)", _ => Pattern };
+        var pattern = kind switch
+        {
+            1 => "(?P<word>[A-Za-z_]+)",
+            2 => @"\b(?P<digits>\d+)\b",
+            3 => "(?P<sep>,)?;",
+            4 => "(?>ab+)c",
+            5 => "(?P<word>[éa]+)",
+            _ => Pattern
+        };
         var cursor = new PythonReScalarMatchCursor(Encoding.UTF8.GetBytes(new string(kind is 2 or 3 ? 'x' : '9', 200000) +
             (kind == 2 ? " 123" : kind == 3 ? ",;" : kind == 4 ? "abbbc" : kind == 5 ? "aaa" : "alpha")),
             Compile(pattern), 0, timeout,
@@ -489,18 +604,37 @@ public sealed class PythonReLeadingAsciiRangeTests
         {
             entered = true;
             Assert.Equal(initialBytes, observer.Ledger.ReservedBytes); // No candidate entered the VM.
-            if (expire) ticks = 50; else cancellation.Cancel();
+            if (expire)
+            {
+                ticks = 50;
+            }
+            else
+            {
+                cancellation.Cancel();
+            }
         };
         Exception? error = null;
-        try { cursor.MoveNext(); }
-        catch (Exception failure) { error = failure; }
-        finally { cursor.Dispose(); }
+        try
+        {
+            cursor.MoveNext();
+        }
+        catch (Exception failure)
+        {
+            error = failure;
+        }
+        finally
+        {
+            cursor.Dispose();
+        }
         Assert.True(entered);
         if (expire)
         {
             var failure = Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
         }
-        else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        else
+        {
+            Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        }
         Assert.Equal(13UL, cursor.ReservedBytes);
     }
 }

@@ -516,11 +516,7 @@ internal static class PythonReDotNetReference
         }
         else builder.Append(node.Kind switch
         {
-            PythonReGroupKind.Capturing => "(", PythonReGroupKind.NonCapturing => "(?:",
-            PythonReGroupKind.PositiveLookahead => "(?=", PythonReGroupKind.NegativeLookahead => "(?!",
-            PythonReGroupKind.PositiveLookbehind => "(?<=", PythonReGroupKind.NegativeLookbehind => "(?<!",
-            PythonReGroupKind.Atomic => "(?>", _ => throw new PythonRePatternException("Unsupported group kind."),
-        });
+            PythonReGroupKind.Capturing => "(",PythonReGroupKind.NonCapturing => "(?:",            PythonReGroupKind.PositiveLookahead => "(?=",PythonReGroupKind.NegativeLookahead => "(?!",            PythonReGroupKind.PositiveLookbehind => "(?<=",PythonReGroupKind.NegativeLookbehind => "(?<!",            PythonReGroupKind.Atomic => "(?>",_ => throw new PythonRePatternException("Unsupported group kind.")        });
     }
 
     private static void AppendConditionalPrefix(PythonReConditionalNode node, Utf8ConstructionText builder,
@@ -553,9 +549,6 @@ internal static class PythonReDotNetReference
         }
         builder.Append(flavor switch
         {
-            PythonReQuantifierFlavor.Greedy => string.Empty, PythonReQuantifierFlavor.Reluctant => "?",
-            PythonReQuantifierFlavor.Possessive => throw new PythonRePatternException("Possessive quantifiers must be lowered before emission."),
-            _ => throw new PythonRePatternException("Unsupported quantifier flavor."),
-        });
+            PythonReQuantifierFlavor.Greedy => string.Empty,PythonReQuantifierFlavor.Reluctant => "?",            PythonReQuantifierFlavor.Possessive => throw new PythonRePatternException("Possessive quantifiers must be lowered before emission."),            _ => throw new PythonRePatternException("Unsupported quantifier flavor.")        });
     }
 }

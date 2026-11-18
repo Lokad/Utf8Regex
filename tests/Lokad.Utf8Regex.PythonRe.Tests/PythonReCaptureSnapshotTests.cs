@@ -4,20 +4,31 @@ using Lokad.Utf8Regex.PythonRe;
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 [Collection(PythonReGlobalSettingsCollection.Name)]
-public sealed class PythonReFindAllOwnershipTests
+public sealed class PythonReCaptureSnapshotTests
 {
     [Fact]
-    public void NestedTupleValuesKeepIndependentSlotsAndSurviveProgramDisposal()
+    public void OverlappingCaptureSnapshotsSurviveCursorAndProgramDisposal()
     {
         var regex = new Utf8PythonRegex("((é😀))");
-        var tuples = regex.FindAllToUtf8(Encoding.UTF8.GetBytes("é😀 é😀")).TupleValues;
+        var input = Encoding.UTF8.GetBytes("é😀 é😀");
+        var matches = new List<Utf8PythonRangeMatch>();
+        using (var cursor = regex.CreateMatchCursor(input))
+        {
+            while (cursor.MoveNext(out var match))
+                matches.Add(match);
+        }
         regex.Dispose();
-        Assert.Equal(2, tuples.Length);
-        Assert.Equal(new[] { "é😀", "é😀" }, tuples[0].Select(Encoding.UTF8.GetString));
-        Assert.Equal(new[] { "é😀", "é😀" }, tuples[1].Select(Encoding.UTF8.GetString));
-        tuples[0][0][0] = (byte)'x';
-        Assert.Equal("é😀", Encoding.UTF8.GetString(tuples[0][1]));
-        Assert.Equal(new[] { "é😀", "é😀" }, tuples[1].Select(Encoding.UTF8.GetString));
+        Assert.Equal(2, matches.Count);
+        Assert.Equal(new[] { 0, 7 }, matches.Select(match => match.Value.StartOffsetInBytes));
+        foreach (var match in matches)
+        {
+            Assert.Equal(match.Groups[0].StartOffsetInBytes, match.Groups[1].StartOffsetInBytes);
+            Assert.Equal(match.Groups[0].EndOffsetInBytes, match.Groups[1].EndOffsetInBytes);
+            Assert.Equal(match.Groups[1].StartOffsetInBytes, match.Groups[2].StartOffsetInBytes);
+            Assert.Equal(match.Groups[1].EndOffsetInBytes, match.Groups[2].EndOffsetInBytes);
+            Assert.Equal("é😀", Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+            Assert.Equal("é😀", Encoding.UTF8.GetString(match.GetGroupMemory(2).Span));
+        }
     }
 
     [Fact]
@@ -33,12 +44,19 @@ public sealed class PythonReFindAllOwnershipTests
             }
         });
         var text = new string('a', 4096);
-        var tuples = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(Encoding.UTF8.GetBytes(text))).TupleValues;
+        ReadOnlyMemory<byte> snapshots2Input = Encoding.UTF8.GetBytes(text);
+        var snapshots2 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots2Cursor = regex.CreateMatchCursor(snapshots2Input, 0, default))
+        {
+            while (snapshots2Cursor.MoveNext(out var snapshots2Match))
+                snapshots2.Add(snapshots2Match);
+        }
+        var tuples = snapshots2.Select(captureSnapshot2 => Enumerable.Range(1, captureSnapshot2.Groups.Length - 1).Select(captureNumber2 => System.Text.Encoding.UTF8.GetString(captureSnapshot2.GetGroupMemory(captureNumber2).Span)).ToArray()).ToArray();
         Assert.Single(tuples);
         Assert.Equal(new[] { text, text }, tuples[0]);
     }
 
-    public static IEnumerable<object?[]> OwnedScalarCases()
+    public static IEnumerable<object?[]> LiteralCases()
     {
         var none = PythonReCompileOptions.None;
         var ignoreCase = PythonReCompileOptions.IgnoreCase;
@@ -53,7 +71,7 @@ public sealed class PythonReFindAllOwnershipTests
     }
 
     [Theory]
-    [MemberData(nameof(OwnedScalarCases))]
+    [MemberData(nameof(LiteralCases))]
     public void CursorWholeMatchGoldensMatchManaged(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
     {
         var regex = new Utf8PythonRegex(pattern, options: options);
@@ -68,11 +86,10 @@ public sealed class PythonReFindAllOwnershipTests
         }
         var matches = wholeMatches6.ToArray();
         Assert.Equal(values, matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
-        var utf8 = regex.FindAllToUtf8(input, startOffsetInBytes);
-        Assert.Equal(values, utf8.ScalarValues.Select(Encoding.UTF8.GetString).ToArray());
+
     }
 
-    public static IEnumerable<object?[]> OwnedSingleGroupCases()
+    public static IEnumerable<object?[]> SingleGroupCases()
     {
         var none = PythonReCompileOptions.None;
         yield return new object?[] { "(cat)", none, "cat horse cat", 0, new[] { "cat", "cat" }, new[] { "cat", "cat" } };
@@ -80,7 +97,7 @@ public sealed class PythonReFindAllOwnershipTests
     }
 
     [Theory]
-    [MemberData(nameof(OwnedSingleGroupCases))]
+    [MemberData(nameof(SingleGroupCases))]
     public void SingleGroupCursorKeepsWholeMatchGoldens(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values, string?[] groupValues)
     {
         var regex = new Utf8PythonRegex(pattern, options: options);
@@ -95,11 +112,11 @@ public sealed class PythonReFindAllOwnershipTests
         }
         var matches = wholeMatches7.ToArray();
         Assert.Equal(values, matches.Select(static match => System.Text.Encoding.UTF8.GetString(match.GetValueMemory().Span)).ToArray());
-        var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, startOffsetInBytes));
-        Assert.Equal(groupValues, strings.ScalarValues);
+        Assert.Equal(groupValues, matches.Select(match => Encoding.UTF8.GetString(match.GetGroupMemory(1).Span)));
+
     }
 
-    public static IEnumerable<object?[]> OwnedTupleCases()
+    public static IEnumerable<object?[]> CaptureCases()
     {
         var none = PythonReCompileOptions.None;
         var ignoreCase = PythonReCompileOptions.IgnoreCase;
@@ -118,16 +135,24 @@ public sealed class PythonReFindAllOwnershipTests
     }
 
     [Theory]
-    [MemberData(nameof(OwnedTupleCases))]
-    public void OwnedTupleFindAllMatchesManaged(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[][] tuples)
+    [MemberData(nameof(CaptureCases))]
+    public void CursorKeepsCaptureGoldens(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[][] tuples)
     {
         var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
-        var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, startOffsetInBytes));
-        Assert.Equal(tuples.Length, strings.TupleValues.Length);
+        ReadOnlyMemory<byte> snapshots5Input = input;
+        var snapshots5 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots5Cursor = regex.CreateMatchCursor(snapshots5Input, startOffsetInBytes, default))
+        {
+            while (snapshots5Cursor.MoveNext(out var snapshots5Match))
+                snapshots5.Add(snapshots5Match);
+        }
+        var strings = snapshots5;
+        Assert.Equal(tuples.Length, strings.Count);
         for (var i = 0; i < tuples.Length; i++)
         {
-            Assert.Equal(tuples[i], strings.TupleValues[i]);
+            Assert.Equal(tuples[i], Enumerable.Range(1, strings[i].Groups.Length - 1)
+                .Select(number => Encoding.UTF8.GetString(strings[i].GetGroupMemory(number).Span)));
         }
 
     }
@@ -160,28 +185,42 @@ public sealed class PythonReFindAllOwnershipTests
     [Theory]
     [InlineData("[a-z]+", "alpha beta gamma 123 ", 1024, 3072)]
     [InlineData("[a-z]+[0-9]+", "item12 other345 ", 512, 1024)]
-    public void GenericBulkBytesDoNotAcquirePerMatchVmWorkspaces(
+    public void CursorDoesNotAcquirePerMatchVmWorkspaces(
         string pattern, string unit, int repetitions, int expectedCount)
     {
         var text = string.Concat(Enumerable.Repeat(unit, repetitions));
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8PythonRegex(pattern);
-        for (var warmup = 0; warmup < 4; warmup++) PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input));
-
+        for (var warmup = 0; warmup < 4; warmup++)
+        {
+            ReadOnlyMemory<byte> snapshots6Input = input;
+            var snapshots6 = new List<Utf8PythonRangeMatch>();
+            using (var snapshots6Cursor = regex.CreateMatchCursor(snapshots6Input, 0, default))
+            {
+                while (snapshots6Cursor.MoveNext(out var snapshots6Match))
+                    snapshots6.Add(snapshots6Match);
+            }
+            _ = snapshots6;
+        }
         var before = GC.GetAllocatedBytesForCurrentThread();
-        var result = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input));
+        ReadOnlyMemory<byte> snapshots7Input = input;
+        var snapshots7 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots7Cursor = regex.CreateMatchCursor(snapshots7Input, 0, default))
+        {
+            while (snapshots7Cursor.MoveNext(out var snapshots7Match))
+                snapshots7.Add(snapshots7Match);
+        }
+        var result = snapshots7;
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
         Assert.Equal(expectedCount, result.Count);
-        // Required byte roots and host decoding fit comfortably. A fresh VM workspace for
+        // Retained snapshot metadata fits comfortably. A fresh VM workspace for
         // each result previously allocated 3.7-5.4 MB on these public workloads.
         Assert.InRange(allocated, 0, 1_048_576);
         var oracle = new System.Text.RegularExpressions.Regex(pattern);
         var expected = oracle.Matches(text).Select(static match => match.Value).ToArray();
-        Assert.Equal(expected, result.ScalarValues);
-        Assert.Equal(expected, regex.FindAllToUtf8(input).ScalarValues.Select(Encoding.UTF8.GetString));
+        Assert.Equal(expected, result.Select(captureSnapshot8 => System.Text.Encoding.UTF8.GetString(captureSnapshot8.GetGroupMemory(captureSnapshot8.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
+
     }
-
-
 
 }

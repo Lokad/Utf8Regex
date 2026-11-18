@@ -47,33 +47,8 @@ internal static partial class PythonReBenchmarkReporter
     private static string ComputePythonReManagedOperationProtocolSha256(
         PythonReBenchmarkOperation operation) => ComputePythonReSha256(operation switch
         {
-            PythonReBenchmarkOperation.IsMatch => "managed-ismatch-scalar-v2",
-            PythonReBenchmarkOperation.Search => "managed-unified-search-consumed-group-zero-v3",
-            PythonReBenchmarkOperation.SearchFromOffset => "managed-unified-search-from-offset-consumed-group-zero-v3",
-            PythonReBenchmarkOperation.Match => "managed-unified-match-consumed-group-zero-v3",
-            PythonReBenchmarkOperation.FullMatch => "managed-unified-fullmatch-consumed-group-zero-v3",
-            PythonReBenchmarkOperation.SearchDetailed => "managed-search-range-cursor-host-captures-v3",
-            PythonReBenchmarkOperation.Count => "managed-count-scalar-v2",
-            PythonReBenchmarkOperation.FindAllStrings => "managed-findall-utf8-host-strings-eager-v4",
-            PythonReBenchmarkOperation.FindAllUtf8 => "managed-findall-utf8-eager-v2",
-            PythonReBenchmarkOperation.FindIterDetailed => "managed-range-cursor-host-captures-v2",
-            PythonReBenchmarkOperation.ReplaceString => "managed-replace-bytes-host-text-eager-v4",
-            PythonReBenchmarkOperation.ReplaceUtf8 => "managed-replace-utf8-eager-v2",
-            PythonReBenchmarkOperation.SubnString => "managed-subn-bytes-host-text-eager-v4",
-            PythonReBenchmarkOperation.SubnUtf8 => "managed-subn-utf8-eager-v2",
-            PythonReBenchmarkOperation.SubnEvaluatorString => "managed-range-cursor-host-subn-text-untimed-verification-v4",
-            PythonReBenchmarkOperation.SubnEvaluatorUtf8 => "managed-range-cursor-host-subn-bytes-untimed-verification-v4",
-            PythonReBenchmarkOperation.SplitStrings => "managed-split-ranges-host-strings-eager-v3",
-            PythonReBenchmarkOperation.CountFromOffset => "managed-count-from-offset-scalar-v2",
-            PythonReBenchmarkOperation.FindAllStructural => "managed-host-range-cursor-group-zero-structural-v2",
-            PythonReBenchmarkOperation.ReplaceStringLimited => "managed-replace-bytes-host-text-limited-eager-v4",
-            PythonReBenchmarkOperation.ReplaceEvaluatorString => "managed-range-cursor-host-replace-text-untimed-verification-v4",
-            PythonReBenchmarkOperation.SplitStringsLimited =>
-                $"managed-split-ranges-host-strings-limited-eager-v3;warmup={PythonReQualificationSplitWarmupCalls}",
-            PythonReBenchmarkOperation.SplitDetailed => "managed-split-ranges-host-detailed-eager-v3",
-            PythonReBenchmarkOperation.FindAllStringsFromOffset => "managed-findall-utf8-host-strings-from-offset-eager-v4",
-            _ => throw new ArgumentOutOfRangeException(nameof(operation)),
-        });
+            PythonReBenchmarkOperation.IsMatch => "managed-ismatch-scalar-v2",            PythonReBenchmarkOperation.Search => "managed-unified-search-consumed-group-zero-v3",            PythonReBenchmarkOperation.SearchFromOffset => "managed-unified-search-from-offset-consumed-group-zero-v3",            PythonReBenchmarkOperation.Match => "managed-unified-match-consumed-group-zero-v3",            PythonReBenchmarkOperation.FullMatch => "managed-unified-fullmatch-consumed-group-zero-v3",            PythonReBenchmarkOperation.SearchDetailed => "managed-search-range-cursor-host-captures-v3",            PythonReBenchmarkOperation.Count => "managed-count-scalar-v2",            PythonReBenchmarkOperation.FindIterDetailed => "managed-range-cursor-host-captures-v2",            PythonReBenchmarkOperation.ReplaceString => "managed-replace-bytes-host-text-eager-v4",            PythonReBenchmarkOperation.ReplaceUtf8 => "managed-replace-utf8-eager-v2",            PythonReBenchmarkOperation.SubnString => "managed-subn-bytes-host-text-eager-v4",            PythonReBenchmarkOperation.SubnUtf8 => "managed-subn-utf8-eager-v2",            PythonReBenchmarkOperation.SubnEvaluatorString => "managed-range-cursor-host-subn-text-untimed-verification-v4",            PythonReBenchmarkOperation.SubnEvaluatorUtf8 => "managed-range-cursor-host-subn-bytes-untimed-verification-v4",            PythonReBenchmarkOperation.SplitStrings => "managed-split-ranges-host-strings-eager-v3",            PythonReBenchmarkOperation.CountFromOffset => "managed-count-from-offset-scalar-v2",            PythonReBenchmarkOperation.FindAllStructural => "managed-host-range-cursor-group-zero-structural-v2",            PythonReBenchmarkOperation.ReplaceStringLimited => "managed-replace-bytes-host-text-limited-eager-v4",            PythonReBenchmarkOperation.ReplaceEvaluatorString => "managed-range-cursor-host-replace-text-untimed-verification-v4",            PythonReBenchmarkOperation.SplitStringsLimited =>
+                $"managed-split-ranges-host-strings-limited-eager-v3;warmup={PythonReQualificationSplitWarmupCalls}",            PythonReBenchmarkOperation.SplitDetailed => "managed-split-ranges-host-detailed-eager-v3",            _ => throw new ArgumentOutOfRangeException(nameof(operation))        });
 
     // Keep these values synchronized with the matching operation branches in the
     // streaming runner. Shared timer/process/digest changes belong in the shared
@@ -81,32 +56,7 @@ internal static partial class PythonReBenchmarkReporter
     private static string ComputePythonReCpythonOperationProtocolSha256(
         PythonReBenchmarkOperation operation) => ComputePythonReSha256(operation switch
         {
-            PythonReBenchmarkOperation.IsMatch => "cpython-pattern-search-bool-v1",
-            PythonReBenchmarkOperation.Search => "cpython-pattern-search-group-zero-v1",
-            PythonReBenchmarkOperation.SearchFromOffset => "cpython-pattern-search-from-offset-group-zero-v1",
-            PythonReBenchmarkOperation.Match => "cpython-pattern-match-group-zero-v1",
-            PythonReBenchmarkOperation.FullMatch => "cpython-pattern-fullmatch-group-zero-v1",
-            PythonReBenchmarkOperation.SearchDetailed => "cpython-pattern-search-detailed-v1",
-            PythonReBenchmarkOperation.Count => "cpython-finditer-sum-v1",
-            PythonReBenchmarkOperation.FindAllStrings => "cpython-pattern-findall-strings-v1",
-            PythonReBenchmarkOperation.FindAllUtf8 => "cpython-pattern-findall-utf8-projection-v1",
-            PythonReBenchmarkOperation.FindIterDetailed => "cpython-finditer-detailed-v1",
-            PythonReBenchmarkOperation.ReplaceString => "cpython-pattern-sub-string-v1",
-            PythonReBenchmarkOperation.ReplaceUtf8 => "cpython-pattern-sub-utf8-projection-v1",
-            PythonReBenchmarkOperation.SubnString => "cpython-pattern-subn-string-v1",
-            PythonReBenchmarkOperation.SubnUtf8 => "cpython-pattern-subn-utf8-projection-v1",
-            PythonReBenchmarkOperation.SubnEvaluatorString => "cpython-pattern-subn-callback-string-untimed-verification-v2",
-            PythonReBenchmarkOperation.SubnEvaluatorUtf8 => "cpython-pattern-subn-callback-utf8-untimed-verification-v2",
-            PythonReBenchmarkOperation.SplitStrings => "cpython-pattern-split-strings-v1",
-            PythonReBenchmarkOperation.CountFromOffset => "cpython-finditer-from-offset-sum-v1",
-            PythonReBenchmarkOperation.FindAllStructural => "cpython-finditer-group-zero-structural-v1",
-            PythonReBenchmarkOperation.ReplaceStringLimited => "cpython-pattern-sub-limited-string-v1",
-            PythonReBenchmarkOperation.ReplaceEvaluatorString => "cpython-pattern-sub-callback-string-untimed-verification-v2",
-            PythonReBenchmarkOperation.SplitStringsLimited => "cpython-pattern-split-limited-strings-v1",
-            PythonReBenchmarkOperation.SplitDetailed => "cpython-pattern-split-detailed-projection-v1",
-            PythonReBenchmarkOperation.FindAllStringsFromOffset => "cpython-pattern-findall-strings-from-offset-v1",
-            _ => throw new ArgumentOutOfRangeException(nameof(operation)),
-        });
+            PythonReBenchmarkOperation.IsMatch => "cpython-pattern-search-bool-v1",            PythonReBenchmarkOperation.Search => "cpython-pattern-search-group-zero-v1",            PythonReBenchmarkOperation.SearchFromOffset => "cpython-pattern-search-from-offset-group-zero-v1",            PythonReBenchmarkOperation.Match => "cpython-pattern-match-group-zero-v1",            PythonReBenchmarkOperation.FullMatch => "cpython-pattern-fullmatch-group-zero-v1",            PythonReBenchmarkOperation.SearchDetailed => "cpython-pattern-search-detailed-v1",            PythonReBenchmarkOperation.Count => "cpython-finditer-sum-v1",            PythonReBenchmarkOperation.FindIterDetailed => "cpython-finditer-detailed-v1",            PythonReBenchmarkOperation.ReplaceString => "cpython-pattern-sub-string-v1",            PythonReBenchmarkOperation.ReplaceUtf8 => "cpython-pattern-sub-utf8-projection-v1",            PythonReBenchmarkOperation.SubnString => "cpython-pattern-subn-string-v1",            PythonReBenchmarkOperation.SubnUtf8 => "cpython-pattern-subn-utf8-projection-v1",            PythonReBenchmarkOperation.SubnEvaluatorString => "cpython-pattern-subn-callback-string-untimed-verification-v2",            PythonReBenchmarkOperation.SubnEvaluatorUtf8 => "cpython-pattern-subn-callback-utf8-untimed-verification-v2",            PythonReBenchmarkOperation.SplitStrings => "cpython-pattern-split-strings-v1",            PythonReBenchmarkOperation.CountFromOffset => "cpython-finditer-from-offset-sum-v1",            PythonReBenchmarkOperation.FindAllStructural => "cpython-finditer-group-zero-structural-v1",            PythonReBenchmarkOperation.ReplaceStringLimited => "cpython-pattern-sub-limited-string-v1",            PythonReBenchmarkOperation.ReplaceEvaluatorString => "cpython-pattern-sub-callback-string-untimed-verification-v2",            PythonReBenchmarkOperation.SplitStringsLimited => "cpython-pattern-split-limited-strings-v1",            PythonReBenchmarkOperation.SplitDetailed => "cpython-pattern-split-detailed-projection-v1",            _ => throw new ArgumentOutOfRangeException(nameof(operation))        });
 
     private static string ComputePythonReSharedProtocolSha256() => ComputePythonReSha256(
         string.Join(

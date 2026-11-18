@@ -116,8 +116,15 @@ public sealed class PythonReBraceQuantifierTests
     {
         var regex = new Utf8PythonRegex(pattern);
         Assert.Equal(expected, regex.Count("😀😀"u8));
+        ReadOnlyMemory<byte> snapshots1Input = ("😀😀"u8).ToArray();
+        var snapshots1 = new List<Utf8PythonRangeMatch>();
+        using (var snapshots1Cursor = regex.CreateMatchCursor(snapshots1Input, 0, default))
+        {
+            while (snapshots1Cursor.MoveNext(out var snapshots1Match))
+                snapshots1.Add(snapshots1Match);
+        }
         Assert.Equal(expected == 5 ? ["", "😀", "", "😀", ""] : new[] { "😀😀", "" },
-            PythonReFindAllAssert.Decode(regex.FindAllToUtf8("😀😀"u8)).ScalarValues);
+                    snapshots1.Select(captureSnapshot1 => System.Text.Encoding.UTF8.GetString(captureSnapshot1.GetGroupMemory(captureSnapshot1.Groups.Length == 2 ? 1 : 0).Span)).ToArray());
     }
 
     [Theory]
@@ -129,20 +136,26 @@ public sealed class PythonReBraceQuantifierTests
         var policy = new Utf8ConstructionPolicy { MaxWorkSteps = 256 };
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
-            if (bytes) _ = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            if (bytes)
             {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = default,
-                ConstructionPolicy = policy,
-                ConstructionTimeout = Regex.InfiniteMatchTimeout
-            }, cancellationToken: default);
-            else _ = Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                _ = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = default,
+                    ConstructionPolicy = policy,
+                    ConstructionTimeout = Regex.InfiniteMatchTimeout
+                }, cancellationToken: default);
+            }
+            else
             {
-                MatchTimeout = Regex.InfiniteMatchTimeout,
-                ResourcePolicy = default,
-                ConstructionPolicy = policy,
-                ConstructionTimeout = Regex.InfiniteMatchTimeout
-            }, cancellationToken: default);
+                _ = Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = default,
+                    ConstructionPolicy = policy,
+                    ConstructionTimeout = Regex.InfiniteMatchTimeout
+                }, cancellationToken: default);
+            }
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
         Assert.False(Utf8ConstructionScope.IsActive);
