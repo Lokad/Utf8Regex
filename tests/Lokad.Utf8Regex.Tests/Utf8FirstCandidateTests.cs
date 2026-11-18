@@ -106,7 +106,10 @@ public sealed class Utf8FirstCandidateTests
     public void DenseRejectedNeighboursRemainInterruptible(bool expire)
     {
         var program = new Utf8Regex("abc").Inspection.AvailableOwnedSliceProgram;
-        var input = Encoding.ASCII.GetBytes(new string('a', 4096));
+        // The exact-prefix scan can reject a whole 2 KiB block per charge.
+        // Leave work after the diagnostic hook at the 64th charged step.
+        var input = new byte[80 * 2048];
+        input.AsSpan().Fill((byte)'a');
         using var token = new CancellationTokenSource(); long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var session = Utf8SearchDiagnosticsSession.Start(_ => { if (expire) ticks = 50; else token.Cancel(); });
