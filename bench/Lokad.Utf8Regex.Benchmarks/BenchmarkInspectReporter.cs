@@ -2701,10 +2701,8 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledRuntime   : {context.CompiledUtf8Regex.Inspection.DebugCompiledEngineRuntimeType}");
         Console.WriteLine($"BaselineAnchor    : {context.Utf8Regex.Inspection.DebugAnchoredLiteralKind}");
         Console.WriteLine($"CompiledAnchor    : {context.CompiledUtf8Regex.Inspection.DebugAnchoredLiteralKind}");
-        Console.WriteLine($"BaselineSupportsWellFormed : {context.Utf8Regex.Inspection.DebugSupportsWellFormedOnlyMatch}");
-        Console.WriteLine($"CompiledSupportsWellFormed : {context.CompiledUtf8Regex.Inspection.DebugSupportsWellFormedOnlyMatch}");
-        Console.WriteLine($"BaselineWellFormedMissDefinitive : {context.Utf8Regex.Inspection.DebugWellFormedOnlyMatchMissIsDefinitive}");
-        Console.WriteLine($"CompiledWellFormedMissDefinitive : {context.CompiledUtf8Regex.Inspection.DebugWellFormedOnlyMatchMissIsDefinitive}");
+        Console.WriteLine($"BaselineSupportsUtf8MatchProbe : {context.Utf8Regex.Inspection.DebugSupportsUtf8MatchProbe}");
+        Console.WriteLine($"CompiledSupportsUtf8MatchProbe : {context.CompiledUtf8Regex.Inspection.DebugSupportsUtf8MatchProbe}");
 
         WriteIsMatchDiagnostics("Baseline", baselineDiagnostics);
         WriteIsMatchDiagnostics("Compiled", compiledDiagnostics);

@@ -8,7 +8,7 @@ internal sealed class Utf8RegexProgram
     // Conservative helper metadata; major program/search payloads are admitted separately.
     internal static ulong ObjectBytes => 128;
 
-    private Utf8RegexProgram(Utf8PreparedRegex preparedRegex, Utf8CompiledEngine compiledEngine, Utf8CompiledEngineRuntime? compiledEngineRuntime, Utf8CaptureCatalog captureCatalog)
+    private Utf8RegexProgram(Utf8PreparedRegex preparedRegex, Utf8CompiledEngine compiledEngine, Utf8LiteralCompiledEngineRuntime? compiledEngineRuntime, Utf8CaptureCatalog captureCatalog)
     {
         PreparedRegex = preparedRegex;
         CompiledEngine = compiledEngine;
@@ -20,7 +20,7 @@ internal sealed class Utf8RegexProgram
 
     public Utf8CompiledEngine CompiledEngine { get; }
 
-    public Utf8CompiledEngineRuntime? CompiledEngineRuntime { get; }
+    public Utf8LiteralCompiledEngineRuntime? CompiledEngineRuntime { get; }
 
     public Utf8CaptureCatalog CaptureCatalog { get; }
 
@@ -43,7 +43,7 @@ internal sealed class Utf8RegexProgram
             // also keep scalar/search payloads without an unmetered runtime.
             // Only literal engines prepare emitted delegates.
             var compiledEngineRuntime = prepareRuntime && compiledEngine.Kind != Utf8CompiledEngineKind.FallbackRegex
-                ? Utf8CompiledEngineRuntime.Create(compiledEngine, preparedRegex, options) : null;
+                ? Utf8LiteralCompiledEngineRuntime.Create(compiledEngine, preparedRegex, (options & RegexOptions.RightToLeft) != 0) : null;
             // Successful owned parsing always finishes capture numbering before
             // publishing the tree. Borrow that catalog for every public route;
             // absent metadata would indicate broken internal preparation.

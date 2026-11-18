@@ -31,14 +31,11 @@ public sealed partial class Utf8Regex
         }
 
         if (_program.CompiledEngineRuntime is { } runtime)
-            return runtime.TryMatchWithoutValidation(input, budget: Utf8ExecutionDeadline.Infinite, out match);
+            return runtime.TryMatchDirect(input, budget: Utf8ExecutionDeadline.Infinite, out match);
 
         match = default(Utf8CaptureRange);
         return false;
     }
-
-    internal bool TryIsMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out bool isMatch)
-        => TryIsMatchAnchoredLiteral(input, out isMatch);
 
     private bool IsMatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
@@ -339,8 +336,7 @@ public sealed partial class Utf8Regex
             // compiled routes request their existing description here.
             var input = Utf8ValidatedInput.Create(bytes);
 
-            if (!_owner.ShouldSkipRequiredPrefilterForMatch() &&
-                _owner.RejectsByRequiredPrefilter(bytes))
+            if (_owner.RejectsByRequiredPrefilter(bytes))
             {
                 return false;
             }

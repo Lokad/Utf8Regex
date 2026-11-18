@@ -97,7 +97,7 @@ public sealed partial class Utf8Regex : IDisposable
                     preparedRegex.SearchPlan.FirstMatchOperation);
             if (matchTimeout == Regex.InfiniteMatchTimeout &&
                 (options & RegexOptions.RightToLeft) == 0 &&
-                _program.CompiledEngineRuntime is Utf8LiteralCompiledEngineRuntime literalRuntime &&
+                _program.CompiledEngineRuntime is { } literalRuntime &&
                 literalRuntime._emittedLiteralFamilyCounter is { SupportsAsciiValidatedCount: true } boundaryLiteralFamilyCounter)
             {
                 _fusedAsciiBoundaryLiteralFamilyCounter = boundaryLiteralFamilyCounter;
@@ -228,7 +228,7 @@ public sealed partial class Utf8Regex : IDisposable
 
     private Utf8CompiledEngine _compiledEngine => _program.CompiledEngine;
 
-    private Utf8CompiledEngineRuntime _compiledEngineRuntime => _program.CompiledEngineRuntime ??
+    private Utf8LiteralCompiledEngineRuntime _compiledEngineRuntime => _program.CompiledEngineRuntime ??
         throw new InvalidOperationException("This expression executes without an unmetered specialized runtime.");
 
     private int[] _groupNumbers => _program.CaptureCatalog.GroupNumbers;
@@ -345,7 +345,7 @@ public sealed partial class Utf8Regex : IDisposable
             return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
         }
 
-        if (TryIsMatchDirectWithoutValidation(input, out var directIsMatch))
+        if (TryIsMatchAnchoredLiteral(input, out var directIsMatch))
         {
             return directIsMatch;
         }
@@ -363,7 +363,7 @@ public sealed partial class Utf8Regex : IDisposable
         if (CanUseWellFormedOnlyValidation())
         {
 
-            if (!ShouldSkipRequiredPrefilterForMatch() && RejectsByRequiredPrefilter(input))
+            if (RejectsByRequiredPrefilter(input))
             {
                 return false;
             }
@@ -374,7 +374,7 @@ public sealed partial class Utf8Regex : IDisposable
 
         var validation = Utf8InputAnalyzer.Describe(input);
 
-        if (!ShouldSkipRequiredPrefilterForMatch() && RejectsByRequiredPrefilter(input))
+        if (RejectsByRequiredPrefilter(input))
         {
             return false;
         }
@@ -545,42 +545,13 @@ public sealed partial class Utf8Regex : IDisposable
             return CountViaCompiledEngine(input, default, fastBudget);
         }
 
-        if (_compiledEngineRuntime.SupportsWellFormedOnlyCount)
-        {
-            if (RejectsByRequiredPrefilter(input))
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
-                return 0;
-            }
-
-            var fastBudget = CreateExecutionBudget();
-            return CountViaCompiledEngine(input, default, fastBudget);
-        }
-
-        if (CanUseWellFormedOnlyValidation())
-        {
-
-            if (RejectsByRequiredPrefilter(input))
-            {
-                Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
-                return 0;
-            }
-
-            var fastBudget = CreateExecutionBudget();
-            return CountViaCompiledEngine(input, default, fastBudget);
-        }
-
-        var validation = Utf8InputAnalyzer.Describe(input);
-
         if (RejectsByRequiredPrefilter(input))
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
             return 0;
         }
 
-        var budget = CreateExecutionBudget();
-
-        return CountViaCompiledEngine(input, validation, budget);
+        return CountViaCompiledEngine(input, default, CreateExecutionBudget());
     }
 
     /// <summary>Owned scalar count from an admitted byte boundary.</summary>
@@ -726,30 +697,25 @@ public sealed partial class Utf8Regex : IDisposable
             return directMatch;
         }
 
-        var canUseAsciiWellFormedOnlyMatch =
-            _compiledEngineRuntime.SupportsAsciiWellFormedOnlyMatch &&
-            CanUseAsciiDirectInput(input);
-
-        var canUseWellFormedOnlyMatch =
-            _compiledEngineRuntime.SupportsWellFormedOnlyMatch;
-
-        if (canUseAsciiWellFormedOnlyMatch || canUseWellFormedOnlyMatch)
+        var runtime = _compiledEngineRuntime;
+        var canUseAsciiProbe = runtime.SupportsAsciiMatchProbe && CanUseAsciiDirectInput(input);
+        var canUseUtf8Probe = runtime.SupportsUtf8MatchProbe;
+        if (canUseAsciiProbe || canUseUtf8Probe)
         {
-
-            if (!ShouldSkipRequiredPrefilterForMatch() && RejectsByRequiredPrefilter(input))
+            if (RejectsByRequiredPrefilter(input))
             {
-                return default(Utf8CaptureRange);
+                return default;
             }
 
-            var matched = canUseAsciiWellFormedOnlyMatch
-                ? _compiledEngineRuntime.TryMatchAsciiWellFormedOnly(input, out var wellFormedMatch)
-                : _compiledEngineRuntime.TryMatchWellFormedOnly(input, out wellFormedMatch);
+            var handled = canUseAsciiProbe
+                ? runtime.TryMatchAsciiProbe(input, out var probeMatch)
+                : runtime.TryMatchUtf8Probe(input, out probeMatch);
 
-            if (matched)
+            if (handled)
             {
-                return wellFormedMatch;
+                return probeMatch;
             }
-            if (_compiledEngineRuntime.WellFormedOnlyMatchMissIsDefinitive)
+            if (canUseUtf8Probe)
             {
                 return default;
             }
@@ -757,7 +723,7 @@ public sealed partial class Utf8Regex : IDisposable
 
         var validation = Utf8InputAnalyzer.Describe(input);
 
-        if (!ShouldSkipRequiredPrefilterForMatch() && RejectsByRequiredPrefilter(input))
+        if (RejectsByRequiredPrefilter(input))
         {
             return default(Utf8CaptureRange);
         }

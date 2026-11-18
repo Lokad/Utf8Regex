@@ -162,7 +162,7 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecuteUtf8DirectBoolOnly()
     {
-        return Utf8Regex.TryIsMatchDirectWithoutValidation(InputBytes, out var isMatch) && isMatch
+        return Utf8Regex.TryIsMatchAnchoredLiteral(InputBytes, out var isMatch) && isMatch
             ? 1
             : 0;
     }

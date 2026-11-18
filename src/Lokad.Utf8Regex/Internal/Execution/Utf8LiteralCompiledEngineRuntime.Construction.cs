@@ -26,6 +26,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         budget.EnterDepth();
         try
         {
+            if (compiledEngine.Kind is not (Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily))
+                throw new ArgumentOutOfRangeException(nameof(compiledEngine), "Only literal engines have a separate runtime.");
             var count = regexPlan.SearchPlan.CountOperation;
             var firstMatch = regexPlan.SearchPlan.FirstMatchOperation;
             // Emitted buffers and final managed copies retain their independent
@@ -43,6 +45,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             var result = budget.AllocateObject(new ConstructionState(compiledEngine, regexPlan, usesRightToLeft,
                 count, firstMatch, emitted, small, firstBytes, prefilter, automaton,
                 primitive, shortCounter, bmp, composite), static state => new Utf8LiteralCompiledEngineRuntime(state));
+            budget.ChargeWork(0); // Check the original interruption authority before publication.
             scope.Complete();
             return result;
         }

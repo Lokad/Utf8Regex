@@ -66,7 +66,7 @@ public sealed partial class Utf8Regex
         return false;
     }
 
-    private bool TryIsMatchAnchoredLiteral(ReadOnlySpan<byte> input, out bool isMatch)
+    internal bool TryIsMatchAnchoredLiteral(ReadOnlySpan<byte> input, out bool isMatch)
     {
         isMatch = false;
         // Same byte-exact contract as the Match arm above: anchored ASCII prefixes
@@ -87,11 +87,6 @@ public sealed partial class Utf8Regex
             return true;
         }
         return false;
-    }
-
-    private bool ShouldSkipRequiredPrefilterForMatch()
-    {
-        return _compiledEngineRuntime.SkipRequiredPrefilterForMatch;
     }
 
     private bool RequiresScalarValueExecution()

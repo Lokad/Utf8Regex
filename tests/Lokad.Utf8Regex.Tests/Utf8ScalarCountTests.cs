@@ -74,9 +74,7 @@ public sealed class Utf8ScalarCountTests
     public void NativeEmptyCounterAndCursorHaveScalarResults(bool compiled, bool finite)
     {
         var regex = new Utf8Regex("", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
-        var runtime = Assert.IsAssignableFrom<Utf8CompiledEngineRuntime>(typeof(Utf8Regex)
-            .GetProperty("_compiledEngineRuntime", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(regex));
-        Assert.IsType<Utf8LiteralCompiledEngineRuntime>(runtime);
+        var runtime = Assert.IsType<Utf8LiteralCompiledEngineRuntime>(regex.Inspection.CompiledRuntime);
         var input = Encoding.UTF8.GetBytes("é😀𐐀a");
         var validation = Utf8Validation.Validate(input);
         var deadline = finite ? Utf8ExecutionDeadline.Start(TimeSpan.FromSeconds(10)) : Utf8ExecutionDeadline.Infinite;

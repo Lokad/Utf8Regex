@@ -161,7 +161,7 @@ public sealed class LokadPublicRouteGuardrailTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatch = regex.IsMatch("https://example.com/path?q=1"u8);
         Assert.True(isMatch);
-        Assert.False(regex.TryIsMatchDirectWithoutValidation(
+        Assert.False(regex.TryIsMatchAnchoredLiteral(
             "https://example.com/caf\u00E9"u8,
             out _));
 
@@ -201,7 +201,7 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(asciiMatch);
         var asciiMiss = regex.IsMatch("no literal"u8);
         Assert.False(asciiMiss);
-        Assert.False(regex.TryIsMatchDirectWithoutValidation("é.ccc"u8, out _));
+        Assert.False(regex.TryIsMatchAnchoredLiteral("é.ccc"u8, out _));
     }
 
     [Fact]

@@ -42,7 +42,7 @@ public sealed partial class Utf8Regex
 
         // Friend tooling borrows the existing runtime; no replay or extra owner
         // is retained in the shipped matcher.
-        internal Utf8CompiledEngineRuntime? CompiledRuntime => _owner._program.CompiledEngineRuntime;
+        internal Utf8LiteralCompiledEngineRuntime? CompiledRuntime => _owner._program.CompiledEngineRuntime;
 
         public Utf8CompiledExecutionBackend CompiledExecutionBackend => _owner.CompiledExecutionBackend;
 
@@ -77,11 +77,7 @@ public sealed partial class Utf8Regex
         public bool DebugCanUseFusedCompiledUtf8LiteralFamilyCount =>
             _owner.CanUseFusedCompiledUtf8LiteralFamilyCount();
 
-        public bool DebugSupportsWellFormedOnlyMatch => CompiledRuntime?.SupportsWellFormedOnlyMatch ?? false;
-
-        public bool DebugWellFormedOnlyMatchMissIsDefinitive =>
-            CompiledRuntime?.WellFormedOnlyMatchMissIsDefinitive ?? false;
-
+        public bool DebugSupportsUtf8MatchProbe => CompiledRuntime?.SupportsUtf8MatchProbe ?? false;
 
         public bool DebugCanGuideFallbackVerification => _owner.CanGuideFallbackVerification();
 

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
+public sealed class Utf8LiteralRuntimeAdmissionTests
 {
     private static Utf8PreparedRegex Plan(string pattern) => (Utf8PreparedRegex)typeof(Utf8Regex)
         .GetProperty("PreparedRegex", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -25,9 +25,8 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
                                                     from reverse in new[] { false, true }
                                                     select new object[] { pattern, reverse };
     public static IEnumerable<object[]> Cutoffs() => from pattern in new[] { "abc", "foo|bar", "中|日", "foo(?=bar)" }
-                                                     from factory in new[] { false, true }
                                                      from bytes in new[] { false, true }
-                                                     select new object[] { pattern, factory, bytes };
+                                                     select new object[] { pattern, bytes };
     public static IEnumerable<object[]> Depths() => from pattern in new[] { "abc", "foo|bar", "中文|日本", "foo(?=bar)" }
                                                     from depth in Enumerable.Range(0, 9)
                                                     select new object[] { pattern, depth };
@@ -78,20 +77,16 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
         Assert.Equal(0ul, owner.Budget.Depth);
     }
 
-    private static Utf8CompiledEngineRuntime Build(Utf8PreparedRegex plan,bool factory) => factory
-        ? Utf8CompiledRuntimeFactory.Create(Utf8CompiledEngineSelector.Select(plan),plan,RegexOptions.CultureInvariant)
-        : Create(plan, false);
-
     [Theory]
     [MemberData(nameof(Cutoffs))]
-    public void EveryRootAndFactoryCutoffPreservesBorrowedParentsAndSpentWork(string pattern, bool factory, bool bytes)
+    public void EveryCutoffPreservesBorrowedParentsAndSpentWork(string pattern, bool bytes)
     {
         var plan = Plan(pattern);         ulong peak, work, loan, slots;
         // Emitted IL now shares the owner. Leave that axis funded while sweeping
         // every byte/work cutoff; separate emission tests sweep instruction slots.
         using (var funded = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
-            _ = funded.Budget.AllocateObject(17, static value => new Box(value)); _ = Build(plan,factory);
+            _ = funded.Budget.AllocateObject(17, static value => new Box(value)); _ = Create(plan, false);
             peak = funded.Budget.PeakBytes - 128; work = funded.Budget.WorkSteps - 2; loan = funded.Budget.ReservedBytes;
             slots = funded.Budget.Reserved;
         }
@@ -101,7 +96,7 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
             using var owner = new Utf8ConstructionScope(ulong.MaxValue, bytes ? 128 + allowance : ulong.MaxValue,
                 bytes ? ulong.MaxValue : 2 + allowance, ulong.MaxValue);
             var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
-            var error = Record.Exception(() => _ = Build(plan,factory));
+            var error = Record.Exception(() => _ = Create(plan, false));
             if (error is null) { successes++; Assert.Equal(loan, owner.Budget.ReservedBytes); }
             else
             {

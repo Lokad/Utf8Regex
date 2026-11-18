@@ -10,10 +10,7 @@ using System.Runtime.Intrinsics;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEngineRuntime,
-    IUtf8AsciiWellFormedMatchRuntime,
-    IUtf8WellFormedMatchRuntime,
-    IUtf8UnvalidatedMatchRuntime
+internal sealed partial class Utf8LiteralCompiledEngineRuntime
 {
     private const int PreparedSearcherLiteralFamilyCountThresholdBytes = 4096;
     internal const int CorrelatedTwoByteLiteralCountThresholdBytes = 128 * 1024;
@@ -52,13 +49,11 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         _compositeTrailingLiteralSearch = state.CompositeSearch;
     }
 
-    public override Utf8CompiledRuntimeCapabilities Capabilities => new(
-        SupportsAsciiWellFormedOnlyMatch: _smallAsciiLiteralFamilyPrimitive is not null || SupportsAsciiDirectMatch,
-        SupportsWellFormedOnlyMatch: _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals || CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
-        WellFormedOnlyMatchMissIsDefinitive: _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals || CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite),
-        SupportsWellFormedOnlyCount: true,
-        SkipRequiredPrefilterForMatch: false,
-        SkipRequiredPrefilterForCount: true);
+    internal bool SupportsAsciiMatchProbe => _smallAsciiLiteralFamilyPrimitive is not null || SupportsAsciiDirectMatch;
+
+    internal bool SupportsUtf8MatchProbe =>
+        _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals ||
+        CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite);
 
     internal bool TryGetSmallAsciiLiteralFamilyPrimitive(
         ReadOnlySpan<byte> input, out PreparedSmallAsciiLiteralFamilySearch primitive)
@@ -73,7 +68,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return false;
     }
 
-    public override bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
+    public bool IsMatch(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (TryStartSingleLiteralInvocation(budget, out var invocation))
         {
@@ -124,7 +119,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         };
     }
 
-    public override int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
+    public int Count(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (_regexPlan.LiteralUtf8 is { Length: 0 } &&
             !_regexPlan.SearchPlan.HasBoundaryRequirements && !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
@@ -178,7 +173,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         };
     }
 
-    public override Utf8CaptureRange Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
+    public Utf8CaptureRange Match(ReadOnlySpan<byte> input, Utf8ValidationResult validation, Utf8ExecutionDeadline budget)
     {
         if (TryStartSingleLiteralInvocation(budget, out var invocation))
         {
@@ -268,7 +263,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return new Utf8CaptureRange(indexInBytes, (indexInBytes) + (search.MatchLengthInBytes));
     }
 
-    public bool TryMatchAsciiWellFormed(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
+    public bool TryMatchAsciiProbe(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
         if (_smallAsciiLiteralFamilyPrimitive is { } primitive)
         {
@@ -287,7 +282,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return false;
     }
 
-    public bool TryMatchWellFormed(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
+    public bool TryMatchUtf8Probe(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
         if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals)
         {
@@ -309,7 +304,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime : Utf8CompiledEng
         return true;
     }
 
-    public bool ExecuteMatchWithoutValidation(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8CaptureRange match)
+    public bool TryMatchDirect(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8CaptureRange match)
     {
         if (!budget.IsInfinite ||
             (_smallAsciiLiteralFamilyPrimitive is null && !SupportsAsciiDirectMatch))
