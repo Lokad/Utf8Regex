@@ -842,7 +842,8 @@ internal static partial class Utf8SliceRunner
     // Shared by generic repeats and complete capture roots. Scalar alignment is
     // preserved because every consuming byte belongs to the proved ASCII range.
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunUnboundedAsciiRange(
-        ReadOnlySpan<byte> input, int start, byte first, byte last, ref Utf8SliceInvocation invocation)
+        ReadOnlySpan<byte> input, int start, byte first, byte last, ref Utf8SliceInvocation invocation,
+        bool checkExitDeadline = true)
     {
         var position = start;
         while (position < input.Length)
@@ -854,14 +855,15 @@ internal static partial class Utf8SliceRunner
             if (stop >= 0) { position += stop; break; }
             position += block.Length;
         }
-        var terminal = invocation.TryChargeInputStep();
+        var terminal = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
         return terminal == Utf8ExecutionLimitKind.None ? (position, terminal) : (-1, terminal);
     }
 
     // A side-effect-free atom repeat has only an endpoint and resource status.
     // Capture/history owners stay at the caller; a negative endpoint is a miss.
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunClassRepeat(Utf8SliceProgram program, int repeatIndex,
-        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation, bool minimumOnly = false)
+        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation, bool minimumOnly = false,
+        bool checkExitDeadline = true)
     {
         var repeat = program.Instructions[repeatIndex];
         var atom = program.Instructions[repeatIndex + 1];
@@ -876,7 +878,7 @@ internal static partial class Utf8SliceRunner
             ? GetUnfoldedAsciiRange(atom, out asciiLast) : -1;
         if (asciiFirst >= 0)
         {
-            var ascii = RunUnboundedAsciiRange(input, start, (byte)asciiFirst, asciiLast, ref invocation);
+            var ascii = RunUnboundedAsciiRange(input, start, (byte)asciiFirst, asciiLast, ref invocation, checkExitDeadline);
             return ascii.EndIndex == start && minimum != 0 ? (-1, ascii.Breach) : ascii;
         }
         byte first = (byte)'\n', second = (byte)'\n';
@@ -897,7 +899,7 @@ internal static partial class Utf8SliceRunner
                 if (stop >= 0) { position += stop; break; }
                 position += block.Length;
             }
-            var terminalBreach = invocation.TryChargeInputStep();
+            var terminalBreach = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
             if (terminalBreach != Utf8ExecutionLimitKind.None) return (-1, terminalBreach);
             // With no maximum and minimum at most one, nonempty byte extent
             // suffices; bounded/scalar-counted repeats keep the normal loop.
@@ -932,10 +934,17 @@ internal static partial class Utf8SliceRunner
             position += width;
             count++;
         }
-        var terminal = invocation.TryChargeInputStep();
+        var terminal = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
         if (terminal != Utf8ExecutionLimitKind.None) return (-1, terminal);
         return count >= minimum ? (position, Utf8ExecutionLimitKind.None)
             : (-1, Utf8ExecutionLimitKind.None);
+    }
+
+    private static Utf8ExecutionLimitKind ChargeRepeatBoundary(ref Utf8SliceInvocation invocation, bool checkDeadline)
+    {
+        var breach = invocation.TryChargeStep();
+        if (checkDeadline || breach != Utf8ExecutionLimitKind.None) invocation.Budget.CheckDeadline();
+        return breach;
     }
 
     private static bool CanAcceptEmptyTail(ReadOnlySpan<Utf8SliceInstruction> code, int index)

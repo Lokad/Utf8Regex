@@ -170,7 +170,10 @@ internal static partial class Utf8SliceRunner
         var next = position;
         for (var piece = 0; piece < minimum; piece++)
         {
-            var breach = invocation.TryChargeInputStep();
+            // The starter inspects one byte. The runs still poll ahead of
+            // every buffered scan, and the Count loop polls before verifying
+            // a survivor or publishing an exhausted search.
+            var breach = ChargeRepeatBoundary(ref invocation, checkDeadline: false);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             if (next == input.Length || (uint)(input[next] - first) > (uint)(last - first))
             {
@@ -181,7 +184,7 @@ internal static partial class Utf8SliceRunner
             var afterStarter = ++next;
             for (var index = 2; index < bodyEnd; index += 4)
             {
-                var run = RunClassRepeat(program, index, input, next, ref invocation);
+                var run = RunClassRepeat(program, index, input, next, ref invocation, checkExitDeadline: false);
                 if (run.Breach != Utf8ExecutionLimitKind.None) return run.Breach;
                 if (run.EndIndex < 0)
                 {

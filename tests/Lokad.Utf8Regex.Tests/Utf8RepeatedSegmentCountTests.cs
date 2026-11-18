@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -140,6 +141,28 @@ public sealed class Utf8RepeatedSegmentCountTests
         Assert.True(reads > 0); trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(bytes, live.Token)).MatchTimeout);
         else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(bytes, live.Token)).CancellationToken);
+    }
+
+    [Fact]
+    public void DeadlineExpiresDuringALongCandidateRunBeforeAnotherCheckpoint()
+    {
+        const string pattern = @"(?:[A-Z][a-z]+\s*){2,3}";
+        var input = Encoding.UTF8.GetBytes("A" + new string('b', 524_288) + "Cd");
+        using var regex = Utf8Regex.Compile(pattern, policy: new() { MatchTimeout = TimeSpan.FromMilliseconds(50) });
+        long ticks = 0;
+        ulong lastCheckpoint = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            lastCheckpoint = steps;
+            ticks = 100;
+        });
+        try
+        {
+            Assert.Equal(pattern, Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input)).Pattern);
+            Assert.Equal(64UL, lastCheckpoint);
+        }
+        finally { session.Complete(); }
     }
 
     [Fact]
