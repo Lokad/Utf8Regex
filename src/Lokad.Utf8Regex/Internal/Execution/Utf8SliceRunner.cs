@@ -831,6 +831,16 @@ internal static partial class Utf8SliceRunner
                 if (proofBreach != Utf8ExecutionLimitKind.None) return new(count, proofBreach);
             }
         }
+        // Keep the existing wide delimiter search when it applies. Otherwise
+        // the short window also makes decimal-or-wide-scalar seeking worthwhile.
+        var shortRepeatWindow = whitespaceLiteral < 0 && leadingScalarIndex > 0
+            ? GetShortRepeatLiteralWindow(program, leadingScalarIndex) : default;
+        var seekDecimal = shortRepeatWindow.Min != 0 && leadingAsciiFirst < 0 && IsLeadingDecimalSet(program, leadingScalarIndex);
+        if (seekDecimal)
+        {
+            leadingAsciiFirst = '0';
+            leadingAsciiLast = (byte)'9';
+        }
         var whitespaceWindowEnd = -1;
         var workspace = new AttemptWorkspace();
         try
@@ -839,19 +849,19 @@ internal static partial class Utf8SliceRunner
             {
                 if (leadingAsciiFirst >= 0)
                 {
-                    var seekBreach = TrySeekAsciiCandidate(input, ref position, (byte)leadingAsciiFirst, leadingAsciiLast, ref invocation);
+                    var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leadingAsciiFirst, leadingAsciiLast, seekDecimal, ref invocation);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
-                    if ((leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
+                    if (shortRepeatWindow.Min != 0 ? !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal) :
+                        (leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond))) ||
                         (branchWindow.Min != 0 && !HasAsciiLiteralInWindow(input, position, branchWindow)) ||
                         !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex) :
                             MatchesStraightAsciiPrefix(program, input, position, 0)))
                     {
-                        // Rejecting a necessary prefix advances one admitted ASCII
-                        // scalar. Reuse the bounded filter, which stops at control
-                        // effects; the next search keeps the original work authority.
+                        // The decimal window always retains wider starts. Each
+                        // rejection is therefore at an admitted ASCII scalar.
                         position++;
                         continue;
                     }

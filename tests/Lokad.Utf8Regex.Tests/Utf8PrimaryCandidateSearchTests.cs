@@ -16,8 +16,8 @@ public sealed class Utf8PrimaryCandidateSearchTests
     {
         const string pattern = @"(?<date>\b\d{1,2}/\d{1,2}/\d{2,4}\b)";
         var prefix = new string('1', 512) + "x 😀 ";
-        var input = Encoding.UTF8.GetBytes(prefix + date);
-        var expected = new Utf8CaptureRange(Encoding.UTF8.GetByteCount(prefix), input.Length);
+        var input = Encoding.UTF8.GetBytes(prefix + date + " " + date);
+        var expected = new Utf8CaptureRange(Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(prefix + date));
         using var regex = Utf8Regex.Compile(pattern, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new() { MaxWorkSteps = 800 }
@@ -25,6 +25,7 @@ public sealed class Utf8PrimaryCandidateSearchTests
         using var source = new CancellationTokenSource();
         var captures = new Utf8CaptureRange[2];
         Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(2, regex.Count(input, source.Token));
         Assert.Equal(expected, regex.Match(input, 2, captures, source.Token));
         Assert.Equal(expected, captures[1]);
         using var cursor = regex.CreateMatchCursor(input, 2, source.Token);
