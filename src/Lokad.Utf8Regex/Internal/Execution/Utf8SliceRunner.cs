@@ -430,7 +430,8 @@ internal static partial class Utf8SliceRunner
                 }
             }
             else
-                attempt = RunFrom(program, input, start, captureStarts, captureEnds, ref workspace.Counts, ref workspace.Positions, heads, collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace.Stacks, ref invocation);
+                attempt = RunFrom(program, input, start, captureStarts, captureEnds,
+                    collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace, ref invocation);
             if (attempt.IsMatch && program.RightToLeft)
             {
                 // Mirrored runs record right edges at capture starts and left
@@ -1693,6 +1694,9 @@ internal static partial class Utf8SliceRunner
         internal int[] Positions;
         internal int[] Heads;
         internal ChunkedStacks Stacks;
+        // Attempts unwind every child. The empty buffer retains its admitted
+        // capacity alongside the root tables for the next attempt.
+        internal Utf8InvocationStateBuffer<AssertionContinuation> AssertionContinuations;
         internal bool Initialized;
         private ulong _reservation;
 
@@ -1702,6 +1706,7 @@ internal static partial class Utf8SliceRunner
             Positions = [];
             Heads = [];
             Stacks = default;
+            AssertionContinuations = default;
             Initialized = false;
             _reservation = 0;
         }
@@ -1729,6 +1734,7 @@ internal static partial class Utf8SliceRunner
 
         internal void Release(ref Utf8SliceInvocation invocation)
         {
+            AssertionContinuations.Release(ref invocation);
             Stacks.ReleaseAll(ref invocation);
             invocation.Ledger.Release(_reservation);
             _reservation = 0;

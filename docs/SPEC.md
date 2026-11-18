@@ -674,6 +674,10 @@ cancellation/deadline scope. Captures and control-flow effects remain VM decisio
 
 Bounded literal assertions can avoid child VM storage while still admitting
 their logical assertion depth under the original work, token and deadline scope.
+The scalar workspace can reuse admitted assertion continuation capacity across
+attempts. Each attempt releases nested repeat state and clears borrowed
+references. A memory cursor holds reusable scratch under its working limit
+until exhaustion, failure or disposal.
 
 Copied value cursors have independent positions but share allowance/deadline and
 published map/table reservations; concurrent advancement is unsupported.

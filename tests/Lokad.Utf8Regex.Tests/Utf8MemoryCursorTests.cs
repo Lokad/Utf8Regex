@@ -78,6 +78,32 @@ public sealed class Utf8MemoryCursorTests
             Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex(".").CreateMatchCursor(bytes, start));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FundedAssertionScratchRefundsOnEndOrCancellation(bool cancel)
+    {
+        using var regex = new Utf8Regex(@"(?<=(?<sep>\s))(?<word>[A-Z][a-z]+)(?=\s)");
+        var root = new Root();
+        var account = new Account(root);
+        using var source = new CancellationTokenSource();
+        using var cursor = regex.CreateMatchCursor("😀 Alpha Beta "u8.ToArray(),
+            cancellationToken: source.Token, workingMemoryAllowance: account);
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.True(account.Used > 0);
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.Equal("Beta", Encoding.UTF8.GetString(second.GetValueMemory().Span));
+        if (cancel)
+        {
+            source.Cancel();
+            Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)).CancellationToken);
+        }
+        else Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(0ul, root.Used);
+        Assert.Equal("Alpha", Encoding.UTF8.GetString(first.GetValueMemory().Span));
+        Assert.Equal(" ", Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
+    }
+
     [Fact]
     public async Task SeparateOwnersKeepProgramAndResultFundedAcrossCloseAndAwaits()
     {

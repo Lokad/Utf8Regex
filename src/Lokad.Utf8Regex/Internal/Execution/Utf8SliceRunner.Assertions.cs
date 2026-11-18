@@ -4,7 +4,7 @@ internal static partial class Utf8SliceRunner
 {
     // An assertion borrows its parent's capture trail and owns only its local
     // repeat arrays. Suspending a cursor preserves the exact backtrack boundary.
-    private struct AssertionCursor
+    internal struct AssertionCursor
     {
         internal AssertionCursor(Utf8SliceProgram program, int start, int[] counts, int[] positions,
             bool requireNonEmpty, bool aligned, int frameBase)
@@ -35,21 +35,23 @@ internal static partial class Utf8SliceRunner
         internal int? RequiredEnd;
     }
 
-    private readonly record struct AssertionContinuation(
+    internal readonly record struct AssertionContinuation(
         AssertionCursor Parent, int FrameMark, int JournalMark, int TrailMark, bool Positive);
 
-    private static Utf8SliceMatchOutcome RunFrom(
+    internal static Utf8SliceMatchOutcome RunFrom(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int start,
-        int[] captureStarts, int[] captureEnds, ref int[] counts, ref int[] positions, int[] balanceHeads,
+        int[] captureStarts, int[] captureEnds,
         bool collectHistory, bool requireNonEmpty, bool startIsScalarBoundary,
-        ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation)
+        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation)
     {
+        ref var stacks = ref workspace.Stacks;
+        ref var continuations = ref workspace.AssertionContinuations;
+        var balanceHeads = workspace.Heads;
         // Only the complete root program may discard terminal rewind choices.
         // Assertion segments can still need them to satisfy RequiredEnd.
         var terminalClassRepeat = CanRunTerminalClassRepeat(program);
-        var current = new AssertionCursor(program, start, counts, positions,
+        var current = new AssertionCursor(program, start, workspace.Counts, workspace.Positions,
             requireNonEmpty, startIsScalarBoundary, stacks.FrameCount);
-        var continuations = new Utf8InvocationStateBuffer<AssertionContinuation>();
         var resumeFailure = false;
         try
         {
@@ -191,9 +193,8 @@ internal static partial class Utf8SliceRunner
             // Only the root can acquire deferred tables; children retain their
             // existing independently released arrays. Keep root storage reusable
             // after success, failure and interruption of an assertion child.
-            counts = current.Counts;
-            positions = current.Positions;
-            continuations.Release(ref invocation);
+            workspace.Counts = current.Counts;
+            workspace.Positions = current.Positions;
         }
     }
 

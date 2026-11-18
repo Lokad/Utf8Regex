@@ -1,6 +1,5 @@
 using System.Text;
 using System.Runtime.CompilerServices;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -152,11 +151,6 @@ public sealed class Utf8WideRepeatStateTests
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 
-    private delegate Utf8SliceMatchOutcome RunSeeded(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int start, int[] starts, int[] ends, ref int[] counts, ref int[] positions, int[] heads,
-        bool history, bool nonempty, bool aligned, ref Utf8SliceRunner.ChunkedStacks stacks,
-        ref Utf8SliceInvocation invocation);
-
     [Theory]
     [InlineData(4294967294L)] [InlineData(4294967295L)]
     public void LargestUnboundedMinimumFinishesOptionalEmptyPhaseWithoutReinitializing(long count)
@@ -187,19 +181,20 @@ public sealed class Utf8WideRepeatStateTests
 
     private static Utf8SliceMatchOutcome RunAtCount(Utf8SliceProgram program, long count, ReadOnlySpan<byte> input, bool nonempty, int start = 0)
     {
-        var run = typeof(Utf8SliceRunner).GetMethod("RunFrom", BindingFlags.Static | BindingFlags.NonPublic)!
-            .CreateDelegate<RunSeeded>();
         var invocation = new Utf8SliceInvocation(new(1000, 128, 1000000), Regex.InfiniteMatchTimeout, default);
-        var stacks = new Utf8SliceRunner.ChunkedStacks();
-        int[] counts = [unchecked((int)count)], positions = [0];
+        var workspace = new Utf8SliceRunner.AttemptWorkspace
+        {
+            Counts = [unchecked((int)count)],
+            Positions = [0],
+        };
         try
         {
-            return run(program, input, start, [], [], ref counts, ref positions, [],
-                false, nonempty, true, ref stacks, ref invocation);
+            return Utf8SliceRunner.RunFrom(program, input, start, [], [],
+                false, nonempty, true, ref workspace, ref invocation);
         }
         finally
         {
-            stacks.ReleaseAll(ref invocation);
+            workspace.Release(ref invocation);
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         }
     }
