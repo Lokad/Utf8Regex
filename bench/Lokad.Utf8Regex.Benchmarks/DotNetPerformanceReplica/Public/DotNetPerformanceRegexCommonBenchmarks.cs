@@ -51,8 +51,7 @@ public class DotNetPerformanceRegexCommonBenchmarks
             "email-miss" => ("ops.dispatch@northwind-control.net#", string.Empty, @"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,12}|[0-9]{1,3})(\]?)$"),
             "date-match" => ("Today is 11/18/2019 and tomorrow is 11/19/2019.", string.Empty, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b"),
             "date-miss" => ("Today is 11/18/201A and tomorrow is 11/19/201A.", string.Empty, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b"),
-            "ip-match" => ("012.200.033.199", string.Empty, @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])"),
-            "ip-miss" => ("012.200.033.19A", string.Empty, @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])"),
+            "ip-match" or "ip-miss" => ResolveSharedIpCase(CaseId),
             "uri-match" => ("https://atlas.example.org/reports/export?id=42", string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?"),
             "uri-miss" => ("https://a https://b", string.Empty, @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?"),
             "matches-set" => (DotNetPerformanceRegexData.CommonSearchText, string.Empty, @"\w{10,}"),
@@ -71,6 +70,12 @@ public class DotNetPerformanceRegexCommonBenchmarks
         _replacementUtf8 = Encoding.UTF8.GetBytes(_replacement);
         _regex = new Regex(pattern, Options, Regex.InfiniteMatchTimeout);
         _utf8Regex = new Utf8Regex(pattern, options: Options);
+    }
+
+    private static (string Input, string Replacement, string Pattern) ResolveSharedIpCase(string caseId)
+    {
+        var subject = BenchmarkSubjectDefinitions.Get("common/" + caseId);
+        return (subject.Input, string.Empty, subject.Pattern);
     }
 
     [Benchmark(Baseline = true)]

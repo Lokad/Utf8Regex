@@ -46,6 +46,10 @@ internal static class BenchmarkSubjectDefinitions
             IpPattern,
             "012.200.033.199",
             "Shared definition common/ip-match"),
+        "common/ip-miss" => new(
+            IpPattern,
+            "012.200.033.1AA",
+            "Shared definition common/ip-miss"),
         "industry/mariomka-email-count" => new(
             MailEmailPattern,
             MailNetworkCorpus,
