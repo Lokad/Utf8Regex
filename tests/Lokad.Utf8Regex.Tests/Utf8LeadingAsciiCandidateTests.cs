@@ -438,14 +438,17 @@ public sealed class Utf8LeadingAsciiCandidateTests
         Assert.Equal(new Regex(pattern).Count(text), regex.Count(input, live.Token));
     }
 
-    [Fact]
-    public void BranchedStartSkipsSparseInputUnderAFiniteWorkLimit()
+    [Theory]
+    [InlineData(false, 512u)]
+    [InlineData(true, 6000u)]
+    public void BranchedStartSkipsRejectedPrefixesUnderAFiniteWorkLimit(bool falseDigitStarts, uint work)
     {
         const string octet = @"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
-        var input = Encoding.UTF8.GetBytes(new string('x', 32763) + "😀 123.17.24.25");
+        var prefix = falseDigitStarts ? string.Concat(Enumerable.Repeat("1x", 2048)) : new string('x', 32763);
+        var input = Encoding.UTF8.GetBytes(prefix + "😀 123.17.24.25");
         using var regex = Utf8Regex.Compile(@"(?:" + octet + @"\.){3}" + octet, policy: new()
         {
-            ResourcePolicy = Funded with { MaxWorkSteps = 512 }
+            ResourcePolicy = Funded with { MaxWorkSteps = work }
         });
         using var live = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(input, live.Token));

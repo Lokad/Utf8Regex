@@ -524,13 +524,25 @@ internal static partial class Utf8SliceRunner
             if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
             {
                 var minimum = entry.RepeatMinimum;
-                if (minimum == 0) return true;
+                var singleAtom = entry.A == index + 2 && entry.A < code.Length &&
+                    code[index + 1] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == index - 1 &&
+                    code[entry.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == entry.B;
+                if (minimum == 0)
+                {
+                    if (!singleAtom || entry.RepeatMaximum != 1) return true;
+                    var first = GetUnfoldedAsciiRange(code[index], out var last);
+                    if (first < 0) return true;
+                    index = entry.A + 1;
+                    // An optional ASCII atom can consume one byte or leave the
+                    // start unchanged. Reject only if neither continuation fits.
+                    if (position < input.Length && (uint)(input[position] - first) <= (uint)(last - first) &&
+                        MayMatchBranchedAsciiPrefix(program, input, position + 1, index, ref remaining))
+                        return true;
+                    continue;
+                }
                 // A required body always starts here. After a nontrivial loop,
                 // its end stays unknown. Skip only a proved fixed-width atom.
-                if (minimum != entry.RepeatMaximum || minimum > remaining || entry.A != index + 2 ||
-                    entry.A >= code.Length ||
-                    code[index + 1] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } loop || loop.A != index - 1 ||
-                    code[entry.A] is not { Kind: Utf8SliceInstructionKind.RepeatExit } exit || exit.A != entry.B)
+                if (minimum != entry.RepeatMaximum || minimum > remaining || !singleAtom)
                     continue;
                 width = (int)minimum;
                 remaining -= width;
