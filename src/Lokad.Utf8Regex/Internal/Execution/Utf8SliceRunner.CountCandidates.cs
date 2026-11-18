@@ -207,24 +207,42 @@ internal static partial class Utf8SliceRunner
         byte first, byte last, ref Utf8SliceInvocation invocation)
         => TrySeekLeadingByte(input, ref position, first, last, false, ref invocation);
 
+    private static ReadOnlySpan<byte> GetExactLeadingLiteral(Utf8SliceProgram program, int index, Span<byte> storage)
+    {
+        // The start proof already skipped the mandatory zero-width prefix.
+        // Only contiguous exact ASCII literals certify a fixed byte prefix.
+        var code = program.Instructions.AsSpan(index);
+        var length = 0;
+        foreach (var atom in code[..Math.Min(code.Length, storage.Length)])
+        {
+            if (atom is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) break;
+            storage[length++] = (byte)atom.A;
+        }
+        return length >= 3 ? storage[..length] : default;
+    }
+
     private static Utf8ExecutionLimitKind TrySeekLeadingByte(ReadOnlySpan<byte> input, ref int position,
-        byte first, byte last, bool decimalSet, ref Utf8SliceInvocation invocation)
+        byte first, byte last, bool decimalSet, ref Utf8SliceInvocation invocation, scoped ReadOnlySpan<byte> exactPrefix = default)
     {
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
         {
-            var relative = IndexOfLeadingByte(input[position..], first, last, decimalSet);
+            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(input[position..], first, last, decimalSet)
+                : input[position..].IndexOf(exactPrefix);
             position = relative < 0 ? -1 : position + relative;
             return Utf8ExecutionLimitKind.None;
         }
-        while (position < input.Length)
+        // Include literal lookahead inside each charged block. The next
+        // block starts at the first byte that could not start a full prefix.
+        var overlap = exactPrefix.IsEmpty ? 0 : exactPrefix.Length - 1;
+        while (position < input.Length - overlap)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Math.Min(2048, input.Length - position);
             var block = input.Slice(position, length);
-            var relative = IndexOfLeadingByte(block, first, last, decimalSet);
+            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(block, first, last, decimalSet) : block.IndexOf(exactPrefix);
             if (relative >= 0) { position += relative; return Utf8ExecutionLimitKind.None; }
-            position += length;
+            position += length - overlap;
         }
         position = -1;
         return Utf8ExecutionLimitKind.None;

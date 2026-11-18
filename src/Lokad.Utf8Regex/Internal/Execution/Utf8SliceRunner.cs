@@ -546,6 +546,9 @@ internal static partial class Utf8SliceRunner
         }
         var shortRepeatWindow = leadingScalarIndex > 0 && leading >= 0
             ? GetShortRepeatLiteralWindow(program, leadingScalarIndex) : default;
+        Span<byte> prefixStorage = stackalloc byte[16];
+        var leadingPrefix = wideInput && second >= 0 && !candidatePlan.CanGuideFallbackStarts
+            ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage) : default;
         if (leading >= 0 || seekLiteral || classLiteral >= 0)
         {
             // A miss can avoid local scratch, but not an enclosing storage loan.
@@ -580,9 +583,10 @@ internal static partial class Utf8SliceRunner
             }
             if (leading >= 0 && ((uint)position >= (uint)input.Length ||
                 (uint)(input[position] - leading) > (uint)(leadingLast - leading) &&
-                !(seekDecimal && input[position] is >= 0xc2 and <= 0xf4)))
+                !(seekDecimal && input[position] is >= 0xc2 and <= 0xf4) ||
+                !leadingPrefix.IsEmpty && !input[position..].StartsWith(leadingPrefix)))
             {
-                var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leading, leadingLast, seekDecimal, ref invocation);
+                var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leading, leadingLast, seekDecimal, ref invocation, leadingPrefix);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
@@ -602,7 +606,7 @@ internal static partial class Utf8SliceRunner
             invocation.Budget.ThrowIfCancellationRequested();
             // Charge even rejected neighbours: dense false heads must retain
             // bounded work and the original interruption authority.
-            if (leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
+            if (leadingPrefix.IsEmpty && leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                 (uint)(input[position + 1] - second) > (uint)(secondLast - second)))
                 continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
@@ -841,6 +845,10 @@ internal static partial class Utf8SliceRunner
             leadingAsciiFirst = '0';
             leadingAsciiLast = (byte)'9';
         }
+        Span<byte> prefixStorage = stackalloc byte[16];
+        var leadingPrefix = input.Length - fromByte >= 256 && whitespaceLiteral < 0 && leadingAsciiSecond >= 0
+            ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage)
+            : default;
         var whitespaceWindowEnd = -1;
         var workspace = new AttemptWorkspace();
         try
@@ -849,12 +857,12 @@ internal static partial class Utf8SliceRunner
             {
                 if (leadingAsciiFirst >= 0)
                 {
-                    var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leadingAsciiFirst, leadingAsciiLast, seekDecimal, ref invocation);
+                    var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leadingAsciiFirst, leadingAsciiLast, seekDecimal, ref invocation, leadingPrefix);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                     if (shortRepeatWindow.Min != 0 ? !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal) :
-                        (leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
+                        (leadingPrefix.IsEmpty && leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond))) ||
                         (branchWindow.Min != 0 && !HasAsciiLiteralInWindow(input, position, branchWindow)) ||
                         !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex) :

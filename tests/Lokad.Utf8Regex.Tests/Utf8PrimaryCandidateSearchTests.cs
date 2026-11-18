@@ -9,6 +9,32 @@ public sealed class Utf8PrimaryCandidateSearchTests
     private const string Pattern = "(?<hit>A.{1,2}B|B.{1,2}A|A.{3,4}B|B.{3,4}A)";
 
     [Theory]
+    [InlineData(2043)]
+    [InlineData(2044)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    public void ExactLeadingLiteralCrossesSearchBlocksAndPreservesBoundaryContext(int offset)
+    {
+        var text = new string('a', offset - 1) + " await Xéawait Y 😀await Z";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var regex = Utf8Regex.Compile(@"(?<word>\bawait\b)\s+[A-Z]", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128 }
+        });
+        using var source = new CancellationTokenSource();
+        var captures = new Utf8CaptureRange[2];
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(2, regex.Count(input, source.Token));
+        Assert.Equal(new Utf8CaptureRange(offset, offset + 7), regex.Match(input, 0, captures, source.Token));
+        Assert.Equal(new Utf8CaptureRange(offset, offset + 5), captures[1]);
+        using var cursor = regex.CreateMatchCursor(input, offset + 1, source.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(input.Length - 7, match.Value.StartOffsetInBytes);
+        Assert.Equal(input.Length, match.Value.EndOffsetInBytes);
+        Assert.False(cursor.MoveNext(out _));
+    }
+
+    [Theory]
     [InlineData("1/2/03")]
     [InlineData("𝟡1/2/03")]
     [InlineData("1𝟡/2/03")]
