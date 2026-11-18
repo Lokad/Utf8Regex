@@ -47,7 +47,7 @@ internal static class Utf8SearchDiagnosticReports
                 regex.Inspection.PreparedRegex.SearchPlan.Kind.ToString(),
                 regex.Inspection.PreparedRegex.SearchPlan.StructuralSearchPlan.RequiresCandidateEndCoverage,
                 regex.Inspection.PreparedRegex.SearchPlan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Window,
-                session.ExecutionRoute.Format(),
+                FormatRoute(session.ExecutionRoute),
                 session.SearchCandidates,
                 session.FixedCheckRejects,
                 session.VerifierInvocations,
@@ -65,6 +65,24 @@ internal static class Utf8SearchDiagnosticReports
         }
     }
 
+    private static string FormatRoute(Utf8ExecutionRoute route) => route switch
+    {
+        Utf8ExecutionRoute.None => "<none>",
+        Utf8ExecutionRoute.CompiledFusedAsciiLiteralFamilyCount => "compiled_fused_ascii_literal_family_count",
+        Utf8ExecutionRoute.CompiledFusedAsciiLiteralCount => "compiled_fused_ascii_literal_count",
+        Utf8ExecutionRoute.CompiledFusedUtf8LiteralCount => "compiled_fused_utf8_literal_count",
+        Utf8ExecutionRoute.CompiledFusedUtf8LiteralFamilyCount => "compiled_fused_utf8_literal_family_count",
+        Utf8ExecutionRoute.RequiredPrefilterReject => "required_prefilter_reject",
+        Utf8ExecutionRoute.FallbackDirectRegex => "fallback_direct_regex",
+        Utf8ExecutionRoute.LiteralFamilyHybridEarliestAutomaton => "literal_family_hybrid_earliest_automaton",
+        Utf8ExecutionRoute.LiteralFamilyPreparedNonOverlapping => "literal_family_prepared_non_overlapping",
+        Utf8ExecutionRoute.LiteralFamilyPreparedWithRequirementsLengthOnly => "literal_family_prepared_with_requirements_length_only",
+        Utf8ExecutionRoute.LiteralFamilyPreparedWithRequirementsMatch => "literal_family_prepared_with_requirements_match",
+        Utf8ExecutionRoute.LiteralFamilyPackedNibbleSimdCount => "literal_family_packed_nibble_simd_count",
+        Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix => "fallback_direct_anchored_ascii_literal_prefix",
+        Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix => "fallback_direct_anchored_ascii_literal_suffix",
+        _ => throw new InvalidOperationException("Unknown UTF-8 execution route.")
+    };
 }
 
 /// <summary>Reports the result, selected execution route, and search counters for a diagnostic match probe.</summary>
