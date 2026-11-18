@@ -58,27 +58,26 @@ internal sealed class Utf8GroupedLiteralSpanTable
 
     public int[] AbsentLengthsInLiteral { get; }
 
-    public static Utf8GroupedLiteralSpanTable? TryCreate(Utf8ExecutionTree? tree, Utf8SliceProgram captureProgram)
+    public static Utf8GroupedLiteralSpanTable? TryCreate(Utf8TreeNode? root, Utf8SliceProgram captureProgram)
     {
         // Stateful declarations use the owned capture-history engine.
         // No slot renumbering or independent numbering scan is needed here.
         if (captureProgram.HasBalancing || captureProgram.HasSharedCaptureDeclarations || captureProgram.HasExplicitCaptureNumbers) return null;
         using var construction = Utf8ConstructionScope.Enter();
         using var storage = Utf8ConstructionSession.Create(construction.Budget);
-        var result = Create(tree, storage);
+        var result = Create(root, storage);
         if (result is not null) { storage.Complete(); construction.Complete(); }
         return result;
 
-        static Utf8GroupedLiteralSpanTable? Create(Utf8ExecutionTree? tree, Utf8ConstructionSession storage)
+        static Utf8GroupedLiteralSpanTable? Create(Utf8TreeNode? root, Utf8ConstructionSession storage)
         {
-            if (tree?.Root is not { Kind: Utf8ExecutionNodeKind.Capture, CaptureNumber: 0 } root ||
-                root.Children.Count != 1)
+            if (root is not { Kind: Utf8TreeNodeKind.Capture, M: 0, ChildCount: 1 })
             {
                 return null;
             }
 
             var walker = SpanWalker.Create(storage, 0);
-            if (!walker.TryWalk(storage, root.Children[0], inLoop: false, inAlternate: false))
+            if (!walker.TryWalk(storage, root.Child(0), inLoop: false, inAlternate: false))
             {
                 return null;
             }
@@ -176,9 +175,9 @@ internal sealed class Utf8GroupedLiteralSpanTable
         internal int LoopStart = -1;
         internal int LoopLength;
 
-        private struct Frame(Utf8ExecutionNode node, SpanWalker? walker, bool inLoop, bool inAlternate, int initialPosition)
+        private struct Frame(Utf8TreeNode node, SpanWalker? walker, bool inLoop, bool inAlternate, int initialPosition)
         {
-            internal readonly Utf8ExecutionNode Node = node;
+            internal readonly Utf8TreeNode Node = node;
             internal SpanWalker? Walker = walker;
             internal readonly bool InLoop = inLoop;
             internal readonly bool InAlternate = inAlternate;
@@ -190,7 +189,7 @@ internal sealed class Utf8GroupedLiteralSpanTable
             internal int End;
         }
 
-        internal bool TryWalk(Utf8ConstructionSession storage, Utf8ExecutionNode node, bool inLoop, bool inAlternate)
+        internal bool TryWalk(Utf8ConstructionSession storage, Utf8TreeNode node, bool inLoop, bool inAlternate)
         {
             var budget = storage.Budget;
             using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(node, this, inLoop, inAlternate, 0));
@@ -226,55 +225,54 @@ internal sealed class Utf8GroupedLiteralSpanTable
             var node = frame.Node;
             switch (node.Kind)
             {
-                case Utf8ExecutionNodeKind.One:
+                case Utf8TreeNodeKind.One:
                     walker.Position++;
                     return true;
-                case Utf8ExecutionNodeKind.Multi:
-                    if (node.Text is null) return false;
-                    walker.Position += node.Text.Length;
+                case Utf8TreeNodeKind.Multi:
+                    walker.Position += node.Str?.Length ?? 0;
                     return true;
-                case Utf8ExecutionNodeKind.Set:
+                case Utf8TreeNodeKind.Set:
                     if (!Utf8ScalarAsciiProjector.TryProjectAsciiDefinition(node.ScalarClass, out var set) || set.IsEmpty)
                         return false;
                     walker.Position++;
                     return true;
-                case Utf8ExecutionNodeKind.Concatenate:
-                    if (frame.Index < node.Children.Count)
-                        child = new(node.Children[frame.Index++], walker, frame.InLoop, frame.InAlternate, 0);
+                case Utf8TreeNodeKind.Concatenate:
+                    if (frame.Index < node.ChildCount)
+                        child = new(node.Child(frame.Index++), walker, frame.InLoop, frame.InAlternate, 0);
                     return true;
-                case Utf8ExecutionNodeKind.Group:
+                case Utf8TreeNodeKind.Group:
                     if (frame.Stage == 0)
                     {
-                        if (node.Children.Count != 1) return false;
+                        if (node.ChildCount != 1) return false;
                         frame.Stage = 1;
-                        child = new(node.Children[0], walker, frame.InLoop, frame.InAlternate, 0);
+                        child = new(node.Child(0), walker, frame.InLoop, frame.InAlternate, 0);
                     }
                     return true;
-                case Utf8ExecutionNodeKind.Capture:
+                case Utf8TreeNodeKind.Capture:
                     if (frame.Stage == 0)
                     {
                         budget.ChargeWork((ulong)walker.Groups.Count);
-                        if (node.CaptureNumber <= 0 || node.Children.Count != 1 || walker.Groups.IndexOf(node.CaptureNumber) >= 0) return false;
+                        if (node.M <= 0 || node.ChildCount != 1 || walker.Groups.IndexOf(node.M) >= 0) return false;
                         frame.Start = walker.Position;
                         frame.Stage = 1;
-                        child = new(node.Children[0], walker, frame.InLoop, frame.InAlternate, 0);
+                        child = new(node.Child(0), walker, frame.InLoop, frame.InAlternate, 0);
                     }
                     else
                     {
-                        walker.Groups.Add(node.CaptureNumber);
+                        walker.Groups.Add(node.M);
                         walker.Starts.Add(frame.Start);
                         walker.Lengths.Add(walker.Position - frame.Start);
                         walker.InLoop.Add(frame.InLoop);
                     }
                     return true;
-                case Utf8ExecutionNodeKind.Alternate:
+                case Utf8TreeNodeKind.Alternate:
                     if (frame.Stage == 0)
                     {
-                        if (node.Children.Count == 0 || walker.LoopSeen) return false;
+                        if (node.ChildCount == 0 || walker.LoopSeen) return false;
                         frame.Start = walker.Position;
                         frame.BaseCount = walker.Groups.Count;
                         frame.Stage = 1;
-                        child = new(node.Children[0], walker, frame.InLoop, true, 0);
+                        child = new(node.Child(0), walker, frame.InLoop, true, 0);
                         return true;
                     }
                     if (frame.Stage == 1)
@@ -289,31 +287,31 @@ internal sealed class Utf8GroupedLiteralSpanTable
                         if (scratch.Position != frame.End || !walker.BranchMatches(scratch, frame.BaseCount)) return false;
                         frame.Index++;
                     }
-                    if (frame.Index < node.Children.Count)
+                    if (frame.Index < node.ChildCount)
                     {
                         frame.Stage = 2;
-                        child = new(node.Children[frame.Index], null, frame.InLoop, true, frame.Start);
+                        child = new(node.Child(frame.Index), null, frame.InLoop, true, frame.Start);
                     }
                     return true;
-                case Utf8ExecutionNodeKind.Loop:
-                case Utf8ExecutionNodeKind.LazyLoop:
+                case Utf8TreeNodeKind.Loop:
+                case Utf8TreeNodeKind.Lazyloop:
                     if (frame.Stage == 0)
                     {
-                        if (walker.LoopSeen || frame.InLoop || frame.InAlternate || node.Min != 0 || node.Max != 1 || node.Children.Count != 1) return false;
+                        if (walker.LoopSeen || frame.InLoop || frame.InAlternate || node.M != 0 || node.N != 1 || node.ChildCount != 1) return false;
                         walker.LoopSeen = true;
                         walker.LoopStart = walker.Position;
                         frame.Stage = 1;
-                        child = new(node.Children[0], walker, true, false, 0);
+                        child = new(node.Child(0), walker, true, false, 0);
                         return true;
                     }
                     walker.LoopLength = walker.Position - walker.LoopStart;
                     return walker.LoopLength != 0;
-                case Utf8ExecutionNodeKind.Bol:
-                case Utf8ExecutionNodeKind.Eol:
-                case Utf8ExecutionNodeKind.Beginning:
-                case Utf8ExecutionNodeKind.Start:
-                case Utf8ExecutionNodeKind.EndZ:
-                case Utf8ExecutionNodeKind.End:
+                case Utf8TreeNodeKind.Bol:
+                case Utf8TreeNodeKind.Eol:
+                case Utf8TreeNodeKind.Beginning:
+                case Utf8TreeNodeKind.Start:
+                case Utf8TreeNodeKind.EndZ:
+                case Utf8TreeNodeKind.End:
                     return true;
                 default:
                     return false;

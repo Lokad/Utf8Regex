@@ -299,11 +299,6 @@ public sealed class Utf8ScalarClassRepresentationTests
         Assert.Null(node.Str);
         Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(4, 4), Utf8OwnedFindOptimizations.ComputeByteWidth(node));
         Assert.NotNull(Utf8OwnedTreeSliceLowerer.TryLower(tree, RegexOptions.CultureInvariant));
-        var semantic = new Utf8SemanticRegex("large class", node.Options, "large class", node.Options, tree);
-        var execution = Utf8ExecutionTreeLowerer.Lower(semantic);
-        Assert.NotNull(execution);
-        Assert.Same(node.ScalarClass, execution.Root.Children[0].Payload);
-        Assert.Equal(string.Empty, execution.Root.Children[0].Text);
         foreach (var lazy in new[] { false, true })
         {
             var repeat = Utf8TreeNode.CreateSetRepeat(node, node.Options, 2, 3, lazy);

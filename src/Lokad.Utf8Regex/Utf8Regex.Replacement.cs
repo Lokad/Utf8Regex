@@ -215,14 +215,10 @@ public sealed partial class Utf8Regex
 
     private Utf8ReplacementPlan RewriteWholeLiteralCapturePlan(Utf8ReplacementPlan plan)
     {
-        if (_groupNumbers.Length <= 1) return plan;
+        var captureNumber = _wholeLiteralCaptureNumber;
+        if (captureNumber == 0) return plan;
         using var owner = Utf8ConstructionScope.Enter();
         using var storage = Utf8ConstructionSession.Create(owner.Budget);
-        var captureNumber = GetWholeLiteralCaptureNumber(storage);
-        if (captureNumber <= 0)
-        {
-            return plan;
-        }
 
         Utf8ConstructionBuffer<Utf8ReplacementInstruction>? rewritten = null;
         for (var i = 0; i < plan.Instructions.Count; i++)
@@ -249,39 +245,20 @@ public sealed partial class Utf8Regex
         return result;
     }
 
-    private int GetWholeLiteralCaptureNumber()
+    private static int GetWholeLiteralCaptureNumber(Utf8TreeNode? root)
     {
+        if (root is not { Kind: Utf8TreeNodeKind.Capture, ChildCount: 1 }) return 0;
+
         using var owner = Utf8ConstructionScope.Enter();
         using var storage = Utf8ConstructionSession.Create(owner.Budget);
-        return GetWholeLiteralCaptureNumber(storage);
-    }
-
-    private int GetWholeLiteralCaptureNumber(Utf8ConstructionSession storage)
-    {
-        if (_groupNumbers.Length == 2 &&
-            Pattern.Length >= 3 &&
-            Pattern[0] == '(' &&
-            Pattern[^1] == ')' &&
-            IsPlainLiteralPattern(storage.Budget, Pattern.AsSpan(1, Pattern.Length - 2)))
-        {
-            return 1;
-        }
-
-        if (_preparedRegex.ExecutionTree?.Root is not { } root ||
-            root.Kind != Utf8ExecutionNodeKind.Capture ||
-            root.Children.Count != 1)
-        {
-            return 0;
-        }
-
-        return TryGetWholeLiteralCaptureNumber(storage, root.Children[0], out var captureNumber)
+        return TryGetWholeLiteralCaptureNumber(storage, root.Child(0), out var captureNumber)
             ? captureNumber
             : 0;
     }
 
-    private readonly record struct ReplacementCaptureFrame(Utf8ExecutionNode Node, int NextChild);
+    private readonly record struct ReplacementCaptureFrame(Utf8TreeNode Node, int NextChild);
 
-    private static bool TryGetWholeLiteralCaptureNumber(Utf8ConstructionSession storage, Utf8ExecutionNode node, out int captureNumber)
+    private static bool TryGetWholeLiteralCaptureNumber(Utf8ConstructionSession storage, Utf8TreeNode node, out int captureNumber)
     {
         var frames = storage.Buffer<ReplacementCaptureFrame>();
         var success = false;
@@ -298,17 +275,18 @@ public sealed partial class Utf8Regex
                 {
                     switch (current.Kind)
                     {
-                        case Utf8ExecutionNodeKind.Capture when current.Children.Count == 1:
-                        case Utf8ExecutionNodeKind.Group when current.Children.Count == 1:
+                        case Utf8TreeNodeKind.Capture when current.ChildCount == 1:
+                        case Utf8TreeNodeKind.Group when current.ChildCount == 1:
                             frames[frames.Count - 1] = frame with { NextChild = 0 };
-                            PushReplacementCaptureFrame(storage.Budget, frames, current.Children[0]);
+                            PushReplacementCaptureFrame(storage.Budget, frames, current.Child(0));
                             continue;
-                        case Utf8ExecutionNodeKind.Concatenate:
-                            Utf8ExecutionNode? child = null;
+                        case Utf8TreeNodeKind.Concatenate:
+                            Utf8TreeNode? child = null;
                             var multiple = false;
-                            foreach (var candidate in current.Children)
+                            for (var i = 0; i < current.ChildCount; i++)
                             {
                                 storage.Budget.ChargeWork(1);
+                                var candidate = current.Child(i);
                                 if (IsZeroWidthBoundaryNode(candidate.Kind)) continue;
                                 if (child is not null) { multiple = true; break; }
                                 child = candidate;
@@ -321,15 +299,15 @@ public sealed partial class Utf8Regex
                             }
                             success = false; number = 0;
                             break;
-                        case Utf8ExecutionNodeKind.One:
-                        case Utf8ExecutionNodeKind.Multi:
+                        case Utf8TreeNodeKind.One:
+                        case Utf8TreeNodeKind.Multi:
                             success = true; number = 0;
                             break;
-                        case Utf8ExecutionNodeKind.Alternate:
-                            if (current.Children.Count > 0)
+                        case Utf8TreeNodeKind.Alternate:
+                            if (current.ChildCount > 0)
                             {
                                 frames[frames.Count - 1] = frame with { NextChild = 1 };
-                                PushReplacementCaptureFrame(storage.Budget, frames, current.Children[0]);
+                                PushReplacementCaptureFrame(storage.Budget, frames, current.Child(0));
                                 continue;
                             }
                             success = true; number = 0;
@@ -339,17 +317,17 @@ public sealed partial class Utf8Regex
                             break;
                     }
                 }
-                else if (current.Kind == Utf8ExecutionNodeKind.Capture)
+                else if (current.Kind == Utf8TreeNodeKind.Capture)
                 {
-                    success &= current.CaptureNumber > 0;
-                    number = success ? current.CaptureNumber : 0;
+                    success &= current.M > 0;
+                    number = success ? current.M : 0;
                 }
-                else if (current.Kind == Utf8ExecutionNodeKind.Alternate)
+                else if (current.Kind == Utf8TreeNodeKind.Alternate)
                 {
-                    if (success && frame.NextChild < current.Children.Count)
+                    if (success && frame.NextChild < current.ChildCount)
                     {
                         frames[frames.Count - 1] = frame with { NextChild = frame.NextChild + 1 };
-                        PushReplacementCaptureFrame(storage.Budget, frames, current.Children[frame.NextChild]);
+                        PushReplacementCaptureFrame(storage.Budget, frames, current.Child(frame.NextChild));
                         continue;
                     }
                     number = 0;
@@ -365,36 +343,22 @@ public sealed partial class Utf8Regex
         return success;
     }
 
-    private static void PushReplacementCaptureFrame(Utf8ConstructionBudget budget, Utf8ConstructionBuffer<ReplacementCaptureFrame> frames, Utf8ExecutionNode node)
+    private static void PushReplacementCaptureFrame(Utf8ConstructionBudget budget, Utf8ConstructionBuffer<ReplacementCaptureFrame> frames, Utf8TreeNode node)
     {
         budget.EnterDepth();
         try { frames.Push(new ReplacementCaptureFrame(node, -1)); }
         catch { budget.LeaveDepth(); throw; }
     }
 
-    private static bool IsZeroWidthBoundaryNode(Utf8ExecutionNodeKind kind)
+    private static bool IsZeroWidthBoundaryNode(Utf8TreeNodeKind kind)
     {
-        return kind is Utf8ExecutionNodeKind.Boundary or
-            Utf8ExecutionNodeKind.NonBoundary or
-            Utf8ExecutionNodeKind.Bol or
-            Utf8ExecutionNodeKind.Eol or
-            Utf8ExecutionNodeKind.Beginning or
-            Utf8ExecutionNodeKind.Start or
-            Utf8ExecutionNodeKind.EndZ or
-            Utf8ExecutionNodeKind.End;
-    }
-
-    private static bool IsPlainLiteralPattern(Utf8ConstructionBudget budget, ReadOnlySpan<char> pattern)
-    {
-        foreach (var ch in pattern)
-        {
-            budget.ChargeWork(1);
-            if (Utf8RegexSyntax.IsRegexMetaCharacter(ch))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return kind is Utf8TreeNodeKind.Boundary or
+            Utf8TreeNodeKind.NonBoundary or
+            Utf8TreeNodeKind.Bol or
+            Utf8TreeNodeKind.Eol or
+            Utf8TreeNodeKind.Beginning or
+            Utf8TreeNodeKind.Start or
+            Utf8TreeNodeKind.EndZ or
+            Utf8TreeNodeKind.End;
     }
 }

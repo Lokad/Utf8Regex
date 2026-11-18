@@ -78,7 +78,6 @@ public sealed class Utf8ScalarOnlyPreparationTests
         var regex = new Utf8Regex("^cat", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var prepared = regex.Inspection.PreparedRegex;
         Assert.True(prepared.AnchoredLiteral.HasValue);
-        Assert.NotNull(prepared.ExecutionTree);
         Assert.Equal(1, regex.Count("cat cat"u8));
         Assert.Equal(3, (regex.Match("cat cat"u8).EndOffsetInBytes - regex.Match("cat cat"u8).StartOffsetInBytes));
     }
@@ -89,7 +88,6 @@ public sealed class Utf8ScalarOnlyPreparationTests
         Assert.Equal(NativeExecutionKind.FallbackRegex, prepared.ExecutionKind);
         Assert.False(prepared.AnchoredLiteral.HasValue);
         Assert.NotNull(prepared.ScalarProgram);
-        Assert.Null(prepared.ExecutionTree);
         Assert.Same(prepared.SemanticRegex.CaptureCatalog, prepared.ScalarProgram.CaptureCatalog);
     }
 }

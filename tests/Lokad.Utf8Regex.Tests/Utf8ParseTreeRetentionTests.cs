@@ -11,6 +11,8 @@ public sealed class Utf8ParseTreeRetentionTests
 {
     [Theory]
     [InlineData("abc", false)] [InlineData("abc", true)]
+    [InlineData("^((ab)c)", false)] [InlineData("^((ab)c)", true)]
+    [InlineData("(?<word>cat|horse)", false)] [InlineData("(?<word>cat|horse)", true)]
     [InlineData("(?<n>.)", false)] [InlineData("(?<n>.)", true)]
     [InlineData("(?<900>😀)\\k<900>", false)] [InlineData("(?<900>😀)\\k<900>", true)]
     [InlineData("[\\p{L}-[AE]]+", false)] [InlineData("[\\p{L}-[AE]]+", true)]

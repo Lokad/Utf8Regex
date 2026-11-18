@@ -12,13 +12,17 @@ internal static class Utf8FrontEnd
         => Compile(pattern, options, options);
 
     internal static Utf8PreparedRegex Compile(string pattern, RegexOptions options, RegexOptions scalarOptions)
-        => Compile(new Utf8ConstructionPattern(pattern), options, scalarOptions);
+        => Compile(new Utf8ConstructionPattern(pattern), options, scalarOptions, out _);
 
-    internal static Utf8PreparedRegex Compile(Utf8ConstructionPattern pattern, RegexOptions options, RegexOptions scalarOptions)
+    internal static Utf8PreparedRegex Compile(Utf8ConstructionPattern pattern, RegexOptions options,
+        RegexOptions scalarOptions, out Utf8TreeNode? root)
     {
         using var owner = Utf8ConstructionScope.Enter();
         var analysis = Analyze(pattern, options);
         var result = Utf8RegexPreparer.Prepare(analysis, scalarOptions);
+        // The caller may read the root while deriving literal capture facts.
+        // Published preparation holds only the results of those analyses.
+        root = analysis.SemanticRegex.RuntimeTree?.Root;
         owner.Complete();
         return result;
     }

@@ -843,6 +843,9 @@ Compile retains a separate construction token. Other profiles use their document
 creation forms. Construction pre-cancellation wins, nested preparation shares
 the owner, and authority is not retained for execution. Ordinary constructors
 keep fixed backstops; positive construction values tighten them, null keeps them.
+Core derives literal capture metadata from the parser tree during construction.
+Whole-match capture substitution reuses the resulting capture number. The
+compiled expression owns its prepared facts without retaining the parser tree.
 The profiles' caller-funded creation forms delegate byte admission to
 their shared allowance, with an optional additional `MaxBytes`; the other
 backstops below remain. See [program lifetime](SPEC-PYTHONRE.md#construction-and-execution-controls).

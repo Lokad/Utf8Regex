@@ -26,9 +26,10 @@ internal sealed class Utf8RegexProgram
 
     public static Utf8RegexProgram Compile(
         string pattern, RegexOptions options, bool prepareRuntime)
-        => Compile(new Utf8ConstructionPattern(pattern), options, prepareRuntime);
+        => Compile(new Utf8ConstructionPattern(pattern), options, prepareRuntime, out _);
 
-    internal static Utf8RegexProgram Compile(Utf8ConstructionPattern pattern, RegexOptions options, bool prepareRuntime)
+    internal static Utf8RegexProgram Compile(Utf8ConstructionPattern pattern, RegexOptions options,
+        bool prepareRuntime, out Utf8TreeNode? root)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -36,7 +37,7 @@ internal sealed class Utf8RegexProgram
         try
         {
             var effectiveOptions = Utf8RegexSyntax.NormalizeNonSemanticOptions(options);
-            var preparedRegex = Utf8FrontEnd.Compile(pattern, effectiveOptions, options);
+            var preparedRegex = Utf8FrontEnd.Compile(pattern, effectiveOptions, options, out root);
             var compiledEngine = Utf8CompiledEngineSelector.Select(preparedRegex);
             // General patterns execute the scalar program. Fixed numeric policies
             // also keep scalar/search payloads without an unmetered runtime.

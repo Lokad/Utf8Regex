@@ -4,34 +4,6 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-/// <summary>Immutable tree node kinds for the owned R02a slice: concatenation,
-/// ordered alternation, greedy/lazy repetition, captures, scalar literals, ASCII
-/// sets, dots, anchors, word boundaries, shorthand classes, Unicode property
-/// escapes, backreferences, lookarounds,
-/// and empty. Trees are built once and lowered to <see cref="Utf8SliceProgram"/>.</summary>
-internal enum Utf8SliceNodeKind : byte
-{
-    Empty = 0,
-    Literal = 1,
-    Set = 2,
-    Concat = 3,
-    Alternation = 4,
-    Repeat = 5,
-    Capture = 6,
-    Dot = 7,
-    Anchor = 8,
-    Boundary = 9,
-    Shorthand = 10,
-    Backref = 11,
-    Lookahead = 12,
-    Lookbehind = 13,
-    Balance = 14,
-    Atomic = 15,
-    Conditional = 16,
-    CategorySet = 18,
-    Fail = 19,
-}
-
 /// <summary>Unicode shorthand classes for the owned slice. Odd values are
 /// the complements of the preceding even value.</summary>
 internal enum Utf8SliceShorthand : byte
@@ -63,44 +35,44 @@ internal enum Utf8SliceAnchorKind : byte
     Contiguous = 3,
 }
 
-/// <summary>Immutable tree node for the owned R02a slice.</summary>
-internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
+/// <summary>Immutable scalar node lowered into a slice program.</summary>
+internal abstract record Utf8SliceNode
 {
-    internal sealed record EmptyNode() : Utf8SliceNode(Utf8SliceNodeKind.Empty);
-    internal sealed record FailNode() : Utf8SliceNode(Utf8SliceNodeKind.Fail);
+    internal sealed record EmptyNode() : Utf8SliceNode;
+    internal sealed record FailNode() : Utf8SliceNode;
 
-    internal sealed record LiteralNode(int Value, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Literal);
+    internal sealed record LiteralNode(int Value, bool FoldCase) : Utf8SliceNode;
 
-    internal sealed record SetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.Set);
+    internal sealed record SetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, bool FoldCase) : Utf8SliceNode;
 
-    internal sealed record ConcatNode(Utf8SliceNode[] Children) : Utf8SliceNode(Utf8SliceNodeKind.Concat);
+    internal sealed record ConcatNode(Utf8SliceNode[] Children) : Utf8SliceNode;
 
-    internal sealed record AlternationNode(Utf8SliceNode[][] Branches) : Utf8SliceNode(Utf8SliceNodeKind.Alternation);
+    internal sealed record AlternationNode(Utf8SliceNode[][] Branches) : Utf8SliceNode;
 
     // Finite bounds fit uint below UINT_MAX; long.MaxValue alone means unbounded.
-    internal sealed record RepeatNode(Utf8SliceNode Body, long Minimum, long Maximum, bool Lazy) : Utf8SliceNode(Utf8SliceNodeKind.Repeat)
+    internal sealed record RepeatNode(Utf8SliceNode Body, long Minimum, long Maximum, bool Lazy) : Utf8SliceNode
     {
         // Mandatory iterations need not participate in the optional loop's
         // zero-progress guard. Python's REPEAT/UNTIL distinction requires this.
         internal bool GuardEmptyAfterMinimum { get; init; }
     }
 
-    internal sealed record CaptureNode(int Slot, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Capture);
+    internal sealed record CaptureNode(int Slot, Utf8SliceNode Body) : Utf8SliceNode;
 
-    internal sealed record DotNode(bool MatchNewline) : Utf8SliceNode(Utf8SliceNodeKind.Dot);
+    internal sealed record DotNode(bool MatchNewline) : Utf8SliceNode;
 
-    internal sealed record AnchorNode(Utf8SliceAnchorKind Anchor, bool MatchMultiline) : Utf8SliceNode(Utf8SliceNodeKind.Anchor);
+    internal sealed record AnchorNode(Utf8SliceAnchorKind Anchor, bool MatchMultiline) : Utf8SliceNode;
 
     internal sealed record BoundaryNode(bool IsWordBoundary, Utf8SliceWordKind WordKind = Utf8SliceWordKind.Unicode)
-        : Utf8SliceNode(Utf8SliceNodeKind.Boundary)
+        : Utf8SliceNode
     {
         // Same fixed, bounded, invocation-free contract as scalar class predicates.
         internal Func<int, bool>? WordPredicate { get; init; }
     }
 
-    internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode(Utf8SliceNodeKind.Shorthand);
+    internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode;
 
-    internal sealed record BackrefNode(int Slot, bool FoldCase, bool AllowUnmatched) : Utf8SliceNode(Utf8SliceNodeKind.Backref)
+    internal sealed record BackrefNode(int Slot, bool FoldCase, bool AllowUnmatched) : Utf8SliceNode
     {
 
         // An owned profile may supply a bounded simple-scalar lowercase table.
@@ -118,15 +90,15 @@ internal abstract record Utf8SliceNode(Utf8SliceNodeKind Kind)
             owner.Complete(); return result;
         }
     }
-    internal sealed record CategorySetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, CategorySetMember[] Categories, bool FoldCase) : Utf8SliceNode(Utf8SliceNodeKind.CategorySet);
-    internal sealed record LookaheadNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookahead);
-    internal sealed record LookbehindNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode(Utf8SliceNodeKind.Lookbehind)
+    internal sealed record CategorySetNode(byte[] Mask16, bool Negated, Utf8SliceShorthand[] Members, CategorySetMember[] Categories, bool FoldCase) : Utf8SliceNode;
+    internal sealed record LookaheadNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode;
+    internal sealed record LookbehindNode(Utf8SliceNode Body, bool Positive) : Utf8SliceNode
     {
         internal uint? ForwardScalarCount { get; init; }
     }
-    internal sealed record BalanceNode(int PopSlot, int CaptureSlot, Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Balance);
-    internal sealed record AtomicNode(Utf8SliceNode Body) : Utf8SliceNode(Utf8SliceNodeKind.Atomic);
-    internal sealed record ConditionalNode(int TestSlot, Utf8SliceNode YesBody, Utf8SliceNode NoBody, Utf8SliceNode? TestBody) : Utf8SliceNode(Utf8SliceNodeKind.Conditional);
+    internal sealed record BalanceNode(int PopSlot, int CaptureSlot, Utf8SliceNode Body) : Utf8SliceNode;
+    internal sealed record AtomicNode(Utf8SliceNode Body) : Utf8SliceNode;
+    internal sealed record ConditionalNode(int TestSlot, Utf8SliceNode YesBody, Utf8SliceNode NoBody, Utf8SliceNode? TestBody) : Utf8SliceNode;
 }
 
 /// <summary>Flat immutable instruction kinds for the owned slice runner.</summary>
@@ -1472,7 +1444,7 @@ internal static class Utf8SliceLowerer
                     Emit(new(Utf8SliceInstructionKind.CaptureEnd, capture.Slot, frame.Opening, 0, 0));
                     break;
                 default:
-                    throw new ArgumentException($"Unsupported slice node {node.Kind}.", nameof(node));
+                    throw new ArgumentException($"Unsupported slice node {node.GetType().Name}.", nameof(node));
             }
             return false;
         }

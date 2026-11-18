@@ -44,6 +44,7 @@ public sealed partial class Utf8Regex : IDisposable
     internal readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
     private readonly bool _hasCaptures;
     private readonly Utf8GroupedLiteralSpanTable? _groupedLiteralSpanTable;
+    private readonly int _wholeLiteralCaptureNumber;
     private readonly byte[]? _caretAnchoredGroupedLiteralUtf8;
     private readonly Utf8SliceProgram _ownedSliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache;
@@ -79,7 +80,7 @@ public sealed partial class Utf8Regex : IDisposable
             construction.Budget.ChargeWork(1);
             construction.Budget.ReserveBytes(ProgramFixedMetadataBytes);
 
-            _program = Utf8RegexProgram.Compile(pattern, options, prepareRuntime: !HasFiniteExecutionLimits);
+            _program = Utf8RegexProgram.Compile(pattern, options, prepareRuntime: !HasFiniteExecutionLimits, out var root);
             var preparedRegex = _program.PreparedRegex;
             _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);
             _fusedAsciiLiteralCountAnchorOffset =
@@ -128,20 +129,25 @@ public sealed partial class Utf8Regex : IDisposable
             var ownedSliceProgram = preparedRegex.ScalarProgram
                 ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
             _ownedSliceProgram = ownedSliceProgram;
+            var usesLiteralEngine = preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral;
+            var captureRoot = usesLiteralEngine || _anchoredLiteral.HasValue ? root : null;
             _hasCaptures = ownedSliceProgram.GroupCount != 0 &&
-                (preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !preparedRegex.AnchoredLiteral.HasValue ||
-                 HasOwnedCaptures(preparedRegex.ExecutionTree));
+                (captureRoot is null || ContainsCapture(captureRoot));
+            if (usesLiteralEngine && _hasCaptures && !ownedSliceProgram.HasUnicodePatternAtoms &&
+                !HasFiniteExecutionLimits && matchTimeout == Regex.InfiniteMatchTimeout && !UsesRightToLeft())
+            {
+                _wholeLiteralCaptureNumber = GetWholeLiteralCaptureNumber(captureRoot);
+            }
             // Grouped literal metadata still proves replacement eligibility and an
             // anchored value-cursor shortcut. Full capture snapshots use the byte
             // cursor, independently of this remaining native preparation.
             var scalarCaptureProjection = pattern.IsUtf8 || HasFiniteExecutionLimits || matchTimeout != Regex.InfiniteMatchTimeout ||
                 _hasCaptures && ownedSliceProgram.HasUnicodePatternAtoms;
-            var hasNativeCaptureTree = preparedRegex.ExecutionTree is not null && !UsesRightToLeft();
             // The anchored prefix table also supplies a value-cursor proof before
             // scalar selection. Preserve that dependency and its existing fences.
-            _groupedLiteralSpanTable = _hasCaptures && hasNativeCaptureTree &&
+            _groupedLiteralSpanTable = _hasCaptures && captureRoot is not null && !UsesRightToLeft() &&
                 (!scalarCaptureProjection || _anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix)
-                    ? Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram) : null;
+                    ? Utf8GroupedLiteralSpanTable.TryCreate(captureRoot, ownedSliceProgram) : null;
             // The existing literal proof respects each anchor's scoped options. Borrow
             // its admitted bytes instead of collecting/copying the execution tree again.
             _caretAnchoredGroupedLiteralUtf8 =
@@ -858,24 +864,13 @@ public sealed partial class Utf8Regex : IDisposable
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
 
-    // Construction-cached capture predicate; a missing tree conservatively reports captures.
-    private static bool HasOwnedCaptures(Utf8ExecutionTree? tree)
+    private struct CaptureCheckFrame(Utf8TreeNode node)
     {
-        if (tree?.Root is null)
-        {
-            return true;
-        }
-
-        return ContainsCapture(tree.Root);
-    }
-
-    private struct CaptureCheckFrame(Utf8ExecutionNode node)
-    {
-        internal readonly Utf8ExecutionNode Node = node;
+        internal readonly Utf8TreeNode Node = node;
         internal int NextChild;
     }
 
-    private static bool ContainsCapture(Utf8ExecutionNode node)
+    private static bool ContainsCapture(Utf8TreeNode node)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -885,10 +880,10 @@ public sealed partial class Utf8Regex : IDisposable
             budget.ChargeWork(1);
             var index = frames.Count - 1;
             var frame = frames[index];
-            if (frame.Node.Kind == Utf8ExecutionNodeKind.Capture && frame.Node.CaptureNumber > 0) return true;
-            if (frame.NextChild < frame.Node.Children.Count)
+            if (frame.Node.Kind == Utf8TreeNodeKind.Capture && frame.Node.M > 0) return true;
+            if (frame.NextChild < frame.Node.ChildCount)
             {
-                var child = frame.Node.Children[frame.NextChild++];
+                var child = frame.Node.Child(frame.NextChild++);
                 frames[index] = frame;
                 frames.Push(new(child));
             }

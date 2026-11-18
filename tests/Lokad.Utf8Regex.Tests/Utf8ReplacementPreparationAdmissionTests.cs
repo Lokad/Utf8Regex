@@ -247,7 +247,6 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
     [InlineData("literal-text")]
     [InlineData("rewrite-simple")]
     [InlineData("rewrite-tree")]
-    [InlineData("rewrite-borrowed")]
     public void StandaloneFactoriesKeepEveryWorkCutoffAndInterruptionInTheParentOwner(string stage)
     {
         var operation = Stage(stage);
@@ -347,7 +346,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
             case "numeric": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a$1z"u8, [0, 1], ["zero", "one"]);
             case "literal-text": return () => Utf8FrontEndReplacementAnalyzer.Analyze("é😀$literalé"u8);
             default:
-                var regex = new Utf8Regex(stage == "rewrite-simple" ? "(abc)" : stage == "rewrite-tree" ? "((?:ab|cd))" : "(a+)b");
+                var regex = new Utf8Regex(stage == "rewrite-simple" ? "(abc)" : "((?:ab|cd))");
                 var plan = Utf8FrontEndReplacementAnalyzer.Analyze("x$1$1z"u8, [0, 1], ["zero", "one"]).Plan;
                 var method = typeof(Utf8Regex).GetMethod("RewriteWholeLiteralCapturePlan", BindingFlags.Instance | BindingFlags.NonPublic)
                     ?? throw new InvalidOperationException();

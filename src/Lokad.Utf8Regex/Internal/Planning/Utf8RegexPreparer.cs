@@ -26,11 +26,6 @@ internal static class Utf8RegexPreparer
 
             var executionBackend = analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex
                 ? Utf8ExecutionBackend.FallbackRegex : Utf8ExecutionBackend.NativeLiteral;
-            // Grouped literal captures and anchored replacement still consume
-            // this tree. General scalar execution needs only its admitted program.
-            var tree = (analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !anchoredLiteral.HasValue) ||
-                (executionBackend == Utf8ExecutionBackend.NativeLiteral && scalarProgram is { GroupCount: 0 })
-                ? null : Utf8ExecutionTreeLowerer.Lower(analyzedRegex.SemanticRegex);
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts);
             var operationPlans = Utf8OperationMatchCursorPlans.Create(searchPlan);
             var result = Utf8PreparedRegex.Create(
@@ -42,7 +37,6 @@ internal static class Utf8RegexPreparer
                 analyzedRegex.ExecutionKind,
                 executionBackend,
                 Utf8CompiledPatternCategories.GetNativeCategory(analyzedRegex.ExecutionKind),
-                tree,
                 scalarProgram,
                 operationPlans,
                 analyzedRegex.LiteralUtf8,

@@ -23,7 +23,6 @@ public sealed class Utf8NativeCapturePreparationTests
             }
         });
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
-        Assert.NotNull(regex.Inspection.PreparedRegex.ExecutionTree);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram!.HasUnicodePatternAtoms);
         Assert.True(Field<bool>(regex, "_hasCaptures"));
         AssertNoMaps(regex);
@@ -66,10 +65,9 @@ public sealed class Utf8NativeCapturePreparationTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void AbsentNativeTreeDoesNotStartProjectionPreparation(bool compiled)
+    public void GeneralProgramDoesNotStartLiteralProjectionPreparation(bool compiled)
     {
         var regex = new Utf8Regex(@"(?<a>a+)\k<a>", options: Options(compiled));
-        Assert.Null(regex.Inspection.PreparedRegex.ExecutionTree);
         AssertNoMaps(regex);
         Assert.Equal("aa", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("aaaa"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromUtf8Name("a"u8)).Span));
     }

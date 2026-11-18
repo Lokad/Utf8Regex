@@ -64,4 +64,4 @@ internal static class Utf8PreparedTestPlans
 {
 
     internal static Utf8PreparedRegex WithSearchPlan(Utf8PreparedRegex p, Utf8SearchPlan search)
-=> Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend, p.CompiledPatternCategory, p.ExecutionTree, p.ScalarProgram, Utf8OperationMatchCursorPlans.Create(search), p.LiteralUtf8, p.FallbackReason, p.AnchoredLiteral);}
+=> Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend, p.CompiledPatternCategory, p.ScalarProgram, Utf8OperationMatchCursorPlans.Create(search), p.LiteralUtf8, p.FallbackReason, p.AnchoredLiteral);}

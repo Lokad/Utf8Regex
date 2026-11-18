@@ -19,17 +19,17 @@ public sealed class Utf8CaptureMapAdmissionTests
 
     // The grouped table still serves native literal consumers. Exercise its
     // production inputs directly; scalar-only dispatch need not retain a tree.
-    private static (Utf8ExecutionTree? ExecutionTree, Utf8SliceProgram ScalarProgram) Prepare(string pattern, RegexOptions options)
+    private static (Utf8TreeNode Root, Utf8SliceProgram ScalarProgram) Prepare(string pattern, RegexOptions options)
     {
         var analyzed = Utf8FrontEnd.Analyze(pattern, options);
-        var tree = Utf8ExecutionTreeLowerer.Lower(analyzed.SemanticRegex);
+        var root = analyzed.SemanticRegex.RuntimeTree!.Root;
         var scalar = Utf8SliceParser.TryParse(options, analyzed.SemanticRegex.RuntimeTree);
-        Assert.NotNull(tree); Assert.NotNull(scalar);
-        return (tree, scalar);
+        Assert.NotNull(scalar);
+        return (root, scalar);
     }
 
-    private static object? Create((Utf8ExecutionTree? ExecutionTree, Utf8SliceProgram ScalarProgram) prepared) =>
-        Utf8GroupedLiteralSpanTable.TryCreate(prepared.ExecutionTree, prepared.ScalarProgram);
+    private static object? Create((Utf8TreeNode Root, Utf8SliceProgram ScalarProgram) prepared) =>
+        Utf8GroupedLiteralSpanTable.TryCreate(prepared.Root, prepared.ScalarProgram);
 
     [Theory]
     [MemberData(nameof(Shapes))]
@@ -105,7 +105,7 @@ public sealed class Utf8CaptureMapAdmissionTests
         using (var measured = Utf8ConstructionScope.Enter())
         {
             measured.Budget.AllocateObject(17, static value => new ParentValue(value));
-            Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(recoveryInput.ExecutionTree, recoveryInput.ScalarProgram));
+            Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(recoveryInput.Root, recoveryInput.ScalarProgram));
             recoveryPeak = measured.Budget.PeakBytes;
         }
         ulong peak;
@@ -139,7 +139,7 @@ public sealed class Utf8CaptureMapAdmissionTests
             {
                 var spent = owner.Budget.WorkSteps;
                 using (var recovered = Utf8ConstructionScope.Enter())
-                    Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(recoveryInput.ExecutionTree, recoveryInput.ScalarProgram));
+                    Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(recoveryInput.Root, recoveryInput.ScalarProgram));
                 Assert.True(owner.Budget.WorkSteps > spent);
                 AssertParent(owner.Budget, checkpoint, parent);
             }
@@ -223,7 +223,7 @@ public sealed class Utf8CaptureMapAdmissionTests
         AssertParent(owner.Budget, checkpoint, parent);
         var spent = owner.Budget.WorkSteps;
         using (var recovered = Utf8ConstructionScope.Enter())
-            Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(recoveryInput.ExecutionTree, recoveryInput.ScalarProgram));
+            Assert.NotNull(Utf8GroupedLiteralSpanTable.TryCreate(recoveryInput.Root, recoveryInput.ScalarProgram));
         Assert.True(owner.Budget.WorkSteps > spent);
         AssertParent(owner.Budget, checkpoint, parent);
     }

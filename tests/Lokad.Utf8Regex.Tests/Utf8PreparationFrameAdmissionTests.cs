@@ -6,23 +6,23 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8PreparationFrameAdmissionTests
 {
-    private static readonly Func<Utf8ExecutionNode, bool> ContainsCapture =
+    private static readonly Func<Utf8TreeNode, bool> ContainsCapture =
         (typeof(Utf8Regex).GetMethod("ContainsCapture", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)
-        ?? throw new InvalidOperationException()).CreateDelegate<Func<Utf8ExecutionNode, bool>>();
+        ?? throw new InvalidOperationException()).CreateDelegate<Func<Utf8TreeNode, bool>>();
     private static readonly Utf8SliceProgram CaptureProgram;
     static Utf8PreparationFrameAdmissionTests() => CaptureProgram = Utf8FrontEnd.Compile("(a)", RegexOptions.None).ScalarProgram!;
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
-    private static Utf8ExecutionNode Node(Utf8ExecutionNodeKind kind, Utf8ExecutionNode[]? children = null,
+    private static Utf8TreeNode Node(Utf8TreeNodeKind kind, Utf8TreeNode[]? children = null,
         int capture = 0, string text = "", char ch = 'a', int minimum = 0, int maximum = 1) =>
-        new(kind, RegexOptions.None, children ?? [], text, ch, capture, minimum, maximum);
+        Utf8TreeNode.Create(kind, RegexOptions.None, ch, text,
+            kind == Utf8TreeNodeKind.Capture ? capture : minimum, maximum,
+            children, null, matchCaseInsensitive: false);
 
-    private static Utf8ExecutionTree Tree(int route, int depth = 0)
+    private static Utf8TreeNode Tree(int route, int depth = 0)
     {
-        var a = Node(Utf8ExecutionNodeKind.One);
-        // Put transparent wrappers inside an actually visited branch/loop body;
-        // table admission intentionally unwraps groups surrounding the whole shape.
-        for (var index = 0; index < depth; index++) a = Node(Utf8ExecutionNodeKind.Group, [a]);
-        return new(Node(Utf8ExecutionNodeKind.Capture, [route == 7 ? a : Node(Utf8ExecutionNodeKind.Capture, [a], capture: 1)]));
+        var leaf = Node(Utf8TreeNodeKind.One);
+        for (var index = 0; index < depth; index++) leaf = Node(Utf8TreeNodeKind.Group, [leaf]);
+        return Node(Utf8TreeNodeKind.Capture, [route == 7 ? leaf : Node(Utf8TreeNodeKind.Capture, [leaf], capture: 1)]);
     }
 
     private static Utf8TreeNode FindTree(int depth = 0)
@@ -34,13 +34,13 @@ public sealed class Utf8PreparationFrameAdmissionTests
         return node;
     }
 
-    private static object? Prepare(int route, Utf8TreeNode find, Utf8ExecutionTree execution) => route switch
+    private static object? Prepare(int route, Utf8TreeNode find, Utf8TreeNode execution) => route switch
     {
         0 => Utf8OwnedFindOptimizations.ComputeByteWidth(find).Minimum,
         1 => Utf8OwnedFindOptimizations.ComputeByteWidth(find).Maximum,
         2 => Utf8OwnedFindOptimizations.TryExtractLongestLiteral(find),
         3 => Utf8GroupedLiteralSpanTable.TryCreate(execution, CaptureProgram),
-        7 => ContainsCapture(execution.Root),
+        7 => ContainsCapture(execution),
         _ => throw new ArgumentOutOfRangeException(nameof(route)),
     };
 
@@ -139,16 +139,16 @@ public sealed class Utf8PreparationFrameAdmissionTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void DeclinedScratchAndLateEligibilityReleaseCompletedLoans(int shape)
     {
-        var a = Node(Utf8ExecutionNodeKind.One);
-        var captured = Node(Utf8ExecutionNodeKind.Capture, [a], capture: 1);
+        var a = Node(Utf8TreeNodeKind.One);
+        var captured = Node(Utf8TreeNodeKind.Capture, [a], capture: 1);
         var body = shape switch
         {
-            0 => Node(Utf8ExecutionNodeKind.Alternate, [captured, Node(Utf8ExecutionNodeKind.Capture,
-                [Node(Utf8ExecutionNodeKind.Multi, text: "bb")], capture: 1)]),
-            1 => Node(Utf8ExecutionNodeKind.Concatenate, [captured, Node(Utf8ExecutionNodeKind.Capture, [a], capture: 1)]),
-            _ => Node(Utf8ExecutionNodeKind.Multi, text: ""),
+            0 => Node(Utf8TreeNodeKind.Alternate, [captured, Node(Utf8TreeNodeKind.Capture,
+                [Node(Utf8TreeNodeKind.Multi, text: "bb")], capture: 1)]),
+            1 => Node(Utf8TreeNodeKind.Concatenate, [captured, Node(Utf8TreeNodeKind.Capture, [a], capture: 1)]),
+            _ => Node(Utf8TreeNodeKind.Multi, text: ""),
         };
-        var execution = new Utf8ExecutionTree(Node(Utf8ExecutionNodeKind.Capture, [body]));
+        var execution = Node(Utf8TreeNodeKind.Capture, [body]);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
