@@ -148,7 +148,7 @@ public sealed class Pcre2AssertionCompilerTests
         var regex = new Utf8Pcre2Regex("(?<!x)(?=needle)needle");
         var input = "xneedle needle"u8;
 
-        var match = regex.Match(input, 1);
+        var match = regex.Match(input, startOffsetInBytes: 1);
 
         Assert.True(match.Success);
         Assert.Equal(8, match.StartOffsetInBytes);

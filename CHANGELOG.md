@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Add optional caller-owned PCRE2 capture slots to the primary Match signature
+  and funded owners. Share existing capture publication without a result array;
+  preserve byte-fragment status, limits and lifetimes. Name former positional
+  match flags/tokens and recompile consumers.
+
 - Consolidate PCRE2 IsMatch/Count onto one optional shared working allowance.
   Null keeps numeric controls without a shared account; supplied admission remains
   terminal on refusal and cannot bypass through an unmetered literal shortcut.

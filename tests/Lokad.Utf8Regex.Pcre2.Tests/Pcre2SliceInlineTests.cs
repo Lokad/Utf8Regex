@@ -130,7 +130,7 @@ public sealed class Pcre2SliceInlineTests
         var expected = Bcl(pattern).Match(inputText);
         Assert.True(expected.Success);
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        var found = regex.Match(Utf8(inputText), 0);
+        var found = regex.Match(Utf8(inputText), startOffsetInBytes: 0);
         Assert.True(found.Success);
         Assert.Equal(expected.Index, found.StartOffsetInBytes);
         Assert.Equal(expected.Index + expected.Length, found.EndOffsetInBytes);

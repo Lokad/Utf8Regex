@@ -85,7 +85,7 @@ public sealed class Pcre2LiteralCompilerTests
 
         Assert.True(regex.IsMatch(input, startOffsetInBytes));
 
-        var match = regex.Match(input, startOffsetInBytes);
+        var match = regex.Match(input, startOffsetInBytes: startOffsetInBytes);
         Assert.True(match.Success);
         Assert.Equal(expectedByteStart, match.StartOffsetInBytes);
         Assert.Equal(expectedByteEnd, match.EndOffsetInBytes);
@@ -125,7 +125,7 @@ public sealed class Pcre2LiteralCompilerTests
         Assert.False(requested.IsMatch("xxabc"u8, 1));
 
         var absoluteEnd = new Utf8Pcre2Regex(@"abc\z");
-        var endMatch = absoluteEnd.Match("abc xx abc"u8, 1);
+        var endMatch = absoluteEnd.Match("abc xx abc"u8, startOffsetInBytes: 1);
         Assert.True(endMatch.Success);
         Assert.Equal(7, endMatch.StartOffsetInBytes);
         Assert.False(absoluteEnd.IsMatch("abc xx abc\n"u8));
@@ -155,7 +155,7 @@ public sealed class Pcre2LiteralCompilerTests
         var input = "😀x"u8;
 
         Assert.False(regex.IsMatch(input, 0, Pcre2MatchOptions.NotEmpty));
-        var afterFirstScalar = regex.Match(input, 0, Pcre2MatchOptions.NotEmptyAtStart);
+        var afterFirstScalar = regex.Match(input, startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.NotEmptyAtStart);
         Assert.True(afterFirstScalar.Success);
         Assert.Equal(4, afterFirstScalar.StartOffsetInBytes);
         Assert.False(regex.IsMatch(input, input.Length, Pcre2MatchOptions.NotEmptyAtStart));

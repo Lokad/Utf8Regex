@@ -54,7 +54,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
     {
         var regex = new Utf8Pcre2Regex("^abc\\K");
         var match = regex.Match("abcdef"u8);
-        var notEmpty = regex.Match("abcdef"u8, 0, Pcre2MatchOptions.NotEmpty);
+        var notEmpty = regex.Match("abcdef"u8, startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.NotEmpty);
 
         Assert.True(match.Success);
         Assert.Equal(3, match.StartOffsetInBytes);

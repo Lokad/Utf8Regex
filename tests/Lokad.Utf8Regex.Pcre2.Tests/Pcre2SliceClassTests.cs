@@ -64,7 +64,7 @@ public sealed class Pcre2SliceClassTests
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(input, 0));
         Assert.Equal(expected.Length, regex.Count(input, 0));
-        Assert.Equal(expected[0], System.Text.Encoding.UTF8.GetString(regex.Match(input, 0).GetValueBytes()));
+        Assert.Equal(expected[0], System.Text.Encoding.UTF8.GetString(regex.Match(input, startOffsetInBytes: 0).GetValueBytes()));
         Assert.Equal(expected[0], System.Text.Encoding.UTF8.GetString(regex.MatchDetailed(input, 0).Value.GetValueBytes()));
         var actual = new List<string>();
         var matches = regex.EnumerateMatches(input, 0);
@@ -126,7 +126,7 @@ public sealed class Pcre2SliceClassTests
         string pattern, string inputText, int expectedStart, int expectedEnd)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        var found = regex.Match(Utf8(inputText), 0);
+        var found = regex.Match(Utf8(inputText), startOffsetInBytes: 0);
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);

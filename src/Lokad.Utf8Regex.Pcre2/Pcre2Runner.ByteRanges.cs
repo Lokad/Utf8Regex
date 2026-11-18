@@ -10,7 +10,8 @@ internal static partial class Pcre2Runner
     internal static Pcre2BacktrackingMatch MatchByteRanges(Pcre2CompiledProgram compiled,
         ref Utf8ValidatedInput input, Utf8BytePosition start, Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions options, ref Pcre2ResourceBudget budget,
-        ref Utf8SliceSlots sliceSlots, ref Utf8SliceRunner.AttemptWorkspace sliceWorkspace)
+        ref Utf8SliceSlots sliceSlots, ref Utf8SliceRunner.AttemptWorkspace sliceWorkspace,
+        scoped Span<Utf8Pcre2CaptureRange> destination = default)
     {
         Pcre2CharacterMatch match;
         switch (compiled.Operations.Match)
@@ -18,7 +19,7 @@ internal static partial class Pcre2Runner
             case Pcre2SliceDirectProgram slice when options == Pcre2MatchOptions.None ||
                 options == (Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart):
                 return MatchSliceByteRanges(slice, compiled, ref input, start, firstMatchingPosition,
-                    options != Pcre2MatchOptions.None, ref budget, ref sliceSlots, ref sliceWorkspace);
+                    options != Pcre2MatchOptions.None, ref budget, ref sliceSlots, ref sliceWorkspace, destination);
             case Pcre2LiteralDirectProgram literal:
                 var literalMatch = Pcre2LiteralRunner.Match(literal.Program, ref input, start, options, ref budget);
                 match = literalMatch.Success ? new(true, literalMatch.StartOffsetInBytes, literalMatch.EndOffsetInBytes,
@@ -42,9 +43,16 @@ internal static partial class Pcre2Runner
                     }
                 };
                 return Pcre2BacktrackingRunner.MatchByteRanges(program, compiled.CandidateSearch, ref input,
-                    start, firstMatchingPosition, options, ref budget);
+                    start, firstMatchingPosition, options, ref budget, destination);
         }
         if (!match.Success) return default;
+        if (!destination.IsEmpty)
+        {
+            Pcre2BacktrackingRunner.WriteByteGroups(destination, match.StartOffsetInBytes, match.EndOffsetInBytes,
+                [], [], input.Bytes, ref budget);
+            return new(true, match.StartOffsetInBytes, match.EndOffsetInBytes,
+                match.ConsumedStartOffsetInBytes, match.ConsumedEndOffsetInBytes, match.MatchBoundaryWasReset, default, null);
+        }
         var groups = Pcre2BacktrackingRunner.MaterializeByteGroups(1, match.StartOffsetInBytes,
             match.EndOffsetInBytes, [], [], input.Bytes, ref budget);
         return new(true, match.StartOffsetInBytes, match.EndOffsetInBytes,
@@ -55,7 +63,8 @@ internal static partial class Pcre2Runner
     private static Pcre2BacktrackingMatch MatchSliceByteRanges(Pcre2SliceDirectProgram slice,
         Pcre2CompiledProgram compiled, ref Utf8ValidatedInput input, Utf8BytePosition start,
         Utf8BytePosition firstMatchingPosition, bool retryNonEmpty, ref Pcre2ResourceBudget budget,
-        ref Utf8SliceSlots slots, ref Utf8SliceRunner.AttemptWorkspace workspace)
+        ref Utf8SliceSlots slots, ref Utf8SliceRunner.AttemptWorkspace workspace,
+        scoped Span<Utf8Pcre2CaptureRange> destination)
     {
         var program = slice.SliceProgram;
         ref var invocation = ref budget.WorkingInvocation;
@@ -84,6 +93,12 @@ internal static partial class Pcre2Runner
             Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
             if (!outcome.Found) return default;
             begin = outcome.StartByte; end = outcome.EndByte;
+        }
+        if (!destination.IsEmpty)
+        {
+            Pcre2BacktrackingRunner.WriteByteGroups(destination, begin, end, slots.Starts, slots.Ends,
+                input.Bytes, ref budget, -1, true);
+            return new(true, begin, end, begin, end, false, default, null);
         }
         var groups = Pcre2BacktrackingRunner.MaterializeByteGroups(checked(program.GroupCount + 1),
             begin, end, slots.Starts, slots.Ends, input.Bytes, ref budget, -1, true);

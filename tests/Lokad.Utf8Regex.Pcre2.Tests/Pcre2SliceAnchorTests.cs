@@ -72,7 +72,7 @@ public sealed class Pcre2SliceAnchorTests
                 System.Text.RegularExpressions.Regex.InfiniteMatchTimeout).IsMatch(inputText));
         var regex = new Utf8Pcre2Regex("^a.c$", Pcre2CompileOptions.None);
         Assert.True(regex.IsMatch(Utf8(inputText), 0));
-        var found = regex.Match(Utf8(inputText), 0);
+        var found = regex.Match(Utf8(inputText), startOffsetInBytes: 0);
         Assert.True(found.Success);
         Assert.Equal(0, found.StartOffsetInBytes);
         Assert.Equal(6, found.EndOffsetInBytes);
@@ -98,7 +98,7 @@ public sealed class Pcre2SliceAnchorTests
         string pattern, string inputText, int startOffsetInBytes, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Multiline);
-        var found = regex.Match(Utf8(inputText), startOffsetInBytes);
+        var found = regex.Match(Utf8(inputText), startOffsetInBytes: startOffsetInBytes);
         Assert.Equal(expectedSuccess, found.Success);
         if (expectedSuccess)
         {

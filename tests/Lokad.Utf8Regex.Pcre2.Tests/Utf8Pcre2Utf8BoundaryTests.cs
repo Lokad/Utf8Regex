@@ -14,7 +14,7 @@ public sealed class Utf8Pcre2Utf8BoundaryTests
         for (var offset = 2; offset <= 4; offset++)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, offset));
-            Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, offset));
+            Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, startOffsetInBytes: offset));
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count(input, offset));
         }
     }

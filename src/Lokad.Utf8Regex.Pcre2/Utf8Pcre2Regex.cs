@@ -254,15 +254,19 @@ public sealed partial class Utf8Pcre2Regex
         return CountCore(input, startOffsetInBytes, matchOptions, cancellationToken, workingMemoryAllowance);
     }
 
-    private Utf8Pcre2ValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)
+    private Utf8Pcre2ValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken,
+        IUtf8MemoryAllowance? workingMemoryAllowance, scoped Span<Utf8Pcre2CaptureRange> output)
     {
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
         try
         {
             var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
             if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, ref invocation, out var directMatch))
             {
+                if (!output.IsEmpty)
+                    output[0] = directMatch.Success ? new(0, true, directMatch.StartOffsetInBytes,
+                        directMatch.EndOffsetInBytes, directMatch.IsUtf8SliceWellFormed) : default;
                 if (!invocation.IsUnmetered)
                 {
                     invocation.Budget.ThrowIfCancellationRequested();
@@ -277,18 +281,64 @@ public sealed partial class Utf8Pcre2Regex
         {
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
         }
+        finally
+        {
+            if (workingMemoryAllowance is not null) invocation.Ledger.Release(invocation.Ledger.ReservedBytes);
+        }
     }
 
-    /// <summary>Finds the first match using an explicit start byte offset and per-operation options, observing cancellation during matching and required range projection.</summary>
-    /// <param name="input">The well-formed UTF-8 subject to match against.</param>
-    /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
-    /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token to observe before entry and during bounded matching.</param>
-    /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
-    public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
+    /// <summary>Finds the first match and optionally writes caller-owned byte capture slots zero onward.</summary>
+    /// <remarks>Short output cannot change selection; excess slots stay untouched. No match or failure clears the supplied prefix, except entry cancellation leaves it unchanged. Caller-owned slots do not consume result-byte capacity. Byte fragments and noncontiguous ranges keep their explicit validity status.</remarks>
+    public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0,
+        scoped Span<Utf8Pcre2CaptureRange> captures = default, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None,
+        CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return MatchCore(input, startOffsetInBytes, matchOptions, cancellationToken);
+        var output = captures[..Math.Min(captures.Length, CaptureGroupCount + 1)];
+        try
+        {
+            return output.Length <= 1
+                ? MatchCore(input, startOffsetInBytes, matchOptions, cancellationToken, workingMemoryAllowance, output)
+                : MatchCaptures(input, startOffsetInBytes, output, matchOptions, cancellationToken, workingMemoryAllowance);
+        }
+        catch { output.Clear(); throw; }
+    }
+
+    private Utf8Pcre2ValueMatch MatchCaptures(ReadOnlySpan<byte> input, int startOffsetInBytes,
+        scoped Span<Utf8Pcre2CaptureRange> output, Pcre2MatchOptions matchOptions, CancellationToken token,
+        IUtf8MemoryAllowance? workingMemoryAllowance)
+    {
+        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token, workingMemoryAllowance);
+        var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
+        try
+        {
+            var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref budget.WorkingInvocation);
+            var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
+            var slots = new Utf8SliceSlots([], []);
+            var workspace = new Utf8SliceRunner.AttemptWorkspace();
+            var match = Pcre2Runner.MatchByteRanges(_program, ref subject, start, start, matchOptions,
+                ref budget, ref slots, ref workspace, output);
+            if (!match.Success) ClearCaptureOutput(output, ref budget);
+            Pcre2SliceDriver.CheckInvocation(ref budget.WorkingInvocation);
+            return Utf8Pcre2ValueMatch.Create(input, new Pcre2GroupData
+            {
+                Success = match.Success, StartOffsetInBytes = match.StartOffsetInBytes,
+                EndOffsetInBytes = match.EndOffsetInBytes, Utf8SliceIsWellFormed = output[0].IsUtf8SliceWellFormed
+            });
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        { throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout); }
+        finally { budget.WorkingInvocation.Ledger.Release(budget.WorkingInvocation.Ledger.ReservedBytes); }
+    }
+
+    private static void ClearCaptureOutput(Span<Utf8Pcre2CaptureRange> output, ref Pcre2ResourceBudget budget)
+    {
+        for (var offset = 0; offset < output.Length;)
+        {
+            budget.ChargeWorkspaceStep();
+            var count = Math.Min(256, output.Length - offset);
+            output.Slice(offset, count).Clear(); offset += count;
+        }
     }
 
     private Utf8Pcre2MatchContext MatchDetailedCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)

@@ -44,7 +44,7 @@ public sealed class Pcre2MultilineSearchTests
         var secondMatchStart = "ERROR: zero\nINFO: one\n"u8.Length;
         Assert.Equal(2, regex.Count(input, 1));
         Assert.Equal(2, regex.Count(input, secondMatchStart));
-        Assert.Equal("ERROR: two\r", System.Text.Encoding.UTF8.GetString(regex.Match(input, secondMatchStart).GetValueBytes()));
+        Assert.Equal("ERROR: two\r", System.Text.Encoding.UTF8.GetString(regex.Match(input, startOffsetInBytes: secondMatchStart).GetValueBytes()));
         Assert.True(regex.IsMatch(input, secondMatchStart, Pcre2MatchOptions.Anchored));
         Assert.False(regex.IsMatch(input, secondMatchStart + 1, Pcre2MatchOptions.Anchored));
     }

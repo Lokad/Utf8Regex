@@ -225,9 +225,9 @@ internal static class Pcre2BacktrackingRunner
     internal static Pcre2BacktrackingMatch MatchByteRanges(Pcre2BacktrackingProgram program,
         Pcre2CandidateSearchProgram candidateSearch, ref Utf8ValidatedInput input,
         Utf8BytePosition start, Utf8BytePosition firstMatchingPosition, Pcre2MatchOptions options,
-        ref Pcre2ResourceBudget budget)
+        ref Pcre2ResourceBudget budget, scoped Span<Utf8Pcre2CaptureRange> destination = default)
         => MatchCore(program, candidateSearch, ref input, start, firstMatchingPosition,
-            options, Pcre2CaptureMaterialization.ByteFinalSlots, ref budget);
+            options, Pcre2CaptureMaterialization.ByteFinalSlots, ref budget, destination);
 
     private static Pcre2BacktrackingMatch MatchCore(
         Pcre2BacktrackingProgram program,
@@ -237,7 +237,7 @@ internal static class Pcre2BacktrackingRunner
         Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
         Pcre2CaptureMaterialization captureMaterialization,
-        ref Pcre2ResourceBudget budget)
+        ref Pcre2ResourceBudget budget, scoped Span<Utf8Pcre2CaptureRange> destination = default)
     {
         var frames = CreateFrames(ref budget, 0);
         var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
@@ -245,7 +245,7 @@ internal static class Pcre2BacktrackingRunner
         try
         {
             return MatchCore(program, candidateSearch, ref input, start, firstMatchingPosition,
-                matchOptions, captureMaterialization, ref budget, ref frames, ref repeatMutations, ref workspace);
+                matchOptions, captureMaterialization, ref budget, ref frames, ref repeatMutations, ref workspace, destination);
         }
         finally { workspace.Dispose(ref budget); repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
     }
@@ -261,7 +261,7 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2ResourceBudget budget,
         scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
-        scoped ref Pcre2BacktrackingWorkspace workspace)
+        scoped ref Pcre2BacktrackingWorkspace workspace, scoped Span<Utf8Pcre2CaptureRange> destination = default)
     {
         var bytes = input.Bytes;
         var anchored = program.RestrictsSearchToInitialCandidate ||
@@ -327,7 +327,7 @@ internal static class Pcre2BacktrackingRunner
                     ref repeatMutations,
                     ref workspace,
                     out var match,
-                    out var failure))
+                    out var failure, destination))
             {
                 return match;
             }
@@ -634,7 +634,7 @@ internal static class Pcre2BacktrackingRunner
         scoped ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         scoped ref Pcre2BacktrackingWorkspace workspace,
         out Pcre2BacktrackingMatch match,
-        out Pcre2BacktrackingFailure failure)
+        out Pcre2BacktrackingFailure failure, scoped Span<Utf8Pcre2CaptureRange> destination = default)
     {
         var configuredFrameLimit = budget.Limits.DepthLimit == 0
             ? int.MaxValue
@@ -1455,7 +1455,7 @@ internal static class Pcre2BacktrackingRunner
                                 inputIndex,
                                 captureStarts,
                                 captureEnds,
-                                ref projectionInput, ref budget);
+                                ref projectionInput, ref budget, destination);
                             failure = default;
                             match = new Pcre2BacktrackingMatch(
                                 true,
@@ -1551,7 +1551,7 @@ internal static class Pcre2BacktrackingRunner
                                 inputIndex,
                                 captureStarts,
                                 captureEnds,
-                                ref projectionInput, ref budget);
+                                ref projectionInput, ref budget, destination);
                             match = new Pcre2BacktrackingMatch(
                                 true,
                                 reportedStartOffsetInBytes,
@@ -2493,7 +2493,15 @@ internal static class Pcre2BacktrackingRunner
         int matchEnd,
         ReadOnlySpan<int> captureStarts,
         ReadOnlySpan<int> captureEnds,
-        ref Utf8ValidatedInput input, ref Pcre2ResourceBudget budget) => materialization switch
+        ref Utf8ValidatedInput input, ref Pcre2ResourceBudget budget,
+        scoped Span<Utf8Pcre2CaptureRange> destination = default)
+    {
+        if (materialization == Pcre2CaptureMaterialization.ByteFinalSlots && !destination.IsEmpty)
+        {
+            WriteByteGroups(destination, matchStart, matchEnd, captureStarts, captureEnds, input.Bytes, ref budget);
+            return default;
+        }
+        return materialization switch
         {
             Pcre2CaptureMaterialization.AssertionRanges =>
                 Pcre2BacktrackingCaptureResult.FromAssertionRanges(
@@ -2512,6 +2520,7 @@ internal static class Pcre2BacktrackingRunner
                     matchStart, matchEnd, captureStarts, captureEnds, input.Bytes, ref budget)),
             _ => default,
         };
+    }
 
     internal static Utf8Pcre2CaptureRange[] MaterializeByteGroups(int count, int matchStart, int matchEnd,
         ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds, ReadOnlySpan<byte> input,
@@ -2525,19 +2534,29 @@ internal static class Pcre2BacktrackingRunner
         {
             control.ChargeWorkspaceStep();
             var groups = new Utf8Pcre2CaptureRange[count];
-            for (var slot = 0; slot < count; slot++)
-            {
-                if ((slot & 63) == 0) control.ChargeWorkspaceStep();
-                var start = slot == 0 ? matchStart : captureStarts[slot + slotOffset];
-                var end = slot == 0 ? matchEnd : captureEnds[slot + slotOffset];
-                if (normalizeDirection && start >= 0 && end >= 0 && start > end) (start, end) = (end, start);
-                var success = slot == 0 || start >= 0 && end >= start;
-                var wellFormed = success && start <= end &&
-                    Pcre2SliceDriver.IsScalarAligned(input, start) && Pcre2SliceDriver.IsScalarAligned(input, end);
-                groups[slot] = new(slot, success, success ? start : 0, success ? end : 0, wellFormed);
-            }
+            WriteByteGroups(groups, matchStart, matchEnd, captureStarts, captureEnds, input, ref budget, slotOffset, normalizeDirection);
             return groups;
         }
         catch { control.ReleaseWorking(bytes); throw; }
+    }
+
+    // Caller-owned ranges and immutable arrays share the same publication work.
+    // A caller destination is not producer-owned result storage.
+    internal static void WriteByteGroups(scoped Span<Utf8Pcre2CaptureRange> destination, int matchStart, int matchEnd,
+        ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds, ReadOnlySpan<byte> input,
+        ref Pcre2ResourceBudget budget, int slotOffset = 0, bool normalizeDirection = false)
+    {
+        var control = new Pcre2ResultControl(ref budget);
+        for (var slot = 0; slot < destination.Length; slot++)
+        {
+            if ((slot & 63) == 0) control.ChargeWorkspaceStep();
+            var start = slot == 0 ? matchStart : captureStarts[slot + slotOffset];
+            var end = slot == 0 ? matchEnd : captureEnds[slot + slotOffset];
+            if (normalizeDirection && start >= 0 && end >= 0 && start > end) (start, end) = (end, start);
+            var success = slot == 0 || start >= 0 && end >= start;
+            var wellFormed = success && start <= end &&
+                Pcre2SliceDriver.IsScalarAligned(input, start) && Pcre2SliceDriver.IsScalarAligned(input, end);
+            destination[slot] = new(slot, success, success ? start : 0, success ? end : 0, wellFormed);
+        }
     }
 }

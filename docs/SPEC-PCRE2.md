@@ -61,6 +61,26 @@ EnumerateMatches, MatchMany, replacement, Analyze, name metadata and Probe.
 Compile, match, substitution and probe options are separate types.
 There is no RTL or DFA matcher.
 
+`Match(input, startOffsetInBytes=0, captures=default, matchOptions=None,
+cancellationToken=default, workingMemoryAllowance=null)` returns the existing
+borrowed whole-match value and optionally fills caller-owned
+`Span<Utf8Pcre2CaptureRange>` slots, including zero. A shorter destination cannot
+change matching or capture selection. Excess slots stay untouched. On no match or
+failure the supplied prefix clears; entry cancellation leaves it unchanged.
+Captures retain numeric slot, participation, byte endpoints and UTF-8 slice
+validity, including opted-in byte fragments and noncontiguous reported ranges.
+Caller-owned slots consume publication work but no producer-owned result-byte
+capacity. Matching buffers still require working admission. Null working
+admission keeps numeric controls; funded owners inherit their program account.
+The owner's Match retains program use until the synchronous call finishes;
+closed owners reject new calls without changing output. Copied ranges and whole
+values remain valid under their original borrowed-input lifetime.
+
+Whole-only matching retains its existing native paths. Capture output uses the
+existing byte-range runner and the same publication loop as immutable snapshots,
+without allocating a temporary result array. MARK and full named metadata remain
+on capture cursors and existing detailed/probe results.
+
 Compile an expression once and invoke its instance methods. Static IsMatch,
 Match and Replace convenience overloads are removed; they previously compiled a
 fresh expression per call. There is no process-wide pattern cache.

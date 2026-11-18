@@ -544,7 +544,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         var regex = new Utf8Pcre2Regex(@"[^a]+\.[^z]+");
         var input = "xbc.de"u8;
 
-        var match = regex.Match(input, 2);
+        var match = regex.Match(input, startOffsetInBytes: 2);
         Assert.True(match.Success);
         Assert.Equal("c.de", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
 
@@ -563,7 +563,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         var regex = new Utf8Pcre2Regex(@"[a-z]+@[a-z]+");
         var input = "foo@bar"u8;
 
-        var match = regex.Match(input, 1);
+        var match = regex.Match(input, startOffsetInBytes: 1);
 
         Assert.True(match.Success);
         Assert.Equal(1, match.StartOffsetInBytes);
@@ -615,7 +615,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSetWithWindow, regex.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(3, regex.Count(input));
 
-        var match = regex.Match(input, 2);
+        var match = regex.Match(input, startOffsetInBytes: 2);
         Assert.True(match.Success);
         Assert.Equal(" bringing ", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
@@ -731,9 +731,9 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         var input = "abcdefghij short klmnopqrst"u8;
 
         Assert.False(regex.DebugUsesUtf8RegexTranslation);
-        Assert.True(regex.Match(input, 17).Success);
-        Assert.True(regex.Match(input, 16).Success);
-        Assert.True(regex.Match(input, 10).Success);
+        Assert.True(regex.Match(input, startOffsetInBytes: 17).Success);
+        Assert.True(regex.Match(input, startOffsetInBytes: 16).Success);
+        Assert.True(regex.Match(input, startOffsetInBytes: 10).Success);
         Assert.Equal(2, regex.Count(input));
     }
 

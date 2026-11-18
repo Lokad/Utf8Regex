@@ -18,7 +18,7 @@ public sealed class Pcre2CharacterTests
         var regex = new Utf8Pcre2Regex(".");
         var input = Encoding.UTF8.GetBytes("aé€😀z");
 
-        var match = regex.Match(input, startOffsetInBytes);
+        var match = regex.Match(input, startOffsetInBytes: startOffsetInBytes);
 
         Assert.True(match.Success);
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
@@ -126,7 +126,7 @@ public sealed class Pcre2CharacterTests
 
         Assert.False(crlfDot.IsMatch("\r\n"u8, 0, Pcre2MatchOptions.Anchored));
         Assert.False(crlfDot.Match("\r\n"u8).Success);
-        Assert.Equal(1, crlfDot.Match("\r\n"u8, 1).StartOffsetInBytes);
+        Assert.Equal(1, crlfDot.Match("\r\n"u8, startOffsetInBytes: 1).StartOffsetInBytes);
         Assert.False(anyCrlfDot.IsMatch("\r\n"u8));
         Assert.True(unicodeBsr.IsMatch(lineSeparator));
         Assert.False(crlfBsr.IsMatch(lineSeparator));
@@ -144,13 +144,13 @@ public sealed class Pcre2CharacterTests
         var absolute = new Utf8Pcre2Regex(@"\A.\Z");
         var requested = new Utf8Pcre2Regex(@"\G.");
 
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(multiline.Match("a\nb"u8, 2).GetValueBytes()));
+        Assert.Equal("b", System.Text.Encoding.UTF8.GetString(multiline.Match("a\nb"u8, startOffsetInBytes: 2).GetValueBytes()));
         Assert.False(singleline.IsMatch("a\nb"u8, 2));
         Assert.Equal(1, finalCaret.Count("\n"u8));
         Assert.Equal(1, dollar.Match("a\n"u8).StartOffsetInBytes);
         Assert.Equal(2, strictDollar.Match("a\n"u8).StartOffsetInBytes);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(absolute.Match("a\n"u8).GetValueBytes()));
-        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(requested.Match("aé"u8, 1).GetValueBytes()));
+        Assert.Equal("é", System.Text.Encoding.UTF8.GetString(requested.Match("aé"u8, startOffsetInBytes: 1).GetValueBytes()));
     }
 
     [Fact]
@@ -177,7 +177,7 @@ public sealed class Pcre2CharacterTests
         var input = "é\n"u8;
         const int floor = 2;
         Assert.Equal(found, regex.IsMatch(input, floor));
-        var match = regex.Match(input, floor);
+        var match = regex.Match(input, startOffsetInBytes: floor);
         Assert.Equal(found, match.Success);
         Assert.Equal(found, regex.MatchDetailed(input, floor).Success);
         Assert.Equal(found ? 1 : 0, regex.Count(input, floor));

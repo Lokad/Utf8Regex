@@ -64,7 +64,7 @@ public sealed class Pcre2FastPathTimeoutTests
             default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(1));
         var input = Encoding.UTF8.GetBytes(text);
         armed = true;
-        var failure = Assert.Throws<Pcre2MatchException>(() => regex.Match(input, 0, options));
+        var failure = Assert.Throws<Pcre2MatchException>(() => regex.Match(input, startOffsetInBytes: 0, matchOptions: options));
         Assert.Equal(Pcre2ErrorKind.Timeout, failure.ErrorKind);
         Assert.True(reads >= 3);
     }

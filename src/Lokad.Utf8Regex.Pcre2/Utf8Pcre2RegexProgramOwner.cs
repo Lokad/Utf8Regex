@@ -61,6 +61,19 @@ public sealed class Utf8Pcre2RegexProgramOwner : IDisposable
             workingMemoryAllowance ?? _storage.Allowance);
     }
 
+    /// <summary>Matches into optional caller-owned byte capture slots while retaining program admission.</summary>
+    /// <remarks>Null working allowance inherits program funding. Entry cancellation and closed owners leave output untouched; copied ranges and the borrowed whole value remain valid after close.</remarks>
+    public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0,
+        scoped Span<Utf8Pcre2CaptureRange> captures = default, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None,
+        CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var regex = Volatile.Read(ref _regex) ?? throw new ObjectDisposedException(nameof(Utf8Pcre2RegexProgramOwner));
+        using var use = _storage.Enter();
+        return regex.Match(input, startOffsetInBytes, captures, matchOptions, cancellationToken,
+            workingMemoryAllowance ?? _storage.Allowance);
+    }
+
     /// <summary>Counts matches using caller-funded temporary storage and existing PCRE2 global progression.</summary>
     /// <remarks>Temporary loans refund synchronously. Work/result traffic and depth/heap controls remain independently applicable.</remarks>
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes = 0,

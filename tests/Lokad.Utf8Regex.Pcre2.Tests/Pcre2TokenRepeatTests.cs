@@ -59,7 +59,7 @@ public sealed class Pcre2TokenRepeatTests
         var regex = new Utf8Pcre2Regex(@"[^\n]*");
         var input = "abc\ndef"u8;
 
-        Assert.Equal("def", System.Text.Encoding.UTF8.GetString(regex.Match(input, 3, Pcre2MatchOptions.NotEmptyAtStart).GetValueBytes()));
+        Assert.Equal("def", System.Text.Encoding.UTF8.GetString(regex.Match(input, startOffsetInBytes: 3, matchOptions: Pcre2MatchOptions.NotEmptyAtStart).GetValueBytes()));
         Assert.False(regex.IsMatch(
             input,
             3,

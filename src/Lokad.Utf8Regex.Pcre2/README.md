@@ -95,6 +95,22 @@ coherent refresh, with no rewritten samples.
 
 ## Example
 
+To copy captures into reusable storage, use the primary Match signature:
+
+```csharp
+using Lokad.Utf8Regex.Pcre2;
+
+Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+var regex = new Utf8Pcre2Regex("(?<word>[a-z]+)-(?<number>[0-9]+)");
+var match = regex.Match("abc-123"u8, captures: captures);
+// Slot zero: [0,7); word: [0,3); number: [4,7), all byte coordinates.
+```
+
+Short destinations keep the same match; excess slots stay untouched. Caller-owned
+slots require no producer-owned result capacity. Shared working admission and
+funded-owner Match use the same numeric limits, token and deadline. Capture
+cursors retain MARK/named metadata; borrowed subjects must remain unchanged.
+
 ```csharp
 using System.Text;
 using Lokad.Utf8Regex.Pcre2;

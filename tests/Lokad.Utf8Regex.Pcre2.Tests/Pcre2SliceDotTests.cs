@@ -125,7 +125,7 @@ public sealed class Pcre2SliceDotTests
         string pattern, string inputText, int expectedStart, int expectedEnd)
     {
         var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
-        var found = regex.Match(Utf8(inputText), 0);
+        var found = regex.Match(Utf8(inputText), startOffsetInBytes: 0);
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);

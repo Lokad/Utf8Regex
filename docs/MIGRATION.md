@@ -528,3 +528,16 @@ method-group delegates. The fifth argument may now be null: an ordinary expressi
 keeps numeric controls without shared funding; a funded owner still inherits its
 program account. Non-null admission is terminal on refusal. Allocation-free paths
 need no reservation. Existing literal algorithms and original interruption stay.
+
+### PCRE2 caller-owned capture slots
+
+PCRE2 Match now follows `Match(input, startOffsetInBytes, captures, matchOptions,
+cancellationToken, workingMemoryAllowance)`. Captures are optional and use
+`Utf8Pcre2CaptureRange`, retaining byte-fragment/noncontiguous range status.
+Recompile callers and name former positional match flags/tokens. Empty output
+keeps the whole-only path; available slots are filled without an intermediate
+result array or result-byte charge. Numeric working limits and shared admission
+still apply. Funded owners now expose the same Match operation and keep program
+admission during the call. Closing an owner preserves returned ranges and borrowed
+whole values, but rejects new calls. MARK/full named metadata remains on existing
+cursors and detailed/probe results.

@@ -61,8 +61,8 @@ public sealed class Pcre2CrlfCandidateTests
             var regex = Create(pattern, finite);
             foreach (var options in new[] { Pcre2MatchOptions.None, Pcre2MatchOptions.Anchored })
             {
-                Assert.False(regex.Match("\r\nx"u8, 0, Pcre2MatchOptions.Anchored).Success);
-                var result = regex.Match("\r\nx"u8, 1, options);
+                Assert.False(regex.Match("\r\nx"u8, startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.Anchored).Success);
+                var result = regex.Match("\r\nx"u8, startOffsetInBytes: 1, matchOptions: options);
                 Assert.True(result.Success);
                 Assert.Equal(1, result.StartOffsetInBytes);
             }

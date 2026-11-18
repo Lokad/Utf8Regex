@@ -52,7 +52,7 @@ public sealed class Pcre2ValueInvocationAuthorityTests
             var prefix = new string('x', lead) + "😀";
             var input = Encoding.UTF8.GetBytes(prefix + text);
             Assert.True(Run(regex, input, value, lead + 4));
-            var retained = regex.Match(input, lead + 4);
+            var retained = regex.Match(input, startOffsetInBytes: lead + 4);
             Assert.Equal((lead + 4, input.Length), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
             Assert.Equal(text, System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
             Assert.Throws<ArgumentOutOfRangeException>(() => { _ = Run(regex, input, value, lead + 1); });
@@ -87,6 +87,6 @@ public sealed class Pcre2ValueInvocationAuthorityTests
 
     private static bool Run(Utf8Pcre2Regex regex, byte[] input, bool value, int start = 0,
         CancellationToken token = default) => value
-        ? regex.Match(input, start, Pcre2MatchOptions.None, token).Success
+        ? regex.Match(input, startOffsetInBytes: start, matchOptions: Pcre2MatchOptions.None, cancellationToken: token).Success
         : regex.IsMatch(input, start, Pcre2MatchOptions.None, token);
 }

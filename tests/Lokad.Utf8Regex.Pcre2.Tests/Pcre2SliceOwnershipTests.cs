@@ -184,7 +184,7 @@ public sealed class Pcre2SliceOwnershipTests
         var input = Utf8(inputText);
         var oracle = Bcl(pattern).Match(inputText, startOffsetInBytes);
         Assert.Equal(expectedStart >= 0, oracle.Success);
-        var found = regex.Match(input, startOffsetInBytes);
+        var found = regex.Match(input, startOffsetInBytes: startOffsetInBytes);
         Assert.Equal(oracle.Success, found.Success);
         if (oracle.Success)
         {
@@ -212,7 +212,7 @@ public sealed class Pcre2SliceOwnershipTests
         var expectedEnd = expectedStart + Encoding.UTF8.GetByteCount(oracle.Value);
         Assert.True(regex.IsMatch(input, 0));
         Assert.Equal(1, regex.Count(input, 0));
-        var found = regex.Match(input, 0);
+        var found = regex.Match(input, startOffsetInBytes: 0);
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
         Assert.Equal(expectedEnd, found.EndOffsetInBytes);
@@ -732,13 +732,13 @@ public sealed class Pcre2SliceOwnershipTests
     public void AnchoredMatchOptionsFallBackToBacktracking()
     {
         var regex = new Utf8Pcre2Regex("(a+)(b+)", Pcre2CompileOptions.None);
-        var hit = regex.Match(Utf8("aaabbxx"), 0, Pcre2MatchOptions.Anchored);
+        var hit = regex.Match(Utf8("aaabbxx"), startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.Anchored);
         Assert.True(hit.Success);
         Assert.Equal(0, hit.StartOffsetInBytes);
         Assert.Equal(5, hit.EndOffsetInBytes);
-        var miss = regex.Match(Utf8("xxaaabbyy"), 0, Pcre2MatchOptions.Anchored);
+        var miss = regex.Match(Utf8("xxaaabbyy"), startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.Anchored);
         Assert.False(miss.Success);
-        var offset = regex.Match(Utf8("xxaaabbyy"), 2, Pcre2MatchOptions.Anchored);
+        var offset = regex.Match(Utf8("xxaaabbyy"), startOffsetInBytes: 2, matchOptions: Pcre2MatchOptions.Anchored);
         Assert.True(offset.Success);
         Assert.Equal(2, offset.StartOffsetInBytes);
     }
@@ -755,7 +755,7 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Throws<OperationCanceledException>(
             () => regex.Count(input, 0, Pcre2MatchOptions.None, canceled.Token));
         Assert.Throws<OperationCanceledException>(
-            () => regex.Match(input, 0, Pcre2MatchOptions.None, canceled.Token));
+            () => regex.Match(input, startOffsetInBytes: 0, matchOptions: Pcre2MatchOptions.None, cancellationToken: canceled.Token));
     }
 
     [Fact]
@@ -770,7 +770,7 @@ public sealed class Pcre2SliceOwnershipTests
         var input = Utf8("xxaaabbyy");
         Assert.True(regex.IsMatch(input, 0));
         Assert.Equal(1, regex.Count(input, 0));
-        Assert.True(regex.Match(input, 0).Success);
+        Assert.True(regex.Match(input, startOffsetInBytes: 0).Success);
     }
 
     [Fact]

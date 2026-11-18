@@ -539,7 +539,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(expected, regex.IsMatch(bytes, startOffsetInBytes));
-        var match = regex.Match(bytes, startOffsetInBytes);
+        var match = regex.Match(bytes, startOffsetInBytes: startOffsetInBytes);
         Assert.Equal(expected, match.Success);
         if (expected)
         {

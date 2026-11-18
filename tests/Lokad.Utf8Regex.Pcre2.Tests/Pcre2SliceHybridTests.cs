@@ -74,7 +74,7 @@ public sealed class Pcre2SliceHybridTests
     public void NativeFirstMatchProjectsBytes()
     {
         var regex = new Utf8Pcre2Regex("([a\\d]+)", Pcre2CompileOptions.None);
-        var found = regex.Match(Utf8("xxa1b"), 0);
+        var found = regex.Match(Utf8("xxa1b"), startOffsetInBytes: 0);
         Assert.True(found.Success);
         Assert.Equal(2, found.StartOffsetInBytes);
         Assert.Equal(4, found.EndOffsetInBytes);
