@@ -174,8 +174,29 @@ internal static partial class Utf8SliceRunner
             program.CategorySetMembers[atom.D].Length <= 1;
     }
 
-    internal static bool CanCountTerminalClassRepeat(Utf8SliceProgram program)
-        => TryGetCountTerminalClassRepeat(program, out _, out _);
+    internal static bool CanCountTerminalScalar(Utf8SliceProgram program)
+        => TryGetTerminalCategory(program, out _, out _, out _) ||
+            TryGetCountTerminalClassRepeat(program, out _, out _);
+
+    private static bool TryGetTerminalCategory(Utf8SliceProgram program,
+        out uint categories, out ulong asciiLow, out ulong asciiHigh)
+    {
+        categories = 0;
+        asciiLow = asciiHigh = 0;
+        var code = program.Instructions.AsSpan();
+        if (program.IsNonBacktracking || program.RightToLeft || code.Length is < 2 or > 64 ||
+            code[^1].Kind != Utf8SliceInstructionKind.Accept) return false;
+
+        // A complete single-scalar expression has one endpoint. Plain capture
+        // markers cannot affect discovery here, and Count observes no captures.
+        var index = 0;
+        while (code[index].Kind == Utf8SliceInstructionKind.CaptureStart) ++index;
+        var atom = code[index++];
+        if (atom.Kind != Utf8SliceInstructionKind.CategorySet) return false;
+        while (code[index].Kind == Utf8SliceInstructionKind.CaptureEnd) ++index;
+        return index == code.Length - 1 &&
+            TryGetPositiveCategorySet(program, atom, out categories, out asciiLow, out asciiHigh);
+    }
 
     private static bool TryGetCountTerminalClassRepeat(Utf8SliceProgram program,
         out int repeatIndex, out int atomIndex)
@@ -209,14 +230,28 @@ internal static partial class Utf8SliceRunner
             code[positions[4]].Kind == Utf8SliceInstructionKind.Accept && CanRepeatScalarAtom(program, code[atomIndex]);
     }
 
-    internal static bool TryCountTerminalClassRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+    internal static bool TryCountTerminalScalar(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int start, ref Utf8SliceInvocation invocation, out Utf8SliceCountOutcome outcome)
     {
         outcome = default;
-        if (!TryGetCountTerminalClassRepeat(program, out var repeatIndex, out var atomIndex)) return false;
+        var repeatIndex = -1;
+        var atomIndex = -1;
+        if (!TryGetTerminalCategory(program, out var categories, out var asciiLow, out var asciiHigh) &&
+            !TryGetCountTerminalClassRepeat(program, out repeatIndex, out atomIndex)) return false;
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)start > (uint)input.Length || start < input.Length && (input[start] & 0xc0) == 0x80) return true;
         invocation.AnchorOriginByte = start;
+
+        if (repeatIndex >= 0 && program.Instructions[repeatIndex] is { RepeatMinimum: 1, RepeatMaximum: 1 } &&
+            program.Instructions[atomIndex].Kind == Utf8SliceInstructionKind.CategorySet)
+            TryGetPositiveCategorySet(program, program.Instructions[atomIndex], out categories, out asciiLow, out asciiHigh);
+        if (categories != 0)
+        {
+            var breach = Utf8UnicodeCategoryExecutor.TryCount(input[start..], categories, asciiLow, asciiHigh,
+                ref invocation, out var count);
+            outcome = new(count, breach);
+            return true;
+        }
         outcome = CountTerminalClassRepeat(program, input, start, repeatIndex, atomIndex, ref invocation);
         return true;
     }

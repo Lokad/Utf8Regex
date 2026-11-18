@@ -8,6 +8,24 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8SingleCategoryCountTests
 {
+    [Theory]
+    [InlineData(@"\p{Sm}", false)]
+    [InlineData(@"(?<symbol>\p{Sm})", false)]
+    [InlineData(@"(?:\p{Sm}){1}", false)]
+    [InlineData(@"[\p{Sm}_]", true)]
+    public void TerminalCategoryCountUsesBoundedBlocksWithoutCaptureScratch(string pattern, bool includesUnderscore)
+    {
+        var subject = string.Concat(Enumerable.Repeat("x∑𝛁😀+_é", 2048));
+        var expected = subject.EnumerateRunes().Count(rune =>
+            Rune.GetUnicodeCategory(rune) == UnicodeCategory.MathSymbol || includesUnderscore && rune.Value == '_');
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new() { MaxWorkSteps = 32, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(subject), source.Token));
+    }
 
     [Theory]
     [InlineData(@"\p{L}")] [InlineData(@"(\p{L})")] [InlineData(@"(?:[\p{L}]){1}")]

@@ -559,7 +559,7 @@ public sealed partial class Utf8Regex : IDisposable
     {
         // Count publishes no capture values. Reuse the complete scalar-run proof
         // before expanded branch search or acquiring unused capture slots.
-        if (Utf8SliceRunner.TryCountTerminalClassRepeat(program, input, startByte, ref invocation, out var terminal))
+        if (Utf8SliceRunner.TryCountTerminalScalar(program, input, startByte, ref invocation, out var terminal))
         {
             if (terminal.Breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Terminal class count breached the invocation budget.");

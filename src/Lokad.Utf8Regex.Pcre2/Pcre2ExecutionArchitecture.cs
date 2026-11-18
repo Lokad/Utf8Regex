@@ -614,11 +614,11 @@ internal static class Pcre2CompiledProgramOverlay
     {
         if (preparedCore is null) return operations;
         var sliceProgram = preparedCore.Inspection.AvailableOwnedSliceProgram;
-        // A complete scalar-repeat Count ignores capture markers. Other native
+        // A complete terminal scalar Count ignores capture markers. Other native
         // Core shapes retain the existing fallback-only shared-slice selection.
         var countOnly = preparedCore.Inspection.ExecutionKind != NativeExecutionKind.FallbackRegex;
         if (countOnly && (operations.Count is not Pcre2BacktrackingDirectProgram ||
-            !Utf8SliceRunner.CanCountTerminalClassRepeat(sliceProgram))) return operations;
+            !Utf8SliceRunner.CanCountTerminalScalar(sliceProgram))) return operations;
         // PCRE2's multiline caret rejects EOF after a final newline. Core's
         // caret accepts it; nullable programs therefore keep profile execution.
         Utf8ConstructionScope.ChargeWork((ulong)sliceProgram.Instructions.Length);
@@ -868,7 +868,7 @@ internal static class Pcre2ProgramInvariant
                 ReferenceEquals(canonical.Fallback, sliceProgram.Fallback);
             var countOnly = ReferenceEquals(directProgram, program.Operations.Count) &&
                 IsOwnedMatchFallback(program, sliceProgram.Fallback) &&
-                Utf8SliceRunner.CanCountTerminalClassRepeat(sliceProgram.SliceProgram);
+                Utf8SliceRunner.CanCountTerminalScalar(sliceProgram.SliceProgram);
             if (!shared && !countOnly)
                 throw new InvalidOperationException("Slice operations must share their payload, or own a proved Count payload and canonical PCRE2 fallback.");
         }

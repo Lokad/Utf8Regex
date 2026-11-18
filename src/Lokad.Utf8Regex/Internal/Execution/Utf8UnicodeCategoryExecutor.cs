@@ -1,5 +1,4 @@
 using Lokad.Utf8Regex.Internal.Search;
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -12,29 +11,20 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // PCRE2-INTEGRATION-POINT: flavor-neutral category counting over caller-valid UTF-8.
 internal static class Utf8UnicodeCategoryExecutor
 {
-    // ASCII categories are fixed scalar facts. Borrow the compiler's embedded
-    // 128-byte data instead of acquiring a runtime category-map array.
-    private static ReadOnlySpan<byte> AsciiCategoryMap =>
-    [
-        14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-        14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14,
-        11, 24, 24, 24, 26, 24, 24, 24, 20, 21, 24, 25, 24, 19, 24, 24,
-        8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 24, 24, 25, 25, 25, 24,
-        24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 24, 21, 27, 18,
-        27, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 20, 25, 21, 25, 14,
-    ];
     private static readonly PreparedByteSetState s_asciiMathSymbols = PreparedByteSetState.FromValues("+<=>|~"u8);
 
-    // The caller supplies a complete single-category language proof. Each
-    // admitted primitive sees at most 4096 bytes, ending on a validated scalar
-    // boundary. Keep the existing SIMD algorithm and charge even unlimited calls.
-    internal static Utf8ExecutionLimitKind TryCountValidated(ReadOnlySpan<byte> input,
-        UnicodeCategory category,
+    // The caller proves a complete one-scalar language whose ASCII mask and
+    // Unicode category table cover the predicate. Keep scalar boundaries and
+    // charge the original invocation before each bounded block.
+    internal static Utf8ExecutionLimitKind TryCount(ReadOnlySpan<byte> input,
+        uint categories, ulong asciiLow, ulong asciiHigh,
         ref Utf8SliceInvocation invocation, out int count)
     {
         count = 0;
+        var admission = invocation.TryReserveWorking(0);
+        if (admission != Utf8ExecutionLimitKind.None) return admission;
+        var mathSymbols = categories == 1u << (int)UnicodeCategory.MathSymbol &&
+            asciiLow == s_asciiMathSymbols.Mask0 && asciiHigh == s_asciiMathSymbols.Mask1;
 
         for (var offset = 0; offset < input.Length;)
         {
@@ -42,7 +32,8 @@ internal static class Utf8UnicodeCategoryExecutor
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Utf8SliceBufferWork.Utf8BlockLength(input[offset..]);
-            count += CountCategory(input.Slice(offset, length), category);
+            var block = input.Slice(offset, length);
+            count += mathSymbols ? CountMathSymbols(block) : CountCategories(block, categories, asciiLow, asciiHigh);
             offset += length;
         }
         var publication = invocation.TryChargeInputStep();
@@ -50,70 +41,25 @@ internal static class Utf8UnicodeCategoryExecutor
         return publication;
     }
 
-    public static int CountCategory(
-        ReadOnlySpan<byte> input,
-        UnicodeCategory category)
+    private static int CountCategories(ReadOnlySpan<byte> input, uint categories, ulong asciiLow, ulong asciiHigh)
     {
-        if (category == UnicodeCategory.MathSymbol)
-        {
-            return CountMathSymbols(input);
-        }
-
         var count = 0;
         var index = 0;
-        var categoryByte = (byte)category;
         while (index < input.Length)
         {
-            var first = input[index];
-            if (first < 0x80)
+            var value = input[index];
+            if (value < 128)
             {
-                if (AsciiCategoryMap[first] == categoryByte)
-                {
-                    count++;
-                }
-
-                index++;
-                continue;
+                var mask = value < 64 ? asciiLow : asciiHigh;
+                count += (int)((mask >> (value & 63)) & 1UL);
+                ++index;
             }
-
-            if ((first & 0xE0) == 0xC0)
+            else
             {
-                var ch = (char)(((first & 0x1F) << 6) | (input[index + 1] & 0x3F));
-                if (char.GetUnicodeCategory(ch) == category)
-                {
-                    count++;
-                }
-
-                index += 2;
-                continue;
+                var category = ReadCategory(input, ref index);
+                count += (int)((categories >> (int)category) & 1u);
             }
-
-            if ((first & 0xF0) == 0xE0)
-            {
-                var ch = (char)(((first & 0x0F) << 12) |
-                                ((input[index + 1] & 0x3F) << 6) |
-                                (input[index + 2] & 0x3F));
-                if (char.GetUnicodeCategory(ch) == category)
-                {
-                    count++;
-                }
-
-                index += 3;
-                continue;
-            }
-
-            var scalar = ((first & 0x07) << 18) |
-                         ((input[index + 1] & 0x3F) << 12) |
-                         ((input[index + 2] & 0x3F) << 6) |
-                         (input[index + 3] & 0x3F);
-            if (Rune.GetUnicodeCategory(new Rune(scalar)) == category)
-            {
-                count++;
-            }
-
-            index += 4;
         }
-
         return count;
     }
 
@@ -133,45 +79,17 @@ internal static class Utf8UnicodeCategoryExecutor
             }
 
             index += nextNonAscii;
-            var first = input[index];
-            if ((first & 0xE0) == 0xC0)
-            {
-                var ch = (char)(((first & 0x1F) << 6) | (input[index + 1] & 0x3F));
-                if (char.GetUnicodeCategory(ch) == UnicodeCategory.MathSymbol)
-                {
-                    count++;
-                }
-
-                index += 2;
-            }
-            else if ((first & 0xF0) == 0xE0)
-            {
-                var ch = (char)(((first & 0x0F) << 12) |
-                                ((input[index + 1] & 0x3F) << 6) |
-                                (input[index + 2] & 0x3F));
-                if (char.GetUnicodeCategory(ch) == UnicodeCategory.MathSymbol)
-                {
-                    count++;
-                }
-
-                index += 3;
-            }
-            else
-            {
-                var scalar = ((first & 0x07) << 18) |
-                             ((input[index + 1] & 0x3F) << 12) |
-                             ((input[index + 2] & 0x3F) << 6) |
-                             (input[index + 3] & 0x3F);
-                if (Rune.GetUnicodeCategory(new Rune(scalar)) == UnicodeCategory.MathSymbol)
-                {
-                    count++;
-                }
-
-                index += 4;
-            }
+            if (ReadCategory(input, ref index) == UnicodeCategory.MathSymbol) ++count;
         }
-
         return count;
+    }
+
+    private static UnicodeCategory ReadCategory(ReadOnlySpan<byte> input, ref int index)
+    {
+        // The subject is caller-valid and the block ends at a scalar boundary.
+        _ = Rune.DecodeFromUtf8(input[index..], out var scalar, out var width);
+        index += width;
+        return Rune.GetUnicodeCategory(scalar);
     }
 
     private static int CountAsciiMathSymbols(ReadOnlySpan<byte> input)

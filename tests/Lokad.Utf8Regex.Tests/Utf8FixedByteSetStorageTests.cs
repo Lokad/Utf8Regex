@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Globalization;
 using System.Text;
 using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Search;
@@ -63,23 +62,6 @@ public sealed class Utf8FixedByteSetStorageTests
             var match = token.Match(input);
             Assert.Equal(length > 0 || letter, match.Success);
             if (match.Success) Assert.Equal((1, 1 + length + (letter || digit ? 1 : 0)), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-        }
-    }
-
-    [Fact]
-    public void FrozenAsciiCategoriesAndMixedScalarCountsAgreeWithScalarClassification()
-    {
-        foreach (var category in Enum.GetValues<UnicodeCategory>())
-        {
-            for (var value = 0; value < 128; value++)
-            {
-                Span<byte> input = stackalloc byte[1]; input[0] = (byte)value;
-                Assert.Equal(Rune.GetUnicodeCategory(new Rune(value)) == category ? 1 : 0,
-                    Utf8UnicodeCategoryExecutor.CountCategory(input, category));
-            }
-            const string text = "+×<😀𝛼|~ä>=é";
-            var expected = text.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == category);
-            Assert.Equal(expected, Utf8UnicodeCategoryExecutor.CountCategory(Encoding.UTF8.GetBytes(text), category));
         }
     }
 

@@ -129,7 +129,7 @@ public sealed partial class Utf8PythonRegex
         // for iteration-compatible roots, but execute this profile's program:
         // lexical folding/classes remain authoritative. Unknown/dependent roots
         // and nullable progression retain their capture cursor.
-        if (!program.CanMatchEmpty && (program.GroupCount == 0 || Utf8SliceRunner.CanCountTerminalClassRepeat(program) ||
+        if (!program.CanMatchEmpty && (program.GroupCount == 0 || Utf8SliceRunner.CanCountTerminalScalar(program) ||
             _canUseUtf8IterationFastPath && _utf8Regex is { CanOmitValueCaptureSlots: true }))
             return CountNonEmptyScalar(input, startOffsetInBytes, program, cancellationToken);
         var cursor = new PythonReScalarMatchCursor(input, program,
