@@ -498,11 +498,12 @@ internal static partial class Utf8SliceRunner
             first.A == (int)Utf8SliceAnchorKind.Beginning;
         byte leadingLast = 0, secondLast = 0;
         var second = -1;
+        var leadingScalarIndex = -1;
         // Borrow Count's bounded necessary-start proof. Every survivor still
         // executes the VM; empty/contiguous/mirrored/folded roots stay unchanged.
         var leading = !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
             !program.CanMatchEmpty && !program.HasContiguousAnchor
-            ? GetLeadingAsciiCandidate(program, out leadingLast, out second, out secondLast) : -1;
+            ? GetLeadingAsciiCandidate(program, out leadingLast, out second, out secondLast, out leadingScalarIndex) : -1;
         // Keep the cheaper existing head proof when available. Prepared prefix
         // search fills its gaps, including multi-alternative and UTF-8 starts.
         var seekLiteral = leading < 0 && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
@@ -514,6 +515,15 @@ internal static partial class Utf8SliceRunner
             var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out _, out _, out var directClassLiteral);
             if (directClassLiteral)
                 classLiteral = literal;
+        }
+        // Keep existing literal guidance when available. A decimal set can
+        // reject unrelated ASCII, but any wider scalar may need verification.
+        var seekDecimal = leading < 0 && !seekLiteral && classLiteral < 0 &&
+            IsLeadingDecimalSet(program, leadingScalarIndex);
+        if (seekDecimal)
+        {
+            leading = '0';
+            leadingLast = (byte)'9';
         }
         if (leading >= 0 || seekLiteral || classLiteral >= 0)
         {
@@ -548,9 +558,10 @@ internal static partial class Utf8SliceRunner
                         new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
             }
             if (leading >= 0 && ((uint)position >= (uint)input.Length ||
-                (uint)(input[position] - leading) > (uint)(leadingLast - leading)))
+                (uint)(input[position] - leading) > (uint)(leadingLast - leading) &&
+                !(seekDecimal && input[position] is >= 0xc2 and <= 0xf4)))
             {
-                var seekBreach = TrySeekAsciiCandidate(input, ref position, (byte)leading, leadingLast, ref invocation);
+                var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leading, leadingLast, seekDecimal, ref invocation);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
@@ -761,7 +772,7 @@ internal static partial class Utf8SliceRunner
         // Keep one candidate search rather than scanning its prefix twice.
         var leadingAsciiFirst = !seekLiteral && !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
             !program.CanMatchEmpty && !program.HasContiguousAnchor
-            ? GetLeadingAsciiCandidate(program, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast) : -1;
+            ? GetLeadingAsciiCandidate(program, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast, out _) : -1;
         var leadingClass = -1;
         var whitespaceLiteralIndex = -1;
         long whitespaceGapMaximum = 0;

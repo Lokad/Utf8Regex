@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -8,17 +9,19 @@ internal static partial class Utf8SliceRunner
     // scanner can reject an impossible consuming byte before the VM runs them.
     private static bool PrecedesRequiredScalar(Utf8SliceInstruction entry) =>
         entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
-            Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Lookahead or Utf8SliceInstructionKind.Lookbehind ||
+            Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary or
+            Utf8SliceInstructionKind.Lookahead or Utf8SliceInstructionKind.Lookbehind ||
         entry.Kind == Utf8SliceInstructionKind.RepeatGreedy && entry.RepeatMinimum > 0;
 
     // An unfolded ASCII literal or positive range proves possible starts.
     // Optional repeats and forks can reach a different consuming instruction.
     private static int GetLeadingAsciiCandidate(Utf8SliceProgram program, out byte last,
-        out int second, out byte secondLast)
+        out int second, out byte secondLast, out int firstScalarIndex)
     {
         last = 0;
         second = -1;
         secondLast = 0;
+        firstScalarIndex = -1;
         var code = program.Instructions.AsSpan();
         var index = 0;
         // This optional per-invocation proof stays bounded even for deeply
@@ -26,6 +29,7 @@ internal static partial class Utf8SliceRunner
         while (index < code.Length && index < 64 && PrecedesRequiredScalar(code[index]))
             index++;
         if (index >= code.Length || index >= 64) return -1;
+        firstScalarIndex = index;
         var first = GetUnfoldedAsciiRange(code[index], out last);
         if (first < 0) return first;
         // Only straight-line mandatory entries can precede the next scalar.
@@ -54,12 +58,22 @@ internal static partial class Utf8SliceRunner
         return (set.D & 255) - 1;
     }
 
+    private static bool IsLeadingDecimalSet(Utf8SliceProgram program, int index)
+        => index >= 0 && program.Instructions[index].Kind == Utf8SliceInstructionKind.CategorySet &&
+            TryGetPositiveCategorySet(program, program.Instructions[index], out var categories, out var low, out var high) &&
+            categories == 1u << (int)UnicodeCategory.DecimalDigitNumber &&
+            (low & ~Utf8AsciiBytePredicates.DecimalMask) == 0 && high == 0;
+
     internal static Utf8ExecutionLimitKind TrySeekAsciiCandidate(ReadOnlySpan<byte> input, ref int position,
         byte first, byte last, ref Utf8SliceInvocation invocation)
+        => TrySeekLeadingByte(input, ref position, first, last, false, ref invocation);
+
+    private static Utf8ExecutionLimitKind TrySeekLeadingByte(ReadOnlySpan<byte> input, ref int position,
+        byte first, byte last, bool decimalSet, ref Utf8SliceInvocation invocation)
     {
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
         {
-            var relative = first == last ? input[position..].IndexOf(first) : input[position..].IndexOfAnyInRange(first, last);
+            var relative = IndexOfLeadingByte(input[position..], first, last, decimalSet);
             position = relative < 0 ? -1 : position + relative;
             return Utf8ExecutionLimitKind.None;
         }
@@ -69,13 +83,17 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Math.Min(2048, input.Length - position);
             var block = input.Slice(position, length);
-            var relative = first == last ? block.IndexOf(first) : block.IndexOfAnyInRange(first, last);
+            var relative = IndexOfLeadingByte(block, first, last, decimalSet);
             if (relative >= 0) { position += relative; return Utf8ExecutionLimitKind.None; }
             position += length;
         }
         position = -1;
         return Utf8ExecutionLimitKind.None;
     }
+
+    private static int IndexOfLeadingByte(ReadOnlySpan<byte> input, byte first, byte last, bool decimalSet)
+        => decimalSet ? Utf8AsciiBytePredicates.DecimalOrScalarLead.IndexOf(input)
+            : first == last ? input.IndexOf(first) : input.IndexOfAnyInRange(first, last);
 
     // A whitespace repeat followed by an exact non-whitespace ASCII scalar
     // admits a window before that scalar; one scalar-class run can precede it,

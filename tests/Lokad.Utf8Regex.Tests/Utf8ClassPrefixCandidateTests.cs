@@ -10,6 +10,73 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ClassPrefixCandidateTests
 {
     [Theory]
+    [InlineData(@"(?<value>\d+(?:\.\d+)?)", "", "𝟚.٣")]
+    [InlineData(@"\b(?<value>(?:\d{1,3}\.){3}\d{1,3})\b", "é1.2.3.4,", "𝟘.١.2.３")]
+    public void DecimalCandidatesPreserveScalarStartsCapturesAndBoundary(string pattern, string before, string value)
+    {
+        // The first wider scalar straddles a search block. It is a candidate
+        // lead but not a digit. IP must also reject the ASCII digits after é.
+        var prefix = new string('!', 2047) + "😀" + new string('!', 16_384) + before;
+        var input = Encoding.UTF8.GetBytes(prefix + value + "!");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var end = start + Encoding.UTF8.GetByteCount(value);
+        using var source = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with { MaxWorkSteps = 1024 }
+        });
+        Assert.True(regex.IsMatch(input, source.Token));
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        var found = regex.Match(input, 0, captures, source.Token);
+        Assert.Equal((start, end), (found.StartOffsetInBytes, found.EndOffsetInBytes));
+        Assert.Equal((start, end), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+
+        using var cursor = regex.CreateMatchCursor(input, 2047, source.Token);
+        Assert.True(cursor.MoveNext(out var retained));
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(value, Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
+    }
+
+    [Fact]
+    public void DecimalPrefixDoesNotSkipAnExplicitAsciiClassMember()
+    {
+        using var regex = Utf8Regex.Compile(@"[\dx]+(?:\.\d+)?");
+        var input = Encoding.UTF8.GetBytes("!x.𝟙!");
+        var result = regex.Match(input);
+        Assert.Equal((1, input.Length - 1), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+    }
+
+    [Fact]
+    public void DecimalCandidateScanObservesTheOriginalTokenAndWorkLimit()
+    {
+        const string pattern = @"\d+(?:\.\d+)?";
+        var input = new byte[2048 * 96];
+        input.AsSpan().Fill((byte)'!');
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with { MaxWorkSteps = 32 }
+        });
+        var limit = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, limit.ResourceKind);
+
+        using var source = new CancellationTokenSource();
+        using var interruptible = Utf8Regex.Compile(pattern, policy: new()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
+        var session = Utf8SearchDiagnosticsSession.Start(_ => source.Cancel());
+        try
+        {
+            var canceled = Assert.Throws<OperationCanceledException>(() => interruptible.IsMatch(input, source.Token));
+            Assert.Equal(source.Token, canceled.CancellationToken);
+        }
+        finally { session.Complete(); }
+    }
+
+    [Theory]
     [InlineData(@"\p{Lu}{2,4}\s+[\s\S]{0,8}result", " 😀result! ")]
     [InlineData(@"\p{Lu}+@", "é😀@! ")]
     public void RejectedWindowsAdvanceWithoutVmWorkspace(string pattern, string tail)
