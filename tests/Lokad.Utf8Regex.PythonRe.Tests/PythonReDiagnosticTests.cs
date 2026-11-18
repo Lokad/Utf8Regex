@@ -26,12 +26,22 @@ public sealed class PythonReDiagnosticTests
             {
                 using var regex = root switch
                 {
-                    0 => new Utf8PythonRegex(pattern, options),
-                    1 => new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options),
-                    2 => Utf8PythonRegex.Compile(pattern, options, Timeout.InfiniteTimeSpan, default,
-                        default, Timeout.InfiniteTimeSpan, default),
-                    _ => Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), options, Timeout.InfiniteTimeSpan,
-                        default, default, Timeout.InfiniteTimeSpan, default),
+                    0 => new Utf8PythonRegex(pattern, options: options),
+                    1 => new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: options),
+                    2 => Utf8PythonRegex.Compile(pattern, options: options, policy: new Utf8RegexPolicy()
+                    {
+                        MatchTimeout = Timeout.InfiniteTimeSpan,
+                        ResourcePolicy = default,
+                        ConstructionPolicy = default,
+                        ConstructionTimeout = Timeout.InfiniteTimeSpan
+                    }, cancellationToken: default),
+                    _ => Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), options: options, policy: new Utf8RegexPolicy()
+                    {
+                        MatchTimeout = Timeout.InfiniteTimeSpan,
+                        ResourcePolicy = default,
+                        ConstructionPolicy = default,
+                        ConstructionTimeout = Timeout.InfiniteTimeSpan
+                    }, cancellationToken: default),
                 };
             });
             Assert.Equal(source, failure.ErrorSource); Assert.Equal(kind, failure.ErrorKind);
@@ -59,30 +69,42 @@ public sealed class PythonReDiagnosticTests
         // to this API's documented UTF-16 units, rather than scalar indices.
         using var regex = new Utf8PythonRegex("(a)");
         foreach (var prefix in new[] { "", "é😀" })
-        foreach (var input in new[] { Array.Empty<byte>(), "zzz"u8.ToArray() })
-        {
-            var template = prefix + suffix;
-            var bytes = Assert.Throws<PythonRePatternException>(() => regex.Subn(input, template));
-            var text = Assert.Throws<PythonRePatternException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(input, template)));
-            foreach (var error in new[] { bytes, text })
+            foreach (var input in new[] { Array.Empty<byte>(), "zzz"u8.ToArray() })
             {
-                Assert.Equal(PythonReErrorSource.Replacement, error.ErrorSource);
-                Assert.Equal(PythonReErrorKind.Syntax, error.ErrorKind);
-                Assert.Equal(prefix.Length + suffixPosition, error.Position);
+                var template = prefix + suffix;
+                var bytes = Assert.Throws<PythonRePatternException>(() => regex.Subn(input, template));
+                var text = Assert.Throws<PythonRePatternException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(input, template)));
+                foreach (var error in new[] { bytes, text })
+                {
+                    Assert.Equal(PythonReErrorSource.Replacement, error.ErrorSource);
+                    Assert.Equal(PythonReErrorKind.Syntax, error.ErrorKind);
+                    Assert.Equal(prefix.Length + suffixPosition, error.Position);
+                }
             }
-        }
     }
 
     [Fact]
     public void FundedFailuresRefundDiscardedStorageAndPreserveCachedPlans()
     {
         var account = new Allowance(4 << 20); Assert.True(account.TryReserve(17));
-        var failure = Assert.Throws<PythonRePatternException>(() => Utf8PythonRegex.Compile("😀[", default,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account));
+        var failure = Assert.Throws<PythonRePatternException>(() => Utf8PythonRegex.Compile("😀[", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default));
         Assert.Equal(PythonReErrorSource.Pattern, failure.ErrorSource); Assert.Equal(2, failure.Position);
         Assert.Equal(17UL, account.Used);
-        using var regex = Utf8PythonRegex.Compile("(?P<x>a)", default, Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, default, account);
+        using var regex = Utf8PythonRegex.Compile("(?P<x>a)", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
         Assert.Equal("a!", PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!")).ResultText); var held = account.Used;
         var replacement = new string('x', 131072) + "é😀" + @"\q";
         failure = Assert.Throws<PythonRePatternException>(() => regex.SubnRetained(""u8, replacement));

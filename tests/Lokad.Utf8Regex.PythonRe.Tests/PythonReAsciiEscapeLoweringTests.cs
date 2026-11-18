@@ -17,8 +17,7 @@ public sealed class PythonReAsciiEscapeLoweringTests
             {
                 var pattern = "(?ai:(?P<x>[" + (negate ? "^" : "") + body + "]))";
                 using var regex = bytes
-                    ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern))
-                    : new Utf8PythonRegex(pattern);
+                    ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern)) : new Utf8PythonRegex(pattern);
                 foreach (var scalar in Enumerable.Range(0, 128).Concat(new[] { 0xE9, 0x660, 0xA0, 0x212A, 0x10400, 0x1F600 }))
                 {
                     var word = scalar is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or >= '0' and <= '9' or '_';
@@ -58,8 +57,7 @@ public sealed class PythonReAsciiEscapeLoweringTests
         {
             var pattern = @"(?ai:(?P<x>\" + escape + "))";
             using var regex = bytes
-                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern))
-                : new Utf8PythonRegex(pattern);
+                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern)) : new Utf8PythonRegex(pattern);
             // ASCII whitespace deliberately omits U+001C..U+001F. The wider
             // scalars also distinguish ASCII classes from Unicode predicates
             // and catch accidental folding of Kelvin sign into ASCII word.
@@ -84,7 +82,7 @@ public sealed class PythonReAsciiEscapeLoweringTests
                 Assert.Equal(text, System.Text.Encoding.UTF8.GetString((actual.Groups[1].Success ? actual.GetGroupMemory(actual.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
                 Assert.Equal((0, input.Length), (actual.Groups[1].StartOffsetInBytes, actual.Groups[1].EndOffsetInBytes));
             }
-            Assert.False(regex.Match(ReadOnlySpan<byte>.Empty,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.False(regex.Match(ReadOnlySpan<byte>.Empty, mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
     [Theory]

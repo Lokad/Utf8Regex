@@ -24,8 +24,17 @@ public sealed class PythonReDetailedPublicationContractTests
                 collectedRanges1.Add(rangeMatch1);
         }
         var unlimited = collectedRanges1.ToArray();
-        var finiteRegex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+        var finiteRegex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            }
+        });
         var collectedRanges2 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor2 = finiteRegex.CreateMatchCursor(input, 0, default))
         {
@@ -66,8 +75,15 @@ public sealed class PythonReDetailedPublicationContractTests
         Utf8PythonRangeMatch cursorRange = default;
         var input = "é😀"u8.ToArray();
         var retained = new List<Utf8PythonRangeMatch>();
-        using (var regex = new Utf8PythonRegex(named ? "(?P<outer>(?P<inner>.))" : "((.))",
-            resourcePolicy: new() { MaxWorkSteps = 10000, MaxWorkingBytes = 4096, MaxResultBytes = 4096 }))
+        using (var regex = new Utf8PythonRegex(named ? "(?P<outer>(?P<inner>.))" : "((.))", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10000,
+                MaxWorkingBytes = 4096,
+                MaxResultBytes = 4096
+            }
+        }))
         {
             using var cursor = regex.CreateMatchCursor(input);
             while (cursor.MoveNext(out cursorRange)) retained.Add(cursorRange);

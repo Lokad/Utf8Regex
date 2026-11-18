@@ -11,12 +11,21 @@ public sealed class PythonReFullMatchByteCeilingTests
     {
         foreach (var maximum in new[] { 1UL, 64UL, 256UL })
         {
-            using var regex = Utf8PythonRegex.Compile("[A-Z]{3}[0-9]{3}",
-                PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-                new() { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = maximum, MaxResultBytes = 4096 },
-                default, Timeout.InfiniteTimeSpan, default);
-            Assert.True(regex.Match("ABC123"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
-            Assert.False(regex.Match("ABC12x"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+            using var regex = Utf8PythonRegex.Compile("[A-Z]{3}[0-9]{3}", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 10000,
+                    MaxDepth = 1,
+                    MaxWorkingBytes = maximum,
+                    MaxResultBytes = 4096
+                },
+                ConstructionPolicy = default,
+                ConstructionTimeout = Timeout.InfiniteTimeSpan
+            }, cancellationToken: default);
+            Assert.True(regex.Match("ABC123"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.False(regex.Match("ABC12x"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
 
@@ -25,14 +34,23 @@ public sealed class PythonReFullMatchByteCeilingTests
     [InlineData(true)]
     public void SingleCaptureSlotsAreAdmittedWithoutUnneededTrail(bool allow)
     {
-        using var regex = Utf8PythonRegex.Compile("([A-Z]{3})[0-9]{3}",
-            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = allow ? 256UL : 1UL, MaxResultBytes = 4096 },
-            default, Timeout.InfiniteTimeSpan, default);
-        if (allow) Assert.True(regex.Match("ABC123"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        using var regex = Utf8PythonRegex.Compile("([A-Z]{3})[0-9]{3}", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10000,
+                MaxDepth = 1,
+                MaxWorkingBytes = allow ? 256UL : 1UL,
+                MaxResultBytes = 4096
+            },
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default);
+        if (allow) Assert.True(regex.Match("ABC123"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         else
         {
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("ABC123"u8,mode: Utf8PythonMatchMode.FullMatch));
+            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("ABC123"u8, mode: Utf8PythonMatchMode.FullMatch));
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
         }
     }
@@ -42,9 +60,17 @@ public sealed class PythonReFullMatchByteCeilingTests
     [InlineData(true)]
     public void UnfundedColdPreparationDoesNotPublishAndRestoresParent(bool liveToken)
     {
-        var regex = new Utf8PythonRegex(string.Concat(Enumerable.Repeat("(a?)", 256)),
-            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 128, MaxDepth = 16, MaxWorkingBytes = 4096, MaxResultBytes = 1024 });
+        var regex = new Utf8PythonRegex(string.Concat(Enumerable.Repeat("(a?)", 256)), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 128,
+                MaxDepth = 16,
+                MaxWorkingBytes = 4096,
+                MaxResultBytes = 1024
+            }
+        });
         using var token = new CancellationTokenSource();
         using var parent = Utf8ConstructionScope.Enter();
         _ = parent.Budget.AllocateArray<byte>(17, false);
@@ -56,7 +82,7 @@ public sealed class PythonReFullMatchByteCeilingTests
         {
             var spent = parent.Budget.WorkSteps;
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                regex.Match([],0,cancellationToken: liveToken ? token.Token : default,mode: Utf8PythonMatchMode.FullMatch));
+                regex.Match([], 0, cancellationToken: liveToken ? token.Token : default, mode: Utf8PythonMatchMode.FullMatch));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
             Assert.True(failure.Requested > failure.Limit);
             Assert.False(regex.DebugIsScalarFullProgramValueCreated);
@@ -71,13 +97,27 @@ public sealed class PythonReFullMatchByteCeilingTests
     [Fact]
     public void EagerCompileUsesItsConstructionAllowanceBeforeTinyInvocation()
     {
-        var regex = Utf8PythonRegex.Compile(string.Concat(Enumerable.Repeat("(a?)", 256)),
-            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 128, MaxDepth = 16, MaxWorkingBytes = 4096, MaxResultBytes = 1024 },
-            new() { MaxWorkSteps = 16000000, MaxDepth = 4096, MaxInstructionCapacity = 1048576, MaxBytes = 8 << 20 },
-            TimeSpan.FromSeconds(30), CancellationToken.None);
+        var regex = Utf8PythonRegex.Compile(string.Concat(Enumerable.Repeat("(a?)", 256)), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 128,
+                MaxDepth = 16,
+                MaxWorkingBytes = 4096,
+                MaxResultBytes = 1024
+            },
+            ConstructionPolicy = new()
+            {
+                MaxWorkSteps = 16000000,
+                MaxDepth = 4096,
+                MaxInstructionCapacity = 1048576,
+                MaxBytes = 8 << 20
+            },
+            ConstructionTimeout = TimeSpan.FromSeconds(30)
+        }, cancellationToken: CancellationToken.None);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match([],mode: Utf8PythonMatchMode.FullMatch));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match([], mode: Utf8PythonMatchMode.FullMatch));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
         Assert.Equal(4096ul, failure.Limit);
     }
@@ -89,14 +129,17 @@ public sealed class PythonReFullMatchByteCeilingTests
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)+", PythonReCompileOptions.None,
-            TimeSpan.FromMilliseconds(20), new()
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
             {
                 MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 16384,
                 MaxResultBytes = 16384
-            });
+            }
+        });
         using var token = new CancellationTokenSource();
         using var parent = Utf8ConstructionScope.Enter();
         var maximum = parent.Budget.MaximumBytes;
@@ -107,7 +150,7 @@ public sealed class PythonReFullMatchByteCeilingTests
             if (cancel) token.Cancel(); else ticks = 25;
         };
         parent.Budget.CheckpointHook = hook;
-        var failure = Record.Exception(() => regex.Match("😀a"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch));
+        var failure = Record.Exception(() => regex.Match("😀a"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.FullMatch));
         if (cancel)
             Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         else
@@ -131,7 +174,7 @@ public sealed class PythonReFullMatchByteCeilingTests
         Assert.True(retained.Success);
         Assert.Equal("x", retained.LastGroup);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.True(regex.Match("😀a"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("😀a"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }
 }

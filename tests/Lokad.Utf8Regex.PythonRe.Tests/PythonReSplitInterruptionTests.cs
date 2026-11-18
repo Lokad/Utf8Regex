@@ -16,8 +16,17 @@ public sealed class PythonReSplitInterruptionTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         const string pattern = "([,;])|(😀)";
         var timeout = TimeSpan.FromMilliseconds(20);
-        using var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, timeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        using var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éa,b😀c;", 8)));
         var checkpoints = new List<ulong>();
         Utf8PythonCaptureRange[] retained;

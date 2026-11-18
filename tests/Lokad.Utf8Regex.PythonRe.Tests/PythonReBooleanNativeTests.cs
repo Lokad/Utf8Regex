@@ -27,8 +27,17 @@ public sealed class PythonReBooleanNativeTests
     public void BooleanNativeSearchKeepsOffsetsAndNeedsNoVmOrResultStorage(
         string pattern, string text, int start, bool expected)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input, start));
@@ -38,11 +47,21 @@ public sealed class PythonReBooleanNativeTests
 
 
     [Theory]
-    [InlineData("cat|dog")] [InlineData("(cat)|(dog)")]
+    [InlineData("cat|dog")]
+    [InlineData("(cat)|(dog)")]
     public void InvalidStartCancellationAndWorkDenialKeepFailureContracts(string pattern)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch("😀cat"u8, 1));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch("cat"u8)).ResourceKind);
@@ -52,13 +71,17 @@ public sealed class PythonReBooleanNativeTests
     }
 
     [Theory]
-    [InlineData("cat|dog")] [InlineData("(cat)|(dog)")]
+    [InlineData("cat|dog")]
+    [InlineData("(cat)|(dog)")]
     public void UnmeteredTokenOnlyAndTimeoutOnlyCallsKeepBooleanOutcomes(string pattern)
     {
         using var token = new CancellationTokenSource();
         foreach (var timeout in new[] { Regex.InfiniteMatchTimeout, TimeSpan.FromSeconds(30) })
         {
-            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, timeout);
+            var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = timeout
+            });
             Assert.True(regex.IsMatch("é😀dog"u8, 2));
             Assert.True(regex.IsMatch("é😀dog"u8, 2, token.Token));
             Assert.False(regex.IsMatch("é😀dog"u8, 9, token.Token));
@@ -76,8 +99,17 @@ public sealed class PythonReBooleanNativeTests
     [InlineData("(cat)|dog", "cat", true)]
     public void OtherProgramsKeepAssertionsFoldingEmptyAndCaptures(string pattern, string text, bool expected)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text)));
     }
 
@@ -85,8 +117,17 @@ public sealed class PythonReBooleanNativeTests
     public void BooleanCallsPreserveRetainedCapturesAndGenericProgramsNeedVmStorage()
     {
         var input = "é😀ab ab"u8.ToArray();
-        var regex = new Utf8PythonRegex("(?P<x>a)(b)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8PythonRegex("(?P<x>a)(b)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, default))
         {
@@ -111,10 +152,19 @@ public sealed class PythonReBooleanNativeTests
             Assert.Equal("b", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(2).Span));
             Assert.Equal(2, matches[0].LastIndex);
             Assert.Null(matches[0].LastGroup);
-            Assert.Equal(6,matches[0].Value.StartOffsetInBytes);
+            Assert.Equal(6, matches[0].Value.StartOffsetInBytes);
         }
-        var generic = new Utf8PythonRegex("(a+)(b+)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var generic = new Utf8PythonRegex("(a+)(b+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => generic.IsMatch(input)).ResourceKind);
     }
@@ -129,8 +179,17 @@ public sealed class PythonReBooleanNativeTests
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20),
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 262144) + "dog");
         var interrupted = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>

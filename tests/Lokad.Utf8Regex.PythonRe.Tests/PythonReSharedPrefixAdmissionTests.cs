@@ -8,8 +8,15 @@ public sealed class PythonReSharedPrefixAdmissionTests
     public void SharedPrefixSkipsFalseHeadsWithinTheOriginalFinitePolicy()
     {
         var input = Encoding.UTF8.GetBytes(new string('i', 65536) + "tem-12");
-        using var regex = new Utf8PythonRegex("item-([0-9]+)", resourcePolicy: new()
-        { MaxWorkSteps = 2000, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 });
+        using var regex = new Utf8PythonRegex("item-([0-9]+)", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 2000,
+                MaxWorkingBytes = 1UL << 20,
+                MaxResultBytes = 1UL << 20
+            }
+        });
         using var cancellation = new CancellationTokenSource();
         var result = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, cancellation.Token));
         Assert.Equal(Utf8PythonFindAllShape.SingleGroup, result.Shape);

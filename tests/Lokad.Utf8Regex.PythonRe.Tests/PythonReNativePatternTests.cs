@@ -29,8 +29,8 @@ public sealed class PythonReNativePatternTests
     public void PublicNativeGrammarPreservesScalarResultsAfterSourceReuse(string pattern, string subject, PythonReCompileOptions options)
     {
         var bytes = Encoding.UTF8.GetBytes(pattern);
-        using var native = new Utf8PythonRegex(bytes, options);
-        using var text = new Utf8PythonRegex(pattern, options);
+        using var native = new Utf8PythonRegex(bytes, options: options);
+        using var text = new Utf8PythonRegex(pattern, options: options);
         Array.Fill(bytes, (byte)0xff);
         Assert.Equal(pattern, native.Pattern);
         Assert.Equal(text.EffectiveOptions, native.EffectiveOptions);

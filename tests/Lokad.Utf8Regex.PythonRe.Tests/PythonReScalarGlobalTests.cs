@@ -24,7 +24,7 @@ public sealed partial class PythonReScalarGlobalTests
         {
             using var source = new CancellationTokenSource();
             var token = live ? source.Token : CancellationToken.None;
-            var regex = new Utf8PythonRegex(pattern, options);
+            var regex = new Utf8PythonRegex(pattern, options: options);
             var collectedRanges1 = new List<Utf8PythonRangeMatch>();
             using (var rangeCursor1 = regex.CreateMatchCursor(input, start, token))
             {
@@ -92,11 +92,17 @@ public sealed partial class PythonReScalarGlobalTests
     }
 
     [Theory]
-    [InlineData(3)] [InlineData(4)]
-    [InlineData(6)] [InlineData(8)] [InlineData(9)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(6)]
+    [InlineData(8)]
+    [InlineData(9)]
     public void CancellationInterruptsOwnedGlobalDiscovery(int operation)
     {
-        var regex = new Utf8PythonRegex("(?P<x>.)+", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8PythonRegex("(?P<x>.)+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\U0001f600", 256)));
         using var source = new CancellationTokenSource();
         var entered = false;

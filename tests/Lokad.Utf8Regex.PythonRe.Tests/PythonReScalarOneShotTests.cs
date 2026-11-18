@@ -26,8 +26,11 @@ public sealed class PythonReScalarOneShotTests
                     MaxWorkingBytes = 16 << 20,
                     MaxResultBytes = 16 << 20,
                 } : default;
-                var regex = new Utf8PythonRegex(pattern, options,
-                    mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan, policy);
+                var regex = new Utf8PythonRegex(pattern, options: options, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                });
                 var token = mode == 0 ? default : source.Token;
                 // This ASCII grammar has only unconstrained DotAll repetition over
                 // supplementary subjects: the BCL oracle has equivalent extents.
@@ -42,7 +45,7 @@ public sealed class PythonReScalarOneShotTests
                     {
                         var start = Encoding.UTF8.GetByteCount(text.AsSpan(0, index));
                         var expected = oracle.Match(text, index);
-                        var actual = full ? regex.Match(input,start,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch): regex.Match(input,start,cancellationToken: token);
+                        var actual = full ? regex.Match(input, start, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch) : regex.Match(input, start, cancellationToken: token);
                         Assert.Equal(expected.Success, actual.Success);
                         if (!expected.Success) continue;
                         Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
@@ -75,9 +78,17 @@ public sealed class PythonReScalarOneShotTests
         // The interval runner charges per bounded block. Cross the invocation's
         // 64-step diagnostic interval even when it consumes a block per step.
         var input = Encoding.UTF8.GetBytes(full ? "pre" + new string('a', 262144) + "😀post" : "prefix" + new string('1', 262144));
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.DotAll,
-            expire ? TimeSpan.FromMilliseconds(200) : Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 5_000_000, MaxDepth = 8192, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.DotAll, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 5_000_000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 16 << 20,
+                MaxResultBytes = 16 << 20
+            }
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -87,7 +98,7 @@ public sealed class PythonReScalarOneShotTests
         });
         try
         {
-            void Run() { if (full) _ = regex.Match(input,0,cancellationToken: source.Token,mode: Utf8PythonMatchMode.FullMatch); else _ = regex.Match(input,0,cancellationToken: source.Token); }
+            void Run() { if (full) _ = regex.Match(input, 0, cancellationToken: source.Token, mode: Utf8PythonMatchMode.FullMatch); else _ = regex.Match(input, 0, cancellationToken: source.Token); }
             if (expire)
             {
                 var failure = Assert.Throws<RegexMatchTimeoutException>(Run);
@@ -98,6 +109,6 @@ public sealed class PythonReScalarOneShotTests
             Assert.True(entered);
         }
         finally { session.Complete(); }
-        Assert.True(full ? regex.Match("pre😀post"u8,mode: Utf8PythonMatchMode.FullMatch).Success : regex.Match("prefix123"u8).Success);
+        Assert.True(full ? regex.Match("pre😀post"u8, mode: Utf8PythonMatchMode.FullMatch).Success : regex.Match("prefix123"u8).Success);
     }
 }

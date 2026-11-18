@@ -36,7 +36,7 @@ public sealed class PythonReSubstitutionOwnershipTests
     [MemberData(nameof(OwnedCases))]
     public void OwnedSubstitutionMatchesCpython(string pattern, PythonReCompileOptions options, string inputText, string replacement, int count, int startOffsetInBytes, string expectedText, int expectedCount)
     {
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var bytes = regex.Subn(input, replacement, count, startOffsetInBytes);
         Assert.Equal(expectedText, Encoding.UTF8.GetString(bytes.ResultBytes));
@@ -56,7 +56,7 @@ public sealed class PythonReSubstitutionOwnershipTests
     [MemberData(nameof(ManagedCases))]
     public void FormerManagedSubstitutionStaysOwned(string pattern, PythonReCompileOptions options, string inputText, string replacement, int count, int startOffsetInBytes, string expectedText, int expectedCount)
     {
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var subn = PythonReSubstitutionAssert.Decode(regex.Subn(input, replacement, count, startOffsetInBytes));
         Assert.Equal(expectedText, subn.ResultText);

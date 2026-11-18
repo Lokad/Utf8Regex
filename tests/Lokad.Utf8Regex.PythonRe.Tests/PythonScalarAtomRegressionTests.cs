@@ -81,7 +81,7 @@ public sealed class PythonScalarAtomRegressionTests
     [InlineData("..", "\U0001F600", false)]
     public void DotFullMatchCoversWholeScalars(string pattern, string input, bool expectedSuccess)
     {
-        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).Match(Utf8(input),mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).Match(Utf8(input), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public sealed class PythonScalarAtomRegressionTests
     [InlineData("\U0001F600+", "\U0001F600\U0001F600", true)]
     public void AstralLiteralFullMatchCoversWholeScalars(string pattern, string input, bool expectedSuccess)
     {
-        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).Match(Utf8(input),mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).Match(Utf8(input), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -131,7 +131,7 @@ public sealed class PythonScalarAtomRegressionTests
     [InlineData("\U00010400", "\U00010428", true, 0, 2)]
     public void AstralIgnoreCaseFoldsBothDirections(string pattern, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        AssertSearch(new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
+        AssertSearch(new Utf8PythonRegex(pattern, options: PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
     }
 
     [Theory]
@@ -139,7 +139,7 @@ public sealed class PythonScalarAtomRegressionTests
     [InlineData("(?a:\U00010428)", "\U00010428", true, 0, 2)]
     public void AsciiAstralLiteralsCompareExactly(string pattern, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        AssertSearch(new Utf8PythonRegex(pattern, PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
+        AssertSearch(new Utf8PythonRegex(pattern, options: PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
     }
 
     [Theory]
@@ -155,7 +155,7 @@ public sealed class PythonScalarAtomRegressionTests
         var regex = new Utf8PythonRegex(pattern);
         AssertSearch(regex, input, expectedSuccess, expectedStart, expectedEnd);
         Assert.Equal(expectedSuccess, regex.Match(Utf8(input)).Success);
-        Assert.Equal(expectedSuccess, regex.Match(Utf8(input),mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(expectedSuccess, regex.Match(Utf8(input), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -164,7 +164,7 @@ public sealed class PythonScalarAtomRegressionTests
     [InlineData("(?a:\\W)", "\U0001F600", true)]
     public void ComplementFullMatchCoversWholeScalars(string pattern, string input, bool expectedSuccess)
     {
-        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).Match(Utf8(input),mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern).Match(Utf8(input), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
@@ -189,9 +189,9 @@ public sealed class PythonScalarAtomRegressionTests
     public void ScopedAsciiComplementSearchAgreesWithCpythonMatch(string pattern, string input)
     {
         var regex = new Utf8PythonRegex(pattern);
-        var search = regex.Match(Utf8(input),mode: Utf8PythonMatchMode.Search);
+        var search = regex.Match(Utf8(input), mode: Utf8PythonMatchMode.Search);
         var match = regex.Match(Utf8(input));
-        var full = regex.Match(Utf8(input),mode: Utf8PythonMatchMode.FullMatch);
+        var full = regex.Match(Utf8(input), mode: Utf8PythonMatchMode.FullMatch);
         Assert.True(search.Success);
         Assert.Equal(match.Success, search.Success);
         Assert.Equal(full.Success, search.Success);
@@ -203,36 +203,36 @@ public sealed class PythonScalarAtomRegressionTests
     [Fact]
     public void AstralLetterComplementStaysPinnedToCpython()
     {
-        Assert.False(new Utf8PythonRegex("\\W").Match(Utf8(char.ConvertFromUtf32(0x10400)),mode: Utf8PythonMatchMode.Search).Success);
+        Assert.False(new Utf8PythonRegex("\\W").Match(Utf8(char.ConvertFromUtf32(0x10400)), mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Fact]
     public void AstralBracketedComplementStaysPinnedToCpython()
     {
-        Assert.False(new Utf8PythonRegex("[\\W]").Match(Utf8(char.ConvertFromUtf32(0x10400)),mode: Utf8PythonMatchMode.Search).Success);
+        Assert.False(new Utf8PythonRegex("[\\W]").Match(Utf8(char.ConvertFromUtf32(0x10400)), mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Fact]
     public void AstralDigitComplementStaysPinnedToCpython()
     {
-        Assert.False(new Utf8PythonRegex("\\D").Match(Utf8(char.ConvertFromUtf32(0x1D7CE)),mode: Utf8PythonMatchMode.Search).Success);
+        Assert.False(new Utf8PythonRegex("\\D").Match(Utf8(char.ConvertFromUtf32(0x1D7CE)), mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Fact]
     public void AstralDoubleNegationStaysPinnedToCpython()
     {
-        Assert.True(new Utf8PythonRegex("[^\\W]").Match(Utf8(char.ConvertFromUtf32(0x10400)),mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(new Utf8PythonRegex("[^\\W]").Match(Utf8(char.ConvertFromUtf32(0x10400)), mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Fact]
     public void AstralDigitDoubleNegationStaysPinnedToCpython()
     {
-        Assert.True(new Utf8PythonRegex("[^\\D]").Match(Utf8(char.ConvertFromUtf32(0x1D7CE)),mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(new Utf8PythonRegex("[^\\D]").Match(Utf8(char.ConvertFromUtf32(0x1D7CE)), mode: Utf8PythonMatchMode.Search).Success);
     }
 
     private static void AssertSearch(Utf8PythonRegex regex, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var match = regex.Match(Encoding.UTF8.GetBytes(input),mode: Utf8PythonMatchMode.Search);
+        var match = regex.Match(Encoding.UTF8.GetBytes(input), mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {

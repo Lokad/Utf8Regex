@@ -15,7 +15,7 @@ public sealed class PythonReCancellationTests
         return source.Token;
     }
 
-    private static Utf8PythonRegex Create() => new("cat|horse", PythonReCompileOptions.None);
+    private static Utf8PythonRegex Create() => new("cat|horse", options: PythonReCompileOptions.None);
 
     [Fact]
     public void PreCanceledTokenThrowsBeforeIsMatch()
@@ -31,7 +31,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input,cancellationToken: token,mode: Utf8PythonMatchMode.Search));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, cancellationToken: token, mode: Utf8PythonMatchMode.Search));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -40,7 +40,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input,cancellationToken: token));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, cancellationToken: token));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -49,7 +49,7 @@ public sealed class PythonReCancellationTests
     {
         var regex = Create();
         var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch));
+        var exception = Assert.Throws<OperationCanceledException>(() => regex.Match(s_input, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch));
         Assert.Equal(token, exception.CancellationToken);
     }
 
@@ -178,7 +178,7 @@ public sealed class PythonReCancellationTests
         var token = CancellationToken.None;
         Assert.True(regex.IsMatch(s_input, startOffsetInBytes: 4, cancellationToken: token));
         Assert.Equal(1, regex.Count(s_input, startOffsetInBytes: 4, cancellationToken: token));
-        Assert.Equal("horse", Encoding.UTF8.GetString(regex.Match(s_input,startOffsetInBytes: 4).GetValueBytes()));
+        Assert.Equal("horse", Encoding.UTF8.GetString(regex.Match(s_input, startOffsetInBytes: 4).GetValueBytes()));
         Assert.Equal("cat pet", Encoding.UTF8.GetString(regex.Replace(s_input, "pet", startOffsetInBytes: 4)));
         Assert.Equal("pet pet", Encoding.UTF8.GetString(regex.Replace(s_input, "pet", cancellationToken: token)));
     }

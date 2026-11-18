@@ -6,14 +6,17 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReNoMatchOutputTests
 {
     private static Utf8PythonRegex Create(ulong resultBytes = 128) =>
-        new("(cat)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy
+        new("(cat)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = resultBytes
-            });
+            }
+        });
 
     [Theory]
     [InlineData("")]

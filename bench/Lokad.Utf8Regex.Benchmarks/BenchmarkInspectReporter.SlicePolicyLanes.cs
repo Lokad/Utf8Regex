@@ -71,8 +71,11 @@ internal static partial class BenchmarkInspectReporter
             MaxResultBytes = 128 * 1_048_576
         };
         var regex = new Utf8PythonRegex("(a)(b)");
-        var finite = new Utf8PythonRegex("(a)(b)", PythonReCompileOptions.None,
-            Regex.InfiniteMatchTimeout, policy);
+        var finite = new Utf8PythonRegex("(a)(b)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         var core = new Utf8Regex("(a)(b)", RegexOptions.CultureInvariant);
         var coreFinite = new Utf8Regex("(a)(b)", RegexOptions.CultureInvariant,
             Regex.InfiniteMatchTimeout, policy);
@@ -88,7 +91,7 @@ internal static partial class BenchmarkInspectReporter
             byte[][][] baselineValues = [];
             int Detailed(Utf8PythonRegex pattern, CancellationToken token)
             {
-                detailed = PythonReBenchmarkReporter.MaterializeDetailedMatches(pattern,input, 0, token);
+                detailed = PythonReBenchmarkReporter.MaterializeDetailedMatches(pattern, input, 0, token);
                 return detailed.Length;
             }
             int Values(Utf8PythonRegex pattern, CancellationToken token)
@@ -193,10 +196,12 @@ internal static partial class BenchmarkInspectReporter
             core.Inspection.DebugUsesOwnedSliceProgram +
             " kind=" + core.Inspection.ExecutionKind);
 
-        var python = new Utf8PythonRegex(
-            sliceCase.Pattern, PythonReCompileOptions.None);
-        var pythonFinite = new Utf8PythonRegex(
-            sliceCase.Pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var python = new Utf8PythonRegex(sliceCase.Pattern, options: PythonReCompileOptions.None);
+        var pythonFinite = new Utf8PythonRegex(sliceCase.Pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         Console.WriteLine("  PythonRe preparation: coreKind=" +
             (python.DebugUtf8ExecutionKind ?? "None"));
         Console.WriteLine("  Core/PythonRe finite: work=1000000 depth=1024 working=1048576 result=1048576");

@@ -26,11 +26,15 @@ public sealed class PythonReAdjacentSetRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, Generous })
         {
-            var owner = new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan, policy);
-            var value = owner.Match(input,mode: Utf8PythonMatchMode.FullMatch);
+            var owner = new Utf8PythonRegex(pattern, options: options, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            });
+            var value = owner.Match(input, mode: Utf8PythonMatchMode.FullMatch);
             Assert.True(value.Success);
             Assert.Equal((0, input.Length), (value.StartOffsetInBytes, value.EndOffsetInBytes));
-            PythonReMatchAssert.Equal(text, owner.Match(input,mode: Utf8PythonMatchMode.FullMatch));
+            PythonReMatchAssert.Equal(text, owner.Match(input, mode: Utf8PythonMatchMode.FullMatch));
             Utf8PythonRangeMatch retained = default;
             using (var captureCursor1 = owner.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
             {
@@ -48,8 +52,14 @@ public sealed class PythonReAdjacentSetRepeatTests
     public void FundedCapturesOutliveProgramClosureAndReturnTemporaryLoans()
     {
         var allowance = new Allowance(16 << 20);
-        var owner = Utf8PythonRegex.Compile(@"item(?P<gap>\s+)[0-9]+", PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance);
+        var owner = Utf8PythonRegex.Compile(@"item(?P<gap>\s+)[0-9]+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = allowance
+        }, cancellationToken: default);
         var held = allowance.Used;
         var input = "item\u2003 12345"u8.ToArray();
         Utf8PythonRangeMatch retained = default;
@@ -72,15 +82,33 @@ public sealed class PythonReAdjacentSetRepeatTests
     public void WorkWorkingAndResultAdmissionRemainUseful()
     {
         const string pattern = @"item\s+[0-9]+";
-        var working = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkingBytes = 1 });
-        Assert.True(working.Match("item   12345"u8,mode: Utf8PythonMatchMode.Search).Success);
-        var work = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1 });
+        var working = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1
+            }
+        });
+        Assert.True(working.Match("item   12345"u8, mode: Utf8PythonMatchMode.Search).Success);
+        var work = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Match("item   12345"u8,mode: Utf8PythonMatchMode.Search)).ResourceKind);
-        var results = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxResultBytes = 1 });
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Match("item   12345"u8, mode: Utf8PythonMatchMode.Search)).ResourceKind);
+        var results = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(results.FindAllToUtf8("item   12345"u8))).ResourceKind);
     }
@@ -98,7 +126,11 @@ public sealed class PythonReAdjacentSetRepeatTests
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var owner = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Generous);
+        var owner = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Generous
+        });
         var interrupted = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -108,12 +140,12 @@ public sealed class PythonReAdjacentSetRepeatTests
         });
         try
         {
-            if (expire) Assert.Equal(pattern, Assert.Throws<RegexMatchTimeoutException>(() => owner.Match(input,mode: Utf8PythonMatchMode.Search)).Pattern);
-            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
+            if (expire) Assert.Equal(pattern, Assert.Throws<RegexMatchTimeoutException>(() => owner.Match(input, mode: Utf8PythonMatchMode.Search)).Pattern);
+            else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
         }
         finally { session.Complete(); }
         Assert.True(interrupted);
         ticks = 0;
-        Assert.True(owner.Match(input,mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(owner.Match(input, mode: Utf8PythonMatchMode.Search).Success);
     }
 }

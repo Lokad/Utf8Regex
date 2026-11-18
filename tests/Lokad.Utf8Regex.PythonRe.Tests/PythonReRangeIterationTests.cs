@@ -31,7 +31,7 @@ public sealed class PythonReRangeIterationTests
     [MemberData(nameof(CaptureCases))]
     public void RangeIterationMatchesCaptureFixtures(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values, string?[][] groups)
     {
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor1 = regex.CreateMatchCursor(input, startOffsetInBytes, default))
@@ -79,7 +79,7 @@ public sealed class PythonReRangeIterationTests
     [MemberData(nameof(ValueCases))]
     public void RangeIterationMatchesValueFixtures(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
     {
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var collectedRanges2 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor2 = regex.CreateMatchCursor(input, startOffsetInBytes, default))

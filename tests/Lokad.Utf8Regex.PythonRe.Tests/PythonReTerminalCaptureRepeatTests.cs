@@ -2,14 +2,17 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReTerminalCaptureRepeatTests
 {
-    private static Utf8PythonRegex Create() => new("(?:|([a-z]+))", PythonReCompileOptions.None,
-        Timeout.InfiniteTimeSpan, new()
+    private static Utf8PythonRegex Create() => new("(?:|([a-z]+))", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+    {
+        MatchTimeout = Timeout.InfiniteTimeSpan,
+        ResourcePolicy = new()
         {
             MaxWorkSteps = 100000,
             MaxDepth = 32,
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1 << 20
-        });
+        }
+    });
 
     [Fact]
     public void EmptyRetryKeepsNonemptyCaptureAndCompletionMetadata()

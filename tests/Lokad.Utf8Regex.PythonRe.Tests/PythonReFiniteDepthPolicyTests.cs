@@ -9,8 +9,15 @@ public sealed class PythonReFiniteDepthPolicyTests
     private static Utf8PythonRegex Create(string pattern, uint cap, bool bytes)
     {
         var policy = new Utf8ResourcePolicy { MaxDepth = cap };
-        return bytes ? new(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
-            : new(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+        return bytes ? new(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        }) : new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
     }
     private static void Denied(Utf8ResourceLimitExceededException error, uint cap)
     {
@@ -76,7 +83,11 @@ public sealed class PythonReFiniteDepthPolicyTests
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
             MaxDepth = kind == Utf8ResourceLimitKind.ExecutionDepth ? 1 : uint.MaxValue
         };
-        var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>😀ab)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>😀ab)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             Utf8PythonRangeMatch snapshot1 = default;
@@ -101,9 +112,14 @@ public sealed class PythonReFiniteDepthPolicyTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8PythonRegex("(?P<x>ab)|😀+ab", PythonReCompileOptions.None,
-            deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxDepth = 1 });
+        var regex = new Utf8PythonRegex("(?P<x>ab)|😀+ab", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = 1
+            }
+        });
         using var cursor = regex.CreateMatchCursor("ab 😀😀ab"u8.ToArray(), 0, source.Token);
         Assert.True(cursor.MoveNext(out cursorRange));
         var retained = cursorRange;
@@ -128,8 +144,8 @@ public sealed class PythonReFiniteDepthPolicyTests
     {
         var regex = Create("ab", 1, bytes);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8,1,mode: Utf8PythonMatchMode.Search));
-        Assert.Equal(4, regex.Match("😀ab"u8,4,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.Equal(6, regex.Match("😀ab"u8,4,mode: Utf8PythonMatchMode.Search).EndOffsetInBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8, 1, mode: Utf8PythonMatchMode.Search));
+        Assert.Equal(4, regex.Match("😀ab"u8, 4, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Equal(6, regex.Match("😀ab"u8, 4, mode: Utf8PythonMatchMode.Search).EndOffsetInBytes);
     }
 }

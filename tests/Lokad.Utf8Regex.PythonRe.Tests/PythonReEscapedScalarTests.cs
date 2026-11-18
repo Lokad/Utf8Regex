@@ -39,8 +39,15 @@ public sealed class PythonReEscapedScalarTests
                 MaxResultBytes = 1000000
             };
             var regex = bytes
-                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options, Timeout.InfiniteTimeSpan, policy)
-                : new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan, policy);
+                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: options, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                }) : new Utf8PythonRegex(pattern, options: options, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                });
             Utf8PythonRangeMatch actual = default;
             using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
             {
@@ -60,14 +67,17 @@ public sealed class PythonReEscapedScalarTests
     {
         Utf8PythonRangeMatch cursorRange = default;
         var input = "π😀😁é 😀"u8.ToArray();
-        var regex = new Utf8PythonRegex(@"(?P<x>[\😀-\😁]+)", PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, new()
+        var regex = new Utf8PythonRegex(@"(?P<x>[\😀-\😁]+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
             {
                 MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
-            });
+            }
+        });
         using var cancellation = new CancellationTokenSource();
         var cursor = regex.CreateMatchCursor(input, 0, cancellation.Token);
         var alias = cursor;
@@ -101,12 +111,19 @@ public sealed class PythonReEscapedScalarTests
     public void RepeatedEscapedScalarsKeepConstructionWorkAdmissionAndRecovery()
     {
         var pattern = string.Concat(Enumerable.Repeat(@"\😀", 1024));
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8PythonRegex.Compile(pattern,
-            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, default,
-            new() { MaxWorkSteps = 128 }, Timeout.InfiniteTimeSpan, CancellationToken.None));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = new()
+            {
+                MaxWorkSteps = 128
+            },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
         Assert.False(Utf8ConstructionScope.IsActive);
-        Assert.True(new Utf8PythonRegex(@"\😀").Match("😀"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(new Utf8PythonRegex(@"\😀").Match("😀"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -145,8 +162,17 @@ public sealed class PythonReEscapedScalarTests
     [Fact]
     public void CorrectEscapedCapturesKeepResultAdmissionAndFreshCallRecovery()
     {
-        var regex = new Utf8PythonRegex(@"(?P<x>\😀)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex(@"(?P<x>\😀)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(1, regex.Count("😀"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>

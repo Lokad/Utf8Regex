@@ -427,11 +427,27 @@ comment/verbose trivia. It includes implicit Unicode unless global ASCII is
 selected; scoped flags do not leak into this metadata. Hosts need not reparse
 pattern headers. These enum values are PythonRe's flags, not CPython integer bits.
 
-Constructors validate policy, flags and timeout before strict byte-pattern
-decoding. Explicit Compile observes pre-cancellation first and accepts separate
-construction policy/timeout/token. One owner covers decoding, parsing, semantic
-validation, lowering, metadata and eager FullMatch preparation. It does not
-consult static caches or retain construction authority.
+Constructors and Compile accept one immutable Utf8RegexPolicy plus compile options.
+Compile additionally accepts a construction cancellation token. The policy carries
+ResourcePolicy, MatchTimeout, ConstructionPolicy, ConstructionTimeout and optional
+ProgramMemoryAllowance; there is no subject-validation policy. Null MatchTimeout
+uses PythonRe.DefaultMatchTimeout; null ConstructionTimeout means infinite.
+
+Validate construction/execution policies, flags and timeouts before pattern
+conversion/storage. Errors in these settings name policy; options and malformed
+pattern diagnostics retain their own source/position contracts. Pre-cancellation
+on Compile wins before all argument/pattern work and allowance acquisition.
+Explicit Compile owns one construction deadline and completes FullMatch preparation
+before publication. Unfunded constructors defer the full program. A funded policy
+always prepares retained operation programs before transferring program admission,
+including through constructors. Later match deadlines remain independent.
+
+Constructors without explicit construction controls/funding borrow an existing
+internal construction owner. Explicit Compile or non-default construction controls/
+funding reject replacement of an active owner. Scope exit restores the parent and
+refunds failed acquisition; spent work is not refunded. Lazy unfunded preparation,
+cache retention, CLR/JIT metadata and host retention retain their documented scope.
+No static pattern cache or construction token becomes later invocation authority.
 
 Resolved ASCII `\w/\W/\d/\D/\s/\S` escapes lower directly to the existing
 admitted 16-byte mask and scalar-complement Set instruction. They skip rendered
@@ -453,12 +469,12 @@ require nonempty matches. Exact empty literals retain their Core value fast path
 independent dotall FullMatch kernels also remain. Construction admission covers
 the work actually performed, so these patterns can require less work/storage.
 
-The `Compile` overloads ending in `programMemoryAllowance` admit covered
+A policy with non-null ProgramMemoryAllowance admits covered
 construction storage through the caller's `IUtf8MemoryAllowance`, then retain a
 conservative completed-program charge. This is neither construction peak nor
 exact heap size; coarse helper charges and shared storage can be overcounted.
 Failure/cancellation refunds that compilation's discarded reservations. An
-omitted `MaxBytes` adds no private byte cap on these overloads; an explicit byte
+omitted `MaxBytes` adds no private byte cap on these entry points; an explicit byte
 limit and existing instruction/work/depth backstops still apply.
 
 Dispose a funded expression when finished. Disposal closes new matching uses
@@ -537,7 +553,8 @@ checkpoints, followed by final publication checks. Adjacent helper boundaries
 add no separate work charges. This can reduce required work units without
 changing interruption bounds or byte/depth/result admission.
 
-Constructors defer general FullMatch preparation; Compile completes it eagerly.
+Unfunded constructors defer general FullMatch preparation; Compile and funded
+constructors complete it eagerly.
 Cold FullMatch copies the existing instruction program with an end constraint,
 sharing immutable tables/names. Its token/deadline is the current invocation's;
 failure is retryable and leaves no failed publication. Exact capture-free literal

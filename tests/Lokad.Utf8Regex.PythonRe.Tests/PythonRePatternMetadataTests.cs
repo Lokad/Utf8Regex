@@ -40,7 +40,8 @@ public sealed class PythonRePatternMetadataTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void CopiesOriginalSourceIntoCallerStorageAndPreservesCancellation(bool native)
     {
         var source = "(?#" + new string('x', 2043) + ")é😀\0";

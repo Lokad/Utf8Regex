@@ -31,7 +31,7 @@ public sealed class PythonReAtomicRepeatCommitTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8PythonRegex(pattern);
-        var match = regex.Match(input,mode: Utf8PythonMatchMode.Search);
+        var match = regex.Match(input, mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expected is not null, match.Success);
         if (expected is null) return;
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
@@ -51,25 +51,47 @@ public sealed class PythonReAtomicRepeatCommitTests
             (new Utf8ResourcePolicy { MaxWorkSteps = 1 }, Utf8ResourceLimitKind.ExecutionWorkSteps),
         })
         {
-            var denied = new Utf8PythonRegex("a++b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match("aaab"u8,mode: Utf8PythonMatchMode.Search)).ResourceKind);
+            var denied = new Utf8PythonRegex("a++b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            });
+            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match("aaab"u8, mode: Utf8PythonMatchMode.Search)).ResourceKind);
         }
-        var results = new Utf8PythonRegex("a++b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxResultBytes = 1 });
+        var results = new Utf8PythonRegex("a++b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(results.FindAllToUtf8("aaab aab"u8))).ResourceKind);
-        var depth = new Utf8PythonRegex("(?>x(?>a+))b", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxDepth = 1 });
+        var depth = new Utf8PythonRegex("(?>x(?>a+))b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => depth.Match("xaaab"u8,mode: Utf8PythonMatchMode.Search)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => depth.Match("xaaab"u8, mode: Utf8PythonMatchMode.Search)).ResourceKind);
     }
 
     [Fact]
     public void FundedInvocationReleasesLoansAndRetainedCapturesSurviveDispose()
     {
         var allowance = new Allowance(16 << 20);
-        var regex = Utf8PythonRegex.Compile("(?>(a+))b", PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance);
+        var regex = Utf8PythonRegex.Compile("(?>(a+))b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = allowance
+        }, cancellationToken: default);
         var held = allowance.Used;
         Utf8PythonRangeMatch retained = default;
         using (var captureCursor1 = regex.CreateMatchCursor(("xxaaaabzz"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
@@ -79,7 +101,7 @@ public sealed class PythonReAtomicRepeatCommitTests
         Assert.True(retained.Success);
         Assert.Equal("aaaa", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(held, allowance.Used);
-        Assert.False(regex.Match("aaaabX"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match("aaaabX"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(held, allowance.Used);
         regex.Dispose();
         Assert.Equal(0UL, allowance.Used);
@@ -98,8 +120,16 @@ public sealed class PythonReAtomicRepeatCommitTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8PythonRegex("a++b", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20),
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 8, MaxWorkingBytes = 1 << 20 });
+        var regex = new Utf8PythonRegex("a++b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 8,
+                MaxWorkingBytes = 1 << 20
+            }
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -111,14 +141,14 @@ public sealed class PythonReAtomicRepeatCommitTests
         try
         {
             if (expire)
-                Assert.Equal("a++b", Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input,mode: Utf8PythonMatchMode.Search)).Pattern);
+                Assert.Equal("a++b", Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, mode: Utf8PythonMatchMode.Search)).Pattern);
             else
                 Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
-                    regex.Match(input,0,cancellationToken: cancellation.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
+                    regex.Match(input, 0, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
         }
         finally { session.Complete(); }
         Assert.True(entered);
         ticks = 0;
-        Assert.True(regex.Match("ab"u8,mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(regex.Match("ab"u8, mode: Utf8PythonMatchMode.Search).Success);
     }
 }

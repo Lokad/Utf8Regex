@@ -212,7 +212,11 @@ public sealed class PythonReReplacementPreparationAdmissionTests
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
             } : default;
-            var regex = new Utf8PythonRegex("(😀)a", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+            var regex = new Utf8PythonRegex("(😀)a", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
             var input = "😀a"u8.ToArray();
             Utf8PythonRangeMatch retained = default;
             using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))

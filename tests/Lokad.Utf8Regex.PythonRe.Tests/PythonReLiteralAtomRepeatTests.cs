@@ -28,8 +28,11 @@ public sealed class PythonReLiteralAtomRepeatTests
         {
             MaxWorkSteps = 1_000_000,MaxDepth = 256,            MaxWorkingBytes = 1 << 20,MaxResultBytes = 1 << 20        } })
         {
-            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
-                Timeout.InfiniteTimeSpan, policy);
+            var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            });
             using var token = new CancellationTokenSource();
             Assert.Equal(expected, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token.Token)).ScalarValues);
             Assert.Equal(expected, regex.FindAllToUtf8(input, 0, token.Token).ScalarValues.Select(Encoding.UTF8.GetString));
@@ -48,17 +51,43 @@ public sealed class PythonReLiteralAtomRepeatTests
     public void UnusedRepeatJournalsDoNotRemoveRequiredAdmission()
     {
         var input = Encoding.UTF8.GetBytes(new string('y', 512));
-        var small = new Utf8PythonRegex("x*", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 256 });
+        var small = new Utf8PythonRegex("x*", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 256
+            }
+        });
         Assert.Equal(513, small.Count(input));
-        Assert.Equal(513, new Utf8PythonRegex("x*", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkingBytes = 1 }).Count(input));
-        var denied = new Utf8PythonRegex("(x*)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkingBytes = 1 });
+        Assert.Equal(513, new Utf8PythonRegex("x*", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1
+            }
+        }).Count(input));
+        var denied = new Utf8PythonRegex("(x*)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
-        var result = new Utf8PythonRegex("x*", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxResultBytes = 1 });
+        var result = new Utf8PythonRegex("x*", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(result.FindAllToUtf8(input))).ResourceKind);
         Assert.Throws<ArgumentException>(() => small.Count(new byte[] { (byte)'y', 255 }));

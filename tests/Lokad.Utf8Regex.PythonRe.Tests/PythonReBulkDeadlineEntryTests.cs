@@ -12,22 +12,28 @@ public sealed class PythonReBulkDeadlineEntryTests
     public void ExpiredEntryPrecedesDiscovery(int start)
     {
         foreach (var pattern in new[] { "cat|horse", "cat" })
-        foreach (var input in new[] { "xcat"u8.ToArray(), "xcat😀"u8.ToArray() })
-        {
-            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
-            long reads = 0;
-            using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => reads++ == 0 ? 0 : 1000);
-            var error = Assert.Throws<RegexMatchTimeoutException>(() => string.Join("|", (regex).FindAllToUtf8(input, start, default).ScalarValues.Select(Encoding.UTF8.GetString)));
-            Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
-            Assert.Equal(regex.Pattern, error.Pattern);
-            Assert.True(reads >= 2);
-        }
+            foreach (var input in new[] { "xcat"u8.ToArray(), "xcat😀"u8.ToArray() })
+            {
+                var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = TimeSpan.FromMilliseconds(1)
+                });
+                long reads = 0;
+                using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => reads++ == 0 ? 0 : 1000);
+                var error = Assert.Throws<RegexMatchTimeoutException>(() => string.Join("|", (regex).FindAllToUtf8(input, start, default).ScalarValues.Select(Encoding.UTF8.GetString)));
+                Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
+                Assert.Equal(regex.Pattern, error.Pattern);
+                Assert.True(reads >= 2);
+            }
     }
 
     [Fact]
     public void RetainedValuesAndScalarCoordinatesSurviveTimeoutAndFreshCalls()
     {
-        var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8PythonRegex("cat|horse", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = Encoding.UTF8.GetBytes("π😀 cat horse cat");
         using var steadyClock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
         var wholeMatches2 = new List<Utf8PythonRangeMatch>();
@@ -64,7 +70,10 @@ public sealed class PythonReBulkDeadlineEntryTests
         string pattern, string text, int start, string expected)
     {
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, string.Join("|", (regex).FindAllToUtf8(input, start, default).ScalarValues.Select(Encoding.UTF8.GetString)));
     }

@@ -23,7 +23,7 @@ public sealed class PythonReSliceConditionalTests
     [InlineData("(?P<n>a)?(?(n)b|c)")]
     public void ConditionalShapesRouteOwned(string pattern)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
     }
 
     [Theory]
@@ -35,10 +35,10 @@ public sealed class PythonReSliceConditionalTests
     public void ConditionalSearchMatchesTranslatedOracle(
         string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
+        var found = regex.Match(input, startByte, mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -57,7 +57,7 @@ public sealed class PythonReSliceConditionalTests
     [InlineData("(?P<n>a)?(?(n)b|c)", "c", 1)]
     public void ConditionalCpythonCountMatchesManaged(string pattern, string inputText, int expected)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText)));
     }
 
@@ -67,7 +67,7 @@ public sealed class PythonReSliceConditionalTests
     [InlineData("(?P<n>a)?(?(n)b|c)", "ab", 0, 2)]
     public void ConditionalCpythonMatchMatchesManaged(string pattern, string inputText, int expectedStart, int expectedLength)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
         var found = regex.Match(Utf8(inputText));
         Assert.True(found.Success);
 
@@ -84,7 +84,7 @@ public sealed class PythonReSliceConditionalTests
     [InlineData("(?P<n>a)?(?(n)b|c)", "ac", false)]
     public void ConditionalCpythonFullMatchMatchesManaged(string pattern, string inputText, bool expected)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

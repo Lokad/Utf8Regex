@@ -8,24 +8,33 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReNativeLiteralCursorTests
 {
     [Theory]
-    [InlineData("cat|dog","é😀dog tail",0,6,9)]
-    [InlineData("😀|中","é😀中",0,2,6)]
-    [InlineData("😀|中","é😀中",6,6,9)]
-    [InlineData("a|ab","éab",0,2,3)]
-    [InlineData("ab|a","éab",0,2,4)]
-    [InlineData("foo(?=bar)","é😀foobar",0,6,9)]
-    [InlineData("foo(?=bar)","éfoobar foobar",6,9,12)]
-    [InlineData("(?:a|ab)(?=c)","éabc",0,2,4)]
-    [InlineData("(?:ab|a)(?=bc)","éabc",0,2,3)]
-    [InlineData("(?:😀|中)(?=é)","é😀é中é",8,8,11)]
-    public void CaptureFreeFamilySearchKeepsScalarPriorityWithoutVmStorage(string pattern,string text,        int start,int byteStart,int byteEnd)
+    [InlineData("cat|dog", "é😀dog tail", 0, 6, 9)]
+    [InlineData("😀|中", "é😀中", 0, 2, 6)]
+    [InlineData("😀|中", "é😀中", 6, 6, 9)]
+    [InlineData("a|ab", "éab", 0, 2, 3)]
+    [InlineData("ab|a", "éab", 0, 2, 4)]
+    [InlineData("foo(?=bar)", "é😀foobar", 0, 6, 9)]
+    [InlineData("foo(?=bar)", "éfoobar foobar", 6, 9, 12)]
+    [InlineData("(?:a|ab)(?=c)", "éabc", 0, 2, 4)]
+    [InlineData("(?:ab|a)(?=bc)", "éabc", 0, 2, 3)]
+    [InlineData("(?:😀|中)(?=é)", "é😀é中é", 8, 8, 11)]
+    public void CaptureFreeFamilySearchKeepsScalarPriorityWithoutVmStorage(string pattern, string text, int start, int byteStart, int byteEnd)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes(text);
-        var match = regex.Match(input,start,mode: Utf8PythonMatchMode.Search);
+        var match = regex.Match(input, start, mode: Utf8PythonMatchMode.Search);
         Assert.True(match.Success);
-        Assert.Equal((byteStart,byteEnd),            (match.StartOffsetInBytes,match.EndOffsetInBytes));
+        Assert.Equal((byteStart, byteEnd), (match.StartOffsetInBytes, match.EndOffsetInBytes));
     }
 
     [Theory]
@@ -65,15 +74,24 @@ public sealed class PythonReNativeLiteralCursorTests
     {
         var regex = new Utf8PythonRegex("cat|dog");
         Assert.False(regex.Match("xcat"u8).Success);
-        Assert.True(regex.Match("xcat"u8,1).Success);
-        Assert.False(regex.Match("cat tail"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.True(regex.Match("dog"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("xcat"u8, 1).Success);
+        Assert.False(regex.Match("cat tail"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("dog"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀cat"u8,1,mode: Utf8PythonMatchMode.Search));
-        var bounded = new Utf8PythonRegex("cat|dog", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀cat"u8, 1, mode: Utf8PythonMatchMode.Search));
+        var bounded = new Utf8PythonRegex("cat|dog", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Match("cat"u8,mode: Utf8PythonMatchMode.Search)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Match("cat"u8, mode: Utf8PythonMatchMode.Search)).ResourceKind);
     }
 
     [Theory]
@@ -87,13 +105,14 @@ public sealed class PythonReNativeLiteralCursorTests
     public void NecessaryHintsDoNotOverrideAssertionsFoldingEmptyOrLargerFamilies(
         string pattern, string text, int start, int end)
     {
-        var match = new Utf8PythonRegex(pattern).Match(Encoding.UTF8.GetBytes(text),mode: Utf8PythonMatchMode.Search);
+        var match = new Utf8PythonRegex(pattern).Match(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.Search);
         Assert.True(match.Success);
         Assert.Equal((start, end), (match.StartOffsetInBytes, match.EndOffsetInBytes));
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void LongNativeSearchKeepsOriginalInterruptionAndPriorSnapshot(bool timeout)
     {
         Utf8PythonRangeMatch cursorRange = default;
@@ -111,8 +130,17 @@ public sealed class PythonReNativeLiteralCursorTests
         });
         try
         {
-            var regex = new Utf8PythonRegex("cat|dog", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20),
-                new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 4000000, MaxResultBytes = 4000000 });
+            var regex = new Utf8PythonRegex("cat|dog", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(20),
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxDepth = 1024,
+                    MaxWorkingBytes = 4000000,
+                    MaxResultBytes = 4000000
+                }
+            });
             var input = Encoding.UTF8.GetBytes("cat" + new string('x', 262144) + "dog");
             using var cursor = regex.CreateMatchCursor(input, 0, cancellation.Token);
             Assert.True(cursor.MoveNext(out cursorRange));

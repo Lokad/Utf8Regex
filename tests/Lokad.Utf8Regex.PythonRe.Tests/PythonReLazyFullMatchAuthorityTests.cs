@@ -15,7 +15,10 @@ public sealed class PythonReLazyFullMatchAuthorityTests
     [InlineData(1)]
     public void ColdFullMatchDoesNotRestartDeadlineAfterPreparation(int result)
     {
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)+", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200));
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        });
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -25,7 +28,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         construction.Budget.CheckpointHook = hook;
         var error = Assert.Throws<RegexMatchTimeoutException>(() =>
         {
-            if (result == 0) _ = regex.Match("😀a"u8,mode: Utf8PythonMatchMode.FullMatch);
+            if (result == 0) _ = regex.Match("😀a"u8, mode: Utf8PythonMatchMode.FullMatch);
             else
             {
                 using var cursor = regex.CreateMatchCursor("😀a"u8.ToArray(), mode: Utf8PythonMatchMode.FullMatch);
@@ -66,7 +69,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         construction.Budget.CheckpointHook = hook;
         var error = Assert.Throws<OperationCanceledException>(() =>
         {
-            if (result == 0) _ = regex.Match("😀a"u8,0,cancellationToken: cancellation.Token,mode: Utf8PythonMatchMode.FullMatch);
+            if (result == 0) _ = regex.Match("😀a"u8, 0, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.FullMatch);
             else
             {
                 using var cursor = regex.CreateMatchCursor("😀a"u8.ToArray(), 0, cancellation.Token, mode: Utf8PythonMatchMode.FullMatch);
@@ -77,13 +80,16 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         Assert.Equal(CopyCheckpoint, checkpoints);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         AssertRestored(construction, hook);
-        Assert.True(regex.Match("😀a"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("😀a"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
     public void BorrowedInterruptionPreservesEnclosingConstructionToken()
     {
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)+", PythonReCompileOptions.None, TimeSpan.FromSeconds(30));
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromSeconds(30)
+        });
         using var parent = new CancellationTokenSource();
         using var call = new CancellationTokenSource();
         using (var construction = Utf8ConstructionScope.Enter())
@@ -92,7 +98,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
             var checkpoints = 0;
             Action<ulong> hook = _ => { if (++checkpoints == CopyCheckpoint) parent.Cancel(); };
             construction.Budget.CheckpointHook = hook;
-            var error = Assert.Throws<OperationCanceledException>(() => regex.Match("😀a"u8,0,cancellationToken: call.Token,mode: Utf8PythonMatchMode.FullMatch));
+            var error = Assert.Throws<OperationCanceledException>(() => regex.Match("😀a"u8, 0, cancellationToken: call.Token, mode: Utf8PythonMatchMode.FullMatch));
             Assert.Equal(parent.Token, error.CancellationToken);
             Assert.False(call.IsCancellationRequested);
             Assert.Equal(parent.Token, construction.Budget.CancellationToken);
@@ -110,21 +116,24 @@ public sealed class PythonReLazyFullMatchAuthorityTests
     [Fact]
     public void FailedConstructionAdmissionIsRetryableWithoutResettingParentWork()
     {
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)+", PythonReCompileOptions.None, TimeSpan.FromSeconds(30));
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromSeconds(30)
+        });
         using (var construction = new Utf8ConstructionScope(
             Utf8ConstructionScope.DefaultInstructionCapacity, Utf8ConstructionScope.DefaultBufferBytes, 8, 65536))
         {
-            var first = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("😀a"u8,mode: Utf8PythonMatchMode.FullMatch));
+            var first = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("😀a"u8, mode: Utf8PythonMatchMode.FullMatch));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, first.ResourceKind);
             var spent = construction.Budget.WorkSteps;
             Assert.True(spent > 0);
             Assert.Equal(0ul, construction.Budget.ReservedBytes);
-            var second = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("😀a"u8,mode: Utf8PythonMatchMode.FullMatch));
+            var second = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("😀a"u8, mode: Utf8PythonMatchMode.FullMatch));
             Assert.Equal(first.ResourceKind, second.ResourceKind);
             Assert.True(construction.Budget.WorkSteps >= spent);
             Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         }
-        Assert.True(regex.Match("😀a"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("😀a"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
@@ -148,7 +157,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
             construction.Budget.CheckpointHook = hook;
             if (cancel)
             {
-                var error = Assert.Throws<OperationCanceledException>(() => regex.Match("😀a"u8,0,cancellationToken: cancellation.Token,mode: Utf8PythonMatchMode.FullMatch));
+                var error = Assert.Throws<OperationCanceledException>(() => regex.Match("😀a"u8, 0, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.FullMatch));
                 Assert.Equal(cancellation.Token, error.CancellationToken);
                 AssertRestored(construction, hook);
                 Assert.Equal(CopyCheckpoint, checkpoints);
@@ -169,7 +178,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         var results = await Task.WhenAll(RunCold(true), RunCold(false));
         Assert.True(results[1] > CopyCheckpoint);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.True(regex.Match("😀a"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("😀a"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     private static void AssertRestored(Utf8ConstructionScope construction, Action<ulong> hook)
@@ -184,16 +193,23 @@ public sealed class PythonReLazyFullMatchAuthorityTests
     [Fact]
     public void PreparationKeepsSeparateWorkBackstopAndFiniteExecutionOwner()
     {
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)+", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            // Fund the independent preparation byte ceiling; construction
-            // work still does not consume the invocation's one work step.
-            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 16384, MaxResultBytes = 1 });
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("😀a"u8,mode: Utf8PythonMatchMode.FullMatch));
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1,
+                MaxDepth = 1,
+                MaxWorkingBytes = 16384,
+                MaxResultBytes = 1
+            }
+        });
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("😀a"u8, mode: Utf8PythonMatchMode.FullMatch));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         Assert.Equal(1ul, error.Limit);
         Assert.Equal(2ul, error.Requested);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        var again = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("😀a"u8,mode: Utf8PythonMatchMode.FullMatch));
+        var again = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match("😀a"u8, mode: Utf8PythonMatchMode.FullMatch));
         Assert.Equal(error.ResourceKind, again.ResourceKind);
         Assert.Equal(error.Requested, again.Requested);
     }

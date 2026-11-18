@@ -28,8 +28,15 @@ public sealed class PythonReLeadingFlagTriviaTests
                 MaxResultBytes = 1000000
             };
             var regex = bytes
-                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options, Timeout.InfiniteTimeSpan, policy)
-                : new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan, policy);
+                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: options, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                }) : new Utf8PythonRegex(pattern, options: options, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                });
             using var cancellation = new CancellationTokenSource();
             Utf8PythonRangeMatch match = default;
             using (var captureCursor1 = regex.CreateMatchCursor(("😀A"u8).ToArray(), 0, cancellation.Token, mode: Utf8PythonMatchMode.FullMatch))
@@ -58,7 +65,7 @@ public sealed class PythonReLeadingFlagTriviaTests
     [InlineData(@"\(\?\#", "(?#")]
     public void CommentsAreTriviaRatherThanRepeatableAtoms(string pattern, string text)
     {
-        Assert.True(new Utf8PythonRegex(pattern).Match(Encoding.UTF8.GetBytes(text),mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(new Utf8PythonRegex(pattern).Match(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -94,7 +101,7 @@ public sealed class PythonReLeadingFlagTriviaTests
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.Equal(0ul, owner.Budget.ReservedBytes);
         }
-        Assert.True(new Utf8PythonRegex("(?i)a").Match("A"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(new Utf8PythonRegex("(?i)a").Match("A"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]

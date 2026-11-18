@@ -83,8 +83,16 @@ public sealed class PythonReTerminalCaptureRootTests
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var regex = new Utf8PythonRegex(separated ? "([a-z]+)-([0-9]+)" : "item-([0-9]+)", PythonReCompileOptions.None,
-            TimeSpan.FromMilliseconds(100), new() { MaxWorkSteps = 1000000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8PythonRegex(separated ? "([a-z]+)-([0-9]+)" : "item-([0-9]+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(100),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         var bytes = Encoding.ASCII.GetBytes("item-" + new string('1', 1 << 18));
         var reached = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ => { reached = true; if (expire) ticks = 100; else token.Cancel(); });

@@ -20,7 +20,13 @@ public sealed class PythonReAtomLoweringTests
         Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(text);
         {
-            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new() { MaxWorkSteps = 1000000 });
+            using var regex = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1000000
+                }
+            });
             Assert.Equal(expected.Length, regex.Count(input));
             using var cursor = regex.CreateMatchCursor(input);
             var values = new List<string>();
@@ -39,13 +45,21 @@ public sealed class PythonReAtomLoweringTests
     [InlineData(@"\uD800", "😀", new string[] { })]
     public void ResolvedAtomsKeepScopedFlagsScalarsAndEscapedLiterals(string pattern, string text, string[] expected)
     {
-        var input=Encoding.UTF8.GetBytes(text);
-        foreach(var finite in new[]{false,true})
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var finite in new[] { false, true })
         {
-            var regex=new Utf8PythonRegex(pattern,resourcePolicy:finite
-                ? new(){MaxWorkSteps=1000000,MaxWorkingBytes=1048576}:default);
-            Assert.Equal(expected.Length,regex.Count(input));
-            Assert.Equal(expected,PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
+            var regex = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = finite ? new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxWorkingBytes = 1048576
+                }
+
+    : default
+            });
+            Assert.Equal(expected.Length, regex.Count(input));
+            Assert.Equal(expected, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         }
     }
 }

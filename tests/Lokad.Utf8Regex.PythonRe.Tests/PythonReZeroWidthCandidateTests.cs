@@ -56,8 +56,17 @@ public sealed class PythonReZeroWidthCandidateTests
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         var program = Program(regex);
-        var finite = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var finite = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         using var token = new CancellationTokenSource();
         for (var start = 0; start <= input.Length; start++)
         {
@@ -78,7 +87,7 @@ public sealed class PythonReZeroWidthCandidateTests
                 Assert.Equal(expected.Count, matches.Length);
                 for (var index = 0; index < matches.Length; index++)
                     Assert.Equal(expected[index], (matches[index].Value.StartOffsetInBytes, matches[index].Value.EndOffsetInBytes));
-                var match = owner.Match(input,start,cancellationToken: token.Token);
+                var match = owner.Match(input, start, cancellationToken: token.Token);
                 Assert.Equal(expected.Count != 0 && expected[0].Start == start, match.Success);
             }
         }

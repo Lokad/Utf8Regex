@@ -16,8 +16,16 @@ public sealed class PythonReFullRangeConstructionTests
     };
 
     private static Utf8PythonRegex Compile(string pattern, PythonReCompileOptions options = PythonReCompileOptions.None)
-        => Utf8PythonRegex.Compile(pattern, options, Timeout.InfiniteTimeSpan, Limits,
-            new() { MaxWorkSteps = 20000 }, Timeout.InfiniteTimeSpan, CancellationToken.None);
+        => Utf8PythonRegex.Compile(pattern, options: options, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Limits,
+            ConstructionPolicy = new()
+            {
+                MaxWorkSteps = 20000
+            },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None);
 
     [Theory]
     [InlineData(@"[\x00-\U0010ffff]", PythonReCompileOptions.None, true)]
@@ -39,8 +47,8 @@ public sealed class PythonReFullRangeConstructionTests
         Assert.Equal(accepts ? scalars : [], regex.FindAllToUtf8(input, 0, cancellation.Token)
             .ScalarValues.Select(Encoding.UTF8.GetString));
         foreach (var scalar in scalars)
-            Assert.Equal(accepts, regex.Match(Encoding.UTF8.GetBytes(scalar),mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.False(regex.Match([],mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.Equal(accepts, regex.Match(Encoding.UTF8.GetBytes(scalar), mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match([], mode: Utf8PythonMatchMode.FullMatch).Success);
 
 
         // This rendering remains live for comparators and timeout pattern text.
@@ -53,9 +61,16 @@ public sealed class PythonReFullRangeConstructionTests
     public void BytePatternCapturesKeepCompleteScalarCoordinatesAndCompletion()
     {
         const string pattern = @"(?i)([\x00-\U0010ffff])";
-        var regex = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, Limits, new() { MaxWorkSteps = 20000 },
-            Timeout.InfiniteTimeSpan, CancellationToken.None);
+        var regex = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Limits,
+            ConstructionPolicy = new()
+            {
+                MaxWorkSteps = 20000
+            },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None);
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor1 = regex.CreateMatchCursor(("é😀\n"u8).ToArray(), 0, default))
         {
@@ -97,11 +112,21 @@ public sealed class PythonReFullRangeConstructionTests
     [InlineData(false)]
     public void OtherRangesAndSmallByteCapsRetainConstructionBackstops(bool partialRange)
     {
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8PythonRegex.Compile(
-            partialRange ? @"(?i)[\x00-\U0010fffe]" : @"(?i)[\x00-\U0010ffff]",
-            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Limits,
-            partialRange ? new() { MaxWorkSteps = 20000 } : new() { MaxBytes = 1 },
-            Timeout.InfiniteTimeSpan, CancellationToken.None));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8PythonRegex.Compile(partialRange ? @"(?i)[\x00-\U0010fffe]" : @"(?i)[\x00-\U0010ffff]", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Limits,
+            ConstructionPolicy = partialRange ? new()
+            {
+                MaxWorkSteps = 20000
+            }
+
+    : new()
+    {
+        MaxBytes = 1
+    },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None));
         Assert.Equal(partialRange ? Utf8ResourceLimitKind.ConstructionWorkSteps : Utf8ResourceLimitKind.ConstructionBytes,
             error.ResourceKind);
         Assert.False(Utf8ConstructionScope.IsActive);
@@ -115,9 +140,19 @@ public sealed class PythonReFullRangeConstructionTests
     [Fact]
     public void TimeoutKeepsOriginalPatternAndDeadline()
     {
-        var regex = Utf8PythonRegex.Compile(@"(?i)[\x00-\U0010ffff]+z", PythonReCompileOptions.None,
-            TimeSpan.FromMilliseconds(20), Limits with { MaxDepth = 4096 }, new() { MaxWorkSteps = 20000 },
-            Timeout.InfiniteTimeSpan, CancellationToken.None);
+        var regex = Utf8PythonRegex.Compile(@"(?i)[\x00-\U0010ffff]+z", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Limits with
+            {
+                MaxDepth = 4096
+            },
+            ConstructionPolicy = new()
+            {
+                MaxWorkSteps = 20000
+            },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None);
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var reached = false;

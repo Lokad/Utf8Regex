@@ -36,7 +36,11 @@ public sealed class PythonReIdentifierVersionTests
             MaxWorkingBytes = 1_048_576,
             MaxResultBytes = 1_048_576
         };
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         Utf8PythonRangeMatch match = default;
         using (var captureCursor1 = regex.CreateMatchCursor(("😀aa"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
         {

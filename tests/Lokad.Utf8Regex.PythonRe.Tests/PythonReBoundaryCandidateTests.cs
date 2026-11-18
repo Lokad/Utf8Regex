@@ -30,8 +30,17 @@ public sealed class PythonReBoundaryCandidateTests
     public void SearchKeepsBoundaryPredicatesCapturesAndOffsets(string pattern, string text, int offset, string? expected, int expectedCount)
     {
         using var token = new CancellationTokenSource();
-        using var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        using var regex = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected is not null, regex.IsMatch(input, offset));
         Assert.Equal(expected is not null, regex.IsMatch(input, offset, token.Token));
@@ -50,13 +59,31 @@ public sealed class PythonReBoundaryCandidateTests
     [Fact]
     public void BoundedWordRunsNeedNoUselessRewindDepth()
     {
-        using var regex = new Utf8PythonRegex(@"(\d{2,4})\b", default, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        using var regex = new Utf8PythonRegex(@"(\d{2,4})\b", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(1, regex.Count("1234"u8));
         Assert.Equal(0, regex.Count("123A"u8));
         Assert.Equal(2, regex.Count("12 567"u8));
-        using var words = new Utf8PythonRegex(@"[a-z]{1,8}\b", default, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        using var words = new Utf8PythonRegex(@"[a-z]{1,8}\b", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(3, words.Count("alpha beta gamma"u8));
     }
 
@@ -82,8 +109,17 @@ public sealed class PythonReBoundaryCandidateTests
         try
         {
             var pattern = interiorRun ? @"\b[0-9]+X\b" : @"\d{2,4}\b";
-            using var regex = new Utf8PythonRegex(pattern, default, TimeSpan.FromMilliseconds(20),
-                new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+            using var regex = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(20),
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxDepth = 1024,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1 << 20
+                }
+            });
             var input = Encoding.UTF8.GetBytes(interiorRun
                 ? "22X a" + new string('1', 200000) + "X 33X"
                 : "1234 " + string.Concat(Enumerable.Repeat("123A ", 4096)) + "5678");
@@ -161,8 +197,8 @@ public sealed class PythonReBoundaryCandidateTests
     {
         using var regex = new Utf8PythonRegex(@"\b[0-9]+X\b");
         var input = Encoding.UTF8.GetBytes("a" + new string('1', count) + "X 😀 22X");
-        PythonReMatchAssert.Equal("22X", regex.Match(input,mode: Utf8PythonMatchMode.Search));
-        PythonReMatchAssert.Equal("22X", regex.Match(input,count,mode: Utf8PythonMatchMode.Search));
+        PythonReMatchAssert.Equal("22X", regex.Match(input, mode: Utf8PythonMatchMode.Search));
+        PythonReMatchAssert.Equal("22X", regex.Match(input, count, mode: Utf8PythonMatchMode.Search));
         var invalid = input.Concat(new byte[] { 0xff }).ToArray();
 
     }
@@ -173,8 +209,15 @@ public sealed class PythonReBoundaryCandidateTests
     [InlineData(@"(?P<x>a+)(?P=x)", "aaaa", 0, true)]
     public void InteriorStartsKeepActualWorkingAdmission(string pattern, string text, int offset, bool requiresStorage)
     {
-        using var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 });
+        using var regex = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxWorkingBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes(text);
         if (requiresStorage)
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, Assert.Throws<Utf8ResourceLimitExceededException>(
@@ -232,7 +275,10 @@ public sealed class PythonReBoundaryCandidateTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        using var regex = new Utf8PythonRegex(pattern, default, TimeSpan.FromMilliseconds(20));
+        using var regex = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         // Bounded ASCII blocks need enough input to reach the diagnostic
         // hook's unchanged 64-work-unit cadence after construction.
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("a" + new string('1', 200000)), 0, token.Token);
@@ -248,8 +294,14 @@ public sealed class PythonReBoundaryCandidateTests
     public void FundedAliasesAndCapturesSurviveProgramClose()
     {
         var account = new Allowance(16 << 20);
-        using var regex = Utf8PythonRegex.Compile(@"\b(?P<n>[0-9]+)X\b", default, Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, default, account);
+        using var regex = Utf8PythonRegex.Compile(@"\b(?P<n>[0-9]+)X\b", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
         using var cursor = regex.CreateMatchCursor("a111A 22X 33X"u8.ToArray()); var alias = cursor;
         regex.Dispose(); Assert.True(account.Used > 0);
         Assert.True(alias.MoveNext(out var first));

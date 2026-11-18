@@ -35,7 +35,7 @@ public sealed class PythonRePersistentCursorTests
         Assert.True(alias.MoveNext(out cursorRange));
         var second = cursorRange;
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(second.GetValueMemory().Span));
-        Assert.Equal((2,6),(second.Value.StartOffsetInBytes,second.Value.EndOffsetInBytes));
+        Assert.Equal((2, 6), (second.Value.StartOffsetInBytes, second.Value.EndOffsetInBytes));
         alias.Dispose(); cursor.Dispose();
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
 
@@ -46,7 +46,8 @@ public sealed class PythonRePersistentCursorTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ExplicitCloseReleasesScratchSynchronouslyAndKeepsBorrowedLoans(bool exhaust)
     {
         Utf8PythonRangeMatch cursorRange = default;
@@ -108,7 +109,8 @@ public sealed class PythonRePersistentCursorTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void InFlightFailureUsesOriginalTokenOrDeadlineAndReleasesLoans(bool expire)
     {
         Utf8PythonRangeMatch cursorRange = default;
@@ -158,8 +160,10 @@ public sealed class PythonRePersistentCursorTests
         long ticks = 0;
         Utf8PythonMatchCursor cursor;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks))
-            cursor = new Utf8PythonRegex("(.)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(100))
-                .CreateMatchCursor("aa"u8.ToArray());
+            cursor = new Utf8PythonRegex("(.)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(100)
+            }).CreateMatchCursor("aa"u8.ToArray());
         using (cursor)
         {
             Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
@@ -228,7 +232,7 @@ public sealed class PythonRePersistentCursorTests
         Func<ReadOnlyMemory<byte>, Utf8PythonMatchCursor> create = subject => regex.CreateMatchCursor(subject);
         using var empty = create(default); Assert.False(empty.MoveNext(out _));
         using var atEnd = regex.CreateMatchCursor("a"u8.ToArray(), 1, CancellationToken.None); Assert.False(atEnd.MoveNext(out _));
-        using var legacy = new Utf8PythonRegex("", default).CreateMatchCursor(default); Assert.True(legacy.MoveNext(out _));
+        using var legacy = new Utf8PythonRegex("", options: default).CreateMatchCursor(default); Assert.True(legacy.MoveNext(out _));
     }
 
     private static Utf8SliceInvocation Invocation()

@@ -6,28 +6,36 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReTextInputContractTests
 {
     [Theory]
-    [InlineData("é")] [InlineData("😀")] [InlineData("夏洛克·福尔摩斯")]
-    [InlineData("abcé")] [InlineData("needle")]
+    [InlineData("é")]
+    [InlineData("😀")]
+    [InlineData("夏洛克·福尔摩斯")]
+    [InlineData("abcé")]
+    [InlineData("needle")]
     public void DelegatedLiteralCountKeepsTheAlreadyValidTextContract(string literal)
     {
         using var regex = new Utf8PythonRegex(literal);
-        using var compiled = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(literal), default,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default);
+        using var compiled = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(literal), options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default);
         var session = Utf8SearchDiagnosticsSession.Start();
         try
         {
             foreach (var length in new[] { 0, 63, 4096 })
-            foreach (var withMatches in new[] { false, true })
-            {
-                var text = new string('a', length) + (withMatches ? literal + " " + literal : "");
-                var bytes = Encoding.UTF8.GetBytes(text);
-                var storage = new byte[bytes.Length + 13];
-                Array.Fill(storage, (byte)0xff);
-                bytes.CopyTo(storage.AsSpan(5));
-                var expected = withMatches ? 2 : 0;
-                Assert.Equal(expected, regex.Count(storage.AsSpan(5, bytes.Length)));
-                Assert.Equal(expected, compiled.Count(storage.AsSpan(5, bytes.Length)));
-            }
+                foreach (var withMatches in new[] { false, true })
+                {
+                    var text = new string('a', length) + (withMatches ? literal + " " + literal : "");
+                    var bytes = Encoding.UTF8.GetBytes(text);
+                    var storage = new byte[bytes.Length + 13];
+                    Array.Fill(storage, (byte)0xff);
+                    bytes.CopyTo(storage.AsSpan(5));
+                    var expected = withMatches ? 2 : 0;
+                    Assert.Equal(expected, regex.Count(storage.AsSpan(5, bytes.Length)));
+                    Assert.Equal(expected, compiled.Count(storage.AsSpan(5, bytes.Length)));
+                }
         }
         finally { session.Complete(); }
     }
@@ -41,19 +49,24 @@ public sealed class PythonReTextInputContractTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         using var regex = new Utf8PythonRegex(pattern);
-        using var compiled = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), default,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default);
+        using var compiled = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default);
         var session = Utf8SearchDiagnosticsSession.Start();
         try
         {
             Assert.True(regex.IsMatch(input));
             Assert.Equal(count, regex.Count(input));
             Assert.Equal(count, compiled.Count(input));
-            var first = regex.Match(input,mode: Utf8PythonMatchMode.Search);
+            var first = regex.Match(input, mode: Utf8PythonMatchMode.Search);
             Assert.Equal(firstByte, first.StartOffsetInBytes);
             Assert.Equal(firstByte + firstLength, first.EndOffsetInBytes);
             _ = regex.Match(input);
-            _ = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch);
+            _ = regex.Match(input, mode: Utf8PythonMatchMode.FullMatch);
             _ = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input));
             _ = regex.FindAllToUtf8(input);
             _ = PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default));
@@ -70,8 +83,14 @@ public sealed class PythonReTextInputContractTests
     public void EarlyRangeDoesNotPrepareUnrequestedWholeTextFacts()
     {
         var input = Encoding.UTF8.GetBytes("needle " + new string('é', 65536));
-        using var regex = new Utf8PythonRegex("(needle)", resourcePolicy: new()
-        { MaxWorkSteps = 64, MaxWorkingBytes = 1 << 20 });
+        using var regex = new Utf8PythonRegex("(needle)", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 64,
+                MaxWorkingBytes = 1 << 20
+            }
+        });
         Assert.Equal(6, regex.Match(input).EndOffsetInBytes);
         using var cursor = regex.CreateMatchCursor(input);
         Assert.True(cursor.MoveNext(out var first));

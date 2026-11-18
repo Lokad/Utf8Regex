@@ -25,7 +25,8 @@ public sealed class PythonReUnicodeBoundaryTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void PrimitiveAndExpandedReferenceAgreeAtEveryScalarOffset(bool nonBoundary)
     {
         var escape = nonBoundary ? @"\B" : @"\b";
@@ -38,12 +39,20 @@ public sealed class PythonReUnicodeBoundaryTests
         using var token = new CancellationTokenSource();
         foreach (var options in new[] { PythonReCompileOptions.None, PythonReCompileOptions.IgnoreCase, PythonReCompileOptions.Ascii })
         {
-            var actual = new Utf8PythonRegex("(?u:" + escape + ")", options, Regex.InfiniteMatchTimeout, Funded);
-            var control = new Utf8PythonRegex("(?u:" + expanded + ")", options, Regex.InfiniteMatchTimeout, Funded);
+            var actual = new Utf8PythonRegex("(?u:" + escape + ")", options: options, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded
+            });
+            var control = new Utf8PythonRegex("(?u:" + expanded + ")", options: options, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded
+            });
             foreach (var text in subjects)
             {
                 var input = Encoding.UTF8.GetBytes(text);
-                for (var offset = 0;;)
+                for (var offset = 0; ;)
                 {
                     var collectedRanges1 = new List<Utf8PythonRangeMatch>();
                     using (var rangeCursor1 = control.CreateMatchCursor(input, offset, token.Token))
@@ -61,9 +70,9 @@ public sealed class PythonReUnicodeBoundaryTests
                         collectedRanges2.ToArray().Select(x => x.Value));
                     Assert.Equal(control.Count(input, offset, token.Token), actual.Count(input, offset, token.Token));
                     Assert.Equal(control.IsMatch(input, offset, token.Token), actual.IsMatch(input, offset, token.Token));
-                    AssertRange(control.Match(input,offset,mode: Utf8PythonMatchMode.Search), actual.Match(input,offset,mode: Utf8PythonMatchMode.Search));
-                    AssertRange(control.Match(input,offset), actual.Match(input,offset));
-                    AssertRange(control.Match(input,offset,mode: Utf8PythonMatchMode.FullMatch), actual.Match(input,offset,mode: Utf8PythonMatchMode.FullMatch));
+                    AssertRange(control.Match(input, offset, mode: Utf8PythonMatchMode.Search), actual.Match(input, offset, mode: Utf8PythonMatchMode.Search));
+                    AssertRange(control.Match(input, offset), actual.Match(input, offset));
+                    AssertRange(control.Match(input, offset, mode: Utf8PythonMatchMode.FullMatch), actual.Match(input, offset, mode: Utf8PythonMatchMode.FullMatch));
                     foreach (var limit in new[] { 0, 1, 2 })
                         Assert.Equal(PythonReSplitAssert.Decode(input, control.SplitRanges(input, limit, offset, token.Token)), PythonReSplitAssert.Decode(input, actual.SplitRanges(input, limit, offset, token.Token)));
                     Assert.Equal(PythonReSubstitutionAssert.Decode(control.Subn(input, "-", 0, offset, token.Token)).ResultText,
@@ -120,7 +129,8 @@ public sealed class PythonReUnicodeBoundaryTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void LongUnicodeWordScanObservesOriginalInterruption(bool expire)
     {
         long ticks = 0;
@@ -133,7 +143,11 @@ public sealed class PythonReUnicodeBoundaryTests
             Regex.InfiniteMatchTimeout, token.Token);
         Utf8InputAnalyzer.Describe(input, ref validation);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var regex = new Utf8PythonRegex(@"\b", PythonReCompileOptions.None, timeout, Funded);
+        var regex = new Utf8PythonRegex(@"\b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = Funded
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -153,8 +167,11 @@ public sealed class PythonReUnicodeBoundaryTests
     public void OutputAdmissionAndOriginalCancellationStillApply()
     {
         foreach (var policy in new[] { Funded with { MaxResultBytes = 1 }, Funded with { MaxWorkingBytes = 1 }, Funded with { MaxWorkSteps = 1 } })
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReSplitAssert.Decode("é alpha"u8, new Utf8PythonRegex(@"\b", PythonReCompileOptions.None,
-                Regex.InfiniteMatchTimeout, policy).SplitRanges("é alpha"u8, 0, 0, default)));
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReSplitAssert.Decode("é alpha"u8, new Utf8PythonRegex(@"\b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            }).SplitRanges("é alpha"u8, 0, 0, default)));
         var regex = new Utf8PythonRegex(@"\b");
 
         using var token = new CancellationTokenSource(); token.Cancel();

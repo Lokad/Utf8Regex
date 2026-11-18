@@ -17,21 +17,30 @@ public sealed class PythonReTimeoutTests
     [Fact]
     public void CatastrophicSearchHonorsTimeout()
     {
-        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
-        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Match(CreateCatastrophicInput(),mode: Utf8PythonMatchMode.Search));
+        var regex = new Utf8PythonRegex("(a+)+$", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Match(CreateCatastrophicInput(), mode: Utf8PythonMatchMode.Search));
     }
 
     [Fact]
     public void CatastrophicSubstitutionHonorsTimeout()
     {
-        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8PythonRegex("(a+)+$", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => PythonReSubstitutionAssert.Decode(regex.Subn(CreateCatastrophicInput(), "-")));
     }
 
     [Fact]
     public void CatastrophicSplitHonorsTimeout()
     {
-        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8PythonRegex("(a+)+$", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => PythonReSplitAssert.Decode(CreateCatastrophicInput(), regex.SplitRanges(CreateCatastrophicInput(), 0, 0, default)));
     }
 
@@ -40,11 +49,14 @@ public sealed class PythonReTimeoutTests
     {
         // Recovery includes the first substitution call. Give its cold path
         // scheduling headroom while still forcing a real catastrophic timeout.
-        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(100));
-        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Match(CreateCatastrophicInput(),mode: Utf8PythonMatchMode.Search));
+        var regex = new Utf8PythonRegex("(a+)+$", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(100)
+        });
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Match(CreateCatastrophicInput(), mode: Utf8PythonMatchMode.Search));
 
         var input = Encoding.UTF8.GetBytes("aaabaaa");
-        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(regex.Match(input, mode: Utf8PythonMatchMode.Search).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.Equal("aaab-", PythonReSubstitutionAssert.Decode(regex.Subn(input, "-")).ResultText);
     }
@@ -54,10 +66,13 @@ public sealed class PythonReTimeoutTests
         // This is a finite-policy success smoke, including cold core discovery
         // and projection. Their deadline now includes startup; a 1 ms ceiling
         // can correctly expire there. Explicit expiry tests keep tight budgets.
-        var regex = new Utf8PythonRegex("abc", PythonReCompileOptions.None, TimeSpan.FromSeconds(1));
+        var regex = new Utf8PythonRegex("abc", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1)
+        });
         var input = Encoding.UTF8.GetBytes("xxabcxx");
 
-        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(regex.Match(input, mode: Utf8PythonMatchMode.Search).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.Equal(1, regex.FindAllToUtf8(input).Count);
         Assert.Equal("xxZxx", PythonReSubstitutionAssert.Decode(regex.Subn(input, "Z")).ResultText);
@@ -66,21 +81,28 @@ public sealed class PythonReTimeoutTests
     [Fact]
     public void CatastrophicFindIterDetailedHonorsTimeout()
     {
-        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
-        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => {
+        var regex = new Utf8PythonRegex("(a+)+$", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
+        Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() =>
+        {
             var collectedRanges1 = new List<Utf8PythonRangeMatch>();
             using (var rangeCursor1 = regex.CreateMatchCursor(CreateCatastrophicInput(), 0, default))
             {
                 while (rangeCursor1.MoveNext(out var rangeMatch1))
                     collectedRanges1.Add(rangeMatch1);
             }
-});
+        });
     }
 
     [Fact]
     public void CatastrophicSubnHonorsTimeout()
     {
-        var regex = new Utf8PythonRegex("(a+)+$", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8PythonRegex("(a+)+$", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Subn(CreateCatastrophicInput(), "-"));
     }
 }

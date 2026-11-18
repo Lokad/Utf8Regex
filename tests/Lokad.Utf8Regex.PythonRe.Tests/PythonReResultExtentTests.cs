@@ -56,7 +56,10 @@ public sealed class PythonReResultExtentTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var regex = new Utf8PythonRegex("é", PythonReCompileOptions.None, timeout);
+        var regex = new Utf8PythonRegex("é", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout
+        });
         var field = typeof(Utf8PythonRegex).GetField("_utf8Regex", BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.NotNull(field);
         var core = Assert.IsType<global::Lokad.Utf8Regex.Utf8Regex>(field.GetValue(regex));

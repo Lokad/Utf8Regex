@@ -10,8 +10,14 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReRetainedSubnTests
 {
     private static Utf8PythonRegex Compile(string pattern, IUtf8MemoryAllowance account,
-        Utf8ResourcePolicy policy = default, TimeSpan? timeout = null) => Utf8PythonRegex.Compile(pattern,
-            default, timeout ?? Timeout.InfiniteTimeSpan, policy, default, Timeout.InfiniteTimeSpan, default, account);
+        Utf8ResourcePolicy policy = default, TimeSpan? timeout = null) => Utf8PythonRegex.Compile(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
 
     [Theory]
     [InlineData("cat", "cat😀cat", "X", 1, 0, "X😀cat", 1)]
@@ -58,7 +64,9 @@ public sealed class PythonReRetainedSubnTests
         result.Dispose(); Assert.Equal(held, inner.Used); Assert.Equal(releases + 1, account.ReleaseCalls);
     }
 
-    [Theory] [InlineData("a", "xx")] [InlineData("(?P<x>a)", @"\g<x>x")]
+    [Theory]
+    [InlineData("a", "xx")]
+    [InlineData("(?P<x>a)", @"\g<x>x")]
     public void PartialAdmissionAndOutputFailureRestoreOnlyTemporaryLoans(string pattern, string template)
     {
         var account = new Allowance(16 << 20); using var regex = Compile(pattern, account);
@@ -102,7 +110,9 @@ public sealed class PythonReRetainedSubnTests
         Assert.Equal(held, account.Used);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void OriginalCancellationAndDeadlineRefundUnpublishedOutput(bool timeout)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -130,7 +140,10 @@ public sealed class PythonReRetainedSubnTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind); Assert.Equal(held, account.Used);
     }
 
-    [Theory] [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
     public void NumericWorkDepthAndWorkingLimitsRemainAuthoritative(int kind)
     {
         var policy = kind switch
@@ -145,8 +158,12 @@ public sealed class PythonReRetainedSubnTests
         var held = account.Used;
         var input = Encoding.UTF8.GetBytes(new string('a', kind == 2 ? 32768 : 4));
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.SubnRetained(input, @"\g<1>"));
-        Assert.Equal(kind switch { 0 => Utf8ResourceLimitKind.ExecutionWorkSteps,
-            1 => Utf8ResourceLimitKind.ExecutionDepth, _ => Utf8ResourceLimitKind.ExecutionWorkingBytes }, failure.ResourceKind);
+        Assert.Equal(kind switch
+        {
+            0 => Utf8ResourceLimitKind.ExecutionWorkSteps,
+            1 => Utf8ResourceLimitKind.ExecutionDepth,
+            _ => Utf8ResourceLimitKind.ExecutionWorkingBytes
+        }, failure.ResourceKind);
         // A valid replacement plan may stay cached; closing the expression refunds it too.
         regex.Dispose(); Assert.Equal(0UL, account.Used); Assert.True(held > 0);
     }

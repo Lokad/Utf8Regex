@@ -17,9 +17,22 @@ public sealed class PythonReAstralRangeRenderingTests
     };
 
     private static Utf8PythonRegex Compile(string pattern)
-        => Utf8PythonRegex.Compile(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
-            new() { MaxWorkSteps = 20000 }, Timeout.InfiniteTimeSpan, CancellationToken.None);
+        => Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            ConstructionPolicy = new()
+            {
+                MaxWorkSteps = 20000
+            },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None);
 
     [Theory]
     [MemberData(nameof(Ranges))]
@@ -43,7 +56,7 @@ public sealed class PythonReAstralRangeRenderingTests
             for (var index = 0; index < samples.Length; index++)
             {
                 var expected = (samples[index] >= low && samples[index] <= high) != negated;
-                Assert.Equal(expected, regex.Match(Encoding.UTF8.GetBytes(texts[index]),mode: Utf8PythonMatchMode.FullMatch).Success);
+                Assert.Equal(expected, regex.Match(Encoding.UTF8.GetBytes(texts[index]), mode: Utf8PythonMatchMode.FullMatch).Success);
                 Assert.Equal(expected, managed.IsMatch(texts[index]));
             }
             var expectedValues = texts.Where((_, index) =>

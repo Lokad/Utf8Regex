@@ -30,7 +30,11 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, Generous })
         {
-            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+            var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
             using var cancellation = new CancellationTokenSource();
             Assert.Equal(expected, regex.Count(input, start));
             Assert.Equal(expected, regex.Count(input, start, cancellation.Token));
@@ -49,15 +53,28 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     [InlineData("cat|horse|dog|pig", "cat horse dog pig", 4)]
     public void OtherProfileRoutesRetainTheirCountSemantics(string pattern, string text, int expected)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Generous
+        });
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text), 0, cancellation.Token));
     }
     [Fact]
     public void PureCountNeedsNeitherResultPayloadNorVmStorageOrDepth()
     {
-        var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 10_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex("cat|horse", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes("π😀" + new string('x', 4096) + " cat horse cat");
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(3, regex.Count(input, 6, cancellation.Token));
@@ -78,8 +95,17 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     {
         var pattern = string.Join('|', Literals.Take(width));
         if (captured) pattern = "(" + pattern + ")";
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes("π😀" + string.Join(' ', Literals.Take(width)) + " cat");
         using var token = new CancellationTokenSource();
         Assert.Equal(width + 1, regex.Count(input, 6));
@@ -100,8 +126,11 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         var input = Encoding.UTF8.GetBytes("é😀" + new string('x', prefixBytes - 6) +
             "TomX Huckleberry12 Tom3 Sawyer4 Finn5 Huckleberr");
         {
-            using var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
-                Regex.InfiniteMatchTimeout, Generous);
+            using var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Generous
+            });
             Assert.Equal(4, regex.Count(input));
             Assert.Equal(new[] { "12", "3", "4", "5" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
         }
@@ -125,10 +154,23 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     public void LongLiteralWindowsAndLaterCapturedResultsKeepTheirSemantics()
     {
         var longLiterals = Enumerable.Range(0, 5).Select(i => (char)('a' + i) + new string('x', 1025) + "z").ToArray();
-        var longRegex = new Utf8PythonRegex(string.Join('|', longLiterals), PythonReCompileOptions.None,
-            Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var longRegex = new Utf8PythonRegex(string.Join('|', longLiterals), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(2, longRegex.Count(Encoding.UTF8.GetBytes("😀" + longLiterals[4] + " " + longLiterals[0]), 4));
-        var captured = new Utf8PythonRegex("(cat|horse|dog|pig|cow)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous);
+        var captured = new Utf8PythonRegex("(cat|horse|dog|pig|cow)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Generous
+        });
         var input = "π😀cat cow"u8.ToArray();
         Utf8PythonRangeMatch retained = default;
         using (var captureCursor1 = captured.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
@@ -152,11 +194,24 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     {
         var pattern = string.Join('|', Literals) + "|wolf";
         var input = Encoding.UTF8.GetBytes(string.Join(' ', Literals) + " wolf");
-        var bounded = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var bounded = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Count(input)).ResourceKind);
-        Assert.Equal(9, new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, Generous).Count(input));
+        Assert.Equal(9, new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Generous
+        }).Count(input));
     }
     [Theory]
     [InlineData(2)]
@@ -168,8 +223,14 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         var pattern = string.Join('|', Literals.Take(width));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(string.Join(' ', Literals.Take(width)) + " ", 128)));
         var expected = width * 128;
-        Utf8PythonRegex Create(ulong cap) => new(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            Generous with { MaxWorkSteps = cap });
+        Utf8PythonRegex Create(ulong cap) => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Generous with
+            {
+                MaxWorkSteps = cap
+            }
+        });
         void Denied(ulong cap)
         {
             var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(cap).Count(input));
@@ -192,7 +253,11 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     [Fact]
     public void DeadlineAtEntryUsesPythonDiagnosticLimits()
     {
-        var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1), Generous);
+        var regex = new Utf8PythonRegex("cat|horse", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1),
+            ResourcePolicy = Generous
+        });
         var invalid = new byte[] { 0xFF, 99, 97, 116 };
         long reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => reads++ == 0 ? 0 : 1000);
@@ -212,7 +277,11 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
     [InlineData(true, 8)]
     public void NativeSearchKeepsOriginalInterruption(bool expire, int width)
     {
-        var regex = new Utf8PythonRegex(string.Join('|', Literals.Take(width)), PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Generous);
+        var regex = new Utf8PythonRegex(string.Join('|', Literals.Take(width)), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Generous
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(string.Join(' ', Literals.Take(width)) + " ", 512)));
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

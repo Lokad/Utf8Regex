@@ -45,7 +45,7 @@ internal static partial class PythonReBenchmarkReporter
 
         var effectiveIterations = GetEffectiveIterations(benchmarkCase, requestedIterations);
         var input = Encoding.UTF8.GetBytes(benchmarkCase.Input);
-        var adapter = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options);
+        var adapter = new Utf8PythonRegex(benchmarkCase.Pattern, options: benchmarkCase.Options);
         var parsed = new PythonReParser(benchmarkCase.Pattern).Parse(benchmarkCase.Options);
         var translation = PythonReTranslator.Translate(parsed, true);
         var core = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, Timeout.InfiniteTimeSpan, default);
@@ -131,8 +131,8 @@ internal static partial class PythonReBenchmarkReporter
         var match = operation switch
         {
             PythonReBenchmarkOperation.Match => adapter.Match(input),
-            PythonReBenchmarkOperation.FullMatch => adapter.Match(input,mode: Utf8PythonMatchMode.FullMatch),
-            _ => adapter.Match(input,mode: Utf8PythonMatchMode.Search),
+            PythonReBenchmarkOperation.FullMatch => adapter.Match(input, mode: Utf8PythonMatchMode.FullMatch),
+            _ => adapter.Match(input, mode: Utf8PythonMatchMode.Search),
         };
         return (match.Success, match.StartOffsetInBytes, match.EndOffsetInBytes);
     }
@@ -153,7 +153,7 @@ internal static partial class PythonReBenchmarkReporter
         {
             return (false, 0, 0);
         }
-var start = match.StartOffsetInBytes;
+        var start = match.StartOffsetInBytes;
         var length = (match.EndOffsetInBytes - match.StartOffsetInBytes);
 
         if (!match.Success)
@@ -200,7 +200,7 @@ var start = match.StartOffsetInBytes;
             outcome = default;
             return false;
         }
-var start = match.StartOffsetInBytes;
+        var start = match.StartOffsetInBytes;
         var length = (match.EndOffsetInBytes - match.StartOffsetInBytes);
 
         if (!match.Success)

@@ -27,23 +27,35 @@ public class Utf8PythonReFindAllBenchmarks
             item => item.Id == "findall/unicode-capture-utf8");
         _text = item.Input;
         _input = Encoding.UTF8.GetBytes(_text);
-        _unlimited = new Utf8PythonRegex(item.Pattern, item.Options, Timeout.InfiniteTimeSpan);
-        _finite = new Utf8PythonRegex(item.Pattern, item.Options, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy
+        _unlimited = new Utf8PythonRegex(item.Pattern, options: item.Options, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
+        _finite = new Utf8PythonRegex(item.Pattern, options: item.Options, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 50_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 64 << 20,
                 MaxResultBytes = 128 << 20
-            });
+            }
+        });
         _regex = new Regex(item.Pattern, RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();
         // Keep the existing corpus; materialize full capture text in host code
         // over the real public range cursor, including the wrapping capture.
         var detailedPattern = "(" + item.Pattern + ")";
-        _detailedUnlimited = new Utf8PythonRegex(detailedPattern, item.Options, Timeout.InfiniteTimeSpan);
-        _detailedFinite = new Utf8PythonRegex(detailedPattern, item.Options, Timeout.InfiniteTimeSpan,
-            _finite.ResourcePolicy);
+        _detailedUnlimited = new Utf8PythonRegex(detailedPattern, options: item.Options, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
+        _detailedFinite = new Utf8PythonRegex(detailedPattern, options: item.Options, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = _finite.ResourcePolicy
+        });
 
         var expected = PredecodedRegex();
         if (expected.Length != 1024)
@@ -77,14 +89,14 @@ public class Utf8PythonReFindAllBenchmarks
     public byte[][][] DecodeThenRegex() => Project(Encoding.UTF8.GetString(_input));
 
     [Benchmark]
-    public PythonReHostDetailedMatch[] DetailedUnlimited() => PythonReBenchmarkReporter.MaterializeDetailedMatches(_detailedUnlimited,_input);
+    public PythonReHostDetailedMatch[] DetailedUnlimited() => PythonReBenchmarkReporter.MaterializeDetailedMatches(_detailedUnlimited, _input);
 
     [Benchmark]
-    public PythonReHostDetailedMatch[] DetailedFinite() => PythonReBenchmarkReporter.MaterializeDetailedMatches(_detailedFinite,_input);
+    public PythonReHostDetailedMatch[] DetailedFinite() => PythonReBenchmarkReporter.MaterializeDetailedMatches(_detailedFinite, _input);
 
     [Benchmark]
     public PythonReHostDetailedMatch[] DetailedFiniteWithToken() =>
-PythonReBenchmarkReporter.MaterializeDetailedMatches(_detailedFinite,_input, 0, _cancellation.Token);
+PythonReBenchmarkReporter.MaterializeDetailedMatches(_detailedFinite, _input, 0, _cancellation.Token);
 
     private byte[][][] Project(string text) => _regex.Matches(text)
         .Select(match => new[]

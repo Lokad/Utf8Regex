@@ -24,7 +24,7 @@ public sealed class PythonReSliceInlineTests
     [InlineData("(?-i:ab)+", "(?-i:ab)+")]
     public void InlineShapesRouteOwned(string pattern, string translated)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
         Assert.Equal(translated, PythonReDotNetReference.Render(regex));
     }
 
@@ -35,24 +35,24 @@ public sealed class PythonReSliceInlineTests
     [InlineData("(?i)a+")]
     public void RewrittenAndHoistedShapesKeepTheirQualifiedRoutes(string pattern)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
     }
 
     [Fact]
     public void LeadingToggleHoistsIntoTranslationOptions()
     {
-        var regex = new Utf8PythonRegex("(?i)a+", PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex("(?i)a+", options: PythonReCompileOptions.None);
         Assert.Equal("(?:[Aa])+", PythonReDotNetReference.Render(regex));
-        Assert.True(regex.Match("aA"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("aA"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
     public void ScopedVerbosePrestripsBeforeTranslation()
     {
-        var regex = new Utf8PythonRegex("(?x:a b)+", PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex("(?x:a b)+", options: PythonReCompileOptions.None);
         Assert.Equal("(?x:ab)+", PythonReDotNetReference.Render(regex));
         var input = Utf8("xababx");
-        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(regex.Match(input,mode: Utf8PythonMatchMode.Search).GetValueBytes()));
+        Assert.Equal("abab", System.Text.Encoding.UTF8.GetString(regex.Match(input, mode: Utf8PythonMatchMode.Search).GetValueBytes()));
         Assert.Equal(1, regex.Count(input));
     }
 
@@ -78,10 +78,10 @@ public sealed class PythonReSliceInlineTests
     public void InlineSearchMatchesTranslatedOracle(
         string pattern, string inputText, int startByte, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
         var input = Utf8(inputText);
         var expected = Bcl(regex).Match(inputText, 0);
-        var found = regex.Match(input,startByte,mode: Utf8PythonMatchMode.Search);
+        var found = regex.Match(input, startByte, mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -100,12 +100,12 @@ public sealed class PythonReSliceInlineTests
     {
         // The toggle is hoisted into the translation options, so the
         // translated-pattern oracle needs the forwarded IgnoreCase flag.
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
         var expected = new Regex(
             PythonReDotNetReference.Render(regex),
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase,
             Regex.InfiniteMatchTimeout).Match(inputText, 0);
-        var found = regex.Match(Utf8(inputText),startByte,mode: Utf8PythonMatchMode.Search);
+        var found = regex.Match(Utf8(inputText), startByte, mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, expected.Success);
         Assert.Equal(expectedSuccess, found.Success);
         if (found.Success)
@@ -128,7 +128,7 @@ public sealed class PythonReSliceInlineTests
     [InlineData("(?x:a b)+", "xabx", 1)]
     public void InlineCountMatchesCpython(string pattern, string inputText, int expected)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
     }
 
@@ -144,8 +144,8 @@ public sealed class PythonReSliceInlineTests
     [InlineData("(?i)a+", "AaA", true)]
     public void InlineMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText),0).Success);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), 0).Success);
     }
 
     [Theory]
@@ -161,15 +161,15 @@ public sealed class PythonReSliceInlineTests
     [InlineData("(?x:a b)+", "ab", true)]
     public void InlineFullMatchMatchesCpython(string pattern, string inputText, bool expected)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        Assert.Equal(expected, regex.Match(Utf8(inputText),mode: Utf8PythonMatchMode.FullMatch).Success);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
+        Assert.Equal(expected, regex.Match(Utf8(inputText), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
     public void InlineScopedGroupProjectsThroughSearchDetailed()
     {
         const string pattern = "(a)(?i:b)+";
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
         var expected = Bcl(regex).Match("xaBB", 0);
         Assert.True(expected.Success);
         Utf8PythonRangeMatch detailed = default;

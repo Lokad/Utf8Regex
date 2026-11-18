@@ -129,16 +129,19 @@ public sealed class PythonReLeadingAsciiRangeTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
+    [InlineData(0)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
     public void FoldedSearchGlobalsKeepCapturesAndScalarOffsets(int padding)
     {
         var regex = new Utf8PythonRegex("(?i:(?P<word>sherlock))");
         var prefix = new string('9', padding);
         var input = Encoding.UTF8.GetBytes(prefix + " SHERLOCK x sherlock!");
         Assert.Equal(new[] { "SHERLOCK", "sherlock" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
-        Assert.Equal(padding + 1, regex.Match(input,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.Equal(padding + 12, regex.Match(input,padding + 2,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.False(regex.Match(input).Success); Assert.False(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(padding + 1, regex.Match(input, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Equal(padding + 12, regex.Match(input, padding + 2, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.False(regex.Match(input).Success); Assert.False(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(new[] { prefix + " ", "SHERLOCK", " x ", "sherlock", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         Assert.Equal(prefix + " [SHERLOCK] x [sherlock]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
@@ -152,22 +155,35 @@ public sealed class PythonReLeadingAsciiRangeTests
         // A non-ASCII subject keeps all CPython partners on the scalar route.
         var match = collectedRanges1.ToArray()[0];
         Assert.Equal("ſHERLOCK", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
-        Assert.Equal(6, match.Value.StartOffsetInBytes);     }
+        Assert.Equal(6, match.Value.StartOffsetInBytes);
+    }
 
     [Theory]
-    [InlineData(0)] [InlineData(2047)] [InlineData(2048)] [InlineData(8192)]
+    [InlineData(0)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(8192)]
     public void UnicodeRemainderSearchGlobalsUseTheAsciiHintUnderFiniteLimits(int padding)
     {
-        var regex = new Utf8PythonRegex("(?P<word>[éa]+)", default, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 2000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8PythonRegex("(?P<word>[éa]+)", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 2000,
+                MaxDepth = 32,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         var prefix = new string('9', padding);
         var input = Encoding.UTF8.GetBytes(prefix + " aaa x aa!");
         using var token = new CancellationTokenSource();
         Assert.Equal(new[] { "aaa", "aa" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).ScalarValues);
-        Assert.Equal(padding + 1, regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.Equal(padding + 2, regex.Match(input,padding + 2,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.Equal(padding + 7, regex.Match(input,padding + 4,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.False(regex.Match(input).Success); Assert.False(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(padding + 1, regex.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Equal(padding + 2, regex.Match(input, padding + 2, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Equal(padding + 7, regex.Match(input, padding + 4, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.False(regex.Match(input).Success); Assert.False(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(new[] { prefix + " ", "aaa", " x ", "aa", "!" }, PythonReSplitAssert.Decode(input, regex.SplitRanges(input, 0, 0, default)));
         Assert.Equal(prefix + " [aaa] x [aa]!", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "[\\g<word>]")));
         var collectedRanges2 = new List<Utf8PythonRangeMatch>();
@@ -179,7 +195,8 @@ public sealed class PythonReLeadingAsciiRangeTests
 
         var match = collectedRanges2.ToArray()[0];
         Assert.Equal("éa", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
-        Assert.Equal(6, match.Value.StartOffsetInBytes);     }
+        Assert.Equal(6, match.Value.StartOffsetInBytes);
+    }
 
     [Fact]
     public void OptionalProofStopsAtItsFixedWorkAndBranchBounds()
@@ -248,45 +265,58 @@ public sealed class PythonReLeadingAsciiRangeTests
         var oracle = new Regex(pattern);
         string[] pieces = ["", ",", ";", "a", "Z", "z", "é", "😀"];
         foreach (var first in pieces)
-        foreach (var second in pieces)
-        {
-            var text = "x" + first + second + "abc!;Zza!;";
-            var input = Encoding.UTF8.GetBytes(text);
-            foreach (var start in new[] { 0, 1 + first.Length })
+            foreach (var second in pieces)
             {
-                var expected = oracle.Matches(text, start).Cast<Match>().ToArray();
-                var collectedRanges3 = new List<Utf8PythonRangeMatch>();
-                using (var rangeCursor3 = regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), default))
+                var text = "x" + first + second + "abc!;Zza!;";
+                var input = Encoding.UTF8.GetBytes(text);
+                foreach (var start in new[] { 0, 1 + first.Length })
                 {
-                    while (rangeCursor3.MoveNext(out var rangeMatch3))
-                        collectedRanges3.Add(rangeMatch3);
-                }
-                var actual = collectedRanges3.ToArray();
-                Assert.Equal(expected.Length, actual.Length);
-                for (var index = 0; index < expected.Length; index++)
-                {
-                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[index].Index)), actual[index].Value.StartOffsetInBytes);
-                    Assert.Equal(expected[index].Groups.Count, actual[index].Groups.Length);
-                    for (var group = 0; group < expected[index].Groups.Count; group++)
+                    var expected = oracle.Matches(text, start).Cast<Match>().ToArray();
+                    var collectedRanges3 = new List<Utf8PythonRangeMatch>();
+                    using (var rangeCursor3 = regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), default))
                     {
-                        Assert.Equal(expected[index].Groups[group].Success, actual[index].Groups[group].Success);
-                        if (expected[index].Groups[group].Success)
-                            Assert.Equal(expected[index].Groups[group].Value, System.Text.Encoding.UTF8.GetString(actual[index].GetGroupMemory(group).Span));
+                        while (rangeCursor3.MoveNext(out var rangeMatch3))
+                            collectedRanges3.Add(rangeMatch3);
+                    }
+                    var actual = collectedRanges3.ToArray();
+                    Assert.Equal(expected.Length, actual.Length);
+                    for (var index = 0; index < expected.Length; index++)
+                    {
+                        Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, expected[index].Index)), actual[index].Value.StartOffsetInBytes);
+                        Assert.Equal(expected[index].Groups.Count, actual[index].Groups.Length);
+                        for (var group = 0; group < expected[index].Groups.Count; group++)
+                        {
+                            Assert.Equal(expected[index].Groups[group].Success, actual[index].Groups[group].Success);
+                            if (expected[index].Groups[group].Success)
+                                Assert.Equal(expected[index].Groups[group].Value, System.Text.Encoding.UTF8.GetString(actual[index].GetGroupMemory(group).Span));
+                        }
                     }
                 }
             }
-        }
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4097)]
+    [InlineData(0)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    [InlineData(4097)]
     public void CapturesAndCoordinatesSurviveSearchBlockTailsAndStartOffsets(int padding)
     {
         var prefix = new string('9', padding) + "😀";
         var text = prefix + "alpha𐐀beta!gamma";
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8PythonRegex(Pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8PythonRegex(Pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 32,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         using var token = new CancellationTokenSource();
         Assert.Equal(new[] { "alpha", "beta", "gamma" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token.Token)).ScalarValues);
         var collectedRanges4 = new List<Utf8PythonRangeMatch>();
@@ -302,8 +332,8 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Equal(1, first.LastIndex); Assert.Equal("word", first.LastGroup);
         Assert.Equal(new[] { "beta", "gamma" }, PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, matches[1].Value.StartOffsetInBytes, token.Token)).ScalarValues);
         Assert.False(regex.Match(input).Success);
-        Assert.False(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.True(regex.Match(input,first.Value.StartOffsetInBytes).Success);
+        Assert.False(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match(input, first.Value.StartOffsetInBytes).Success);
         Assert.ThrowsAny<ArgumentException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, padding + 1)));
         Assert.Equal("alpha", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
     }
@@ -328,13 +358,24 @@ public sealed class PythonReLeadingAsciiRangeTests
     public void ImpossibleStartsStillRespectOutputAdmission()
     {
         foreach (var pattern in new[] { Pattern, "(,)?;", "(?>(?P<word>[a-z]+))" })
-        foreach (var resultLimit in new[] { true, false })
+            foreach (var resultLimit in new[] { true, false })
+            {
+                var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = resultLimit ? new()
+                    {
+                        MaxResultBytes = 1
+                    }
+
+        : new()
         {
-            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-                resultLimit ? new() { MaxResultBytes = 1 } : new() { MaxWorkingBytes = 1 });
-            var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8("999 alpha,;"u8)));
-            Assert.Equal(resultLimit ? Utf8ResourceLimitKind.ExecutionResultBytes : Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
+            MaxWorkingBytes = 1
         }
+                });
+                var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFindAllAssert.Decode(regex.FindAllToUtf8("999 alpha,;"u8)));
+                Assert.Equal(resultLimit ? Utf8ResourceLimitKind.ExecutionResultBytes : Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
+            }
     }
 
     [Theory]
@@ -361,8 +402,17 @@ public sealed class PythonReLeadingAsciiRangeTests
     [Fact]
     public void LaterCapturesKeepTheirValuesAndCompletionOrder()
     {
-        var regex = new Utf8PythonRegex("([a-z]+)-([0-9]+)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8PythonRegex("([a-z]+)-([0-9]+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 32,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         var input = "999😀one-12 z-3 bad!"u8;
         var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input)).TupleValues;
         var bytes = regex.FindAllToUtf8(input).TupleValues;
@@ -380,7 +430,10 @@ public sealed class PythonReLeadingAsciiRangeTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void WorkDenialInCandidateSearchKeepsItsAuthorityAndReleasesStorage(int kind)
     {
         var pattern = kind switch { 1 => @"\b(?P<digits>\d+)\b", 2 => "(,)?;", 3 => "(?P<word>[éa]+)", _ => Pattern };
@@ -394,19 +447,26 @@ public sealed class PythonReLeadingAsciiRangeTests
         var cursor = new PythonReScalarMatchCursor(input, program, 0, Timeout.InfiniteTimeSpan,
             null, pattern, new(new(constructionWork + 1, 32, 1 << 20, 1 << 20), Timeout.InfiniteTimeSpan, default));
         Exception? error = null;
-        try { cursor.MoveNext(); } catch (Exception failure) { error = failure; }
+        try { cursor.MoveNext(); }
+        catch (Exception failure) { error = failure; }
         finally { cursor.Dispose(); }
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
         Assert.Equal(0UL, cursor.ReservedBytes);
     }
 
     [Theory]
-    [InlineData(false, 0)] [InlineData(true, 0)]
-    [InlineData(false, 1)] [InlineData(true, 1)]
-    [InlineData(false, 2)] [InlineData(true, 2)]
-    [InlineData(false, 3)] [InlineData(true, 3)]
-    [InlineData(false, 4)] [InlineData(true, 4)]
-    [InlineData(false, 5)] [InlineData(true, 5)]
+    [InlineData(false, 0)]
+    [InlineData(true, 0)]
+    [InlineData(false, 1)]
+    [InlineData(true, 1)]
+    [InlineData(false, 2)]
+    [InlineData(true, 2)]
+    [InlineData(false, 3)]
+    [InlineData(true, 3)]
+    [InlineData(false, 4)]
+    [InlineData(true, 4)]
+    [InlineData(false, 5)]
+    [InlineData(true, 5)]
     public void CandidateBlocksObserveOriginalTokenAndDeadlineAndKeepParentLoans(bool expire, int kind)
     {
         long ticks = 0;
@@ -432,7 +492,8 @@ public sealed class PythonReLeadingAsciiRangeTests
             if (expire) ticks = 50; else cancellation.Cancel();
         };
         Exception? error = null;
-        try { cursor.MoveNext(); } catch (Exception failure) { error = failure; }
+        try { cursor.MoveNext(); }
+        catch (Exception failure) { error = failure; }
         finally { cursor.Dispose(); }
         Assert.True(entered);
         if (expire)

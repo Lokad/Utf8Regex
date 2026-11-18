@@ -11,8 +11,15 @@ public sealed class PythonReFiniteWorkingPolicyTests
     private static Utf8PythonRegex Create(string pattern, ulong bytes, bool bytePattern)
     {
         var policy = new Utf8ResourcePolicy { MaxWorkingBytes = bytes };
-        return bytePattern ? new(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
-            : new(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+        return bytePattern ? new(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        }) : new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
     }
 
     private static void Denied(Utf8ResourceLimitExceededException error, ulong bytes)
@@ -96,7 +103,11 @@ public sealed class PythonReFiniteWorkingPolicyTests
             MaxWorkingBytes = kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1 : ulong.MaxValue,
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue
         };
-        var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>😀ab)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>😀ab)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             Utf8PythonRangeMatch snapshot1 = default;
@@ -142,7 +153,7 @@ public sealed class PythonReFiniteWorkingPolicyTests
     {
         var regex = Create("ab", 1_048_576, bytePattern);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8,1,mode: Utf8PythonMatchMode.Search));
-        Assert.Equal(4, regex.Match("😀ab"u8,4,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8, 1, mode: Utf8PythonMatchMode.Search));
+        Assert.Equal(4, regex.Match("😀ab"u8, 4, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
     }
 }

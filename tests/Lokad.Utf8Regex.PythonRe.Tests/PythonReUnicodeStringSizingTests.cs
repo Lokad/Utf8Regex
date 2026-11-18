@@ -44,8 +44,16 @@ public sealed class PythonReUnicodeStringSizingTests
                 MaxWorkingBytes = 1_048_576,
                 MaxResultBytes = 1_048_576
             } : default;
-            using var plain = new Utf8PythonRegex("[,，]", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-            using var captured = new Utf8PythonRegex("([,，])", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+            using var plain = new Utf8PythonRegex("[,，]", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
+            using var captured = new Utf8PythonRegex("([,，])", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
             Assert.Equal(new string?[] { word, word, "尾😀" }, PythonReSplitAssert.Decode(input, plain.SplitRanges(input, 0, 4, default)));
             Assert.Equal(new string?[] { word, "，", word, ",", "尾😀" }, PythonReSplitAssert.Decode(input, captured.SplitRanges(input, 0, 4, default)));
             Assert.Equal(new string?[] { word, word + ",尾😀" }, PythonReSplitAssert.Decode(input, plain.SplitRanges(input, 1, 4, default)));

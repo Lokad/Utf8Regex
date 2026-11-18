@@ -32,8 +32,17 @@ public sealed class PythonReCountPublicationTests
         finally { cursor.Dispose(); }
         foreach (var admit in new[] { false, true })
         {
-            var bounded = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = work - (admit ? 0UL : 1UL), MaxDepth = 1024, MaxWorkingBytes = 1048576, MaxResultBytes = 1 });
+            var bounded = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = work - (admit ? 0UL : 1UL),
+                    MaxDepth = 1024,
+                    MaxWorkingBytes = 1048576,
+                    MaxResultBytes = 1
+                }
+            });
             int? published = null;
             var failure = Record.Exception(() => published = bounded.Count(input));
             if (admit) { Assert.Null(failure); Assert.Equal(3, published); }
@@ -54,7 +63,11 @@ public sealed class PythonReCountPublicationTests
         var input = "😀x"u8.ToArray();
         const string pattern = "(😀*)";
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 };
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         ulong work;
         var matches = 0;
         using (var measured = regex.CreateMatchCursor(input))
@@ -63,8 +76,14 @@ public sealed class PythonReCountPublicationTests
             while (measured.MoveNext(out _)) matches++;
             work = observer.Budget.Steps;
         }
-        var bounded = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            policy with { MaxWorkSteps = work - 1 });
+        var bounded = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy with
+            {
+                MaxWorkSteps = work - 1
+            }
+        });
         using var cursor = bounded.CreateMatchCursor(input);
         var invocation = cursor.WorkingInvocation;
         Assert.True(invocation.Ledger.TryReserve(13));
@@ -99,21 +118,25 @@ public sealed class PythonReCountPublicationTests
             MaxResultBytes = 1048576
         } : Utf8ResourcePolicy.Unlimited;
         var timeout = TimeSpan.FromMilliseconds(20);
-        var regex = new Utf8PythonRegex("(a*)", PythonReCompileOptions.None, timeout, policy);
+        var regex = new Utf8PythonRegex("(a*)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = policy
+        });
         byte[] input = [];
         ulong terminal = 0;
         var expected = -1;
         for (var length = 0; length < 256 && expected < 0; length++)
-        for (var tail = 0; tail < 8 && expected < 0; tail++)
-        {
-            input = Encoding.UTF8.GetBytes(new string('a', length) + new string('x', tail));
-            using var measured = regex.CreateMatchCursor(input, 0, token.Token);
-            var observer = measured.WorkingInvocation;
-            var count = 0;
-            while (measured.MoveNext(out _)) count++;
-            terminal = observer.Budget.Steps;
-            if ((terminal & 63) == 0) expected = count;
-        }
+            for (var tail = 0; tail < 8 && expected < 0; tail++)
+            {
+                input = Encoding.UTF8.GetBytes(new string('a', length) + new string('x', tail));
+                using var measured = regex.CreateMatchCursor(input, 0, token.Token);
+                var observer = measured.WorkingInvocation;
+                var count = 0;
+                while (measured.MoveNext(out _)) count++;
+                terminal = observer.Budget.Steps;
+                if ((terminal & 63) == 0) expected = count;
+            }
         Assert.True(expected > 0, "No bounded terminal cursor checkpoint witness found.");
 
         using var cursor = regex.CreateMatchCursor(input, 0, token.Token);
@@ -180,7 +203,11 @@ public sealed class PythonReCountPublicationTests
             MaxResultBytes = 1048576
         } : Utf8ResourcePolicy.Unlimited;
         var timeout = TimeSpan.FromMilliseconds(20);
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, timeout, policy);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = policy
+        });
         var program = Field<Utf8SliceProgram>(regex, "_scalarProgram");
         var candidate = Field<global::Lokad.Utf8Regex.Utf8Regex?>(regex, "_utf8Regex");
         Assert.False(candidate?.CanFindNativeLiteralForResult == true);
@@ -188,20 +215,20 @@ public sealed class PythonReCountPublicationTests
         ulong terminal = 0;
         var expected = -1;
         for (var length = 0; length < 256 && expected < 0; length++)
-        for (var tail = 0; tail < 8 && expected < 0; tail++)
-        {
-            input = Encoding.UTF8.GetBytes(new string('a', length) + new string('x', tail));
-            var invocation = new Utf8SliceInvocation(limits, timeout, token.Token);
-            var cursor = new PythonReScalarMatchCursor(input, program, 0, timeout, candidate, pattern, invocation);
-            try
+            for (var tail = 0; tail < 8 && expected < 0; tail++)
             {
-                var count = 0;
-                while (cursor.MoveNext()) count++;
-                terminal = cursor.WorkingInvocation.Budget.Steps;
-                if ((terminal & 63) == 0) expected = count;
+                input = Encoding.UTF8.GetBytes(new string('a', length) + new string('x', tail));
+                var invocation = new Utf8SliceInvocation(limits, timeout, token.Token);
+                var cursor = new PythonReScalarMatchCursor(input, program, 0, timeout, candidate, pattern, invocation);
+                try
+                {
+                    var count = 0;
+                    while (cursor.MoveNext()) count++;
+                    terminal = cursor.WorkingInvocation.Budget.Steps;
+                    if ((terminal & 63) == 0) expected = count;
+                }
+                finally { cursor.Dispose(); }
             }
-            finally { cursor.Dispose(); }
-        }
         Assert.True(expected >= 0, "No bounded terminal VM checkpoint witness found.");
         var entered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
@@ -234,9 +261,9 @@ public sealed class PythonReCountPublicationTests
             ("([a-z]+)-([0-9]+)", "é😀item-12 other-345", 6, 2),
             ("([a-z]+)([0-9]+)", "é😀item12 other345", 13, 1),
         })
-        foreach (var finite in new[] { false, true })
-        foreach (var expire in new[] { false, true })
-            yield return [pattern, text, start, count, finite, expire];
+            foreach (var finite in new[] { false, true })
+                foreach (var expire in new[] { false, true })
+                    yield return [pattern, text, start, count, finite, expire];
     }
 
     [Theory]
@@ -252,7 +279,11 @@ public sealed class PythonReCountPublicationTests
             MaxResultBytes = 1048576
         } : Utf8ResourcePolicy.Unlimited;
         var timeout = TimeSpan.FromMilliseconds(20);
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, timeout, policy);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = policy
+        });
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
 

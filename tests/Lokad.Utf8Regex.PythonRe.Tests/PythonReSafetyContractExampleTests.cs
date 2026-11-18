@@ -12,7 +12,7 @@ public sealed class PythonReSafetyContractExampleTests
     {
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
-        var regex = new Utf8PythonRegex("cat|horse", PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex("cat|horse", options: PythonReCompileOptions.None);
         var exception = Assert.Throws<OperationCanceledException>(() => regex.Count("cat horse"u8, 0, canceled.Token));
         Assert.Equal(canceled.Token, exception.CancellationToken);
     }

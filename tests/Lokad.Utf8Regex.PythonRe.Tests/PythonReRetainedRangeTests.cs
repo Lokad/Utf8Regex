@@ -9,8 +9,14 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReRetainedRangeTests
 {
     private static Utf8PythonRegex Compile(string pattern, IUtf8MemoryAllowance account, Utf8ResourcePolicy policy = default, TimeSpan? timeout = null)
-        => Utf8PythonRegex.Compile(pattern, default, timeout ?? Timeout.InfiniteTimeSpan, policy, default,
-            Timeout.InfiniteTimeSpan, default, account);
+        => Utf8PythonRegex.Compile(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
 
     [Fact]
     public async Task ReceiptsSurviveCursorProgramDisposalAndHostWaits()
@@ -133,7 +139,9 @@ public sealed class PythonReRetainedRangeTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind); Assert.Equal(program, account.Used);
     }
 
-    [Theory] [InlineData(1)] [InlineData(2)]
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
     public void CancellationBeforePublicationRefundsOnlyUnpublishedStorage(int cancelAfterGrant)
     {
         var account = new Allowance(16 << 20); using var regex = Compile(".", account); var program = account.Used;

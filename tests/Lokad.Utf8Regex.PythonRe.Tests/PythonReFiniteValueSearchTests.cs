@@ -11,58 +11,83 @@ public sealed class PythonReFiniteValueSearchTests
     { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
 
     [Theory]
-    [InlineData("needle","π😀needle!",6)]
-    [InlineData("Шерлок","π😀Шерлок!",6)]
-    [InlineData("needle","Ватсон",-1)]
-    [InlineData("Шерлок","Ватсон",-1)]
-    [InlineData("","π😀",0)]
-    [InlineData("","",0)]
-    public void ExactLiteralSearchKeepsCoordinatesUnderTinyStorageAndLiveToken(string pattern,string text,int start)
+    [InlineData("needle", "π😀needle!", 6)]
+    [InlineData("Шерлок", "π😀Шерлок!", 6)]
+    [InlineData("needle", "Ватсон", -1)]
+    [InlineData("Шерлок", "Ватсон", -1)]
+    [InlineData("", "π😀", 0)]
+    [InlineData("", "", 0)]
+    public void ExactLiteralSearchKeepsCoordinatesUnderTinyStorageAndLiveToken(string pattern, string text, int start)
     {
-        var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan, Policy);
+        var regex = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy
+        });
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(text);
-        var match = regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search);
+        var match = regex.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search);
         Assert.Equal(start >= 0, match.Success);
         if (start >= 0)
         {
             Assert.Equal((start, start + Encoding.UTF8.GetByteCount(pattern)), (match.StartOffsetInBytes, match.EndOffsetInBytes));
-            Assert.False(regex.Match("other"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).Success && pattern.Length != 0);
+            Assert.False(regex.Match("other"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search).Success && pattern.Length != 0);
             Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
         byte[] invalid = [.. input, 0xff];
 
         token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
     }
 
     [Fact]
     public void NonzeroFloorsAndUnprovedPatternsRetainScalarSemantics()
     {
-        var literal = new Utf8PythonRegex("é", default, Timeout.InfiniteTimeSpan, Policy);
-        Assert.Equal(3, literal.Match("éxé"u8,2,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.Throws<ArgumentOutOfRangeException>(() => literal.Match("éxé"u8,1,mode: Utf8PythonMatchMode.Search));
-        Assert.False(new Utf8PythonRegex("needle(?=!)", default, Timeout.InfiniteTimeSpan,
-            Policy with { MaxWorkingBytes = 1 << 20, MaxDepth = 128 }).Match("needle"u8,mode: Utf8PythonMatchMode.Search).Success);
-        var captured = new Utf8PythonRegex("(needle)", default, Timeout.InfiniteTimeSpan, Policy);
+        var literal = new Utf8PythonRegex("é", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy
+        });
+        Assert.Equal(3, literal.Match("éxé"u8, 2, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => literal.Match("éxé"u8, 1, mode: Utf8PythonMatchMode.Search));
+        Assert.False(new Utf8PythonRegex("needle(?=!)", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy with
+            {
+                MaxWorkingBytes = 1 << 20,
+                MaxDepth = 128
+            }
+        }).Match("needle"u8, mode: Utf8PythonMatchMode.Search).Success);
+        var captured = new Utf8PythonRegex("(needle)", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => captured.Match("needle"u8,mode: Utf8PythonMatchMode.Search)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => captured.Match("needle"u8, mode: Utf8PythonMatchMode.Search)).ResourceKind);
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void OriginalCancellationAndAbsoluteDeadlineInterruptNativeLiteralDiscovery(bool deadline)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var timeout = deadline ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
-        var owner = new Utf8PythonRegex("Шерлок", default, timeout, Policy);
+        var owner = new Utf8PythonRegex("Шерлок", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = Policy
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 200000) + "Шерлок");
         var reached = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ => { reached = true; if (deadline) ticks = 1000; else token.Cancel(); });
         Exception? failure = null;
-        try { _ = owner.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search); } catch (Exception error) { failure = error; }
+        try { _ = owner.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search); }
+        catch (Exception error) { failure = error; }
         finally { session.Complete(); }
         Assert.True(reached);
         if (deadline) Assert.Equal("Шерлок", Assert.IsType<RegexMatchTimeoutException>(failure).Pattern);
@@ -99,12 +124,21 @@ public sealed class PythonReFiniteValueSearchTests
     }
 
     [Theory]
-    [InlineData("é", 4093)] [InlineData("é", 4094)] [InlineData("é", 4095)]
-    [InlineData("é", 4096)] [InlineData("é", 4097)]
-    [InlineData("中", 4093)] [InlineData("中", 4094)] [InlineData("中", 4095)]
-    [InlineData("中", 4096)] [InlineData("中", 4097)]
-    [InlineData("😀", 4093)] [InlineData("😀", 4094)] [InlineData("😀", 4095)]
-    [InlineData("😀", 4096)] [InlineData("😀", 4097)]
+    [InlineData("é", 4093)]
+    [InlineData("é", 4094)]
+    [InlineData("é", 4095)]
+    [InlineData("é", 4096)]
+    [InlineData("é", 4097)]
+    [InlineData("中", 4093)]
+    [InlineData("中", 4094)]
+    [InlineData("中", 4095)]
+    [InlineData("中", 4096)]
+    [InlineData("中", 4097)]
+    [InlineData("😀", 4093)]
+    [InlineData("😀", 4094)]
+    [InlineData("😀", 4095)]
+    [InlineData("😀", 4096)]
+    [InlineData("😀", 4097)]
     public void NativeValueCoordinatesKeepCompleteScalarsAcrossSizingBlocks(string scalar, int padding)
     {
         var prefix = new string('x', padding) + scalar + "中😀|";
@@ -114,26 +148,33 @@ public sealed class PythonReFiniteValueSearchTests
         foreach (var mode in new[] { 0, 1, 2 })
         {
             using var token = new CancellationTokenSource();
-            using var owner = new Utf8PythonRegex(pattern, default,
-                mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
-                mode == 0 ? default : Policy);
-            var match = owner.Match(input,0,cancellationToken: mode == 0 ? default : token.Token,mode: Utf8PythonMatchMode.Search);
+            using var owner = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
+                ResourcePolicy = mode == 0 ? default : Policy
+            });
+            var match = owner.Match(input, 0, cancellationToken: mode == 0 ? default : token.Token, mode: Utf8PythonMatchMode.Search);
             Assert.True(match.Success);
             Assert.Equal((byteStart, byteStart + Encoding.UTF8.GetByteCount(pattern)),
                 (match.StartOffsetInBytes, match.EndOffsetInBytes));
-            Assert.False(owner.Match("absent"u8,mode: Utf8PythonMatchMode.Search).Success);
+            Assert.False(owner.Match("absent"u8, mode: Utf8PythonMatchMode.Search).Success);
             Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
         }
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ObservedCheckpointsKeepOriginalInterruptionAuthorityThroughCoordinatePublication(bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
-        using var owner = new Utf8PythonRegex("Шерлок", default, timeout, Policy);
+        using var owner = new Utf8PythonRegex("Шерлок", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = Policy
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é中😀", 20000)) + "Шерлок");
         var limits = new Utf8ExecutionLimits(100000, 1, 13, 1);
         var probe = new Utf8SliceInvocation(limits, timeout, default);

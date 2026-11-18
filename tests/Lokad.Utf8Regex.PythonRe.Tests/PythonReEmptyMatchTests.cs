@@ -23,7 +23,7 @@ public sealed class PythonReEmptyMatchTests
     public void FindAllVisitsEveryBoundaryOnce(string pattern, PythonReCompileOptions options, string inputText, int expected, string expectedStarts)
     {
         var wholeMatches5 = new List<Utf8PythonRangeMatch>();
-        using (var rangeCursor5 = new Utf8PythonRegex(pattern, options).CreateMatchCursor(Encoding.UTF8.GetBytes(inputText), 0, default))
+        using (var rangeCursor5 = new Utf8PythonRegex(pattern, options: options).CreateMatchCursor(Encoding.UTF8.GetBytes(inputText), 0, default))
         {
             while (rangeCursor5.MoveNext(out var rangeMatch5))
             {
@@ -40,7 +40,7 @@ public sealed class PythonReEmptyMatchTests
     public void FindIterVisitsEveryBoundaryOnce(string pattern, PythonReCompileOptions options, string inputText, int expected, string expectedStarts)
     {
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
-        using (var rangeCursor1 = new Utf8PythonRegex(pattern, options).CreateMatchCursor(Encoding.UTF8.GetBytes(inputText), 0, default))
+        using (var rangeCursor1 = new Utf8PythonRegex(pattern, options: options).CreateMatchCursor(Encoding.UTF8.GetBytes(inputText), 0, default))
         {
             while (rangeCursor1.MoveNext(out var rangeMatch1))
                 collectedRanges1.Add(rangeMatch1);

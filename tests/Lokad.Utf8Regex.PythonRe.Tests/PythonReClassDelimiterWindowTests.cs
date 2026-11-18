@@ -20,14 +20,19 @@ public sealed class PythonReClassDelimiterWindowTests
         foreach (var finite in new[] { false, true })
         {
             using var token = new CancellationTokenSource();
-            using var owner = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-                finite ? new()
+            using var owner = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = finite ? new()
                 {
                     MaxWorkSteps = 1_000_000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1_000_000,
                     MaxResultBytes = 1_000_000
-                } : default);
+                }
+
+    : default
+            });
             Utf8PythonRangeMatch result = default;
             using (var captureCursor1 = owner.CreateMatchCursor(storage.AsMemory(3, bytes.Length), floor, token.Token, mode: Utf8PythonMatchMode.Search))
             {
@@ -66,14 +71,19 @@ public sealed class PythonReClassDelimiterWindowTests
             var oracle = new Regex(pattern);
             foreach (var finite in new[] { false, true })
             {
-                using var owner = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-                    finite ? new()
+                using var owner = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = finite ? new()
                     {
                         MaxWorkSteps = 1_000_000,
                         MaxDepth = 4096,
                         MaxWorkingBytes = 1_000_000,
                         MaxResultBytes = 1_000_000
-                    } : default);
+                    }
+
+    : default
+                });
                 Assert.Equal(oracle.Count(text), owner.Count(input));
                 Assert.Equal(oracle.Count(suffix), owner.Count(input, Encoding.UTF8.GetByteCount(prefix)));
                 var collectedRanges1 = new List<Utf8PythonRangeMatch>();
@@ -134,8 +144,10 @@ public sealed class PythonReClassDelimiterWindowTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        using var owner = new Utf8PythonRegex(@"[a-z]+@z", default,
-            timeout ? TimeSpan.FromTicks(1) : Timeout.InfiniteTimeSpan);
+        using var owner = new Utf8PythonRegex(@"[a-z]+@z", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout ? TimeSpan.FromTicks(1) : Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaaa \t @bad ", 512)) + "b@z");
         var reached = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ => { reached = true; if (timeout) ticks = 1000; else token.Cancel(); });
@@ -162,14 +174,19 @@ public sealed class PythonReClassDelimiterWindowTests
         var text = "é😀" + new string('x', prefix) + " item-123 other-45";
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern);
-        using var owner = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-            finite ? new()
+        using var owner = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = finite ? new()
             {
                 MaxWorkSteps = 1_000_000,
                 MaxWorkingBytes = 1_000_000,
                 MaxResultBytes = 1_000_000,
                 MaxDepth = 128
-            } : default);
+            }
+
+    : default
+        });
         Utf8PythonRangeMatch first = default;
         using (var captureCursor2 = owner.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
         {
@@ -183,9 +200,9 @@ public sealed class PythonReClassDelimiterWindowTests
         Assert.Equal(oracle.Replace(text, "$2:$1"), System.Text.Encoding.UTF8.GetString(owner.Replace(input, @"\2:\1")));
         Assert.Equal(oracle.Split(text), PythonReSplitAssert.Decode(input, owner.SplitRanges(input, 0, 0, default)));
         var floor = Encoding.UTF8.GetByteCount("é😀") + prefix + 1;
-        Assert.True(owner.Match(input,floor).Success);
+        Assert.True(owner.Match(input, floor).Success);
         Assert.False(owner.Match(input).Success);
-        Assert.False(owner.Match(input,floor,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(owner.Match(input, floor, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal("item", System.Text.Encoding.UTF8.GetString((first.Groups[1].Success ? first.GetGroupMemory(first.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
@@ -286,10 +303,10 @@ public sealed class PythonReClassDelimiterWindowTests
     {
         using var owner = new Utf8PythonRegex("([a-z]+)-([0-9]+)");
         var valid = Encoding.UTF8.GetBytes("😀" + new string('x', 256) + " item-123");
-        Assert.Throws<ArgumentOutOfRangeException>(() => owner.Match(valid,1,mode: Utf8PythonMatchMode.Search));
+        Assert.Throws<ArgumentOutOfRangeException>(() => owner.Match(valid, 1, mode: Utf8PythonMatchMode.Search));
         Assert.Equal("😀" + new string('x', 256) + " 123:item", System.Text.Encoding.UTF8.GetString(owner.Replace(valid, @"\2:\1")));
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Match(valid,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => owner.Match(valid, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
     }
 
     [Theory]
@@ -307,15 +324,17 @@ public sealed class PythonReClassDelimiterWindowTests
         for (var mode = 0; mode < 3; mode++)
         {
             using var token = new CancellationTokenSource();
-            using var owner = new Utf8PythonRegex("([a-z]+)-([0-9]+)", default,
-                mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
-                mode == 0 ? default : new()
+            using var owner = new Utf8PythonRegex("([a-z]+)-([0-9]+)", options: default, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = mode == 2 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
+                ResourcePolicy = mode == 0 ? default : new()
                 {
                     MaxWorkSteps = 1_000_000,
                     MaxDepth = 128,
                     MaxWorkingBytes = 1_000_000,
                     MaxResultBytes = 1_000_000
-                });
+                }
+            });
             Utf8PythonRangeMatch first = default;
             using (var captureCursor3 = owner.CreateMatchCursor((input).ToArray(), 0, token.Token, mode: Utf8PythonMatchMode.Search))
             {
@@ -323,9 +342,9 @@ public sealed class PythonReClassDelimiterWindowTests
             }
             Assert.Equal((at, length), (first.Value.StartOffsetInBytes, first.Value.EndOffsetInBytes));
             Assert.Equal(new[] { "item-1", "item", "1" }, PythonReCaptureAssert.Values(first));
-            Assert.Equal(at + 1, owner.Match(input,at + 1,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+            Assert.Equal(at + 1, owner.Match(input, at + 1, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
             Assert.False(owner.Match(input).Success);
-            Assert.False(owner.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.False(owner.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
 

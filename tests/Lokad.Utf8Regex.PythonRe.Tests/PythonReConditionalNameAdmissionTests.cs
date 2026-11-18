@@ -32,7 +32,7 @@ public sealed class PythonReConditionalNameAdmissionTests
             Assert.Equal(3, error.Position);
             Assert.False(Utf8ConstructionScope.IsActive);
         }
-        Assert.True(new Utf8PythonRegex("(?P<x>a)?(?(x)b|c)").Match("ab"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(new Utf8PythonRegex("(?P<x>a)?(?(x)b|c)").Match("ab"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -60,8 +60,15 @@ public sealed class PythonReConditionalNameAdmissionTests
                 MaxResultBytes = 1000000
             };
             var regex = bytes
-                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy)
-                : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
+                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                }) : new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                });
             Utf8PythonRangeMatch match = default;
             using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
             {

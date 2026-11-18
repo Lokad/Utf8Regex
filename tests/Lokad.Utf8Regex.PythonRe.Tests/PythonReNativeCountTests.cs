@@ -21,8 +21,17 @@ public sealed class PythonReNativeCountTests
     public void NativeCountNeedsNoCaptureSlotsOrResultStorage(string pattern, string text, int start, int expected)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         using var token = new CancellationTokenSource();
         Assert.Equal(expected, regex.Count(input, start));
         Assert.Equal(expected, regex.Count(input, start, token.Token));
@@ -42,8 +51,17 @@ public sealed class PythonReNativeCountTests
     [InlineData("(a)|(ab)|(b)|(ba)", "aba", 3)]
     public void OtherProgramsKeepProfileSemantics(string pattern, string text, int expected)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text)));
     }
 
@@ -64,11 +82,20 @@ public sealed class PythonReNativeCountTests
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
         Assert.Equal("b", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(2).Span));
         Assert.Equal(2, matches[0].LastIndex); Assert.Null(matches[0].LastGroup);
-        Assert.Equal(6,matches[0].Value.StartOffsetInBytes);
+        Assert.Equal(6, matches[0].Value.StartOffsetInBytes);
         var tuples = regex.FindAllToUtf8(input).TupleValues;
         Assert.Equal("a"u8.ToArray(), tuples[0][0]); Assert.Equal("b"u8.ToArray(), tuples[0][1]);
-        var generic = new Utf8PythonRegex("(a+)(b+)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var generic = new Utf8PythonRegex("(a+)(b+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => generic.Count(input)).ResourceKind);
     }
@@ -78,8 +105,17 @@ public sealed class PythonReNativeCountTests
     [Fact]
     public void StartCancellationAndWorkFailureKeepPrecedence()
     {
-        var regex = new Utf8PythonRegex("(a)(b)", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex("(a)(b)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀ab"u8, 1));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count("ab"u8)).ResourceKind);
@@ -95,8 +131,17 @@ public sealed class PythonReNativeCountTests
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8PythonRegex("(a)(b)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20),
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex("(a)(b)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 262144) + "ab");
         var interrupted = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>

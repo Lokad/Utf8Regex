@@ -45,13 +45,25 @@ public sealed class PythonReSharedWorkingAllowanceTests
     public void SharedAdmissionDoesNotRelaxNumericWorkingOrResultLimits()
     {
         var allowance = new Allowance(ulong.MaxValue);
-        var working = new Utf8PythonRegex("(a)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
+        var working = new Utf8PythonRegex("(a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => working.CreateMatchCursor("a"u8.ToArray(), 0, default, allowance));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
         Assert.Equal(0, allowance.Reservations);
-        var result = new Utf8PythonRegex("(a)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxResultBytes = 1 });
+        var result = new Utf8PythonRegex("(a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxResultBytes = 1
+            }
+        });
         using var cursor = result.CreateMatchCursor("a"u8.ToArray(), 0, default, allowance);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _)).ResourceKind);
@@ -62,7 +74,10 @@ public sealed class PythonReSharedWorkingAllowanceTests
     public void HalfAMillionDiscardedRangesRefundSharedWorkingCapacityWithoutATrafficQuota()
     {
         var allowance = new Allowance(16 << 10);
-        using var cursor = new Utf8PythonRegex("(.)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan).CreateMatchCursor(
+        using var cursor = new Utf8PythonRegex("(.)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        }).CreateMatchCursor(
             Enumerable.Repeat((byte)'a', 500000).ToArray(), 0, default, allowance);
         var count = 0; while (cursor.MoveNext(out _)) count++;
         Assert.Equal(500000, count); Assert.True(allowance.Peak > 0); Assert.Equal(0UL, allowance.Used);
@@ -133,8 +148,10 @@ public sealed class PythonReSharedWorkingAllowanceTests
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var allowance = new Allowance(1 << 20);
-        using var cursor = new Utf8PythonRegex("(z)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(100))
-            .CreateMatchCursor(Encoding.UTF8.GetBytes("z" + new string('a', 262144)), 0, default, allowance);
+        using var cursor = new Utf8PythonRegex("(z)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(100)
+        }).CreateMatchCursor(Encoding.UTF8.GetBytes("z" + new string('a', 262144)), 0, default, allowance);
         Assert.True(cursor.MoveNext(out var retained)); ticks = 100;
         var failure = Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
         Assert.Empty(failure.Input); Assert.Equal("(z)", failure.Pattern);

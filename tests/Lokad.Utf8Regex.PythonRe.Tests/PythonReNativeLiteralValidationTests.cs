@@ -33,15 +33,18 @@ public sealed class PythonReNativeLiteralValidationTests
             } : default;
             using var live = new CancellationTokenSource();
             var token = mode == 2 ? live.Token : default;
-            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
-                mode == 3 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan, policy);
-            Check(regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.Search), pattern, text, start);
-            PythonReMatchAssert.Equal(start >= 0 ? pattern : null, regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.Search));
-            Check(regex.Match(input,0,cancellationToken: token), pattern, text, start == 0 ? 0 : -1);
-            PythonReMatchAssert.Equal(start == 0 ? pattern : null, regex.Match(input,0,cancellationToken: token));
+            var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = mode == 3 ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            });
+            Check(regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.Search), pattern, text, start);
+            PythonReMatchAssert.Equal(start >= 0 ? pattern : null, regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.Search));
+            Check(regex.Match(input, 0, cancellationToken: token), pattern, text, start == 0 ? 0 : -1);
+            PythonReMatchAssert.Equal(start == 0 ? pattern : null, regex.Match(input, 0, cancellationToken: token));
             var full = text == pattern;
-            Check(regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch), pattern, text, full ? 0 : -1);
-            PythonReMatchAssert.Equal(full ? pattern : null, regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch));
+            Check(regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch), pattern, text, full ? 0 : -1);
+            PythonReMatchAssert.Equal(full ? pattern : null, regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch));
         }
     }
 
@@ -87,7 +90,7 @@ public sealed class PythonReNativeLiteralValidationTests
             var error = Assert.Throws<OperationCanceledException>(() => Run(regex, [0xff], operation, cancellation.Token));
             Assert.Equal(cancellation.Token, error.CancellationToken);
         }
-        PythonReMatchAssert.Equal("Шерлок", regex.Match("xx Шерлок"u8,mode: Utf8PythonMatchMode.Search));
+        PythonReMatchAssert.Equal("Шерлок", regex.Match("xx Шерлок"u8, mode: Utf8PythonMatchMode.Search));
     }
 
     [Fact]
@@ -95,13 +98,13 @@ public sealed class PythonReNativeLiteralValidationTests
     {
         var regex = new Utf8PythonRegex("é😀");
         var input = Encoding.UTF8.GetBytes("中é😀尾");
-        var first = regex.Match(input,mode: Utf8PythonMatchMode.Search);
+        var first = regex.Match(input, mode: Utf8PythonMatchMode.Search);
         Utf8PythonRangeMatch snapshot = default;
         using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
         {
             captureCursor1.MoveNext(out snapshot);
         }
-        Assert.False(regex.Match("Ватсон"u8,mode: Utf8PythonMatchMode.Search).Success);
+        Assert.False(regex.Match("Ватсон"u8, mode: Utf8PythonMatchMode.Search).Success);
         Assert.Equal(1, regex.Count(input));
         Assert.Equal((3, 9), (first.StartOffsetInBytes, first.EndOffsetInBytes));
         Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(first.GetValueBytes()));
@@ -112,8 +115,15 @@ public sealed class PythonReNativeLiteralValidationTests
     [InlineData(4)]
     public void ImmediateMissStillChecksTheOriginalDeadline(int operation)
     {
-        var regex = new Utf8PythonRegex("Шерлок", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1),
-            new() { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex("Шерлок", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1),
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var input = "absent"u8.ToArray();
         var reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads < 2 ? 0 : 1000);
@@ -137,9 +147,9 @@ public sealed class PythonReNativeLiteralValidationTests
     {
         switch (operation)
         {
-            case 0: _ = regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.Search); break;
-            case 2: _ = regex.Match(input,0,cancellationToken: token); break;
-            case 4: _ = regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch); break;
+            case 0: _ = regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.Search); break;
+            case 2: _ = regex.Match(input, 0, cancellationToken: token); break;
+            case 4: _ = regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch); break;
             default: throw new ArgumentOutOfRangeException(nameof(operation));
         }
     }

@@ -8,8 +8,14 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReFundedExecutionTests
 {
     private static Utf8PythonRegex Compile(string pattern, Allowance account, Utf8ResourcePolicy policy = default,
-        TimeSpan? timeout = null) => Utf8PythonRegex.Compile(pattern, default, timeout ?? Timeout.InfiniteTimeSpan,
-            policy, default, Timeout.InfiniteTimeSpan, default, account);
+        TimeSpan? timeout = null) => Utf8PythonRegex.Compile(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
 
     [Theory]
     [InlineData("(?P<x>[a-z]+)", "aa bb")]

@@ -18,8 +18,8 @@ public sealed class PythonReGlobalModeAdmissionTests
         {
             var error = Assert.Throws<PythonRePatternException>(() =>
             {
-                if (bytes) _ = new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options);
-                else _ = new Utf8PythonRegex(pattern, options);
+                if (bytes) _ = new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: options);
+                else _ = new Utf8PythonRegex(pattern, options: options);
             });
             Assert.Equal("ASCII and UNICODE flags are incompatible", error.Message);
             Assert.Equal(-1, error.Position);
@@ -43,8 +43,17 @@ public sealed class PythonReGlobalModeAdmissionTests
     [InlineData(@"(?u)(?a:(?P<x>\w+))(?P<y>\w+)", "aé", "a", "é")]
     public void ScopedModesOverrideAndRestoreWithoutChangingCaptureIdentity(string pattern, string text, string first, string second)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         Utf8PythonRangeMatch match = default;
         using (var captureCursor1 = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -70,6 +79,6 @@ public sealed class PythonReGlobalModeAdmissionTests
             Assert.Equal(0ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
         }
-        Assert.True(new Utf8PythonRegex("(?a)a").Match("a"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(new Utf8PythonRegex("(?a)a").Match("a"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

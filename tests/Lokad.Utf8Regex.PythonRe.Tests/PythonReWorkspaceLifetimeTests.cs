@@ -43,7 +43,11 @@ public sealed class PythonReWorkspaceLifetimeTests
     {
         Utf8PythonRangeMatch cursorRange = default;
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 };
-        var regex = new Utf8PythonRegex("(?:(?P<x>a+)(?=b)b|(?P<y>c+))", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8PythonRegex("(?:(?P<x>a+)(?=b)b|(?P<y>c+))", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         using var cursor = regex.CreateMatchCursor("aaaxcc aab c"u8.ToArray());
         Assert.True(cursor.MoveNext(out cursorRange)); var first = cursorRange;
         Assert.Equal("cc", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span)); Assert.Equal("y", first.LastGroup);

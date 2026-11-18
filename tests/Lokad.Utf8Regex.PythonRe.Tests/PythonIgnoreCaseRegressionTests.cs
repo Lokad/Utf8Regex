@@ -44,7 +44,7 @@ public sealed class PythonIgnoreCaseRegressionTests
     [InlineData("a", "\u00E1", false, 0, 0)]
     public void UnicodeLiteralsFollowCpython(string pattern, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        AssertSearch(new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
+        AssertSearch(new Utf8PythonRegex(pattern, options: PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
     }
 
     [Theory]
@@ -70,7 +70,7 @@ public sealed class PythonIgnoreCaseRegressionTests
     [InlineData("[\u03B1-\u03C9]", "\u03A3", true, 0, 1)]
     public void UnicodeRangesFollowCpython(string pattern, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        AssertSearch(new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
+        AssertSearch(new Utf8PythonRegex(pattern, options: PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
     }
 
     [Theory]
@@ -81,7 +81,7 @@ public sealed class PythonIgnoreCaseRegressionTests
     [InlineData("(?i:[\\w])", "\u0130", true, 0, 1)]
     public void ScopedOptionsFollowCpython(string pattern, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        AssertSearch(new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
+        AssertSearch(new Utf8PythonRegex(pattern, options: PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
     }
 
     [Theory]
@@ -97,7 +97,7 @@ public sealed class PythonIgnoreCaseRegressionTests
     [InlineData("[a-z]", "\u0130", false, 0, 0)]
     public void AsciiLiteralsAndRangesExcludeNonAsciiPartners(string pattern, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        AssertSearch(new Utf8PythonRegex(pattern, PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
+        AssertSearch(new Utf8PythonRegex(pattern, options: PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
     }
 
     [Theory]
@@ -111,14 +111,14 @@ public sealed class PythonIgnoreCaseRegressionTests
     [InlineData("([ab])\\1", "aA", true, 0, 2)]
     public void BackreferencesFollowCpython(string pattern, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        AssertSearch(new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
+        AssertSearch(new Utf8PythonRegex(pattern, options: PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
     }
 
     [Theory]
     [InlineData("(k)\\1", "kK", true, 0, 2)]
     public void AsciiBackreferencesFollowCpython(string pattern, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        AssertSearch(new Utf8PythonRegex(pattern, PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
+        AssertSearch(new Utf8PythonRegex(pattern, options: PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase), input, expectedSuccess, expectedStart, expectedEnd);
     }
 
     [Theory]
@@ -127,7 +127,7 @@ public sealed class PythonIgnoreCaseRegressionTests
     [InlineData("k", "\u212A", true)]
     public void UnicodeFullMatchFollowsCpython(string pattern, string input, bool expectedSuccess)
     {
-        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern, PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes(input),mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(expectedSuccess, new Utf8PythonRegex(pattern, options: PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes(input), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     // Previously managed-folding gaps: owned scalar classes and lexical
@@ -135,31 +135,31 @@ public sealed class PythonIgnoreCaseRegressionTests
     [Fact]
     public void TurkicBackreferenceStaysPinnedToCpython()
     {
-        Assert.True(new Utf8PythonRegex("(i)\\1", PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes("i\u0130"),mode: Utf8PythonMatchMode.Search).Success);
-        Assert.True(new Utf8PythonRegex("(\u0130)\\1", PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes("\u0130i"),mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(new Utf8PythonRegex("(i)\\1", options: PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes("i\u0130"), mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(new Utf8PythonRegex("(\u0130)\\1", options: PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes("\u0130i"), mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Fact]
     public void ScopedAsciiKelvinStaysPinnedToCpython()
     {
-        Assert.False(new Utf8PythonRegex("(?a:k)", PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes("\u212A"),mode: Utf8PythonMatchMode.Search).Success);
+        Assert.False(new Utf8PythonRegex("(?a:k)", options: PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes("\u212A"), mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Fact]
     public void AsciiTopUnicodeScopedBackreferenceStaysPinnedToCpython()
     {
-        Assert.True(new Utf8PythonRegex("(?u:(i)\\1)", PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes("iI"),mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(new Utf8PythonRegex("(?u:(i)\\1)", options: PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes("iI"), mode: Utf8PythonMatchMode.Search).Success);
     }
 
     [Fact]
     public void AsciiComplexBackreferenceStaysPinnedToCpython()
     {
-        Assert.True(new Utf8PythonRegex("([kj])\\1", PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes("kK"),mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(new Utf8PythonRegex("([kj])\\1", options: PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase).Match(Encoding.UTF8.GetBytes("kK"), mode: Utf8PythonMatchMode.Search).Success);
     }
 
     private static void AssertSearch(Utf8PythonRegex regex, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var match = regex.Match(Encoding.UTF8.GetBytes(input),mode: Utf8PythonMatchMode.Search);
+        var match = regex.Match(Encoding.UTF8.GetBytes(input), mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {

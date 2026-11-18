@@ -6,19 +6,20 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReConstructionAdmissionTests
 {
     [Theory]
-    [InlineData(PythonReCompileOptions.Locale, false)]
-    [InlineData(PythonReCompileOptions.Locale, true)]
-    [InlineData(PythonReCompileOptions.Ascii | PythonReCompileOptions.Unicode, false)]
-    [InlineData(PythonReCompileOptions.Ascii | PythonReCompileOptions.Unicode, true)]
-    public void InvalidFlagsPrecedeByteDecodingAndSpendNoConstructionAllowance(PythonReCompileOptions options, bool policy)
+    [InlineData(PythonReCompileOptions.Locale)]
+    [InlineData(PythonReCompileOptions.Ascii | PythonReCompileOptions.Unicode)]
+    public void InvalidFlagsPrecedeByteDecodingAndSpendNoConstructionAllowance(PythonReCompileOptions options)
     {
         using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
         foreach (var pattern in new[] { new byte[] { 0xff }, new byte[4096] })
         {
             Assert.Throws<PythonRePatternException>(() =>
             {
-                if (policy) _ = new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited);
-                else _ = new Utf8PythonRegex(pattern, options, Timeout.InfiniteTimeSpan);
+                _ = new Utf8PythonRegex(pattern, options: options, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = Utf8ResourcePolicy.Unlimited
+                });
             });
             Assert.Equal(0UL, scope.Budget.WorkSteps);
             Assert.Equal(0UL, scope.Budget.ReservedBytes);
@@ -27,19 +28,21 @@ public sealed class PythonReConstructionAdmissionTests
         }
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void InvalidTimeoutPrecedesByteDecodingAndSpendsNoConstructionAllowance(bool policy)
+    [Fact]
+    public void InvalidTimeoutPrecedesByteDecodingAndSpendsNoConstructionAllowance()
     {
         using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
         foreach (var pattern in new[] { new byte[] { 0xff }, new byte[4096] })
         {
             var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                if (policy) _ = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.Zero, Utf8ResourcePolicy.Unlimited);
-                else _ = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.Zero);
+                _ = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = TimeSpan.Zero,
+                    ResourcePolicy = Utf8ResourcePolicy.Unlimited
+                });
             });
-            Assert.Equal("matchTimeout", error.ParamName);
+            Assert.Equal("policy", error.ParamName);
             Assert.Equal(0UL, scope.Budget.WorkSteps);
             Assert.Equal(0UL, scope.Budget.ReservedBytes);
             Assert.Equal(0UL, scope.Budget.PeakBytes);
@@ -52,9 +55,15 @@ public sealed class PythonReConstructionAdmissionTests
     {
         using var scope = new Utf8ConstructionScope(0, 0, 0, 0);
         var error = Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new Utf8PythonRegex(new byte[] { 0xff }, PythonReCompileOptions.Locale, TimeSpan.Zero,
-                new Utf8ResourcePolicy { MaxWorkSteps = 0 }));
-        Assert.Equal("resourcePolicy", error.ParamName);
+            new Utf8PythonRegex(new byte[] { 0xff }, options: PythonReCompileOptions.Locale, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = TimeSpan.Zero,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = 0
+                }
+            }));
+        Assert.Equal("policy", error.ParamName);
         Assert.Equal(0UL, scope.Budget.WorkSteps);
         Assert.Equal(0UL, scope.Budget.ReservedBytes);
     }
@@ -69,14 +78,26 @@ public sealed class PythonReConstructionAdmissionTests
         Assert.Equal(0ul, scope.Budget.WorkSteps);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
         var working = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-                new Utf8ResourcePolicy { MaxWorkingBytes = 1 }));
+            new Utf8PythonRegex("cat"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkingBytes = 1
+                }
+            }));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, working.ResourceKind);
         Assert.Equal(1UL, working.Requested);
         Assert.Equal(0ul, scope.Budget.WorkSteps);
         var acceptedPolicy = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-                new Utf8ResourcePolicy { MaxWorkSteps = 1 }));
+            new Utf8PythonRegex("cat"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = 1
+                }
+            }));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, acceptedPolicy.ResourceKind);
         Assert.Equal(0ul, scope.Budget.WorkSteps);
         Assert.Equal(0ul, scope.Budget.ReservedBytes);
@@ -93,7 +114,8 @@ public sealed class PythonReConstructionAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ScalarPreparationInheritsDepthAndRecoversWithTheSameOwner(bool bytes)
     {
         var pattern = new string('(', 64) + "." + new string(')', 64);
@@ -113,7 +135,10 @@ public sealed class PythonReConstructionAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void EveryBytePatternEntryAdmitsOwnedSourceBytesBeforeParsing(int entry)
     {
         // Valid UTF-8, deliberately invalid grammar: admission must precede parsing.
@@ -126,9 +151,16 @@ public sealed class PythonReConstructionAdmissionTests
             _ = entry switch
             {
                 0 => new Utf8PythonRegex(encoded),
-                1 => new Utf8PythonRegex(encoded, PythonReCompileOptions.None),
-                2 => new Utf8PythonRegex(encoded, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan),
-                _ => new Utf8PythonRegex(encoded, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited),
+                1 => new Utf8PythonRegex(encoded, options: PythonReCompileOptions.None),
+                2 => new Utf8PythonRegex(encoded, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan
+                }),
+                _ => new Utf8PythonRegex(encoded, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = Utf8ResourcePolicy.Unlimited
+                }),
             };
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
@@ -140,8 +172,11 @@ public sealed class PythonReConstructionAdmissionTests
     }
 
     [Theory]
-    [InlineData("")] [InlineData("cat")] [InlineData("é")]
-    [InlineData("😀")] [InlineData("a😀é中")]
+    [InlineData("")]
+    [InlineData("cat")]
+    [InlineData("é")]
+    [InlineData("😀")]
+    [InlineData("a😀é中")]
     public void RetainedNativePatternSharesTheCompilationLoanWithoutChargingBorrowedText(string pattern)
     {
         ulong held;
@@ -178,8 +213,14 @@ public sealed class PythonReConstructionAdmissionTests
         var parent = scope.Budget.AllocateArray<byte>(1, false);
         var invalid = new byte[] { 0xed, 0xa0, 0x80 };
         var workingUtf8 = Assert.Throws<ArgumentException>(() =>
-            new Utf8PythonRegex(invalid, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-                new Utf8ResourcePolicy { MaxWorkingBytes = 1 }));
+            new Utf8PythonRegex(invalid, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkingBytes = 1
+                }
+            }));
         Assert.Equal("patternUtf8", workingUtf8.ParamName);
         Assert.IsType<System.Text.DecoderFallbackException>(workingUtf8.InnerException);
         var utf8 = Assert.Throws<ArgumentException>(() => new Utf8PythonRegex(invalid));
@@ -194,7 +235,8 @@ public sealed class PythonReConstructionAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void WideScalarIrCannotBypassTheEnclosingByteOwner(bool bytes)
     {
         // Preserve wide denial and the original same-owner "cat" recovery;
@@ -218,7 +260,8 @@ public sealed class PythonReConstructionAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ScalarConstructionPropagatesByteAdmissionFailure(bool bytes)
     {
         using (var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, 1))
@@ -239,7 +282,8 @@ public sealed class PythonReConstructionAdmissionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ScalarConstructionUsesTheSharedOwnerAndPropagatesCapacityFailure(bool bytes)
     {
         using (var scope = new Utf8ConstructionScope(1))

@@ -27,7 +27,8 @@ public sealed class PythonReAsciiBoundaryTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void PrimitiveAndExpandedReferenceAgreeAtEveryScalarOffset(bool nonBoundary)
     {
         var escape = nonBoundary ? @"\B" : @"\b";
@@ -37,68 +38,76 @@ public sealed class PythonReAsciiBoundaryTests
         string[] subjects = ["", "a", " ", "aa bb", "_0", "éA😀Bıİ", "e\u0301", "İıſK𝟙", "A\n", "\r\n", "\0x_", "😀 é x"];
         using var token = new CancellationTokenSource();
         foreach (var options in new[] { PythonReCompileOptions.Ascii, PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase })
-        foreach (var scoped in new[] { false, true })
-        {
-            var pattern = scoped ? "(?a:" + escape + ")" : escape;
-            var controlPattern = scoped ? "(?a:" + expanded + ")" : expanded;
-            var actual = new Utf8PythonRegex(pattern, options, Regex.InfiniteMatchTimeout, Funded);
-            var control = new Utf8PythonRegex(controlPattern, options, Regex.InfiniteMatchTimeout, Funded);
-            foreach (var text in subjects)
+            foreach (var scoped in new[] { false, true })
             {
-                var input = Encoding.UTF8.GetBytes(text);
-                var offset = 0;
-                while (true)
+                var pattern = scoped ? "(?a:" + escape + ")" : escape;
+                var controlPattern = scoped ? "(?a:" + expanded + ")" : expanded;
+                var actual = new Utf8PythonRegex(pattern, options: options, policy: new Utf8RegexPolicy()
                 {
-                    var collectedRanges1 = new List<Utf8PythonRangeMatch>();
-                    using (var rangeCursor1 = control.CreateMatchCursor(input, offset, token.Token))
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = Funded
+                });
+                var control = new Utf8PythonRegex(controlPattern, options: options, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = Funded
+                });
+                foreach (var text in subjects)
+                {
+                    var input = Encoding.UTF8.GetBytes(text);
+                    var offset = 0;
+                    while (true)
                     {
-                        while (rangeCursor1.MoveNext(out var rangeMatch1))
-                            collectedRanges1.Add(rangeMatch1);
+                        var collectedRanges1 = new List<Utf8PythonRangeMatch>();
+                        using (var rangeCursor1 = control.CreateMatchCursor(input, offset, token.Token))
+                        {
+                            while (rangeCursor1.MoveNext(out var rangeMatch1))
+                                collectedRanges1.Add(rangeMatch1);
+                        }
+                        var expected = collectedRanges1.ToArray();
+                        var collectedRanges2 = new List<Utf8PythonRangeMatch>();
+                        using (var rangeCursor2 = actual.CreateMatchCursor(input, offset, token.Token))
+                        {
+                            while (rangeCursor2.MoveNext(out var rangeMatch2))
+                                collectedRanges2.Add(rangeMatch2);
+                        }
+                        var found = collectedRanges2.ToArray();
+                        Assert.Equal(expected.Select(x => x.Value), found.Select(x => x.Value));
+                        Assert.Equal(expected.Length, actual.Count(input, offset, token.Token));
+                        Assert.Equal(control.IsMatch(input, offset, token.Token), actual.IsMatch(input, offset, token.Token));
+                        foreach (var limit in new[] { 0, 1, 2 })
+                            Assert.Equal(PythonReSplitAssert.Decode(input, control.SplitRanges(input, limit, offset, token.Token)), PythonReSplitAssert.Decode(input, actual.SplitRanges(input, limit, offset, token.Token)));
+                        Assert.Equal(PythonReSubstitutionAssert.Decode(control.Subn(input, "-", 0, offset, token.Token)).ResultText,
+                            PythonReSubstitutionAssert.Decode(actual.Subn(input, "-", 0, offset, token.Token)).ResultText);
+                        if (offset == input.Length) break;
+                        Rune.DecodeFromUtf8(input.AsSpan(offset), out _, out var width);
+                        offset += width;
                     }
-                    var expected = collectedRanges1.ToArray();
-                    var collectedRanges2 = new List<Utf8PythonRangeMatch>();
-                    using (var rangeCursor2 = actual.CreateMatchCursor(input, offset, token.Token))
-                    {
-                        while (rangeCursor2.MoveNext(out var rangeMatch2))
-                            collectedRanges2.Add(rangeMatch2);
-                    }
-                    var found = collectedRanges2.ToArray();
-                    Assert.Equal(expected.Select(x => x.Value), found.Select(x => x.Value));
-                    Assert.Equal(expected.Length, actual.Count(input, offset, token.Token));
-                    Assert.Equal(control.IsMatch(input, offset, token.Token), actual.IsMatch(input, offset, token.Token));
-                    foreach (var limit in new[] { 0, 1, 2 })
-                        Assert.Equal(PythonReSplitAssert.Decode(input, control.SplitRanges(input, limit, offset, token.Token)), PythonReSplitAssert.Decode(input, actual.SplitRanges(input, limit, offset, token.Token)));
-                    Assert.Equal(PythonReSubstitutionAssert.Decode(control.Subn(input, "-", 0, offset, token.Token)).ResultText,
-                        PythonReSubstitutionAssert.Decode(actual.Subn(input, "-", 0, offset, token.Token)).ResultText);
-                    if (offset == input.Length) break;
-                    Rune.DecodeFromUtf8(input.AsSpan(offset), out _, out var width);
-                    offset += width;
                 }
             }
-        }
     }
 
     [Fact]
     public void StrictAsciiMembershipKeepsTurkishIAndUnicodeScopesDistinct()
     {
-        var ascii = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
+        var ascii = new Utf8PythonRegex(@"\b", options: PythonReCompileOptions.Ascii);
         Assert.Equal(0, ascii.Count("İıé😀"u8));
         Assert.Equal(2, ascii.Count("İAı"u8));
         Assert.Equal(new string?[] { "İ", "A", "ı" }, PythonReSplitAssert.Decode("İAı"u8, ascii.SplitRanges("İAı"u8, 0, 0, default)));
         var unicode = new Utf8PythonRegex(@"\b");
         Assert.Equal(2, unicode.Count("İıé😀"u8));
-        Assert.Equal(2, new Utf8PythonRegex(@"(?u:\b)", PythonReCompileOptions.Ascii).Count("İıé😀"u8));
+        Assert.Equal(2, new Utf8PythonRegex(@"(?u:\b)", options: PythonReCompileOptions.Ascii).Count("İıé😀"u8));
         Assert.Equal(0, new Utf8PythonRegex(@"(?a:\b)").Count("İıé😀"u8));
-        Assert.Equal(0, new Utf8PythonRegex(@"\B", PythonReCompileOptions.Ascii).Count([]));
-        Assert.Equal(new string?[] { "" }, PythonReSplitAssert.Decode([], new Utf8PythonRegex(@"\B", PythonReCompileOptions.Ascii).SplitRanges([], 0, 0, default)));
+        Assert.Equal(0, new Utf8PythonRegex(@"\B", options: PythonReCompileOptions.Ascii).Count([]));
+        Assert.Equal(new string?[] { "" }, PythonReSplitAssert.Decode([], new Utf8PythonRegex(@"\B", options: PythonReCompileOptions.Ascii).SplitRanges([], 0, 0, default)));
     }
 
     [Fact]
     public void CapturesEmptyAlternativesAndCursorAliasesRemainOwned()
     {
         Utf8PythonRangeMatch cursorRange = default;
-        var regex = new Utf8PythonRegex(@"(?P<b>\b)|(?P<a>a)", PythonReCompileOptions.Ascii);
-        var control = new Utf8PythonRegex("(?P<b>" + PythonReParser.AsciiWordBoundary + ")|(?P<a>a)", PythonReCompileOptions.Ascii);
+        var regex = new Utf8PythonRegex(@"(?P<b>\b)|(?P<a>a)", options: PythonReCompileOptions.Ascii);
+        var control = new Utf8PythonRegex("(?P<b>" + PythonReParser.AsciiWordBoundary + ")|(?P<a>a)", options: PythonReCompileOptions.Ascii);
         var input = "a éa😀a"u8.ToArray();
         var collectedRanges3 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor3 = control.CreateMatchCursor(input, 0, default))
@@ -127,7 +136,8 @@ public sealed class PythonReAsciiBoundaryTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void LongWordScanObservesOriginalInterruption(bool expire)
     {
         long ticks = 0;
@@ -137,7 +147,11 @@ public sealed class PythonReAsciiBoundaryTests
         var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
         Utf8InputAnalyzer.Describe(input, ref validation);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var regex = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii, timeout, Funded);
+        var regex = new Utf8PythonRegex(@"\b", options: PythonReCompileOptions.Ascii, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = Funded
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -160,10 +174,14 @@ public sealed class PythonReAsciiBoundaryTests
     {
         foreach (var policy in new[] { Funded with { MaxResultBytes = 1 }, Funded with { MaxWorkingBytes = 1 }, Funded with { MaxWorkSteps = 1 } })
         {
-            var regex = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii, Regex.InfiniteMatchTimeout, policy);
+            var regex = new Utf8PythonRegex(@"\b", options: PythonReCompileOptions.Ascii, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
             Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReSplitAssert.Decode("alpha beta"u8, regex.SplitRanges("alpha beta"u8, 0, 0, default)));
         }
-        var normal = new Utf8PythonRegex(@"\b", PythonReCompileOptions.Ascii);
+        var normal = new Utf8PythonRegex(@"\b", options: PythonReCompileOptions.Ascii);
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => PythonReSplitAssert.Decode("alpha beta"u8, normal.SplitRanges("alpha beta"u8, 0, 0, token.Token))).CancellationToken);
     }

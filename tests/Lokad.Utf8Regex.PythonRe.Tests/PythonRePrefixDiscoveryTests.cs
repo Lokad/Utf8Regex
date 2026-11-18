@@ -27,15 +27,24 @@ public sealed class PythonRePrefixDiscoveryTests
     public void PublicDiscoveryMatchesUnguidedProfileVerification(string pattern, string subject)
     {
         Utf8PythonRangeMatch cursorRange = default;
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.Multiline);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.Multiline);
         var input = Encoding.UTF8.GetBytes(subject);
         var plain = new PythonReScalarMatchState(input, Field<Utf8SliceProgram>(regex, "_scalarProgram"),
             0, Regex.InfiniteMatchTimeout, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default), null);
         var expected = new List<Utf8PythonRangeMatch>();
         try { while (plain.MoveNext(input)) expected.Add(plain.SnapshotRanges(input, Field<PythonReNameEntry[]>(regex, "_nameEntries"))); }
         finally { plain.Dispose(); }
-        var finite = new Utf8PythonRegex(pattern, PythonReCompileOptions.Multiline, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+        var finite = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.Multiline, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            }
+        });
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, default))
         {
@@ -196,7 +205,10 @@ public sealed class PythonRePrefixDiscoveryTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var regex = new Utf8PythonRegex("(ab|cd)+", PythonReCompileOptions.None, timeout);
+        var regex = new Utf8PythonRegex("(ab|cd)+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout
+        });
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(new string('x', 200000)), 0, token.Token);
         cursor.WorkingInvocation.ShareStorageForCursor();
         var observer = cursor.WorkingInvocation;

@@ -26,15 +26,18 @@ public class Utf8PythonReNoMatchOutputBenchmarks
         _text = item.Input;
         _input = Encoding.UTF8.GetBytes(_text);
         _replacement = item.Replacement;
-        _unlimited = new Utf8PythonRegex(item.Pattern, item.Options);
-        _finite = new Utf8PythonRegex(item.Pattern, item.Options, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy
+        _unlimited = new Utf8PythonRegex(item.Pattern, options: item.Options);
+        _finite = new Utf8PythonRegex(item.Pattern, options: item.Options, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 50_000_000,
                 MaxDepth = 1024,
                 MaxWorkingBytes = 64 << 20,
                 MaxResultBytes = 128 << 20
-            });
+            }
+        });
         _regex = new Regex(item.Pattern, RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();
         if (Unlimited() != _text || Finite() != _text || FiniteWithToken() != _text ||

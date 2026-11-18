@@ -13,12 +13,15 @@ public sealed class PythonRePrefixProjectionTests
     {
         Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(prefix + new string('界', 200000));
-        using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new()
+        using var regex = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy()
         {
-            MaxWorkSteps = 10000000,
-            MaxDepth = 4096,
-            MaxWorkingBytes = 4096,
-            MaxResultBytes = 4096
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10000000,
+                MaxDepth = 4096,
+                MaxWorkingBytes = 4096,
+                MaxResultBytes = 4096
+            }
         });
         var account = new Allowance(4096); Assert.True(account.TryReserve(17));
         using var cursor = regex.CreateMatchCursor(input, start, default, account);
@@ -46,10 +49,13 @@ public sealed class PythonRePrefixProjectionTests
     {
         Utf8PythonRangeMatch cursorRange = default;
         ulong? traffic = null;
-        using var regex = new Utf8PythonRegex("(a)", resourcePolicy: new()
+        using var regex = new Utf8PythonRegex("(a)", policy: new Utf8RegexPolicy()
         {
-            MaxWorkingBytes = 65536,
-            MaxResultBytes = 2048
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 65536,
+                MaxResultBytes = 2048
+            }
         });
         foreach (var prefix in new[] { "", new string('é', 4096) + "😀" })
         {
@@ -76,8 +82,14 @@ public sealed class PythonRePrefixProjectionTests
     {
         Utf8PythonRangeMatch cursorRange = default;
         var text = new string('x', prefixLength) + "éa😀" + new string('界', 10000);
-        using var cursor = new Utf8PythonRegex("(?<=(é))a(?=(😀))", resourcePolicy: new()
-        { MaxWorkingBytes = 4096, MaxResultBytes = 4096 }).CreateMatchCursor(Encoding.UTF8.GetBytes(text));
+        using var cursor = new Utf8PythonRegex("(?<=(é))a(?=(😀))", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 4096,
+                MaxResultBytes = 4096
+            }
+        }).CreateMatchCursor(Encoding.UTF8.GetBytes(text));
         Assert.True(cursor.MoveNext(out cursorRange)); var result = cursorRange;
         Assert.Equal((prefixLength, prefixLength + 2), (result.Groups[1].StartOffsetInBytes, result.Groups[1].EndOffsetInBytes));
         Assert.Equal((prefixLength + 3, prefixLength + 7), (result.Groups[2].StartOffsetInBytes, result.Groups[2].EndOffsetInBytes));

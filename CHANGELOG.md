@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Simplify PythonRe constructors/Compile to one immutable Utf8RegexPolicy for
+  execution, construction and program funding. Compile keeps a separate token;
+  funded constructors prepare retained programs eagerly. Recompile callers and
+  move legacy control arguments into policy properties.
+
 - Unify PythonRe value matching on Match with explicit Search/Match/FullMatch mode,
   optional caller-owned capture slots, byte end bound and shared working admission.
   Search/FullMatch methods are removed; recompile callers and name positional tokens.

@@ -41,8 +41,15 @@ public sealed class PythonReWideRepeatTests
                     MaxResultBytes = 1000000
                 } : default;
                 var regex = bytes
-                    ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
-                    : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+                    ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                    {
+                        MatchTimeout = Regex.InfiniteMatchTimeout,
+                        ResourcePolicy = policy
+                    }) : new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                    {
+                        MatchTimeout = Regex.InfiniteMatchTimeout,
+                        ResourcePolicy = policy
+                    });
                 Utf8PythonRangeMatch match = default;
                 using (var captureCursor1 = regex.CreateMatchCursor(input, 0, cancellation.Token, mode: Utf8PythonMatchMode.FullMatch))
                 {
@@ -87,8 +94,17 @@ public sealed class PythonReWideRepeatTests
     [InlineData("(?P<g>a?){2147483648,4294967294}")]
     public void LargeMandatoryNullableWorkRemainsBounded(string pattern)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000, MaxDepth = 256, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(""u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
     }
@@ -99,8 +115,17 @@ public sealed class PythonReWideRepeatTests
     public void WideMandatoryIterationsKeepOriginalInterruption(bool expire)
     {
         const string pattern = "(?:){4294967294,}";
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20),
-            new() { MaxWorkSteps = 1000000, MaxDepth = 256, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
@@ -130,8 +155,17 @@ public sealed class PythonReWideRepeatTests
     [Fact]
     public void WiderRepeatWorkspaceStillRequiresWorkingAdmission()
     {
-        var regex = new Utf8PythonRegex("(?:){2147483648}", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1, MaxResultBytes = 1000000 });
+        var regex = new Utf8PythonRegex("(?:){2147483648}", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1000000
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(""u8)).ResourceKind);
     }

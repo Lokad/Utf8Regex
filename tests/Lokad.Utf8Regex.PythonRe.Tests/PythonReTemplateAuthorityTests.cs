@@ -10,10 +10,16 @@ public sealed class PythonReTemplateAuthorityTests
     private const string Template = @"<\g<x>>";
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void ColdTemplateDeadlineStartsBeforePreparation(int result)
     {
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200));
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        });
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var construction = Utf8ConstructionScope.Enter();
@@ -35,7 +41,10 @@ public sealed class PythonReTemplateAuthorityTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void ColdTemplateCancellationStopsPreparationAndAllowsFreshCall(int result)
     {
         var regex = new Utf8PythonRegex("(?P<x>😀|a)");
@@ -54,13 +63,19 @@ public sealed class PythonReTemplateAuthorityTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void WarmCachedPlanObservesNewDeadlineWithoutInvalidatingRetainedResults(int result)
     {
         // Success/recovery must use the same deterministic time authority as the
         // expiry witness; a loaded test host can spend 200ms scheduling or JITing.
         using var stableClock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200));
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        });
         var retained = regex.Subn("😀a"u8, Template);
         var payload = regex.DebugReplacementPlanCachePayloadBytes;
         var reads = 0;
@@ -77,13 +92,23 @@ public sealed class PythonReTemplateAuthorityTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void PreparationKeepsConstructionBackstopAndSharesTemplateLengthWork(int result)
     {
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            // Fund the separate byte ceiling. Template-length admission spends
-            // one invocation step; the next execution step exhausts its cap.
-            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 16384, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1,
+                MaxDepth = 1,
+                MaxWorkingBytes = 16384,
+                MaxResultBytes = 1
+            }
+        });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Run(regex, result, CancellationToken.None));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         Assert.Equal(1ul, error.Limit);
@@ -97,7 +122,10 @@ public sealed class PythonReTemplateAuthorityTests
     [Fact]
     public void ColdPlanKeepsEnclosingConstructionTokenAndAllowsRecovery()
     {
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, TimeSpan.FromSeconds(30));
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromSeconds(30)
+        });
         using var parent = new CancellationTokenSource();
         using var operation = new CancellationTokenSource();
         using (var construction = Utf8ConstructionScope.Enter())
@@ -122,7 +150,10 @@ public sealed class PythonReTemplateAuthorityTests
     [Fact]
     public void WaitingCallerCanCancelWithoutInvalidatingPendingPreparation()
     {
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, TimeSpan.FromSeconds(30));
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromSeconds(30)
+        });
         using var preparing = new ManualResetEventSlim();
         using var waiting = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
@@ -143,7 +174,8 @@ public sealed class PythonReTemplateAuthorityTests
                 Assert.True(release.Wait(TimeSpan.FromSeconds(10)), "Release pending preparation.");
             };
             ownerResult = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template));
-        })) { IsBackground = true };
+        }))
+        { IsBackground = true };
         owner.Start();
         try
         {
@@ -159,7 +191,8 @@ public sealed class PythonReTemplateAuthorityTests
                     return 0;
                 });
                 Run(regex, 0, cancellation.Token);
-            })) { IsBackground = true };
+            }))
+            { IsBackground = true };
             waiter.Start();
             Assert.True(waiting.Wait(TimeSpan.FromSeconds(10)));
             cancellation.Cancel();
@@ -182,10 +215,14 @@ public sealed class PythonReTemplateAuthorityTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void PreparingCallerInterruptionDoesNotBecomeHealthyWaiterFailure(bool timeout)
     {
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200));
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        });
         using var preparing = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         using var cancellation = new CancellationTokenSource();
@@ -204,7 +241,8 @@ public sealed class PythonReTemplateAuthorityTests
                 Assert.True(release.Wait(TimeSpan.FromSeconds(10)));
             };
             Run(regex, 0, cancellation.Token);
-        })) { IsBackground = true };
+        }))
+        { IsBackground = true };
         owner.Start();
         try
         {
@@ -216,7 +254,8 @@ public sealed class PythonReTemplateAuthorityTests
             {
                 using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => 0);
                 waiterResult = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template));
-            })) { IsBackground = true };
+            }))
+            { IsBackground = true };
             waiter.Start();
             // A clock read can precede cache lookup. Keep the owner pending
             // until this worker actually waits on that entry, so it observes
@@ -265,13 +304,15 @@ public sealed class PythonReTemplateAuthorityTests
                 Assert.True(release.Wait(TimeSpan.FromSeconds(10)));
             };
             Run(regex, 0, cancellation.Token);
-        })) { IsBackground = true };
+        }))
+        { IsBackground = true };
         var waiter = new Thread(() =>
         {
             try { result = System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, Template)); }
             catch (Exception error) { failure = error; }
             finally { completed.Set(); }
-        }) { IsBackground = true };
+        })
+        { IsBackground = true };
         var waiterStarted = false;
         owner.Start();
         try

@@ -50,20 +50,35 @@ public sealed class PythonReClassDelimiterCountTests
         Assert.Equal(1, regex.Count(input));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀é@"u8, 1));
-        var working = new Utf8PythonRegex(@"\w+@", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            Policy with { MaxWorkingBytes = 1 });
+        var working = new Utf8PythonRegex(@"\w+@", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy with
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         Assert.Equal(1, working.Count(input));
         Assert.Equal(0, working.Count(Encoding.UTF8.GetBytes(new string('!', 100000))));
-        var work = new Utf8PythonRegex(@"\w+@", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            Policy with { MaxWorkSteps = 1 });
+        var work = new Utf8PythonRegex(@"\w+@", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy with
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Count([.. input, 0xff])).ResourceKind);
     }
 
     [Theory]
-    [InlineData(false, 0)] [InlineData(true, 0)]
-    [InlineData(false, 1)] [InlineData(true, 1)]
-    [InlineData(false, 2)] [InlineData(true, 2)]
+    [InlineData(false, 0)]
+    [InlineData(true, 0)]
+    [InlineData(false, 1)]
+    [InlineData(true, 1)]
+    [InlineData(false, 2)]
+    [InlineData(true, 2)]
     public void SearchRewindAndVerificationKeepOriginalInterruption(bool expire, int phase)
     {
         var pattern = phase == 2 ? @"\w+@(?:x|xy)z" : @"\w+@";
@@ -94,17 +109,27 @@ public sealed class PythonReClassDelimiterCountTests
         finally { session.Complete(); }
     }
 
-    private static Utf8ResourcePolicy Policy => new() { MaxWorkSteps = 4_000_000, MaxDepth = 4096,
-        MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };
+    private static Utf8ResourcePolicy Policy => new()
+    {
+        MaxWorkSteps = 4_000_000,
+        MaxDepth = 4096,
+        MaxWorkingBytes = 16 << 20,
+        MaxResultBytes = 16 << 20
+    };
 
     [Fact]
     public void FundedCountRefundsSuccessfulDeniedAndCanceledLoans()
     {
         var account = new PythonReSharedWorkingAllowanceTests.Allowance(16 << 20);
         Assert.True(account.TryReserve(13));
-        using var regex = Utf8PythonRegex.Compile(@"[\w.+-]+@[\w.-]+\.[\w.-]+",
-            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Policy, default,
-            Timeout.InfiniteTimeSpan, default, account);
+        using var regex = Utf8PythonRegex.Compile(@"[\w.+-]+@[\w.-]+\.[\w.-]+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
         var held = account.Used;
         var input = Encoding.UTF8.GetBytes(new string('!', 100000) + "é@d.e");
         Assert.Equal(1, regex.Count(input));
@@ -145,5 +170,9 @@ public sealed class PythonReClassDelimiterCountTests
     }
 
     private static Utf8PythonRegex Create(string pattern, TimeSpan? timeout = null)
-        => new(pattern, PythonReCompileOptions.None, timeout ?? Timeout.InfiniteTimeSpan, Policy);
+        => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy
+        });
 }

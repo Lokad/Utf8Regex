@@ -48,8 +48,15 @@ public sealed class PythonReBraceQuantifierTests
         foreach (var bytes in new[] { false, true })
         {
             var regex = bytes
-                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
-                : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+                ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = policy
+                }) : new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = policy
+                });
             var input = Encoding.UTF8.GetBytes(text);
             Utf8PythonRangeMatch actual = default;
             using (var captureCursor1 = regex.CreateMatchCursor(input, 0, cancellation.Token, mode: Utf8PythonMatchMode.FullMatch))
@@ -60,7 +67,7 @@ public sealed class PythonReBraceQuantifierTests
             Assert.Equal(text, System.Text.Encoding.UTF8.GetString(actual.GetValueMemory().Span));
             Assert.Equal(0, actual.Value.StartOffsetInBytes);
             Assert.Equal(input.Length, actual.Value.EndOffsetInBytes);
-            Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.True(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
 
@@ -122,13 +129,23 @@ public sealed class PythonReBraceQuantifierTests
         var policy = new Utf8ConstructionPolicy { MaxWorkSteps = 256 };
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
-            if (bytes) _ = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None,
-                Regex.InfiniteMatchTimeout, default, policy, Regex.InfiniteMatchTimeout, default);
-            else _ = Utf8PythonRegex.Compile(pattern, PythonReCompileOptions.None,
-                Regex.InfiniteMatchTimeout, default, policy, Regex.InfiniteMatchTimeout, default);
+            if (bytes) _ = Utf8PythonRegex.Compile(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = default,
+                ConstructionPolicy = policy,
+                ConstructionTimeout = Regex.InfiniteMatchTimeout
+            }, cancellationToken: default);
+            else _ = Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = default,
+                ConstructionPolicy = policy,
+                ConstructionTimeout = Regex.InfiniteMatchTimeout
+            }, cancellationToken: default);
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
         Assert.False(Utf8ConstructionScope.IsActive);
-        Assert.True(new Utf8PythonRegex("a{foo}").Match("a{foo}"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(new Utf8PythonRegex("a{foo}").Match("a{foo}"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

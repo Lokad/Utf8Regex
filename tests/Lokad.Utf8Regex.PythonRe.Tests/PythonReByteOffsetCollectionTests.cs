@@ -60,8 +60,14 @@ public sealed class PythonReByteOffsetCollectionTests
             var failure = Assert.Throws<OperationCanceledException>(() => regex.FindAllToUtf8("😀 foo"u8, 4, canceled.Token));
             Assert.Equal(canceled.Token, failure.CancellationToken);
         }
-        var limited = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1 });
+        var limited = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.FindAllToUtf8("😀 foo"u8, 4));
     }
 
@@ -94,12 +100,17 @@ public sealed class PythonReByteOffsetCollectionTests
         }
     }
 
-    private static Utf8PythonRegex Create(string pattern, bool finite) => new(pattern, default,
-        Timeout.InfiniteTimeSpan, finite ? new Utf8ResourcePolicy
+    private static Utf8PythonRegex Create(string pattern, bool finite) => new(pattern, options: default, policy: new Utf8RegexPolicy()
+    {
+        MatchTimeout = Timeout.InfiniteTimeSpan,
+        ResourcePolicy = finite ? new Utf8ResourcePolicy
         {
             MaxWorkSteps = 1_000_000,
             MaxDepth = 1024,
             MaxWorkingBytes = 16 << 20,
             MaxResultBytes = 16 << 20
-        } : default);
+        }
+
+    : default
+    });
 }

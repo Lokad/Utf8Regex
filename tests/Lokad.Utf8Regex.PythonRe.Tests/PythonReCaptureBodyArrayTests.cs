@@ -72,9 +72,21 @@ public sealed class PythonReCaptureBodyArrayTests
         var expected = new Utf8PythonRegex(pattern);
         foreach (var work in new[] { false, true })
         {
-            Utf8PythonRegex Compile(ulong cap) => Utf8PythonRegex.Compile(pattern, PythonReCompileOptions.None,
-                Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited,
-                work ? new() { MaxWorkSteps = cap } : new() { MaxBytes = cap }, Regex.InfiniteMatchTimeout, default);
+            Utf8PythonRegex Compile(ulong cap) => Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = work ? new()
+                {
+                    MaxWorkSteps = cap
+                }
+
+    : new()
+    {
+        MaxBytes = cap
+    },
+                ConstructionTimeout = Regex.InfiniteMatchTimeout
+            }, cancellationToken: default);
             Assert.Equal(expected.GetGroupNames(), Compile(4000000).GetGroupNames());
             foreach (var cap in new[] { 1UL, 128UL, 1024UL })
             {
@@ -87,7 +99,9 @@ public sealed class PythonReCaptureBodyArrayTests
     }
 
     [Theory]
-    [InlineData(1)] [InlineData(17)] [InlineData(65)]
+    [InlineData(1)]
+    [InlineData(17)]
+    [InlineData(65)]
     public void DenseBodyGrowthAndPublicationDenialsRestoreParentLoans(int groups)
     {
         var pattern = new string('(', groups) + "a" + new string(')', groups);
@@ -115,7 +129,8 @@ public sealed class PythonReCaptureBodyArrayTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void DenseBodyPreparationPreservesParentInterruptionAndRetainedParse(bool expire)
     {
         var retained = new PythonReParser("((😀))").Parse(PythonReCompileOptions.None);

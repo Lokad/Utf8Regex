@@ -11,17 +11,31 @@ public sealed class PythonReResourcePolicyTests
     public void ZeroWorkPolicyIsInvalidBeforePatternValidation()
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 0 };
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex("[invalid",
-            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex(new byte[] { 255 },
-            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex("[invalid", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex(new byte[] { 255 }, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        }));
     }
 
     [Fact]
     public void UnlimitedPolicyConstructsBothFlavorsAndRoundTrips()
     {
-        var fromText = new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, Utf8ResourcePolicy.Unlimited);
-        var fromBytes = new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, Utf8ResourcePolicy.Unlimited);
+        var fromText = new Utf8PythonRegex("cat", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Utf8PythonRegex.DefaultMatchTimeout,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited
+        });
+        var fromBytes = new Utf8PythonRegex("cat"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Utf8PythonRegex.DefaultMatchTimeout,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited
+        });
         Assert.Equal(Utf8ResourcePolicy.Unlimited, fromText.ResourcePolicy);
         Assert.Equal(Utf8ResourcePolicy.Unlimited, fromBytes.ResourcePolicy);
         Assert.Equal(1, fromText.Count(Encoding.UTF8.GetBytes("cat")));
@@ -29,7 +43,9 @@ public sealed class PythonReResourcePolicyTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
     public void FiniteDepthAndMemoryBudgetsConstructAndExecute(int kind)
     {
         var policy = kind switch
@@ -38,8 +54,16 @@ public sealed class PythonReResourcePolicyTests
             1 => new Utf8ResourcePolicy { MaxWorkingBytes = 100 },
             _ => new Utf8ResourcePolicy { MaxDepth = 100, MaxResultBytes = 100 },
         };
-        var text = new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy);
-        var bytes = new Utf8PythonRegex("cat"u8, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy);
+        var text = new Utf8PythonRegex("cat", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Utf8PythonRegex.DefaultMatchTimeout,
+            ResourcePolicy = policy
+        });
+        var bytes = new Utf8PythonRegex("cat"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Utf8PythonRegex.DefaultMatchTimeout,
+            ResourcePolicy = policy
+        });
         Assert.Equal(policy, text.ResourcePolicy);
         Assert.True(text.IsMatch("cat"u8)); Assert.True(bytes.IsMatch("cat"u8));
     }
@@ -48,20 +72,32 @@ public sealed class PythonReResourcePolicyTests
     public void ZeroBudgetIsRejectedBeforePatternWork()
     {
         var policy = new Utf8ResourcePolicy { MaxDepth = 0u };
-        Assert.Throws<System.ArgumentOutOfRangeException>(() => new Utf8PythonRegex("cat", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
+        Assert.Throws<System.ArgumentOutOfRangeException>(() => new Utf8PythonRegex("cat", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Utf8PythonRegex.DefaultMatchTimeout,
+            ResourcePolicy = policy
+        }));
     }
     [Fact]
     public void ValidFinitePolicyPreservesPatternSyntaxFailure()
     {
         var policy = new Utf8ResourcePolicy { MaxWorkingBytes = 1024ul };
-        Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
+        Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex("[invalid", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Utf8PythonRegex.DefaultMatchTimeout,
+            ResourcePolicy = policy
+        }));
     }
 
     [Fact]
     public void ZeroPolicyIsRejectedBeforePatternCompilation()
     {
         var policy = new Utf8ResourcePolicy { MaxDepth = 0u };
-        Assert.Throws<System.ArgumentOutOfRangeException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, policy));
+        Assert.Throws<System.ArgumentOutOfRangeException>(() => new Utf8PythonRegex("[invalid", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Utf8PythonRegex.DefaultMatchTimeout,
+            ResourcePolicy = policy
+        }));
     }
 
     [Fact]
@@ -69,8 +105,16 @@ public sealed class PythonReResourcePolicyTests
     {
         var zero = new Utf8ResourcePolicy { MaxDepth = 0u };
         var invalidBytes = new byte[] { 0x63, 0x61, 0x74, 0xFF };
-        Assert.Throws<System.ArgumentOutOfRangeException>(() => new Utf8PythonRegex(invalidBytes, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, zero));
-        Assert.Throws<System.ArgumentException>(() => new Utf8PythonRegex(invalidBytes, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, Utf8ResourcePolicy.Unlimited));
+        Assert.Throws<System.ArgumentOutOfRangeException>(() => new Utf8PythonRegex(invalidBytes, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Utf8PythonRegex.DefaultMatchTimeout,
+            ResourcePolicy = zero
+        }));
+        Assert.Throws<System.ArgumentException>(() => new Utf8PythonRegex(invalidBytes, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Utf8PythonRegex.DefaultMatchTimeout,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited
+        }));
     }
 
     [Theory]
@@ -81,12 +125,16 @@ public sealed class PythonReResourcePolicyTests
         // R06 compatibility evidence: default construction behaves exactly like
         // an explicit Unlimited policy across value and global operations.
         var input = Encoding.UTF8.GetBytes(inputText);
-        var baseline = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
-        var explicitUnlimited = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Utf8PythonRegex.DefaultMatchTimeout, Utf8ResourcePolicy.Unlimited);
+        var baseline = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
+        var explicitUnlimited = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Utf8PythonRegex.DefaultMatchTimeout,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited
+        });
 
         Assert.Equal(baseline.Count(input), explicitUnlimited.Count(input));
-        var expectedSearch = baseline.Match(input,mode: Utf8PythonMatchMode.Search);
-        var actualSearch = explicitUnlimited.Match(input,mode: Utf8PythonMatchMode.Search);
+        var expectedSearch = baseline.Match(input, mode: Utf8PythonMatchMode.Search);
+        var actualSearch = explicitUnlimited.Match(input, mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSearch.Success, actualSearch.Success);
         Assert.Equal(baseline.FindAllToUtf8(input).Count, explicitUnlimited.FindAllToUtf8(input).Count);
         Assert.Equal(PythonReSplitAssert.Decode(input, baseline.SplitRanges(input, 0, 0, default)).Length, PythonReSplitAssert.Decode(input, explicitUnlimited.SplitRanges(input, 0, 0, default)).Length);

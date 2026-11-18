@@ -21,14 +21,14 @@ public sealed class PythonReNativeSubstitutionTests
         var input = Encoding.UTF8.GetBytes(subject); var replacement = Encoding.UTF8.GetBytes(template);
         var starts = Enumerable.Range(0, input.Length + 1).Where(offset => offset == input.Length || (input[offset] & 0xc0) != 0x80);
         foreach (var count in new[] { -1, 0, 1, 2 })
-        foreach (var start in starts)
-        {
-            var expected = regex.Subn(input, template, count, start);
-            var actual = regex.Subn(input, replacement, count, start);
-            Assert.Equal(expected.ReplacementCount, actual.ReplacementCount);
-            Assert.Equal(expected.ResultBytes, actual.ResultBytes);
-            Assert.Equal(expected.ResultBytes, regex.Replace(input, replacement, count, start));
-        }
+            foreach (var start in starts)
+            {
+                var expected = regex.Subn(input, template, count, start);
+                var actual = regex.Subn(input, replacement, count, start);
+                Assert.Equal(expected.ReplacementCount, actual.ReplacementCount);
+                Assert.Equal(expected.ResultBytes, actual.ResultBytes);
+                Assert.Equal(expected.ResultBytes, regex.Replace(input, replacement, count, start));
+            }
     }
 
     [Fact]
@@ -52,7 +52,8 @@ public sealed class PythonReNativeSubstitutionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void NativeGrammarAndUtf8ErrorsAreValidatedOnMissEvenWithNegativeCount(bool warm)
     {
         var regex = new Utf8PythonRegex("a");
@@ -75,14 +76,20 @@ public sealed class PythonReNativeSubstitutionTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void NativePreparationRefusalAndInterruptionRefundEveryTemporaryLoan(bool timeout)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var allowance = new Allowance(4 << 20);
-        using var regex = Utf8PythonRegex.Compile("(?P<x>a)"u8, default,
-            timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, default, allowance);
+        using var regex = Utf8PythonRegex.Compile("(?P<x>a)"u8, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = allowance
+        }, cancellationToken: default);
         regex.Replace("a"u8, "warm\\g<x>"u8);
         var held = allowance.Used; var entries = regex.DebugReplacementPlanCacheEntryCount;
         using var token = new CancellationTokenSource();
@@ -111,8 +118,14 @@ public sealed class PythonReNativeSubstitutionTests
     public void NativeKeysAndRetainedOutputKeepSeparateDeterministicLifetimes()
     {
         var allowance = new Allowance(4 << 20);
-        using var regex = Utf8PythonRegex.Compile("(?P<x>a)"u8, default, Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, default, allowance);
+        using var regex = Utf8PythonRegex.Compile("(?P<x>a)"u8, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = allowance
+        }, cancellationToken: default);
         using var result = regex.SubnRetained("éaa😀"u8, "[\\g<x>]"u8);
         var bytes = result.Result.ResultBytes;
         Assert.Equal("é[a][a]😀", Encoding.UTF8.GetString(bytes)); Assert.Equal(2, result.Result.ReplacementCount);
@@ -129,8 +142,16 @@ public sealed class PythonReNativeSubstitutionTests
     [InlineData(null, null, 1)]
     public void NativeSubstitutionEnforcesUsefulFinitePolicies(int? work, int? working, int? result)
     {
-        var regex = new Utf8PythonRegex("(?P<x>a)", default, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = (ulong?)work, MaxWorkingBytes = (ulong?)working, MaxResultBytes = (ulong?)result });
+        var regex = new Utf8PythonRegex("(?P<x>a)", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (ulong?)work,
+                MaxWorkingBytes = (ulong?)working,
+                MaxResultBytes = (ulong?)result
+            }
+        });
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Subn("aaa"u8, "[\\g<x>]"u8));
         Assert.Equal(work is not null ? Utf8ResourceLimitKind.ExecutionWorkSteps :
             working is not null ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes,
@@ -140,14 +161,27 @@ public sealed class PythonReNativeSubstitutionTests
     [Fact]
     public void LongNativeTemplatesSpendWorkBeforeColdKeysAndOnWarmQueries()
     {
-        var regex = new Utf8PythonRegex("a", default, Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy { MaxWorkSteps = 64 });
+        var regex = new Utf8PythonRegex("a", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 64
+            }
+        });
         var template = new byte[1 << 20]; template.AsSpan().Fill((byte)'z');
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace([], template));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
         var allowance = new Allowance(4 << 20);
-        using var funded = Utf8PythonRegex.Compile("a"u8, default, Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, default, allowance);
+        using var funded = Utf8PythonRegex.Compile("a"u8, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = allowance
+        }, cancellationToken: default);
         ulong retained = 0;
         for (var i = 0; i < 96; i++)
         {
@@ -162,8 +196,14 @@ public sealed class PythonReNativeSubstitutionTests
     public async Task ConcurrentNativeReuseKeepsOnlyItsBoundedRetainedFunding()
     {
         var allowance = new Allowance(4 << 20);
-        using var regex = Utf8PythonRegex.Compile("(?P<x>a)"u8, default, Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, default, allowance);
+        using var regex = Utf8PythonRegex.Compile("(?P<x>a)"u8, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = allowance
+        }, cancellationToken: default);
         byte[][] templates = ["0\\g<x>é"u8.ToArray(), "1\\g<x>é"u8.ToArray(), "2\\g<x>é"u8.ToArray(), "3\\g<x>é"u8.ToArray()];
         foreach (var template in templates) regex.Replace("a"u8, template);
         var held = allowance.Used;

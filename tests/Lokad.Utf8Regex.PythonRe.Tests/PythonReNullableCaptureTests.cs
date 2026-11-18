@@ -34,20 +34,24 @@ public sealed class PythonReNullableCaptureTests
             MaxWorkingBytes = 1_048_576,
             MaxResultBytes = 4_194_304
         } : Utf8ResourcePolicy.Unlimited;
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         var input = Encoding.UTF8.GetBytes(subject);
         using var source = new CancellationTokenSource();
         foreach (var token in new[] { CancellationToken.None, source.Token })
         {
             Assert.True(regex.IsMatch(input, 0, token));
-            Assert.True(regex.Match(input,0,cancellationToken: token).Success);
+            Assert.True(regex.Match(input, 0, cancellationToken: token).Success);
             Utf8PythonRangeMatch snapshot1 = default;
             using (var captureCursor1 = regex.CreateMatchCursor(input, 0, token, mode: Utf8PythonMatchMode.Search))
             {
                 captureCursor1.MoveNext(out snapshot1);
             }
             Assert.True(snapshot1.Success);
-            Assert.Equal(fullMatch, regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.Equal(fullMatch, regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch).Success);
             Assert.Equal(expectedRanges.Length, regex.Count(input, 0, token));
             Assert.Equal(expectedCaptures.Select(value => value ?? ""), PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, 0, token)).ScalarValues);
             var collectedRanges1 = new List<Utf8PythonRangeMatch>();

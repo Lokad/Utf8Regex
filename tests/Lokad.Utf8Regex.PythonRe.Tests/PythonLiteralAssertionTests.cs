@@ -10,14 +10,17 @@ public sealed class PythonLiteralAssertionTests
     public void LiteralAssertionsKeepParentAlternativeCaptureRollback(string pattern)
     {
         using var token = new CancellationTokenSource();
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 100000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
-            });
+            }
+        });
         Utf8PythonRangeMatch match = default;
         using (var captureCursor1 = regex.CreateMatchCursor(("foobar"u8).ToArray(), 0, token.Token, mode: Utf8PythonMatchMode.Search))
         {
@@ -52,16 +55,22 @@ public sealed class PythonLiteralAssertionTests
         foreach (var bytes in new[] { false, true })
         {
             if (bytes && pattern.Contains("😀", StringComparison.Ordinal)) continue;
-            var regex = bytes ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None,
-                Timeout.InfiniteTimeSpan, policy) : new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
-                Timeout.InfiniteTimeSpan, policy);
-            var match = regex.Match(storage.AsSpan(1, input.Length),mode: Utf8PythonMatchMode.Search);
+            var regex = bytes ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            }) : new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            });
+            var match = regex.Match(storage.AsSpan(1, input.Length), mode: Utf8PythonMatchMode.Search);
             Assert.Equal(success, match.Success);
             Assert.Equal(success ? 1 : 0, regex.Count(input));
             if (!success) continue;
             Assert.Equal(start, match.StartOffsetInBytes);
-            Assert.True(regex.Match(input,start,mode: Utf8PythonMatchMode.Search).Success);
-            Assert.False(regex.Match(input,start + 1,mode: Utf8PythonMatchMode.Search).Success);
+            Assert.True(regex.Match(input, start, mode: Utf8PythonMatchMode.Search).Success);
+            Assert.False(regex.Match(input, start + 1, mode: Utf8PythonMatchMode.Search).Success);
             Utf8PythonRangeMatch retained = default;
             using (var captureCursor2 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
             {

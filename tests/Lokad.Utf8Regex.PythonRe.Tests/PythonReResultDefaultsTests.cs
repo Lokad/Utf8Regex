@@ -12,8 +12,19 @@ public sealed class PythonReResultDefaultsTests
     [InlineData(2, true)]
     public void CursorModesPublishDefaultOnMiss(int operation, bool controlled)
     {
-        var regex = new Utf8PythonRegex("(?P<x>a)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            controlled ? new() { MaxWorkSteps = 100000, MaxDepth = 64, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 } : default);
+        var regex = new Utf8PythonRegex("(?P<x>a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = controlled ? new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 64,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+
+    : default
+        });
         using var cancellation = new CancellationTokenSource();
         var token = controlled ? cancellation.Token : default;
         Utf8PythonRangeMatch data = default;
@@ -45,7 +56,7 @@ public sealed class PythonReResultDefaultsTests
         Assert.True(retained.TryGetGroup(1, out var absent));
         Assert.False(absent.Success);
         Assert.Empty(System.Text.Encoding.UTF8.GetString((absent.Success ? retained.GetGroupMemory(absent.Number).Span : ReadOnlySpan<byte>.Empty)));
-        Assert.True(regex.Match("a😀"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("a😀"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.Equal((0, 4), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
         Assert.False(retained.TryGetGroup(-1, out var missing));

@@ -45,7 +45,7 @@ public sealed class PythonReCountOwnershipTests
     [MemberData(nameof(OwnedCountCases))]
     public void OwnedCountMatchesFindAll(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, int expected)
     {
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
         Assert.Equal(regex.FindAllToUtf8(input, startOffsetInBytes).Count, regex.Count(input, startOffsetInBytes));
@@ -55,7 +55,7 @@ public sealed class PythonReCountOwnershipTests
     {
         // Count and FindAll share scalar discovery with Python empty-match
         // adjacency and agree with the pinned count.
-        var regex = new Utf8PythonRegex("\\b|\\w+", PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex("\\b|\\w+", options: PythonReCompileOptions.None);
         var input = Encoding.UTF8.GetBytes("\u00E9 skip y");
         Assert.Equal(3, regex.Count(input, 8));
         Assert.Equal(3, regex.FindAllToUtf8(input, 8).Count);
@@ -64,7 +64,7 @@ public sealed class PythonReCountOwnershipTests
     [InlineData("(?P<word>foo)-(?P=word)", PythonReCompileOptions.None, "xx foo-foo yy foo-foo", 3, 2)]
     public void NamedReferenceCountRunsOwned(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, int expected)
     {
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(expected, regex.Count(input, startOffsetInBytes));
     }
@@ -75,7 +75,10 @@ public sealed class PythonReCountOwnershipTests
         var policy = new Utf8ResourcePolicy
         { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
         const string pattern = "([A-Za-z]){2,3}";
-        var count = new Utf8PythonRegex(pattern, resourcePolicy: policy);
+        var count = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = policy
+        });
         var input = "éabcdefg 😀 ab"u8.ToArray();
         using var token = new CancellationTokenSource();
         Assert.Equal(3, count.Count(input));
@@ -96,7 +99,10 @@ public sealed class PythonReCountOwnershipTests
             ("([a-z]+)([0-9]+)", "é😀item12 other345", 2, 13),
         })
         {
-            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: policy);
+            using var regex = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = policy
+            });
             var input = Encoding.UTF8.GetBytes(text);
             var session = Utf8SearchDiagnosticsSession.Start();
             try
@@ -126,7 +132,13 @@ public sealed class PythonReCountOwnershipTests
     public void CaptureReadersAssertionsAndNullableProgressionRetainAdmission(string pattern, string text)
     {
         {
-            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new() { MaxWorkingBytes = 1 });
+            using var regex = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkingBytes = 1
+                }
+            });
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input)).ResourceKind);
@@ -138,10 +150,22 @@ public sealed class PythonReCountOwnershipTests
     {
         var account = new PythonReSharedWorkingAllowanceTests.Allowance(16 << 20);
         Assert.True(account.TryReserve(17));
-        using var simple = Utf8PythonRegex.Compile("([a-z]+)-([0-9]+)", default,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account);
-        using var compound = Utf8PythonRegex.Compile("((ab)+)x", default,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account);
+        using var simple = Utf8PythonRegex.Compile("([a-z]+)-([0-9]+)", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
+        using var compound = Utf8PythonRegex.Compile("((ab)+)x", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
         var held = account.Used;
         account.Maximum = held;
         Assert.Equal(2, simple.Count("é😀item-12 other-345"u8));
@@ -170,8 +194,16 @@ public sealed class PythonReCountOwnershipTests
         var succeeded = false;
         for (ulong limit = 1; limit <= 256; limit++)
         {
-            using var regex = new Utf8PythonRegex(pattern, resourcePolicy: new()
-            { MaxWorkSteps = limit, MaxDepth = 256, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            using var regex = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy()
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = limit,
+                    MaxDepth = 256,
+                    MaxWorkingBytes = 1,
+                    MaxResultBytes = 1
+                }
+            });
             int? published = null;
             var failure = Record.Exception(() => published = regex.Count(input));
             if (failure is null) { Assert.Equal(2, published); succeeded = true; break; }

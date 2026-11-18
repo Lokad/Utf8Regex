@@ -59,7 +59,7 @@ internal static partial class PythonReBenchmarkReporter
         var parseResult = new PythonReParser(definition.Pattern).Parse(options);
         var translation = PythonReTranslator.Translate(parseResult, true);
         var inputBytes = Encoding.UTF8.GetBytes(definition.Input);
-        if (!new Utf8PythonRegex(definition.Pattern, options).IsMatch(inputBytes))
+        if (!new Utf8PythonRegex(definition.Pattern, options: options).IsMatch(inputBytes))
         {
             throw new InvalidOperationException(
                 $"PythonRe lifecycle '{definition.Id}' must retain a successful first-search preflight.");
@@ -101,11 +101,11 @@ internal static partial class PythonReBenchmarkReporter
                 iterations,
                 samples)),
             AdapterConstruction = ToLifecycleTiming(MeasureOperation(
-                () => new Utf8PythonRegex(definition.Pattern, options).GetGroupNames().Length,
+                () => new Utf8PythonRegex(definition.Pattern, options: options).GetGroupNames().Length,
                 iterations,
                 samples)),
             ConstructFirstSearch = ToLifecycleTiming(MeasureOperation(
-                () => new Utf8PythonRegex(definition.Pattern, options).IsMatch(inputBytes) ? 1 : 0,
+                () => new Utf8PythonRegex(definition.Pattern, options: options).IsMatch(inputBytes) ? 1 : 0,
                 iterations,
                 samples)),
             CpythonCompile = cpython.Lifecycle.Compile,

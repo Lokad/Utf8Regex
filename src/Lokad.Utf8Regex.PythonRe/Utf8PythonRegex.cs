@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -13,17 +14,17 @@ namespace Lokad.Utf8Regex.PythonRe;
 /// <remarks>The adapter preserves Python operation shaping while exposing UTF-8 byte ranges.</remarks>
 public sealed partial class Utf8PythonRegex
 {
-    /// <summary>Compiles an expression over already-valid UTF-8 text.</summary>
-    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Use Compile for separate construction/funding controls.</remarks>
-    public Utf8PythonRegex(string pattern, PythonReCompileOptions options = PythonReCompileOptions.None, TimeSpan? matchTimeout = null,
-        Utf8ResourcePolicy resourcePolicy = default)
-        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy) { }
+    /// <summary>Constructs an expression for caller-valid, unchanged UTF-8 subjects.</summary>
+    /// <remarks>The immutable policy separates construction and invocation limits/deadlines. Unfunded constructors defer the full-match program; caller-funded construction prepares retained programs before publication. With no explicit construction controls/funding, nested construction borrows its existing owner. Compile always starts an explicit eager construction owner.</remarks>
+    public Utf8PythonRegex(string pattern, PythonReCompileOptions options = PythonReCompileOptions.None,
+        Utf8RegexPolicy? policy = null)
+        : this(new Utf8ConstructionPattern(pattern), options, policy, default, eager: false) { }
 
-    /// <summary>Compiles a strict UTF-8 pattern over already-valid UTF-8 text.</summary>
-    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Use Compile for separate construction/funding controls.</remarks>
-    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options = PythonReCompileOptions.None, TimeSpan? matchTimeout = null,
-        Utf8ResourcePolicy resourcePolicy = default)
-        : this(new Utf8ConstructionPattern(patternUtf8), options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy) { }
+    /// <summary>Constructs a strict UTF-8 pattern for caller-valid, unchanged UTF-8 subjects.</summary>
+    /// <remarks>The source is borrowed only during construction and copied after admission. Policy settings and lifetime follow the text constructor; subject validation is not a regex operation.</remarks>
+    public Utf8PythonRegex(ReadOnlySpan<byte> patternUtf8, PythonReCompileOptions options = PythonReCompileOptions.None,
+        Utf8RegexPolicy? policy = null)
+        : this(new Utf8ConstructionPattern(patternUtf8), options, policy, default, eager: false) { }
 
     private readonly record struct PythonReUtf8MatchRange(
         int IndexInBytes,
@@ -96,101 +97,132 @@ public sealed partial class Utf8PythonRegex
     private readonly Utf8BoundedPreparationCache<object, PythonReReplacementPlan> _replacementPlanCache;
     private readonly object _patternSource;
 
-    /// <summary>Shared construction worker. Validates the policy before parsing or preparation.</summary>
-    private Utf8PythonRegex(Utf8ConstructionPattern patternSource, PythonReCompileOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
+    /// <summary>Owns constructor/factory admission and publishes one reusable program.</summary>
+    private Utf8PythonRegex(Utf8ConstructionPattern patternSource, PythonReCompileOptions options,
+        Utf8RegexPolicy? policy, CancellationToken cancellationToken, bool eager)
     {
-        ValidatePythonRePolicy(resourcePolicy, nameof(resourcePolicy));
-        // These argument checks need no pattern conversion or construction
-        // allowance. Keep policy errors first, then flags and timeout, for both
-        // text and byte entries before acquiring decoded pattern storage.
+        cancellationToken.ThrowIfCancellationRequested();
+        policy ??= Utf8RegexPolicy.Default;
+        var resourcePolicy = policy.ResourcePolicy;
+        var constructionPolicy = policy.ConstructionPolicy;
+        var constructionTimeout = policy.ConstructionTimeout ?? Timeout.InfiniteTimeSpan;
+        var programMemoryAllowance = policy.ProgramMemoryAllowance;
+        constructionPolicy.Validate(nameof(policy));
+        resourcePolicy.Validate(nameof(policy));
+        Utf8MatchTimeout.Validate(constructionTimeout, nameof(policy));
         PythonReCompileValidator.Validate(options);
-        MatchTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
+        MatchTimeout = Utf8MatchTimeout.Validate(policy.MatchTimeout ?? DefaultMatchTimeout, nameof(policy));
         ArgumentNullException.ThrowIfNull(patternSource.Text, "pattern");
-        using var construction = Utf8ConstructionScope.Enter();
-        if (patternSource.IsUtf8)
+        var explicitConstruction = eager || programMemoryAllowance is not null ||
+            constructionPolicy != default || constructionTimeout != Timeout.InfiniteTimeSpan;
+        using var construction = !explicitConstruction ? Utf8ConstructionScope.Enter()
+            : programMemoryAllowance is null
+                ? Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken)
+                : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, cancellationToken, programMemoryAllowance);
+        try
         {
-            PythonReParser.ValidateNativeSource(patternSource.Utf8, construction.Budget);
-            // This retained copy also supplies the parser's borrow. Admission
-            // precedes allocation; caller reuse after compilation is harmless.
-            var bytes = construction.Budget.AllocateArray<byte>(patternSource.Length, false);
-            construction.Budget.ChargeWork((ulong)bytes.Length);
-            patternSource.Utf8.CopyTo(bytes);
-            _patternSource = bytes;
-        }
-        else _patternSource = patternSource.Text;
-        Options = options;
-        ResourcePolicy = resourcePolicy;
-        HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
-            resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
-
-        var parser = PythonReParser.Create(_patternSource);
-        var parseResult = parser.Parse(options);
-        EffectiveOptions = (parseResult.Options & PythonReCompileOptions.Ascii) != 0
-            ? parseResult.Options
-            : parseResult.Options | PythonReCompileOptions.Unicode;
-        _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
-        _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
-        var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
-        // Nullable iteration always uses the Python scalar program. Only the
-        // exact empty literal has a separate Core value-operation consumer.
-        var prepareCore = !_canMatchEmpty || isExactLiteral;
-        var translation = PythonReTranslator.Translate(parseResult, prepareCore);
-        _scalarProgram = PythonReScalarCompiler.Compile(parseResult);
-        // Failed preparation is retryable: a caller's cancellation must not
-        // become a permanently cached failure. Concurrent cold callers may each
-        // derive under their own construction scope; only one result is kept.
-        _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.RequireFullMatch(_scalarProgram), LazyThreadSafetyMode.PublicationOnly);
-
-        _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
-        _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);
-        _nameEntriesUtf8 = construction.Budget.AllocateArray<byte[]>(_nameEntries.Length, false);
-        for (var index = 0; index < _nameEntries.Length; index++)
-        {
-            construction.Budget.ChargeWork(1);
-            _nameEntriesUtf8[index] = construction.Budget.EncodeUtf8(_nameEntries[index].Name.AsSpan());
-        }
-        // Transfer the parser's admitted immutable name map for replacement
-        // lookup without retaining the rest of the parse tree.
-        _namedGroups = parseResult.NamedGroups;
-
-        // Other nullable programs use neither Core start hints nor its result
-        // lanes. Their operations use Python scalar execution or independent
-        // kernels, so avoid rendering/constructing an unused Core program.
-        if (prepareCore)
-        {
-            try
+            if (patternSource.IsUtf8)
             {
-                var core = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, MatchTimeout, resourcePolicy);
-                // Preparation can discover useful native result lanes or exact
-                // start hints. Discard roots declined by every current consumer;
-                // their transient construction remains conservatively admitted.
-                if (_canUseUtf8IterationFastPath || core.CanFindNativeLiteralForResult ||
-                    PythonReScalarMatchState.CanUseCandidateRegex(_scalarProgram, core))
-                    _utf8Regex = core;
+                PythonReParser.ValidateNativeSource(patternSource.Utf8, construction.Budget);
+                // This retained copy also supplies the parser's borrow. Admission
+                // precedes allocation; caller reuse after compilation is harmless.
+                var bytes = construction.Budget.AllocateArray<byte>(patternSource.Length, false);
+                construction.Budget.ChargeWork((ulong)bytes.Length);
+                patternSource.Utf8.CopyTo(bytes);
+                _patternSource = bytes;
             }
-            catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
+            else _patternSource = patternSource.Text;
+            Options = options;
+            ResourcePolicy = resourcePolicy;
+            HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
+                resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
+
+            var parser = PythonReParser.Create(_patternSource);
+            var parseResult = parser.Parse(options);
+            EffectiveOptions = (parseResult.Options & PythonReCompileOptions.Ascii) != 0
+                ? parseResult.Options
+                : parseResult.Options | PythonReCompileOptions.Unicode;
+            _canMatchEmpty = PythonReTranslator.CanMatchEmpty(parseResult.Root, parseResult);
+            _canUseUtf8IterationFastPath = PythonReTranslator.CanUseUtf8IterationFastPath(parseResult.Root);
+            var isExactLiteral = PythonReTranslator.IsExactLiteral(parseResult.Root);
+            // Nullable iteration always uses the Python scalar program. Only the
+            // exact empty literal has a separate Core value-operation consumer.
+            var prepareCore = !_canMatchEmpty || isExactLiteral;
+            var translation = PythonReTranslator.Translate(parseResult, prepareCore);
+            _scalarProgram = PythonReScalarCompiler.Compile(parseResult);
+            // Failed preparation is retryable: a caller's cancellation must not
+            // become a permanently cached failure. Concurrent cold callers may each
+            // derive under their own construction scope; only one result is kept.
+            _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.RequireFullMatch(_scalarProgram), LazyThreadSafetyMode.PublicationOnly);
+
+            _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
+            _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);
+            _nameEntriesUtf8 = construction.Budget.AllocateArray<byte[]>(_nameEntries.Length, false);
+            for (var index = 0; index < _nameEntries.Length; index++)
             {
-                // The optional core fast path may be unavailable; the profile scalar program serves the grammar.
+                construction.Budget.ChargeWork(1);
+                _nameEntriesUtf8[index] = construction.Budget.EncodeUtf8(_nameEntries[index].Name.AsSpan());
             }
+            // Transfer the parser's admitted immutable name map for replacement
+            // lookup without retaining the rest of the parse tree.
+            _namedGroups = parseResult.NamedGroups;
+
+            // Other nullable programs use neither Core start hints nor its result
+            // lanes. Their operations use Python scalar execution or independent
+            // kernels, so avoid rendering/constructing an unused Core program.
+            if (prepareCore)
+            {
+                try
+                {
+                    var core = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, MatchTimeout, resourcePolicy);
+                    // Preparation can discover useful native result lanes or exact
+                    // start hints. Discard roots declined by every current consumer;
+                    // their transient construction remains conservatively admitted.
+                    if (_canUseUtf8IterationFastPath || core.CanFindNativeLiteralForResult ||
+                        PythonReScalarMatchState.CanUseCandidateRegex(_scalarProgram, core))
+                        _utf8Regex = core;
+                }
+                catch (Exception exception) when (IsOptionalUtf8BackendUnavailableException(exception))
+                {
+                    // The optional core fast path may be unavailable; the profile scalar program serves the grammar.
+                }
+            }
+
+            // Core owns its source/literal copies. Rendering was construction
+            // scratch, including when every optional Core consumer declined.
+            construction.Budget.ReleaseArray(translation.NativePatternUtf8, false);
+
+            _canUseZeroOffsetUtf8SearchValueFastPath =
+                isExactLiteral &&
+                _utf8Regex?.Inspection.ExecutionKind is
+                    NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
+            _canUseZeroOffsetUtf8ValueFastPath =
+                _canUseZeroOffsetUtf8SearchValueFastPath &&
+                _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
+            _replacementPlanCache = Utf8BoundedPreparationCache<object, PythonReReplacementPlan>.CreateRetained(ReplacementPlanCacheCapacity, PythonReReplacementKeyComparer.Instance);
+
+            // Fund every retained operation program before transferring compilation
+            // admission. Lazy unfunded constructors retain their established path.
+            if (eager || programMemoryAllowance is not null) _ = _lazyScalarFullProgram.Value;
+            if (programMemoryAllowance is not null)
+            {
+                var owner = construction.Budget.AllocateObject(programMemoryAllowance,
+                    static allowance => new Utf8FundedStorage(allowance, nameof(Utf8PythonRegex)));
+                construction.Budget.ChargeWork(0);
+                _replacementPlanCache.EnableFunding(programMemoryAllowance);
+                owner.Retain(construction.Budget.TransferFundedBytes());
+                _programMemory = owner;
+            }
+            else if (explicitConstruction) construction.Budget.ChargeWork(0);
+            construction.Complete();
         }
-
-        // Core owns its source/literal copies. Rendering was construction
-        // scratch, including when every optional Core consumer declined.
-        construction.Budget.ReleaseArray(translation.NativePatternUtf8, false);
-
-        _canUseZeroOffsetUtf8SearchValueFastPath =
-            isExactLiteral &&
-            _utf8Regex?.Inspection.ExecutionKind is
-                NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal;
-        _canUseZeroOffsetUtf8ValueFastPath =
-            _canUseZeroOffsetUtf8SearchValueFastPath &&
-            _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
-        _replacementPlanCache = Utf8BoundedPreparationCache<object, PythonReReplacementPlan>.CreateRetained(ReplacementPlanCacheCapacity, PythonReReplacementKeyComparer.Instance);
-        construction.Complete();
+        catch (Utf8ExecutionDeadlineExpiredException) when (explicitConstruction)
+        {
+            // Byte patterns need no diagnostic decode after expiry.
+            throw new RegexMatchTimeoutException(string.Empty,
+                patternSource.IsUtf8 ? string.Empty : patternSource.Text, constructionTimeout);
+        }
     }
-
-    private static void ValidatePythonRePolicy(Utf8ResourcePolicy resourcePolicy, string paramName)
-        => resourcePolicy.Validate(paramName);
 
     /// <summary>Gets or sets the timeout used by constructors that do not specify one.</summary>
     /// <remarks>The initial value is an infinite timeout.</remarks>

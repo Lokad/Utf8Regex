@@ -24,48 +24,48 @@ public sealed class PythonReCorpusExecutionTests
 
         if (corpusCase.Expected.Outcome == PythonReCorpusOutcomeKind.PatternError)
         {
-            var ex = Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex(corpusCase.Pattern, options));
+            var ex = Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex(corpusCase.Pattern, options: options));
             Assert.Contains(corpusCase.Expected.ErrorContains!, ex.Message, StringComparison.OrdinalIgnoreCase);
             return;
         }
 
-        var regex = new Utf8PythonRegex(corpusCase.Pattern, options);
+        var regex = new Utf8PythonRegex(corpusCase.Pattern, options: options);
         var input = System.Text.Encoding.UTF8.GetBytes(corpusCase.InputText);
         switch (corpusCase.Operation)
         {
             case PythonReCorpusOperationKind.Search:
-            {
-                var match = regex.Match(input,corpusCase.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search);
-                Assert.Equal(corpusCase.Expected.Success, match.Success);
-                if (match.Success)
                 {
-                    Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
-                }
+                    var match = regex.Match(input, corpusCase.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search);
+                    Assert.Equal(corpusCase.Expected.Success, match.Success);
+                    if (match.Success)
+                    {
+                        Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+                    }
 
-                break;
-            }
+                    break;
+                }
             case PythonReCorpusOperationKind.Match:
-            {
-                var match = regex.Match(input,corpusCase.StartOffsetInBytes);
-                Assert.Equal(corpusCase.Expected.Success, match.Success);
-                if (match.Success)
                 {
-                    Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
-                }
+                    var match = regex.Match(input, corpusCase.StartOffsetInBytes);
+                    Assert.Equal(corpusCase.Expected.Success, match.Success);
+                    if (match.Success)
+                    {
+                        Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+                    }
 
-                break;
-            }
+                    break;
+                }
             case PythonReCorpusOperationKind.FullMatch:
-            {
-                var match = regex.Match(input,corpusCase.StartOffsetInBytes,mode: Utf8PythonMatchMode.FullMatch);
-                Assert.Equal(corpusCase.Expected.Success, match.Success);
-                if (match.Success)
                 {
-                    Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
-                }
+                    var match = regex.Match(input, corpusCase.StartOffsetInBytes, mode: Utf8PythonMatchMode.FullMatch);
+                    Assert.Equal(corpusCase.Expected.Success, match.Success);
+                    if (match.Success)
+                    {
+                        Assert.Equal(corpusCase.Expected.ValueText, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
+                    }
 
-                break;
-            }
+                    break;
+                }
             case PythonReCorpusOperationKind.Count:
                 Assert.Equal(corpusCase.Expected.MatchCount, regex.Count(input, corpusCase.StartOffsetInBytes));
                 break;

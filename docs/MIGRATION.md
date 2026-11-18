@@ -387,8 +387,8 @@ deadlines and meaningful byte/work/depth limits remain on the retained APIs.
 
 ### Constructor signatures
 
-Constructors now use the existing optional nullable-timeout signature: one per
-supported string/UTF-8 pattern representation. Short source calls still work;
+Core, PCRE2 and POSIX constructors retain one optional nullable-timeout signature
+per supported pattern representation. PythonRe uses the policy described below. Short source calls still work;
 previously compiled callers of removed overloads must be recompiled, including
 adapters. Core UTF-8 compilation remains on Compile; no public span constructor
 is added. Explicit construction limits, cancellation and program funding retain
@@ -479,3 +479,26 @@ admitted. Pre-cancellation preserves output; later failure clears the requested
 prefix. Optional endOffsetInBytes is a scalar boundary and retains absolute prefix
 context. Optional working admission inherits program/numeric funding when null;
 supplied refusal is terminal. Use a capture cursor for LastIndex/LastGroup.
+
+### PythonRe compilation policy
+
+PythonRe constructors and Compile now take options and one immutable Utf8RegexPolicy.
+Move the former matchTimeout, resourcePolicy, constructionPolicy,
+constructionTimeout and programMemoryAllowance arguments into its corresponding
+properties. Compile's cancellationToken remains a separate argument. Recompile
+callers; legacy long signatures are removed. Resource/timeout argument errors now
+name policy. Core, PCRE2 and POSIX compilation surfaces have not yet migrated.
+
+Null MatchTimeout uses PythonRe.DefaultMatchTimeout; null ConstructionTimeout means
+infinite. Explicit TimeSpan.Zero remains invalid. Compile eagerly prepares FullMatch;
+unfunded constructors retain lazy preparation. ProgramMemoryAllowance funds all
+retained programs before publication, including constructor-created expressions.
+Dispose funded expressions; existing calls/cursors survive close under their
+original authority and refund synchronously when finished. Null program funding
+selects numeric controls without a shared allowance; refusal is terminal.
+
+Constructors with only execution settings can inherit an active internal
+construction owner. Explicit Compile or explicit construction/funding controls
+start one owner and reject replacing an active one. Constructor construction
+limits/deadlines are now enforceable through the same policy. Pattern/template
+checks remain separate from the caller-valid subject contract.

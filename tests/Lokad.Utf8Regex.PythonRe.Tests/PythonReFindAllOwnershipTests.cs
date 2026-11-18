@@ -23,11 +23,14 @@ public sealed class PythonReFindAllOwnershipTests
     [Fact]
     public void EqualCaptureRangesFitAUsefulFiniteResultBudget()
     {
-        using var regex = new Utf8PythonRegex("(([a-z]+))", resourcePolicy: new()
+        using var regex = new Utf8PythonRegex("(([a-z]+))", policy: new Utf8RegexPolicy()
         {
-            MaxResultBytes = 12 << 10,
-            MaxWorkingBytes = 1 << 20,
-            MaxWorkSteps = 1000000
+            ResourcePolicy = new()
+            {
+                MaxResultBytes = 12 << 10,
+                MaxWorkingBytes = 1 << 20,
+                MaxWorkSteps = 1000000
+            }
         });
         var text = new string('a', 4096);
         var tuples = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(Encoding.UTF8.GetBytes(text))).TupleValues;
@@ -53,7 +56,7 @@ public sealed class PythonReFindAllOwnershipTests
     [MemberData(nameof(OwnedScalarCases))]
     public void CursorWholeMatchGoldensMatchManaged(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
     {
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var wholeMatches6 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor6 = regex.CreateMatchCursor(input, startOffsetInBytes, default))
@@ -80,7 +83,7 @@ public sealed class PythonReFindAllOwnershipTests
     [MemberData(nameof(OwnedSingleGroupCases))]
     public void SingleGroupCursorKeepsWholeMatchGoldens(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values, string?[] groupValues)
     {
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var wholeMatches7 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor7 = regex.CreateMatchCursor(input, startOffsetInBytes, default))
@@ -118,7 +121,7 @@ public sealed class PythonReFindAllOwnershipTests
     [MemberData(nameof(OwnedTupleCases))]
     public void OwnedTupleFindAllMatchesManaged(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[][] tuples)
     {
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var strings = PythonReFindAllAssert.Decode(regex.FindAllToUtf8(input, startOffsetInBytes));
         Assert.Equal(tuples.Length, strings.TupleValues.Length);
@@ -141,7 +144,7 @@ public sealed class PythonReFindAllOwnershipTests
     [MemberData(nameof(ManagedCases))]
     public void GeneralCursorKeepsWholeMatchGoldens(string pattern, PythonReCompileOptions options, string inputText, int startOffsetInBytes, string[] values)
     {
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var wholeMatches8 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor8 = regex.CreateMatchCursor(input, startOffsetInBytes, default))

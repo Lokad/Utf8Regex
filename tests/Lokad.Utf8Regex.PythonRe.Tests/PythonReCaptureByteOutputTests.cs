@@ -13,7 +13,11 @@ public sealed class PythonReCaptureByteOutputTests
     };
 
     private static Utf8PythonRegex Create(string pattern, Utf8ResourcePolicy policy)
-        => new(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
+        => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
     [Theory]
     [InlineData(4095)]
     [InlineData(4096)]

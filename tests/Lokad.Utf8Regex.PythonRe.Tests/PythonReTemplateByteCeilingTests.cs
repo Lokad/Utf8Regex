@@ -45,8 +45,17 @@ public sealed class PythonReTemplateByteCeilingTests
     [Fact]
     public void ColdByteDenialPrecedesExecutionWithoutCachingFailure()
     {
-        var regex = new Utf8PythonRegex("a", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8PythonRegex("a", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Replace([], "x"));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, failure.ResourceKind);
         Assert.Equal(0, regex.DebugReplacementPlanCacheEntryCount);
@@ -79,14 +88,17 @@ public sealed class PythonReTemplateByteCeilingTests
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None,
-            TimeSpan.FromMilliseconds(20), new()
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
             {
                 MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
-            });
+            }
+        });
         using var token = new CancellationTokenSource();
         using var parent = Utf8ConstructionScope.Enter();
         var maximum = parent.Budget.MaximumBytes;
@@ -117,13 +129,22 @@ public sealed class PythonReTemplateByteCeilingTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void DistinctCallerAndParentAuthoritiesRemainEffective(int authority)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8PythonRegex("(?P<x>😀|a)", PythonReCompileOptions.None,
-            TimeSpan.FromMilliseconds(100), new() { MaxWorkingBytes = 1 << 20 });
+        var regex = new Utf8PythonRegex("(?P<x>😀|a)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(100),
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1 << 20
+            }
+        });
         using var caller = new CancellationTokenSource();
         using var parentToken = new CancellationTokenSource();
         using var parent = Utf8ConstructionScope.Enter();
@@ -158,7 +179,15 @@ public sealed class PythonReTemplateByteCeilingTests
         Assert.Equal("<😀><a>", System.Text.Encoding.UTF8.GetString(regex.Replace("😀a"u8, @"<\g<x>>")));
     }
 
-    private static Utf8PythonRegex Create(string pattern, ulong working, ulong work = 128) => new(pattern,
-        PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-        new() { MaxWorkSteps = work, MaxDepth = 16, MaxWorkingBytes = working, MaxResultBytes = 4096 });
+    private static Utf8PythonRegex Create(string pattern, ulong working, ulong work = 128) => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+    {
+        MatchTimeout = Timeout.InfiniteTimeSpan,
+        ResourcePolicy = new()
+        {
+            MaxWorkSteps = work,
+            MaxDepth = 16,
+            MaxWorkingBytes = working,
+            MaxResultBytes = 4096
+        }
+    });
 }

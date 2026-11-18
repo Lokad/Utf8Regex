@@ -30,7 +30,11 @@ public sealed class PythonReIpv4BooleanTests
         using var token = new CancellationTokenSource();
         foreach (var options in new[] { PythonReCompileOptions.None, PythonReCompileOptions.Ascii })
         {
-            using var regex = new Utf8PythonRegex(Pattern, options, Timeout.InfiniteTimeSpan, Small);
+            using var regex = new Utf8PythonRegex(Pattern, options: options, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Small
+            });
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(expected, regex.IsMatch(input, offset));
             Assert.Equal(expected, regex.IsMatch(input, offset, token.Token));
@@ -45,7 +49,11 @@ public sealed class PythonReIpv4BooleanTests
     [InlineData(4095)]
     public void CrossingWindowsKeepScalarStartAndPartialHit(int padding)
     {
-        using var regex = new Utf8PythonRegex(Pattern, default, Timeout.InfiniteTimeSpan, Small);
+        using var regex = new Utf8PythonRegex(Pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small
+        });
         var input = Encoding.UTF8.GetBytes("😀" + new string('x', padding) + "012.200.033.19A😀");
         Assert.True(regex.IsMatch(input, 4));
         Assert.True(regex.IsMatch(input, 4 + padding + 1)); // Legal two-digit first octet.
@@ -55,13 +63,23 @@ public sealed class PythonReIpv4BooleanTests
     [Fact]
     public void ScalarOffsetsAndEntryFailuresArePreserved()
     {
-        using var regex = new Utf8PythonRegex(Pattern, default, Timeout.InfiniteTimeSpan, Small);
+        using var regex = new Utf8PythonRegex(Pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small
+        });
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch("😀012.200.033.199"u8, 1));
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.IsMatch("😀"u8, 1, canceled.Token)).CancellationToken);
-        using var denied = new Utf8PythonRegex(Pattern, default, Timeout.InfiniteTimeSpan,
-            Small with { MaxWorkSteps = 1 });
+        using var denied = new Utf8PythonRegex(Pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small with
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(
             () => denied.IsMatch("012.200.033.199"u8)).ResourceKind);
     }
@@ -74,7 +92,11 @@ public sealed class PythonReIpv4BooleanTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        using var regex = new Utf8PythonRegex(Pattern, default, TimeSpan.FromMilliseconds(20), Small);
+        using var regex = new Utf8PythonRegex(Pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Small
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 262144) + "012.200.033.199");
         var interrupted = false;
         var diagnostic = Utf8SearchDiagnosticsSession.Start(steps =>
@@ -116,8 +138,14 @@ public sealed class PythonReIpv4BooleanTests
     {
         var account = new Allowance(16 << 20);
         Assert.True(account.TryReserve(13));
-        using var regex = Utf8PythonRegex.Compile(Pattern, default, Timeout.InfiniteTimeSpan,
-            Small, default, Timeout.InfiniteTimeSpan, default, account);
+        using var regex = Utf8PythonRegex.Compile(Pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
         var held = account.Used;
         Assert.True(regex.IsMatch("012.200.033.199"u8));
         Assert.False(regex.IsMatch("1.2.3.4"u8));
@@ -131,8 +159,14 @@ public sealed class PythonReIpv4BooleanTests
     public void CursorAliasAndSnapshotSurviveFundedProgramClosure()
     {
         var account = new Allowance(16 << 20);
-        using var regex = Utf8PythonRegex.Compile(Pattern, default, Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, default, account);
+        using var regex = Utf8PythonRegex.Compile(Pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
         using var cursor = regex.CreateMatchCursor("😀012.200.033.199 x 99.99.99.99"u8.ToArray());
         var alias = cursor;
         regex.Dispose(); Assert.True(account.Used > 0);

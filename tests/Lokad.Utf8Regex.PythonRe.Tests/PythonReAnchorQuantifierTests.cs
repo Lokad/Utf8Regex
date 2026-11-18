@@ -41,8 +41,17 @@ public sealed class PythonReAnchorQuantifierTests
     [InlineData("(?=(?P<x>😀))*😀", "😀")]
     public void GroupsAssertionsLiteralBracesAndClassEscapesKeepTheirGrammar(string pattern, string text)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         Utf8PythonRangeMatch snapshot1 = default;
         using (var captureCursor1 = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -76,21 +85,21 @@ public sealed class PythonReAnchorQuantifierTests
     {
         foreach (var options in new[] { PythonReCompileOptions.None, PythonReCompileOptions.Ascii, PythonReCompileOptions.IgnoreCase })
         {
-            var positive = new Utf8PythonRegex("[" + escape + "]+", options);
-            var negative = new Utf8PythonRegex("[^" + escape + "]", options);
+            var positive = new Utf8PythonRegex("[" + escape + "]+", options: options);
+            var negative = new Utf8PythonRegex("[^" + escape + "]", options: options);
             var controlInput = Encoding.UTF8.GetBytes(new string(control, 2));
             var letterInput = Encoding.UTF8.GetBytes(letter.ToString());
-            Assert.True(positive.Match(controlInput,mode: Utf8PythonMatchMode.FullMatch).Success);
-            Assert.False(positive.Match(letterInput,mode: Utf8PythonMatchMode.FullMatch).Success);
-            Assert.True(negative.Match(letterInput,mode: Utf8PythonMatchMode.FullMatch).Success);
-            Assert.False(negative.Match(controlInput.AsSpan(0, 1),mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.True(positive.Match(controlInput, mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.False(positive.Match(letterInput, mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.True(negative.Match(letterInput, mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.False(negative.Match(controlInput.AsSpan(0, 1), mode: Utf8PythonMatchMode.FullMatch).Success);
         }
     }
 
     [Fact]
     public void ControlEscapesAlsoSupplyActualClassRangeEndpoints()
     {
-        Assert.True(new Utf8PythonRegex(@"[\b-\r]+").Match("\b\t\n\v\f\r"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.False(new Utf8PythonRegex(@"[\b-\r]+").Match("bfnrtv"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(new Utf8PythonRegex(@"[\b-\r]+").Match("\b\t\n\v\f\r"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(new Utf8PythonRegex(@"[\b-\r]+").Match("bfnrtv"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

@@ -12,14 +12,17 @@ public sealed class PythonReLookaroundCaptureRangeTests
     {
         const string pattern = "(?=(😀é))(?P<whole>😀é)(?P<empty>)(x)?";
         var input = Encoding.UTF8.GetBytes("😀é 😀é");
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None,
-            Regex.InfiniteMatchTimeout, new()
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
             {
                 MaxWorkSteps = 100000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 1048576,
                 MaxResultBytes = 1048576
-            });
+            }
+        });
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor1 = regex.CreateMatchCursor(input, 0, default))
         {

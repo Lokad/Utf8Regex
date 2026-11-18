@@ -26,8 +26,15 @@ public sealed class PythonReFiniteWorkPolicyTests
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = limit };
         return bytesPattern
-            ? new(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
-            : new(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+            ? new(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            }) : new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
     }
 
     internal static string Run(Utf8PythonRegex regex, byte[] input, int operation, int start = 0,
@@ -41,9 +48,9 @@ public sealed class PythonReFiniteWorkPolicyTests
         return operation switch
         {
             0 => regex.IsMatch(input, start, token).ToString(),
-            1 => regex.Match(input,start,cancellationToken: token,mode: Utf8PythonMatchMode.Search).Success.ToString(),
-            2 => regex.Match(input,start,cancellationToken: token).Success.ToString(),
-            3 => regex.Match(input,start,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch).Success.ToString(),
+            1 => regex.Match(input, start, cancellationToken: token, mode: Utf8PythonMatchMode.Search).Success.ToString(),
+            2 => regex.Match(input, start, cancellationToken: token).Success.ToString(),
+            3 => regex.Match(input, start, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch).Success.ToString(),
             4 => regex.Count(input, start, token).ToString(),
             17 => regex.FindAllToUtf8(input, start, token).ScalarValues.Length.ToString(),
             18 => string.Join("|", regex.SplitRanges(input, 0, start, token).Select(x => $"{x.Number}:{x.Success}:{x.StartOffsetInBytes}:{x.EndOffsetInBytes}")),
@@ -151,8 +158,8 @@ public sealed class PythonReFiniteWorkPolicyTests
         }
         var all = collectedRanges1.ToArray();
         Assert.Equal(new[] { "", "😀", "", "a", "" }, all.Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)));
-        Assert.Equal(4, regex.Match("😀a"u8,4,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀a"u8,1,mode: Utf8PythonMatchMode.Search));
+        Assert.Equal(4, regex.Match("😀a"u8, 4, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀a"u8, 1, mode: Utf8PythonMatchMode.Search));
         Assert.Equal(1, regex.Count("😀a"u8, 5));
     }
 
@@ -184,13 +191,20 @@ public sealed class PythonReFiniteWorkPolicyTests
     {
         using var token = new CancellationTokenSource(); token.Cancel();
         var regex = RegexWith("cat", 1);
-        var error = Assert.Throws<OperationCanceledException>(() => regex.Match("cat"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search));
+        var error = Assert.Throws<OperationCanceledException>(() => regex.Match("cat"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search));
         Assert.Equal(token.Token, error.CancellationToken);
         Assert.Throws<OperationCanceledException>(() => regex.CreateMatchCursor("cat"u8.ToArray(), 0, token.Token));
 
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks += 100);
-        regex = new("cat", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1), new() { MaxWorkSteps = 1 });
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("cat"u8,mode: Utf8PythonMatchMode.Search));
+        regex = new("cat", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
+        Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("cat"u8, mode: Utf8PythonMatchMode.Search));
     }
 }

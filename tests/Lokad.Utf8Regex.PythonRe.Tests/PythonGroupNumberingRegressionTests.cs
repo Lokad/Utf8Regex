@@ -25,8 +25,19 @@ public sealed class PythonGroupNumberingRegressionTests
             .Select(index => index % 2 == 0 ? $"(?P<n{index}>.)" : "(.)")) + ")" + (trailingGroup ? "(.)" : "");
         var text = body + (trailingGroup ? "z" : "");
         var input = Utf8(text);
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            finite ? new() { MaxWorkSteps = 1000000, MaxDepth = 1000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = finite ? new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1000,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+
+    : default
+        });
         var values = new[] { text, body }.Concat(pieces).Concat(trailingGroup ? new[] { "z" } : []).ToArray();
         void AssertGroups(Utf8PythonRangeMatch match)
         {
@@ -77,7 +88,7 @@ public sealed class PythonGroupNumberingRegressionTests
         var regex = new Utf8PythonRegex(pattern);
         AssertSearch(regex, input, expectedSuccess, expectedStart, expectedEnd);
         Assert.Equal(expectedSuccess, regex.Match(Utf8(input)).Success);
-        Assert.Equal(expectedSuccess, regex.Match(Utf8(input),mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(expectedSuccess, regex.Match(Utf8(input), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -194,7 +205,7 @@ public sealed class PythonGroupNumberingRegressionTests
 
     private static void AssertSearch(Utf8PythonRegex regex, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var match = regex.Match(Encoding.UTF8.GetBytes(input),mode: Utf8PythonMatchMode.Search);
+        var match = regex.Match(Encoding.UTF8.GetBytes(input), mode: Utf8PythonMatchMode.Search);
         Assert.Equal(expectedSuccess, match.Success);
         if (expectedSuccess)
         {

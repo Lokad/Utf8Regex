@@ -34,19 +34,24 @@ public sealed class PythonReCaptureAliasTests
         Assert.Equal(["0", first, second], owned.GroupNames);
         foreach (var finite in new[] { false, true })
         {
-            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-                finite ? new Utf8ResourcePolicy
+            var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = finite ? new Utf8ResourcePolicy
                 {
                     MaxWorkSteps = 1_000_000,
                     MaxDepth = 2048,
                     MaxWorkingBytes = 1_048_576,
                     MaxResultBytes = 1_048_576
-                } : default);
+                }
+
+    : default
+            });
             Assert.Equal(["0", first, second], regex.GetGroupNames());
             Assert.True(regex.IsMatch(input));
             Assert.False(regex.IsMatch(absent));
             Assert.Equal(1, regex.Count(input));
-            Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.True(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
             Utf8PythonRangeMatch retained = default;
             using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
             {

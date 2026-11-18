@@ -14,12 +14,16 @@ public sealed class PythonRePublicConstructionTests
     {
         var pattern = new string('a', prefix) + "😀é";
         var bytes = System.Text.Encoding.UTF8.GetBytes(pattern);
-        var regex = Utf8PythonRegex.Compile(bytes, PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-            Timeout.InfiniteTimeSpan, CancellationToken.None);
+        var regex = Utf8PythonRegex.Compile(bytes, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None);
         Assert.Equal(pattern, regex.Pattern);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.True(regex.Match(bytes,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match(bytes, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(1, regex.Count(bytes));
         Assert.False(Utf8ConstructionScope.IsActive);
     }
@@ -28,9 +32,13 @@ public sealed class PythonRePublicConstructionTests
     public void ByteFactoryRetainsAbsoluteMalformedOffsetAfterDecodeBlock()
     {
         var bytes = Enumerable.Repeat((byte)'a', 8193).Append((byte)0xff).ToArray();
-        var failure = Assert.Throws<ArgumentException>(() => Utf8PythonRegex.Compile(bytes,
-            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited,
-            Utf8ConstructionPolicy.Default, Timeout.InfiniteTimeSpan, CancellationToken.None));
+        var failure = Assert.Throws<ArgumentException>(() => Utf8PythonRegex.Compile(bytes, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None));
         Assert.Equal("patternUtf8", failure.ParamName);
         Assert.Equal(8193, Assert.IsType<System.Text.DecoderFallbackException>(failure.InnerException).Index);
         Assert.False(Utf8ConstructionScope.IsActive);
@@ -65,12 +73,19 @@ public sealed class PythonRePublicConstructionTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++);
         var regex = bytes
-            ? Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8, PythonReCompileOptions.None,
-                TimeSpan.FromMilliseconds(1), Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-                TimeSpan.FromSeconds(30), CancellationToken.None)
-            : Utf8PythonRegex.Compile("(?P<x>😀){2,4}", PythonReCompileOptions.None,
-                TimeSpan.FromMilliseconds(1), Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-                TimeSpan.FromSeconds(30), CancellationToken.None);
+            ? Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(1),
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = Utf8ConstructionPolicy.Default,
+                ConstructionTimeout = TimeSpan.FromSeconds(30)
+            }, cancellationToken: CancellationToken.None) : Utf8PythonRegex.Compile("(?P<x>😀){2,4}", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(1),
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = Utf8ConstructionPolicy.Default,
+                ConstructionTimeout = TimeSpan.FromSeconds(30)
+            }, cancellationToken: CancellationToken.None);
         Assert.True(ticks > 1);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal(TimeSpan.FromMilliseconds(1), regex.MatchTimeout);
@@ -78,12 +93,19 @@ public sealed class PythonRePublicConstructionTests
     }
 
     private static Utf8PythonRegex Compile(Utf8ConstructionPolicy policy, bool bytes)
-        => bytes ? Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8, PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy,
-            Timeout.InfiniteTimeSpan, CancellationToken.None)
-        : Utf8PythonRegex.Compile("(?P<x>😀){2,4}", PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy,
-            Timeout.InfiniteTimeSpan, CancellationToken.None);
+        => bytes ? Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = policy,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None) : Utf8PythonRegex.Compile("(?P<x>😀){2,4}", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = policy,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None);
 
     [Theory]
     [InlineData(0, false)]
@@ -129,9 +151,19 @@ public sealed class PythonRePublicConstructionTests
     public void PreCancellationPrecedesInvalidByteDecodingAndArguments()
     {
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
-        var error = Assert.Throws<OperationCanceledException>(() => Utf8PythonRegex.Compile(new byte[] { 0xff },
-            PythonReCompileOptions.Locale, TimeSpan.Zero, new() { MaxWorkSteps = 0 },
-            new() { MaxBytes = 0 }, TimeSpan.Zero, cancellation.Token));
+        var error = Assert.Throws<OperationCanceledException>(() => Utf8PythonRegex.Compile(new byte[] { 0xff }, options: PythonReCompileOptions.Locale, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.Zero,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 0
+            },
+            ConstructionPolicy = new()
+            {
+                MaxBytes = 0
+            },
+            ConstructionTimeout = TimeSpan.Zero
+        }, cancellationToken: cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
         Assert.False(Utf8ConstructionScope.IsActive);
     }
@@ -140,22 +172,25 @@ public sealed class PythonRePublicConstructionTests
     public void FundedFourControlPolicyAndConstructionTokenEndAtPublication()
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8, PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, new()
+        var regex = Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
             {
                 MaxWorkSteps = 100000,
                 MaxDepth = 64,
                 MaxWorkingBytes = 1000000,
                 MaxResultBytes = 1000000
             },
-            new()
+            ConstructionPolicy = new()
             {
                 MaxWorkSteps = 1000000,
                 MaxDepth = 128,
                 MaxInstructionCapacity = 10000,
                 MaxBytes = 1000000
             },
-            TimeSpan.FromSeconds(30), cancellation.Token);
+            ConstructionTimeout = TimeSpan.FromSeconds(30)
+        }, cancellationToken: cancellation.Token);
         cancellation.Cancel();
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Utf8PythonRangeMatch result = default;
@@ -166,7 +201,7 @@ public sealed class PythonRePublicConstructionTests
         Assert.True(result.Success);
         Assert.Equal("x", result.LastGroup);
         Assert.Equal(1, result.LastIndex);
-        Assert.True(regex.Match("😀😀"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("😀😀"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
@@ -179,9 +214,13 @@ public sealed class PythonRePublicConstructionTests
             if (++reads == 8) cancellation.Cancel();
             return 0;
         });
-        var error = Assert.Throws<OperationCanceledException>(() => Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8,
-            PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited,
-            Utf8ConstructionPolicy.Default, TimeSpan.FromSeconds(30), cancellation.Token));
+        var error = Assert.Throws<OperationCanceledException>(() => Utf8PythonRegex.Compile("(?P<x>😀){2,4}"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = TimeSpan.FromSeconds(30)
+        }, cancellationToken: cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
         Assert.Equal(8, reads);
         Assert.False(Utf8ConstructionScope.IsActive);
@@ -196,12 +235,20 @@ public sealed class PythonRePublicConstructionTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
         var error = Assert.Throws<RegexMatchTimeoutException>(() =>
         {
-            if (bytes) _ = Utf8PythonRegex.Compile("😀+"u8, PythonReCompileOptions.None,
-                Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-                TimeSpan.FromMilliseconds(1), CancellationToken.None);
-            else _ = Utf8PythonRegex.Compile("😀+", PythonReCompileOptions.None,
-                Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-                TimeSpan.FromMilliseconds(1), CancellationToken.None);
+            if (bytes) _ = Utf8PythonRegex.Compile("😀+"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = Utf8ConstructionPolicy.Default,
+                ConstructionTimeout = TimeSpan.FromMilliseconds(1)
+            }, cancellationToken: CancellationToken.None);
+            else _ = Utf8PythonRegex.Compile("😀+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = Utf8ConstructionPolicy.Default,
+                ConstructionTimeout = TimeSpan.FromMilliseconds(1)
+            }, cancellationToken: CancellationToken.None);
         });
         Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
         Assert.Equal(bytes ? string.Empty : "😀+", error.Pattern);

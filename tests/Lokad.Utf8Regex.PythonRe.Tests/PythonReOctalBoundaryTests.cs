@@ -5,7 +5,8 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReOctalBoundaryTests
 {
     [Theory]
-    [InlineData("")] [InlineData("😀")]
+    [InlineData("")]
+    [InlineData("😀")]
     public void EveryThreeDigitOctalPreservesScalarValuesAndRangeErrors(string prefix)
     {
         for (var value = 0; value < 512; value++)
@@ -24,11 +25,11 @@ public sealed class PythonReOctalBoundaryTests
                 }
                 var input = Encoding.UTF8.GetBytes(prefix + (char)value + "z");
                 var regex = new Utf8PythonRegex(pattern);
-                var match = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch);
+                var match = regex.Match(input, mode: Utf8PythonMatchMode.FullMatch);
                 Assert.True(match.Success, pattern);
                 Assert.Equal(0, match.StartOffsetInBytes);
                 Assert.Equal(input.Length, match.EndOffsetInBytes);
-                Assert.False(regex.Match(input.AsSpan(0, input.Length - 1),mode: Utf8PythonMatchMode.FullMatch).Success);
+                Assert.False(regex.Match(input.AsSpan(0, input.Length - 1), mode: Utf8PythonMatchMode.FullMatch).Success);
             }
         }
     }
@@ -44,8 +45,17 @@ public sealed class PythonReOctalBoundaryTests
     [InlineData(@"(a)(b)\2\1", "abba")]
     public void OneDigitContinuationAndNumericReferencesKeepTheirBoundaries(string pattern, string subject)
     {
-        var regex = new Utf8PythonRegex("^😀" + pattern + "$", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 10000, MaxDepth = 64, MaxWorkingBytes = 65536, MaxResultBytes = 65536 });
-        Assert.True(regex.Match(Encoding.UTF8.GetBytes("😀" + subject),mode: Utf8PythonMatchMode.FullMatch).Success);
+        var regex = new Utf8PythonRegex("^😀" + pattern + "$", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10000,
+                MaxDepth = 64,
+                MaxWorkingBytes = 65536,
+                MaxResultBytes = 65536
+            }
+        });
+        Assert.True(regex.Match(Encoding.UTF8.GetBytes("😀" + subject), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 }

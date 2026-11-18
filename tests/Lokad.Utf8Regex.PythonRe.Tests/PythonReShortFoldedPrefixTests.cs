@@ -4,14 +4,24 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReShortFoldedPrefixTests
 {
-    private static Utf8ResourcePolicy Generous => new() {
-        MaxWorkSteps = 1_000_000, MaxDepth = 1024,
-        MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20
+    private static Utf8ResourcePolicy Generous => new()
+    {
+        MaxWorkSteps = 1_000_000,
+        MaxDepth = 1024,
+        MaxWorkingBytes = 1 << 20,
+        MaxResultBytes = 1 << 20
     };
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(220)] [InlineData(230)]
-    [InlineData(248)] [InlineData(255)] [InlineData(256)] [InlineData(257)] [InlineData(4097)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(220)]
+    [InlineData(230)]
+    [InlineData(248)]
+    [InlineData(255)]
+    [InlineData(256)]
+    [InlineData(257)]
+    [InlineData(4097)]
     public void PublicSearchAndCapturesKeepUnicodePartnersAndNonzeroStarts(int padding)
     {
         var text = "π" + new string('x', padding) + " watson sxx ſherlocK xx SHERLOCK";
@@ -19,22 +29,25 @@ public sealed class PythonReShortFoldedPrefixTests
         var input = storage.AsSpan(5, bytes.Length);
         var first = text.IndexOf('ſ');
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, Generous })
-        foreach (var start in new[] { 0, 2, bytes.Length })
-        {
-            using var token = new CancellationTokenSource();
-            using var owner = new Utf8PythonRegex("(?P<n>sherlock)", PythonReCompileOptions.IgnoreCase,
-                Timeout.InfiniteTimeSpan, policy);
-            var expected = start == bytes.Length ? Array.Empty<string>() : ["ſherlocK", "SHERLOCK"];
-            var actual = owner.Match(input,start,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search);
-            Assert.Equal(expected.Length != 0, actual.Success);
-            if (actual.Success)
+            foreach (var start in new[] { 0, 2, bytes.Length })
             {
-                Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, first)), actual.StartOffsetInBytes);
-                Assert.Equal(Encoding.UTF8.GetByteCount(expected[0]), actual.EndOffsetInBytes - actual.StartOffsetInBytes);
+                using var token = new CancellationTokenSource();
+                using var owner = new Utf8PythonRegex("(?P<n>sherlock)", options: PythonReCompileOptions.IgnoreCase, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                });
+                var expected = start == bytes.Length ? Array.Empty<string>() : ["ſherlocK", "SHERLOCK"];
+                var actual = owner.Match(input, start, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search);
+                Assert.Equal(expected.Length != 0, actual.Success);
+                if (actual.Success)
+                {
+                    Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, first)), actual.StartOffsetInBytes);
+                    Assert.Equal(Encoding.UTF8.GetByteCount(expected[0]), actual.EndOffsetInBytes - actual.StartOffsetInBytes);
+                }
+                Assert.Equal(expected.Length, owner.Count(input, start, token.Token));
+                Assert.Equal(expected, PythonReFindAllAssert.Decode(owner.FindAllToUtf8(input, start, token.Token)).ScalarValues);
             }
-            Assert.Equal(expected.Length, owner.Count(input, start, token.Token));
-            Assert.Equal(expected, PythonReFindAllAssert.Decode(owner.FindAllToUtf8(input, start, token.Token)).ScalarValues);
-        }
     }
 
     [Theory]
@@ -45,9 +58,12 @@ public sealed class PythonReShortFoldedPrefixTests
     {
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, Generous })
         {
-            using var owner = new Utf8PythonRegex("(?P<n>" + pattern + ")", PythonReCompileOptions.IgnoreCase,
-                Timeout.InfiniteTimeSpan, policy);
-            PythonReMatchAssert.Equal(expected, owner.Match(Encoding.UTF8.GetBytes(text),mode: Utf8PythonMatchMode.Search));
+            using var owner = new Utf8PythonRegex("(?P<n>" + pattern + ")", options: PythonReCompileOptions.IgnoreCase, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            });
+            PythonReMatchAssert.Equal(expected, owner.Match(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.Search));
         }
     }
 
@@ -55,13 +71,20 @@ public sealed class PythonReShortFoldedPrefixTests
     public void SmallPoliciesAllowBorrowedValuesWithoutTextAdmission()
     {
         using var token = new CancellationTokenSource();
-        using var owner = new Utf8PythonRegex("sherlock", PythonReCompileOptions.IgnoreCase,
-            Timeout.InfiniteTimeSpan, new() {
-                MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1
-            });
-        Assert.False(owner.Match("prefix watson suffix"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).Success);
-        Assert.True(owner.Match("SHERLOCK"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search).Success);
-        PythonReMatchAssert.Equal("SHERLOCK", owner.Match("SHERLOCK"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search));
+        using var owner = new Utf8PythonRegex("sherlock", options: PythonReCompileOptions.IgnoreCase, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
+        Assert.False(owner.Match("prefix watson suffix"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(owner.Match("SHERLOCK"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search).Success);
+        PythonReMatchAssert.Equal("SHERLOCK", owner.Match("SHERLOCK"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search));
     }
 
     [Fact]
@@ -69,12 +92,15 @@ public sealed class PythonReShortFoldedPrefixTests
     {
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, Generous })
         {
-            using var owner = new Utf8PythonRegex("sherlock", PythonReCompileOptions.IgnoreCase,
-                Timeout.InfiniteTimeSpan, policy);
+            using var owner = new Utf8PythonRegex("sherlock", options: PythonReCompileOptions.IgnoreCase, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            });
 
             using var token = new CancellationTokenSource(); token.Cancel();
             Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(
-                () => owner.Match("SHERLOCK"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.Search)).CancellationToken);
+                () => owner.Match("SHERLOCK"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).CancellationToken);
         }
     }
 }

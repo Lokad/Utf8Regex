@@ -86,24 +86,27 @@ belong to the host. Timeouts use `RegexMatchTimeoutException`; its
 Input is empty when working or result bytes are bounded to avoid decoding the
 subject for diagnostics after expiry.
 
-Explicit `Compile` factories accept separate construction limits, timeout and
-token, and eagerly prepare FullMatch. Constructors keep fixed construction
-backstops and lazy FullMatch preparation. Cold FullMatch/replacement preparation,
-cache retention, incidental owners, host decoding, callback allocations and
-host containers retain separate documented scope. The execution token must be
-passed on each operation. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits)
-and [MIGRATION.md](../../docs/MIGRATION.md).
+Constructors and Compile accept one immutable Utf8RegexPolicy. Its ResourcePolicy
+and MatchTimeout govern later invocations; ConstructionPolicy and ConstructionTimeout
+govern eager creation. Null timeouts use DefaultMatchTimeout for matching and
+infinite construction time. Compile accepts a separate synchronous construction
+token and completes FullMatch preparation. Unfunded constructors defer that program;
+a ProgramMemoryAllowance funds it eagerly before publication and supplies default
+working admission. Dispose funded expressions after use; active calls/cursors keep
+their funding until they finish. Refusal never retries without admission.
 
-Value/context/count and byte-output calls now take optional offsets/counts and
-cancellation on their existing long signature. For example,
-`regex.Match(subject.Span, cancellationToken: token, mode: Utf8PythonMatchMode.Search)`
-searches from byte zero.
-Recompile old callers; adapt a short method-group delegate with an explicit
-lambda. Cursor funding overloads retain their distinct account/null contracts.
-Managed benchmark lanes that bind removed short overloads have new protocol
-identities. Their output/consumption is unchanged; explicit context/cursor/split
-lanes retain their existing identities. Recorded tables remain historical until
-the coherent refresh, without rewriting old samples.
+With no explicit construction controls/funding, constructors can borrow an active
+internal construction owner. Explicit Compile and construction/funding controls
+start one owner and reject replacing an active one. Invalid policy values report
+the policy parameter. Settings are copied; the construction token does not become
+execution authority. Host retention/decoding and incidental objects keep their
+separate scope. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits)
+and [migration guidance](../../docs/MIGRATION.md#pythonre-compilation-policy).
+
+Old timeout/resource/construction/funding argument lists are removed. Recompile
+callers. Matching/count/output retain their optional offset/count/token signatures;
+Match's explicit mode selects search, anchored or full behavior. Historical benchmark
+tables keep their original producer identities until a coherent refresh.
 
 `cursor.MoveNext(out Utf8PythonRangeMatch match, token = default)` discovers
 capture byte ranges without captured strings or a whole-subject coordinate map.
@@ -157,13 +160,16 @@ using Lokad.Utf8Regex.PythonRe;
 var regex = new Utf8PythonRegex(
     pattern: @"(?P<word>foo)-(?P=word)",
     options: PythonReCompileOptions.None,
-    matchTimeout: TimeSpan.FromSeconds(1),
-    resourcePolicy: new Utf8ResourcePolicy
+    policy: new Utf8RegexPolicy
     {
-        MaxWorkSteps = 1_000_000,
-        MaxDepth = 1024,
-        MaxWorkingBytes = 16 * 1024 * 1024,
-        MaxResultBytes = 16 * 1024 * 1024
+        MatchTimeout = TimeSpan.FromSeconds(1),
+        ResourcePolicy = new()
+        {
+            MaxWorkSteps = 1_000_000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 16 * 1024 * 1024,
+            MaxResultBytes = 16 * 1024 * 1024
+        }
     });
 
 bool isMatch = regex.IsMatch("foo-foo"u8);

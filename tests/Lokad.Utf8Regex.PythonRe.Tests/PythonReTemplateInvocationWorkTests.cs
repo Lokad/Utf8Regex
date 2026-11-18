@@ -21,8 +21,16 @@ public sealed class PythonReTemplateInvocationWorkTests
     public void LongTemplateIsDeniedBeforeColdPreparationEvenWhenSubjectIsEmpty(bool text)
     {
         var template = new string('z', 1 << 20);
-        var regex = new Utf8PythonRegex("a", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 64, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 });
+        var regex = new Utf8PythonRegex("a", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 64,
+                MaxWorkingBytes = 16 << 20,
+                MaxResultBytes = 16 << 20
+            }
+        });
         using var parent = Utf8ConstructionScope.Enter();
         var retained = parent.Budget.AllocateArray<byte>(13, false);
         retained[0] = 42;
@@ -69,8 +77,14 @@ public sealed class PythonReTemplateInvocationWorkTests
     [InlineData(true)]
     public void WarmLengthDenialKeepsThePreviouslyPublishedPlan(bool text)
     {
-        var regex = new Utf8PythonRegex("a", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1 });
+        var regex = new Utf8PythonRegex("a", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            }
+        });
         var prepare = Preparation(regex);
         var template = new string('z', 4096);
         var funded = new Utf8SliceInvocation(new(100000, 128, 16 << 20), Timeout.InfiniteTimeSpan, default);

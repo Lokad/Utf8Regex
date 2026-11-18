@@ -14,9 +14,16 @@ public sealed class PythonReCaptureSlotTests
     public void SlotsPreserveByteCoordinatesAcrossModesAndBounds(Utf8PythonMatchMode mode,
         string text, int start, int end, int expectedStart, int expectedEnd)
     {
-        using var regex = new Utf8PythonRegex("(?P<outer>(?P<inner>😀))(?P<maybe>é)?",
-            resourcePolicy: new() { MaxWorkSteps = 100000, MaxDepth = 128,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        using var regex = new Utf8PythonRegex("(?P<outer>(?P<inner>😀))(?P<maybe>é)?", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         var bytes = Encoding.UTF8.GetBytes(text);
         Span<Utf8PythonCaptureRange> captures = stackalloc Utf8PythonCaptureRange[6];
         captures.Fill(new() { Number = 99, Success = true });
@@ -39,7 +46,11 @@ public sealed class PythonReCaptureSlotTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(4)] [InlineData(8)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(4)]
+    [InlineData(8)]
     public void ShortBuffersDoNotChangeBacktrackingOrLastCapture(int size)
     {
         using var regex = new Utf8PythonRegex("(?P<x>a|ab)+(?P<last>b)?");
@@ -100,7 +111,9 @@ public sealed class PythonReCaptureSlotTests
         Assert.All(captures, range => Assert.Equal(99, range.Number)); Assert.Equal(0, account.Attempts);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void AdmissionRefusalOrCancellationClearsOnlyRequestedSlotsAndRefunds(bool cancel)
     {
         using var regex = new Utf8PythonRegex("(?P<x>a)");
@@ -116,7 +129,11 @@ public sealed class PythonReCaptureSlotTests
         Assert.All(captures[..2], range => Assert.False(range.Success)); Assert.Equal(99, captures[2].Number);
     }
 
-    [Theory] [InlineData(-1)] [InlineData(1)] [InlineData(3)] [InlineData(5)]
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(5)]
     public void InvalidEndRejectsAndClearsRequestedPrefix(int end)
     {
         using var regex = new Utf8PythonRegex("(?P<x>.)");

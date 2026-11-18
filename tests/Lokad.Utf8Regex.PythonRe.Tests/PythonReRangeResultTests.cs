@@ -59,7 +59,7 @@ public sealed class PythonReRangeResultTests
         int maxSplit, int start, string?[] expected)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8PythonRegex(pattern, options);
+        var regex = new Utf8PythonRegex(pattern, options: options);
         var ranges = regex.SplitRanges(input, maxSplit, start, default);
         Assert.Equal(expected, ranges.Select(range => range.Success
             ? Encoding.UTF8.GetString(input.AsSpan(range.StartOffsetInBytes, range.EndOffsetInBytes - range.StartOffsetInBytes)) : null));
@@ -71,8 +71,16 @@ public sealed class PythonReRangeResultTests
     public void LargeCapturesAndNoSeparatorSplitsDoNotAllocateTextOrCoordinateMaps()
     {
         var policy = new Utf8ResourcePolicy { MaxWorkingBytes = 16 << 10, MaxResultBytes = 4 << 10 };
-        var capture = new Utf8PythonRegex("(?P<all>.+)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
-        var split = new Utf8PythonRegex("z", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, policy);
+        var capture = new Utf8PythonRegex("(?P<all>.+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
+        var split = new Utf8PythonRegex("z", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         var input = Encoding.UTF8.GetBytes(new string('é', 1 << 20) + "😀");
         using (var warm = capture.CreateMatchCursor("é😀"u8.ToArray())) Assert.True(warm.MoveNext(out _));
         _ = split.SplitRanges("é😀"u8);
@@ -89,14 +97,27 @@ public sealed class PythonReRangeResultTests
     [Fact]
     public void DiscardingHalfAMillionRangesKeepsActiveCapacityBounded()
     {
-        var regex = new Utf8PythonRegex("(.)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 16 << 10 });
+        var regex = new Utf8PythonRegex("(.)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 16 << 10
+            }
+        });
         using var cursor = regex.CreateMatchCursor(Enumerable.Repeat((byte)'a', 500000).ToArray());
         var count = 0;
         while (cursor.MoveNext(out var range)) { Assert.Equal(count, range.Value.StartOffsetInBytes); count++; }
         Assert.Equal(500000, count);
-        var capped = new Utf8PythonRegex("(.)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 16 << 10, MaxResultBytes = 4096 });
+        var capped = new Utf8PythonRegex("(.)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 16 << 10,
+                MaxResultBytes = 4096
+            }
+        });
         using var denied = capped.CreateMatchCursor(Enumerable.Repeat((byte)'a', 128).ToArray());
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => { while (denied.MoveNext(out _)) { } });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind);
@@ -114,7 +135,10 @@ public sealed class PythonReRangeResultTests
         Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
 
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        using var timed = new Utf8PythonRegex("(.)", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(100)).CreateMatchCursor("ab"u8.ToArray());
+        using var timed = new Utf8PythonRegex("(.)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(100)
+        }).CreateMatchCursor("ab"u8.ToArray());
         Assert.True(timed.MoveNext(out _)); ticks = 100;
         Assert.Throws<RegexMatchTimeoutException>(() => timed.MoveNext(out _));
     }

@@ -22,9 +22,21 @@ public sealed class PythonReEffectiveOptionsTests
     {
         var bytes = Encoding.UTF8.GetBytes(pattern);
         Utf8PythonRegex[] expressions = [
-            new(pattern, requested), new(bytes, requested),
-            Utf8PythonRegex.Compile(pattern, requested, Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default),
-            Utf8PythonRegex.Compile(bytes, requested, Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default),
+            new(pattern, options: requested), new(bytes, options: requested),
+            Utf8PythonRegex.Compile(pattern, options: requested, policy: new Utf8RegexPolicy()
+{
+    MatchTimeout = Timeout.InfiniteTimeSpan,
+    ResourcePolicy = default,
+    ConstructionPolicy = default,
+    ConstructionTimeout = Timeout.InfiniteTimeSpan
+}, cancellationToken: default),
+            Utf8PythonRegex.Compile(bytes, options: requested, policy: new Utf8RegexPolicy()
+{
+    MatchTimeout = Timeout.InfiniteTimeSpan,
+    ResourcePolicy = default,
+    ConstructionPolicy = default,
+    ConstructionTimeout = Timeout.InfiniteTimeSpan
+}, cancellationToken: default),
         ];
         foreach (var expression in expressions)
         {
@@ -39,13 +51,13 @@ public sealed class PythonReEffectiveOptionsTests
     {
         var ascii = new Utf8PythonRegex(@"(?ai)\w");
         Assert.Equal(PythonReCompileOptions.Ascii | PythonReCompileOptions.IgnoreCase, ascii.EffectiveOptions);
-        Assert.True(ascii.Match("A"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.False(ascii.Match("é"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(ascii.Match("A"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(ascii.Match("é"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
 
         var scoped = new Utf8PythonRegex(@"(?a:\w+)\s+(?u:\w+)");
         Assert.Equal(PythonReCompileOptions.Unicode, scoped.EffectiveOptions);
-        Assert.True(scoped.Match("a é"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.False(scoped.Match("é é"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(scoped.Match("a é"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(scoped.Match("é é"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
 
         var lines = new Utf8PythonRegex("(?x) # prefix\n(?#group)(?im) ^a$");
         Assert.True(lines.IsMatch("first\nA\nlast"u8));

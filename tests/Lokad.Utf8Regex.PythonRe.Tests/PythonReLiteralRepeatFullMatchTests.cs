@@ -29,8 +29,19 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         var oracle = new Regex(@"\G(?:" + pattern + @")\z");
         foreach (var controlled in new[] { false, true })
         {
-            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-                controlled ? new() { MaxWorkSteps = 1000000, MaxDepth = 10000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default);
+            var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = controlled ? new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxDepth = 10000,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1 << 20
+                }
+
+    : default
+            });
             using var live = new CancellationTokenSource();
             foreach (var count in new[] { 0, 1, 2, 3, 4, 15, 16, 31, 32, 63, 64, 65 })
                 foreach (var prefix in new[] { "", "π😀" })
@@ -42,7 +53,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
                         byte[] storage = [0xff, .. bytes, 0xff];
                         var start = Encoding.UTF8.GetByteCount(prefix);
                         var expected = oracle.Match(text, prefix.Length).Success;
-                        var match = regex.Match(storage.AsSpan(1, bytes.Length),start,cancellationToken:                             controlled ? live.Token : default,mode: Utf8PythonMatchMode.FullMatch);
+                        var match = regex.Match(storage.AsSpan(1, bytes.Length), start, cancellationToken: controlled ? live.Token : default, mode: Utf8PythonMatchMode.FullMatch);
                         Assert.Equal(expected, match.Success);
                         if (!expected) continue;
                         Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
@@ -57,12 +68,15 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     [InlineData("😀A")]
     public void ValueMatchingUsesOwnedLiteralInstructionsWithoutColdPreparationOrMajorScratch(string period)
     {
-        var regex = new Utf8PythonRegex("(?:" + period + ")+", PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, Small);
+        var regex = new Utf8PythonRegex("(?:" + period + ")+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(period, 65)));
         using var denied = new Utf8ConstructionScope(0, 0, 0, 0);
         using var live = new CancellationTokenSource();
-        var match = regex.Match(input,0,cancellationToken: live.Token,mode: Utf8PythonMatchMode.FullMatch);
+        var match = regex.Match(input, 0, cancellationToken: live.Token, mode: Utf8PythonMatchMode.FullMatch);
         Assert.True(match.Success);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal(0UL, denied.Budget.ReservedBytes);
@@ -81,7 +95,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     {
         var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch detailed = default;
         using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -103,7 +117,11 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     {
         var pattern = "(?:" + Regex.Escape(period) + ")" + quantifier + Regex.Escape(tail);
         var oracle = new Regex(@"\G(?:" + pattern + @")\z");
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Timeout.InfiniteTimeSpan, Small);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small
+        });
         using var live = new CancellationTokenSource();
         foreach (var count in new[] { 0, 1, 2, 3, 4, 15, 16, 31, 32, 63, 64, 65 })
             foreach (var prefix in new[] { "", "π😀" })
@@ -118,7 +136,7 @@ public sealed class PythonReLiteralRepeatFullMatchTests
                     byte[] storage = [0xff, .. bytes, 0xff];
                     var start = Encoding.UTF8.GetByteCount(prefix);
                     var expected = oracle.Match(text, prefix.Length).Success;
-                    var match = regex.Match(storage.AsSpan(1, bytes.Length),start,cancellationToken: live.Token,mode: Utf8PythonMatchMode.FullMatch);
+                    var match = regex.Match(storage.AsSpan(1, bytes.Length), start, cancellationToken: live.Token, mode: Utf8PythonMatchMode.FullMatch);
                     Assert.Equal(expected, match.Success);
                     if (!expected) continue;
                     Assert.Equal((start, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
@@ -133,11 +151,14 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     public void FixedStackProofBoundaryRetainsUnicodeAndFallbackCorrectness(int periodScalars)
     {
         var period = string.Concat(Enumerable.Range(0, periodScalars).Select(i => new Rune(0x1f600 + i).ToString()));
-        var regex = new Utf8PythonRegex("(?:" + period + ")+🚀", PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, periodScalars == 59 ? Small : default);
+        var regex = new Utf8PythonRegex("(?:" + period + ")+🚀", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = periodScalars == 59 ? Small : default
+        });
         var text = period + period + "🚀";
         var input = Encoding.UTF8.GetBytes(text);
-        var match = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch);
+        var match = regex.Match(input, mode: Utf8PythonMatchMode.FullMatch);
         Assert.True(match.Success);
         Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
         Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
@@ -156,8 +177,14 @@ public sealed class PythonReLiteralRepeatFullMatchTests
             var cap = low + (high - low) / 2;
             try
             {
-                Assert.True(new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-                    Small with { MaxWorkSteps = cap }).Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+                Assert.True(new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = Small with
+                    {
+                        MaxWorkSteps = cap
+                    }
+                }).Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
                 high = cap;
             }
             catch (Utf8ResourceLimitExceededException error)
@@ -168,13 +195,25 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         }
         for (ulong cap = 1; cap < low; cap++)
         {
-            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex(
-                pattern, default, Timeout.InfiniteTimeSpan, Small with { MaxWorkSteps = cap }).Match(input,mode: Utf8PythonMatchMode.FullMatch));
+            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Small with
+                {
+                    MaxWorkSteps = cap
+                }
+            }).Match(input, mode: Utf8PythonMatchMode.FullMatch));
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
             Assert.Equal(cap + 1, error.Requested);
         }
-        Assert.True(new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan,
-            Small with { MaxWorkSteps = low }).Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small with
+            {
+                MaxWorkSteps = low
+            }
+        }).Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -187,14 +226,14 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         for (var start = 0; start <= bytes.Length; start++)
         {
             if (start < bytes.Length && (bytes[start] & 0xc0) == 0x80)
-                Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(bytes,start,mode: Utf8PythonMatchMode.FullMatch));
+                Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(bytes, start, mode: Utf8PythonMatchMode.FullMatch));
             else
-                Assert.Equal(start is 2 or 8, regex.Match(bytes,start,mode: Utf8PythonMatchMode.FullMatch).Success);
+                Assert.Equal(start is 2 or 8, regex.Match(bytes, start, mode: Utf8PythonMatchMode.FullMatch).Success);
         }
 
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
-            regex.Match(bytes,0,cancellationToken: canceled.Token,mode: Utf8PythonMatchMode.FullMatch)).CancellationToken);
+            regex.Match(bytes, 0, cancellationToken: canceled.Token, mode: Utf8PythonMatchMode.FullMatch)).CancellationToken);
     }
 
     [Theory]
@@ -202,8 +241,12 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     [InlineData("(?:é😀)+Ω", "é😁é😀Ω")]
     public void LiteralTailCannotHideAWrongPeriodOfTheSameByteLength(string pattern, string text)
     {
-        var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan, Small);
-        Assert.False(regex.Match(Encoding.UTF8.GetBytes(text),mode: Utf8PythonMatchMode.FullMatch).Success);
+        var regex = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small
+        });
+        Assert.False(regex.Match(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 
@@ -213,14 +256,23 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     [InlineData(16UL)]
     public void WorkDenialIsNotNoMatchAndFreshInvocationsRecover(ulong work)
     {
-        var regex = new Utf8PythonRegex("(?:Шерлок )+", PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, Small with { MaxWorkSteps = work });
+        var regex = new Utf8PythonRegex("(?:Шерлок )+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small with
+            {
+                MaxWorkSteps = work
+            }
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("Шерлок ", 1024)));
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input,mode: Utf8PythonMatchMode.FullMatch));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input, mode: Utf8PythonMatchMode.FullMatch));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
-        Assert.True(new Utf8PythonRegex("(?:Шерлок )+", PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, Small).Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(new Utf8PythonRegex("(?:Шерлок )+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small
+        }).Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -232,7 +284,11 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     {
         var pattern = "(?:Шерлок )+" + (hasTail ? "Ω" : "");
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("Шерлок ", 4096)) + (hasTail ? "Ω" : ""));
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20), Small);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Small
+        });
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -247,15 +303,15 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         {
             if (expire)
             {
-                var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch));
+                var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.FullMatch));
                 Assert.Equal(pattern, error.Pattern); Assert.Empty(error.Input);
             }
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
-                regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch)).CancellationToken);
+                regex.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.FullMatch)).CancellationToken);
         }
         finally { diagnostics.Complete(); }
         Assert.True(called); ticks = 0;
-        Assert.True(regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 
@@ -266,17 +322,21 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     [InlineData(true, true)]
     public void FinalPublicationPollsTokenAfterItsLastDeadlineRead(bool success, bool hasTail)
     {
-        var regex = new Utf8PythonRegex("(?:ab)+" + (hasTail ? "c" : ""), PythonReCompileOptions.None, TimeSpan.FromSeconds(30), Small);
+        var regex = new Utf8PythonRegex("(?:ab)+" + (hasTail ? "c" : ""), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromSeconds(30),
+            ResourcePolicy = Small
+        });
         var input = Encoding.UTF8.GetBytes((success ? "abab" : "abax") + (hasTail ? "c" : ""));
         var totalReads = 0;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => { totalReads++; return 0; }))
-            Assert.Equal(success, regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+            Assert.Equal(success, regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         using var token = new CancellationTokenSource();
         var reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == totalReads) token.Cancel(); return 0; });
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
-            regex.Match(input,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch)).CancellationToken);
+            regex.Match(input, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.FullMatch)).CancellationToken);
     }
 
     [Theory]
@@ -285,7 +345,10 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     public void DeclinedRepeatProofKeepsColdPreparationAuthority(bool expire)
     {
         const string pattern = "(?:ab[cd])+";
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -299,17 +362,17 @@ public sealed class PythonReLiteralRepeatFullMatchTests
         construction.Budget.CheckpointHook = hook;
         if (expire)
         {
-            var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("abcabd"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch));
+            var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("abcabd"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.FullMatch));
             Assert.Equal(pattern, error.Pattern); Assert.Equal("abcabd", error.Input);
         }
         else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
-            regex.Match("abcabd"u8,0,cancellationToken: token.Token,mode: Utf8PythonMatchMode.FullMatch)).CancellationToken);
+            regex.Match("abcabd"u8, 0, cancellationToken: token.Token, mode: Utf8PythonMatchMode.FullMatch)).CancellationToken);
         Assert.Equal(3, checkpoints);
         Assert.Same(hook, construction.Budget.CheckpointHook);
         Assert.Equal(0UL, construction.Budget.ReservedBytes);
         Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         ticks = 0;
-        Assert.True(regex.Match("abcabd"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("abcabd"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Theory]
@@ -319,15 +382,21 @@ public sealed class PythonReLiteralRepeatFullMatchTests
     public void FundedClosureKeepsParentLoanAndBorrowedValueValid(string pattern, string text)
     {
         var account = new Allowance(16 << 20); Assert.True(account.TryReserve(13));
-        using var regex = Utf8PythonRegex.Compile(pattern, PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, Small, default, Timeout.InfiniteTimeSpan, default, account);
+        using var regex = Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Small,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
         var held = account.Used; account.Maximum = held;
         var input = Encoding.UTF8.GetBytes(text);
-        var match = regex.Match(input,mode: Utf8PythonMatchMode.FullMatch);
+        var match = regex.Match(input, mode: Utf8PythonMatchMode.FullMatch);
         Assert.True(match.Success); Assert.Equal(held, account.Used);
         regex.Dispose(); Assert.Equal(13UL, account.Used);
         Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
-        Assert.Throws<ObjectDisposedException>(() => regex.Match(input,mode: Utf8PythonMatchMode.FullMatch));
+        Assert.Throws<ObjectDisposedException>(() => regex.Match(input, mode: Utf8PythonMatchMode.FullMatch));
         account.Release(13);
     }
 }

@@ -33,7 +33,7 @@ public sealed class PythonReDirectNegatedClassTests
     {
         using var regex = new Utf8PythonRegex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(expected, regex.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(expected, regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch snapshot1 = default;
         using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -75,8 +75,17 @@ public sealed class PythonReDirectNegatedClassTests
     public void SimpleComplementNeedsNoBacktrackingCapacity()
     {
         using var token = new CancellationTokenSource();
-        using var regex = new Utf8PythonRegex(@"[^ab]+a", default, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        using var regex = new Utf8PythonRegex(@"[^ab]+a", options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes(new string('é', 10000) + "a");
         Assert.True(regex.IsMatch(input, 0, token.Token));
         Assert.Equal(1, regex.Count(input, 0, token.Token));
@@ -103,7 +112,10 @@ public sealed class PythonReDirectNegatedClassTests
         });
         try
         {
-            using var regex = new Utf8PythonRegex(@"[^ab]+a", default, TimeSpan.FromMilliseconds(20));
+            using var regex = new Utf8PythonRegex(@"[^ab]+a", options: default, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(20)
+            });
             var input = Encoding.UTF8.GetBytes("xa" + new string('é', 100000) + "a");
             using var cursor = regex.CreateMatchCursor(input, 0, cancellation.Token);
             Assert.True(cursor.MoveNext(out cursorRange));

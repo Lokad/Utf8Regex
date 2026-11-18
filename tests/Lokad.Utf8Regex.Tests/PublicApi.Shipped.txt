@@ -64,6 +64,13 @@ sealed class Utf8RegexMatchCursor : IDisposable
   method Boolean MoveNext(out Utf8RangeMatch match, Threading.CancellationToken cancellationToken = default)
   method Boolean MoveNextRetained(out Utf8RetainedRangeMatch match, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance resultMemoryAllowance = null)
   method Void Dispose()
+sealed class Utf8RegexPolicy
+  ctor Utf8RegexPolicy()
+  property IUtf8MemoryAllowance ProgramMemoryAllowance { get; init; }
+  property Nullable<TimeSpan> ConstructionTimeout { get; init; }
+  property Nullable<TimeSpan> MatchTimeout { get; init; }
+  property Utf8ConstructionPolicy ConstructionPolicy { get; init; }
+  property Utf8ResourcePolicy ResourcePolicy { get; init; }
 sealed class Utf8RegexProgramOwner : IDisposable
   property Int32 CaptureGroupCount { get; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)

@@ -19,7 +19,7 @@ public sealed class PythonReClassUnionTests
         foreach (var rune in text.EnumerateRunes())
         {
             var bytes = Encoding.UTF8.GetBytes(rune.ToString());
-            var hit = regex.Match(bytes,mode: Utf8PythonMatchMode.FullMatch).Success;
+            var hit = regex.Match(bytes, mode: Utf8PythonMatchMode.FullMatch).Success;
             Assert.Equal(hit ? 1 : 0, regex.Count(bytes));
             if (hit) actual.Add(rune.Value);
         }
@@ -42,18 +42,33 @@ public sealed class PythonReClassUnionTests
     public void FoldingAndComplementOperandsRetainLexicalSemantics(string pattern, string text, bool expected)
     {
         var regex = new Utf8PythonRegex(pattern);
-        Assert.Equal(expected, regex.Match(Encoding.UTF8.GetBytes(text),mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(expected, regex.Match(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.FullMatch).Success);
     }
 
     [Fact]
     public void AClassUnionDoesNotNeedPerScalarChoiceFrames()
     {
-        var regex = new Utf8PythonRegex(@"[\w.+-]+@", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20, MaxWorkSteps = 100000 });
+        var regex = new Utf8PythonRegex(@"[\w.+-]+@", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = 1,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20,
+                MaxWorkSteps = 100000
+            }
+        });
         Assert.Equal(2, regex.Count("é²𐐀._+-@ word@"u8));
         Assert.Equal(0, regex.Count("é²𐐀._+- no-at"u8));
-        var denied = new Utf8PythonRegex(@"[\w.+-]+@", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1 });
+        var denied = new Utf8PythonRegex(@"[\w.+-]+@", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("abc@"u8));
 
         using var token = new CancellationTokenSource(); token.Cancel();

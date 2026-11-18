@@ -7,8 +7,14 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReFundedProgramTests
 {
     private static Utf8PythonRegex Compile(string pattern, Allowance allowance, CancellationToken token = default,
-        Utf8ConstructionPolicy construction = default) => Utf8PythonRegex.Compile(pattern, PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, default, construction, Timeout.InfiniteTimeSpan, token, allowance);
+        Utf8ConstructionPolicy construction = default) => Utf8PythonRegex.Compile(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = construction,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = allowance
+        }, cancellationToken: token);
 
     [Theory]
     [InlineData(false)]
@@ -17,9 +23,14 @@ public sealed class PythonReFundedProgramTests
     {
         var allowance = new Allowance(16 << 20); Assert.True(allowance.TryReserve(13));
         using var token = new CancellationTokenSource();
-        using var regex = utf8 ? Utf8PythonRegex.Compile("(?P<x>é+)"u8, PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, token.Token, allowance)
-            : Compile("(?P<x>é+)", allowance, token.Token);
+        using var regex = utf8 ? Utf8PythonRegex.Compile("(?P<x>é+)"u8, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = allowance
+        }, cancellationToken: token.Token) : Compile("(?P<x>é+)", allowance, token.Token);
         var held = allowance.Used; Assert.True(held > 13); token.Cancel();
         Assert.Equal(1, regex.Count("éé"u8)); Assert.Equal(held, allowance.Used);
         Utf8PythonRangeMatch retained = default;
@@ -41,9 +52,14 @@ public sealed class PythonReFundedProgramTests
         const string pattern = "(?P<x>😀)";
         var encoded = Encoding.UTF8.GetBytes(pattern);
         var allowance = new Allowance(16 << 20);
-        using var regex = native ? Utf8PythonRegex.Compile(encoded, PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance)
-            : Compile(pattern, allowance);
+        using var regex = native ? Utf8PythonRegex.Compile(encoded, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = allowance
+        }, cancellationToken: default) : Compile(pattern, allowance);
         var held = allowance.Used; var destination = new byte[encoded.Length];
         Assert.Equal(1, regex.CaptureGroupCount);
         Assert.True(regex.TryGetGroupNumber("x"u8, out var number)); Assert.Equal(1, number);
@@ -137,8 +153,14 @@ public sealed class PythonReFundedProgramTests
         }
         Assert.True(denied > 1);
         var malformed = new Allowance(1 << 20);
-        Assert.Throws<ArgumentException>(() => Utf8PythonRegex.Compile(new byte[] { 0xff }, default,
-            Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, malformed));
+        Assert.Throws<ArgumentException>(() => Utf8PythonRegex.Compile(new byte[] { 0xff }, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = malformed
+        }, cancellationToken: default));
         Assert.Equal(0UL, malformed.Used);
     }
 

@@ -954,7 +954,7 @@ internal static partial class PythonReBenchmarkReporter
         var input = Encoding.UTF8.GetBytes("prefix item-123 foo Ð¨ÐµÑ€Ð»Ð¾Ðº suffix");
         var fullMatchInputUtf8 = Encoding.UTF8.GetBytes(fullMatchInput);
         var fullMatchMissUtf8 = "__pythonre_fullmatch_miss__"u8.ToArray();
-        var prepared = new Utf8PythonRegex(pattern, options);
+        var prepared = new Utf8PythonRegex(pattern, options: options);
         var nativePatternText = Encoding.UTF8.GetString(translation.NativePatternUtf8);
         var coreFullPattern = $@"\A(?:{nativePatternText})\z";
         var preparedCoreFull = new Utf8Regex(coreFullPattern, translation.NativeRegexOptions);
@@ -996,13 +996,13 @@ internal static partial class PythonReBenchmarkReporter
             iterations,
             samples));
         PrintOperation("PythonReConstruct", MeasureOperation(
-            () => new Utf8PythonRegex(pattern, options).GetHashCode(),
+            () => new Utf8PythonRegex(pattern, options: options).GetHashCode(),
             iterations,
             samples));
         PrintOperation("ConstructFirstCall", MeasureOperation(
             () =>
             {
-                var regex = new Utf8PythonRegex(pattern, options);
+                var regex = new Utf8PythonRegex(pattern, options: options);
                 return regex.GetHashCode() ^ (regex.IsMatch(input) ? 1 : 0);
             },
             iterations,
@@ -1010,17 +1010,17 @@ internal static partial class PythonReBenchmarkReporter
         PrintOperation("ConstructFirstFull", MeasureOperation(
             () =>
             {
-                var regex = new Utf8PythonRegex(pattern, options);
-                return regex.GetHashCode() ^ (regex.Match(fullMatchInputUtf8,mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0);
+                var regex = new Utf8PythonRegex(pattern, options: options);
+                return regex.GetHashCode() ^ (regex.Match(fullMatchInputUtf8, mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0);
             },
             iterations,
             samples));
         PrintOperation("PreparedFullHit", MeasureOperation(
-            () => prepared.Match(fullMatchInputUtf8,mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0,
+            () => prepared.Match(fullMatchInputUtf8, mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0,
             reuseIterations,
             samples));
         PrintOperation("PreparedFullMiss", MeasureOperation(
-            () => prepared.Match(fullMatchMissUtf8,mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0,
+            () => prepared.Match(fullMatchMissUtf8, mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0,
             reuseIterations,
             samples));
         PrintOperation("DirectCoreFullHit", MeasureOperation(
@@ -1050,8 +1050,8 @@ internal static partial class PythonReBenchmarkReporter
             Regex.InfiniteMatchTimeout);
         var strictUtf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        var pythonMatch = pythonRegex.Match(input,startOffsetInBytes,mode: Utf8PythonMatchMode.FullMatch);
-        var pythonDetailedMiss = PythonReBenchmarkReporter.MaterializeDetailedFullMatch(pythonRegex,missInput, startOffsetInBytes);
+        var pythonMatch = pythonRegex.Match(input, startOffsetInBytes, mode: Utf8PythonMatchMode.FullMatch);
+        var pythonDetailedMiss = PythonReBenchmarkReporter.MaterializeDetailedFullMatch(pythonRegex, missInput, startOffsetInBytes);
         var managedResult = managedFullRegex.IsMatch(subject.AsSpan(prefix.Length));
         var managedMiss = managedFullRegex.IsMatch(missSubject.AsSpan(prefix.Length));
         if (!pythonMatch.Success || pythonMatch.EndOffsetInBytes != input.Length ||
@@ -1068,7 +1068,7 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"Iterations         : {iterations} (capped at 2000)");
         Console.WriteLine($"Samples            : {samples} (capped at 15)");
         PrintOperation("PythonReFullMatch", MeasureOperation(
-            () => pythonRegex.Match(input,startOffsetInBytes,mode: Utf8PythonMatchMode.FullMatch).EndOffsetInBytes,
+            () => pythonRegex.Match(input, startOffsetInBytes, mode: Utf8PythonMatchMode.FullMatch).EndOffsetInBytes,
             iterations,
             samples));
         PrintOperation("DecodeFullMatch", MeasureOperation(
@@ -1084,11 +1084,11 @@ internal static partial class PythonReBenchmarkReporter
             iterations,
             samples));
         PrintOperation("PythonReFullMiss", MeasureOperation(
-            () => pythonRegex.Match(missInput,startOffsetInBytes,mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0,
+            () => pythonRegex.Match(missInput, startOffsetInBytes, mode: Utf8PythonMatchMode.FullMatch).Success ? 1 : 0,
             iterations,
             samples));
         PrintOperation("PythonReDetailedMiss", MeasureOperation(
-            () => PythonReBenchmarkReporter.MaterializeDetailedFullMatch(pythonRegex,missInput, startOffsetInBytes).Success ? 1 : 0,
+            () => PythonReBenchmarkReporter.MaterializeDetailedFullMatch(pythonRegex, missInput, startOffsetInBytes).Success ? 1 : 0,
             iterations,
             samples));
         PrintOperation("DecodeFullMiss", MeasureOperation(
@@ -1138,7 +1138,7 @@ internal static partial class PythonReBenchmarkReporter
         if (PythonReBenchmarkReporter.MaterializeStructural(pythonRegex, input, startOffsetInBytes).Length != 0 ||
             PythonReFindAllTextResult.Decode(pythonRegex.FindAllToUtf8(input, startOffsetInBytes)).Count != 0 ||
             pythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
-PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex,input, startOffsetInBytes).Length != 0 ||
+PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex, input, startOffsetInBytes).Length != 0 ||
             pythonRegex.Count(input, startOffsetInBytes) != 0 ||
             PythonReFindAllTextResult.Decode(capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes)).Count != 0 ||
             capturedPythonRegex.FindAllToUtf8(input, startOffsetInBytes).Count != 0 ||
@@ -1146,7 +1146,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex,input, startOff
             PythonReBenchmarkReporter.MaterializeStructural(pythonRegex, hitInput, startOffsetInBytes).Length != 256 ||
             PythonReFindAllTextResult.Decode(pythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes)).Count != 256 ||
             pythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count != 256 ||
-PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex,hitInput, startOffsetInBytes).Length != 256 ||
+PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex, hitInput, startOffsetInBytes).Length != 256 ||
             pythonRegex.Count(hitInput, startOffsetInBytes) != 256 ||
             PythonReFindAllTextResult.Decode(capturedPythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes)).Count != 256 ||
             capturedPythonRegex.FindAllToUtf8(hitInput, startOffsetInBytes).Count != 256 ||
@@ -1190,7 +1190,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex,hitInput, start
             iterations,
             samples));
         PrintOperation("FindIterDetailedEmpty", MeasureOperation(
-            () => PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex,input, startOffsetInBytes).Length,
+            () => PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex, input, startOffsetInBytes).Length,
             iterations,
             samples));
         PrintOperation("CountEmpty", MeasureOperation(
@@ -1242,7 +1242,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex,hitInput, start
             iterations,
             samples));
         PrintOperation("FindIterDetailedHit", MeasureOperation(
-            () => PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex,hitInput, startOffsetInBytes).Length,
+            () => PythonReBenchmarkReporter.MaterializeDetailedMatches(pythonRegex, hitInput, startOffsetInBytes).Length,
             iterations,
             samples));
         PrintOperation("CountHit", MeasureOperation(
@@ -1903,7 +1903,7 @@ internal sealed class PythonReBenchmarkContext
         _startOffsetInUtf16 = s_strictUtf8.GetCharCount(
             InputBytes.AsSpan(0, benchmarkCase.Coverage.StartOffsetInBytes));
         _replacementBytes = Encoding.UTF8.GetBytes(benchmarkCase.Replacement);
-        _pythonRegex = new Utf8PythonRegex(benchmarkCase.Pattern, benchmarkCase.Options);
+        _pythonRegex = new Utf8PythonRegex(benchmarkCase.Pattern, options: benchmarkCase.Options);
         var parsed = new PythonReParser(benchmarkCase.Pattern).Parse(benchmarkCase.Options);
         var translation = PythonReTranslator.Translate(parsed, true);
         var translatedPattern = PythonReDotNetReference.Render(parsed);
@@ -2326,349 +2326,349 @@ internal sealed class PythonReBenchmarkContext
         switch (_case.Operation)
         {
             case PythonReBenchmarkOperation.IsMatch:
-            {
-                var result = false;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.IsMatch(InputBytes);
-                }
+                    var result = false;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = _pythonRegex.IsMatch(InputBytes);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    result ? 1 : 0,
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        result ? 1 : 0,
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.Search:
-            {
-                Utf8PythonValueMatch result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search);
-                }
+                    Utf8PythonValueMatch result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.SearchFromOffset:
-            {
-                Utf8PythonValueMatch result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Match(InputBytes,_case.Coverage.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search);
-                }
+                    Utf8PythonValueMatch result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.Match:
-            {
-                Utf8PythonValueMatch result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Match(InputBytes);
-                }
+                    Utf8PythonValueMatch result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = _pythonRegex.Match(InputBytes);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.FullMatch:
-            {
-                Utf8PythonValueMatch result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch);
-                }
+                    Utf8PythonValueMatch result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.SearchDetailed:
-            {
-                PythonReHostDetailedMatch result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex,InputBytes);
-                }
+                    PythonReHostDetailedMatch result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex, InputBytes);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.Count:
-            {
-                var result = 0;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Count(InputBytes);
-                }
+                    var result = 0;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = _pythonRegex.Count(InputBytes);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    result,
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        result,
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.CountFromOffset:
-            {
-                var result = 0;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Count(InputBytes, _case.Coverage.StartOffsetInBytes);
-                }
+                    var result = 0;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = _pythonRegex.Count(InputBytes, _case.Coverage.StartOffsetInBytes);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    result,
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        result,
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.FindAllStrings:
-            {
-                PythonReFindAllTextResult result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(InputBytes));
-                }
+                    PythonReFindAllTextResult result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(InputBytes));
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.FindAllStringsFromOffset:
-            {
-                PythonReFindAllTextResult result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(
-                        InputBytes,
-                        _case.Coverage.StartOffsetInBytes));
-                }
+                    PythonReFindAllTextResult result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = PythonReFindAllTextResult.Decode(_pythonRegex.FindAllToUtf8(
+                            InputBytes,
+                            _case.Coverage.StartOffsetInBytes));
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.FindAllUtf8:
-            {
-                Utf8PythonFindAllUtf8Result result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.FindAllToUtf8(InputBytes);
-                }
+                    Utf8PythonFindAllUtf8Result result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = _pythonRegex.FindAllToUtf8(InputBytes);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.FindIterDetailed:
-            {
-                PythonReHostDetailedMatch[] result = [];
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex,InputBytes);
-                }
+                    PythonReHostDetailedMatch[] result = [];
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.FindAllStructural:
-            {
-                PythonReStructuralMatch[] result = [];
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes);
-                }
+                    PythonReStructuralMatch[] result = [];
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.ReplaceString:
-            {
-                var result = string.Empty;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement));
-                }
+                    var result = string.Empty;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement));
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.ReplaceUtf8:
-            {
-                byte[] result = [];
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Replace(InputBytes, _case.Replacement);
-                }
+                    byte[] result = [];
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = _pythonRegex.Replace(InputBytes, _case.Replacement);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.ReplaceStringLimited:
-            {
-                var result = string.Empty;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = Encoding.UTF8.GetString(_pythonRegex.Replace(
-                        InputBytes,
-                        _case.Replacement,
-                        _case.Coverage.ReplacementCount));
-                }
+                    var result = string.Empty;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = Encoding.UTF8.GetString(_pythonRegex.Replace(
+                            InputBytes,
+                            _case.Replacement,
+                            _case.Coverage.ReplacementCount));
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.SubnString:
-            {
-                PythonReSubnTextResult result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement));
-                }
+                    PythonReSubnTextResult result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = PythonReSubnTextResult.Decode(_pythonRegex.Subn(InputBytes, _case.Replacement));
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.SubnUtf8:
-            {
-                Utf8PythonSubnUtf8Result result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Subn(InputBytes, _case.Replacement);
-                }
+                    Utf8PythonSubnUtf8Result result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = _pythonRegex.Subn(InputBytes, _case.Replacement);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.SubnEvaluatorString:
-            {
-                PythonReSubnTextResult result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
-                    result = PythonReSubnTextResult.Decode(ComposePythonReReplacement());
+                {
+                    PythonReSubnTextResult result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                        result = PythonReSubnTextResult.Decode(ComposePythonReReplacement());
 
-                var completed = Stopwatch.GetTimestamp();
-                var allocated = GC.GetAllocatedBytesForCurrentThread();
-                // One untimed semantic replay retains callback capture evidence.
-                // The timed host loop copies its prepared replacement; capture replay is untimed.
-                _ = ExecutePythonReEvaluatorString();
-                return Complete(completed, allocated,
-                    Combine(Checksum(result), _callbackChecksum),
-                    SemanticDigest(_case.Operation, result, _callbackSemanticDigest));
-            }
+                    var completed = Stopwatch.GetTimestamp();
+                    var allocated = GC.GetAllocatedBytesForCurrentThread();
+                    // One untimed semantic replay retains callback capture evidence.
+                    // The timed host loop copies its prepared replacement; capture replay is untimed.
+                    _ = ExecutePythonReEvaluatorString();
+                    return Complete(completed, allocated,
+                        Combine(Checksum(result), _callbackChecksum),
+                        SemanticDigest(_case.Operation, result, _callbackSemanticDigest));
+                }
             case PythonReBenchmarkOperation.SubnEvaluatorUtf8:
-            {
-                Utf8PythonSubnUtf8Result result = default;
-                for (var iteration = 0; iteration < iterations; iteration++)
-                    result = ComposePythonReReplacement();
+                {
+                    Utf8PythonSubnUtf8Result result = default;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                        result = ComposePythonReReplacement();
 
-                var completed = Stopwatch.GetTimestamp();
-                var allocated = GC.GetAllocatedBytesForCurrentThread();
-                // One untimed semantic replay retains callback capture evidence.
-                // The timed host loop copies its prepared replacement; capture replay is untimed.
-                _ = ExecutePythonReEvaluatorUtf8();
-                return Complete(completed, allocated,
-                    Combine(Checksum(result), _callbackChecksum),
-                    SemanticDigest(_case.Operation, result, _callbackSemanticDigest));
-            }
+                    var completed = Stopwatch.GetTimestamp();
+                    var allocated = GC.GetAllocatedBytesForCurrentThread();
+                    // One untimed semantic replay retains callback capture evidence.
+                    // The timed host loop copies its prepared replacement; capture replay is untimed.
+                    _ = ExecutePythonReEvaluatorUtf8();
+                    return Complete(completed, allocated,
+                        Combine(Checksum(result), _callbackChecksum),
+                        SemanticDigest(_case.Operation, result, _callbackSemanticDigest));
+                }
             case PythonReBenchmarkOperation.ReplaceEvaluatorString:
-            {
-                string result = string.Empty;
-                for (var iteration = 0; iteration < iterations; iteration++)
-                    result = Encoding.UTF8.GetString(ComposePythonReReplacement().ResultBytes);
+                {
+                    string result = string.Empty;
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                        result = Encoding.UTF8.GetString(ComposePythonReReplacement().ResultBytes);
 
-                var completed = Stopwatch.GetTimestamp();
-                var allocated = GC.GetAllocatedBytesForCurrentThread();
-                // One untimed semantic replay retains callback capture evidence.
-                // The timed host loop copies its prepared replacement; capture replay is untimed.
-                _ = ExecutePythonReReplaceEvaluatorString();
-                return Complete(completed, allocated,
-                    Combine(Checksum(result), _callbackChecksum),
-                    SemanticDigest(_case.Operation, result, _callbackSemanticDigest));
-            }
+                    var completed = Stopwatch.GetTimestamp();
+                    var allocated = GC.GetAllocatedBytesForCurrentThread();
+                    // One untimed semantic replay retains callback capture evidence.
+                    // The timed host loop copies its prepared replacement; capture replay is untimed.
+                    _ = ExecutePythonReReplaceEvaluatorString();
+                    return Complete(completed, allocated,
+                        Combine(Checksum(result), _callbackChecksum),
+                        SemanticDigest(_case.Operation, result, _callbackSemanticDigest));
+                }
             case PythonReBenchmarkOperation.SplitStrings:
-            {
-                string?[] result = [];
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = MaterializePythonSplitStrings();
-                }
+                    string?[] result = [];
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = MaterializePythonSplitStrings();
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.SplitStringsLimited:
-            {
-                string?[] result = [];
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = MaterializePythonSplitStrings(_case.Coverage.MaxSplit);
-                }
+                    string?[] result = [];
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = MaterializePythonSplitStrings(_case.Coverage.MaxSplit);
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             case PythonReBenchmarkOperation.SplitDetailed:
-            {
-                SplitTextItem[] result = [];
-                for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = MaterializePythonSplitDetailed();
-                }
+                    SplitTextItem[] result = [];
+                    for (var iteration = 0; iteration < iterations; iteration++)
+                    {
+                        result = MaterializePythonSplitDetailed();
+                    }
 
-                return Complete(
-                    Stopwatch.GetTimestamp(),
-                    GC.GetAllocatedBytesForCurrentThread(),
-                    Checksum(result),
-                    SemanticDigest(_case.Operation, result));
-            }
+                    return Complete(
+                        Stopwatch.GetTimestamp(),
+                        GC.GetAllocatedBytesForCurrentThread(),
+                        Checksum(result),
+                        SemanticDigest(_case.Operation, result));
+                }
             default:
                 throw new InvalidOperationException();
         }
@@ -2707,14 +2707,14 @@ internal sealed class PythonReBenchmarkContext
             case PythonReBenchmarkOperation.Search:
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search);
+                    result = _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search);
                     consumptionChecksum += GetConsumptionToken(result);
                 }
                 break;
             case PythonReBenchmarkOperation.SearchFromOffset:
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Match(InputBytes,_case.Coverage.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search);
+                    result = _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search);
                     consumptionChecksum += GetConsumptionToken(result);
                 }
                 break;
@@ -2728,7 +2728,7 @@ internal sealed class PythonReBenchmarkContext
             case PythonReBenchmarkOperation.FullMatch:
                 for (var iteration = 0; iteration < iterations; iteration++)
                 {
-                    result = _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch);
+                    result = _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch);
                     consumptionChecksum += GetConsumptionToken(result);
                 }
                 break;
@@ -2748,23 +2748,23 @@ internal sealed class PythonReBenchmarkContext
 
     internal ulong ExecutePythonReConsumptionToken() => _case.Operation switch
     {
-        PythonReBenchmarkOperation.Search => GetConsumptionToken(_pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search)),
+        PythonReBenchmarkOperation.Search => GetConsumptionToken(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.SearchFromOffset => GetConsumptionToken(
-            _pythonRegex.Match(InputBytes,_case.Coverage.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search)),
+            _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.Match => GetConsumptionToken(_pythonRegex.Match(InputBytes)),
-        PythonReBenchmarkOperation.FullMatch => GetConsumptionToken(_pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch)),
+        PythonReBenchmarkOperation.FullMatch => GetConsumptionToken(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch)),
         _ => 0,
     };
 
     internal int ExecutePythonRe() => _case.Operation switch
     {
         PythonReBenchmarkOperation.IsMatch => _pythonRegex.IsMatch(InputBytes) ? 1 : 0,
-        PythonReBenchmarkOperation.Search => Checksum(_pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search)),
+        PythonReBenchmarkOperation.Search => Checksum(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.SearchFromOffset => Checksum(
-            _pythonRegex.Match(InputBytes,_case.Coverage.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search)),
+            _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.Match => Checksum(_pythonRegex.Match(InputBytes)),
-        PythonReBenchmarkOperation.FullMatch => Checksum(_pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch)),
-        PythonReBenchmarkOperation.SearchDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex,InputBytes)),
+        PythonReBenchmarkOperation.FullMatch => Checksum(_pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch)),
+        PythonReBenchmarkOperation.SearchDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex, InputBytes)),
         PythonReBenchmarkOperation.Count => _pythonRegex.Count(InputBytes),
         PythonReBenchmarkOperation.CountFromOffset => _pythonRegex.Count(
             InputBytes,
@@ -2774,7 +2774,7 @@ internal sealed class PythonReBenchmarkContext
             InputBytes,
             _case.Coverage.StartOffsetInBytes))),
         PythonReBenchmarkOperation.FindAllUtf8 => Checksum(_pythonRegex.FindAllToUtf8(InputBytes)),
-        PythonReBenchmarkOperation.FindIterDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex,InputBytes)),
+        PythonReBenchmarkOperation.FindIterDetailed => Checksum(PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         PythonReBenchmarkOperation.FindAllStructural => Checksum(PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),
         PythonReBenchmarkOperation.ReplaceString => Checksum(Encoding.UTF8.GetString(_pythonRegex.Replace(InputBytes, _case.Replacement))),
         PythonReBenchmarkOperation.ReplaceUtf8 => Checksum(_pythonRegex.Replace(InputBytes, _case.Replacement)),
@@ -2800,19 +2800,19 @@ internal sealed class PythonReBenchmarkContext
             _pythonRegex.IsMatch(InputBytes)),
         PythonReBenchmarkOperation.Search => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search)),
+            _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.SearchFromOffset => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Match(InputBytes,_case.Coverage.StartOffsetInBytes,mode: Utf8PythonMatchMode.Search)),
+            _pythonRegex.Match(InputBytes, _case.Coverage.StartOffsetInBytes, mode: Utf8PythonMatchMode.Search)),
         PythonReBenchmarkOperation.Match => SemanticDigest(
             _case.Operation,
             _pythonRegex.Match(InputBytes)),
         PythonReBenchmarkOperation.FullMatch => SemanticDigest(
             _case.Operation,
-            _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch)),
+            _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch)),
         PythonReBenchmarkOperation.SearchDetailed => SemanticDigest(
             _case.Operation,
-PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex,InputBytes)),
+PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex, InputBytes)),
         PythonReBenchmarkOperation.Count => SemanticDigest(
             _case.Operation,
             _pythonRegex.Count(InputBytes)),
@@ -2830,7 +2830,7 @@ PythonReBenchmarkReporter.MaterializeDetailedSearch(_pythonRegex,InputBytes)),
             _pythonRegex.FindAllToUtf8(InputBytes)),
         PythonReBenchmarkOperation.FindIterDetailed => SemanticDigest(
             _case.Operation,
-PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex,InputBytes)),
+PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         PythonReBenchmarkOperation.FindAllStructural => SemanticDigest(
             _case.Operation,
             PythonReBenchmarkReporter.MaterializeStructural(_pythonRegex, InputBytes)),
@@ -3333,9 +3333,9 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex,InputBytes)),
         EnsureOneShotPhases();
         var match = _case.Operation switch
         {
-            PythonReBenchmarkOperation.Search => _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.Search),
+            PythonReBenchmarkOperation.Search => _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.Search),
             PythonReBenchmarkOperation.Match => _pythonRegex.Match(InputBytes),
-            PythonReBenchmarkOperation.FullMatch => _pythonRegex.Match(InputBytes,mode: Utf8PythonMatchMode.FullMatch),
+            PythonReBenchmarkOperation.FullMatch => _pythonRegex.Match(InputBytes, mode: Utf8PythonMatchMode.FullMatch),
             _ => throw new InvalidOperationException($"Unsupported one-shot operation {_case.Operation}."),
         };
         return match.Success
@@ -3371,7 +3371,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex,InputBytes)),
         {
             return default;
         }
-var indexInBytes = match.StartOffsetInBytes;
+        var indexInBytes = match.StartOffsetInBytes;
         var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
 
         if (!match.Success)
@@ -3879,7 +3879,7 @@ var indexInBytes = match.StartOffsetInBytes;
         var values = new List<string>();
         foreach (var match in EnumerateCoreMatches())
         {
-var indexInBytes = match.StartOffsetInBytes;
+            var indexInBytes = match.StartOffsetInBytes;
             var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
             if (!match.Success)
             {
@@ -3902,7 +3902,7 @@ var indexInBytes = match.StartOffsetInBytes;
         var byteValues = new List<byte[]>();
         foreach (var match in EnumerateCoreMatches())
         {
-var indexInBytes = match.StartOffsetInBytes;
+            var indexInBytes = match.StartOffsetInBytes;
             var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
             if (!match.Success)
             {
@@ -3925,7 +3925,7 @@ var indexInBytes = match.StartOffsetInBytes;
         var ranges = new List<PythonReBenchmarkRange>();
         foreach (var match in EnumerateCoreMatches())
         {
-var indexInBytes = match.StartOffsetInBytes;
+            var indexInBytes = match.StartOffsetInBytes;
             var lengthInBytes = (match.EndOffsetInBytes - match.StartOffsetInBytes);
             if (!match.Success)
             {
@@ -4020,8 +4020,10 @@ var indexInBytes = match.StartOffsetInBytes;
                     var range = match.Groups[number];
                     groups[number] = new PythonReHostCapture
                     {
-                        Number = range.Number, Success = range.Success,
-                        StartOffsetInBytes = range.StartOffsetInBytes, EndOffsetInBytes = range.EndOffsetInBytes,
+                        Number = range.Number,
+                        Success = range.Success,
+                        StartOffsetInBytes = range.StartOffsetInBytes,
+                        EndOffsetInBytes = range.EndOffsetInBytes,
                         ValueText = Encoding.UTF8.GetString(match.GetGroupMemory(number).Span)
                     };
                 }

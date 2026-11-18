@@ -45,39 +45,46 @@ public sealed class PythonReDirectShapingTests
         var ranges = expected.GetProperty("matches").EnumerateArray().ToArray();
         using var source = new CancellationTokenSource();
         foreach (var bytesPattern in new[] { false, true })
-        foreach (var finite in new[] { false, true })
-        foreach (var token in new[] { CancellationToken.None, source.Token })
-        {
-            var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxResultBytes = 1000000 } : new Utf8ResourcePolicy();
-            var regex = bytesPattern ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
-                : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
-            var input = Encoding.UTF8.GetBytes(text);
-            var wholeMatches4 = new List<Utf8PythonRangeMatch>();
-            using (var rangeCursor4 = regex.CreateMatchCursor(input, 0, token))
-            {
-                while (rangeCursor4.MoveNext(out var rangeMatch4))
+            foreach (var finite in new[] { false, true })
+                foreach (var token in new[] { CancellationToken.None, source.Token })
                 {
-                    wholeMatches4.Add(rangeMatch4);
+                    var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxResultBytes = 1000000 } : new Utf8ResourcePolicy();
+                    var regex = bytesPattern ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                    {
+                        MatchTimeout = Regex.InfiniteMatchTimeout,
+                        ResourcePolicy = policy
+                    }) : new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+                    {
+                        MatchTimeout = Regex.InfiniteMatchTimeout,
+                        ResourcePolicy = policy
+                    });
+                    var input = Encoding.UTF8.GetBytes(text);
+                    var wholeMatches4 = new List<Utf8PythonRangeMatch>();
+                    using (var rangeCursor4 = regex.CreateMatchCursor(input, 0, token))
+                    {
+                        while (rangeCursor4.MoveNext(out var rangeMatch4))
+                        {
+                            wholeMatches4.Add(rangeMatch4);
+                        }
+                    }
+                    var matches = wholeMatches4.ToArray();
+                    Assert.Equal(ranges.Length, matches.Length);
+                    for (var i = 0; i < matches.Length; i++)
+                    {
+                        Assert.True(matches[i].Success);
+                        Assert.Equal(ranges[i][0].GetString(), System.Text.Encoding.UTF8.GetString(matches[i].GetValueMemory().Span));
+                        Assert.Equal(ranges[i][1].GetInt32(), matches[i].Value.StartOffsetInBytes);
+                        Assert.Equal(ranges[i][2].GetInt32(), matches[i].Value.EndOffsetInBytes);
+                    }
+                    var bytes = regex.FindAllToUtf8(input, 0, token);
+                    Assert.Equal(shape, bytes.Shape);
+                    input.AsSpan().Fill((byte)'x');
+                    var strings = PythonReFindAllAssert.Decode(bytes);
+                    Assert.Equal(scalarValues, strings.ScalarValues);
+                    Assert.Equal(tupleValues, strings.TupleValues);
+                    Assert.Equal(ranges.Select(x => (x[1].GetInt32(), x[2].GetInt32())),
+                        matches.Select(x => (x.Value.StartOffsetInBytes, x.Value.EndOffsetInBytes)));
                 }
-            }
-            var matches = wholeMatches4.ToArray();
-            Assert.Equal(ranges.Length, matches.Length);
-            for (var i = 0; i < matches.Length; i++)
-            {
-                Assert.True(matches[i].Success);
-                Assert.Equal(ranges[i][0].GetString(), System.Text.Encoding.UTF8.GetString(matches[i].GetValueMemory().Span));
-                Assert.Equal(ranges[i][1].GetInt32(), matches[i].Value.StartOffsetInBytes);
-                Assert.Equal(ranges[i][2].GetInt32(), matches[i].Value.EndOffsetInBytes);
-            }
-            var bytes = regex.FindAllToUtf8(input, 0, token);
-            Assert.Equal(shape, bytes.Shape);
-            input.AsSpan().Fill((byte)'x');
-            var strings = PythonReFindAllAssert.Decode(bytes);
-            Assert.Equal(scalarValues, strings.ScalarValues);
-            Assert.Equal(tupleValues, strings.TupleValues);
-            Assert.Equal(ranges.Select(x => (x[1].GetInt32(), x[2].GetInt32())),
-                matches.Select(x => (x.Value.StartOffsetInBytes, x.Value.EndOffsetInBytes)));
-        }
     }
 
     [Theory]

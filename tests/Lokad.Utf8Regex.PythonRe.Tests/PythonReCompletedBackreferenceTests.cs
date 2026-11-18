@@ -35,8 +35,12 @@ public sealed class PythonReCompletedBackreferenceTests
         using var source = new CancellationTokenSource();
         foreach (var policy in new[] { Utf8ResourcePolicy.Unlimited, Funded })
         {
-            var regex = new Utf8PythonRegex(pattern, default, Timeout.InfiniteTimeSpan, policy);
-            Assert.Equal(reference.Match(input,mode: Utf8PythonMatchMode.FullMatch).Success, regex.Match(input,0,cancellationToken: source.Token,mode: Utf8PythonMatchMode.FullMatch).Success);
+            var regex = new Utf8PythonRegex(pattern, options: default, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            });
+            Assert.Equal(reference.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success, regex.Match(input, 0, cancellationToken: source.Token, mode: Utf8PythonMatchMode.FullMatch).Success);
             Utf8PythonRangeMatch snapshot1 = default;
             using (var captureCursor1 = reference.CreateMatchCursor(input, mode: Utf8PythonMatchMode.FullMatch))
             {
@@ -77,7 +81,11 @@ public sealed class PythonReCompletedBackreferenceTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8PythonRegex(Pattern, default, expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan, Funded);
+        var regex = new Utf8PythonRegex(Pattern, options: default, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded
+        });
         using var cursor = regex.CreateMatchCursor("token-token token-token"u8.ToArray(), 0, source.Token);
         var alias = cursor;
         ref var invocation = ref cursor.WorkingInvocation;
@@ -100,7 +108,11 @@ public sealed class PythonReCompletedBackreferenceTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
 {
     Utf8PythonRangeMatch snapshot3 = default;
-    using (var captureCursor3 = new Utf8PythonRegex(Pattern, default, Timeout.InfiniteTimeSpan, policy).CreateMatchCursor("token-token"u8.ToArray(), mode: Utf8PythonMatchMode.FullMatch))
+    using (var captureCursor3 = new Utf8PythonRegex(Pattern, options: default, policy: new Utf8RegexPolicy()
+    {
+        MatchTimeout = Timeout.InfiniteTimeSpan,
+        ResourcePolicy = policy
+    }).CreateMatchCursor("token-token"u8.ToArray(), mode: Utf8PythonMatchMode.FullMatch))
     {
         captureCursor3.MoveNext(out snapshot3);
     }

@@ -18,8 +18,17 @@ public sealed class PythonReOperationBoundaryTests
         var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
         Assert.True(account.TryReserve(17));
         using var regex = funded
-            ? Utf8PythonRegex.Compile(pattern, default, timeout, default, default, Timeout.InfiniteTimeSpan, default, account)
-            : new Utf8PythonRegex(pattern, matchTimeout: timeout);
+            ? Utf8PythonRegex.Compile(pattern, options: default, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = timeout,
+                ResourcePolicy = default,
+                ConstructionPolicy = default,
+                ConstructionTimeout = Timeout.InfiniteTimeSpan,
+                ProgramMemoryAllowance = account
+            }, cancellationToken: default) : new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = timeout
+            });
         for (var operation = 0; operation < 14; operation++)
         {
             if (operation is 3 or 4 or 5 or 6 or 9 or 11) continue;
@@ -63,7 +72,7 @@ public sealed class PythonReOperationBoundaryTests
         switch (operation)
         {
             case 0: _ = regex.IsMatch(input, 0, token); break;
-            case 1: _ = regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.Search); break;
+            case 1: _ = regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.Search); break;
             case 2:
                 Utf8PythonRangeMatch snapshot1 = default;
                 using (var captureCursor1 = regex.CreateMatchCursor(input, 0, token, mode: Utf8PythonMatchMode.Search))
@@ -75,7 +84,7 @@ public sealed class PythonReOperationBoundaryTests
             case 7: _ = regex.FindAllToUtf8(input, 0, token); break;
             case 8: _ = regex.SplitRanges(input, 0, 0, token); break;
             case 10: _ = System.Text.Encoding.UTF8.GetString(regex.Replace(input, @"\2:\1", 0, 0, token)); break;
-            case 12: _ = regex.Match(input,0,cancellationToken: token,mode: Utf8PythonMatchMode.FullMatch); break;
+            case 12: _ = regex.Match(input, 0, cancellationToken: token, mode: Utf8PythonMatchMode.FullMatch); break;
             case 13: _ = regex.Count(input, 0, token); break;
         }
     }

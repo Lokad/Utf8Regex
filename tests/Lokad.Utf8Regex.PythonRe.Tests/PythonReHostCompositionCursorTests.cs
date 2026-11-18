@@ -8,8 +8,15 @@ public sealed class PythonReHostCompositionCursorTests
     public void OneRangeCapturesLookaheadWithoutPreparingUnusedSuffix()
     {
         var input = Encoding.UTF8.GetBytes("πneedleé😀 " + string.Concat(Enumerable.Repeat("😀", 65536)));
-        using var regex = new Utf8PythonRegex("(?P<word>needle)(?=(?P<tail>é😀))", resourcePolicy: new()
-        { MaxWorkingBytes = 1 << 20, MaxResultBytes = 4096, MaxWorkSteps = 1_000_000 });
+        using var regex = new Utf8PythonRegex("(?P<word>needle)(?=(?P<tail>é😀))", policy: new Utf8RegexPolicy()
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 4096,
+                MaxWorkSteps = 1_000_000
+            }
+        });
         using var cursor = regex.CreateMatchCursor(input);
         Assert.True(cursor.MoveNext(out var retained));
         Assert.Equal(2, retained.LastIndex); Assert.Equal("tail", retained.LastGroup);
@@ -21,7 +28,9 @@ public sealed class PythonReHostCompositionCursorTests
     }
 
     [Theory]
-    [InlineData(0, 2)] [InlineData(1, 1)] [InlineData(2, 2)]
+    [InlineData(0, 2)]
+    [InlineData(1, 1)]
+    [InlineData(2, 2)]
     public void HostLimitedRangeIterationKeepsIndependentLookaroundCaptures(int limit, int expected)
     {
         using var regex = new Utf8PythonRegex("(?P<word>a)(?=(?P<tail>.))");

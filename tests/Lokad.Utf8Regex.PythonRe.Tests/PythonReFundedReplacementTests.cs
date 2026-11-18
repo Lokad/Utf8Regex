@@ -7,8 +7,14 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReFundedReplacementTests
 {
-    private static Utf8PythonRegex Compile(Allowance allowance, TimeSpan? timeout = null) => Utf8PythonRegex.Compile(
-        "(?P<x>a)", default, timeout ?? Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, allowance);
+    private static Utf8PythonRegex Compile(Allowance allowance, TimeSpan? timeout = null) => Utf8PythonRegex.Compile("(?P<x>a)", options: default, policy: new Utf8RegexPolicy()
+    {
+        MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan,
+        ResourcePolicy = default,
+        ConstructionPolicy = default,
+        ConstructionTimeout = Timeout.InfiniteTimeSpan,
+        ProgramMemoryAllowance = allowance
+    }, cancellationToken: default);
 
     [Fact]
     public void WarmPlansStayFundedAndAreReusedUntilProgramDisposal()
@@ -25,7 +31,9 @@ public sealed class PythonReFundedReplacementTests
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void InvalidCanceledAndDeniedPreparationsPreserveValidEntries(bool warm)
     {
         var allowance = new Allowance(4 << 20); using var regex = Compile(allowance);
@@ -109,7 +117,9 @@ public sealed class PythonReFundedReplacementTests
         regex.Dispose(); Assert.Equal(0UL, allowance.Used);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ActiveSubstitutionKeepsAnEvictedOrDisposedPlanFunded(bool disposeProgram)
     {
         var allowance = new Allowance(4 << 20); using var regex = Compile(allowance, TimeSpan.FromSeconds(30));
@@ -131,7 +141,8 @@ public sealed class PythonReFundedReplacementTests
             });
             try { output = PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!")).ResultText; }
             catch (Exception failure) { error = failure; }
-        }) { IsBackground = true };
+        })
+        { IsBackground = true };
         worker.Start();
         ulong held = 0;
         try
@@ -178,12 +189,14 @@ public sealed class PythonReFundedReplacementTests
             ownerId = Environment.CurrentManagedThreadId;
             try { PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!", 0, 0, ownerToken.Token)); }
             catch (Exception failure) { ownerError = failure; }
-        }) { IsBackground = true };
+        })
+        { IsBackground = true };
         var follower = new Thread(() =>
         {
             try { output = PythonReSubstitutionAssert.Decode(regex.Subn("a"u8, @"\g<x>!", 0, 0, followerToken.Token)).ResultText; }
             catch (Exception failure) { followerError = failure; }
-        }) { IsBackground = true };
+        })
+        { IsBackground = true };
         var followerStarted = false; owner.Start();
         try
         {

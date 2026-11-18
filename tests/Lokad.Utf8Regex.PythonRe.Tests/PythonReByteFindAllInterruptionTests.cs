@@ -13,9 +13,9 @@ public sealed class PythonReByteFindAllInterruptionTests
             ("([a-z]+)([0-9]+)", "alpha12 beta34 "), ("(😀)?", "😀é"), ("x*", "xé😀y"),
             ("(([^ ]+))", "é😀 word "), ("(foo)?([a-z]+)", "bar fooword "),
             (new string('a', 63) + "([0-9]+)", new string('a', 127) + "3 ") })
-        foreach (var finite in new[] { false, true })
-        foreach (var expire in new[] { false, true })
-            yield return [pattern, unit, finite, expire];
+            foreach (var finite in new[] { false, true })
+                foreach (var expire in new[] { false, true })
+                    yield return [pattern, unit, finite, expire];
     }
 
     [Theory]
@@ -26,9 +26,18 @@ public sealed class PythonReByteFindAllInterruptionTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var timeout = TimeSpan.FromMilliseconds(20);
-        var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1024,
-            MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } : Utf8ResourcePolicy.Unlimited;
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, timeout, policy);
+        var policy = finite ? new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 100000,
+            MaxDepth = 1024,
+            MaxWorkingBytes = 1048576,
+            MaxResultBytes = 1048576
+        } : Utf8ResourcePolicy.Unlimited;
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = policy
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(unit, 16)));
         var checkpoints = new List<ulong>();
         Utf8PythonFindAllUtf8Result retained;

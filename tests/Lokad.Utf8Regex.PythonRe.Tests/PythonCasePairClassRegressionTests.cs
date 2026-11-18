@@ -16,9 +16,9 @@ public sealed class PythonCasePairClassRegressionTests
     [InlineData("[Aa][Bb][Cc]", "abx", false)]
     public void CasePairClassesMatchBothVariants(string pattern, string inputText, bool expected)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None);
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None);
         var input = Encoding.UTF8.GetBytes(inputText);
-        Assert.Equal(expected, regex.Match(input,mode: Utf8PythonMatchMode.Search).Success);
+        Assert.Equal(expected, regex.Match(input, mode: Utf8PythonMatchMode.Search).Success);
         Assert.Equal(expected ? 1 : 0, regex.Count(input));
     }
 }

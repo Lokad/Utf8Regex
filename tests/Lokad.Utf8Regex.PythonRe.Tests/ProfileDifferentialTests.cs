@@ -14,7 +14,7 @@ public sealed class ProfileDifferentialTests
     public void SharedLanguagePreservesByteMatchesAndCaptures(string mode)
         => ProfileDifferential.Run(mode, (pattern, timeout, policy, groups) =>
         {
-            var regex = new Utf8PythonRegex(pattern, matchTimeout: timeout, resourcePolicy: policy);
+            var regex = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy { MatchTimeout = timeout, ResourcePolicy = policy });
             return (input, start, token) =>
             {
                 var exists = regex.IsMatch(input, 0, token);

@@ -27,14 +27,17 @@ public class Utf8PythonReTemplateBenchmarks
         _text = string.Concat(Enumerable.Repeat("alpha 😀 café beta é ", Repetitions));
         _input = Encoding.UTF8.GetBytes(_text);
         _unlimited = new Utf8PythonRegex("(?P<word>[a-z]+)");
-        _finite = new Utf8PythonRegex("(?P<word>[a-z]+)", PythonReCompileOptions.None,
-            Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy
+        _finite = new Utf8PythonRegex("(?P<word>[a-z]+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 50_000_000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 64 << 20,
                 MaxResultBytes = 128 << 20
-            });
+            }
+        });
         _regex = new Regex("(?<word>[a-z]+)", RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();
         var expected = PredecodedRegex();

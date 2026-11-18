@@ -61,11 +61,23 @@ public sealed class PythonReTerminalClassRepeatTests
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"(\w)+", 1, 1 << 20).FindAllToUtf8("abc ééé"u8)).ResourceKind);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"\w+", 1, 1).FindAllToUtf8("abc ééé"u8)).ResourceKind);
-        var tiny = new Utf8PythonRegex(@"\w+", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
+        var tiny = new Utf8PythonRegex(@"\w+", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         Assert.Equal(2, tiny.Count("abc ééé"u8));
-        var captured = new Utf8PythonRegex(@"(\w+)", PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
+        var captured = new Utf8PythonRegex(@"(\w+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         Assert.Equal(1, captured.Count("abc"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => captured.FindAllToUtf8("abc"u8)).ResourceKind);
@@ -76,7 +88,7 @@ public sealed class PythonReTerminalClassRepeatTests
     {
         var regex = Create(@"\w+", 1, 1 << 20);
         Assert.Equal(1, regex.Count("😀é² ab"u8, 9));
-        Assert.Equal(9, regex.Match("😀é² ab"u8,9,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Equal(9, regex.Match("😀é² ab"u8, 9, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀é² ab"u8, 1));
 
         Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes("\u1c89\U0001e5f1")));
@@ -104,16 +116,23 @@ public sealed class PythonReTerminalClassRepeatTests
     public void FullMatchAnchoringAndFollowingFailureRetainTheirGeneralPaths()
     {
         var regex = Create(@"\w+", 256, 1 << 20);
-        Assert.True(regex.Match("é²"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.False(regex.Match("abc!"u8,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.True(regex.Match("é²"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match("abc!"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.False(regex.Match("😀abc"u8).Success);
-        Assert.Equal(4, regex.Match("😀abc"u8,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Equal(4, regex.Match("😀abc"u8, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
         Assert.Equal("abcZ", Encoding.UTF8.GetString(Create(@"\w+Z", 256, 1 << 20).FindAllToUtf8("abcZ"u8).ScalarValues[0]));
         Assert.Equal("XYZ", Encoding.UTF8.GetString(Create(@"(?<=\w{2})\w+", 256, 1 << 20).FindAllToUtf8("abXYZ"u8).ScalarValues[0]));
     }
 
-    private static Utf8PythonRegex Create(string pattern, uint depth, ulong results) => new(pattern,
-        PythonReCompileOptions.None, Timeout.InfiniteTimeSpan,
-        new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = depth,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = results });
+    private static Utf8PythonRegex Create(string pattern, uint depth, ulong results) => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+    {
+        MatchTimeout = Timeout.InfiniteTimeSpan,
+        ResourcePolicy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 1000000,
+            MaxDepth = depth,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = results
+        }
+    });
 }

@@ -21,7 +21,11 @@ public sealed class PythonReFiniteResultPolicyTests
                 MaxWorkingBytes = kind != 1 ? 1_048_576ul : null,
                 MaxResultBytes = kind != 0 ? 1_048_576ul : null
             };
-            var regex = new Utf8PythonRegex("z", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1), policy);
+            var regex = new Utf8PythonRegex("z", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(1),
+                ResourcePolicy = policy
+            });
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
             var error = Assert.Throws<RegexMatchTimeoutException>(() =>
@@ -36,8 +40,15 @@ public sealed class PythonReFiniteResultPolicyTests
     public void CursorTimeoutKeepsPriorSnapshotAndReleasesScratchWithoutDiagnosticCopy()
     {
         Utf8PythonRangeMatch cursorRange = default;
-        var regex = new Utf8PythonRegex(".", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(200),
-            new() { MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
+        var regex = new Utf8PythonRegex(".", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200),
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            }
+        });
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cursor = regex.CreateMatchCursor("😀a"u8.ToArray());
@@ -58,8 +69,14 @@ public sealed class PythonReFiniteResultPolicyTests
     [Fact]
     public void WorkOnlyTimeoutRetainsInputAndPreCancellationRetainsToken()
     {
-        var regex = new Utf8PythonRegex("z", PythonReCompileOptions.None, TimeSpan.FromMilliseconds(1),
-            new() { MaxWorkSteps = ulong.MaxValue });
+        var regex = new Utf8PythonRegex("z", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = ulong.MaxValue
+            }
+        });
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
         var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch("xxxxxxxx"u8));
@@ -75,8 +92,15 @@ public sealed class PythonReFiniteResultPolicyTests
         PythonReCompileOptions options = PythonReCompileOptions.None, TimeSpan? timeout = null)
     {
         var policy = new Utf8ResourcePolicy { MaxResultBytes = cap, MaxWorkSteps = work };
-        return bytes ? new(Encoding.UTF8.GetBytes(pattern), options, timeout ?? Regex.InfiniteMatchTimeout, policy)
-            : new(pattern, options, timeout ?? Regex.InfiniteMatchTimeout, policy);
+        return bytes ? new(Encoding.UTF8.GetBytes(pattern), options: options, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout ?? Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        }) : new(pattern, options: options, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = timeout ?? Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
     }
     private static string Run(Utf8PythonRegex regex, byte[] input, int operation, int start = 0, CancellationToken token = default)
         => PythonReFiniteWorkPolicyTests.Run(regex, input, operation, start, token);
@@ -155,7 +179,7 @@ public sealed class PythonReFiniteResultPolicyTests
         const string pattern = "😀|(?P<x>a)";
         var input = "😀a\nA"u8.ToArray();
         var collectedRanges1 = new List<Utf8PythonRangeMatch>();
-        using (var rangeCursor1 = new Utf8PythonRegex(pattern, options).CreateMatchCursor(input, 0, default))
+        using (var rangeCursor1 = new Utf8PythonRegex(pattern, options: options).CreateMatchCursor(input, 0, default))
         {
             while (rangeCursor1.MoveNext(out var rangeMatch1))
                 collectedRanges1.Add(rangeMatch1);
@@ -239,7 +263,7 @@ public sealed class PythonReFiniteResultPolicyTests
     {
         Assert.True(Create(".", 1).IsMatch("😀"u8));
         Assert.Equal(2, Create(".", 1).Count("😀a"u8));
-        var range = Create(".", 1).Match("😀"u8,mode: Utf8PythonMatchMode.Search);
+        var range = Create(".", 1).Match("😀"u8, mode: Utf8PythonMatchMode.Search);
         Assert.Equal(4, range.EndOffsetInBytes);
         Denied(() =>
         {
@@ -251,8 +275,8 @@ public sealed class PythonReFiniteResultPolicyTests
 
             _ = snapshot2;
         }, 1);
-        PythonReMatchAssert.Equal("", Create("", 1).Match("😀"u8,mode: Utf8PythonMatchMode.Search));
-        Assert.False(Create("missing", 1).Match("😀"u8,mode: Utf8PythonMatchMode.Search).Success);
+        PythonReMatchAssert.Equal("", Create("", 1).Match("😀"u8, mode: Utf8PythonMatchMode.Search));
+        Assert.False(Create("missing", 1).Match("😀"u8, mode: Utf8PythonMatchMode.Search).Success);
         var regex = Create(".*?", 1000000);
         var collectedRanges3 = new List<Utf8PythonRangeMatch>();
         using (var rangeCursor3 = regex.CreateMatchCursor(("😀a"u8).ToArray(), 0, default))
@@ -261,8 +285,8 @@ public sealed class PythonReFiniteResultPolicyTests
                 collectedRanges3.Add(rangeMatch3);
         }
         Assert.Equal(new[] { "", "😀", "", "a", "" }, collectedRanges3.ToArray().Select(x => System.Text.Encoding.UTF8.GetString(x.GetValueMemory().Span)));
-        Assert.Equal(4, regex.Match("😀a"u8,4,mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
-        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀a"u8,1,mode: Utf8PythonMatchMode.Search));
+        Assert.Equal(4, regex.Match("😀a"u8, 4, mode: Utf8PythonMatchMode.Search).StartOffsetInBytes);
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀a"u8, 1, mode: Utf8PythonMatchMode.Search));
         Utf8PythonRangeMatch context = default;
         using (var captureCursor3 = regex.CreateMatchCursor(("😀a"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
         {
@@ -286,9 +310,21 @@ public sealed class PythonReFiniteResultPolicyTests
     public void ZeroAndUnsupportedFieldsRejectBeforePatternWork()
     {
         var zero = new Utf8ResourcePolicy { MaxResultBytes = 0 };
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, zero));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex(new byte[] { 255 }, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, zero));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex("[invalid", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = zero
+        }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8PythonRegex(new byte[] { 255 }, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = zero
+        }));
         var unsupported = new Utf8ResourcePolicy { MaxResultBytes = 1000000, MaxWorkingBytes = 1 };
-        Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex("[invalid", PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, unsupported));
+        Assert.Throws<PythonRePatternException>(() => new Utf8PythonRegex("[invalid", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = unsupported
+        }));
     }
 }

@@ -19,8 +19,16 @@ public sealed class PythonReCaptureCompletionTests
         string pattern, string text, int last, string name, string capture)
     {
         {
-            var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-                new Utf8ResourcePolicy { MaxWorkingBytes = 4096, MaxResultBytes = 4096, MaxWorkSteps = 10000 });
+            var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkingBytes = 4096,
+                    MaxResultBytes = 4096,
+                    MaxWorkSteps = 10000
+                }
+            });
             var input = Encoding.UTF8.GetBytes(text);
             Utf8PythonRangeMatch result = default;
             using (var captureCursor1 = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search))
@@ -51,8 +59,16 @@ public sealed class PythonReCaptureCompletionTests
     [InlineData("(?P<v>)", "", "")]
     public void SingleCaptureCompletionRemainsValidWithFiniteLimits(string pattern, string text, string capture)
     {
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 1024, MaxResultBytes = 4096, MaxWorkSteps = 10000 });
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1024,
+                MaxResultBytes = 4096,
+                MaxWorkSteps = 10000
+            }
+        });
         Utf8PythonRangeMatch result = default;
         using (var captureCursor3 = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), mode: Utf8PythonMatchMode.Search))
         {
@@ -112,8 +128,15 @@ public sealed class PythonReCaptureCompletionTests
         foreach (var bytes in new[] { false, true })
         {
             var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxResultBytes = 1000000 };
-            var regex = bytes ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy)
-                : new Utf8PythonRegex(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout, policy);
+            var regex = bytes ? new Utf8PythonRegex(Encoding.UTF8.GetBytes(pattern), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            }) : new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
             Utf8PythonRangeMatch context = default;
             using (var captureCursor4 = kind switch
             {
@@ -170,8 +193,19 @@ public sealed class PythonReCaptureCompletionTests
         }
         foreach (var work in new[] { false, true })
         {
-            Utf8PythonRegex Create(ulong cap) => new(pattern, PythonReCompileOptions.None, Regex.InfiniteMatchTimeout,
-                work ? new() { MaxWorkSteps = cap } : new() { MaxResultBytes = cap });
+            Utf8PythonRegex Create(ulong cap) => new(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = work ? new()
+                {
+                    MaxWorkSteps = cap
+                }
+
+    : new()
+    {
+        MaxResultBytes = cap
+    }
+            });
             ulong first = 1, last = 1000000;
             while (first < last)
             {
@@ -219,7 +253,10 @@ public sealed class PythonReCaptureCompletionTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8PythonRegex(pattern, PythonReCompileOptions.None, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), 0, source.Token);
         var invocation = cursor.WorkingInvocation;
         ticks = 15; Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
