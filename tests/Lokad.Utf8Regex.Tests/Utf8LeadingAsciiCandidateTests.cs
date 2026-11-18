@@ -452,6 +452,49 @@ public sealed class Utf8LeadingAsciiCandidateTests
         Assert.True(regex.IsMatch(input, live.Token));
     }
 
+    [Theory]
+    [InlineData("(?<tag>AX|BY)[A-Z0-7]{4}|(?<word>[a-zA-Z0-9+/]{8})")]
+    [InlineData("(?<word>[a-zA-Z0-9+/]{8})|(?<tag>AX|BY)[A-Z0-7]{4}")]
+    [InlineData("(?<tag>AX|BY)[A-Z0-7]{4}|(?<word>[a-zA-Z0-9+/]{8})|(?<other>é.)")]
+    public void BranchedPrefixRejectionKeepsOrderedSurvivorsAndCaptures(string alternatives)
+    {
+        var pattern = """(?:(?<open>'|")(?:""" + alternatives + """)(?:'|"))+""";
+        const string prefix = "'AX1234' 😀 ";
+        const string suffix = "'AXz!' x 'AXPLUS12' \"BY2345\" x 'éq' x 'AX0000";
+        var text = prefix + suffix;
+        var input = Encoding.UTF8.GetBytes(text);
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var bcl = new Regex(pattern);
+        var expected = bcl.Matches(text, prefix.Length);
+        using var regex = Utf8Regex.Compile(pattern, policy: new() { ResourcePolicy = Funded });
+        using var token = new CancellationTokenSource();
+        using var cursor = regex.CreateMatchCursor(input, start, token.Token);
+        foreach (Match match in expected)
+        {
+            Assert.True(cursor.MoveNext(out var actual));
+            Assert.Equal(match.Value, Encoding.UTF8.GetString(actual.GetValueMemory().Span));
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), actual.Value.StartOffsetInBytes);
+            for (var group = 1; group < match.Groups.Count; group++)
+                Assert.Equal(match.Groups[group].Value, Encoding.UTF8.GetString(actual.GetGroupMemory(group).Span));
+        }
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(bcl.Count(text), regex.Count(input, token.Token));
+    }
+
+    [Fact]
+    public void ImpossibleBranchedPrefixesStayWithinFiniteWork()
+    {
+        const string pattern = """(?:(?<open>'|")(?:(?<tag>AX|BY)[A-Z0-7]{4}|(?<word>[a-zA-Z0-9+/]{8}))(?:'|"))+""";
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("'AXz!'😀", 512)));
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = Funded with { MaxDepth = 1, MaxWorkSteps = 5000 }
+        });
+        using var token = new CancellationTokenSource();
+        Assert.Equal(0, regex.Count(input, token.Token));
+        Assert.False(regex.IsMatch(input, token.Token));
+    }
+
     private const string StraightPrefixPattern = @"(?:# [Nn][Oo][Qq][Aa])(?::\s?(([A-Z]+[0-9]+(?:[,\s]+)?)+))?";
 
     private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 4000000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 };

@@ -505,6 +505,7 @@ internal static partial class Utf8SliceRunner
         var leading = !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
             !program.CanMatchEmpty && !program.HasContiguousAnchor
             ? GetLeadingAsciiCandidate(program, candidatePlan, out leadingLast, out second, out secondLast, out leadingScalarIndex) : -1;
+        var checkBranchedPrefix = leading >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
         // Keep the cheaper existing head proof when available. Prepared prefix
         // search fills its gaps, including multi-alternative and UTF-8 starts.
         var seekLiteral = leading < 0 && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
@@ -598,6 +599,8 @@ internal static partial class Utf8SliceRunner
             // bounded work and the original interruption authority.
             if (leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                 (uint)(input[position + 1] - second) > (uint)(secondLast - second)))
+                continue;
+            if (checkBranchedPrefix && !MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex))
                 continue;
             var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, collectHistory, false, true, ref workspace, ref invocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
@@ -787,11 +790,13 @@ internal static partial class Utf8SliceRunner
         byte leadingAsciiLast = 0;
         var leadingAsciiSecond = -1;
         byte leadingAsciiSecondLast = 0;
+        var leadingScalarIndex = -1;
         // A direct beginning anchor already owns bounded line/prefix discovery.
         // Keep one candidate search rather than scanning its prefix twice.
         var leadingAsciiFirst = !seekLiteral && !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
             !program.CanMatchEmpty && !program.HasContiguousAnchor
-            ? GetLeadingAsciiCandidate(program, candidatePlan, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast, out _) : -1;
+            ? GetLeadingAsciiCandidate(program, candidatePlan, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast, out leadingScalarIndex) : -1;
+        var checkBranchedPrefix = leadingAsciiFirst >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
         var leadingClass = -1;
         var whitespaceLiteralIndex = -1;
         long whitespaceGapMaximum = 0;
@@ -829,7 +834,8 @@ internal static partial class Utf8SliceRunner
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                     if ((leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond))) ||
-                        !MatchesStraightAsciiPrefix(program, input, position, 0))
+                        !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex) :
+                            MatchesStraightAsciiPrefix(program, input, position, 0)))
                     {
                         // Rejecting a necessary prefix advances one admitted ASCII
                         // scalar. Reuse the bounded filter, which stops at control

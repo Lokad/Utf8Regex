@@ -406,4 +406,73 @@ internal static partial class Utf8SliceRunner
         }
         return true;
     }
+
+    // This check only eliminates impossible starts. The VM owns branch order,
+    // captures and every effect beyond the bounded prefix.
+    private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, int index, ref int remaining)
+    {
+        var code = program.Instructions;
+        while (remaining > 0 && (uint)index < (uint)code.Length)
+        {
+            remaining--;
+            var entry = code[index++];
+            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
+            if (entry is { Kind: Utf8SliceInstructionKind.Jump } && entry.A >= index)
+            {
+                index = entry.A;
+                continue;
+            }
+            if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index)
+            {
+                if (MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining)) return true;
+                index = entry.A;
+                continue;
+            }
+
+            var width = 1;
+            if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
+            {
+                var minimum = entry.RepeatMinimum;
+                if (minimum == 0) return true;
+                // A required body always starts here. After a nontrivial loop,
+                // its end stays unknown. Skip only a proved fixed-width atom.
+                if (minimum != entry.RepeatMaximum || minimum > remaining || entry.A != index + 2 ||
+                    entry.A >= code.Length ||
+                    code[index + 1] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } loop || loop.A != index - 1 ||
+                    code[entry.A] is not { Kind: Utf8SliceInstructionKind.RepeatExit } exit || exit.A != entry.B)
+                    continue;
+                width = (int)minimum;
+                remaining -= width;
+                var atomIndex = index;
+                index = entry.A + 1;
+                entry = code[atomIndex];
+            }
+            if (entry is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && (uint)entry.A < 128)
+            {
+                if (width > input.Length - position ||
+                    (width == 1 ? input[position] != entry.A : input.Slice(position, width).ContainsAnyExcept((byte)entry.A)))
+                    return false;
+            }
+            else if (entry is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } && program.SetMasks[entry.A].Length == 16)
+            {
+                if (width > input.Length - position) return false;
+                var mask = program.SetMasks[entry.A];
+                foreach (var value in input.Slice(position, width))
+                    if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) return false;
+            }
+            else return true;
+            position += width;
+        }
+        return true;
+    }
+
+    private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, int index)
+    {
+        // Share one visit/byte allowance across both arms. Their caller meters
+        // this bounded check along with the search for each candidate byte.
+        var remaining = 96;
+        return MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining);
+    }
 }
