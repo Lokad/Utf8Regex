@@ -2640,22 +2640,7 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         {
             Append(InputBytes.AsSpan(last, match.Value.StartOffsetInBytes - last));
             if (observe is not null)
-            {
-                var groups = new PythonReHostCapture[match.Groups.Length];
-                for (var number = 0; number < groups.Length; number++)
-                {
-                    var range = match.Groups[number];
-                    groups[number] = new PythonReHostCapture
-                    {
-                        Number = range.Number,
-                        Success = range.Success,
-                        StartOffsetInBytes = range.StartOffsetInBytes,
-                        EndOffsetInBytes = range.EndOffsetInBytes,
-                        ValueText = Encoding.UTF8.GetString(match.GetGroupMemory(number).Span)
-                    };
-                }
-                observe(new PythonReHostDetailedMatch { Groups = groups, NameEntries = match.NameEntries.ToArray(), LastIndex = match.LastIndex });
-            }
+                observe(PythonReBenchmarkReporter.ProjectDetailed(match));
             Append(s_hostConstantReplacement(this, match));
             last = match.Value.EndOffsetInBytes;
             replaced++;

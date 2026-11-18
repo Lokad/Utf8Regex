@@ -212,7 +212,7 @@ public sealed class PythonReTranslationLifetimeTests
             }
             Assert.True(hit.Success);
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString((hit.Groups[1].Success ? hit.GetGroupMemory(hit.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
-            Assert.Equal("α", hit.LastGroup);
+            Assert.Equal(1, hit.LastIndex);
             Utf8PythonRangeMatch snapshot5 = default;
             using (var captureCursor5 = regex.CreateMatchCursor(("ab"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
             {

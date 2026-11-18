@@ -19,7 +19,7 @@ public sealed class PythonReBoundaryRetryTests
         var invocation = new Utf8SliceInvocation(new(1_000_000, 1024, 1UL << 20),
             Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
-        var cursor = new Utf8PythonMatchCursor(input, program, [], 0,
+        var cursor = new Utf8PythonMatchCursor(input, program, 0,
             Regex.InfiniteMatchTimeout, @"\b", invocation, null);
         var alias = cursor;
         var snapshots = new List<Utf8PythonRangeMatch>();
@@ -98,7 +98,7 @@ public sealed class PythonReBoundaryRetryTests
             var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
             var invocation = new Utf8SliceInvocation(new(1_000_000, 1024, 1UL << 20), timeout, source.Token);
             Assert.True(invocation.Ledger.TryReserve(13));
-            var cursor = new Utf8PythonMatchCursor("a"u8.ToArray(), program, [], 0, timeout, @"\b", invocation, null);
+            var cursor = new Utf8PythonMatchCursor("a"u8.ToArray(), program, 0, timeout, @"\b", invocation, null);
             try
             {
                 Assert.True(cursor.MoveNext(out cursorRange));

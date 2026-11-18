@@ -7,13 +7,13 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReDetailedPublicationContractTests
 {
     [Theory]
-    [InlineData("(?P<outer>(?P<face>😀)(é)?)(x)?", "xx😀é yy😀", 2, 1, "outer")]
-    [InlineData("(?<=(?P<before>😀))(?P<body>é)", "😀é", 1, 2, "body")]
-    [InlineData("(?P<empty>)(?P<next>😀)?", "😀", 2, 2, "next")]
-    [InlineData("(?P<outer>(?P<inner>😀))", "é😀 é😀", 2, 1, "outer")]
-    [InlineData("(?P<outer>(?P<inner>))", "é😀", 3, 1, "outer")]
+    [InlineData("(?P<outer>(?P<face>😀)(é)?)(x)?", "xx😀é yy😀", 2, 1)]
+    [InlineData("(?<=(?P<before>😀))(?P<body>é)", "😀é", 1, 2)]
+    [InlineData("(?P<empty>)(?P<next>😀)?", "😀", 2, 2)]
+    [InlineData("(?P<outer>(?P<inner>😀))", "é😀 é😀", 2, 1)]
+    [InlineData("(?P<outer>(?P<inner>))", "é😀", 3, 1)]
     public void DetailedSnapshotsKeepScalarValuesCoordinatesAndOwnership(
-        string pattern, string subject, int expectedCount, int firstLastIndex, string firstLastGroup)
+        string pattern, string subject, int expectedCount, int firstLastIndex)
     {
         Utf8PythonRangeMatch cursorRange = default;
         var input = Encoding.UTF8.GetBytes(subject);
@@ -44,7 +44,6 @@ public sealed class PythonReDetailedPublicationContractTests
         var finite = collectedRanges2.ToArray();
         Assert.Equal(expectedCount, finite.Length);
         Assert.Equal(firstLastIndex, finite[0].LastIndex);
-        Assert.Equal(firstLastGroup, finite[0].LastGroup);
         for (var match = 0; match < finite.Length; match++)
         {
             Assert.Equal(unlimited[match].Groups.ToArray(), finite[match].Groups.ToArray());
@@ -92,8 +91,7 @@ public sealed class PythonReDetailedPublicationContractTests
         Assert.Equal(2, retained.Count);
         foreach (var (match, ordinal) in retained.Select((value, index) => (value, index)))
         {
-            Assert.Equal(1, match.LastIndex); Assert.Equal(named ? "outer" : null, match.LastGroup);
-            Assert.Equal(named ? 2 : 0, match.NameEntries.Length);
+            Assert.Equal(1, match.LastIndex);
             Assert.Equal(3, match.Groups.Length);
             for (var group = 0; group < 3; group++)
             {
@@ -104,7 +102,7 @@ public sealed class PythonReDetailedPublicationContractTests
         Assert.Equal("é", System.Text.Encoding.UTF8.GetString(retained[0].GetGroupMemory(1).Span)); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained[1].GetValueMemory().Span));
         if (named)
         {
-            Assert.True(retained[1].TryGetFirstSetGroup("outer", out var outer)); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((outer.Success ? retained[1].GetGroupMemory(outer.Number) : default).Span));
+            Assert.True(retained[1].TryGetGroup(1, out var outer)); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((outer.Success ? retained[1].GetGroupMemory(outer.Number) : default).Span));
         }
     }
 
@@ -121,7 +119,7 @@ public sealed class PythonReDetailedPublicationContractTests
         try
         {
             Assert.True(measured.MoveNext(input));
-            _ = measured.SnapshotRanges(input, []);
+            _ = measured.SnapshotRanges(input);
             work = measured.WorkingInvocation.Budget.Steps;
             extent = measured.WorkingInvocation.Budget.ResultBytes;
         }
@@ -139,7 +137,7 @@ public sealed class PythonReDetailedPublicationContractTests
                 Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
                 reserved = true;
                 Assert.True(cursor.MoveNext(input));
-                var snapshot = cursor.SnapshotRanges(input, []);
+                var snapshot = cursor.SnapshotRanges(input);
                 Assert.Equal(work, cap);
                 Assert.Equal(extent, cursor.WorkingInvocation.Budget.ResultBytes);
                 Assert.Equal("😀é", Encoding.UTF8.GetString(input.AsSpan(snapshot.Groups[0].StartOffsetInBytes, snapshot.Groups[0].EndOffsetInBytes - snapshot.Groups[0].StartOffsetInBytes)));

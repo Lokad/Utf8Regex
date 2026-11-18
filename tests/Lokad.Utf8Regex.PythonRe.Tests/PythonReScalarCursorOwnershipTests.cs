@@ -37,7 +37,7 @@ public sealed class PythonReScalarCursorOwnershipTests
             Assert.True(positionedBytes > 0); // Owned slots; unnecessary rollback scratch may be absent.
             source.Cancel();
             var observed = false;
-            try { mapped.SnapshotRanges("\U0001f600"u8.ToArray(), []); }
+            try { mapped.SnapshotRanges("\U0001f600"u8.ToArray()); }
             catch (OperationCanceledException failure)
             {
                 observed = true;

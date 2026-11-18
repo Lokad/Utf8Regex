@@ -47,7 +47,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         {
             captureCursor1.MoveNext(out snapshot1);
         }
-        Assert.Equal("x", snapshot1.LastGroup);
+        Assert.Equal(1, snapshot1.LastIndex);
         Utf8PythonRangeMatch snapshot2 = default;
         using (var captureCursor2 = regex.CreateMatchCursor(("😀a"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -110,7 +110,7 @@ public sealed class PythonReLazyFullMatchAuthorityTests
         {
             captureCursor3.MoveNext(out snapshot3);
         }
-        Assert.Equal("x", snapshot3.LastGroup);
+        Assert.Equal(1, snapshot3.LastIndex);
     }
 
     [Fact]
@@ -170,7 +170,6 @@ public sealed class PythonReLazyFullMatchAuthorityTests
                     captureCursor4.MoveNext(out match);
                 }
                 Assert.Equal(1, match.LastIndex);
-                Assert.Equal("x", match.LastGroup);
                 Assert.Same(hook, construction.Budget.CheckpointHook);
             }
             return checkpoints;

@@ -82,7 +82,6 @@ public sealed class PythonReNativeCountTests
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
         Assert.Equal("b", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(2).Span));
         Assert.Equal(2, matches[0].LastIndex);
-        Assert.Null(matches[0].LastGroup);
         Assert.Equal(6, matches[0].Value.StartOffsetInBytes);
         ReadOnlyMemory<byte> snapshots1Input = input;
         var snapshots1 = new List<Utf8PythonRangeMatch>();

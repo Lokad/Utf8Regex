@@ -78,7 +78,7 @@ public sealed class PythonReNullableCaptureTests
                 var snapshot = cursorRange;
                 retained.Add(snapshot);
                 PythonReCaptureAssert.Equal(detailed[index], snapshot);
-                Assert.True(snapshot.TryGetFirstSetGroup("x", out var capture));
+                Assert.True(snapshot.TryGetGroup(1, out var capture));
                 Assert.Equal(expectedCaptures[index] is not null, capture.Success);
                 if (expectedCaptures[index] is { } text)
                 {
@@ -90,7 +90,7 @@ public sealed class PythonReNullableCaptureTests
             Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
             for (var index = 0; index < retained.Count; index++)
             {
-                Assert.True(retained[index].TryGetFirstSetGroup("x", out var capture));
+                Assert.True(retained[index].TryGetGroup(1, out var capture));
                 Assert.Equal(expectedCaptures[index] is not null, capture.Success);
                 if (expectedCaptures[index] is { } text)
                 {

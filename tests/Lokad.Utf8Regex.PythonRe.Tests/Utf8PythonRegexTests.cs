@@ -485,7 +485,7 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(detailed.Success);
         Assert.Equal("Шерлок Шерлок ", System.Text.Encoding.UTF8.GetString(detailed.GetValueMemory().Span));
-        Assert.True(detailed.TryGetFirstSetGroup("word", out var word));
+        Assert.True(detailed.TryGetGroup(1, out var word));
         Assert.Equal("Шерлок ", System.Text.Encoding.UTF8.GetString((word.Success ? detailed.GetGroupMemory(word.Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.True(data.Success);
         Assert.Equal("Шерлок Шерлок ", System.Text.Encoding.UTF8.GetString(data.GetValueMemory().Span));
@@ -557,7 +557,7 @@ public sealed class Utf8PythonRegexTests
         }
 
         Assert.True(match.Success);
-        Assert.True(match.TryGetFirstSetGroup("word", out var group));
+        Assert.True(match.TryGetGroup(1, out var group));
         Assert.True(group.Success);
         Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((group.Success ? match.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty)));
     }
@@ -588,7 +588,7 @@ public sealed class Utf8PythonRegexTests
         Assert.True(match.Success);
         Assert.True(full.Success);
         Assert.Equal("foo-foo", System.Text.Encoding.UTF8.GetString(full.GetValueMemory().Span));
-        Assert.True(search.TryGetFirstSetGroup("word", out var word));
+        Assert.True(search.TryGetGroup(1, out var word));
         Assert.True(word.Success);
         Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((word.Success ? search.GetGroupMemory(word.Number).Span : ReadOnlySpan<byte>.Empty)));
     }
@@ -1709,7 +1709,7 @@ public sealed class Utf8PythonRegexTests
 
         Assert.Equal(2, matches.Length);
         Assert.Equal("foo-foo", System.Text.Encoding.UTF8.GetString(matches[0].GetValueMemory().Span));
-        Assert.True(matches[0].TryGetFirstSetGroup("word", out var firstWord));
+        Assert.True(matches[0].TryGetGroup(1, out var firstWord));
         Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((firstWord.Success ? matches[0].GetGroupMemory(firstWord.Number) : default).Span));
         Assert.Equal("foo-foo", System.Text.Encoding.UTF8.GetString(matches[1].GetValueMemory().Span));
     }
@@ -2001,7 +2001,7 @@ public sealed class Utf8PythonRegexTests
 
         static string Describe(Utf8PythonRangeMatch match)
         {
-            Assert.True(match.TryGetFirstSetGroup("word", out var word));
+            Assert.True(match.TryGetGroup(1, out var word));
             Assert.True(match.TryGetGroup(2, out var optional));
             var value = System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(word.Number).Span);
             return optional.Success

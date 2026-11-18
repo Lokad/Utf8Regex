@@ -88,7 +88,6 @@ public sealed class PythonReEscapedScalarTests
             retained = cursorRange;
             Assert.Equal((2, 10), (retained.Value.StartOffsetInBytes, retained.Value.EndOffsetInBytes));
             Assert.Equal(1, retained.LastIndex);
-            Assert.Equal("x", retained.LastGroup);
             Assert.True(alias.MoveNext(out cursorRange));
             Assert.Equal((13, 17), (cursorRange.Value.StartOffsetInBytes, cursorRange.Value.EndOffsetInBytes));
             Assert.False(cursor.MoveNext(out cursorRange));

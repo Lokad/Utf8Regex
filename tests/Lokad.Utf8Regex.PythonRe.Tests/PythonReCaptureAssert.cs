@@ -16,8 +16,6 @@ internal static class PythonReCaptureAssert
     {
         Assert.Equal(expected.Success, actual.Success);
         Assert.Equal(expected.LastIndex, actual.LastIndex);
-        Assert.Equal(expected.LastGroup, actual.LastGroup);
-        Assert.Equal(expected.NameEntries.ToArray(), actual.NameEntries.ToArray());
         Assert.Equal(expected.Groups.ToArray(), actual.Groups.ToArray());
         for (var number = 0; number < expected.Groups.Length; number++)
             Assert.True(expected.GetGroupMemory(number).Span.SequenceEqual(actual.GetGroupMemory(number).Span));

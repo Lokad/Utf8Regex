@@ -151,7 +151,6 @@ public sealed class PythonReBooleanNativeTests
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(1).Span));
             Assert.Equal("b", System.Text.Encoding.UTF8.GetString(matches[0].GetGroupMemory(2).Span));
             Assert.Equal(2, matches[0].LastIndex);
-            Assert.Null(matches[0].LastGroup);
             Assert.Equal(6, matches[0].Value.StartOffsetInBytes);
         }
         var generic = new Utf8PythonRegex("(a+)(b+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()

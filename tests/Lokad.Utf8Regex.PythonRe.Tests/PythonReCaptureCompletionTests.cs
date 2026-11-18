@@ -8,15 +8,15 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReCaptureCompletionTests
 {
     [Theory]
-    [InlineData("(?P<outer>a(?P<inner>b))", "ab", 1, "outer", "ab")]
-    [InlineData("(?P<one>a)(?P<two>b)?", "a", 1, "one", "a")]
-    [InlineData("(?P<one>a)(?P<two>)", "a", 2, "two", "")]
-    [InlineData("(?P<one>a)+(?P<two>b)", "aab", 2, "two", "b")]
-    [InlineData("(?P<one>a)(?P<two>b)|(?P<three>c)", "c", 3, "three", "c")]
-    [InlineData("(?P<a>a)(?P<b>b)(?P<c>c|cd)e", "abcde", 3, "c", "cd")]
-    [InlineData("(?P<a>a)(?P<b>b)(?:(?P<c>c)d|ce)", "abce", 2, "b", "b")]
+    [InlineData("(?P<outer>a(?P<inner>b))", "ab", 1, "ab")]
+    [InlineData("(?P<one>a)(?P<two>b)?", "a", 1, "a")]
+    [InlineData("(?P<one>a)(?P<two>)", "a", 2, "")]
+    [InlineData("(?P<one>a)+(?P<two>b)", "aab", 2, "b")]
+    [InlineData("(?P<one>a)(?P<two>b)|(?P<three>c)", "c", 3, "c")]
+    [InlineData("(?P<a>a)(?P<b>b)(?P<c>c|cd)e", "abcde", 3, "cd")]
+    [InlineData("(?P<a>a)(?P<b>b)(?:(?P<c>c)d|ce)", "abce", 2, "b")]
     public void MultipleCaptureCompletionSurvivesReducedRollbackStorage(
-        string pattern, string text, int last, string name, string capture)
+        string pattern, string text, int last, string capture)
     {
         {
             var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
@@ -37,7 +37,6 @@ public sealed class PythonReCaptureCompletionTests
             }
             Assert.True(result.Success);
             Assert.Equal(last, result.LastIndex);
-            Assert.Equal(name, result.LastGroup);
             Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((result.Groups[last].Success ? result.GetGroupMemory(result.Groups[last].Number).Span : ReadOnlySpan<byte>.Empty)));
 
             var expected = PythonReCaptureAssert.Values(result).Skip(1).ToArray();
@@ -64,7 +63,6 @@ public sealed class PythonReCaptureCompletionTests
             }
             Assert.Equal(last, snapshot2.LastIndex);
             Assert.Equal(last, result.LastIndex);
-            Assert.Equal(name, result.LastGroup);
             Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((result.Groups[last].Success ? result.GetGroupMemory(result.Groups[last].Number).Span : ReadOnlySpan<byte>.Empty)));
         }
     }
@@ -90,7 +88,6 @@ public sealed class PythonReCaptureCompletionTests
         }
         Assert.True(result.Success);
         Assert.Equal(1, result.LastIndex);
-        Assert.Equal("v", result.LastGroup);
         Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((result.Groups[1].Success ? result.GetGroupMemory(result.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 
@@ -118,11 +115,22 @@ public sealed class PythonReCaptureCompletionTests
     private static int? LastIndex(JsonElement expected)
         => expected.GetProperty("lastIndex").ValueKind == JsonValueKind.Null ? null : expected.GetProperty("lastIndex").GetInt32();
 
-    private static void AssertRange(JsonElement expected, Utf8PythonRangeMatch actual)
+    private static void AssertRange(JsonElement expected, Utf8PythonRangeMatch actual, Utf8PythonRegex regex)
     {
         Assert.Equal(expected.GetProperty("success").GetBoolean(), actual.Success);
         Assert.Equal(LastIndex(expected), actual.LastIndex);
-        Assert.Equal(expected.GetProperty("lastGroup").GetString(), actual.LastGroup);
+        var name = expected.GetProperty("lastGroup").GetString();
+        if (name is not null)
+        {
+            Assert.True(regex.TryGetGroupNumber(Encoding.UTF8.GetBytes(name), out var number));
+            Assert.Equal(actual.LastIndex, number);
+        }
+        else if (actual.LastIndex is int unnamed)
+        {
+            Span<byte> label = stackalloc byte[11];
+            Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryCopyGroupNameUtf8(unnamed, label, out var written));
+            Assert.Equal(unnamed.ToString(System.Globalization.CultureInfo.InvariantCulture), Encoding.UTF8.GetString(label[..written]));
+        }
         var groups = expected.GetProperty("groups");
         Assert.Equal(groups.GetArrayLength(), actual.Groups.Length);
         for (var number = 0; number < groups.GetArrayLength(); number++)
@@ -167,7 +175,7 @@ public sealed class PythonReCaptureCompletionTests
             {
                 captureCursor4.MoveNext(out context);
             }
-            AssertRange(expected, context);
+            AssertRange(expected, context, regex);
         }
     }
     [Theory]
@@ -194,7 +202,7 @@ public sealed class PythonReCaptureCompletionTests
         }
         for (var index = 0; index < expected.GetArrayLength(); index++)
         {
-            AssertRange(expected[index], retained[index]);
+            AssertRange(expected[index], retained[index], regex);
         }
     }
     [Theory]
@@ -253,7 +261,6 @@ public sealed class PythonReCaptureCompletionTests
                 captureCursor7.MoveNext(out result);
             }
             Assert.Equal(expected.LastIndex, result.LastIndex);
-            Assert.Equal(expected.LastGroup, result.LastGroup);
             PythonReCaptureAssert.Equal(expected, result);
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             {
@@ -269,11 +276,11 @@ public sealed class PythonReCaptureCompletionTests
         }
     }
     [Theory]
-    [InlineData(false, "(?<=(?P<outer>(😀)))é", "😀é", "outer")]
-    [InlineData(true, "(?<=(?P<outer>(😀)))é", "😀é", "outer")]
-    [InlineData(false, "(?:(?(2)(😀)|()))+", "😀😀", null)]
-    [InlineData(true, "(?:(?(2)(😀)|()))+", "😀😀", null)]
-    public void MetadataPublicationRetainsOriginalTokenAndDeadline(bool expire, string pattern, string text, string? lastGroup)
+    [InlineData(false, "(?<=(?P<outer>(😀)))é", "😀é")]
+    [InlineData(true, "(?<=(?P<outer>(😀)))é", "😀é")]
+    [InlineData(false, "(?:(?(2)(😀)|()))+", "😀😀")]
+    [InlineData(true, "(?:(?(2)(😀)|()))+", "😀😀")]
+    public void MetadataPublicationRetainsOriginalTokenAndDeadline(bool expire, string pattern, string text)
     {
         Utf8PythonRangeMatch cursorRange = default;
         long ticks = 0;
@@ -289,7 +296,6 @@ public sealed class PythonReCaptureCompletionTests
         Assert.True(cursor.MoveNext(out cursorRange));
         var retained = cursorRange;
         Assert.Equal(1, retained.LastIndex);
-        Assert.Equal(lastGroup, retained.LastGroup);
         if (expire)
         {
             ticks = 25;
@@ -303,14 +309,10 @@ public sealed class PythonReCaptureCompletionTests
         }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
-        Assert.Equal(lastGroup, retained.LastGroup);
     }
     [Fact]
     public void DefaultDetailedResultsHaveNoCompletion()
     {
         Assert.Null(default(Utf8PythonRangeMatch).LastIndex);
-        Assert.Null(default(Utf8PythonRangeMatch).LastGroup);
-        Assert.Null(default(Utf8PythonRangeMatch).LastIndex);
-        Assert.Null(default(Utf8PythonRangeMatch).LastGroup);
     }
 }

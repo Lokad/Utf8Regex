@@ -63,7 +63,6 @@ public sealed class PythonReGlobalModeAdmissionTests
         Assert.Equal(first, System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(second, System.Text.Encoding.UTF8.GetString((match.Groups[2].Success ? match.GetGroupMemory(match.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(2, match.LastIndex);
-        Assert.Equal("y", match.LastGroup);
     }
 
     [Fact]

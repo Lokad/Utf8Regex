@@ -19,7 +19,6 @@ namespace Lokad.Utf8Regex.PythonRe;
 public sealed class Utf8PythonMatchCursor : IDisposable
 {
     private ReadOnlyMemory<byte> _input;
-    private PythonReNameEntry[] _names;
     private PythonReScalarMatchState _discovery;
     private int _active;
     private Utf8FundedStorage.Use? _programUse;
@@ -29,13 +28,12 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     private enum Status : byte { Open, Matched, Ended, Faulted, Disposed }
 
     internal Utf8PythonMatchCursor(ReadOnlyMemory<byte> input, Utf8SliceProgram program,
-        PythonReNameEntry[] names, int startOffsetInBytes, TimeSpan timeout,
+        int startOffsetInBytes, TimeSpan timeout,
         object pattern, Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, Utf8FundedStorage.Use? programUse = null,
         bool anchored = false)
     {
         _input = input;
         _programUse = programUse;
-        _names = names;
         _anchored = anchored;
         _discovery = new PythonReScalarMatchState(input.Span, program,
             startOffsetInBytes, timeout, pattern, invocation, candidateRegex, prepareSearch: !anchored);
@@ -144,7 +142,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
             }
             var marker = _discovery.ResultReservation;
             {
-                var completed = _discovery.SnapshotRanges(_input, _names);
+                var completed = _discovery.SnapshotRanges(_input);
                 var receipt = retain ? _discovery.RetainRanges(completed) : null;
                 _discovery.Checkpoint();
                 if (receipt is not null)
@@ -210,7 +208,6 @@ public sealed class Utf8PythonMatchCursor : IDisposable
         _programUse = null;
         _discovery = default;
         _input = default;
-        _names = [];
         _status = status;
         programUse?.Dispose();
     }

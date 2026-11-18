@@ -47,7 +47,7 @@ public sealed class PythonReIdentifierVersionTests
             captureCursor1.MoveNext(out match);
         }
         Assert.True(match.Success);
-        Assert.Equal(name, match.LastGroup);
+        Assert.Equal(1, match.LastIndex);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("😀a", PythonReSubstitutionAssert.Decode(regex.Subn("😀aa"u8, "\\g<" + name + ">")).ResultText);
         using var cancellation = new CancellationTokenSource();
@@ -64,7 +64,7 @@ public sealed class PythonReIdentifierVersionTests
         {
             captureCursor2.MoveNext(out match);
         }
-        Assert.Equal("e\u0301", match.LastGroup);
+        Assert.Equal(2, match.LastIndex);
         Assert.Equal("a|b", PythonReSubstitutionAssert.Decode(regex.Subn("ab"u8, "\\g<é>|\\g<e\u0301>")).ResultText);
     }
 

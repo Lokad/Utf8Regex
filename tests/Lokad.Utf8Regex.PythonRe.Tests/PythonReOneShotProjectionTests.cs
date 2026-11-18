@@ -135,13 +135,13 @@ public sealed class PythonReOneShotProjectionTests
                 captureCursor1.MoveNext(out owned);
             }
             Assert.True(owned.Success);
-            Assert.True(owned.TryGetFirstSetGroup(name, out var group));
+            Assert.True(regex.TryGetGroupNumber(Encoding.UTF8.GetBytes(name), out var number, token.Token));
+            Assert.True(owned.TryGetGroup(number, out var group));
             Assert.Equal(text, System.Text.Encoding.UTF8.GetString((group.Success ? owned.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty)));
             Assert.Equal((begin, end), (group.StartOffsetInBytes, group.EndOffsetInBytes));
             Assert.Equal(1, owned.LastIndex);
             if (name == "inner")
             {
-                Assert.Equal("outer", owned.LastGroup);
                 Assert.False(owned.Groups[3].Success);
             }
             // Borrowed captured bytes survive another operation's scratch release.
@@ -194,7 +194,7 @@ public sealed class PythonReOneShotProjectionTests
         using (var cursor = regex.CreateMatchCursor("é"u8.ToArray(), mode: (Utf8PythonMatchMode)kind))
             cursor.MoveNext(out context);
         Assert.False(context.Success); Assert.Equal(0, context.Groups.Length);
-        Assert.Empty(context.NameEntries.ToArray()); var value = kind switch { 0 => regex.Match("é"u8, mode: Utf8PythonMatchMode.Search), 1 => regex.Match("é"u8), _ => regex.Match("é"u8, mode: Utf8PythonMatchMode.FullMatch) };
+         var value = kind switch { 0 => regex.Match("é"u8, mode: Utf8PythonMatchMode.Search), 1 => regex.Match("é"u8), _ => regex.Match("é"u8, mode: Utf8PythonMatchMode.FullMatch) };
         Assert.False(value.Success);
         Assert.False(regex.IsMatch("é"u8));
     }
@@ -243,110 +243,4 @@ public sealed class PythonReOneShotProjectionTests
         Assert.True(allocated < 65536, $"Unexpected subject-sized projection: {allocated} bytes.");
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void RangeNamesAndGroupsRequireAdmissionAndSurviveScratchRelease(bool allow)
-    {
-        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
-        var program = core.Inspection.AvailableOwnedSliceProgram;
-        Assert.NotNull(program);
-        var names = Enumerable.Repeat(new PythonReNameEntry { Name = "word", Number = 1 }, 5000).ToArray();
-        var extent = ArrayBytes<PythonReNameEntry>(names.Length);
-        var groupExtent = ArrayBytes<Utf8PythonCaptureRange>(2);
-        var input = "😀é"u8.ToArray();
-        // Real snapshot roots overlap discovery scratch. Refusal must leave the
-        // result unpublished and every reservation refundable by this owner.
-        var total = 13 + 2 * ArrayBytes<int>(1) + groupExtent + extent;
-        var state = new PythonReScalarMatchState(input, program, 0, Regex.InfiniteMatchTimeout,
-            "(.)", new(new(0, 0, total - (allow ? 0UL : 1UL)), Regex.InfiniteMatchTimeout, CancellationToken.None), null);
-        Assert.True(state.WorkingInvocation.Ledger.TryReserve(13));
-        Utf8PythonRangeMatch result = default;
-        try
-        {
-            Assert.True(state.MoveNext(input));
-            Exception? failure = null;
-            try { result = state.SnapshotRanges(input, names); }
-            catch (InvalidOperationException error) { failure = error; }
-            if (allow)
-            {
-                Assert.Null(failure); Assert.True(result.Success);
-                Assert.Equal(names, result.NameEntries.ToArray());
-                Assert.Equal(groupExtent + extent, state.ResultReservation);
-                Assert.Equal(total, state.ReservedBytes);
-                names[0] = new PythonReNameEntry { Name = "changed", Number = 0 };
-                Assert.Equal("word", result.NameEntries[0].Name);
-                Assert.Equal("😀", Encoding.UTF8.GetString(result.GetValueMemory().Span));
-            }
-            else
-            {
-                Assert.NotNull(failure); Assert.False(result.Success);
-                Assert.Equal(groupExtent, state.ResultReservation);
-                Assert.Equal(total - extent, state.ReservedBytes);
-                Assert.Equal(total, state.WorkingInvocation.Budget.PeakWorkingBytes);
-                Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, state.WorkingInvocation.Budget.LimitBreach);
-            }
-        }
-        finally { state.Dispose(); }
-        Assert.Equal(13UL, state.ReservedBytes); state.WorkingInvocation.Ledger.Release(13);
-        if (allow)
-        {
-            Assert.Equal("😀", Encoding.UTF8.GetString(result.GetValueMemory().Span));
-            Assert.Equal("word", result.NameEntries[0].Name);
-        }
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void NameCopyFailureAfterAdmissionIsUnpublishedAndPreservesNeutralFailure(bool expire)
-    {
-        long ticks = 0;
-        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        using var token = new CancellationTokenSource();
-        var core = new global::Lokad.Utf8Regex.Utf8Regex("(.)");
-        var program = core.Inspection.AvailableOwnedSliceProgram;
-        Assert.NotNull(program);
-        var names = Enumerable.Repeat(new PythonReNameEntry { Name = "word", Number = 1 }, 16385).ToArray();
-        var extent = ArrayBytes<PythonReNameEntry>(names.Length);
-        var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
-        var cursor = new PythonReScalarMatchState("😀"u8, program, 0, timeout,
-            "(.)", new(new(0, 0, 1UL << 24), timeout, token.Token), null);
-        Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));
-        try
-        {
-            Assert.True(cursor.MoveNext("😀"u8));
-            var baseline = cursor.ReservedBytes;
-            var priorResults = cursor.ResultReservation;
-            cursor.WorkingInvocation.ShareStorageForCursor();
-            var observer = cursor.WorkingInvocation;
-            while ((cursor.WorkingInvocation.Budget.Steps & 63) != 0)
-                Assert.Equal(Utf8ExecutionLimitKind.None, cursor.WorkingInvocation.TryChargeInputStep());
-            var entered = false;
-            cursor.WorkingInvocation.CheckpointHook = _ =>
-            {
-                if (observer.Ledger.ReservedBytes == baseline + extent)
-                {
-                    entered = true;
-                    if (expire) ticks = 50; else token.Cancel();
-                }
-            };
-            PythonReNameEntry[]? result = null;
-            Exception? failure = null;
-            try { result = cursor.SnapshotNameEntries(names); }
-            catch (Exception error) { failure = error; }
-            Assert.True(entered); Assert.Null(result);
-            if (expire)
-            {
-                Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
-
-            }
-            else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-            Assert.Equal(baseline + extent, cursor.ReservedBytes);
-            Assert.Equal(priorResults + extent, cursor.ResultReservation);
-            Assert.All(names, entry => Assert.Equal("word", entry.Name));
-        }
-        finally { cursor.Dispose(); }
-        Assert.Equal(13UL, cursor.ReservedBytes); cursor.WorkingInvocation.Ledger.Release(13);
-    }
 }

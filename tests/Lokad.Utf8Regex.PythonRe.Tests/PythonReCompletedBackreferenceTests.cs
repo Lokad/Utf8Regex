@@ -108,7 +108,6 @@ public sealed class PythonReCompletedBackreferenceTests
         var retained = cursorRange;
         Assert.Equal("token", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         Assert.Equal(1, retained.LastIndex);
-        Assert.Equal("word", retained.LastGroup);
         if (expire)
         {
             ticks = 25;

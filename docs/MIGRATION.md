@@ -400,8 +400,8 @@ shared allowance/deadline; copying never creates another budget.
 
 Owned snapshots survive later calls, failure and disposal. Default Core values
 are empty/zero; a default view has no groups, while an unsuccessful operation
-retains group zero. Python default/missed detailed capture/name arrays and text
-are empty. Successful supplied arrays retain their documented identity. Mutable
+retains group zero. Python default and missed range results expose empty captures.
+Successful supplied arrays retain their documented identity. Mutable
 output arrays remain independent even when immutable equal-range strings share.
 
 Core removes `ReplaceToString`, callback replacement and both evaluator delegates.
@@ -560,11 +560,19 @@ is specified. Captures, original cancellation, byte output and aliases are uncha
 
 ### PythonRe capture cursor modes and byte end bounds
 
-PythonRe capture metadata now comes from CreateMatchCursor over stable memory.
+PythonRe capture ranges come from CreateMatchCursor over stable memory.
 Select Utf8PythonMatchMode.Search (default), Match or FullMatch and optionally a
-scalar-aligned byte end bound. MoveNext returns immutable numbered/named ranges
-with LastIndex/LastGroup; dispose the cursor after the desired result. Previously
-returned snapshots remain valid while borrowed subject memory remains unchanged.
+scalar-aligned byte end bound. `MoveNext` returns immutable numbered ranges and
+`LastIndex`. Dispose the cursor after the desired result. Returned snapshots
+remain valid while borrowed subject memory remains unchanged.
+
+`NameEntries`, `LastGroup`, `TryGetFirstSetGroup` and `PythonReNameEntry` are
+removed from the result surface. Resolve a UTF-8 name with `TryGetGroupNumber`
+on the open regex and use `TryGetGroup(number, ...)` on the result. To reproduce
+Python's `lastgroup`, copy group names once with `TryCopyGroupNameUtf8`. Look up
+`LastIndex` in that host map and return null for a missing or unnamed group
+(the regex exports a decimal label for unnamed slots). Retained result admission
+now covers the capture array and receipt. Name storage belongs to the program.
 SearchDetailed/MatchDetailed/FullMatchDetailed and their context/group carriers
 are removed. The optional cursor working account now treats null as inherited
 program funding or numeric limits; a supplied account still refuses terminally.
@@ -585,7 +593,7 @@ allocate no result arrays and consume no result-byte quota; VM scratch remains
 admitted. Pre-cancellation preserves output; later failure clears the requested
 prefix. Optional endOffsetInBytes is a scalar boundary and retains absolute prefix
 context. Optional working admission inherits program/numeric funding when null;
-supplied refusal is terminal. Use a capture cursor for LastIndex/LastGroup.
+supplied refusal is terminal. Use a capture cursor for `LastIndex`.
 
 ### PythonRe compilation policy
 

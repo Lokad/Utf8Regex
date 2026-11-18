@@ -43,7 +43,6 @@ public sealed class PythonGroupNumberingRegressionTests
         {
             Assert.True(match.Success);
             Assert.Equal(trailingGroup ? 72 : 1, match.LastIndex);
-            Assert.Equal(trailingGroup ? null : "outer", match.LastGroup);
             Assert.Equal(values, PythonReCaptureAssert.Values(match));
             Assert.Equal(Enumerable.Range(0, values.Length), Enumerable.Range(0, match.Groups.Length));
         }
@@ -150,7 +149,8 @@ public sealed class PythonGroupNumberingRegressionTests
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((first.Success ? context.GetGroupMemory(first.Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.True(context.TryGetGroup(2, out var second));
         Assert.Equal("b", System.Text.Encoding.UTF8.GetString((second.Success ? context.GetGroupMemory(second.Number).Span : ReadOnlySpan<byte>.Empty)));
-        Assert.True(context.TryGetFirstSetGroup("x", out var named));
+        Assert.True(regex.TryGetGroupNumber("x"u8, out var groupNumber));
+        Assert.True(context.TryGetGroup(groupNumber, out var named));
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((named.Success ? context.GetGroupMemory(named.Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 

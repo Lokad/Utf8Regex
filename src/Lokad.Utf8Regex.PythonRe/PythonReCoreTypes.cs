@@ -1,15 +1,5 @@
 namespace Lokad.Utf8Regex.PythonRe;
 
-/// <summary>Maps a Python named group to its numeric capture slot.</summary>
-public readonly struct PythonReNameEntry
-{
-    /// <summary>Gets the group name.</summary>
-    public string Name { get; init; }
-
-    /// <summary>Gets the capture group number, starting at one; group zero is the whole match.</summary>
-    public int Number { get; init; }
-}
-
 internal readonly struct PythonReGroupData
 {
     public int Number { get; init; }

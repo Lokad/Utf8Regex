@@ -439,7 +439,7 @@ public sealed class PythonReClassDelimiterWindowTests
 
             Assert.Equal("item-123", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span));
             Assert.Equal("other-45", System.Text.Encoding.UTF8.GetString(second.GetValueMemory().Span));
-            Assert.True(second.TryGetFirstSetGroup("n", out var group));
+            Assert.True(second.TryGetGroup(1, out var group));
             Assert.Equal("other", System.Text.Encoding.UTF8.GetString((group.Success ? second.GetGroupMemory(group.Number) : default).Span));
         }
         finally

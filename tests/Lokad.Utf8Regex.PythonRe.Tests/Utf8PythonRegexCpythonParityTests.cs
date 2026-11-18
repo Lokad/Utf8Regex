@@ -647,13 +647,18 @@ public sealed class Utf8PythonRegexCpythonParityTests
     public void NamedCaptureMetadataFollowsCpythonExamples()
     {
         Utf8PythonRangeMatch match = default;
-        using (var captureCursor11 = new Utf8PythonRegex("(?P<first>first) (?P<second>second)").CreateMatchCursor(("first second"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
+        using var regex = new Utf8PythonRegex("(?P<first>first) (?P<second>second)");
+        using (var captureCursor11 = regex.CreateMatchCursor(("first second"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
         {
             captureCursor11.MoveNext(out match);
         }
         Assert.True(match.Success);
-        Assert.Equal("first", GetNamedGroup(match, "first"));
-        Assert.Equal("second", GetNamedGroup(match, "second"));
+        Assert.True(regex.TryGetGroupNumber("first"u8, out var first));
+        Assert.Equal(1, first);
+        Assert.Equal("first", GetGroup(match, first));
+        Assert.True(regex.TryGetGroupNumber("second"u8, out var second));
+        Assert.Equal(2, second);
+        Assert.Equal("second", GetGroup(match, second));
     }
 
     [Theory]
@@ -821,13 +826,6 @@ public sealed class Utf8PythonRegexCpythonParityTests
     private static string GetGroup(Utf8PythonRangeMatch match, int number)
     {
         Assert.True(match.TryGetGroup(number, out var group));
-        Assert.True(group.Success);
-        return System.Text.Encoding.UTF8.GetString((group.Success ? match.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty));
-    }
-
-    private static string GetNamedGroup(Utf8PythonRangeMatch match, string name)
-    {
-        Assert.True(match.TryGetFirstSetGroup(name, out var group));
         Assert.True(group.Success);
         return System.Text.Encoding.UTF8.GetString((group.Success ? match.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty));
     }

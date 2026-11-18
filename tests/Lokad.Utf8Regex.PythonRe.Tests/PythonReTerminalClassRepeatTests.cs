@@ -55,7 +55,6 @@ public sealed class PythonReTerminalClassRepeatTests
             Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), matches[i].Value.StartOffsetInBytes);
             Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, start + expected[i].Length)), matches[i].Value.EndOffsetInBytes);
             Assert.Null(matches[i].LastIndex);
-            Assert.Null(matches[i].LastGroup);
             previous = start + expected[i].Length;
         }
     }

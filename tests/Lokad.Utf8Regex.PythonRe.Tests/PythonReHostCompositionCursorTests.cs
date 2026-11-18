@@ -19,7 +19,7 @@ public sealed class PythonReHostCompositionCursorTests
         });
         using var cursor = regex.CreateMatchCursor(input);
         Assert.True(cursor.MoveNext(out var retained));
-        Assert.Equal(2, retained.LastIndex); Assert.Equal("tail", retained.LastGroup);
+        Assert.Equal(2, retained.LastIndex);
         Assert.Equal("needle", Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.True(retained.TryGetGroup(2, out var tail));
         Assert.Equal((8, 14), (tail.StartOffsetInBytes, tail.EndOffsetInBytes));

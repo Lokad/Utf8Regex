@@ -999,7 +999,7 @@ public sealed class PythonReSliceOwnershipTests
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((detailed.Groups[1].Success ? detailed.GetGroupMemory(detailed.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("b", System.Text.Encoding.UTF8.GetString((detailed.Groups[2].Success ? detailed.GetGroupMemory(detailed.Groups[2].Number).Span : ReadOnlySpan<byte>.Empty)));
-        Assert.True(detailed.TryGetFirstSetGroup("w", out var word));
+        Assert.True(detailed.TryGetGroup(1, out var word));
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((word.Success ? detailed.GetGroupMemory(word.Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 

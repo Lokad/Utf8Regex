@@ -17,19 +17,9 @@ public readonly record struct PythonReHostCapture
 public readonly record struct PythonReHostDetailedMatch
 {
     public PythonReHostCapture[] Groups { get => field ?? []; init; }
-    public PythonReNameEntry[] NameEntries { get => field ?? []; init; }
     public int? LastIndex { get; init; }
     public bool Success => Groups.Length > 0 && Groups[0].Success;
     public PythonReHostCapture Value => Success ? Groups[0] : default;
-    public string? LastGroup
-    {
-        get
-        {
-            if (LastIndex is int number)
-                foreach (var entry in NameEntries) if (entry.Number == number) return entry.Name;
-            return null;
-        }
-    }
 }
 
 internal static partial class PythonReBenchmarkReporter
@@ -60,23 +50,13 @@ internal static partial class PythonReBenchmarkReporter
         var matches = new List<PythonReHostDetailedMatch>();
         using var cursor = regex.CreateMatchCursor(input, start, token);
         while (cursor.MoveNext(out var match))
-        {
-            var groups = new PythonReHostCapture[match.Groups.Length];
-            for (var number = 0; number < groups.Length; number++)
-            {
-                var range = match.Groups[number];
-                groups[number] = new() { Number = number, Success = range.Success,
-                    StartOffsetInBytes = range.StartOffsetInBytes, EndOffsetInBytes = range.EndOffsetInBytes,
-                    ValueText = Encoding.UTF8.GetString(match.GetGroupMemory(number).Span) };
-            }
-            matches.Add(new() { Groups = groups, NameEntries = match.NameEntries.ToArray(), LastIndex = match.LastIndex });
-        }
+            matches.Add(ProjectDetailed(match));
         var result = matches.ToArray();
         token.ThrowIfCancellationRequested();
         return result;
     }
 
-    private static PythonReHostDetailedMatch ProjectDetailed(Utf8PythonRangeMatch match)
+    internal static PythonReHostDetailedMatch ProjectDetailed(Utf8PythonRangeMatch match)
     {
         var groups = new PythonReHostCapture[match.Groups.Length];
         for (var number = 0; number < groups.Length; number++)
@@ -86,6 +66,6 @@ internal static partial class PythonReBenchmarkReporter
                 StartOffsetInBytes = group.StartOffsetInBytes, EndOffsetInBytes = group.EndOffsetInBytes,
                 ValueText = Encoding.UTF8.GetString(match.GetGroupMemory(number).Span) };
         }
-        return new() { Groups = groups, NameEntries = match.NameEntries.ToArray(), LastIndex = match.LastIndex };
+        return new() { Groups = groups, LastIndex = match.LastIndex };
     }
 }

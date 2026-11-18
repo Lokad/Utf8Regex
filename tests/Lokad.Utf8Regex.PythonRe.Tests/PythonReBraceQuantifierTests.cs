@@ -89,9 +89,9 @@ public sealed class PythonReBraceQuantifierTests
     }
 
     [Theory]
-    [InlineData("(😀){,2}?é", "😀😀é", "😀", null, 4)]
-    [InlineData("(?P<g>a){,2}+b", "aab", "a", "g", 1)]
-    public void OmittedLowerBoundsKeepLastCompleteScalarCapture(string pattern, string text, string capture, string? name, int startByte)
+    [InlineData("(😀){,2}?é", "😀😀é", "😀", 4)]
+    [InlineData("(?P<g>a){,2}+b", "aab", "a", 1)]
+    public void OmittedLowerBoundsKeepLastCompleteScalarCapture(string pattern, string text, string capture, int startByte)
     {
         var regex = new Utf8PythonRegex(pattern);
         Utf8PythonRangeMatch actual = default;
@@ -102,7 +102,6 @@ public sealed class PythonReBraceQuantifierTests
         Assert.True(actual.Success);
         Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((actual.Groups[1].Success ? actual.GetGroupMemory(actual.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(1, actual.LastIndex);
-        Assert.Equal(name, actual.LastGroup);
         Assert.Equal(startByte, actual.Groups[1].StartOffsetInBytes);
         Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(text)));
         Assert.Equal(capture, System.Text.Encoding.UTF8.GetString((actual.Groups[1].Success ? actual.GetGroupMemory(actual.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));

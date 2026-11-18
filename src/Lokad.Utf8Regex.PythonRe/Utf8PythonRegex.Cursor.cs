@@ -23,7 +23,7 @@ public sealed partial class Utf8PythonRegex
             ValidateScalarStartOffset(subject.Span, startOffsetInBytes);
             var program = mode == Utf8PythonMatchMode.FullMatch
                 ? GetScalarFullProgram(subject.Span, invocation.Budget.Deadline, cancellationToken) : ScalarProgram;
-            return new Utf8PythonMatchCursor(subject, program, _nameEntries, startOffsetInBytes,
+            return new Utf8PythonMatchCursor(subject, program, startOffsetInBytes,
                 MatchTimeout, this, invocation, _utf8Regex, programUse, anchored: mode != Utf8PythonMatchMode.Search);
         }
         catch { programUse?.Dispose(); throw; }

@@ -64,7 +64,6 @@ public sealed class PythonReNativeLiteralCursorTests
             Assert.Equal(secondValue, System.Text.Encoding.UTF8.GetString(second.GetValueMemory().Span));
             Assert.Single(first.Groups.ToArray()); Assert.Single(second.Groups.ToArray());
             Assert.Null(first.LastIndex); Assert.Null(second.LastIndex);
-            Assert.Null(first.LastGroup); Assert.Null(second.LastGroup);
         }
         finally { cursor.Dispose(); }
     }

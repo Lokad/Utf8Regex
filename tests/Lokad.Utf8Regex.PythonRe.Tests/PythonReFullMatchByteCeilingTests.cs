@@ -172,7 +172,7 @@ public sealed class PythonReFullMatchByteCeilingTests
             captureCursor1.MoveNext(out retained);
         }
         Assert.True(retained.Success);
-        Assert.Equal("x", retained.LastGroup);
+        Assert.Equal(1, retained.LastIndex);
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Assert.True(regex.Match("😀a"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal("😀a", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));

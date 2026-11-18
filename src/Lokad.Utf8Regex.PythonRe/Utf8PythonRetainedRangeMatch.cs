@@ -1,7 +1,7 @@
 namespace Lokad.Utf8Regex.PythonRe;
 
 /// <summary>Holds an explicitly funded immutable range result until the caller releases its reservation.</summary>
-/// <remarks>Dispose after retained users finish, or take over admission for any copies kept afterward. Copies already obtained from Match remain valid; subject bytes remain borrowed and their memory manager must stay alive. This receipt covers range/name arrays, shared name text counted conservatively again, and its object charge. Borrowed input is excluded. There is no finalizer.</remarks>
+/// <remarks>Dispose after retained users finish, or take over admission for any copies kept afterward. Copies already obtained from Match remain valid; subject bytes remain borrowed and their memory manager must stay alive. This receipt covers the range array and its object charge. Borrowed input is excluded. There is no finalizer.</remarks>
 public sealed class Utf8PythonRetainedRangeMatch : IDisposable
 {
     private Utf8PythonRangeMatch _match;

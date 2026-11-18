@@ -83,7 +83,6 @@ public sealed class PythonReConditionalNameAdmissionTests
                 {
                     Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
                     Assert.Equal(1, match.LastIndex);
-                    Assert.Equal("x", match.LastGroup);
                 }
             }
         }

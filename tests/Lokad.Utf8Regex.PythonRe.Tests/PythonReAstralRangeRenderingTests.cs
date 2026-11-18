@@ -95,7 +95,6 @@ public sealed class PythonReAstralRangeRenderingTests
         Assert.All(matches, match =>
         {
             Assert.Equal(1, match.LastIndex);
-            Assert.Equal("x", match.LastGroup);
         });
         Assert.Equal(new[] { first, second }, new Regex(PythonReDotNetReference.Render(regex), RegexOptions.CultureInvariant)
             .Matches(text).Select(match => match.Value));

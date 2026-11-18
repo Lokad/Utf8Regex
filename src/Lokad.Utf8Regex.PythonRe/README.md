@@ -27,8 +27,8 @@ The profile targets the documented CPython 3.13.2 `str` grammar with owned Unico
 15.1.0 identifier/class/case data. Patterns are parsed before scalar lowering.
 Captures are numbered in opening order; references/conditionals, fixed-width
 lookbehind, greedy/lazy repetition, scoped flags and Python empty-match retry use
-the owned engine. `LastIndex`/`LastGroup` identify the last capture to close on the
-successful path; an unnamed last capture has a null name. Unmatched captures keep
+the owned engine. `LastIndex` identifies the last capture to close on the
+successful path. The compiled regex exports UTF-8 capture names. Unmatched captures keep
 the documented null/empty shaping for each API.
 
 Match exposes a borrowed whole-match byte value and optional caller-owned capture
@@ -151,9 +151,8 @@ backend presence alone does not establish execution. A Core preparation may stil
 be built transiently to discover eligibility, under the original construction
 owner. Discarding a root reduces retention, not all construction traffic.
 
-Default and unsuccessful detailed results expose empty capture/name arrays and
-empty value text. Default match/group data also expose empty text. Successful
-snapshots keep their supplied arrays and retain their values across later calls.
+Default and unsuccessful range results expose empty capture arrays. Successful
+snapshots retain their numbered ranges across later calls.
 
 ## Public API
 
@@ -205,11 +204,11 @@ and advances successively. An optional scalar-aligned endOffsetInBytes limits th
 subject prefix without rebasing byte coordinates or losing lookbehind context.
 Dispose after consuming the desired result; snapshots remain valid. The former
 SearchDetailed/MatchDetailed/FullMatchDetailed APIs and context/group view types
-are removed. LastIndex/LastGroup retain Python's last-capture-to-close semantics.
+are removed. `LastIndex` retains Python's last-capture-to-close semantics.
 A cursor owns persistent discovery state, so one-shot capture materialization now
 pays cursor setup and allocation too. Use Match with caller-owned capture slots
 when only byte ranges are required, or omit slots for a whole-match value.
-Completion-order LastIndex/LastGroup remain on cursor snapshots.
+Resolve names on the compiled regex before using the resulting numbers on a snapshot.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one range result per
 advance without materializing a complete collection:

@@ -83,7 +83,7 @@ proof retains the existing admitted workspace/slots, LastIndex and retained
 results. Two nonnested positive ASCII interval `+` captures can also reuse it
 when a nonempty exact ASCII literal separates them and its first byte cannot be
 consumed by the first interval. Both existing closing-journal entries remain
-admitted, preserving LastIndex/LastGroup without another completion flag or map.
+admitted, preserving `LastIndex` without another completion flag or map.
 Literal, repeat-block and publication checks keep the original authority;
 removed VM dispatch can lower work totals. FullMatch end constraints and other
 root shapes retain their existing verification. No capture history is discarded.
@@ -266,8 +266,10 @@ work/storage can decrease; major-buffer admission and useful limits remain.
 Captures are numbered by opening parenthesis, including named groups.
 References and conditionals use those numbers. Detailed `LastIndex` is the last
 capture to close on the successful path, not the largest participating number:
-`((a))` closes group 1 last. `LastGroup` is that slot's name, or null when
-unnamed. Misses/no participating captures have null completion metadata. With one
+`((a))` closes group 1 last. Misses and matches without a participating capture
+have a null `LastIndex`. Hosts implementing Python's `lastgroup` can resolve that
+number using the names copied from the compiled regex and return null for an
+unnamed group. With one
 group, participation in its completed slot establishes `LastIndex` without a
 completion-journal scan. Unneeded rollback storage can be omitted on linear paths.
 References after the sole unique capture closes can also use its completed slot
@@ -284,9 +286,9 @@ workspace cleanup. Lazy, captured, alternating and constrained-tail programs kee
 their retry. Eliminated instructions lower work requirements,
 with the original cancellation/deadline and byte/depth/result admission preserved.
 
-Default and unsuccessful borrowed capture contexts expose no capture slots or
-named mappings. Successful range results own immutable capture/name metadata and
-borrow the unchanged subject. Text materialization belongs to the host.
+Default and unsuccessful range results expose no capture slots. Successful range
+results own immutable numbered captures and borrow the unchanged subject. Names
+belong to the compiled expression. Text materialization belongs to the host.
 
 ## Grammar and parsing
 
@@ -333,8 +335,8 @@ entry preserves output; no match or later failure clears the requested prefix.
 The result does not borrow output slots, so whole-match bytes survive slot reuse.
 Caller destinations add no result-array allocation or result-byte charge; the
 existing VM still admits its major scratch and observes bounded projection checks.
-No-closing-metadata callers can avoid cursor snapshots. LastIndex/LastGroup remain
-available through the capture cursor, never inferred from participating slot order.
+Use the capture cursor when closing order matters. Its `LastIndex` reflects the
+last capture to close even when a larger slot also participated.
 Search/FullMatch methods are removed; use mode and recompile callers. Name old
 positional tokens cancellationToken: because captures is now the third parameter.
 Match accepts optional working admission; null inherits program/numeric funding,
@@ -581,14 +583,14 @@ FullMatchDetailedData, FindIterDetailed and their two owned-text carriers are
 removed. SearchDetailed, MatchDetailed, FullMatchDetailed and their stack-only
 Utf8PythonMatchContext/Utf8PythonGroupContext carriers are also removed. Hosts
 use the capture cursor with the corresponding mode, then decode/copy under
-their own controls. Snapshots retain numbered/named groups and Python closing-order
-LastIndex/LastGroup, including an outer capture that closes after its children.
+their own controls. Snapshots retain numbered groups and Python's closing order
+through `LastIndex`, including when an outer capture closes after its children.
 
 Template substitutions copy required output from encoded template literals and
-scalar-aligned captures. Capture/name arrays and owned byte output consume modeled
+scalar-aligned captures. Capture arrays and owned byte output consume modeled
 result capacity independently. Admission precedes allocation and cumulative
 traffic is not refunded by working release. Host strings, collections and borrowed
-subject storage are excluded. Empty name metadata needs no allocation/copy.
+subject storage are excluded. The name lookup table is admitted at construction.
 Deleting owned-text publication and its string-sizing/decoding helpers does not
 change scalar matching, byte offsets, interruption or admission for retained byte
 operations. There is no invocation UTF-16 string-capacity guarantee for host work.
@@ -657,7 +659,7 @@ own admission and final interruption checks. Neither ordinary range publication
 nor one-shot owned results bound external host retention. A new call gets an
 independent allowance and needs independent host admission.
 
-Range snapshots own immutable capture/name arrays and borrow the unchanged
+Range snapshots own immutable capture arrays and borrow the unchanged
 `ReadOnlyMemory<byte>` subject. Their metadata survives cursor moves/disposal;
 keep its memory manager alive when accessing `GetValueMemory`/`GetGroupMemory`.
 Unmatched captures have `Success=false` and zero offsets, distinct from successful
@@ -674,9 +676,8 @@ receipt. The cursor must have a caller-owned working allowance, either from
 funded Compile or its explicit factory argument. An unfunded cursor rejects this
 method before discovery and can still use ordinary advances. No Release/TryReserve
 gap occurs during transfer. `ChargedBytes` reports the modeled amount, including
-the receipt object, capture/name arrays and shared immutable name text counted
-conservatively again so it can outlive program funding. Borrowed subject storage
-remains excluded. Numeric result traffic includes
+the receipt object and capture array. Borrowed subject storage remains excluded.
+Numeric result traffic includes
 that acquisition and is never refunded by disposal or transfer.
 
 The receipt's `Match` owns immutable range metadata and survives cursor/program

@@ -145,7 +145,7 @@ public sealed class PythonUnicodeVersionTests
         else
         { token.Cancel(); Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _)).CancellationToken); }
         Assert.Equal("é", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
-        Assert.Equal("w", retained.LastGroup);
+        Assert.Equal(1, retained.LastIndex);
     }
 
     [Fact]

@@ -69,7 +69,7 @@ public sealed class PythonReAdjacentSetRepeatTests
         }
         Assert.True(retained.Success);
         Assert.Equal("\u2003 ", System.Text.Encoding.UTF8.GetString((retained.Groups[1].Success ? retained.GetGroupMemory(retained.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
-        Assert.Equal("gap", retained.LastGroup);
+        Assert.Equal(1, retained.LastIndex);
         Assert.Equal(held, allowance.Used);
         Assert.Equal(1, owner.Count(input));
         Assert.Equal(held, allowance.Used);

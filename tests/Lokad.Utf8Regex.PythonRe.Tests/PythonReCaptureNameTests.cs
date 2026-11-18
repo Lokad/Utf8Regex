@@ -47,7 +47,6 @@ public sealed class PythonReCaptureNameTests
         }
         using var cursor = regex.CreateMatchCursor("abcd"u8.ToArray());
         Assert.True(cursor.MoveNext(out var result));
-        Assert.Null(result.LastGroup);
         Assert.Equal(4, result.LastIndex);
     }
 }

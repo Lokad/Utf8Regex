@@ -47,7 +47,6 @@ public sealed class PythonReLeadingFlagTriviaTests
             Assert.Equal("😀A", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
             Assert.Equal((0, 5), (match.Groups[1].StartOffsetInBytes, match.Groups[1].EndOffsetInBytes));
             Assert.Equal(1, match.LastIndex);
-            Assert.Equal("x", match.LastGroup);
             Assert.Equal(1, regex.Count("😀A"u8, 0, cancellation.Token));
         }
     }

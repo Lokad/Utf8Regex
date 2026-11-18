@@ -127,7 +127,6 @@ public sealed partial class PythonReScalarFoldingTests
         }
         Assert.False(search.Success);
         Assert.Equal(0, search.Groups.Length);
-        Assert.Equal(0, search.NameEntries.Length);
         Utf8PythonRangeMatch match = default;
         using (var captureCursor9 = regex.CreateMatchCursor(("!"u8).ToArray(), mode: Utf8PythonMatchMode.Match))
         {
@@ -135,7 +134,6 @@ public sealed partial class PythonReScalarFoldingTests
         }
         Assert.False(match.Success);
         Assert.Equal(0, match.Groups.Length);
-        Assert.Equal(0, match.NameEntries.Length);
         Utf8PythonRangeMatch full = default;
         using (var captureCursor10 = regex.CreateMatchCursor(("!"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -143,7 +141,6 @@ public sealed partial class PythonReScalarFoldingTests
         }
         Assert.False(full.Success);
         Assert.Equal(0, full.Groups.Length);
-        Assert.Equal(0, full.NameEntries.Length);
     }
 
     [Fact]

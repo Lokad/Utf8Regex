@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-// Immutable cursor name metadata stays stable across independent traversals.
+// Independent cursors and compiled metadata are safe to read concurrently.
 public sealed class PythonResultOwnershipRegressionTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
@@ -20,7 +20,7 @@ public sealed class PythonResultOwnershipRegressionTests
             {
                 captureCursor3.MoveNext(out snapshot3);
             }
-            if (snapshot3.NameEntries.ToArray()[0].Name != "word")
+            if (!snapshot3.Success || snapshot3.LastIndex != 1 || !snapshot3.GetGroupMemory(1).Span.SequenceEqual("foo"u8))
             {
                 System.Threading.Interlocked.Increment(ref failures);
             }
@@ -33,7 +33,7 @@ public sealed class PythonResultOwnershipRegressionTests
             {
                 captureCursor4.MoveNext(out snapshot4);
             }
-            if (!snapshot4.TryGetFirstSetGroup("word", out var ignoredGroup))
+            if (!regex.TryGetGroupNumber("word"u8, out var number) || !snapshot4.TryGetGroup(number, out var group) || !group.Success)
             {
                 System.Threading.Interlocked.Increment(ref failures);
             }
@@ -50,14 +50,12 @@ public sealed class PythonResultOwnershipRegressionTests
         {
             captureCursor5.MoveNext(out first);
         }
-        Assert.Empty(first.NameEntries.ToArray());
         Assert.Equal(2, regex.CaptureGroupCount);
         Utf8PythonRangeMatch second = default;
         using (var captureCursor6 = regex.CreateMatchCursor(Utf8("ab"), mode: Utf8PythonMatchMode.Search))
         {
             captureCursor6.MoveNext(out second);
         }
-        Assert.Empty(second.NameEntries.ToArray());
         Assert.True(second.Success);
     }
 }

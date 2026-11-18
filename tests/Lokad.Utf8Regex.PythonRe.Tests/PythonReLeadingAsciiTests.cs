@@ -150,8 +150,8 @@ public sealed class PythonReLeadingAsciiTests
             Assert.True(alias.MoveNext(out cursorRange)); var second = cursorRange;
             Assert.False(cursor.MoveNext(out cursorRange)); Assert.False(alias.MoveNext(out cursorRange));
             alias.Dispose();
-            Assert.True(first.TryGetFirstSetGroup("n", out var group)); Assert.Equal("१२", System.Text.Encoding.UTF8.GetString((group.Success ? first.GetGroupMemory(group.Number) : default).Span));
-            Assert.True(second.TryGetFirstSetGroup("n", out group)); Assert.Equal("\U0001D7CE", System.Text.Encoding.UTF8.GetString((group.Success ? second.GetGroupMemory(group.Number) : default).Span));
+            Assert.True(first.TryGetGroup(1, out var group)); Assert.Equal("१२", System.Text.Encoding.UTF8.GetString((group.Success ? first.GetGroupMemory(group.Number) : default).Span));
+            Assert.True(second.TryGetGroup(1, out group)); Assert.Equal("\U0001D7CE", System.Text.Encoding.UTF8.GetString((group.Success ? second.GetGroupMemory(group.Number) : default).Span));
             Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
         }
         finally { cursor.Dispose(); }

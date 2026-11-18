@@ -152,8 +152,8 @@ public sealed class PythonReRangeResultTests
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.SplitRanges("a"u8, 0, 0, token.Token)).CancellationToken);
         Assert.Single(regex.SplitRanges("é😀"u8, -1, 0, default));
         var none = default(Utf8PythonRangeMatch);
-        Assert.False(none.Success); Assert.True(none.Groups.IsEmpty); Assert.True(none.NameEntries.IsEmpty);
-        Assert.Null(none.LastIndex); Assert.Null(none.LastGroup); Assert.True(none.GetValueMemory().IsEmpty);
-        Assert.False(none.TryGetGroup(0, out _)); Assert.False(none.TryGetFirstSetGroup("x", out _));
+        Assert.False(none.Success); Assert.True(none.Groups.IsEmpty);
+        Assert.Null(none.LastIndex);  Assert.True(none.GetValueMemory().IsEmpty);
+        Assert.False(none.TryGetGroup(0, out _));
     }
 }

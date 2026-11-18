@@ -39,7 +39,7 @@ public sealed class PythonReCompilationPolicyTests
         Assert.True(account.Used > 0);
         Assert.Throws<ObjectDisposedException>(() => regex.Count(input));
         Assert.True(alias.MoveNext(out var retained));
-        Assert.Equal("x", retained.LastGroup);
+        Assert.Equal(1, retained.LastIndex);
         Assert.False(cursor.MoveNext(out _));
         Assert.Equal(0UL, account.Used);
         alias.Dispose();

@@ -31,7 +31,7 @@ public sealed class PythonReResultExtentTests
 
                 var positioned = cursor.ReservedBytes;
                 var marker = cursor.ResultReservation;
-                var groups = cursor.SnapshotRanges(input, []);
+                var groups = cursor.SnapshotRanges(input);
                 Assert.Equal(positioned + ArrayBytes<Utf8PythonCaptureRange>(2), cursor.ReservedBytes);
                 Assert.Equal(2 * count, groups.Groups[1].StartOffsetInBytes);
                 var resultTraffic = cursor.WorkingInvocation.Budget.ResultBytes;

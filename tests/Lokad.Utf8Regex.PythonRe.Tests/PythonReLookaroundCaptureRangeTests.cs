@@ -36,7 +36,6 @@ public sealed class PythonReLookaroundCaptureRangeTests
             var match = snapshots[row];
             var start = row * 7;
             Assert.Equal(3, match.LastIndex);
-            Assert.Equal("empty", match.LastGroup);
             foreach (var group in match.Groups.ToArray().Take(3))
             {
                 Assert.True(group.Success);

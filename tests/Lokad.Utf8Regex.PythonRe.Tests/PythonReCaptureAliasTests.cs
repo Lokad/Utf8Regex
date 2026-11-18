@@ -84,9 +84,8 @@ public sealed class PythonReCaptureAliasTests
                 captureCursor1.MoveNext(out retained);
             }
             Assert.Equal(2, retained.LastIndex);
-            Assert.Equal(second, retained.LastGroup);
-            Assert.True(retained.TryGetFirstSetGroup(first, out var a));
-            Assert.True(retained.TryGetFirstSetGroup(second, out var b));
+            Assert.True(retained.TryGetGroup(1, out var a));
+            Assert.True(retained.TryGetGroup(2, out var b));
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString((a.Success ? retained.GetGroupMemory(a.Number).Span : ReadOnlySpan<byte>.Empty)));
             Assert.Equal("b", System.Text.Encoding.UTF8.GetString((b.Success ? retained.GetGroupMemory(b.Number).Span : ReadOnlySpan<byte>.Empty)));
             ReadOnlyMemory<byte> snapshots1Input = input;
@@ -137,7 +136,6 @@ public sealed class PythonReCaptureAliasTests
         }
         Assert.Equal(["0", "α", "2", "g1"], copiedNames33);
         Assert.Equal(3, match.LastIndex);
-        Assert.Equal("g1", match.LastGroup);
         Assert.Equal(["abcab", "a", "b", "c"], PythonReCaptureAssert.Values(match).ToArray());
     }
 

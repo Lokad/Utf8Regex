@@ -365,7 +365,6 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Equal(Encoding.UTF8.GetByteCount(prefix), first.Value.StartOffsetInBytes);
         Assert.Equal("alpha", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
         Assert.Equal(1, first.LastIndex);
-        Assert.Equal("word", first.LastGroup);
         ReadOnlyMemory<byte> snapshots4Input = input;
         int snapshots4Start = matches[1].Value.StartOffsetInBytes;
         var snapshots4 = new List<Utf8PythonRangeMatch>();
@@ -470,7 +469,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
         Assert.Equal("alpha", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
         Assert.Equal(7, first.Value.StartOffsetInBytes);
-        Assert.Equal("word", first.LastGroup);
+        Assert.Equal(1, first.LastIndex);
     }
 
     [Fact]

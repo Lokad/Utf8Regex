@@ -39,10 +39,10 @@ public sealed class PythonRePersistentCursorTests
         alias.Dispose(); cursor.Dispose();
         Assert.Throws<ObjectDisposedException>(() => cursor.MoveNext(out _));
 
-        Assert.True(first.TryGetFirstSetGroup("x", out var group)); Assert.Equal("é", System.Text.Encoding.UTF8.GetString((group.Success ? first.GetGroupMemory(group.Number) : default).Span));
-        Assert.True(second.TryGetFirstSetGroup("x", out group)); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((group.Success ? second.GetGroupMemory(group.Number) : default).Span));
+        Assert.True(first.TryGetGroup(1, out var group)); Assert.Equal("é", System.Text.Encoding.UTF8.GetString((group.Success ? first.GetGroupMemory(group.Number) : default).Span));
+        Assert.True(second.TryGetGroup(1, out group)); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((group.Success ? second.GetGroupMemory(group.Number) : default).Span));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(second.GetValueMemory().Span));
-        Assert.True(second.TryGetFirstSetGroup("x", out group)); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((group.Success ? second.GetGroupMemory(group.Number) : default).Span));
+        Assert.True(second.TryGetGroup(1, out group)); Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((group.Success ? second.GetGroupMemory(group.Number) : default).Span));
     }
 
     [Theory]
@@ -244,7 +244,7 @@ public sealed class PythonRePersistentCursorTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex(pattern);
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
-        return new Utf8PythonMatchCursor(input, program, [], 0,
+        return new Utf8PythonMatchCursor(input, program, 0,
             timeout ?? Regex.InfiniteMatchTimeout, pattern, invocation, null);
     }
 }

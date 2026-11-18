@@ -122,7 +122,6 @@ public sealed class PythonReTerminalCaptureRootTests
         Assert.True(cursor.MoveNext(out cursorRange));
         var first = cursorRange;
         Assert.Equal(2, first.LastIndex);
-        Assert.Equal("number", first.LastGroup);
         Assert.Equal(6, first.Groups[1].StartOffsetInBytes);
         Assert.Equal(11, first.Groups[2].StartOffsetInBytes);
         Assert.True(alias.MoveNext(out cursorRange));
@@ -133,7 +132,6 @@ public sealed class PythonReTerminalCaptureRootTests
         cursor.Dispose();
         Assert.Equal("12", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(2).Span));
         Assert.Equal(2, first.LastIndex);
-        Assert.Equal("number", first.LastGroup);
     }
     [Theory]
     [InlineData(false, false)]

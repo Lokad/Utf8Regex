@@ -117,7 +117,6 @@ public sealed class PythonReCaptureCursorInterruptionTests
         {
             Assert.Equal(expected[index].Groups.ToArray(), actual[index].Groups.ToArray());
             Assert.Equal(expected[index].LastIndex, actual[index].LastIndex);
-            Assert.Equal(expected[index].NameEntries.ToArray(), actual[index].NameEntries.ToArray());
             for (var group = 0; group < actual[index].Groups.Length; group++)
                 Assert.Equal(expected[index].GetGroupMemory(group).ToArray(), actual[index].GetGroupMemory(group).ToArray());
         }

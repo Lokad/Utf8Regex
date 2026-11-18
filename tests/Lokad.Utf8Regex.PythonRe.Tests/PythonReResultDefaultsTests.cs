@@ -52,7 +52,7 @@ public sealed class PythonReResultDefaultsTests
         }
         Assert.True(retained.Success);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
-        Assert.Equal("y", retained.LastGroup);
+        Assert.Equal(2, retained.LastIndex);
         Assert.True(retained.TryGetGroup(1, out var absent));
         Assert.False(absent.Success);
         Assert.Empty(System.Text.Encoding.UTF8.GetString((absent.Success ? retained.GetGroupMemory(absent.Number).Span : ReadOnlySpan<byte>.Empty)));
@@ -68,13 +68,9 @@ public sealed class PythonReResultDefaultsTests
         Assert.False(result.Success);
         Assert.Equal(0, System.Text.Encoding.UTF8.GetString(result.GetValueMemory().Span).Length);
         Assert.Equal(0, result.Groups.Length);
-        Assert.Empty(result.NameEntries.ToArray());
-        Assert.Equal(0, result.NameEntries.Length);
         Assert.Null(result.LastIndex);
-        Assert.Null(result.LastGroup);
         Assert.False(result.TryGetGroup(0, out var group));
         Assert.Empty(System.Text.Encoding.UTF8.GetString((group.Success ? result.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty)));
-        Assert.False(result.TryGetFirstSetGroup("x", out group));
         Assert.Empty(System.Text.Encoding.UTF8.GetString((group.Success ? result.GetGroupMemory(group.Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 }

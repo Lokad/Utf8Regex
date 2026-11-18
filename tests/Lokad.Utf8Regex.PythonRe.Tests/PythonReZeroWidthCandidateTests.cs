@@ -114,7 +114,7 @@ public sealed class PythonReZeroWidthCandidateTests
         while (alias.MoveNext(out cursorRange)) { }
         alias.Dispose();
         Assert.Equal("٤٥", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
-        Assert.Equal("n", retained.LastGroup);
+        Assert.Equal(1, retained.LastIndex);
     }
 
     [Fact]

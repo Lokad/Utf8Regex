@@ -30,9 +30,9 @@ public sealed partial class Utf8PythonRegex
         using var programUse = EnterProgramUse();
         Utf8PatternMetadata.ValidateName(nameUtf8, cancellationToken);
         number = 0;
-        for (var index = 0; index < _nameEntriesUtf8.Length; index++)
-            if (Utf8PatternMetadata.NameEquals(_nameEntriesUtf8[index], nameUtf8, cancellationToken))
-            { number = _nameEntries[index].Number; return true; }
+        foreach (var entry in _nameEntriesUtf8)
+            if (Utf8PatternMetadata.NameEquals(entry.Key, nameUtf8, cancellationToken))
+            { number = entry.Value; return true; }
         cancellationToken.ThrowIfCancellationRequested();
         return false;
     }

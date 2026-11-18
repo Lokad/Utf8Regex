@@ -248,7 +248,7 @@ public sealed class PythonReFiniteResultPolicyTests
             captureCursor1.MoveNext(out retained);
         }
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
-        Assert.True(retained.TryGetFirstSetGroup("first", out var first));
+        Assert.True(retained.TryGetGroup(1, out var first));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((first.Success ? retained.GetGroupMemory(first.Number).Span : ReadOnlySpan<byte>.Empty)));
         Denied(() =>
         {

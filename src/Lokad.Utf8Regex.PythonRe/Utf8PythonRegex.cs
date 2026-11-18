@@ -30,8 +30,7 @@ public sealed partial class Utf8PythonRegex
     private readonly Utf8SliceProgram _scalarProgram;
     private readonly Lazy<Utf8SliceProgram> _lazyScalarFullProgram;
     private readonly Utf8Regex? _utf8Regex;
-    private readonly PythonReNameEntry[] _nameEntries;
-    private readonly byte[][] _nameEntriesUtf8;
+    private readonly KeyValuePair<byte[], int>[] _nameEntriesUtf8;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
     private readonly bool _canMatchEmpty;
     private readonly bool _canUseUtf8IterationFastPath;
@@ -99,12 +98,12 @@ public sealed partial class Utf8PythonRegex
             // derive under their own construction scope; only one result is kept.
             _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.RequireFullMatch(_scalarProgram), LazyThreadSafetyMode.PublicationOnly);
 
-            _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);
-            _nameEntriesUtf8 = construction.Budget.AllocateArray<byte[]>(_nameEntries.Length, false);
-            for (var index = 0; index < _nameEntries.Length; index++)
+            _nameEntriesUtf8 = construction.Budget.AllocateArray<KeyValuePair<byte[], int>>(parseResult.NamedGroups.Count, false);
+            var nameIndex = 0;
+            foreach (var entry in parseResult.NamedGroups)
             {
                 construction.Budget.ChargeWork(1);
-                _nameEntriesUtf8[index] = construction.Budget.EncodeUtf8(_nameEntries[index].Name.AsSpan());
+                _nameEntriesUtf8[nameIndex++] = new(construction.Budget.EncodeUtf8(entry.Key.AsSpan()), entry.Value);
             }
             // Transfer the parser's admitted immutable name map for replacement
             // lookup without retaining the rest of the parse tree.
@@ -248,26 +247,6 @@ public sealed partial class Utf8PythonRegex
                 "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
         }
 
-    }
-
-    // name entries carry Python slot numbers; the managed numbers they replaced were only valid when no named group preceded an unnamed one.
-    private static PythonReNameEntry[] GetPythonNameEntries(IReadOnlyDictionary<string, int> namedGroups)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var entries = construction.Budget.AllocateArray<PythonReNameEntry>(namedGroups.Count, false);
-        var index = 0;
-        foreach (var pair in namedGroups)
-        {
-            construction.Budget.ChargeWork(1);
-            entries[index++] = new PythonReNameEntry
-            {
-                Name = pair.Key,
-                Number = pair.Value
-            };
-        }
-
-        construction.Complete();
-        return entries;
     }
 
 }

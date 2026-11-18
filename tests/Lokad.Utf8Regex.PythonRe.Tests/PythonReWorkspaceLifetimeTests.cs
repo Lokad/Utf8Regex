@@ -15,7 +15,7 @@ public sealed class PythonReWorkspaceLifetimeTests
         Assert.NotNull(program);
         var invocation = new Utf8SliceInvocation(new(1000000, 1024, 1UL << 20), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
-        using var cursor = new Utf8PythonMatchCursor(input, program, [], 0,
+        using var cursor = new Utf8PythonMatchCursor(input, program, 0,
             Regex.InfiniteMatchTimeout, "(a)(b)", invocation, null);
         var alias = cursor;
         Assert.True(cursor.MoveNext(out cursorRange));
@@ -50,13 +50,13 @@ public sealed class PythonReWorkspaceLifetimeTests
         });
         using var cursor = regex.CreateMatchCursor("aaaxcc aab c"u8.ToArray());
         Assert.True(cursor.MoveNext(out cursorRange)); var first = cursorRange;
-        Assert.Equal("cc", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span)); Assert.Equal("y", first.LastGroup);
+        Assert.Equal("cc", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span)); Assert.Equal(2, first.LastIndex);
         Assert.True(first.TryGetGroup(1, out var x)); Assert.False(x.Success);
         Assert.True(cursor.MoveNext(out cursorRange)); var second = cursorRange;
-        Assert.Equal("aab", System.Text.Encoding.UTF8.GetString(second.GetValueMemory().Span)); Assert.Equal("x", second.LastGroup);
+        Assert.Equal("aab", System.Text.Encoding.UTF8.GetString(second.GetValueMemory().Span)); Assert.Equal(1, second.LastIndex);
         Assert.True(second.TryGetGroup(2, out var y)); Assert.False(y.Success);
         Assert.True(cursor.MoveNext(out cursorRange)); var third = cursorRange;
-        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(third.GetValueMemory().Span)); Assert.Equal("y", third.LastGroup);
+        Assert.Equal("c", System.Text.Encoding.UTF8.GetString(third.GetValueMemory().Span)); Assert.Equal(2, third.LastIndex);
         Assert.False(cursor.MoveNext(out cursorRange));
         Assert.Equal("cc", System.Text.Encoding.UTF8.GetString(first.GetValueMemory().Span)); Assert.Equal("aab", System.Text.Encoding.UTF8.GetString(second.GetValueMemory().Span));
         Assert.Equal((4, 7, 11), (first.Value.StartOffsetInBytes, second.Value.StartOffsetInBytes, third.Value.StartOffsetInBytes));
@@ -70,7 +70,7 @@ public sealed class PythonReWorkspaceLifetimeTests
         var limit = 13 + 3 * Utf8ConstructionBudget.ArrayBytes<int>(program.GroupCount);
         var invocation = new Utf8SliceInvocation(new(1000000, 1024, limit), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
-        using var cursor = new Utf8PythonMatchCursor("ab"u8.ToArray(), program, [], 0,
+        using var cursor = new Utf8PythonMatchCursor("ab"u8.ToArray(), program, 0,
             Regex.InfiniteMatchTimeout, "(a)(b)", invocation, null);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);

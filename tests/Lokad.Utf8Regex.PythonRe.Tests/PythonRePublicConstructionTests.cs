@@ -59,7 +59,7 @@ public sealed class PythonRePublicConstructionTests
         }
         Assert.True(match.Success);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((match.Groups[1].Success ? match.GetGroupMemory(match.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
-        Assert.Equal("x", match.LastGroup);
+        Assert.Equal(1, match.LastIndex);
         Assert.Equal(0ul, deniedPreparation.Budget.WorkSteps);
         Assert.Equal(0ul, deniedPreparation.Budget.ReservedBytes);
         Assert.Equal(0ul, deniedPreparation.Budget.Reserved);
@@ -143,7 +143,6 @@ public sealed class PythonRePublicConstructionTests
             captureCursor2.MoveNext(out result);
         }
         Assert.True(result.Success);
-        Assert.Equal("x", result.LastGroup);
         Assert.Equal(1, result.LastIndex);
     }
 
@@ -199,7 +198,6 @@ public sealed class PythonRePublicConstructionTests
             captureCursor3.MoveNext(out result);
         }
         Assert.True(result.Success);
-        Assert.Equal("x", result.LastGroup);
         Assert.Equal(1, result.LastIndex);
         Assert.True(regex.Match("😀😀"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
     }

@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- PythonRe cursor snapshots carry numbered captures and `LastIndex`. Capture
+  names stay on the compiled regex, eliminating the per-match name-table copy.
+
 - Core retained matches expose numeric groups and capture history. Resolve names
   on the compiled regex. Retained match admission no longer includes name text.
 

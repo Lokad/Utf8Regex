@@ -168,12 +168,6 @@ internal struct PythonReScalarMatchState
 
     internal Utf8PythonRetainedRangeMatch RetainRanges(Utf8PythonRangeMatch match)
     {
-        var index = 0;
-        foreach (var entry in match.NameEntries)
-        {
-            if ((index++ & 255) == 0) Checkpoint();
-            _results.ReserveSharedStorage(Utf8ConstructionBudget.StringBytes(entry.Name.Length), ref _invocation);
-        }
         return _results.AllocateObject((Match: match, Allowance: _invocation.Ledger.MemoryAllowance!),
             static state => new Utf8PythonRetainedRangeMatch(state.Match, state.Allowance), ref _invocation);
     }
@@ -633,17 +627,6 @@ internal struct PythonReScalarMatchState
         return value;
     }
 
-    internal PythonReNameEntry[] SnapshotNameEntries(PythonReNameEntry[] names)
-    {
-        Checkpoint();
-        // No storage or copying is needed for canonical empty metadata.
-        if (names.Length == 0) return [];
-        var copied = AllocateResultArray<PythonReNameEntry>(names.Length);
-        Utf8InvocationResultLedger.Copy<PythonReNameEntry>(names, copied, ref _invocation);
-        Checkpoint();
-        return copied;
-    }
-
     internal bool TryGetCaptureByteRange(int number, out int start, out int end)
     {
         start = end = -1;
@@ -680,7 +663,7 @@ internal struct PythonReScalarMatchState
         return slot + 1;
     }
 
-    internal Utf8PythonRangeMatch SnapshotRanges(ReadOnlyMemory<byte> input, PythonReNameEntry[] names)
+    internal Utf8PythonRangeMatch SnapshotRanges(ReadOnlyMemory<byte> input)
     {
         var lastIndex = GetLastIndex();
         var groups = AllocateResultArray<Utf8PythonCaptureRange>(_program.GroupCount + 1);
@@ -691,9 +674,8 @@ internal struct PythonReScalarMatchState
                 ? new Utf8PythonCaptureRange { Number = number, Success = true, StartOffsetInBytes = start, EndOffsetInBytes = end }
                 : new Utf8PythonCaptureRange { Number = number };
         }
-        var copiedNames = SnapshotNameEntries(names);
         Checkpoint();
-        return new Utf8PythonRangeMatch(input, groups, copiedNames, lastIndex);
+        return new Utf8PythonRangeMatch(input, groups, lastIndex);
     }
 
     internal byte[] GetBytes(ReadOnlySpan<byte> input, int start, int end)

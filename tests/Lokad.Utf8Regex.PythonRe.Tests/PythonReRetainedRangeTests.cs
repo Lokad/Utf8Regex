@@ -32,7 +32,7 @@ public sealed class PythonReRetainedRangeTests
         Assert.Equal(13UL + first.ChargedBytes + second.ChargedBytes, account.Used);
         await Task.Yield();
         Assert.Equal("é", Encoding.UTF8.GetString(first.Match.GetGroupMemory(1).Span));
-        Assert.Equal("x", first.Match.LastGroup); Assert.Equal("😀", Encoding.UTF8.GetString(second.Match.GetValueMemory().Span));
+        Assert.Equal(1, first.Match.LastIndex); Assert.Equal("😀", Encoding.UTF8.GetString(second.Match.GetValueMemory().Span));
         await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Task.Run(alias.Dispose)));
         Assert.Throws<ObjectDisposedException>(() => first.Match);
         Assert.Equal(13UL + second.ChargedBytes, account.Used);
@@ -60,18 +60,24 @@ public sealed class PythonReRetainedRangeTests
     }
 
     [Fact]
-    public void RetainedNameTextNeedsItsOwnAdmissionAfterProgramLifetime()
+    public void LongCaptureNamesNeedNoResultAdmissionAfterProgramLifetime()
     {
         var account = new Allowance(16 << 20); var name = new string('n', 4096);
         using var regex = Compile("(?P<" + name + ">.)", account); var program = account.Used;
         account.Maximum = program + 4096;
-        using (var denied = regex.CreateMatchCursor("a"u8.ToArray()))
-            Assert.Throws<Utf8MemoryAdmissionException>(() => denied.MoveNextRetained(out _));
-        Assert.Equal(program, account.Used); account.Maximum = 16 << 20;
+        Assert.True(regex.TryGetGroupNumber(Encoding.UTF8.GetBytes(name), out var group));
+        Assert.Equal(1, group);
         using var cursor = regex.CreateMatchCursor("a"u8.ToArray());
-        Assert.True(cursor.MoveNextRetained(out var retained)); Assert.True(retained.ChargedBytes > (ulong)name.Length * 2);
-        cursor.Dispose(); regex.Dispose(); Assert.Equal(retained.ChargedBytes, account.Used);
-        Assert.Equal(name, retained.Match.LastGroup); retained.Dispose(); Assert.Equal(0UL, account.Used);
+        Assert.True(cursor.MoveNextRetained(out var retained));
+        using (retained)
+        {
+            cursor.Dispose();
+            regex.Dispose();
+            Assert.Equal(retained.ChargedBytes, account.Used);
+            Assert.Equal(group, retained.Match.LastIndex);
+            Assert.True(retained.Match.GetGroupMemory(group).Span.SequenceEqual("a"u8));
+        }
+        Assert.Equal(0UL, account.Used);
     }
 
     [Fact]
@@ -218,7 +224,7 @@ public sealed class PythonReRetainedRangeTests
         first.Dispose();
         Assert.True(rangeReceipt.Match.TryGetGroup(1, out var letters));
         Assert.Equal((305, 309), (letters.StartOffsetInBytes, letters.EndOffsetInBytes));
-        Assert.Equal("x", rangeReceipt.Match.LastGroup);
+        Assert.Equal(1, rangeReceipt.Match.LastIndex);
         using var output = second.SubnRetained("12"u8, @"[\g<d>]"); var escaped = output.Result;
         second.Dispose();
         Assert.True(digits.TryGetGroup(1, out var digitRange));

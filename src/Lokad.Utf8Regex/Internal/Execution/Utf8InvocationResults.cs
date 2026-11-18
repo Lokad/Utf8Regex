@@ -75,21 +75,6 @@ internal struct Utf8InvocationResultLedger
         return result;
     }
 
-    internal static void Copy<T>(ReadOnlySpan<T> source, Span<T> destination, ref Utf8SliceInvocation invocation)
-    {
-        if (source.Length > destination.Length) throw new ArgumentException("The result destination is too small.", nameof(destination));
-        var control = new Utf8InvocationBufferControl(ref invocation);
-        Utf8InvocationOutput.Checkpoint(control);
-        for (var offset = 0; offset < source.Length;)
-        {
-            Utf8InvocationOutput.Checkpoint(control);
-            var count = Math.Min(256, source.Length - offset);
-            source.Slice(offset, count).CopyTo(destination.Slice(offset, count));
-            offset += count;
-        }
-        Utf8InvocationOutput.Checkpoint(control);
-    }
-
     internal void ReleaseArray<T>(T[] array, ref Utf8SliceInvocation invocation)
     {
         var extent = Utf8ConstructionBudget.ArrayBytes<T>(array.Length);
