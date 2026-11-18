@@ -8,6 +8,10 @@ public sealed class Utf8SimplePrefixCountTests
 {
     [Theory]
     [InlineData(@"(?<head>[\w.+-]+@)[\w-]+\.[\w.-]+", "bad@? 😀éclair@chez.fr xx@z.rs")]
+    [InlineData(@"([\w.+-]+)@([\w-]+)\.([\w.-]+)", "bad@? 😀éclair@chez.fr xx@z.rs")]
+    [InlineData(@"(?<key>\w+): (?<value>\w+)", "éclair: thé 😀name: café")]
+    [InlineData(@"(?<run>[\w@]{1,4})@(?<end>[!?])", "ab@cd@! é@@? 😀x@@!")]
+    [InlineData(@"(?<w>\w+)@\k<w>", "bad@? ab@b 😀éé@é")]
     [InlineData(@"[^;]+;[A-Z]", "bad;? 😀é;Z xy;A")]
     [InlineData(@"[\w,]{2,4},\d", "a,none! 😀éxyz,5 bc,7")]
     [InlineData(@"(?<=(?<lead>é))(?<word>[A-Z][a-z]+)(?=\s|$)", "abcdéAlpha 😀éBeta")]

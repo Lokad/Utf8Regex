@@ -511,8 +511,8 @@ internal static partial class Utf8SliceRunner
         if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor && input.Length - fromByte >= 256)
         {
-            var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out var literalIndex, out _);
-            if (leadingClass >= 0 && literalIndex == leadingClass + 3)
+            var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out _, out _, out var directClassLiteral);
+            if (directClassLiteral)
                 classLiteral = literal;
         }
         if (leading >= 0 || seekLiteral || classLiteral >= 0)
@@ -767,8 +767,12 @@ internal static partial class Utf8SliceRunner
         long whitespaceGapMaximum = 0;
         var whitespaceLiteral = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
             !program.HasContiguousAnchor && input.Length - fromByte >= 256
-            ? GetLeadingWhitespaceLiteral(program, out leadingClass, out whitespaceLiteralIndex, out whitespaceGapMaximum) : -1;
-        if (whitespaceLiteral >= 0 && leadingClass >= 0 && whitespaceLiteralIndex != leadingClass + 3 &&
+            ? GetLeadingWhitespaceLiteral(program, out leadingClass, out whitespaceLiteralIndex,
+                out whitespaceGapMaximum, out _) : -1;
+        // Count keeps its prepared literal search when capture markers or
+        // consuming instructions separate the repeat from its delimiter.
+        var literalImmediatelyAfterRepeat = whitespaceLiteralIndex == leadingClass + 3;
+        if (whitespaceLiteral >= 0 && leadingClass >= 0 && !literalImmediatelyAfterRepeat &&
             (candidatePlan.LiteralSearch is not { IgnoreCase: false } classSearch ||
                 !LiteralStartsAtInstruction(program, whitespaceLiteralIndex, classSearch.Needle)))
             whitespaceLiteral = -1;
@@ -800,7 +804,7 @@ internal static partial class Utf8SliceRunner
                     if (leadingClass >= 0)
                     {
                         Utf8ExecutionLimitKind seekBreach;
-                        if (whitespaceLiteralIndex == leadingClass + 3)
+                        if (literalImmediatelyAfterRepeat)
                         {
                             seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                                 (byte)whitespaceLiteral, ref position, ref invocation, out whitespaceWindowEnd);
@@ -816,7 +820,7 @@ internal static partial class Utf8SliceRunner
                                 position = whitespaceWindowEnd;
                                 if (position >= 0)
                                     seekBreach = TryRewindClassWhitespace(program, input, floor, leadingClass,
-                                        whitespaceGapMaximum, ref position, ref invocation);
+                                        whitespaceGapMaximum, false, ref position, ref invocation);
                             }
                         }
                         if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);

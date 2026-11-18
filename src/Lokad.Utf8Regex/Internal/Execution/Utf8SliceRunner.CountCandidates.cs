@@ -84,11 +84,12 @@ internal static partial class Utf8SliceRunner
     // references and assertions may make a later start win after an earlier
     // one fails. No candidate is itself accepted by this necessary condition.
     internal static int GetLeadingWhitespaceLiteral(Utf8SliceProgram program,
-        out int leadingClass, out int literalIndex, out long gapMaximum)
+        out int leadingClass, out int literalIndex, out long gapMaximum, out bool directClassLiteral)
     {
         leadingClass = -1;
         literalIndex = -1;
         gapMaximum = 0;
+        directClassLiteral = false;
         var code = program.Instructions.AsSpan();
         var index = 0;
         while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
@@ -103,13 +104,14 @@ internal static partial class Utf8SliceRunner
             while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
                 index++;
         }
-        // The scalar-class run may meet its delimiter directly. Its actual
-        // instruction supplies the necessary byte; no prepared hint is borrowed.
+        // Capture markers do not consume input. The scalar-class run can
+        // still meet its delimiter directly when they sit between the two.
         if (leadingClass >= 0 && index < 64 && index < code.Length &&
             code[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } direct &&
             (uint)direct.A < 128)
         {
             literalIndex = index;
+            directClassLiteral = true;
             return direct.A;
         }
         if (index >= 64 || !IsSingleClassRepeat(code, index)) return -1;
@@ -163,20 +165,19 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    internal static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int floor, int leadingClass, long gapMaximum, ref int position, ref Utf8SliceInvocation invocation)
+    private static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int floor, int leadingClass, long gapMaximum, bool directClassLiteral,
+        ref int position, ref Utf8SliceInvocation invocation)
     {
         var windowEnd = position;
         var code = program.Instructions;
-        var directClassLiteral = gapMaximum == 0 && leadingClass > 0 && code.Length - leadingClass > 3 &&
-            code[leadingClass + 3] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 };
         if (directClassLiteral &&
             code[leadingClass - 1].RepeatMinimum == 1 && code[leadingClass - 1].RepeatMaximum == long.MaxValue &&
             code[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } atom &&
             TryGetAsciiMaskPair(program.SetMasks[atom.A], out var first, out var second))
         {
             // Direct unbounded class runs start after the last excluded byte.
-            // ASCII cannot occur inside a wider scalar in this validated span.
+            // ASCII cannot occur inside a wider scalar in caller-valid UTF-8.
             // Keep literal discovery and VM verification: this is only a window.
             while (position > floor)
             {
@@ -197,8 +198,8 @@ internal static partial class Utf8SliceRunner
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            // Count's caller validated the subject and scalar endpoints. This
-            // gap needs only width; membership reads below still decode values.
+            // This gap needs only scalar width. Membership reads below still
+            // decode values.
             if (!TryGetScalarWidthEndingAt(input, position, out var width)) break;
             position -= width;
         }
@@ -269,7 +270,7 @@ internal static partial class Utf8SliceRunner
             if (MatchesStraightAsciiPrefix(program, input, position, literalIndex))
             {
                 windowEnd = position;
-                return TryRewindClassWhitespace(program, input, floor, -1, 0, ref position, ref invocation);
+                return TryRewindClassWhitespace(program, input, floor, -1, 0, false, ref position, ref invocation);
             }
             // The admitted first byte is ASCII, so the next byte is a scalar boundary.
             position++;
@@ -278,7 +279,7 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
-    private static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
+    internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int leadingClass, byte literal, ref int position,
         ref Utf8SliceInvocation invocation, out int windowEnd)
     {
@@ -286,7 +287,7 @@ internal static partial class Utf8SliceRunner
         var breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
         windowEnd = position;
         if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
-        return TryRewindClassWhitespace(program, input, floor, leadingClass, 0, ref position, ref invocation);
+        return TryRewindClassWhitespace(program, input, floor, leadingClass, 0, true, ref position, ref invocation);
     }
 
     private static bool MatchesStraightAsciiPrefix(Utf8SliceProgram program,

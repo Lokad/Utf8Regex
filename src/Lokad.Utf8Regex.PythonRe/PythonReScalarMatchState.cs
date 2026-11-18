@@ -102,21 +102,15 @@ internal struct PythonReScalarMatchState
                         !program.RightToLeft && !program.IgnoreCase)
                     {
                         var delimiter = Utf8SliceRunner.GetLeadingWhitespaceLiteral(program,
-                            out var leadingClass, out var literalIndex, out _);
+                            out var leadingClass, out _, out _, out var directClassLiteral);
                         // Only direct ASCII class/delimiter windows qualify;
                         // whitespace/gaps and opaque prefixes keep their route.
-                        if (delimiter >= 0 && leadingClass >= 0 &&
+                        if (directClassLiteral &&
                             program.Instructions[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom &&
                             program.SetMasks[atom.A].Length == 16)
                         {
-                            var afterRepeat = leadingClass + 3;
-                            while (afterRepeat < literalIndex && program.Instructions[afterRepeat].Kind is
-                                Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) afterRepeat++;
-                            if (afterRepeat == literalIndex)
-                            {
-                                _delimiter = delimiter;
-                                _delimiterLeadingClass = leadingClass;
-                            }
+                            _delimiter = delimiter;
+                            _delimiterLeadingClass = leadingClass;
                         }
                     }
                 }
@@ -429,16 +423,10 @@ internal struct PythonReScalarMatchState
                     }
                     if (delimiter >= 0 && _position > windowEnd && !bypassWindow)
                     {
-                        var floor = _position;
-                        windowEnd = floor;
-                        var breach = Utf8SliceRunner.TrySeekAsciiCandidate(input, ref windowEnd,
-                            (byte)delimiter, (byte)delimiter, ref _invocation);
+                        var breach = Utf8SliceRunner.TrySeekLeadingClassLiteralWindow(_program, input,
+                            leadingClass, (byte)delimiter, ref _position, ref _invocation, out windowEnd);
                         if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
-                        if (windowEnd < 0) { Checkpoint(); _finished = true; return false; }
-                        _position = windowEnd;
-                        breach = Utf8SliceRunner.TryRewindClassWhitespace(_program, input, floor,
-                            leadingClass, 0, ref _position, ref _invocation);
-                        if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                        if (_position < 0) { Checkpoint(); _finished = true; return false; }
                     }
                     // A necessary start hint still requires profile verification.
                     // Avoid its search helper when the current byte meets the hint.
