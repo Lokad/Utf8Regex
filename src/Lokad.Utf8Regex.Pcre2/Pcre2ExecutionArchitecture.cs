@@ -1687,6 +1687,10 @@ internal static class Pcre2GlobalOperationDriver
     {
         var program = compiledProgram.Operations.Count;
 
+        if (matchOptions == Pcre2MatchOptions.None && program is Pcre2BacktrackingDirectProgram categoryProgram &&
+            Pcre2SliceDriver.TryCountGeneralCategory(categoryProgram.Program, input.Bytes[start.Value..], ref invocation, out result))
+            return true;
+
         if (program is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&
             matchOptions == Pcre2MatchOptions.None &&
             (invocation.IsUnmetered && invocation.CheckpointHook is null))

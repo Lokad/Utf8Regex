@@ -21,7 +21,7 @@ public sealed class Pcre2BudgetedCategoryCountTests
             {
                 ResourcePolicy = new()
                 {
-                    MaxWorkSteps = 100000,
+                    MaxWorkSteps = 32,
                     MaxDepth = 1,
                     MaxWorkingBytes = 1,
                     MaxResultBytes = 1
@@ -32,6 +32,36 @@ public sealed class Pcre2BudgetedCategoryCountTests
             Assert.Equal(expected, regex.Count(input, floor, default, token.Token, allowance));
             Assert.Equal(0, allowance.Attempts);
         }
+    }
+
+    [Theory]
+    [InlineData(@"\p{S m}", "A+∑𝛁_😀", 3)]
+    [InlineData(@"(?<unit>[\p{Sm}_])", "A+∑𝛁_😀", 4)]
+    [InlineData(@"[^\P{L&}]", "Aaǅ中𝓐+", 4)]
+    [InlineData(@"\P{S}", "A+∑𝛁_😀", 2)]
+    [InlineData(@"\p{Xan}", "é٣中𝕒𝛁_😀", 4)]
+    public void CategoryMasksPreserveAliasesUnionsAndComplements(string pattern, string text, int matches)
+    {
+        const string prefix = "Aé😀";
+        var input = Encoding.UTF8.GetBytes(prefix + string.Concat(Enumerable.Repeat(text, 512)));
+        var floor = Encoding.UTF8.GetByteCount(prefix);
+        using var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Ucp, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 32 }, MatchTimeout = Timeout.InfiniteTimeSpan,
+        });
+        Assert.Equal(matches * 512, regex.Count(input, floor));
+    }
+
+    [Theory]
+    [InlineData(Pcre2CompileOptions.Anchored, @"\p{Sm}", "x+∑", 0)]
+    [InlineData(Pcre2CompileOptions.EndAnchored, @"\p{Sm}", "+∑x", 0)]
+    [InlineData(Pcre2CompileOptions.FirstLine, @"\p{Sm}", "x+\n+∑", 1)]
+    [InlineData(Pcre2CompileOptions.Caseless, @"\p{Lu}", "aAǅ+", 3)]
+    [InlineData(Pcre2CompileOptions.None, @"\p{Xps}", "é\v\u0085😀", 2)]
+    public void CategoryCountPreservesProfileOptions(Pcre2CompileOptions options, string pattern, string text, int matches)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern, options: options);
+        Assert.Equal(matches, regex.Count(Encoding.UTF8.GetBytes(text)));
     }
 
     [Fact]

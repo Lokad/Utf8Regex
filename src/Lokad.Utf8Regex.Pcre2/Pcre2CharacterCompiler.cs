@@ -159,6 +159,33 @@ internal sealed class Pcre2CharacterClass
 
     internal AsciiCharClass AsciiSet { get; }
 
+    // ASCII membership comes from AsciiSet. Every other scalar in an eligible
+    // class is classified solely by its general category.
+    internal bool TryGetGeneralCategories(out uint categories)
+    {
+        categories = 0;
+        if (Terms.Length > 16) return false;
+        var hasProperty = false;
+        foreach (var term in Terms)
+        {
+            uint termCategories;
+            if (term.Kind == Pcre2CharacterClassTermKind.Property)
+            {
+                termCategories = Pcre2CharacterSemantics.GeneralCategoryMask(term.Name, caseless: false);
+                if (termCategories == 0) return false;
+                hasProperty = true;
+            }
+            else if (term.Kind == Pcre2CharacterClassTermKind.Range && term.Range.High < 128)
+                termCategories = 0;
+            else return false;
+
+            categories |= term.Negated ? ~termCategories : termCategories;
+        }
+
+        categories = (Negated ? ~categories : categories) & Pcre2CharacterSemantics.AllGeneralCategories;
+        return hasProperty;
+    }
+
     internal PreparedByteSet? AsciiByteSet => _asciiByteSet;
 
     internal void PrepareAsciiByteSet()
@@ -1530,62 +1557,87 @@ internal static class Pcre2CharacterSemantics
     internal static bool IsVerticalSpace(Rune scalar) => scalar.Value is
         0x000A or 0x000B or 0x000C or 0x000D or 0x0085 or 0x2028 or 0x2029;
 
-    internal static bool IsKnownProperty(string normalizedName) => normalizedName is
-        "ANY" or
-        "C" or "CC" or "CF" or "CN" or "CO" or "CS" or
-        "L" or "LC" or "L&" or "LU" or "LL" or "LT" or "LM" or "LO" or
-        "M" or "MC" or "ME" or "MN" or
-        "N" or "ND" or "NL" or "NO" or
-        "P" or "PC" or "PD" or "PE" or "PF" or "PI" or "PO" or "PS" or
-        "S" or "SC" or "SK" or "SM" or "SO" or
-        "Z" or "ZS" or "ZL" or "ZP" or
-        "XAN" or "XPS" or "XSP" or "XUC" or "XWD";
+    internal const uint AllGeneralCategories = (1u << ((int)UnicodeCategory.OtherNotAssigned + 1)) - 1u;
+    private const uint CasedLetters = (1u << (int)UnicodeCategory.UppercaseLetter) |
+        (1u << (int)UnicodeCategory.LowercaseLetter) | (1u << (int)UnicodeCategory.TitlecaseLetter);
+    private const uint Letters = CasedLetters |
+        (1u << (int)UnicodeCategory.ModifierLetter) | (1u << (int)UnicodeCategory.OtherLetter);
+    private const uint Marks = (1u << (int)UnicodeCategory.NonSpacingMark) |
+        (1u << (int)UnicodeCategory.SpacingCombiningMark) | (1u << (int)UnicodeCategory.EnclosingMark);
+    private const uint Numbers = (1u << (int)UnicodeCategory.DecimalDigitNumber) |
+        (1u << (int)UnicodeCategory.LetterNumber) | (1u << (int)UnicodeCategory.OtherNumber);
+    private const uint Punctuation = (1u << (int)UnicodeCategory.ConnectorPunctuation) |
+        (1u << (int)UnicodeCategory.DashPunctuation) | (1u << (int)UnicodeCategory.OpenPunctuation) |
+        (1u << (int)UnicodeCategory.ClosePunctuation) | (1u << (int)UnicodeCategory.InitialQuotePunctuation) |
+        (1u << (int)UnicodeCategory.FinalQuotePunctuation) | (1u << (int)UnicodeCategory.OtherPunctuation);
+    private const uint Symbols = (1u << (int)UnicodeCategory.MathSymbol) |
+        (1u << (int)UnicodeCategory.CurrencySymbol) | (1u << (int)UnicodeCategory.ModifierSymbol) |
+        (1u << (int)UnicodeCategory.OtherSymbol);
+    private const uint Separators = (1u << (int)UnicodeCategory.SpaceSeparator) |
+        (1u << (int)UnicodeCategory.LineSeparator) | (1u << (int)UnicodeCategory.ParagraphSeparator);
+    private const uint Other = (1u << (int)UnicodeCategory.Control) |
+        (1u << (int)UnicodeCategory.Format) | (1u << (int)UnicodeCategory.Surrogate) |
+        (1u << (int)UnicodeCategory.PrivateUse) | (1u << (int)UnicodeCategory.OtherNotAssigned);
+
+    private static uint CategoryBit(UnicodeCategory category) => 1u << (int)category;
+
+    internal static bool IsKnownProperty(string normalizedName) =>
+        GeneralCategoryMask(normalizedName, caseless: false) != 0 ||
+        normalizedName is "XPS" or "XSP" or "XUC" or "XWD";
+
+    // Zero denotes a property that cannot be resolved from the category alone.
+    internal static uint GeneralCategoryMask(string normalizedName, bool caseless) => normalizedName switch
+    {
+        "ANY" => AllGeneralCategories,
+        "C" => Other,
+        "CC" => CategoryBit(UnicodeCategory.Control),
+        "CF" => CategoryBit(UnicodeCategory.Format),
+        "CN" => CategoryBit(UnicodeCategory.OtherNotAssigned),
+        "CO" => CategoryBit(UnicodeCategory.PrivateUse),
+        "CS" => CategoryBit(UnicodeCategory.Surrogate),
+        "L" => Letters,
+        "LC" or "L&" => CasedLetters,
+        "LU" => caseless ? CasedLetters : CategoryBit(UnicodeCategory.UppercaseLetter),
+        "LL" => caseless ? CasedLetters : CategoryBit(UnicodeCategory.LowercaseLetter),
+        "LT" => caseless ? CasedLetters : CategoryBit(UnicodeCategory.TitlecaseLetter),
+        "LM" => CategoryBit(UnicodeCategory.ModifierLetter),
+        "LO" => CategoryBit(UnicodeCategory.OtherLetter),
+        "M" => Marks,
+        "MC" => CategoryBit(UnicodeCategory.SpacingCombiningMark),
+        "ME" => CategoryBit(UnicodeCategory.EnclosingMark),
+        "MN" => CategoryBit(UnicodeCategory.NonSpacingMark),
+        "N" => Numbers,
+        "ND" => CategoryBit(UnicodeCategory.DecimalDigitNumber),
+        "NL" => CategoryBit(UnicodeCategory.LetterNumber),
+        "NO" => CategoryBit(UnicodeCategory.OtherNumber),
+        "P" => Punctuation,
+        "PC" => CategoryBit(UnicodeCategory.ConnectorPunctuation),
+        "PD" => CategoryBit(UnicodeCategory.DashPunctuation),
+        "PE" => CategoryBit(UnicodeCategory.ClosePunctuation),
+        "PF" => CategoryBit(UnicodeCategory.FinalQuotePunctuation),
+        "PI" => CategoryBit(UnicodeCategory.InitialQuotePunctuation),
+        "PO" => CategoryBit(UnicodeCategory.OtherPunctuation),
+        "PS" => CategoryBit(UnicodeCategory.OpenPunctuation),
+        "S" => Symbols,
+        "SC" => CategoryBit(UnicodeCategory.CurrencySymbol),
+        "SK" => CategoryBit(UnicodeCategory.ModifierSymbol),
+        "SM" => CategoryBit(UnicodeCategory.MathSymbol),
+        "SO" => CategoryBit(UnicodeCategory.OtherSymbol),
+        "Z" => Separators,
+        "ZS" => CategoryBit(UnicodeCategory.SpaceSeparator),
+        "ZL" => CategoryBit(UnicodeCategory.LineSeparator),
+        "ZP" => CategoryBit(UnicodeCategory.ParagraphSeparator),
+        "XAN" => Letters | Numbers,
+        _ => 0,
+    };
 
     internal static bool MatchesProperty(Rune scalar, string normalizedName, bool caseless)
     {
         var category = Rune.GetUnicodeCategory(scalar);
+        var mask = GeneralCategoryMask(normalizedName, caseless);
+        if (mask != 0) return (mask & CategoryBit(category)) != 0;
         return normalizedName switch
         {
-            "ANY" => true,
-            "C" => IsOther(category),
-            "CC" => category == UnicodeCategory.Control,
-            "CF" => category == UnicodeCategory.Format,
-            "CN" => category == UnicodeCategory.OtherNotAssigned,
-            "CO" => category == UnicodeCategory.PrivateUse,
-            "CS" => category == UnicodeCategory.Surrogate,
-            "L" => IsLetterCategory(category),
-            "LC" or "L&" => IsCasedLetter(category),
-            "LU" => caseless ? IsCasedLetter(category) : category == UnicodeCategory.UppercaseLetter,
-            "LL" => caseless ? IsCasedLetter(category) : category == UnicodeCategory.LowercaseLetter,
-            "LT" => caseless ? IsCasedLetter(category) : category == UnicodeCategory.TitlecaseLetter,
-            "LM" => category == UnicodeCategory.ModifierLetter,
-            "LO" => category == UnicodeCategory.OtherLetter,
-            "M" => IsMark(category),
-            "MC" => category == UnicodeCategory.SpacingCombiningMark,
-            "ME" => category == UnicodeCategory.EnclosingMark,
-            "MN" => category == UnicodeCategory.NonSpacingMark,
-            "N" => IsNumber(category),
-            "ND" => category == UnicodeCategory.DecimalDigitNumber,
-            "NL" => category == UnicodeCategory.LetterNumber,
-            "NO" => category == UnicodeCategory.OtherNumber,
-            "P" => IsPunctuation(category),
-            "PC" => category == UnicodeCategory.ConnectorPunctuation,
-            "PD" => category == UnicodeCategory.DashPunctuation,
-            "PE" => category == UnicodeCategory.ClosePunctuation,
-            "PF" => category == UnicodeCategory.FinalQuotePunctuation,
-            "PI" => category == UnicodeCategory.InitialQuotePunctuation,
-            "PO" => category == UnicodeCategory.OtherPunctuation,
-            "PS" => category == UnicodeCategory.OpenPunctuation,
-            "S" => IsSymbol(category),
-            "SC" => category == UnicodeCategory.CurrencySymbol,
-            "SK" => category == UnicodeCategory.ModifierSymbol,
-            "SM" => category == UnicodeCategory.MathSymbol,
-            "SO" => category == UnicodeCategory.OtherSymbol,
-            "Z" => IsSeparator(category),
-            "ZS" => category == UnicodeCategory.SpaceSeparator,
-            "ZL" => category == UnicodeCategory.LineSeparator,
-            "ZP" => category == UnicodeCategory.ParagraphSeparator,
-            "XAN" => IsLetterCategory(category) || IsNumber(category),
             "XPS" or "XSP" => IsUnicodeSpace(scalar, category),
             // PT_UCNC: a Rune is already outside the surrogate range.
             "XUC" => scalar.Value >= 0xA0 || scalar.Value is '$' or '@' or '`',
@@ -1827,57 +1879,18 @@ internal static class Pcre2CharacterSemantics
         return false;
     }
 
-    private static bool IsLetterCategory(UnicodeCategory category) => category is
-        UnicodeCategory.UppercaseLetter or
-        UnicodeCategory.LowercaseLetter or
-        UnicodeCategory.TitlecaseLetter or
-        UnicodeCategory.ModifierLetter or
-        UnicodeCategory.OtherLetter;
+    private static bool IsLetterCategory(UnicodeCategory category) => (Letters & CategoryBit(category)) != 0;
 
-    private static bool IsCasedLetter(UnicodeCategory category) => category is
-        UnicodeCategory.UppercaseLetter or
-        UnicodeCategory.LowercaseLetter or
-        UnicodeCategory.TitlecaseLetter;
+    private static bool IsNumber(UnicodeCategory category) => (Numbers & CategoryBit(category)) != 0;
 
-    private static bool IsMark(UnicodeCategory category) => category is
-        UnicodeCategory.NonSpacingMark or
-        UnicodeCategory.SpacingCombiningMark or
-        UnicodeCategory.EnclosingMark;
+    private static bool IsPunctuation(UnicodeCategory category) => (Punctuation & CategoryBit(category)) != 0;
 
-    private static bool IsNumber(UnicodeCategory category) => category is
-        UnicodeCategory.DecimalDigitNumber or
-        UnicodeCategory.LetterNumber or
-        UnicodeCategory.OtherNumber;
+    private static bool IsSymbol(UnicodeCategory category) => (Symbols & CategoryBit(category)) != 0;
 
-    private static bool IsPunctuation(UnicodeCategory category) => category is
-        UnicodeCategory.ConnectorPunctuation or
-        UnicodeCategory.DashPunctuation or
-        UnicodeCategory.OpenPunctuation or
-        UnicodeCategory.ClosePunctuation or
-        UnicodeCategory.InitialQuotePunctuation or
-        UnicodeCategory.FinalQuotePunctuation or
-        UnicodeCategory.OtherPunctuation;
-
-    private static bool IsSymbol(UnicodeCategory category) => category is
-        UnicodeCategory.MathSymbol or
-        UnicodeCategory.CurrencySymbol or
-        UnicodeCategory.ModifierSymbol or
-        UnicodeCategory.OtherSymbol;
-
-    private static bool IsSeparator(UnicodeCategory category) => category is
-        UnicodeCategory.SpaceSeparator or
-        UnicodeCategory.LineSeparator or
-        UnicodeCategory.ParagraphSeparator;
-
-    private static bool IsOther(UnicodeCategory category) => category is
-        UnicodeCategory.Control or
-        UnicodeCategory.Format or
-        UnicodeCategory.Surrogate or
-        UnicodeCategory.PrivateUse or
-        UnicodeCategory.OtherNotAssigned;
+    private static bool IsSeparator(UnicodeCategory category) => (Separators & CategoryBit(category)) != 0;
 
     private static bool IsPosixGraph(Rune scalar, UnicodeCategory category) =>
-        (IsLetterCategory(category) || IsMark(category) || IsNumber(category) ||
-         IsPunctuation(category) || IsSymbol(category) || category == UnicodeCategory.Format) &&
+        ((Letters | Marks | Numbers | Punctuation | Symbols | CategoryBit(UnicodeCategory.Format)) &
+            CategoryBit(category)) != 0 &&
         scalar.Value is not (0x061C or 0x180E or >= 0x2066 and <= 0x2069);
 }

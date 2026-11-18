@@ -341,6 +341,32 @@ internal static class Pcre2SliceDriver
         return count;
     }
 
+    internal static bool TryCountGeneralCategory(Pcre2BacktrackingProgram program, ReadOnlySpan<byte> input,
+        scoped ref Utf8SliceInvocation invocation, out int count)
+    {
+        count = 0;
+        var code = program.Instructions;
+        if ((program.Request.Options & (Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored |
+                Pcre2CompileOptions.FirstLine)) != 0 || program.Request.SkipsCrLfContinuation ||
+            code.Length is < 2 or > 64 || code[^1].Kind != Pcre2BacktrackingInstructionKind.Accept)
+            return false;
+
+        // A complete one-scalar program needs no capture state for Count.
+        var index = 0;
+        while (code[index].Kind == Pcre2BacktrackingInstructionKind.CaptureStart) index++;
+        ref readonly var instruction = ref code[index++];
+        if (instruction.Kind != Pcre2BacktrackingInstructionKind.Token ||
+            instruction.Token.Kind != Pcre2CharacterTokenKind.CharacterClass ||
+            (instruction.Token.Options & Pcre2CharacterOptions.Caseless) != 0) return false;
+        while (code[index].Kind == Pcre2BacktrackingInstructionKind.CaptureEnd) index++;
+        var characterClass = instruction.Token.CharacterClass;
+        if (index != code.Length - 1 || !characterClass.TryGetGeneralCategories(out var categories)) return false;
+
+        ThrowIfSliceBreached(Utf8UnicodeCategoryExecutor.TryCount(input, categories,
+            characterClass.AsciiSet.ActualLowMask, characterClass.AsciiSet.ActualHighMask, ref invocation, out count));
+        return true;
+    }
+
     // The caller proves a non-empty left-to-right language, so no PCRE2 empty
     // retry is needed. Keep one scratch rental and one original invocation for
     // the entire count; the shared runner meters search and verification.
