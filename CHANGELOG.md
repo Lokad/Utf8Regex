@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Core enumeration handles lax end anchors when the literal itself consumes a
+  final line feed.
+
 - PCRE2 replacement accepts UTF-8 templates, including Extended grammar and
   funded destination output.
 

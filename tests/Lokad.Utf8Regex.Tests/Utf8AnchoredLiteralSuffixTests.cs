@@ -5,14 +5,32 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Anchored ASCII literal suffixes (literal$ and literal\Z covering the whole
-// pattern, plus the strict literal\z twin) verify by a byte-exact tail compare:
-// only the input end (or right before a single trailing line feed for the lax
-// forms) can match, so IsMatch, Match, Count, detailed matches, and enumeration
-// never construct the fallback engine, at any start offset. Coordinates map the
-// match start through UTF-16 on non-ASCII input.
+// Anchored ASCII literal suffixes can use a single byte-exact tail comparison
+// when the pattern proves only one end position can match.
 public sealed class Utf8AnchoredLiteralSuffixTests
 {
+    [Theory]
+    [InlineData(@"\n$", "😀\n\n")]
+    [InlineData(@"abc\n\Z", "😀abc\n")]
+    [InlineData(@"(?i:ABC\n)$", "😀abc\n")]
+    [InlineData(@"abc\n\z", "😀abc\n")]
+    public void SuffixLiteralCanConsumeTheFinalLineFeed(string pattern, string text)
+    {
+        using var regex = new Utf8Regex(pattern);
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern, RegexOptions.CultureInvariant).Matches(text)
+            .Select(hit => (Encoding.UTF8.GetByteCount(text.AsSpan(0, hit.Index)),
+                Encoding.UTF8.GetByteCount(text.AsSpan(0, hit.Index + hit.Length)))).ToArray();
+        Assert.Equal(expected.Length, regex.Count(input));
+        foreach (var floor in new int?[] { null, 0 })
+        {
+            var ranges = new List<(int Start, int End)>();
+            foreach (var hit in regex.EnumerateMatches(input, floor))
+                ranges.Add((hit.StartOffsetInBytes, hit.EndOffsetInBytes));
+            Assert.Equal(expected, ranges);
+        }
+    }
+
     public static IEnumerable<object?[]> AcceptCases()
     {
         yield return new object?[] { "ab$", "AnchoredAsciiLiteralSuffix" };
@@ -133,9 +151,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
 
     public static IEnumerable<object?[]> NonAsciiBehaviorCases()
     {
-        // The tail compare is byte-exact on every input: astral scalars never end
-        // with ASCII bytes, and the match start maps through UTF-16, so non-ASCII
-        // inputs stay zero-construction too.
+        // No byte in an astral scalar can be mistaken for an ASCII suffix byte.
         yield return new object?[] { "ab$", "éab" };
         yield return new object?[] { "ab$", "abé" };
     }

@@ -49,6 +49,10 @@ internal static class Utf8AnchoredLiteralClassifier
         if (!VisitLiteral(body, start, count, bytes, true, out var written, out var copiedFold) || written != length || copiedFold != folded)
             throw new InvalidOperationException("An immutable literal proof changed during copying.");
         var lax = last.Kind != Utf8TreeNodeKind.End;
+        // A lax end anchor admits both the subject end and the position before
+        // a trailing line feed. A literal ending in LF can match at either,
+        // so the single-candidate suffix cursor has no complete proof.
+        if (suffix && lax && bytes[^1] == (byte)'\n') return default;
         var kind = prefix
             ? folded ? Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix : Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix
             : folded ? lax ? Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffix : Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralSuffixStrictEnd
