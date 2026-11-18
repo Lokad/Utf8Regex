@@ -177,23 +177,21 @@ internal sealed class LokadPublicBenchmarkContext
         return Utf8FallbackReplay.IsMatch(Utf8Regex, InputBytes) ? 1 : 0;
     }
 
-    public int ExecuteUtf8CompiledAfterValidationOnly()
+    public int ExecuteUtf8CompiledMatchOnly()
     {
-        var validation = Utf8Validation.Validate(InputBytes);
         return Operation switch
         {
-            LokadPublicBenchmarkOperation.IsMatch => Utf8MatchInspection.IsMatchCompiled(CompiledUtf8Regex, InputBytes, validation) ? 1 : 0,
-            LokadPublicBenchmarkOperation.Match => MeasureMatch(Utf8MatchInspection.MatchCompiled(CompiledUtf8Regex, InputBytes, validation)),
+            LokadPublicBenchmarkOperation.IsMatch => Utf8MatchInspection.IsMatchCompiled(CompiledUtf8Regex, InputBytes) ? 1 : 0,
+            LokadPublicBenchmarkOperation.Match => MeasureMatch(Utf8MatchInspection.MatchCompiled(CompiledUtf8Regex, InputBytes)),
             _ => 0,
         };
     }
 
-    public int ExecuteUtf8CompiledBoolAfterValidationOnly()
+    public int ExecuteUtf8CompiledBoolOnly()
     {
-        var validation = Utf8Validation.Validate(InputBytes);
         return Operation switch
         {
-            LokadPublicBenchmarkOperation.IsMatch or LokadPublicBenchmarkOperation.Match => Utf8MatchInspection.IsMatchCompiled(CompiledUtf8Regex, InputBytes, validation) ? 1 : 0,
+            LokadPublicBenchmarkOperation.IsMatch or LokadPublicBenchmarkOperation.Match => Utf8MatchInspection.IsMatchCompiled(CompiledUtf8Regex, InputBytes) ? 1 : 0,
             _ => 0,
         };
     }

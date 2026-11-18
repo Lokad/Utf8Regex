@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -102,27 +101,22 @@ public sealed class Utf8SimplePrefixCountTests
     }
 
     [Fact]
-    public void PreparedScalarCountBorrowsPrefixProofAndOriginalWorkingAuthority()
+    public void PublicScalarCountUsesPrefixProofUnderFiniteLimits()
     {
-        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+");
+        const string pattern = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
         var input = Encoding.UTF8.GetBytes("😀" + new string('x', 65536));
-        var validation = Utf8Validation.Validate(input);
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(1000000, 1, 256),
-            Regex.InfiniteMatchTimeout, default);
-        var breach = Utf8PreparedScalarExecutor.TryCount(regex.Inspection.PreparedRegex,
-            input, validation, ref invocation, out var count);
-        Assert.Equal(Utf8ExecutionLimitKind.None, breach);
-        Assert.Equal(0, count);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-
-        // A later native-looking prefix is not sufficient: Unicode word
-        // boundaries, Unicode whitespace and the whole suffix stay scalar.
+        using var regex = Create(1000000);
+        Assert.Equal(0, regex.Count(input));
+        // Unicode word boundaries, whitespace and the suffix still require verification.
         Assert.Equal(2, regex.Count("éclass Wrong 😀class\u00a0Right record Good"u8));
-        var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(1, 1, 256),
-            Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
-            Utf8PreparedScalarExecutor.TryCount(regex.Inspection.PreparedRegex,
-                input, validation, ref denied, out _));
+        using var denied = Create(1);
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+
+        static Utf8Regex Create(ulong steps) => new(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = steps, MaxDepth = 32, MaxWorkingBytes = 2048 }
+        });
     }
 
     [Fact]

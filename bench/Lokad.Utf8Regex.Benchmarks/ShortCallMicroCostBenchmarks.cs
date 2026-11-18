@@ -96,12 +96,12 @@ public class ShortPublicMatchMicroCostBenchmarks
     }
 
     [Benchmark(OperationsPerInvoke = RepeatCount)]
-    public int CompiledAfterValidation()
+    public int CompiledProbe()
     {
         var total = 0;
         for (var i = 0; i < RepeatCount; i++)
         {
-            total += _context.ExecuteUtf8CompiledAfterValidationOnly();
+            total += _context.ExecuteUtf8CompiledMatchOnly();
         }
 
         return total;
@@ -227,12 +227,12 @@ public class ShortPrefixLoopMicroCostBenchmarks
     }
 
     [Benchmark(OperationsPerInvoke = RepeatCount)]
-    public int CompiledAfterValidation()
+    public int CompiledProbe()
     {
         var total = 0;
         for (var i = 0; i < RepeatCount; i++)
         {
-            total += _context.ExecuteUtf8PrefixCompiledAfterValidation();
+            total += _context.ExecuteUtf8PrefixCompiledMatchOnly();
         }
 
         return total;

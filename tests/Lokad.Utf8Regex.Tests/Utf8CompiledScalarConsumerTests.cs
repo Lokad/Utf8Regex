@@ -117,95 +117,91 @@ public sealed class Utf8CompiledScalarConsumerTests
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void ScalarExecutionSharesBudgetAndRestoresCaptureScratch(int operation)
+    public void PublicScalarOperationsRespectAndRefundWorkingAllowance(int operation)
     {
-        var prepared = Prepare(@"(?<x>.)\k<x>");
+        using var regex = new Utf8Regex(@"(?<x>.)\k<x>");
         var input = "😀😀"u8.ToArray();
-        var validation = Utf8Validation.Validate(input);
-        var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        Assert.True(funded.Ledger.TryReserve(7));
-        Assert.Equal(Utf8ExecutionLimitKind.None, Run(operation, prepared, input, validation, ref funded));
-        Assert.Equal(7ul, funded.Ledger.ReservedBytes);
-        var limited = new Utf8SliceInvocation(new(funded.Budget.Steps, 0, 0), Regex.InfiniteMatchTimeout, default);
-        Assert.True(limited.Ledger.TryReserve(7));
-        Assert.Equal(Utf8ExecutionLimitKind.None, Run(operation, prepared, input, validation, ref limited));
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Run(operation, prepared, input, validation, ref limited));
-        Assert.Equal(7ul, limited.Ledger.ReservedBytes);
-        var denied = new Utf8SliceInvocation(new(0, 0, 8), Regex.InfiniteMatchTimeout, default);
-        Assert.True(denied.Ledger.TryReserve(7));
-        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, Run(operation, prepared, input, validation, ref denied));
-        Assert.Equal(7ul, denied.Ledger.ReservedBytes);
+        var working = new WorkingAccount(1 << 20);
+        Assert.True(working.TryReserve(7));
+        Assert.Equal(operation == 2 ? 8 : 1, Run(operation, regex, input, working, default));
+        Assert.True(working.Peak > 7);
+        Assert.Equal(7ul, working.Used);
+
+        var denying = new WorkingAccount(8);
+        Assert.True(denying.TryReserve(7));
+        Assert.Throws<Utf8MemoryAdmissionException>(() => Run(operation, regex, input, denying, default));
+        Assert.Equal(7ul, denying.Used);
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void ScalarExecutionCancellationKeepsEntryTokenAndReleasesScratch(int operation)
+    [InlineData(0, false)] [InlineData(1, false)] [InlineData(2, false)]
+    [InlineData(0, true)] [InlineData(1, true)] [InlineData(2, true)]
+    public void PublicScalarOperationsKeepEntryInterruptionAuthority(int operation, bool expire)
     {
-        var prepared = Prepare("(?<x>a+)b");
-        var input = Encoding.UTF8.GetBytes(new string('a', 2048) + "b");
-        var validation = Utf8Validation.Validate(input);
-        using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var entered = false;
-        invocation.CheckpointHook = _ => { entered = true; source.Cancel(); };
-        OperationCanceledException? failure = null;
-        try { _ = Run(operation, prepared, input, validation, ref invocation); }
-        catch (OperationCanceledException cancelled) { failure = cancelled; }
-        Assert.True(entered); Assert.NotNull(failure); Assert.Equal(source.Token, failure.CancellationToken);
-        Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
-    }
-
-    [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void ScalarOperationsUseThePassedEntryDeadline(int operation)
-    {
-        const string pattern = @"(?<=é).";
-        var prepared = Prepare(pattern);
-        var input = "é😀"u8.ToArray();
-        var validation = Utf8Validation.Validate(input);
-        var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(1));
-        Thread.Sleep(20);
-        Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+        using var regex = new Utf8Regex(@"(?<x>.)\k<x>", policy: new Utf8RegexPolicy
         {
-            if (operation == 0) _ = Utf8PreparedScalarExecutor.IsMatch(prepared, input, validation, deadline);
-            else if (operation == 1) _ = Utf8PreparedScalarExecutor.Count(prepared, input, validation, deadline);
-            else _ = Utf8PreparedScalarExecutor.Match(prepared, input, validation, deadline);
+            MatchTimeout = TimeSpan.FromMilliseconds(100)
         });
+        var input = "😀😀"u8.ToArray();
+        var working = new WorkingAccount(1 << 20);
+        Assert.True(working.TryReserve(7));
+        using var source = new CancellationTokenSource();
+        var readCount = 0;
+        var interruptAt = int.MaxValue;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (++readCount != interruptAt)
+                return 0;
+            if (expire)
+                return 1000;
+            source.Cancel();
+            return 0;
+        });
+        Assert.Equal(operation == 2 ? 8 : 1, Run(operation, regex, input, working, source.Token));
+        Assert.True(readCount > 1);
+        interruptAt = readCount;
+        readCount = 0;
+        if (expire)
+        {
+            var failure = Assert.Throws<RegexMatchTimeoutException>(() =>
+                Run(operation, regex, input, working, source.Token));
+            Assert.Equal(regex.MatchTimeout, failure.MatchTimeout);
+        }
+        else
+        {
+            var failure = Assert.Throws<OperationCanceledException>(() =>
+                Run(operation, regex, input, working, source.Token));
+            Assert.Equal(source.Token, failure.CancellationToken);
+        }
+        Assert.Equal(7ul, working.Used);
     }
 
-    private static Utf8ExecutionLimitKind Run(int operation, Utf8PreparedRegex prepared, byte[] input,
-        Utf8ValidationResult validation, ref Utf8SliceInvocation invocation)
-        => operation == 0 ? Utf8PreparedScalarExecutor.TryIsMatch(prepared, input, validation, ref invocation, out _)
-            : operation == 1 ? Utf8PreparedScalarExecutor.TryCount(prepared, input, validation, ref invocation, out _)
-            : Utf8PreparedScalarExecutor.TryMatch(prepared, input, validation, ref invocation, out _);
+    private static int Run(int operation, Utf8Regex regex, byte[] input, WorkingAccount working, CancellationToken token)
+        => operation switch
+        {
+            0 => regex.IsMatch(input, token, working) ? 1 : 0,
+            1 => regex.Count(input, token, working),
+            _ => regex.Match(input, cancellationToken: token, workingMemoryAllowance: working).EndOffsetInBytes,
+        };
 
-    [Theory]
-    [InlineData(0, true)]
-    [InlineData(1, true)]
-    [InlineData(2, true)]
-    [InlineData(0, false)]
-    [InlineData(1, false)]
-    [InlineData(2, false)]
-    public void CancellationAtFinalPublicationCannotPublishAResult(int operation, bool hit)
+    private sealed class WorkingAccount(ulong capacity) : IUtf8MemoryAllowance
     {
-        var prepared = Prepare("a");
-        var input = hit ? "a"u8.ToArray() : "z"u8.ToArray();
-        var validation = Utf8Validation.Validate(input);
-        var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Run(operation, prepared, input, validation, ref funded));
-        var padding = (64 - (funded.Budget.Steps & 63)) & 63;
-        using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, source.Token);
-        for (var step = 0ul; step < padding; step++) Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeInputStep());
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var entered = false;
-        invocation.CheckpointHook = steps => { if (steps == padding + funded.Budget.Steps) { entered = true; source.Cancel(); } };
-        OperationCanceledException? failure = null;
-        try { _ = Run(operation, prepared, input, validation, ref invocation); }
-        catch (OperationCanceledException cancelled) { failure = cancelled; }
-        Assert.True(entered); Assert.NotNull(failure); Assert.Equal(source.Token, failure.CancellationToken);
-        Assert.Equal(7ul, invocation.Ledger.ReservedBytes);
+        public ulong Used { get; private set; }
+        public ulong Peak { get; private set; }
+
+        public bool TryReserve(ulong bytes)
+        {
+            if (bytes > capacity - Used) return false;
+            Used += bytes;
+            Peak = Math.Max(Peak, Used);
+            return true;
+        }
+
+        public void Release(ulong bytes)
+        {
+            Assert.True(bytes <= Used);
+            Used -= bytes;
+        }
     }
 
     [Theory]

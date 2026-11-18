@@ -1743,7 +1743,7 @@ internal static partial class BenchmarkInspectReporter
         Measure("PrefilterOnly", iterations, context.ExecuteUtf8PrefixPrefilterOnly);
         Measure("DirectMatchHook", iterations, context.ExecuteUtf8PrefixDirectHookOnly);
         Measure("DirectUrlMatcher", iterations, context.ExecuteLokadScriptDirectUrlMatcher);
-        Measure("CompiledMatchOnly", iterations, context.ExecuteUtf8PrefixCompiledAfterValidation);
+        Measure("CompiledMatchOnly", iterations, context.ExecuteUtf8PrefixCompiledMatchOnly);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
@@ -1785,7 +1785,7 @@ internal static partial class BenchmarkInspectReporter
 
         Measure("WellFormedOnly", iterations, context.ExecuteUtf8PrefixWellFormedOnly);
         Measure("DirectMatchHook", iterations, context.ExecuteUtf8PrefixDirectHookOnly);
-        Measure("CompiledMatchOnly", iterations, context.ExecuteUtf8PrefixCompiledAfterValidation);
+        Measure("CompiledMatchOnly", iterations, context.ExecuteUtf8PrefixCompiledMatchOnly);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
@@ -2394,8 +2394,8 @@ internal static partial class BenchmarkInspectReporter
                         Measure("CompiledLiteralFamilyRawMatch", iterations, context.ExecuteUtf8CompiledLiteralFamilyRawMatchOnly);
                         Measure("CompiledLiteralFamilyProjectionOnly", iterations, context.ExecuteUtf8CompiledLiteralFamilyProjectionOnly);
                     }
-                    Measure("CompiledBoolAfterValidation", iterations, context.ExecuteUtf8CompiledBoolAfterValidationOnly);
-                    Measure("CompiledMatchAfterValidation", iterations, context.ExecuteUtf8CompiledAfterValidationOnly);
+                    Measure("CompiledBoolProbe", iterations, context.ExecuteUtf8CompiledBoolOnly);
+                    Measure("CompiledMatchProbe", iterations, context.ExecuteUtf8CompiledMatchOnly);
                     Measure("CompiledDirectNoValidation", iterations, context.ExecuteUtf8CompiledDirectNoValidationOnly);
                     break;
             }
@@ -2443,8 +2443,8 @@ internal static partial class BenchmarkInspectReporter
             {
                 Measure("ValidationOnly", iterations, context.ExecuteUtf8PrefixValidationOnly);
                 Measure("WellFormedOnly", iterations, context.ExecuteUtf8PrefixWellFormedOnly);
-                Measure("CompiledBoolAfterValidation", iterations, context.ExecuteUtf8PrefixCompiledBoolAfterValidation);
-                Measure("CompiledMatchAfterValidation", iterations, context.ExecuteUtf8PrefixCompiledAfterValidation);
+                Measure("CompiledBoolProbe", iterations, context.ExecuteUtf8PrefixCompiledBoolOnly);
+                Measure("CompiledMatchProbe", iterations, context.ExecuteUtf8PrefixCompiledMatchOnly);
                 Measure("CompiledDirectNoValidation", iterations, context.ExecuteUtf8PrefixCompiledDirectHookOnly);
                 Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
             }
@@ -2630,7 +2630,7 @@ internal static partial class BenchmarkInspectReporter
             Measure("FallbackSearchStartsOnly", iterations, context.ExecuteUtf8FallbackSearchStartsOnly);
         }
 
-        Measure("CompiledAfterValidation", iterations, context.ExecuteUtf8CompiledAfterValidationOnly);
+        Measure("CompiledProbe", iterations, context.ExecuteUtf8CompiledMatchOnly);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
@@ -2661,7 +2661,7 @@ internal static partial class BenchmarkInspectReporter
         Measure("WellFormedOnly", iterations, context.ExecuteUtf8PrefixWellFormedOnly);
         Measure("PrefilterOnly", iterations, context.ExecuteUtf8PrefixPrefilterOnly);
         Measure("DirectHook", iterations, context.ExecuteUtf8PrefixDirectHookOnly);
-        Measure("CompiledAfterValidation", iterations, context.ExecuteUtf8PrefixCompiledAfterValidation);
+        Measure("CompiledProbe", iterations, context.ExecuteUtf8PrefixCompiledMatchOnly);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
@@ -2684,7 +2684,6 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var iterations = ParseValidatorDeepIterations(context, iterationsText);
-        var validation = Utf8Validation.Validate(context.InputBytes);
         var baselineDiagnostics = context.Utf8Regex.CollectIsMatchDiagnostics(context.InputBytes);
         var compiledDiagnostics = context.CompiledUtf8Regex.CollectIsMatchDiagnostics(context.InputBytes);
 
@@ -2722,15 +2721,15 @@ internal static partial class BenchmarkInspectReporter
         Measure("MatchAfterWellFormed", iterations, () =>
         {
             Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
-            return Utf8MatchInspection.IsMatchCompiled(context.Utf8Regex, context.InputBytes, default) ? 1 : 0;
+            return Utf8MatchInspection.IsMatchCompiled(context.Utf8Regex, context.InputBytes) ? 1 : 0;
         });
         Measure("CompiledMatchAfterWellFormed", iterations, () =>
         {
             Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
-            return Utf8MatchInspection.IsMatchCompiled(context.CompiledUtf8Regex, context.InputBytes, default) ? 1 : 0;
+            return Utf8MatchInspection.IsMatchCompiled(context.CompiledUtf8Regex, context.InputBytes) ? 1 : 0;
         });
-        Measure("MatchAfterValidation", iterations, () => Utf8MatchInspection.IsMatchCompiled(context.Utf8Regex, context.InputBytes, validation) ? 1 : 0);
-        Measure("CompiledMatchAfterValidation", iterations, () => Utf8MatchInspection.IsMatchCompiled(context.CompiledUtf8Regex, context.InputBytes, validation) ? 1 : 0);
+        Measure("MatchProbe", iterations, () => Utf8MatchInspection.IsMatchCompiled(context.Utf8Regex, context.InputBytes) ? 1 : 0);
+        Measure("CompiledMatchProbe", iterations, () => Utf8MatchInspection.IsMatchCompiled(context.CompiledUtf8Regex, context.InputBytes) ? 1 : 0);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
         Measure("DecodeThenRegex", iterations, context.ExecuteDecodeThenRegex);
@@ -2924,11 +2923,10 @@ internal static partial class BenchmarkInspectReporter
             return match.Success ? 1 : 0;
         });
 
-        var validation = Utf8Validation.Validate(benchmarkCase.InputBytes);
-        Measure("MatchAfterValidation", iterations, () =>
-            Utf8MatchInspection.IsMatchCompiled(regex, benchmarkCase.InputBytes, validation) ? 1 : 0);
-        Measure("CompiledMatchAfterValidation", iterations, () =>
-            Utf8MatchInspection.IsMatchCompiled(compiledUtf8Regex, benchmarkCase.InputBytes, validation) ? 1 : 0);
+        Measure("MatchProbe", iterations, () =>
+            Utf8MatchInspection.IsMatchCompiled(regex, benchmarkCase.InputBytes) ? 1 : 0);
+        Measure("CompiledMatchProbe", iterations, () =>
+            Utf8MatchInspection.IsMatchCompiled(compiledUtf8Regex, benchmarkCase.InputBytes) ? 1 : 0);
         Measure("RuntimeFamilyIsMatch", iterations, () =>
         {
             var handled = regex.Inspection.DebugTryIsMatchLiteralFamily(benchmarkCase.InputBytes, out var isMatch);

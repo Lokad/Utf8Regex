@@ -1,4 +1,3 @@
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -7,18 +6,18 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static class Utf8MatchInspection
 {
-    public static bool IsMatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input, Utf8ValidationResult validation)
-        => !Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input) &&
-           (regex.Inspection.CompiledRuntime is { } runtime
-               ? runtime.IsMatch(input, Utf8ExecutionDeadline.Infinite)
-               : Utf8PreparedScalarExecutor.IsMatch(regex.Inspection.PreparedRegex, input, validation, Utf8ExecutionDeadline.Infinite));
+    public static bool IsMatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input)
+        => regex.Inspection.CompiledRuntime is { } runtime
+            ? !Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input) &&
+              runtime.IsMatch(input, Utf8ExecutionDeadline.Infinite)
+            : regex.IsMatch(input);
 
-    public static Utf8CaptureRange MatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input, Utf8ValidationResult validation)
-        => Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)
-            ? default(Utf8CaptureRange)
-            : regex.Inspection.CompiledRuntime is { } runtime
-                ? runtime.Match(input, Utf8ExecutionDeadline.Infinite)
-                : Utf8PreparedScalarExecutor.Match(regex.Inspection.PreparedRegex, input, validation, Utf8ExecutionDeadline.Infinite);
+    public static Utf8CaptureRange MatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input)
+        => regex.Inspection.CompiledRuntime is { } runtime
+            ? Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)
+                ? default
+                : runtime.Match(input, Utf8ExecutionDeadline.Infinite)
+            : regex.Match(input);
 
     public static bool TryCountSelectedKernelWithoutValidation(Utf8Regex regex, ReadOnlySpan<byte> input, out int count)
     {

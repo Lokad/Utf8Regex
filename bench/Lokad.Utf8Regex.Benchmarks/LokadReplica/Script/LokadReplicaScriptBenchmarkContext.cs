@@ -195,14 +195,13 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return total;
     }
 
-    public int ExecuteUtf8PrefixCompiledAfterValidation()
+    public int ExecuteUtf8PrefixCompiledMatchOnly()
     {
         EnsurePrefixMatchLoop();
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            var validation = Utf8Validation.Validate(sample);
-            var match = Utf8MatchInspection.MatchCompiled(CompiledUtf8Regex, sample, validation);
+            var match = Utf8MatchInspection.MatchCompiled(CompiledUtf8Regex, sample);
             if (match.Success)
             {
                 total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
@@ -239,14 +238,13 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return total;
     }
 
-    public int ExecuteUtf8PrefixCompiledBoolAfterValidation()
+    public int ExecuteUtf8PrefixCompiledBoolOnly()
     {
         EnsurePrefixMatchLoop();
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            var validation = Utf8Validation.Validate(sample);
-            if (Utf8MatchInspection.IsMatchCompiled(CompiledUtf8Regex, sample, validation))
+            if (Utf8MatchInspection.IsMatchCompiled(CompiledUtf8Regex, sample))
             {
                 total += sample.Length;
             }
