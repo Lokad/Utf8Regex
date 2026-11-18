@@ -294,6 +294,42 @@ public sealed class Pcre2MemoryCursorTests
             new Utf8Pcre2Regex(".").CreateMatchCursor(new byte[] { 0xff }, cancellationToken: canceled.Token)).CancellationToken);
     }
 
+    [Theory]
+    [InlineData("needle", "😀needle needle", 2)]
+    [InlineData("one|two|three|four", "one two four", 3)]
+    [InlineData(@"([a-z]+)-\1", "abc-abc foo-foo", 2)]
+    [InlineData(".", "😀éx", 3)]
+    public void OptionalWorkingAdmissionKeepsNumericLimitsAndEquivalentNullResults(string pattern, string text, int count)
+    {
+        var regex = Utf8Pcre2Regex.Create(pattern, default, default, new()
+        {
+            MaxWorkSteps = 1_000_000, MaxDepth = 512, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1
+        }, TimeSpan.FromSeconds(10));
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.True(regex.IsMatch(input));
+        Assert.True(regex.IsMatch(input, workingMemoryAllowance: null));
+        Assert.Equal(count, regex.Count(input));
+        Assert.Equal(count, regex.Count(input, workingMemoryAllowance: null));
+        var root = new Root(); var account = new Account(root);
+        Assert.True(regex.IsMatch(input, workingMemoryAllowance: account));
+        Assert.Equal(count, regex.Count(input, workingMemoryAllowance: account));
+        Assert.Equal(0UL, root.Used);
+    }
+
+    [Fact]
+    public void LiteralFamilyBooleanAdmissionCannotUseUnfundedShortcutAndPreCancellationWins()
+    {
+        var regex = new Utf8Pcre2Regex(@"(?<x>one)\k<x>");
+        Assert.IsType<Pcre2FiniteLiteralLanguageDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        var root = new Root(); var account = new Account(root) { Maximum = 0 };
+        using var source = new CancellationTokenSource(); source.Cancel();
+        var error = Assert.Throws<OperationCanceledException>(() =>
+            regex.IsMatch("oneone"u8, -1, cancellationToken: source.Token, workingMemoryAllowance: account));
+        Assert.Equal(source.Token, error.CancellationToken); Assert.Equal(0, account.Attempts);
+        Assert.Throws<Utf8MemoryAdmissionException>(() => regex.IsMatch("oneone"u8, workingMemoryAllowance: account));
+        Assert.Equal(1, account.Attempts); Assert.Equal(0UL, root.Used);
+    }
+
     private static Utf8Pcre2RegexProgramOwner Compile(string pattern, Account account)
         => Utf8Pcre2Regex.Compile(pattern, default, default, Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account);
     private sealed class Root { internal readonly object Gate = new(); internal ulong Used; }

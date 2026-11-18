@@ -519,3 +519,12 @@ are optional; name `captures:` when omitting the start. The former forwarding
 overloads are removed, so recompile callers and adapt positional arguments or
 method-group delegates. Selection, original cursor interruption, alias progress,
 short/excess output and retained byte ranges keep their existing contracts.
+
+### PCRE2 Boolean/count working admission
+
+IsMatch and Count each have one signature with optional byte start, match flags,
+token and `workingMemoryAllowance`. Recompile callers and adapt four-parameter
+method-group delegates. The fifth argument may now be null: an ordinary expression
+keeps numeric controls without shared funding; a funded owner still inherits its
+program account. Non-null admission is terminal on refusal. Allocation-free paths
+need no reservation. Existing literal algorithms and original interruption stay.

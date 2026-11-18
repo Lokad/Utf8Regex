@@ -83,7 +83,10 @@ byte starts, lazy errors and original operation controls remain. Output survives
 owner disposal; no additional retained-output receipt is needed for this route.
 
 Operation defaults now use one optional token-bearing signature per input/template
-representation. For example, `regex.Match(subject, cancellationToken: token)`
+representation. `IsMatch` and `Count` also accept optional `workingMemoryAllowance`:
+null keeps numeric controls without a shared account; a supplied account retains
+terminal refusal and synchronous refunds. Funded owners inherit program funding
+when that argument is null. For example, `regex.Match(subject, cancellationToken: token)`
 starts at byte zero. Recompile old callers. When using TryReplace's retired
 options-only fifth argument, write `substitutionOptions: options`. Cancellation,
 finite limits and literal fast paths remain enforced. Benchmark call bindings

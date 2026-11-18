@@ -181,15 +181,17 @@ public sealed partial class Utf8Pcre2Regex
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
     /// <param name="cancellationToken">The token to observe before entry and during bounded matching.</param>
+    /// <param name="workingMemoryAllowance">Optional shared working admission; null keeps numeric limits without a shared account. Refusal is terminal.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
-    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
+    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None,
+        CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (startOffsetInBytes == 0 && matchOptions == Pcre2MatchOptions.None &&
+        if (workingMemoryAllowance is null && startOffsetInBytes == 0 && matchOptions == Pcre2MatchOptions.None &&
             !cancellationToken.CanBeCanceled && _unmeteredLiteralLanguage is { } literalLanguage)
             return literalLanguage.BooleanSearch.IsMatch(input, 0);
 
-        return IsMatchCore(input, startOffsetInBytes, matchOptions, cancellationToken);
+        return IsMatchCore(input, startOffsetInBytes, matchOptions, cancellationToken, workingMemoryAllowance);
     }
 
     private int CountCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
@@ -238,16 +240,18 @@ public sealed partial class Utf8Pcre2Regex
         }
     }
 
-    /// <summary>Counts non-overlapping matches using an explicit start byte offset and per-operation options, observing cancellation during validation and cumulative global matching.</summary>
+    /// <summary>Counts non-overlapping matches using an explicit start byte offset and per-operation options, observing cancellation during cumulative global matching.</summary>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The token retained through validation and all matching work.</param>
+    /// <param name="cancellationToken">The token retained through all matching work.</param>
+    /// <param name="workingMemoryAllowance">Optional shared working admission; null keeps numeric limits without a shared account. Covered temporary loans refund synchronously.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
-    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
+    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None,
+        CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return CountCore(input, startOffsetInBytes, matchOptions, cancellationToken);
+        return CountCore(input, startOffsetInBytes, matchOptions, cancellationToken, workingMemoryAllowance);
     }
 
     private Utf8Pcre2ValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken)

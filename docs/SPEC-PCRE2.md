@@ -391,8 +391,10 @@ funding transfer. Ordinary expressions retain their existing cache bounds.
 The owner exposes Boolean matching and Count with byte starts, PCRE2 match flags
 and each call's cancellation token. Temporary storage uses program funding by
 default; an explicit working allowance selects a separate host account. Ordinary
-expressions also accept shared working admission through their full IsMatch/Count
-signatures. Existing numeric limits, original
+expressions accept `workingMemoryAllowance=null` as an optional final parameter
+on their single IsMatch/Count signatures. Null keeps numeric controls without a
+shared account; a non-null account also fences unmetered literal shortcuts.
+The funded owner's null still selects program funding. Existing numeric limits, original
 cancellation and PCRE2 timeout/limit errors still apply. Shared refusal throws
 `Utf8MemoryAdmissionException` synchronously and never retries elsewhere.
 Covered temporary loans refund on success, failure and interruption. Borrowed

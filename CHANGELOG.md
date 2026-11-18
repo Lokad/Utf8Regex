@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Consolidate PCRE2 IsMatch/Count onto one optional shared working allowance.
+  Null keeps numeric controls without a shared account; supplied admission remains
+  terminal on refusal and cannot bypass through an unmetered literal shortcut.
+
 - Unify POSIX creation on Utf8RegexPolicy, including construction controls and
   program funding. Funded expressions close new operations on Dispose while
   admitted calls/cursors retain storage. Consolidate Match and cursor MoveNext

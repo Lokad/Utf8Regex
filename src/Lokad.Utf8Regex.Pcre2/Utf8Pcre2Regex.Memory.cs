@@ -55,23 +55,4 @@ public sealed partial class Utf8Pcre2Regex
         => TryReplaceCore(input, replacementUtf8, destination, out bytesWritten, startOffsetInBytes,
             substitutionOptions, matchOptions, token, workingMemoryAllowance);
 
-    /// <summary>Tests for a match with separate caller-owned working admission.</summary>
-    /// <remarks>Compilation and borrowed input retain separate owners. Existing PCRE2 limits and cancellation/deadline apply. Covered temporary loans refund synchronously; denial does not retry under another allowance.</remarks>
-    public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
-        CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        ArgumentNullException.ThrowIfNull(workingMemoryAllowance);
-        return IsMatchCore(input, startOffsetInBytes, matchOptions, cancellationToken, workingMemoryAllowance);
-    }
-
-    /// <summary>Counts matches with separate caller-owned working admission.</summary>
-    /// <remarks>Uses the existing PCRE2 global driver and numeric limits. Covered temporary loans refund synchronously after completion or failure; result traffic remains a distinct cumulative policy.</remarks>
-    public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
-        CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        ArgumentNullException.ThrowIfNull(workingMemoryAllowance);
-        return CountCore(input, startOffsetInBytes, matchOptions, cancellationToken, workingMemoryAllowance);
-    }
 }

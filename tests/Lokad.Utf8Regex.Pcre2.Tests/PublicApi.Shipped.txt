@@ -108,8 +108,7 @@ sealed class Utf8Pcre2Regex
   property Utf8Pcre2CompileSettings CompileSettings { get; }
   property Utf8Pcre2ExecutionLimits DefaultExecutionLimits { get; }
   property static TimeSpan DefaultMatchTimeout { get; set; }
-  method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
-  method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
+  method Boolean IsMatch(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Boolean TryGetFirstSetGroup(ReadOnlySpan<Byte> input, String name, out Utf8Pcre2GroupContext group, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
   method Buffers.OperationStatus TryCopyPatternUtf8(Span<Byte> destination, out Int32 bytesRequired, Threading.CancellationToken cancellationToken = default)
   method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Span<Byte> destination, out Int32 bytesWritten, Int32 startOffsetInBytes = 0, Pcre2SubstitutionOptions substitutionOptions = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
@@ -118,8 +117,7 @@ sealed class Utf8Pcre2Regex
   method Int32 CopyNameEntries(Span<Pcre2NameEntry> destination, out Boolean isMore)
   method Int32 CopyNumbersForName(String name, Span<Int32> destination, out Boolean isMore)
   method Int32 CopyNumbersForUtf8Name(ReadOnlySpan<Byte> nameUtf8, Span<Int32> destination, out Boolean isMore, Threading.CancellationToken cancellationToken = default)
-  method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
-  method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Pcre2MatchOptions matchOptions, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance workingMemoryAllowance)
+  method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
   method Utf8Pcre2Analysis Analyze()
   method Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
