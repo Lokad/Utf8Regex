@@ -40,9 +40,9 @@ Raw durations, iteration counts, allocations and loaded producer identities go
 to a unique JSON file under `artifacts/benchmark-refresh/generality/`. A focused
 selection neither replaces accepted README tables nor qualifies a package.
 
-The 18 November 2026 full refresh on `fc72da76` completed in 57m02s on the quiet
-VM. Core generality took 605.35 seconds and covered 120 rows and 816 lanes. The
-run verified all catalogs, paired comparisons, lifecycle, scaling and resource
+The 18 November 2026 full refresh on `654d5716` completed in 52m17s on the quiet
+VM. Core generality took 609.55 seconds and qualified all 816 lanes across 120 rows.
+The run verified all catalogs, paired comparisons, lifecycle, scaling and resource
 checks. Compact summaries are in [bench/Snapshots](../bench/Snapshots/). Raw
 durations and the full receipt are under `artifacts/benchmark-refresh/`.
 
