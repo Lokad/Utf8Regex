@@ -1023,6 +1023,62 @@ internal static partial class Utf8SliceRunner
         return terminal == Utf8ExecutionLimitKind.None ? (position, terminal) : (-1, terminal);
     }
 
+    private static int GetGuardedRepeatAtom(Utf8SliceProgram program, int repeatIndex)
+    {
+        var code = program.Instructions;
+        var repeat = code[repeatIndex];
+        var exit = repeat.A;
+        if (program.RightToLeft || exit <= repeatIndex + 3 || exit >= code.Length - 1 ||
+            code[exit] is not { Kind: Utf8SliceInstructionKind.RepeatExit } clear || clear.A != repeat.B ||
+            code[exit - 1] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } loop || loop.A != repeatIndex)
+            return -1;
+
+        // The prepared lookahead has no capture or rollback effects. A
+        // successful iteration advances by exactly the following scalar.
+        var atomIndex = exit - 2;
+        var guard = code[repeatIndex + 1];
+        if (guard is not { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: > 0 } || guard.A + guard.D != atomIndex)
+            return -1;
+        return code[atomIndex].Kind is Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or
+            Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid ||
+            code[atomIndex] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } ? atomIndex : -1;
+    }
+
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunGuardedClassRepeat(Utf8SliceProgram program,
+        int repeatIndex, int atomIndex, ReadOnlySpan<byte> input, int start, uint assertionDepth,
+        ref Utf8SliceInvocation invocation, out int minimumEnd)
+    {
+        var code = program.Instructions;
+        var repeat = code[repeatIndex];
+        var guard = code[repeatIndex + 1];
+        var atom = code[atomIndex];
+        var minimum = repeat.RepeatMinimum;
+        var maximum = repeat.RepeatMaximum;
+        var position = start;
+        var count = 0;
+        minimumEnd = start;
+        while (count < maximum)
+        {
+            // Once the minimum is met, one logical rewind remains available
+            // while the next scalar's assertion is being evaluated.
+            var depth = count >= minimum ? assertionDepth + 1 : assertionDepth;
+            var breach = TryMatchInlineLiteralAssertion(code, repeatIndex + 2, guard.A - 2, guard.C - 1,
+                input, position, false, null, depth, ref invocation, out var matched);
+            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+            if (matched != (guard.D != 0)) break;
+            breach = invocation.TryChargeStep();
+            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+            if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
+            breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
+            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+            if (!hit) break;
+            position += width;
+            if (++count == minimum) minimumEnd = position;
+        }
+        var terminal = ChargeRepeatBoundary(ref invocation, checkDeadline: true);
+        return terminal == Utf8ExecutionLimitKind.None && count >= minimum ? (position, terminal) : (-1, terminal);
+    }
+
     // A side-effect-free atom repeat has only an endpoint and resource status.
     // Capture/history owners stay at the caller; a negative endpoint is a miss.
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunClassRepeat(Utf8SliceProgram program, int repeatIndex,
