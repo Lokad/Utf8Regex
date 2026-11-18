@@ -239,29 +239,6 @@ public sealed class Pcre2LiteralGlobalOperationTests
     }
 
     [Fact]
-    public void MatchManyStopsAfterOneLookahead()
-    {
-        var regex = new Utf8Pcre2Regex("a");
-        Span<Utf8Pcre2MatchData> one = stackalloc Utf8Pcre2MatchData[1];
-
-        var written = regex.MatchMany("a a"u8, one, out var isMore);
-
-        Assert.Equal(1, written);
-        Assert.True(isMore);
-        Assert.Equal(0, one[0].StartOffsetInBytes);
-
-        Span<Utf8Pcre2MatchData> all = stackalloc Utf8Pcre2MatchData[2];
-        written = regex.MatchMany("a a"u8, all, out isMore);
-        Assert.Equal(2, written);
-        Assert.False(isMore);
-        Assert.Equal(2, all[1].StartOffsetInBytes);
-
-        written = regex.MatchMany("a a"u8, Span<Utf8Pcre2MatchData>.Empty, out isMore);
-        Assert.Equal(0, written);
-        Assert.True(isMore);
-    }
-
-    [Fact]
     public void LiteralReplacementUsesByteSegmentsAndGlobalMatches()
     {
         var regex = new Utf8Pcre2Regex("abc");

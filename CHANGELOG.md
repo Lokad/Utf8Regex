@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PCRE2 MatchMany, its duplicate range-copy driver and whole-range carrier.
+  Stream ranges through EnumerateMatches or retain a capture cursor; callers own
+  buffering and request the next result explicitly.
+
 - Remove PCRE2 MatchDetailed and its duplicate invocation wrapper. Use primary
   caller-owned capture ranges or persistent cursor snapshots; actual partial
   probes and their metadata remain supported. Recompile consumers.

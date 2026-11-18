@@ -31,7 +31,7 @@ The admitted profile includes literals/classes, branching/repetition, captures,
 backreferences, assertions, scoped options, branch reset, duplicate names,
 recursion/subroutines, conditionals, atomic groups, backtracking control, `\K`,
 Unicode and opted-in `\C`. Normal operations include `IsMatch`, `Match`,
-`CreateMatchCursor`, `Count`, `EnumerateMatches`, `MatchMany` and substitution.
+`CreateMatchCursor`, `Count`, `EnumerateMatches` and substitution.
 `MatchDetailed` is removed: use caller-owned capture slots, or a persistent cursor
 for owned snapshots and named metadata. Dispose temporary cursors after the
 required results; returned ranges remain valid with unchanged subject memory.
@@ -261,18 +261,21 @@ protection without an additional overload family.
 
 Keep borrowed subjects unchanged and their owners alive. Copied value cursors
 retain independent positions but share allowance/deadline. Owned detailed results
-remain valid after cursor advance/failure. `MatchMany` may have written a prefix
-to caller storage before throwing. Its input and result storage must be disjoint;
+remain valid after cursor advance/failure. `MatchMany` and its whole-range carrier
+are removed. Stream ranges with `EnumerateMatches`, or retain a memory cursor for
+captures across host waits. Callers decide when to request another result; there
+is no implicit bulk lookahead or `isMore` result. Caller-buffered prefixes remain
+valid after later failure. Input and caller capture storage must be disjoint;
 overlap is unsupported and is not checked, since writes can corrupt the subject
-before later discovery. Empty destinations retain their match-existence probe.
+before later discovery.
 An already cancelled explicit token still wins. Interruption during TryReplace copying can
 also leave modified destination bytes. DestinationTooSmall leaves destination
 storage unchanged. Host-retained storage requires separate admission.
 
-Enumeration and `MatchMany` publish byte endpoints and value status directly,
+Enumeration publishes byte endpoints and value status directly,
 preserving snapshots and independent copied positions. Capture publication has
 no coordinate table, sort or prefix scan. Numerical work/storage needs can drop;
-validation, allocation admission and cumulative interruption/limits stay enforced.
+pattern/template checks, allocation admission and cumulative interruption/limits stay enforced.
 
 `TryReplace` supports input and template buffers overlapping the destination.
 Matched overlapping input stages output before copying to caller storage, so
@@ -369,6 +372,8 @@ Measured source `0e10d86b6038`: .NET 11.0.0. Selective updates retain each row's
 
 ### Compatible MatchMany
 
+Historical results for the removed MatchMany API. This operation is no longer refreshed; current callers use EnumerateMatches or a persistent cursor. These measurements do not describe the replacement APIs.
+
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
 | `simple/httpclient-caseless` | 0.986 us | 1.133 us | Managed faster | 0.87x |
@@ -439,6 +444,8 @@ Measured source `0e10d86b6038`: .NET 11.0.0. Selective updates retain each row's
 | `pcre2/kreset-repeat` | 4.787 us | — | Excluded | — |
 
 ### PCRE2-only MatchMany
+
+Historical results for the removed MatchMany API. This operation is no longer refreshed; current callers use EnumerateMatches or a persistent cursor. These measurements do not describe the replacement APIs.
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |

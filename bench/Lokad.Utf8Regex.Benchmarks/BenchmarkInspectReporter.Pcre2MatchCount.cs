@@ -59,8 +59,8 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CPU set           : {processorSet.Description}");
         Console.WriteLine("Protocol          : fixed-size input; same-trip paired lanes; alternating order");
         Console.WriteLine();
-        Console.WriteLine("| Matches | Candidates | VM steps | Pool rents | Managed IsMatch us | Native IsMatch us | M/N | Managed Count us | Native Count us | M/N | Managed Enumerate us | Native Enumerate us | M/N | Managed MatchMany us | Native MatchMany us | M/N |");
-        Console.WriteLine("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
+        Console.WriteLine("| Matches | Candidates | VM steps | Pool rents | Managed IsMatch us | Native IsMatch us | M/N | Managed Count us | Native Count us | M/N | Managed Enumerate us | Native Enumerate us | M/N |");
+        Console.WriteLine("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
 
         foreach (var requestedMatchCount in new[] { 0, 1, 8, 64 })
         {
@@ -95,8 +95,7 @@ internal static partial class BenchmarkInspectReporter
                 compileSettings,
                 supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch |
                     Utf8Pcre2BenchmarkOperation.Count |
-                    Utf8Pcre2BenchmarkOperation.EnumerateMatches |
-                    Utf8Pcre2BenchmarkOperation.MatchMany,
+                    Utf8Pcre2BenchmarkOperation.EnumerateMatches,
                 supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only);
             var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
             using var baseline = new PcreNetNativeBenchmarkBaseline(benchmarkCase);
@@ -116,7 +115,6 @@ internal static partial class BenchmarkInspectReporter
                          Utf8Pcre2BenchmarkOperation.IsMatch,
                          Utf8Pcre2BenchmarkOperation.Count,
                          Utf8Pcre2BenchmarkOperation.EnumerateMatches,
-                         Utf8Pcre2BenchmarkOperation.MatchMany,
                      })
             {
                 var managedChecksum = ComputePcre2ManagedResultChecksum(
@@ -147,11 +145,6 @@ internal static partial class BenchmarkInspectReporter
                 () => baseline.Execute(Utf8Pcre2BenchmarkOperation.EnumerateMatches),
                 iterations,
                 samples);
-            var matchMany = MeasurePcre2DiagnosticPair(
-                () => ExecutePcre2MatchManyRangeSink(context.Utf8Pcre2Regex, context.InputBytes),
-                () => baseline.Execute(Utf8Pcre2BenchmarkOperation.MatchMany),
-                iterations,
-                samples);
 
             Console.WriteLine(
                 $"| {actualMatchCount} | {diagnostics.CandidateAttempts:N0} | " +
@@ -161,9 +154,7 @@ internal static partial class BenchmarkInspectReporter
                 $"{count.FirstMicroseconds:F3} | {count.SecondMicroseconds:F3} | " +
                 $"{count.FirstMicroseconds / count.SecondMicroseconds:F2}x | " +
                 $"{enumerate.FirstMicroseconds:F3} | {enumerate.SecondMicroseconds:F3} | " +
-                $"{enumerate.FirstMicroseconds / enumerate.SecondMicroseconds:F2}x | " +
-                $"{matchMany.FirstMicroseconds:F3} | {matchMany.SecondMicroseconds:F3} | " +
-                $"{matchMany.FirstMicroseconds / matchMany.SecondMicroseconds:F2}x |");
+                $"{enumerate.FirstMicroseconds / enumerate.SecondMicroseconds:F2}x |");
         }
 
         return 0;

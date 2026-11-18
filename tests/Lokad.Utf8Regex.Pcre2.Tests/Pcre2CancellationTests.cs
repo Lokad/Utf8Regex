@@ -108,15 +108,6 @@ public sealed class Pcre2CancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeMatchMany()
-    {
-        var regex = Create();
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.MatchMany(s_input, new Utf8Pcre2MatchData[8], out _, cancellationToken: token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void CancellationBeatsValidation()
     {
         var regex = Create();

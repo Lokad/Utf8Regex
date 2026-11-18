@@ -46,10 +46,7 @@ public sealed class Pcre2SliceCursorProjectionTests
         Assert.True(alias.MoveNext());
         AssertRange(alias.Current,10,12);
 
-        var destination = new Utf8Pcre2MatchData[3];
-        Assert.Equal(3, regex.MatchMany(input, destination, out var more, 2, Pcre2MatchOptions.None));
-        Assert.False(more);
-        Assert.Equal(new[] { 2, 10, 14 }, destination.Select(m => m.StartOffsetInBytes));
+
     }
 
     [Theory]
@@ -131,16 +128,6 @@ public sealed class Pcre2SliceCursorProjectionTests
         Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         AssertRange(retained,2,4);
         AssertRange(cursor.Current,2,4);
-    }
-
-    [Theory]
-    [InlineData(0)] [InlineData(5)]
-    public void MalformedTailIsRejectedBeforeEnumerationOrDestinationWrites(int policy)
-    {
-        var regex = Create(policy: policy);
-        var input = "éab"u8.ToArray().Concat(new byte[] { 0xFF }).ToArray();
-        var destination = new Utf8Pcre2MatchData[2];
-        Assert.All(destination, match => Assert.False(match.Success));
     }
 
     private static void AssertRange(Utf8Pcre2ValueMatch match,int start,int end)

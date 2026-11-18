@@ -110,37 +110,6 @@ public readonly ref struct Utf8Pcre2ValueMatch
         => new(input, data, mark);
 }
 
-/// <summary>Stores the reported byte endpoints and value status of one PCRE2 match.</summary>
-public readonly struct Utf8Pcre2MatchData
-{
-    /// <summary>Gets whether the operation found a match.</summary>
-    public bool Success { get; init; }
-
-    /// <summary>Gets the reported match start as a zero-based byte offset, or zero after no match.</summary>
-    public int StartOffsetInBytes { get; init; }
-
-    /// <summary>Gets the reported exclusive match end as a zero-based byte offset, or zero after no match.</summary>
-    public int EndOffsetInBytes { get; init; }
-
-    /// <summary>Gets whether the successful match maps to one forward contiguous byte range.</summary>
-    public bool HasContiguousByteRange { get; init; }
-
-    /// <summary>Gets whether the contiguous match value is well-formed UTF-8.</summary>
-    public bool IsUtf8SliceWellFormed { get; init; }
-
-    internal static Utf8Pcre2MatchData Create(Pcre2GroupData data)
-    {
-        return new Utf8Pcre2MatchData
-        {
-            Success = data.Success,
-            StartOffsetInBytes = data.Success ? data.StartOffsetInBytes : 0,
-            EndOffsetInBytes = data.Success ? data.EndOffsetInBytes : 0,
-            HasContiguousByteRange = data.HasContiguousByteRange,
-            IsUtf8SliceWellFormed = data.IsUtf8SliceWellFormed
-        };
-    }
-}
-
 /// <summary>Provides a stack-only detailed PCRE2 match view with numbered and duplicate-name-aware groups.</summary>
 /// <remarks>The context and returned spans must not outlive the original UTF-8 input.</remarks>
 public readonly ref struct Utf8Pcre2MatchContext

@@ -76,6 +76,11 @@ internal static partial class BenchmarkInspectReporter
             writer.WriteLine();
             writer.WriteLine($"### {GetPcre2MarkdownSectionTitle(sectionName)}");
             writer.WriteLine();
+            if (sectionName.EndsWith("-matchmany", StringComparison.Ordinal))
+            {
+                writer.WriteLine("Historical results for the removed MatchMany API. This operation is no longer refreshed; current callers use EnumerateMatches or a persistent cursor. These measurements do not describe the replacement APIs.");
+                writer.WriteLine();
+            }
             writer.WriteLine("| Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |");
             writer.WriteLine("| --- | ---: | ---: | --- | ---: |");
             foreach (var (caseId, row) in section

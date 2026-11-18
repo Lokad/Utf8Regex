@@ -390,15 +390,6 @@ public sealed class Pcre2ExecutionArchitectureTests
         }
 
         Assert.Equal([(0, 6), (7, 10), (11, 17), (18, 21)], optionalRanges);
-        Span<Utf8Pcre2MatchData> optionalDestination = stackalloc Utf8Pcre2MatchData[3];
-        Assert.Equal(3, optionalCapture.MatchMany(
-            "fooBAR foo fooBAR foo"u8,
-            optionalDestination,
-            out var optionalIsMore));
-        Assert.True(optionalIsMore);
-        Assert.Equal((0, 6), (
-            optionalDestination[0].StartOffsetInBytes,
-            optionalDestination[0].EndOffsetInBytes));
         ReadOnlySpan<byte> result2Input = "abcabc"u8;
         var result2Captures = new Utf8Pcre2CaptureRange[branchReset.CaptureGroupCount + 1];
         var result2Result = branchReset.Match(result2Input, captures: result2Captures);
@@ -480,12 +471,14 @@ public sealed class Pcre2ExecutionArchitectureTests
         Assert.True(resetAtEnd.IsMatch("xx ab"u8));
         Assert.False(unicode.IsMatch("éxλ"u8));
 
-        Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[3];
-        Assert.Equal(3, alternative.MatchMany("foobar foobaz foobar"u8, matches, out var isMore));
-        Assert.False(isMore);
-        Assert.Equal((3, 6), (matches[0].StartOffsetInBytes, matches[0].EndOffsetInBytes));
-        Assert.Equal((7, 13), (matches[1].StartOffsetInBytes, matches[1].EndOffsetInBytes));
-        Assert.Equal((17, 20), (matches[2].StartOffsetInBytes, matches[2].EndOffsetInBytes));
+        var matches = alternative.EnumerateMatches("foobar foobaz foobar"u8);
+        Assert.True(matches.MoveNext());
+        Assert.Equal((3, 6), (matches.Current.StartOffsetInBytes, matches.Current.EndOffsetInBytes));
+        Assert.True(matches.MoveNext());
+        Assert.Equal((7, 13), (matches.Current.StartOffsetInBytes, matches.Current.EndOffsetInBytes));
+        Assert.True(matches.MoveNext());
+        Assert.Equal((17, 20), (matches.Current.StartOffsetInBytes, matches.Current.EndOffsetInBytes));
+        Assert.False(matches.MoveNext());
     }
 
     private static void AssertFiniteLiteralBoundaryResetPlan(Utf8Pcre2Regex regex)

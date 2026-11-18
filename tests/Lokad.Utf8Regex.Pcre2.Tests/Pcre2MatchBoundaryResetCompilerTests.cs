@@ -92,8 +92,7 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
         Assert.Throws<NotSupportedException>(() => regex.EnumerateMatches("aa"u8));
         Assert.Throws<NotSupportedException>(() => regex.Replace("aa"u8, "x"));
 
-        var destination = new Utf8Pcre2MatchData[1];
-        Assert.Throws<NotSupportedException>(() => regex.MatchMany("aa"u8, destination, out _));
+
     }
 
     [Fact]

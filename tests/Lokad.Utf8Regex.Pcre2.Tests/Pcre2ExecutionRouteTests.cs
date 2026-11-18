@@ -191,7 +191,7 @@ public sealed class Pcre2ExecutionRouteTests
     }
 
     [Fact]
-    public void LiteralFamilyCursorFeedsMatchManyAndByteTemplates()
+    public void LiteralFamilyCursorFeedsRangesAndByteTemplates()
     {
         var regex = new Utf8Pcre2Regex("tempus|magna|semper");
         var input = "é tempus magna semper tempus"u8;
@@ -201,10 +201,9 @@ public sealed class Pcre2ExecutionRouteTests
         Assert.True(enumerator.MoveNext());
         Assert.Equal(3, enumerator.Current.StartOffsetInBytes);
 
-        Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[3];
-        Assert.Equal(3, regex.MatchMany(input, matches, out var isMore));
-        Assert.True(isMore);
-        Assert.Equal(16, matches[2].StartOffsetInBytes);
+        Assert.True(enumerator.MoveNext());
+        Assert.True(enumerator.MoveNext());
+        Assert.Equal(16, enumerator.Current.StartOffsetInBytes);
 
         const string expected = "é <tempus> <magna> <semper> <tempus>";
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
@@ -346,9 +345,6 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.Equal(3, regex.Count(input, 8));
         Assert.Equal("abcdefghij", System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));
 
-        Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[3];
-        Assert.Equal(3, regex.MatchMany(input, matches, out var isMore));
-        Assert.True(isMore);
         Assert.Equal(
             "short <abcdefghij> <x_123456789> <yyyyyyyyyy> é<abcdefghij>",
             System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
@@ -539,9 +535,6 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.Equal("β.γ", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
 
-        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[3];
-        Assert.Equal(3, regex.MatchMany(input, destination, out var isMore));
-        Assert.False(isMore);
         Assert.Equal("<bc.d>za<bc.e>za<β.γ>z", Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
     }
 

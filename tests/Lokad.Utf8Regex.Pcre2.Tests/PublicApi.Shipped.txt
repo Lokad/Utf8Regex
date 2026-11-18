@@ -70,12 +70,6 @@ sealed class Utf8Pcre2MatchCursor : IDisposable
   method Boolean MoveNext(out Utf8Pcre2RangeMatch match, Threading.CancellationToken cancellationToken = default)
   method Boolean MoveNextRetained(out Utf8Pcre2RetainedRangeMatch match, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance resultMemoryAllowance = null)
   method Void Dispose()
-readonly struct Utf8Pcre2MatchData
-  property Boolean HasContiguousByteRange { get; init; }
-  property Boolean IsUtf8SliceWellFormed { get; init; }
-  property Boolean Success { get; init; }
-  property Int32 EndOffsetInBytes { get; init; }
-  property Int32 StartOffsetInBytes { get; init; }
 readonly ref struct Utf8Pcre2PartialMatchContext
   property String Mark { get; }
   property Utf8Pcre2ValueMatch Value { get; }
@@ -118,7 +112,6 @@ sealed class Utf8Pcre2Regex : IDisposable
   method Int32 CopyNumbersForName(String name, Span<Int32> destination, out Boolean isMore)
   method Int32 CopyNumbersForUtf8Name(ReadOnlySpan<Byte> nameUtf8, Span<Int32> destination, out Boolean isMore, Threading.CancellationToken cancellationToken = default)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Int32 MatchMany(ReadOnlySpan<Byte> input, Span<Utf8Pcre2MatchData> destination, out Boolean isMore, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
   method Utf8Pcre2Analysis Analyze()
   method Utf8Pcre2MatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8Pcre2ProbeResult Probe(ReadOnlySpan<Byte> input, Pcre2PartialMode partialMode, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)

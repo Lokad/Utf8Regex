@@ -431,10 +431,6 @@ internal static partial class BenchmarkInspectReporter
             Measure("PublicEnumerateSum", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
         }
 
-        if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.MatchMany) != 0)
-        {
-            Measure("MatchManySum", samples, iterations, () => ExecutePcre2MatchManyRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
-        }
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Replace) != 0)
         {
@@ -564,10 +560,6 @@ internal static partial class BenchmarkInspectReporter
             Measure("PredecodedEnumerateSum", samples, iterations, () => ExecuteUtf8Pcre2PredecodedEnumerateRangeSink(context));
         }
 
-        if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.MatchMany) != 0)
-        {
-            Measure("Pcre2MatchManySum", samples, iterations, () => ExecutePcre2MatchManyRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
-        }
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Replace) != 0)
         {
@@ -810,10 +802,6 @@ internal static partial class BenchmarkInspectReporter
             Measure("Pcre2PublicEnumerateSum", samples, iterations, () => ExecutePcre2PublicEnumeratorRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
         }
 
-        if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.MatchMany) != 0)
-        {
-            Measure("Pcre2MatchManySum", samples, iterations, () => ExecutePcre2MatchManyRangeSink(context.Utf8Pcre2Regex, context.InputBytes));
-        }
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Replace) != 0)
         {
@@ -1104,22 +1092,6 @@ internal static partial class BenchmarkInspectReporter
         return sum;
     }
 
-    private static int ExecutePcre2MatchManyRangeSink(Utf8Pcre2Regex regex, byte[] input)
-    {
-        Span<Utf8Pcre2MatchData> buffer = stackalloc Utf8Pcre2MatchData[8];
-        var written = regex.MatchMany(input, buffer, out var isMore);
-        var sink = 0;
-        for (var i = 0; i < written; i++)
-        {
-            sink = Pcre2BenchmarkRangeSink.Add(
-                sink,
-                buffer[i].StartOffsetInBytes,
-                buffer[i].EndOffsetInBytes - buffer[i].StartOffsetInBytes);
-        }
-
-        return Pcre2BenchmarkRangeSink.Complete(sink, written, isMore);
-    }
-
     private static int ExecuteUtf8Pcre2Utf8EnumeratorRangeSink(Utf8Pcre2BenchmarkContext context)
     {
         var sink = 0;
@@ -1218,12 +1190,10 @@ var rangeResult61356 = enumerator.Current;
                 "pcre2-managed-compatible-ismatch" => Pcre2BenchmarkSection.ManagedCompatibleIsMatch,
                 "pcre2-managed-compatible-count" => Pcre2BenchmarkSection.ManagedCompatibleCount,
                 "pcre2-managed-compatible-enumerate" => Pcre2BenchmarkSection.ManagedCompatibleEnumerate,
-                "pcre2-managed-compatible-matchmany" => Pcre2BenchmarkSection.ManagedCompatibleMatchMany,
                 "pcre2-managed-compatible-replace" => Pcre2BenchmarkSection.ManagedCompatibleReplace,
                 "pcre2-special-ismatch" => Pcre2BenchmarkSection.SpecialIsMatch,
                 "pcre2-special-count" => Pcre2BenchmarkSection.SpecialCount,
                 "pcre2-special-enumerate" => Pcre2BenchmarkSection.SpecialEnumerate,
-                "pcre2-special-matchmany" => Pcre2BenchmarkSection.SpecialMatchMany,
                 "pcre2-special-replace" => Pcre2BenchmarkSection.SpecialReplace,
                 "all" => throw new InvalidOperationException("Use an empty section argument to refresh all PCRE2 benchmark sections."),
                 _ => throw new InvalidOperationException($"Unknown PCRE2 benchmark section '{token}'."),
@@ -1293,7 +1263,7 @@ var rangeResult61356 = enumerator.Current;
         var maximumIterations = ParsePcre2SnapshotIterations(benchmarkCase, section, iterations);
         var actions = new List<Func<int>> { () => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, operation) };
         var names = new List<string> { "Utf8Pcre2" };
-        if (context.Utf8Regex is not null && operation != Utf8Pcre2BenchmarkOperation.MatchMany)
+        if (context.Utf8Regex is not null)
         {
             names.Add("Utf8Regex");
             actions.Add(operation switch
@@ -1305,7 +1275,7 @@ var rangeResult61356 = enumerator.Current;
                 _ => throw new ArgumentOutOfRangeException(nameof(operation)),
             });
         }
-        if (context.Regex is not null && operation != Utf8Pcre2BenchmarkOperation.MatchMany)
+        if (context.Regex is not null)
         {
             if ((benchmarkCase.SupportedBackends & Utf8Pcre2BenchmarkBackend.PredecodedRegex) != 0)
             {
@@ -1386,7 +1356,6 @@ var rangeResult61356 = enumerator.Current;
             Utf8Pcre2BenchmarkOperation.IsMatch => regex.IsMatch(context.InputBytes) ? 1 : 0,
             Utf8Pcre2BenchmarkOperation.Count => regex.Count(context.InputBytes),
             Utf8Pcre2BenchmarkOperation.EnumerateMatches => ExecutePcre2PublicEnumeratorRangeSink(regex, context.InputBytes),
-            Utf8Pcre2BenchmarkOperation.MatchMany => ExecutePcre2MatchManyRangeSink(regex, context.InputBytes),
             Utf8Pcre2BenchmarkOperation.Replace => regex.Replace(context.InputBytes, context.Replacement).Length,
             _ => throw new ArgumentOutOfRangeException(nameof(operation)),
         };
@@ -1490,7 +1459,6 @@ var rangeResult61356 = enumerator.Current;
             Pcre2BenchmarkSection.ManagedCompatibleIsMatch or
             Pcre2BenchmarkSection.ManagedCompatibleCount or
             Pcre2BenchmarkSection.ManagedCompatibleEnumerate or
-            Pcre2BenchmarkSection.ManagedCompatibleMatchMany or
             Pcre2BenchmarkSection.ManagedCompatibleReplace;
 
         if (inputBytes <= 256)
@@ -1502,7 +1470,6 @@ var rangeResult61356 = enumerator.Current;
                     Utf8Pcre2BenchmarkOperation.IsMatch => Math.Max(1000, requestedIterations),
                     Utf8Pcre2BenchmarkOperation.Count => Math.Max(100, requestedIterations),
                     Utf8Pcre2BenchmarkOperation.EnumerateMatches => Math.Max(100, requestedIterations),
-                    Utf8Pcre2BenchmarkOperation.MatchMany => Math.Max(100, requestedIterations),
                     Utf8Pcre2BenchmarkOperation.Replace => Math.Max(100, requestedIterations),
                     _ => requestedIterations,
                 };
@@ -1513,7 +1480,6 @@ var rangeResult61356 = enumerator.Current;
                 Utf8Pcre2BenchmarkOperation.IsMatch => Math.Max(500, requestedIterations),
                 Utf8Pcre2BenchmarkOperation.Count => Math.Max(100, requestedIterations),
                 Utf8Pcre2BenchmarkOperation.EnumerateMatches => Math.Max(100, requestedIterations),
-                Utf8Pcre2BenchmarkOperation.MatchMany => Math.Max(100, requestedIterations),
                 Utf8Pcre2BenchmarkOperation.Replace => Math.Max(100, requestedIterations),
                 _ => requestedIterations,
             };
@@ -1526,7 +1492,6 @@ var rangeResult61356 = enumerator.Current;
                 Utf8Pcre2BenchmarkOperation.IsMatch => Math.Max(100, requestedIterations),
                 Utf8Pcre2BenchmarkOperation.Count => Math.Max(20, requestedIterations),
                 Utf8Pcre2BenchmarkOperation.EnumerateMatches => Math.Max(20, requestedIterations),
-                Utf8Pcre2BenchmarkOperation.MatchMany => Math.Max(20, requestedIterations),
                 Utf8Pcre2BenchmarkOperation.Replace => Math.Max(20, requestedIterations),
                 _ => requestedIterations,
             };
@@ -1553,12 +1518,10 @@ var rangeResult61356 = enumerator.Current;
             Pcre2BenchmarkSection.ManagedCompatibleIsMatch => "pcre2-managed-compatible-ismatch",
             Pcre2BenchmarkSection.ManagedCompatibleCount => "pcre2-managed-compatible-count",
             Pcre2BenchmarkSection.ManagedCompatibleEnumerate => "pcre2-managed-compatible-enumerate",
-            Pcre2BenchmarkSection.ManagedCompatibleMatchMany => "pcre2-managed-compatible-matchmany",
             Pcre2BenchmarkSection.ManagedCompatibleReplace => "pcre2-managed-compatible-replace",
             Pcre2BenchmarkSection.SpecialIsMatch => "pcre2-special-ismatch",
             Pcre2BenchmarkSection.SpecialCount => "pcre2-special-count",
             Pcre2BenchmarkSection.SpecialEnumerate => "pcre2-special-enumerate",
-            Pcre2BenchmarkSection.SpecialMatchMany => "pcre2-special-matchmany",
             Pcre2BenchmarkSection.SpecialReplace => "pcre2-special-replace",
             _ => throw new ArgumentOutOfRangeException(nameof(section)),
         };
@@ -1569,12 +1532,10 @@ var rangeResult61356 = enumerator.Current;
             Pcre2BenchmarkSection.ManagedCompatibleIsMatch => (Utf8Pcre2BenchmarkOperation.IsMatch, Utf8Pcre2BenchmarkBackend.AllManagedComparisons, exactBackends: false),
             Pcre2BenchmarkSection.ManagedCompatibleCount => (Utf8Pcre2BenchmarkOperation.Count, Utf8Pcre2BenchmarkBackend.AllManagedComparisons, exactBackends: false),
             Pcre2BenchmarkSection.ManagedCompatibleEnumerate => (Utf8Pcre2BenchmarkOperation.EnumerateMatches, Utf8Pcre2BenchmarkBackend.AllManagedComparisons, exactBackends: false),
-            Pcre2BenchmarkSection.ManagedCompatibleMatchMany => (Utf8Pcre2BenchmarkOperation.MatchMany, Utf8Pcre2BenchmarkBackend.AllManagedComparisons, exactBackends: false),
             Pcre2BenchmarkSection.ManagedCompatibleReplace => (Utf8Pcre2BenchmarkOperation.Replace, Utf8Pcre2BenchmarkBackend.AllManagedComparisons, exactBackends: false),
             Pcre2BenchmarkSection.SpecialIsMatch => (Utf8Pcre2BenchmarkOperation.IsMatch, Utf8Pcre2BenchmarkBackend.Pcre2Only, exactBackends: true),
             Pcre2BenchmarkSection.SpecialCount => (Utf8Pcre2BenchmarkOperation.Count, Utf8Pcre2BenchmarkBackend.Pcre2Only, exactBackends: true),
             Pcre2BenchmarkSection.SpecialEnumerate => (Utf8Pcre2BenchmarkOperation.EnumerateMatches, Utf8Pcre2BenchmarkBackend.Pcre2Only, exactBackends: true),
-            Pcre2BenchmarkSection.SpecialMatchMany => (Utf8Pcre2BenchmarkOperation.MatchMany, Utf8Pcre2BenchmarkBackend.Pcre2Only, exactBackends: true),
             Pcre2BenchmarkSection.SpecialReplace => (Utf8Pcre2BenchmarkOperation.Replace, Utf8Pcre2BenchmarkBackend.Pcre2Only, exactBackends: true),
             _ => throw new ArgumentOutOfRangeException(nameof(section)),
         };
@@ -1601,12 +1562,10 @@ var rangeResult61356 = enumerator.Current;
         ManagedCompatibleIsMatch = 0,
         ManagedCompatibleCount = 1,
         ManagedCompatibleEnumerate = 2,
-        ManagedCompatibleMatchMany = 3,
         ManagedCompatibleReplace = 4,
         SpecialIsMatch = 5,
         SpecialCount = 6,
         SpecialEnumerate = 7,
-        SpecialMatchMany = 8,
         SpecialReplace = 9,
     }
 

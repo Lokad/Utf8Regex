@@ -57,7 +57,7 @@ not total heap, stack or process memory.
 ## Surface and admission
 
 `Utf8Pcre2Regex` supplies IsMatch, Count, Match, persistent memory cursors,
-EnumerateMatches, MatchMany, replacement, Analyze, name metadata and Probe.
+EnumerateMatches, replacement, Analyze, name metadata and Probe.
 Compile, match, substitution and probe options are separate types.
 There is no RTL or DFA matcher.
 
@@ -70,6 +70,14 @@ First-only nonmonotone K/MARK remains on primary Match; generic iteration keeps
 its existing rejection. Actual partial/full Probe contexts and their failure
 discriminants remain available, with the same selected drivers and authority.
 No public forwarding replacement or validation token is introduced.
+
+MatchMany and Utf8Pcre2MatchData are removed. Stream whole-match values through
+EnumerateMatches, or use the memory cursor for suspended capture traversal.
+Callers own any buffered prefix and explicitly request each next result; the
+engine no longer performs bulk-capacity lookahead or returns isMore. Earlier
+values remain valid after later failure. Host buffering is outside regex
+admission; the enumerator/cursor keeps its original cumulative work, deadline and
+cancellation authority. Input and caller capture output must remain disjoint.
 
 `Match(input, startOffsetInBytes=0, captures=default, matchOptions=None,
 cancellationToken=default, workingMemoryAllowance=null)` returns the existing
@@ -200,7 +208,7 @@ retain the established execution and grapheme metering.
 Results expose reported byte start and exclusive end separately.
 `HasContiguousByteRange` requires start <= end. Opted-in lookaround `\K` can
 report start > end; byte extraction then throws. Single-match operations remain
-supported, while Count, enumeration, MatchMany and replacement reject a yielded
+supported, while Count, enumeration and replacement reject a yielded
 non-monotone result with `NotSupportedException`.
 
 `IsUtf8SliceWellFormed` can be false when explicitly allowed `\C` splits a
@@ -220,10 +228,7 @@ Caller NotEmpty/NotEmptyAtStart flags apply to every attempt.
 Replacement preserves an admitted reset-empty `\K` result that ordinary
 enumeration suppresses, as pinned by operation-specific fixtures.
 
-MatchMany fills at most the destination length and reports `isMore`; it is not
-a continuation protocol. Only the returned prefix is valid. An empty destination
-still probes. Input/result storage must be disjoint: this is an **unchecked caller
-precondition**, not an overlap exception guarantee. Analyze exposes advisory
+Analyze exposes advisory
 length/literal/eligibility facts, not an executable plan or validation exemption.
 Mark reports the last relevant named verb on success, partial or failure.
 
@@ -234,7 +239,7 @@ PartialMatch; partial exposes only substring zero and Mark, not capture groups.
 
 | Mode/route | Supported disposition |
 | --- | --- |
-| None | Ordinary detailed matching |
+| None | Full-match probing |
 | Literal/curated partial drivers | Their qualified Soft/Hard decisions |
 | Generic Soft full match | Returned when ordinary matching proves FullMatch |
 | Other generic partial decisions | NotSupportedException; a full match cannot prove Hard priority, and a marked miss cannot prove NoMatch |
@@ -462,7 +467,7 @@ and absolute deadline. Close rejects later advances, including ended copies;
 original entry cancellation takes precedence. Current byte endpoints, fragment
 status and borrowed values remain valid with unchanged input. Use the persistent
 cursor for traversal surviving close or shared working admission. Probe, detailed
-metadata, owned output and MatchMany retain numeric controls and admitted program
+metadata and owned output retain numeric controls and admitted program
 use, without adding working-overload symmetry or changing drivers/MARK/partials.
 
 `Utf8Pcre2Regex.TryReplace` retains the program's admission and accepts

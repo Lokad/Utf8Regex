@@ -63,18 +63,6 @@ public sealed class Pcre2TimeoutIdentityTests
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(CreateCatastrophicInput()));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
     }
-    [Fact]
-    public void CatastrophicMatchManyReportsTimeoutIdentity()
-    {
-        var regex = new Utf8Pcre2Regex("(a+)+$", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = TimeSpan.FromMilliseconds(1)
-        });
-        Assert.True(regex.Analyze().IsFullyNative);
-        var destination = new Utf8Pcre2MatchData[8];
-        var exception = Assert.Throws<Pcre2MatchException>(() => regex.MatchMany(CreateCatastrophicInput(), destination, out _));
-        Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
-    }
 
     [Fact]
     public void CatastrophicReplaceReportsTimeoutIdentity()

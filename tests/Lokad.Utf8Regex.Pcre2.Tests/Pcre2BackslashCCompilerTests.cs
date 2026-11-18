@@ -91,9 +91,7 @@ public sealed class Pcre2BackslashCCompilerTests
         Assert.False(enumerator.Current.IsUtf8SliceWellFormed);
         Assert.False(enumerator.MoveNext());
 
-        Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[2];
-        Assert.Equal(2, regex.MatchMany(input, matches, out var isMore));
-        Assert.False(isMore);
+
     }
 
     [Fact]

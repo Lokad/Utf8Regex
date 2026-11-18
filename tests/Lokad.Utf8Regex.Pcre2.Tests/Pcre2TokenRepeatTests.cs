@@ -47,9 +47,7 @@ public sealed class Pcre2TokenRepeatTests
 
         Assert.Equal(["abc", "", "def", ""], values);
 
-        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[4];
-        Assert.Equal(4, regex.MatchMany(input, destination, out var isMore));
-        Assert.False(isMore);
+
         Assert.Equal("<abc><>\n<def><>", System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
     }
 

@@ -6,8 +6,7 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 // Empty-match progression: after an empty match the search advances one
 // UTF-8 scalar (never into the middle of one), so global operations visit
-// every scalar boundary exactly once and Count, EnumerateMatches, and
-// MatchMany agree.
+// every scalar boundary exactly once and Count agrees with enumeration.
 public sealed class Pcre2EmptyMatchIterationTests
 {
     private static Utf8Pcre2Regex Create(string pattern)
@@ -42,9 +41,7 @@ public sealed class Pcre2EmptyMatchIterationTests
         Assert.Equal(expected, regex.Count(input));
         Assert.Equal(expectedStarts, string.Join(",", EnumerateStarts(regex, input)));
 
-        var destination = new Utf8Pcre2MatchData[8];
-        Assert.Equal(expected, regex.MatchMany(input, destination, out var isMore));
-        Assert.False(isMore);
+
     }
 
     [Fact]

@@ -58,7 +58,6 @@ public sealed class Pcre2PolicyOwnershipTests
         Assert.Throws<ObjectDisposedException>(() => regex.EnumerateMatches("a"u8));
         Assert.Throws<ObjectDisposedException>(() => regex.CreateMatchCursor("a"u8.ToArray()));
         Assert.Throws<ObjectDisposedException>(() => regex.Probe("a"u8, Pcre2PartialMode.None));
-        Assert.Throws<ObjectDisposedException>(() => regex.MatchMany("a"u8, new Utf8Pcre2MatchData[1], out _));
         Assert.Throws<ObjectDisposedException>(() => regex.Replace("a"u8, "x"));
         Assert.Throws<ObjectDisposedException>(() => regex.Replace("a"u8, "x"u8));
         Assert.Throws<ObjectDisposedException>(() => regex.TryReplace("a"u8, "x"u8, new byte[1], out _));
@@ -123,7 +122,6 @@ public sealed class Pcre2PolicyOwnershipTests
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
-    [InlineData(3)]
     public void AdmittedNumericOperationsFinishAfterCloseWithoutPublicGateReentry(int operation)
     {
         var account = new Account(); using var regex = new Utf8Pcre2Regex("(?<x>a+)", policy: new()
@@ -135,7 +133,7 @@ public sealed class Pcre2PolicyOwnershipTests
         {
             case 1: Assert.True(regex.Probe("aaa"u8, Pcre2PartialMode.None).GetMatch().Success); break;
             case 2: Assert.Equal("<aaa>"u8.ToArray(), regex.Replace("aaa"u8, "<$1>"u8)); break;
-            default: Assert.Equal(1, regex.MatchMany("aaa"u8, new Utf8Pcre2MatchData[2], out _)); break;
+            default: throw new ArgumentOutOfRangeException(nameof(operation));
         }
         Assert.True(closed); Assert.Equal(0UL, account.Used);
     }

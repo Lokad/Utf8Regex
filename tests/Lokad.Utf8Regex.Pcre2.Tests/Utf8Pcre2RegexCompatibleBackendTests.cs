@@ -137,33 +137,15 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
     }
 
     [Fact]
-    public void MatchManyUsesCompatibleManagedBackend()
+    public void EnumerationReportsCompatibleByteRanges()
     {
         var regex = new Utf8Pcre2Regex("foo");
-        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[2];
-
-        var written = regex.MatchMany("xxfoozzfoo"u8, destination, out var isMore);
-
-        Assert.Equal(2, written);
-        Assert.False(isMore);
-        Assert.Equal(2, destination[0].StartOffsetInBytes);
-        Assert.Equal(5, destination[0].EndOffsetInBytes);
-        Assert.Equal(7, destination[1].StartOffsetInBytes);
-        Assert.Equal(10, destination[1].EndOffsetInBytes);
-    }
-
-    [Fact]
-    public void MatchManyReportsIsMoreForCompatibleManagedBackend()
-    {
-        var regex = new Utf8Pcre2Regex("(a)b+");
-        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[1];
-
-        var written = regex.MatchMany("ab abb x"u8, destination, out var isMore);
-
-        Assert.Equal(1, written);
-        Assert.True(isMore);
-        Assert.Equal(0, destination[0].StartOffsetInBytes);
-        Assert.Equal(2, destination[0].EndOffsetInBytes);
+        var matches = regex.EnumerateMatches("xxfoozzfoo"u8);
+        Assert.True(matches.MoveNext());
+        Assert.Equal((2, 5), (matches.Current.StartOffsetInBytes, matches.Current.EndOffsetInBytes));
+        Assert.True(matches.MoveNext());
+        Assert.Equal((7, 10), (matches.Current.StartOffsetInBytes, matches.Current.EndOffsetInBytes));
+        Assert.False(matches.MoveNext());
     }
 
     [Fact]
@@ -179,22 +161,6 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
         Assert.True(enumerator.MoveNext());
         Assert.Equal("xyzabc", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
         Assert.False(enumerator.MoveNext());
-    }
-
-    [Fact]
-    public void BranchResetSubroutineUsesSearchEquivalentForMatchMany()
-    {
-        var regex = new Utf8Pcre2Regex("(?|(abc)|(xyz))(?1)");
-        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[2];
-
-        var written = regex.MatchMany("abcabcxyzabc"u8, destination, out var isMore);
-
-        Assert.Equal(2, written);
-        Assert.False(isMore);
-        Assert.Equal(0, destination[0].StartOffsetInBytes);
-        Assert.Equal(6, destination[0].EndOffsetInBytes);
-        Assert.Equal(6, destination[1].StartOffsetInBytes);
-        Assert.Equal(12, destination[1].EndOffsetInBytes);
     }
 
     [Fact]
@@ -215,7 +181,7 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
     }
 
     [Fact]
-    public void BranchResetNestedUsesSearchEquivalentForCountEnumerateAndMatchMany()
+    public void BranchResetNestedUsesSearchEquivalentForCountAndEnumerate()
     {
         var regex = new Utf8Pcre2Regex("(x)(?|(abc)|(xyz))(x)");
 
@@ -224,17 +190,10 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
         var enumerator = regex.EnumerateMatches("xabcx xxyzx"u8);
         Assert.True(enumerator.MoveNext());
         Assert.Equal("xabcx", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
+        Assert.Equal((0, 5), (enumerator.Current.StartOffsetInBytes, enumerator.Current.EndOffsetInBytes));
         Assert.True(enumerator.MoveNext());
         Assert.Equal("xxyzx", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
+        Assert.Equal((6, 11), (enumerator.Current.StartOffsetInBytes, enumerator.Current.EndOffsetInBytes));
         Assert.False(enumerator.MoveNext());
-
-        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[2];
-        var written = regex.MatchMany("xabcx xxyzx"u8, destination, out var isMore);
-        Assert.Equal(2, written);
-        Assert.False(isMore);
-        Assert.Equal(0, destination[0].StartOffsetInBytes);
-        Assert.Equal(5, destination[0].EndOffsetInBytes);
-        Assert.Equal(6, destination[1].StartOffsetInBytes);
-        Assert.Equal(11, destination[1].EndOffsetInBytes);
     }
 }

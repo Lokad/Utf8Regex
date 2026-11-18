@@ -495,19 +495,6 @@ internal static partial class BenchmarkInspectReporter
 
                 return checksum.Complete(count, false);
             }
-            case Utf8Pcre2BenchmarkOperation.MatchMany:
-            {
-                Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[8];
-                var written = regex.MatchMany(input, matches, out var isMore);
-                for (var i = 0; i < written; i++)
-                {
-                    checksum.AddRange(
-                        matches[i].StartOffsetInBytes,
-                        matches[i].EndOffsetInBytes - matches[i].StartOffsetInBytes);
-                }
-
-                return checksum.Complete(written, isMore);
-            }
             default:
                 throw new NotSupportedException($"No structured checksum is available for {operation}.");
         }

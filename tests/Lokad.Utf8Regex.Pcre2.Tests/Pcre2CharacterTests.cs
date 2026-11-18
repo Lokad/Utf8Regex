@@ -206,10 +206,7 @@ public sealed class Pcre2CharacterTests
         Assert.Equal(4, matches.Current.EndOffsetInBytes);
         Assert.False(matches.MoveNext());
 
-        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[1];
-        Assert.Equal(1, regex.MatchMany(input, destination, out var isMore));
-        Assert.True(isMore);
-        Assert.Equal(0, destination[0].StartOffsetInBytes);
+
 
         Assert.Equal("<a>-<é>😀", Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
     }

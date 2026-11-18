@@ -34,7 +34,6 @@ internal static class Utf8Pcre2BenchmarkCatalog
             replacement: "|",
             supportedOperations: Utf8Pcre2BenchmarkOperation.Count |
                 Utf8Pcre2BenchmarkOperation.EnumerateMatches |
-                Utf8Pcre2BenchmarkOperation.MatchMany |
                 Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
@@ -87,7 +86,7 @@ internal static class Utf8Pcre2BenchmarkCatalog
             "(?|(abc)|(xyz))",
             "abc xyz xyz abc q",
             replacement: "hit",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/branch-reset-backref",
@@ -100,7 +99,7 @@ internal static class Utf8Pcre2BenchmarkCatalog
             "(x)(?|(abc)|(xyz))(x)",
             "xabcx xxyzx xqqx xabcx",
             replacement: "wrap",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/branch-reset-followup",
@@ -108,7 +107,7 @@ internal static class Utf8Pcre2BenchmarkCatalog
             "aaaccccaaa bccccb xx aaaccccaaa",
             compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
             replacement: "tail",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/duplicate-names",
@@ -116,56 +115,56 @@ internal static class Utf8Pcre2BenchmarkCatalog
             "foofoo barbar xx foofoo",
             compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
             replacement: "pair",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/kreset-global",
             @"abc\K123",
             "abc123 xx abc123 yy abc123",
             replacement: "Z",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/kreset-bar-or-baz",
             @"(foo)(\Kbar|baz)",
             "foobar xx foobaz yy foobaz",
             replacement: "Z",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/kreset-repeat",
             @"(?:a\Kb)*",
             "ab xx ab yy ab",
             replacement: "R",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/kreset-captured-repeat",
             @"(a\Kb)*",
             "ab xx ab yy ab",
             replacement: "R",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/kreset-atomic-alt",
             @"(?>a\Kbz|ab)",
             "abz ab xx abz",
             replacement: "R",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/grapheme-cluster",
             @"\X",
             string.Concat(Enumerable.Repeat("a\u0301🇫🇷👩🏽‍💻\r\n한", 8)),
             replacement: "G",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch | Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.IsMatch | Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/same-start-global",
             "(?<=abc)(|def)",
             "abcdefabc",
             replacement: "[${0}]",
-            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.MatchMany | Utf8Pcre2BenchmarkOperation.Replace,
+            supportedOperations: Utf8Pcre2BenchmarkOperation.Count | Utf8Pcre2BenchmarkOperation.EnumerateMatches | Utf8Pcre2BenchmarkOperation.Replace,
             supportedBackends: Utf8Pcre2BenchmarkBackend.Pcre2Only),
         new(
             "pcre2/conditional-lookahead",

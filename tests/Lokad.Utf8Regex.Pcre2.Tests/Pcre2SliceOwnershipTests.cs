@@ -465,7 +465,7 @@ public sealed class Pcre2SliceOwnershipTests
     }
 
     [Fact]
-    public void OwnedEnumerateSupportsAbandonmentAndMatchMany()
+    public void OwnedEnumerateSupportsAbandonmentAndFreshTraversal()
     {
         var regex = new Utf8Pcre2Regex("(a+)(b+)", options: Pcre2CompileOptions.None);
         var input = Utf8("aab aabb aaabbb");
@@ -474,13 +474,12 @@ public sealed class Pcre2SliceOwnershipTests
         Assert.Equal(0, partial.Current.StartOffsetInBytes);
         Assert.Equal(3, partial.Current.EndOffsetInBytes);
 
-        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[8];
-        Assert.Equal(
-            3,
-            regex.MatchMany(input, destination, out var isMore));
-        Assert.False(isMore);
-        Assert.Equal(9, destination[2].StartOffsetInBytes);
-        Assert.Equal(15, destination[2].EndOffsetInBytes);
+        var fresh = regex.EnumerateMatches(input);
+        var ranges = new List<(int Start, int End)>();
+        while (fresh.MoveNext())
+            ranges.Add((fresh.Current.StartOffsetInBytes, fresh.Current.EndOffsetInBytes));
+        Assert.Equal([(0, 3), (4, 8), (9, 15)], ranges);
+        Assert.Equal((0, 3), (partial.Current.StartOffsetInBytes, partial.Current.EndOffsetInBytes));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
 

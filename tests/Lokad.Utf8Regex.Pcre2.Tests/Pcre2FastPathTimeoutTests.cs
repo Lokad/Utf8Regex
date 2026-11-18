@@ -19,9 +19,6 @@ public sealed class Pcre2FastPathTimeoutTests
     [InlineData(2, 0)]
     [InlineData(2, 2)]
     [InlineData(2, 4)]
-    [InlineData(3, 0)]
-    [InlineData(3, 2)]
-    [InlineData(3, 4)]
     [InlineData(4, 0)]
     [InlineData(4, 2)]
     [InlineData(4, 4)]
@@ -144,11 +141,6 @@ public sealed class Pcre2FastPathTimeoutTests
             case 0: return regex.IsMatch(input) ? 1 : 0;
             case 1: return regex.Match(input).Success ? 1 : 0;
             case 2: return regex.Count(input);
-            case 3:
-                var destination = new Utf8Pcre2MatchData[8];
-                var count = regex.MatchMany(input, destination, out var isMore);
-                Assert.False(isMore);
-                return count;
             case 4:
                 var matches = 0;
                 var enumerator = regex.EnumerateMatches(input);

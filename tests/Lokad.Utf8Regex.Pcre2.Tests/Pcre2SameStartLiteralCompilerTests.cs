@@ -25,11 +25,7 @@ public sealed class Pcre2SameStartLiteralCompilerTests
 
         Assert.Equal([(3, 3), (3, 6), (9, 9)], ranges);
 
-        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[2];
-        Assert.Equal(2, regex.MatchMany(input, destination, out var isMore));
-        Assert.True(isMore);
-        Assert.Equal((3, 3), (destination[0].StartOffsetInBytes, destination[0].EndOffsetInBytes));
-        Assert.Equal((3, 6), (destination[1].StartOffsetInBytes, destination[1].EndOffsetInBytes));
+
     }
 
     [Fact]

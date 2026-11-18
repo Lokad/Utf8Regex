@@ -24,9 +24,7 @@ public sealed class Pcre2MultilineSearchTests
 
         Assert.Equal(["ERROR: first", "ERROR: \r", "ERROR: café"], values);
 
-        Span<Utf8Pcre2MatchData> destination = stackalloc Utf8Pcre2MatchData[2];
-        Assert.Equal(2, regex.MatchMany(input, destination, out var isMore));
-        Assert.True(isMore);
+
         Assert.Equal("INFO: boot\n<ERROR: first>\nERROR: \n<ERROR: \r>\n<ERROR: café>\n",
             System.Text.Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
     }

@@ -117,12 +117,14 @@ public sealed class Pcre2BacktrackingCompilerTests
         Assert.Equal(3, regex.Count(input));
         Assert.Equal("<cat> <horsehorse> <cat>", Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
 
-        Span<Utf8Pcre2MatchData> matches = stackalloc Utf8Pcre2MatchData[3];
-        Assert.Equal(3, regex.MatchMany(input, matches, out var isMore));
-        Assert.False(isMore);
-        Assert.Equal(0, matches[0].StartOffsetInBytes);
-        Assert.Equal(4, matches[1].StartOffsetInBytes);
-        Assert.Equal(15, matches[2].StartOffsetInBytes);
+        var matches = regex.EnumerateMatches(input);
+        Assert.True(matches.MoveNext());
+        Assert.Equal(0, matches.Current.StartOffsetInBytes);
+        Assert.True(matches.MoveNext());
+        Assert.Equal(4, matches.Current.StartOffsetInBytes);
+        Assert.True(matches.MoveNext());
+        Assert.Equal(15, matches.Current.StartOffsetInBytes);
+        Assert.False(matches.MoveNext());
     }
 
     [Fact]

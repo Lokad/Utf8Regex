@@ -71,6 +71,7 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
         var enumerator = regex.EnumerateMatches("ab"u8);
         Assert.True(enumerator.MoveNext());
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(enumerator.Current.GetValueBytes()));
+        var retained = enumerator.Current;
 
         Pcre2MatchException? exception = null;
         try
@@ -84,6 +85,8 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
 
         Assert.NotNull(exception);
         Assert.Equal(Pcre2ErrorKind.DisallowedLookaroundBackslashK, exception.ErrorKind);
+        Assert.Equal((0, 1), (retained.StartOffsetInBytes, retained.EndOffsetInBytes));
+        Assert.Equal("a", System.Text.Encoding.UTF8.GetString(retained.GetValueBytes()));
     }
 
     [Fact]

@@ -259,6 +259,13 @@ and [host admission](SPEC.md#host-admission).
 
 ## Program owners, cursors and retained results
 
+PCRE2 removes `MatchMany` and `Utf8Pcre2MatchData`. Consume the existing
+`EnumerateMatches` values directly, or use a persistent memory cursor for
+captures across host waits. Buffer ranges in caller storage when needed. Each
+advance requests one result, so a full host buffer does not cause an implicit
+lookahead. There is no `isMore` projection. Previously copied values remain
+valid after subsequent failure; host buffers are outside regex admission.
+
 PCRE2 removes ordinary `MatchDetailed`. Use primary Match with caller-owned byte
 capture slots for a first result, including K/C and MARK. For immutable snapshots
 and named result metadata, create a persistent cursor over stable memory and

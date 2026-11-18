@@ -13,7 +13,7 @@ Compilation is one-way:
 
 Invocation is one-way:
 
-`UTF-8 subject -> native UTF-window checking or trusted bypass -> operation program -> runner/cursor -> public projection`
+`caller-valid, unchanged UTF-8 subject -> operation program -> runner/cursor -> public projection`
 
 Backtracking Count and search keep frame/repeat journals and lazily acquired
 fixed vectors under one lexical owner. Candidate attempts borrow and reset that
@@ -111,7 +111,7 @@ The backtracking runtime keeps consumed and reported ranges distinct. `\K`
 changes the reported start but not the consumed range used for restart and
 empty-match detection. Global cursors apply PCRE2's empty retry at the same
 position, then advance by one valid UTF-8 scalar only when that retry fails.
-Count, enumeration, `MatchMany`, and substitution share this progression
+Count, enumeration and substitution share this progression
 machinery, with an operation-specific disposition for non-monotone results and
 reset-empty substitution.
 
