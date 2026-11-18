@@ -219,8 +219,7 @@ public sealed class Utf8MultiLiteralWrapperAdmissionTests
     public void PublicLiteralFamiliesPreserveScalarGapByteRangesWithoutBclExecution(int family, bool compiled)
     {
         var literals = Family(family);
-        var regex = new Utf8Regex(string.Join("|", literals.Select(v => Regex.Escape(Encoding.UTF8.GetString(v)))),
-            RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex(string.Join("|", literals.Select(v => Regex.Escape(Encoding.UTF8.GetString(v)))), options:             RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = literals.SelectMany(v => "中|"u8.ToArray().Concat(v)).Concat("😀!"u8.ToArray()).ToArray();
         var ranges = new List<(int, int)>(); var last = 0; var count = 0;
         for (var start = 0; start < input.Length; start++)

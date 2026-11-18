@@ -63,7 +63,7 @@ public sealed class Utf8PatternMetadataTests
     {
         const string source = "(?#trivia)é😀\0";
         var encoded = Encoding.UTF8.GetBytes(source);
-        var regex = native ? Utf8Regex.Compile(encoded) : new Utf8Regex(source);
+        var regex = native ? Utf8Regex.Compile(encoded): new Utf8Regex(source);
         var destination = Enumerable.Repeat((byte)0xa5, encoded.Length + 4).ToArray();
         Assert.Equal(OperationStatus.DestinationTooSmall,
             regex.TryCopyPatternUtf8(destination.AsSpan(2, encoded.Length - 1), out var required));
@@ -97,7 +97,7 @@ public sealed class Utf8PatternMetadataTests
     {
         var source = new string('a', 2047) + "😀é\0";
         var encoded = Encoding.UTF8.GetBytes(source);
-        var regex = native ? Utf8Regex.Compile(encoded) : new Utf8Regex(source);
+        var regex = native ? Utf8Regex.Compile(encoded): new Utf8Regex(source);
         var destination = new byte[encoded.Length];
         Assert.Equal(OperationStatus.Done, regex.TryCopyPatternUtf8(destination, out var required));
         Assert.Equal(encoded.Length, required); Assert.Equal(encoded, destination);
@@ -111,7 +111,7 @@ public sealed class Utf8PatternMetadataTests
     public void RepeatedCopiesAllocateNoIntermediateSourceOrStorage(bool native)
     {
         var encoded = Encoding.UTF8.GetBytes(new string('a', 128) + "😀é");
-        var regex = native ? Utf8Regex.Compile(encoded) : new Utf8Regex(Encoding.UTF8.GetString(encoded));
+        var regex = native ? Utf8Regex.Compile(encoded): new Utf8Regex(Encoding.UTF8.GetString(encoded));
         var destination = new byte[encoded.Length];
         for (var i = 0; i < 16; i++) regex.TryCopyPatternUtf8(destination, out _);
         var allocated = GC.GetAllocatedBytesForCurrentThread();

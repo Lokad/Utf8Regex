@@ -12,6 +12,8 @@ public sealed partial class Utf8Regex
         IUtf8MemoryAllowance? workingMemoryAllowance = null, int? endOffsetInBytes = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
+        workingMemoryAllowance ??= _programMemory?.Allowance;
         if (startOffsetInBytes is null && captures.IsEmpty &&
             workingMemoryAllowance is null && endOffsetInBytes is null)
         {

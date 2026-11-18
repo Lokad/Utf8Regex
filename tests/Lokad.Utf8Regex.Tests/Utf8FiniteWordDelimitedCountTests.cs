@@ -8,8 +8,17 @@ public sealed class Utf8FiniteWordDelimitedCountTests
 {
     private const string Pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
     private static Utf8Regex Create(RegexOptions options, ulong work)
-        => new(Pattern, options, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+        => new(Pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = work,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 8 << 20,
+                MaxResultBytes = 1
+            }
+        });
 
     [Theory]
     [InlineData("", 0)]
@@ -86,8 +95,17 @@ public sealed class Utf8FiniteWordDelimitedCountTests
     [InlineData(RegexOptions.ECMAScript, 2)]
     public void DeclinedOptionsKeepTheirScalarContract(RegexOptions options, int expected)
     {
-        var regex = new Utf8Regex(Pattern, options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8Regex(Pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         Assert.Equal(expected, regex.Count("équipe@exemple.fr 𐐀@b.c a@b.c"u8));
     }
 

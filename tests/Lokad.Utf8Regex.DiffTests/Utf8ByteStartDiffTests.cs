@@ -40,7 +40,7 @@ public sealed class Utf8ByteStartDiffTests
         foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
         foreach (var offset in offsets)
         {
-            var utf8 = new Utf8Regex(pattern, options | compiled);
+            var utf8 = new Utf8Regex(pattern, options: options | compiled);
             if (!IsScalarBoundary(text, offset))
             {
                 // This oracle position splits a surrogate pair. Exercise the
@@ -91,7 +91,10 @@ public sealed class Utf8ByteStartDiffTests
         var input = new byte[50_000];
         Array.Fill(input, (byte)'a');
         input[^1] = (byte)'!';
-        var utf8 = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var utf8 = new Utf8Regex(@"(a+)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var runtime = new Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
         var text = Encoding.UTF8.GetString(input);
 

@@ -14,7 +14,7 @@ public sealed class Utf8DeepScalarAdmissionTests
         var pattern = string.Concat(Enumerable.Repeat("(?:", depth)) + "." + new string(')', depth);
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.True(regex.IsMatch("😀"u8));
         Assert.Equal(1, regex.Count("😀"u8));
         Assert.Equal(4, (regex.Match("😀"u8).EndOffsetInBytes - regex.Match("😀"u8).StartOffsetInBytes));
@@ -48,7 +48,7 @@ public sealed class Utf8DeepScalarAdmissionTests
             (family == "ahead" ? "." : family == "behind" ? "x" : "");
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         var text = family == "behind" ? "\U0001f600x" : "\U0001f600";

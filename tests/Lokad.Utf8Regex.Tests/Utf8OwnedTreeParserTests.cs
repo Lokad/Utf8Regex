@@ -271,7 +271,7 @@ public sealed class Utf8OwnedTreeParserTests
     {
         Assert.NotNull(Utf8OwnedTreeParser.TryParse("(?I:a)", RegexOptions.CultureInvariant));
         var oracle = new Regex("(?I:a)", RegexOptions.CultureInvariant);
-        var product = new Utf8Regex("(?I:a)", RegexOptions.CultureInvariant);
+        var product = new Utf8Regex("(?I:a)", options: RegexOptions.CultureInvariant);
         Assert.Equal(oracle.ToString(), product.Pattern);
     }
 

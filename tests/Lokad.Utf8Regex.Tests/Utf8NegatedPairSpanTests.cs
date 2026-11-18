@@ -53,7 +53,7 @@ public sealed class Utf8NegatedPairSpanTests
     [InlineData(RegexOptions.NonBacktracking)]
     public void ExecutionOptionsPreserveCapturedValues(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"([^ab]+)a", options);
+        var regex = new Utf8Regex(@"([^ab]+)a", options: options);
         var input = "é😀a 𝒜a"u8.ToArray();
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(options == RegexOptions.RightToLeft ? " 𝒜" : "é😀", System.Text.Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));

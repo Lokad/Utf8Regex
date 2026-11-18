@@ -15,7 +15,7 @@ public class Utf8OrderedLiteralWindowCursorBenchmarks
 {
     private byte[] _input = [];
     private string _text = string.Empty;
-    private Utf8Regex _utf8 = new(@"a\s{2,}b", RegexOptions.CultureInvariant);
+    private Utf8Regex _utf8 = new(@"a\s{2,}b", options: RegexOptions.CultureInvariant);
     private Regex _oracle = new(@"a\s{2,}b", RegexOptions.CultureInvariant);
 
     [Params(false, true)]
@@ -27,7 +27,7 @@ public class Utf8OrderedLiteralWindowCursorBenchmarks
         _text = string.Concat(Enumerable.Repeat("xa  byy ", 1024));
         _input = Encoding.UTF8.GetBytes(_text);
         var options = RegexOptions.CultureInvariant | (Compiled ? RegexOptions.Compiled : RegexOptions.None);
-        _utf8 = new Utf8Regex(@"a\s{2,}b", options);
+        _utf8 = new Utf8Regex(@"a\s{2,}b", options: options);
         _oracle = new Regex(@"a\s{2,}b", options);
         if (EnumerateUtf8() != EnumeratePredecoded() || EnumerateDecode() != EnumeratePredecoded() ||
             SplitUtf8() != SplitPredecoded() || SplitDecode() != SplitPredecoded() ||

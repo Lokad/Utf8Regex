@@ -13,8 +13,8 @@ public sealed class Utf8NativeCompilationTests
     public void PublicNativeProgramsPreserveSelectionAndCapturesAfterSourceReuse(string pattern, RegexOptions options)
     {
         var source = Encoding.UTF8.GetBytes(pattern);
-        var native = Utf8Regex.Compile(source, options);
-        var text = new Utf8Regex(pattern, options);
+        var native = Utf8Regex.Compile(source, options: options);
+        var text = new Utf8Regex(pattern, options: options);
         Array.Fill(source, (byte)0xff);
         Assert.Equal(pattern, native.Pattern);
         Assert.Equal(text.GetGroupNumbers(), native.GetGroupNumbers());
@@ -98,10 +98,10 @@ public sealed class Utf8NativeCompilationTests
     public void NativeSourceKeepsTheMeasuredCyrillicCountStrategy(string pattern)
     {
         const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var native = Utf8Regex.Compile(Encoding.UTF8.GetBytes(pattern), options);
+        var native = Utf8Regex.Compile(Encoding.UTF8.GetBytes(pattern), options: options);
         Assert.True(native.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
         var input = "шерлок холмс; ДЖОН УОТСОН; ирен адлер"u8;
-        Assert.Equal(new Utf8Regex(pattern, options).Count(input), native.Count(input));
+        Assert.Equal(new Utf8Regex(pattern, options: options).Count(input), native.Count(input));
     }
 
     [Theory]
@@ -115,8 +115,13 @@ public sealed class Utf8NativeCompilationTests
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 },
         };
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8Regex.Compile("(?<x>😀){2,4}"u8,
-            RegexOptions.None, Timeout.InfiniteTimeSpan, default, policy, Timeout.InfiniteTimeSpan, default));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8Regex.Compile("(?<x>😀){2,4}"u8, options:             RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = policy,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default));
         Assert.Equal(limit switch
         {
             0 => Utf8ResourceLimitKind.ConstructionWorkSteps,
@@ -133,16 +138,31 @@ public sealed class Utf8NativeCompilationTests
         using var construction = new CancellationTokenSource();
         var programs = new Account();
         programs.AfterGrant = construction.Cancel;
-        var error = Assert.Throws<OperationCanceledException>(() => Utf8Regex.Compile("(?<x>😀)+"u8,
-            RegexOptions.None, Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, construction.Token, programs));
+        var error = Assert.Throws<OperationCanceledException>(() => Utf8Regex.Compile("(?<x>😀)+"u8, options:             RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = programs
+        }, cancellationToken: construction.Token));
         Assert.Equal(construction.Token, error.CancellationToken); Assert.Equal(0UL, programs.Used);
 
         using var successful = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var native = Utf8Regex.Compile("(?<x>😀)+"u8, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxWorkingBytes = 1_000_000, MaxResultBytes = 1_000_000 },
-            default, TimeSpan.FromMilliseconds(20), successful.Token);
+        var native = Utf8Regex.Compile("(?<x>😀)+"u8, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxWorkingBytes = 1_000_000,
+                MaxResultBytes = 1_000_000
+            },
+            ConstructionPolicy = default,
+            ConstructionTimeout = TimeSpan.FromMilliseconds(20)
+        }, cancellationToken: successful.Token);
         successful.Cancel(); ticks = 1000;
         Assert.Equal(1, native.Count("😀😀"u8));
         using var invocation = new CancellationTokenSource(); invocation.Cancel();
@@ -154,8 +174,13 @@ public sealed class Utf8NativeCompilationTests
     {
         var calls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++calls < 3 ? 0 : 100);
-        var failure = Assert.Throws<RegexMatchTimeoutException>(() => Utf8Regex.Compile("(?<x>😀)+"u8,
-            RegexOptions.None, Timeout.InfiniteTimeSpan, default, default, TimeSpan.FromMilliseconds(20), default));
+        var failure = Assert.Throws<RegexMatchTimeoutException>(() => Utf8Regex.Compile("(?<x>😀)+"u8, options:             RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = TimeSpan.FromMilliseconds(20)
+        }, cancellationToken: default));
         Assert.Equal(string.Empty, failure.Pattern);
     }
 
@@ -164,8 +189,14 @@ public sealed class Utf8NativeCompilationTests
     {
         var programs = new Account(); var working = new Account(); var results = new Account();
         var source = "(?<x>😀)+"u8.ToArray();
-        var owner = Utf8Regex.Compile(source, RegexOptions.None, Timeout.InfiniteTimeSpan, default,
-            default, Timeout.InfiniteTimeSpan, default, programs);
+        var owner = Utf8Regex.Compile(source, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = programs
+        }, cancellationToken: default);
         Assert.True(programs.Used > 0);
         Array.Fill(source, (byte)0xff);
         var cursor = owner.CreateMatchCursor("😀😀 😀"u8.ToArray(), workingMemoryAllowance: working);

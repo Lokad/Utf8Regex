@@ -17,7 +17,10 @@ public sealed class Utf8RegexConstructorDiffTests
             ? Regex.InfiniteMatchTimeout
             : TimeSpan.FromMilliseconds(timeoutMilliseconds);
 
-        var utf8Regex = new Utf8Regex(pattern, options, matchTimeout);
+        var utf8Regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = matchTimeout
+        });
         var runtimeRegex = new Regex(pattern, options, matchTimeout);
 
         Assert.Equal(runtimeRegex.Options, utf8Regex.Options);
@@ -47,7 +50,7 @@ public sealed class Utf8RegexConstructorDiffTests
     {
         // Mirrored and adapted from Regex.Ctor.Tests.cs invalid-options cases plus BCL ECMAScript/NonBacktracking scopes (external/runtime 9ffface2f3f).
         var runtime = Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("foo", options));
-        var utf8 = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("foo", options));
+        var utf8 = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("foo", options: options));
 
         Assert.Equal(runtime.ParamName, utf8.ParamName);
     }
@@ -64,7 +67,7 @@ public sealed class Utf8RegexConstructorDiffTests
     {
         // Owned ValidateOptions must accept exactly the BCL-accepted scope above.
         var runtimeRegex = new Regex("foo", options);
-        var utf8Regex = new Utf8Regex("foo", options);
+        var utf8Regex = new Utf8Regex("foo", options: options);
 
         Assert.Equal(runtimeRegex.Options, utf8Regex.Options);
     }
@@ -78,8 +81,12 @@ public sealed class Utf8RegexConstructorDiffTests
         var timeout = TimeSpan.FromMilliseconds(timeoutMilliseconds);
 
         var runtime = Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("foo", RegexOptions.CultureInvariant, timeout));
-        var utf8 = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("foo", RegexOptions.CultureInvariant, timeout));
+        var utf8 = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("foo", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        }));
 
-        Assert.Equal(runtime.ParamName, utf8.ParamName);
+        Assert.Equal("matchTimeout", runtime.ParamName);
+        Assert.Equal("policy", utf8.ParamName);
     }
 }

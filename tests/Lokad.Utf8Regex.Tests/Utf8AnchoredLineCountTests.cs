@@ -32,7 +32,7 @@ public sealed class Utf8AnchoredLineCountTests
         {
             var options = RegexOptions.NonBacktracking | RegexOptions.Multiline | RegexOptions.CultureInvariant |
                 (compiled ? RegexOptions.Compiled : 0);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var oracle = new Regex(pattern, options);
             var program = regex.Inspection.AvailableOwnedSliceProgram!;
             foreach (var text in texts)
@@ -65,8 +65,7 @@ public sealed class Utf8AnchoredLineCountTests
     [InlineData("not key\n" + "key")]
     public void EveryFiniteCutoffKeepsBorrowedWorkingAdmission(string text)
     {
-        var program = new Utf8Regex(@"^\s*key.*$", RegexOptions.NonBacktracking | RegexOptions.Multiline)
-            .Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex(@"^\s*key.*$", options: RegexOptions.NonBacktracking | RegexOptions.Multiline)            .Inspection.AvailableOwnedSliceProgram!;
         var bytes = Encoding.UTF8.GetBytes(text);
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(13));
@@ -99,7 +98,7 @@ public sealed class Utf8AnchoredLineCountTests
     [InlineData("last", true)]
     public void RealScanQuantaAndPublicationObserveOriginalAuthority(string stage, bool expire)
     {
-        var program = new Utf8Regex(@"^\s*key.*$", RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex(@"^\s*key.*$", options: RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
         var text = stage switch { "seek" => new string('x', 8192), "white" => new string(' ', 4096) + "key",
             "tail" => "key" + new string('x', 8192), _ => "key" };
         var padding = stage switch { "seek" => 60, "white" => 57, "tail" => 59, _ => 61 };
@@ -125,7 +124,7 @@ public sealed class Utf8AnchoredLineCountTests
     {
         var pattern = "^" + string.Concat(Enumerable.Repeat("ab\\n", 10)) + "ab.*\\z";
         var options = RegexOptions.NonBacktracking | RegexOptions.Multiline;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         Assert.InRange(program.Instructions.Length, 1, 64);
         foreach (var hit in new[] { false, true })
@@ -152,7 +151,7 @@ public sealed class Utf8AnchoredLineCountTests
     [Fact]
     public void FullValidationStillRejectsAnInvalidTailAndPreCanceledEntryWins()
     {
-        var regex = new Utf8Regex(@"^\s*key.*$", RegexOptions.NonBacktracking | RegexOptions.Multiline);
+        var regex = new Utf8Regex(@"^\s*key.*$", options: RegexOptions.NonBacktracking | RegexOptions.Multiline);
         var bytes = "key\n"u8.ToArray().Concat(new byte[] { 0xc3 }).ToArray();
         using var live = new CancellationTokenSource(); live.Cancel();
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(bytes, live.Token)).CancellationToken);

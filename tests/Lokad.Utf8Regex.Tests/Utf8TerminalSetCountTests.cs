@@ -22,7 +22,11 @@ public sealed class Utf8TerminalSetCountTests
     {
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, Policy);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy
+            });
             using var live = new CancellationTokenSource();
             var bytes = Encoding.UTF8.GetBytes(text); byte[] backing = [0xff, .. bytes, 0xff];
             Assert.Equal(expected, regex.Count(backing.AsSpan(1, bytes.Length), live.Token));
@@ -36,7 +40,11 @@ public sealed class Utf8TerminalSetCountTests
         var lengths = new[] { 7, 8, 13, 14, 20, 21, 26, 27, 255, 256, 257 };
         var text = string.Join(' ', lengths.Select(length => new string('a', length)));
         var expected = lengths.Sum(length => length / 13 + (length % 13 >= 8 ? 1 : 0));
-        var regex = new Utf8Regex("[A-Za-z]{8,13}", RegexOptions.Compiled, Timeout.InfiniteTimeSpan, Policy);
+        var regex = new Utf8Regex("[A-Za-z]{8,13}", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy
+        });
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text)));
         Assert.Equal(Regex.Count(text, "[A-Za-z]{8,13}"), expected);
     }
@@ -49,7 +57,7 @@ public sealed class Utf8TerminalSetCountTests
     public void MatchingAndCopiedCursorsKeepRangesAndProgression(string pattern, string text)
     {
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options);
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text]);
         var bytes = Encoding.UTF8.GetBytes(text);
@@ -67,8 +75,8 @@ public sealed class Utf8TerminalSetCountTests
     {
         foreach (var pattern in new[] { "(?<=[a-z]{2})x", "(?<=([a-z]{2}))x", "(?<v>[a-z]{2,3})", "[a-z]{2,3}?", "[a-z]{0,3}" })
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.RightToLeft })
-            Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(pattern, options), new Regex(pattern, options), ["éabx abc abcdef x"]);
-        var nonbacktracking = new Utf8Regex("[a-z]{2,3}", RegexOptions.NonBacktracking);
+            Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(pattern, options: options), new Regex(pattern, options), ["éabx abc abcdef x"]);
+        var nonbacktracking = new Utf8Regex("[a-z]{2,3}", options: RegexOptions.NonBacktracking);
         Assert.Equal(4, nonbacktracking.Count("ab cde fghij"u8));
     }
 
@@ -98,7 +106,11 @@ public sealed class Utf8TerminalSetCountTests
     public void LastScalarPublicationObservesOriginalInterruption(bool expire)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex("[a-z]+", RegexOptions.None, TimeSpan.FromMilliseconds(50), Policy);
+        var regex = new Utf8Regex("[a-z]+", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Policy
+        });
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         using var live = new CancellationTokenSource();
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => { if (expire) ticks = 100; else live.Cancel(); });

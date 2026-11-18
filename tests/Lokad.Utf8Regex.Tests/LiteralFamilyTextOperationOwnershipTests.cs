@@ -36,7 +36,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     [MemberData(nameof(NativeRouteCases))]
     public void LiteralFamilyTextOperationsRouteNatively(string pattern, RegexOptions options)
     {
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes("cat caf\u00E9 horse ni\u00F1o");
         Assert.True(regex.CanUseNativeSplit(Utf8Validation.Validate(input)), "pattern=" + pattern + " options=" + options.ToString());
     }
@@ -51,7 +51,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     [MemberData(nameof(ExcludedRouteCases))]
     public void NonLiteralFamilySplitShapesUseSeparateOwnedRoutes(string pattern, RegexOptions options)
     {
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes("cat horse caf\u00E9 noir");
         Assert.False(regex.CanUseNativeSplit(Utf8Validation.Validate(input)), "pattern=" + pattern + " options=" + options.ToString());
     }
@@ -101,7 +101,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
         {
             foreach (var option in options)
             {
-                if (new Utf8Regex(pattern, option).Inspection.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
+                if (new Utf8Regex(pattern, options: option).Inspection.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
                 {
                     continue;
                 }
@@ -121,7 +121,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     [MemberData(nameof(SplitParityCases))]
     public void OwnedLiteralFamilySplitCountsMatchOverlappingComparator(string pattern, RegexOptions options, string inputText, int count)
     {
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.True(regex.CanUseNativeSplit(Utf8Validation.Validate(input)), "pattern=" + pattern + " options=" + options.ToString());
         // Literal alternatives and BMP subjects overlap the comparator's
@@ -152,7 +152,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
         {
             foreach (var option in options)
             {
-                if (new Utf8Regex(pattern, option).Inspection.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
+                if (new Utf8Regex(pattern, options: option).Inspection.ExecutionKind is not (NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
                 {
                     continue;
                 }
@@ -172,7 +172,7 @@ public sealed class LiteralFamilyTextOperationOwnershipTests
     [MemberData(nameof(ReplaceParityCases))]
     public void OwnedLiteralFamilyReplaceValuesMatchOverlappingComparator(string pattern, RegexOptions options, string inputText, string replacement)
     {
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var actual = regex.Replace(input, replacement);
         var oracle = new Regex(pattern, options);

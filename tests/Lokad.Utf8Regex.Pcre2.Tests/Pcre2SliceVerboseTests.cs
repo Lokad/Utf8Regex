@@ -44,8 +44,7 @@ public sealed class Pcre2SliceVerboseTests
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(Utf8("ab")));
         Assert.False(regex.IsMatch(Utf8("a\vb")));
-        var core = new Utf8Regex(pattern,
-            System.Text.RegularExpressions.RegexOptions.IgnorePatternWhitespace |
+        var core = new Utf8Regex(pattern, options:             System.Text.RegularExpressions.RegexOptions.IgnorePatternWhitespace |
             System.Text.RegularExpressions.RegexOptions.CultureInvariant);
         Assert.False(core.IsMatch("ab"u8));
         Assert.True(core.IsMatch("a\vb"u8));

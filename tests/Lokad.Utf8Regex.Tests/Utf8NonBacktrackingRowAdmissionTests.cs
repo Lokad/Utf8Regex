@@ -11,7 +11,7 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
     [InlineData(true, false)] [InlineData(true, true)]
     public void RejectedLiteralRowsKeepRealAdmissionAndFinalPublicationChecks(bool lastRow, bool expire)
     {
-        var program = new Utf8Regex("z", RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex("z", options: RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(2, program.Instructions.Length);
         var input = Encoding.UTF8.GetBytes(new string('x', lastRow ? 1 : 128));
         long ticks = 0;
@@ -43,8 +43,7 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
     [InlineData(63)] [InlineData(64)] [InlineData(65)] [InlineData(129)]
     public void EachRowHasExactWorkAndEveryRefusalRefundsTheTable(int states)
     {
-        var program = new Utf8Regex(new string('a', states - 1), RegexOptions.NonBacktracking)
-            .Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex(new string('a', states - 1), options: RegexOptions.NonBacktracking)            .Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(states, program.Instructions.Length);
         var boundary = states <= 64 ? 64 / states : 1;
         foreach (var scalars in new[] { boundary - 1, boundary, boundary + 1 })
@@ -85,7 +84,7 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void ARealPackedRowAdmissionKeepsInterruptionAndBorrowedStorage(bool expire)
     {
-        var program = new Utf8Regex("", RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex("", options: RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
         Assert.Single(program.Instructions);
         var input = Encoding.UTF8.GetBytes(new string('x', 128));
         long ticks = 0;

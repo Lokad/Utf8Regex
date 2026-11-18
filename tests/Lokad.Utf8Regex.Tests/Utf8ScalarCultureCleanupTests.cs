@@ -37,7 +37,7 @@ public sealed class Utf8ScalarCultureCleanupTests
             };
             var options = RegexOptions.IgnoreCase | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
                 (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
             var input = Encoding.UTF8.GetBytes(text);
@@ -84,7 +84,7 @@ public sealed class Utf8ScalarCultureCleanupTests
             var options = RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
                 (scoped ? RegexOptions.None : RegexOptions.IgnoreCase);
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.AvailableOwnedSliceProgram?.IsNonBacktracking);
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
             foreach (var text in new[] { "i", "I", "\u0130", "\u0131", "iii", "aIai" })

@@ -37,7 +37,7 @@ public sealed class Utf8NativeFamilyInvocationTests
             (reverse ? RegexOptions.RightToLeft : RegexOptions.None);
         // Exercise reverse discovery with the same immutable family facts. Some
         // public RTL front ends deliberately retain their owned scalar route.
-        var regex = new Utf8Regex(pattern, options & ~RegexOptions.RightToLeft);
+        var regex = new Utf8Regex(pattern, options: options & ~RegexOptions.RightToLeft);
         var plan = Prepared(regex).SearchPlan;
         Assert.NotNull(plan.AlternateLiteralsUtf8);
         const string text = "abcde cab AB caféteria café noir! xa-b a-b b niño 😀é 😀 中";
@@ -94,7 +94,7 @@ public sealed class Utf8NativeFamilyInvocationTests
     [InlineData(true, true)]
     public void EveryCutoffAcrossMatchesSearchAndProjectionPreservesCallerLeaseAndUnpublishedResult(bool folded, bool ascii)
     {
-        var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
+        var regex = new Utf8Regex("target|needle", options: RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var text = ascii ? "x target y needle z target" : "é target 中 needle 😀 target";
         var input = Encoding.UTF8.GetBytes(text);
         var plan = Prepared(regex);
@@ -173,7 +173,7 @@ public sealed class Utf8NativeFamilyInvocationTests
     [InlineData(true, true)]
     public void CountNeverPublishesPartialSuccessAndKeepsOneBudgetAcrossMatches(bool reverse, bool folded)
     {
-        var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
+        var regex = new Utf8Regex("target|needle", options: RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var plan = Prepared(regex).SearchPlan;
         var input = Encoding.UTF8.GetBytes("é target 中 needle 😀 target");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
@@ -236,7 +236,7 @@ public sealed class Utf8NativeFamilyInvocationTests
     [InlineData(true)]
     public void OffsetFloorKeepsOriginalBoundaryContextAndFamilyProgression(bool metered)
     {
-        var regex = new Utf8Regex(@"\b(?:target|needle)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:target|needle)\b", options: RegexOptions.CultureInvariant);
         const string text = "é target xneedle needle target";
         var input = Encoding.UTF8.GetBytes(text);
         var invocation = new Utf8SliceInvocation(metered ? new(ulong.MaxValue, 0, 0) : Utf8ExecutionLimits.Unlimited,
@@ -262,7 +262,7 @@ public sealed class Utf8NativeFamilyInvocationTests
     [InlineData(true)]
     public void LegacyDeadlineFinderExpiresWithoutChangingScanState(bool hit)
     {
-        var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("target|needle", options: RegexOptions.CultureInvariant);
         var plan = Prepared(regex).SearchPlan;
         var input = Encoding.UTF8.GetBytes(new string('x', 320000) + (hit ? "target" : ""));
         var state = default(PreparedMultiLiteralScanState);
@@ -284,7 +284,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options,
             ["", "é target needle 中 target", "foo foobar baz xfoo", "xa-b a-b b niño café noir!"], options);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         const string text = "é target needle foo foobar xa-b a-b b niño café noir!";
         var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), cancellationToken: source.Token);
         foreach (Match expected in new Regex(pattern, options).Matches(text))
@@ -306,8 +306,10 @@ public sealed class Utf8NativeFamilyInvocationTests
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None),
-            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex("target|needle", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
         var armed = false;
         var entered = false;
@@ -357,7 +359,7 @@ public sealed class Utf8NativeFamilyInvocationTests
     public void PublicFamilyCancellationBetweenMatchesKeepsTokenAndUnpublishedCurrent(bool compiled, bool folded)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant |
+        var regex = new Utf8Regex("target|needle", options: RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None) | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var enumerator = regex.EnumerateMatches("é target needle"u8, cancellationToken: source.Token);
         Assert.True(enumerator.MoveNext());
@@ -416,8 +418,10 @@ public sealed class Utf8NativeFamilyInvocationTests
     public void DeadlineAwarePublicFamilyOperationsExpireInsideLongDiscovery(string pattern, bool compiled, string operation)
     {
         using var clock = Utf8DeadlineTestClock.Start();
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None),
-            TimeSpan.FromMilliseconds(200));
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         _ = Utf8InputAnalyzer.Describe(input, ref validation);
@@ -454,8 +458,10 @@ public sealed class Utf8NativeFamilyInvocationTests
     public void ValidationRetainsOriginalFamilyDeadlineUntilValueOperationFinishes(bool compiled, string operation)
     {
         using var clock = Utf8DeadlineTestClock.Start();
-        var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None),
-            TimeSpan.FromMilliseconds(200));
+        var regex = new Utf8Regex("target|needle", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ => { if (!entered) { entered = true; clock.Advance(250); } });
@@ -484,7 +490,10 @@ public sealed class Utf8NativeFamilyInvocationTests
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         const string pattern = "(?<x-00>a)|b";
         const string text = "a a b b";
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         var oracle = new Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
@@ -507,7 +516,7 @@ public sealed class Utf8NativeFamilyInvocationTests
     [InlineData(true)]
     public void ExhaustedFamilyCursorDoesNotRescanItsTerminalGap(bool folded)
     {
-        var regex = new Utf8Regex("target|needle", RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
+        var regex = new Utf8Regex("target|needle", options: RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), invocation);
@@ -523,7 +532,7 @@ public sealed class Utf8NativeFamilyInvocationTests
     [InlineData(true)]
     public void DenseLaterBranchCountWorkGrowsLinearlyWithSubject(bool reverse)
     {
-        var regex = new Utf8Regex("absent|a", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+        var regex = new Utf8Regex("absent|a", options: RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
         var plan = Prepared(regex).SearchPlan;
         var small = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         var large = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);

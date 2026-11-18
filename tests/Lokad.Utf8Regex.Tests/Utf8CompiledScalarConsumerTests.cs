@@ -39,7 +39,7 @@ public sealed class Utf8CompiledScalarConsumerTests
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes(text);
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(count, regex.Count(input));
             var match = regex.Match(input);
@@ -60,7 +60,7 @@ public sealed class Utf8CompiledScalarConsumerTests
         Assert.Equal(isAscii, Utf8Validation.Validate(input).IsAscii);
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options | mode);
+            var regex = new Utf8Regex(pattern, options: options | mode);
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected != 0, regex.IsMatch(input));
             Assert.Equal(expected != 0, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);

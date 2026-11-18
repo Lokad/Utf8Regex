@@ -59,8 +59,17 @@ public sealed class Utf8WideRepeatStateTests
     public void FiniteMaximumKeepsPublicScalarCapturesAndResourceControls(RegexOptions options)
     {
         const string pattern = "(?<x>😀|a){0,2147483647}";
-        var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         Assert.Equal(2, regex.Count("😀a"u8));
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("😀a"u8.ToArray()));
         Assert.Equal((0, 5), (retained.Value.StartOffsetInBytes, (retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes)));
@@ -69,8 +78,17 @@ public sealed class Utf8WideRepeatStateTests
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         Assert.Throws<OperationCanceledException>(() => regex.Count("😀a"u8, cancellation.Token));
-        var denied = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var denied = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("😀a"u8)).ResourceKind);
         Assert.Equal(2, regex.Count("😀a"u8));
@@ -86,12 +104,12 @@ public sealed class Utf8WideRepeatStateTests
         // A finite consuming repeat requires expansion in this engine. It must
         // fail admission promptly, rather than silently become a compact '*'.
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            new Utf8Regex("(?<x>😀|a){0,2147483647}", options));
+            new Utf8Regex("(?<x>😀|a){0,2147483647}", options: options));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionInstructionCapacity, failure.ResourceKind);
-        var unbounded = new Utf8Regex("(?<x>😀|a)*", options);
+        var unbounded = new Utf8Regex("(?<x>😀|a)*", options: options);
         Assert.Equal(2, unbounded.Count("😀a"u8));
         // Existing compact zero-width finite repeats still need no expansion.
-        var empty = new Utf8Regex("(?<x>){0,2147483647}", options);
+        var empty = new Utf8Regex("(?<x>){0,2147483647}", options: options);
         Assert.Equal(3, empty.Count("😀a"u8));
         Assert.True((Utf8MatchSequence.First(empty.CreateMatchCursor("😀a"u8.ToArray())).TryGetGroup("x", out var range1) ? range1.Success : default));
     }

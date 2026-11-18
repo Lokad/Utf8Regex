@@ -231,7 +231,7 @@ public sealed class Utf8NativeLiteralPreparationTests
     {
         foreach (var pattern in new[] { "([^a])", "([^a])(?=!)", "([aA-[a]])" })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var subtracted = pattern == "([aA-[a]])";
             // Folding [aA] before subtracting folded [a] yields an empty class.
             var input = Encoding.UTF8.GetBytes(subtracted ? "Aa" : "A😀!");

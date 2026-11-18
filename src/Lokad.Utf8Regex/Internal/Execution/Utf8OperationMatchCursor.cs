@@ -21,6 +21,8 @@ internal ref partial struct Utf8OperationMatchCursor
         return _sliceInvocation;
     }
 
+    internal void CheckCancellationAtEntry() => _sliceInvocation.Budget.ThrowIfCancellationRequested();
+
     internal ulong DebugInvocationSteps => _sliceInvocation.Budget.Steps;
 
     internal bool HasResourceLimitBreach => _sliceInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None;

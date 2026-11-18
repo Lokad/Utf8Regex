@@ -39,9 +39,17 @@ public sealed class Utf8AtomicRepeatCommitTests
         {
             var options = mode | RegexOptions.CultureInvariant;
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1_000_000, MaxDepth = 10000,
-                    MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 });
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 10000,
+                    MaxWorkingBytes = 1 << 24,
+                    MaxResultBytes = 1 << 24
+                }
+            });
             var expected = oracle.Match(text);
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Utf8MatchSequence.AssertCaptures(expected, retained, input, text);

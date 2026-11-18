@@ -53,7 +53,7 @@ public sealed class Utf8OwnedTreeParserBraceDecayTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         AssertProductMatchesOracle(oracle, product, inputs);
     }
 
@@ -68,7 +68,7 @@ public sealed class Utf8OwnedTreeParserBraceDecayTests
         Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);
         Assert.Equal((RegexOptions)options, actual.Options);
         Assert.Equal(CultureInfo.InvariantCulture.Name, actual.Culture?.Name);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         AssertProductMatchesOracle(oracle, product, inputs);
     }
 

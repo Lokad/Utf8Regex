@@ -54,7 +54,7 @@ public sealed class EngineDependencyInventoryTests
             RegexOptions.NonBacktracking | RegexOptions.Compiled | RegexOptions.CultureInvariant,
         })
         {
-            var utf8Regex = new Utf8Regex("foo", options);
+            var utf8Regex = new Utf8Regex("foo", options: options);
             var runtimeRegex = new Regex("foo", options);
             Assert.Equal(runtimeRegex.Options, utf8Regex.Options);
         }
@@ -66,12 +66,12 @@ public sealed class EngineDependencyInventoryTests
             RegexOptions.NonBacktracking | RegexOptions.RightToLeft,
         })
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("foo", options));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("foo", options: options));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("foo", options));
         }
         // .NET 11 assigns 0x0800 to AnyNewLine. Runtime support does not
         // silently extend the owned grammar or its admitted option set.
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("foo", (RegexOptions)0x0800));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("foo", options: (RegexOptions)0x0800));
     }
 
 

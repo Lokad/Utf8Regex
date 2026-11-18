@@ -100,7 +100,7 @@ public sealed class Utf8CaptureSlotRetirementTests
         // These patterns contain whole scalar literals only, so this comparator
         // overlaps the UTF-8 contract even with supplementary characters.
         var oracle = new Regex(pattern, options & ~RegexOptions.Compiled);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.Equal(oracle.GetGroupNumbers(), regex.GetGroupNumbers());
         Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
         foreach (var name in oracle.GetGroupNames()) Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));

@@ -77,8 +77,16 @@ public sealed class Utf8OptionalRepeatTests
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
                 Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation).Breach);
             Assert.Equal(13ul, invocation.Ledger.ReservedBytes);
-            var publicRegex = new Utf8Regex(regex.Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                new Utf8ResourcePolicy { MaxWorkSteps = limit, MaxDepth = 64, MaxWorkingBytes = 1 << 20 });
+            var publicRegex = new Utf8Regex(regex.Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = limit,
+                    MaxDepth = 64,
+                    MaxWorkingBytes = 1 << 20
+                }
+            });
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => publicRegex.Count(input)).ResourceKind);
         }
@@ -115,7 +123,11 @@ public sealed class Utf8OptionalRepeatTests
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1 };
         foreach (var pattern in new[] { "a?", @"\w?", "[é😀]?" })
         {
-            var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
+            var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            });
             Assert.Equal(3, regex.Count("a😀"u8));
             using var source = new CancellationTokenSource();
             Assert.Equal(3, regex.Count("a😀"u8, source.Token));

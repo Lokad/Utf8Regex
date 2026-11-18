@@ -23,7 +23,7 @@ public sealed class Utf8LeadingScalarPairCountTests
         {
             var pattern = Regex.Escape(literal);
             var expected = new Regex(pattern, option).Count(text);
-            var actual = new Utf8Regex(pattern, option).Count(Encoding.UTF8.GetBytes(text));
+            var actual = new Utf8Regex(pattern, options: option).Count(Encoding.UTF8.GetBytes(text));
             Assert.Equal(expected, actual);
         }
     }
@@ -52,8 +52,17 @@ public sealed class Utf8LeadingScalarPairCountTests
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8Regex("夏a");
         Assert.Equal(2, regex.Count(input));
-        var finite = new Utf8Regex("夏a", RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var finite = new Utf8Regex("夏a", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         using var live = new CancellationTokenSource();
         Assert.Equal(2, finite.Count(input, live.Token));
         Assert.Equal(2, regex.Count(input, live.Token));

@@ -12,7 +12,7 @@ public sealed class Utf8StructuralInputFactsTests
     public void ByteOperationsAndCoordinateConsumersShareTheSelectedAuthority(
 RegexOptions options)
     {
-        var regex = new Utf8Regex("Tom.{1,3}river", options);
+        var regex = new Utf8Regex("Tom.{1,3}river", options: options);
         var input = Encoding.UTF8.GetBytes("é😀 Tom😀river x Tomabriver");
         using var lifetime = new CancellationTokenSource();
         Assert.True(Observe(() => regex.IsMatch(input, lifetime.Token)));

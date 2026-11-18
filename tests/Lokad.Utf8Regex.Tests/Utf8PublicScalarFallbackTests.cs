@@ -31,7 +31,7 @@ public sealed class Utf8PublicScalarFallbackTests
     public void PublicValueAndDetailedLanesUseScalarOutcomes(string pattern, string subject,
         int count, int start, int length, bool compiled, bool rtl)
     {
-        var regex = new Utf8Regex(pattern, Options(compiled, rtl));
+        var regex = new Utf8Regex(pattern, options: Options(compiled, rtl));
         var input = Encoding.UTF8.GetBytes(subject);
         using var tokenSource = new CancellationTokenSource();
         foreach (var token in new[] { CancellationToken.None, tokenSource.Token })
@@ -63,7 +63,7 @@ public sealed class Utf8PublicScalarFallbackTests
     [MemberData(nameof(AnchorOffsets))]
     public void OffsetAnchorsRespectTheScalarSearchDirection(bool prefix, bool compiled, bool rtl, bool end)
     {
-        var regex = new Utf8Regex(prefix ? "\\Afoo" : "foo\\z", Options(compiled, rtl));
+        var regex = new Utf8Regex(prefix ? "\\Afoo" : "foo\\z", options: Options(compiled, rtl));
         var input = "foo-foo"u8.ToArray();
         var offset = end ? input.Length : 0;
         var expected = rtl ? end : !end;
@@ -93,7 +93,7 @@ public sealed class Utf8PublicScalarFallbackTests
     [InlineData(true, true)]
     public void ByteOffsetsRejectScalarInteriors(bool compiled, bool rtl)
     {
-        var regex = new Utf8Regex("(?<x>.)", Options(compiled, rtl));
+        var regex = new Utf8Regex("(?<x>.)", options: Options(compiled, rtl));
         var input = "😀a"u8.ToArray();
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 1, []).Success);
         Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, 1)));
@@ -111,7 +111,7 @@ public sealed class Utf8PublicScalarFallbackTests
         var options = RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-        var regex = new Utf8Regex("(?<=😀)(?<x>.)(?<12>.)", options);
+        var regex = new Utf8Regex("(?<=😀)(?<x>.)(?<12>.)", options: options);
         var input = Encoding.UTF8.GetBytes("z😀😀a");
         using var cursor = regex.CreateMatchCursor(input, rtl ? input.Length : 5);
         Assert.True(cursor.MoveNext(out var match));

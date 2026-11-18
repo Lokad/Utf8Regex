@@ -23,8 +23,16 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
         using var token = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled | RegexOptions.Multiline })
         {
-            var regex = new Utf8Regex(Pattern, options, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxDepth = 1,
+                    MaxWorkingBytes = 1,
+                    MaxResultBytes = 1
+                }
+            });
             var expected = new Regex(Pattern, options).Match(text); var bytes = Encoding.UTF8.GetBytes(text);
             byte[] storage = [0xff, .. bytes, 0xff];
             var diagnostics = Utf8SearchDiagnosticsSession.Start();
@@ -43,7 +51,14 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
     {
         var bytes = Encoding.ASCII.GetBytes("///" + new string('x', length - 4) + "\n");
         Assert.Equal(length, (new Utf8Regex(Pattern).Match(bytes).EndOffsetInBytes - new Utf8Regex(Pattern).Match(bytes).StartOffsetInBytes));
-        var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded with { MaxWorkingBytes = 1 });
+        var tight = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         Assert.Equal(length, (tight.Match(bytes).EndOffsetInBytes - tight.Match(bytes).StartOffsetInBytes));
     }
 
@@ -70,11 +85,18 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
         foreach (var text in new[] { "///é😀\nrest", "helloé;tail;", "///hi\nEND", "///hi\nwrong" })
         {
             var expected = new Regex(pattern, options).Match(text);
-            var actual = new Utf8Regex(pattern, options).Match(Encoding.UTF8.GetBytes(text));
+            var actual = new Utf8Regex(pattern, options: options).Match(Encoding.UTF8.GetBytes(text));
                     Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (actual.Success, actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
                 }
         using var token = new CancellationTokenSource(); token.Cancel();
-        var denied = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded with { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(input));
     }
 
@@ -89,7 +111,11 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
             if (++reads == trigger) { if (expire) ticks = 100; else token.Cancel(); }
             return ticks;
         });
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50), Funded);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Funded
+        });
         Assert.True(regex.Match("///value\n"u8, cancellationToken: token.Token).Success);
         trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("///value\n"u8, cancellationToken: token.Token)).MatchTimeout);

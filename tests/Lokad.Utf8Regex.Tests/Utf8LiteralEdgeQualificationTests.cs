@@ -27,7 +27,7 @@ public sealed class Utf8LiteralEdgeQualificationTests
     }
     private static void Range(string pattern, string text, RegexOptions options, int index, int length)
     {
-        var regex = new Utf8Regex(pattern, options); var input = Encoding.UTF8.GetBytes(text);
+        var regex = new Utf8Regex(pattern, options: options); var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input)); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal((index, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
     }
@@ -41,10 +41,10 @@ public sealed class Utf8LiteralEdgeQualificationTests
         foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             Range(pattern, "ab😀", RegexOptions.CultureInvariant | compiled, 0, 2);
-            var match = Utf8MatchSequence.First(new Utf8Regex(pattern, RegexOptions.CultureInvariant | compiled).CreateMatchCursor("ab😀"u8.ToArray()));
+            var match = Utf8MatchSequence.First(new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | compiled).CreateMatchCursor("ab😀"u8.ToArray()));
             Assert.True(match.TryGetGroup("x", out var group)); Assert.Equal((0, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
             Range("^(ab)", "ab😀", RegexOptions.CultureInvariant | compiled, 0, 2);
-            Assert.True(Utf8MatchSequence.First(new Utf8Regex("^(ab)", RegexOptions.CultureInvariant | compiled).CreateMatchCursor("ab😀"u8.ToArray())).TryGetGroup(1, out var aliasGroup));
+            Assert.True(Utf8MatchSequence.First(new Utf8Regex("^(ab)", options: RegexOptions.CultureInvariant | compiled).CreateMatchCursor("ab😀"u8.ToArray())).TryGetGroup(1, out var aliasGroup));
             Assert.Equal((0, 2), (aliasGroup.StartOffsetInBytes, (aliasGroup.EndOffsetInBytes - aliasGroup.StartOffsetInBytes)));
         }
     }

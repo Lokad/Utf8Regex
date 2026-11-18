@@ -73,7 +73,7 @@ public sealed class Utf8NativeProjectionInvocationTests
         using var clock = Utf8DeadlineTestClock.Start();
         var pattern = family switch { 2 or 8 => "中", 3 or 4 => "target|other", 5 => "ta[rg]get", _ => "target" };
         var options = RegexOptions.CultureInvariant | (family is 1 or 4 or 7 ? RegexOptions.IgnoreCase : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var plan = Assert.IsType<Utf8PreparedRegex>(typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(regex));
         var text = "é中\U0001f600 target";
         var input = Encoding.UTF8.GetBytes(text);

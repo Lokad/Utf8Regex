@@ -20,7 +20,10 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         {
             var options = RegexOptions.CultureInvariant | compiled |
                 (pattern == "NEEDLE" ? RegexOptions.IgnoreCase : RegexOptions.None);
-            var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1));
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(1)
+            });
             var oracle = new Regex(pattern, options);
             var text = new string('x', prefixLength) + "é😀前汉字 café needle";
             var bytes = Encoding.UTF8.GetBytes(text);
@@ -62,7 +65,10 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         using var clock = Utf8DeadlineTestClock.Start();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (pattern == "TARGET" ? RegexOptions.IgnoreCase : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout
+        });
         Assert.Contains(Prepared(regex).ExecutionKind, new[] {
             NativeExecutionKind.ExactAsciiLiteral, NativeExecutionKind.ExactUtf8Literal, NativeExecutionKind.AsciiLiteralIgnoreCase });
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
@@ -114,7 +120,10 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (reverse ? RegexOptions.RightToLeft : RegexOptions.None) | (pattern == "TARGET" ? RegexOptions.IgnoreCase : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         var oracle = new Regex(pattern, options);
         string[] texts = ["", "é😀 target 中 café target! 😀 target 😀", "aaa a éa a aé", "TARGET target! xTarget"];
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, texts);
@@ -143,7 +152,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     [InlineData(true, true)]
     public void CountCutoffsIncludeValidationAndEveryMatchWithoutPublishingPartialTotal(bool reverse, bool folded)
     {
-        var regex = new Utf8Regex("target", RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
+        var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var plan = Prepared(regex).SearchPlan;
         var input = Encoding.UTF8.GetBytes("é target 中 TARGET 😀 target " + new string('x', 10000));
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
@@ -173,7 +182,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     [InlineData(true, "match")]
     public void DeadlineOnlyRuntimeConsumersBorrowAlreadyExpiredCallerDeadline(bool reverse, string operation)
     {
-        var regex = new Utf8Regex("target", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant);
         var plan = Prepared(regex);
         var runtime = Utf8LiteralCompiledEngineRuntime.Create(Utf8CompiledEngineSelector.Select(plan), plan, reverse);
         var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(1));
@@ -196,7 +205,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     [InlineData(true)]
     public void PublicCountCancelsAfterSuccessfulMatchesBeforeItsTerminalMiss(bool compiled)
     {
-        var regex = new Utf8Regex("target", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("target ", 1000)) + new string('x', 320000));
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         _ = Utf8InputAnalyzer.Describe(input, ref validation);
@@ -224,7 +233,7 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     [InlineData(true)]
     public void InvalidUtf8RetainsStrictFailureAndPreCanceledTokensWinAtEntry(bool compiled)
     {
-        var regex = new Utf8Regex("target", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         byte[] input = [.. "target"u8, 0xF0, 0x80, 0x80, 0x80];
         using var live = new CancellationTokenSource();
         live.Cancel();
@@ -247,7 +256,10 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         string[] patterns = ["", "\uD83D", "(?<x>t)(?<x>arget)", "(?<7>target)", "(?<x-00>a)", "(?i:k)", "(?-i:A)"];
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (id == 6 ? RegexOptions.IgnoreCase : RegexOptions.None);
-        var regex = new Utf8Regex(patterns[id], options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(patterns[id], options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         var oracle = Utf8ScalarCaptureFixture.Project(new Regex(patterns[id], options));
         const string text = "😀 target a K k A a";
         var subject = new Utf8ScalarCaptureFixture.Subject(text);

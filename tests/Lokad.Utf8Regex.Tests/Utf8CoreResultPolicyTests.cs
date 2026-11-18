@@ -14,8 +14,14 @@ public sealed class Utf8CoreResultPolicyTests
     public void ByteBoundedTimeoutDoesNotDecodeTheSubjectForDiagnostics()
     {
         var input = Enumerable.Repeat((byte)'x', 200_000).ToArray();
-        var regex = new Utf8Regex("z", RegexOptions.CultureInvariant,
-            TimeSpan.FromMilliseconds(1), new() { MaxResultBytes = 1 });
+        var regex = new Utf8Regex("z", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1),
+            ResourcePolicy = new()
+            {
+                MaxResultBytes = 1
+            }
+        });
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
         var error = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input));
@@ -40,7 +46,11 @@ public sealed class Utf8CoreResultPolicyTests
                 MaxWorkingBytes = kind != 1 ? 1_048_576ul : null,
                 MaxResultBytes = kind != 0 ? 1_048_576ul : null
             };
-            var regex = new Utf8Regex("z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1), policy);
+            var regex = new Utf8Regex("z", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(1),
+                ResourcePolicy = policy
+            });
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
             var error = Assert.Throws<RegexMatchTimeoutException>(() => Run(regex, operation, input, default));
@@ -53,8 +63,14 @@ public sealed class Utf8CoreResultPolicyTests
     [Fact]
     public void WorkOnlyTimeoutKeepsExistingDiagnosticInput()
     {
-        var regex = new Utf8Regex("z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1),
-            new() { MaxWorkSteps = ulong.MaxValue });
+        var regex = new Utf8Regex("z", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = ulong.MaxValue
+            }
+        });
         var input = "xxxxxxxx"u8.ToArray();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
@@ -65,8 +81,15 @@ public sealed class Utf8CoreResultPolicyTests
     [Fact]
     public void CopiedMatchAndSplitCursorsOmitInputAfterAnInterveningWait()
     {
-        var regex = new Utf8Regex(".", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(200),
-            new() { MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
+        var regex = new Utf8Regex(".", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200),
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            }
+        });
         var input = "😀a"u8.ToArray();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -90,8 +113,15 @@ public sealed class Utf8CoreResultPolicyTests
     }
 
     private static Utf8Regex Create(string pattern, ulong result, RegexOptions options = RegexOptions.CultureInvariant,
-        ulong? work = null, TimeSpan? timeout = null) => new(pattern, options, timeout ?? Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxResultBytes = result, MaxWorkSteps = work });
+        ulong? work = null, TimeSpan? timeout = null) => new(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout ?? Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxResultBytes = result,
+                MaxWorkSteps = work
+            }
+        });
 
     public static IEnumerable<object[]> OperationModes() => Utf8CoreWorkPolicyTests.OperationModes();
     private static string Run(Utf8Regex regex, string operation, byte[] input, CancellationToken token, int offset = 1)
@@ -106,7 +136,7 @@ public sealed class Utf8CoreResultPolicyTests
         var token = live ? source.Token : default;
         var input = Encoding.UTF8.GetBytes("é😀 ab😀 ab");
         const string pattern = "😀|(?<x>ab)";
-        var expected = Run(new Utf8Regex(pattern, options), operation, input, token);
+        var expected = Run(new Utf8Regex(pattern, options: options), operation, input, token);
         Assert.Equal(expected, Run(Create(pattern, 1000000, options), operation, input, token));
         Assert.Equal(expected, Run(Create(pattern, ulong.MaxValue, options), operation, input, token));
         if (operation is "is" or "count" or "match" or "slot-match" or "matches" or "matches-offset" or "split" or "split-count")
@@ -150,7 +180,7 @@ public sealed class Utf8CoreResultPolicyTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         foreach (var operation in new[] { "capture", "replace", "replace-bytes", "destination", "destination-bytes" })
         {
-            Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
+            Assert.Equal(Run(new Utf8Regex(pattern, options: options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
             AssertResultFailure(() => Run(Create(pattern, 1, options), operation, input, default), 1);
         }
@@ -168,7 +198,7 @@ public sealed class Utf8CoreResultPolicyTests
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes("é😀😀 aaabb 😀");
         foreach (var operation in new[] { "capture", "capture-offset", "matches", "split", "replace" })
-            Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
+            Assert.Equal(Run(new Utf8Regex(pattern, options: options), operation, input, default),
                 Run(Create(pattern, 1000000, options), operation, input, default));
         var dot = Create(".", 1, options);
         Assert.Equal(4, (dot.Match("😀"u8).EndOffsetInBytes - dot.Match("😀"u8).StartOffsetInBytes));

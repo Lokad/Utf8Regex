@@ -51,7 +51,7 @@ public sealed class Utf8RtlEnumerationTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
@@ -95,7 +95,7 @@ public sealed class Utf8RtlEnumerationTests
         // Boundary predicates retain full scalar context while enumerating backwards.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         var expected = new System.Collections.Generic.List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))

@@ -12,7 +12,7 @@ public sealed class AsciiSimplePatternPortfolioTests
     public void BoundedSuffixOptionsKeepWhitespaceAndCaseSemantics(RegexOptions options)
     {
         const string pattern = @"\s[a-zA-Z]{0,12}ing\s";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         foreach (var text in new[] { "\u2003sing\u00a0", " SING ", " singing ", " xing\n", "é sing Ω" })
         {
             var input = System.Text.Encoding.UTF8.GetBytes(text);

@@ -41,8 +41,11 @@ public sealed class Utf8RtlStrictEndCountTests
         foreach (var compiled in new[] { false, true })
         foreach (var finite in new[] { false, true })
         {
-            var regex = new Utf8Regex(pattern, options | (compiled ? RegexOptions.Compiled : 0),
-                Regex.InfiniteMatchTimeout, finite ? Limits() : default);
+            var regex = new Utf8Regex(pattern, options: options | (compiled ? RegexOptions.Compiled : 0), policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = finite ? Limits() : default
+            });
             var expected = oracle.Match(text);
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
             Assert.Equal(expected.Success, retained.Success);
@@ -70,7 +73,7 @@ public sealed class Utf8RtlStrictEndCountTests
     [InlineData(0)] [InlineData(1)] [InlineData(64)] [InlineData(4096)]
     public void StrictEndCountsOnlyOnePossibleStartWithBoundedWork(int length)
     {
-        var program = new Utf8Regex(@"\z", RegexOptions.RightToLeft).Inspection.PreparedRegex.ScalarProgram!;
+        var program = new Utf8Regex(@"\z", options: RegexOptions.RightToLeft).Inspection.PreparedRegex.ScalarProgram!;
         var input = Encoding.UTF8.GetBytes(new string('a', length));
         foreach (var start in new[] { input.Length, 0 })
         {
@@ -88,7 +91,7 @@ public sealed class Utf8RtlStrictEndCountTests
     [Fact]
     public void ImpossibleFloorAvoidsScratchAndEveryCutoffKeepsTheCallerLoan()
     {
-        var regex = new Utf8Regex(@"\A\k<g>(?<g>.{64})\z", RegexOptions.RightToLeft);
+        var regex = new Utf8Regex(@"\A\k<g>(?<g>.{64})\z", options: RegexOptions.RightToLeft);
         var program = regex.Inspection.PreparedRegex.ScalarProgram!;
         var input = Encoding.UTF8.GetBytes(new string('a', 128));
         var wrongFloor = new Utf8SliceInvocation(new(1000, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
@@ -118,8 +121,11 @@ public sealed class Utf8RtlStrictEndCountTests
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         }
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(regex.Pattern,
-                RegexOptions.RightToLeft, Regex.InfiniteMatchTimeout, Limits(1)).Count(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(regex.Pattern, options:                 RegexOptions.RightToLeft, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Limits(1)
+            }).Count(input)).ResourceKind);
     }
 
     [Theory]
@@ -129,7 +135,7 @@ public sealed class Utf8RtlStrictEndCountTests
     [InlineData(true, true)]
     public void TerminalExhaustionKeepsOriginalAuthority(bool wrongFloor, bool expire)
     {
-        var program = new Utf8Regex(@"\z", RegexOptions.RightToLeft).Inspection.PreparedRegex.ScalarProgram!;
+        var program = new Utf8Regex(@"\z", options: RegexOptions.RightToLeft).Inspection.PreparedRegex.ScalarProgram!;
         var input = "abcdef"u8.ToArray();
         var start = wrongFloor ? 0 : input.Length;
         var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 1, 7, 1), Regex.InfiniteMatchTimeout, default);

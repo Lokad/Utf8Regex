@@ -47,10 +47,19 @@ public sealed class Utf8LiteralEqualityTests
         foreach (var mode in new[] { System.Text.RegularExpressions.RegexOptions.None, System.Text.RegularExpressions.RegexOptions.Compiled })
         foreach (var finite in new[] { false, true })
         {
-            var regex = new Utf8Regex("abcdefgh|xyzzz|ztzzz", mode,
-                System.Text.RegularExpressions.Regex.InfiniteMatchTimeout,
-                finite ? new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1024,
-                    MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } : Utf8ResourcePolicy.Unlimited);
+            var regex = new Utf8Regex("abcdefgh|xyzzz|ztzzz", options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout,
+                ResourcePolicy = finite ? new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 1024,
+                    MaxWorkingBytes = 1048576,
+                    MaxResultBytes = 1048576
+                }
+
+                : Utf8ResourcePolicy.Unlimited
+            });
             Assert.False(regex.IsMatch(input));
             Assert.Equal(0, regex.Count(input));
             Assert.False(regex.Match(input).Success);

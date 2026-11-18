@@ -45,7 +45,11 @@ public sealed class Utf8SupplementaryCaseTests
             foreach (var pattern in new[] { capital, "[" + capital + "]", "[" + capital + "-" + capital + "]",
                 "[" + small + "]", "[\\p{L}-[^" + capital + "]]" })
             {
-                var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, policy);
+                var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = policy
+                });
                 var bytes = Encoding.UTF8.GetBytes("padding!" + small + "!padding");
                 var input = bytes.AsSpan(7, 6);
                 var match = regex.Match(input, cancellationToken: source.Token);
@@ -55,10 +59,17 @@ public sealed class Utf8SupplementaryCaseTests
                 Assert.Equal(small, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray(), cancellationToken: source.Token)).GetValueMemory().Span));
                 Assert.Equal("!x!", Encoding.UTF8.GetString(regex.Replace(input, "x", source.Token)));
             }
-            var reference = new Utf8Regex(reverse ? @"^\1(.)$" : @"^(.)\1$",
-                options, Regex.InfiniteMatchTimeout, policy);
+            var reference = new Utf8Regex(reverse ? @"^\1(.)$" : @"^(.)\1$", options:                 options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
                     Assert.Equal(8, (reference.Match(Encoding.UTF8.GetBytes(capital + small), cancellationToken: source.Token).EndOffsetInBytes - reference.Match(Encoding.UTF8.GetBytes(capital + small), cancellationToken: source.Token).StartOffsetInBytes));
-                    var excluded = new Utf8Regex("^[^" + capital + "]$", options, Regex.InfiniteMatchTimeout, policy);
+                    var excluded = new Utf8Regex("^[^" + capital + "]$", options: options, policy: new Utf8RegexPolicy
+                    {
+                        MatchTimeout = Regex.InfiniteMatchTimeout,
+                        ResourcePolicy = policy
+                    });
             Assert.False(excluded.IsMatch(Encoding.UTF8.GetBytes(small), source.Token));
             Assert.True(excluded.IsMatch("😀"u8, source.Token));
         }

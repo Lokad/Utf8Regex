@@ -28,7 +28,7 @@ public sealed class Utf8SliceExplicitCaptureTests
             RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant | RegexOptions.Compiled,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
         }
     }
@@ -60,7 +60,7 @@ public sealed class Utf8SliceExplicitCaptureTests
             RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant | RegexOptions.Compiled,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(expected, regex.IsMatch(input));
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
@@ -72,7 +72,7 @@ public sealed class Utf8SliceExplicitCaptureTests
     [Fact]
     public void OwnedGroupApisSkipUnnamedGroups()
     {
-        var regex = new Utf8Regex("(a)+(?<x>b)+", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a)+(?<x>b)+", options: RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var oracle = new Regex("(a)+(?<x>b)+", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
@@ -88,7 +88,7 @@ public sealed class Utf8SliceExplicitCaptureTests
     [Fact]
     public void OwnedCategoryGroupApisSkipUnnamedGroups()
     {
-        var regex = new Utf8Regex("(\\p{L}+)(?<x>y)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(\\p{L}+)(?<x>y)", options: RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var oracle = new Regex("(\\p{L}+)(?<x>y)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
@@ -108,6 +108,6 @@ public sealed class Utf8SliceExplicitCaptureTests
     public void UnboundDigitsFailConstruction(string pattern)
     {
         Utf8PatternFailureAssert.Throws(
-            () => new Utf8Regex(pattern, RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant));
+            () => new Utf8Regex(pattern, options: RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant));
     }
 }

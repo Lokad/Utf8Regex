@@ -9,7 +9,10 @@ public sealed class Utf8RegexTimeoutTests
     [Fact]
     public void NativeSimpleExecutionRespectsMatchTimeout()
     {
-        var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Regex(@"(a+)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = new byte[50_000];
         Array.Fill(input, (byte)'a');
         input[^1] = (byte)'!';
@@ -23,7 +26,10 @@ public sealed class Utf8RegexTimeoutTests
     {
         // Category arms run the same per-visit budget steps as every other
         // arm: a catastrophic category shape times out with the same identity.
-        var regex = new Utf8Regex(@"(\p{L}+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Regex(@"(\p{L}+)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = new byte[50_000];
         Array.Fill(input, (byte)'a');
         input[^1] = (byte)'!';
@@ -37,7 +43,10 @@ public sealed class Utf8RegexTimeoutTests
     {
         // Control-literal arms run the same per-visit budget steps as every other
         // arm: a catastrophic control shape times out with the same identity.
-        var regex = new Utf8Regex(@"(\t+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Regex(@"(\t+)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = new byte[50_000];
         Array.Fill(input, (byte)9);
         input[^1] = (byte)33;
@@ -49,7 +58,10 @@ public sealed class Utf8RegexTimeoutTests
     [Fact]
     public void NativeMatchEnumerationRespectsMatchTimeout()
     {
-        var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Regex(@"(a+)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = new byte[50_000];
         Array.Fill(input, (byte)'a');
         input[^1] = (byte)'!';
@@ -64,7 +76,10 @@ public sealed class Utf8RegexTimeoutTests
     [Fact]
     public void NativeReplaceRespectsMatchTimeout()
     {
-        var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Regex(@"(a+)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = new byte[50_000];
         Array.Fill(input, (byte)'a');
         input[^1] = (byte)'!';
@@ -75,7 +90,10 @@ public sealed class Utf8RegexTimeoutTests
     [Fact]
     public void NativeSplitEnumerationMapsDeadlineExpirationAtTheAdapter()
     {
-        var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Regex(@"(a+)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = CreateCatastrophicInput();
 
         Assert.Throws<RegexMatchTimeoutException>(() =>
@@ -88,7 +106,10 @@ public sealed class Utf8RegexTimeoutTests
     [Fact]
     public void NativeCountAndMatchMapDeadlineExpirationAtTheFacade()
     {
-        var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Regex(@"(a+)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
 
         Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(CreateCatastrophicInput()));
         Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(CreateCatastrophicInput()));
@@ -108,7 +129,10 @@ public sealed class Utf8RegexTimeoutTests
             if (expire && ++clockReads > 8) ticks++;
             return ticks;
         });
-        var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Regex(@"(a+)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var oracle = new Regex(@"(a+)+$", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
 
         Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(CreateCatastrophicInput()));
@@ -152,7 +176,10 @@ public sealed class Utf8RegexTimeoutTests
     [Fact]
     public void FromOffsetOperationsRespectMatchTimeout()
     {
-        var regex = new Utf8Regex(@"(a+)+$", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Regex(@"(a+)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = CreateCatastrophicInput();
         Assert.Throws<RegexMatchTimeoutException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input, 0)));
     }
@@ -162,7 +189,10 @@ public sealed class Utf8RegexTimeoutTests
         // This checks finite-policy route compatibility. Cold JIT and scheduler
         // time can exceed1ms, and projection now checks that original deadline.
         // Explicit expiration is covered by the timeout and projection witnesses.
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+        var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1)
+        });
         var input = Encoding.UTF8.GetBytes("xxabcxx");
 
         Assert.True(regex.IsMatch(input));
@@ -199,7 +229,10 @@ public sealed class Utf8RegexTimeoutTests
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
         Assert.Throws<RegexMatchTimeoutException>(() => oracle.IsMatch(text));
-        var regex = new Utf8Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
+        var regex = new Utf8Regex("(a|ab)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var exception = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
         Assert.Equal(text, exception.Input);
@@ -227,7 +260,10 @@ public sealed class Utf8RegexTimeoutTests
         var oracle = new Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
         var expectedMiss = oracle.IsMatch(text);
         Assert.False(expectedMiss);
-        var regex = new Utf8Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
+        var regex = new Utf8Regex("(a|ab)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(expectedMiss, regex.IsMatch(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -245,7 +281,10 @@ public sealed class Utf8RegexTimeoutTests
         var timeout = TimeSpan.FromMilliseconds(500);
         var text = new string('a', 20000) + (astralTail ? "\U0001F600!" : "!");
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
+        var regex = new Utf8Regex("(a|ab)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var detailed = Assert.Throws<RegexMatchTimeoutException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
         Assert.Empty(detailed.Input);
@@ -278,7 +317,10 @@ public sealed class Utf8RegexTimeoutTests
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex("(a+)+$", options, timeout);
         Assert.Throws<RegexMatchTimeoutException>(() => oracle.IsMatch(text));
-        var regex = new Utf8Regex("(a+)+$", options, timeout);
+        var regex = new Utf8Regex("(a+)+$", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         var isMatchException = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
         Assert.Equal(text, isMatchException.Input);
         Assert.Equal("(a+)+$", isMatchException.Pattern);

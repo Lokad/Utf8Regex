@@ -13,7 +13,7 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
 {
     private static Utf8PreparedRegex Plan(string pattern) => (Utf8PreparedRegex)typeof(Utf8Regex)
         .GetProperty("PreparedRegex", BindingFlags.Instance | BindingFlags.NonPublic)!
-        .GetValue(new Utf8Regex(pattern, RegexOptions.CultureInvariant))!;
+        .GetValue(new Utf8Regex(pattern, options: RegexOptions.CultureInvariant))!;
     private static object? Field(object instance, string name) => instance.GetType()
         .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(instance);
     private static Utf8LiteralCompiledEngineRuntime Create(Utf8PreparedRegex plan, bool reverse) =>
@@ -147,7 +147,7 @@ public sealed class Utf8LiteralRuntimeFactoryAdmissionTests
     {
         foreach (var pattern in new[] { "foo|bar", "zoo|apple|cat", "中文词|日本人|韩国人", "😀|😃", "foo(?=bar)", "中(?=文)" })
         {
-            var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+            var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
             var input = Encoding.UTF8.GetBytes("😀|foobar|zoo|apple|cat|中文词|日本人|韩国人|😃|中文");
             var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(input)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
             Assert.Equal(ranges.Count, regex.Count(input)); Assert.Equal(ranges.Count > 0, regex.IsMatch(input));

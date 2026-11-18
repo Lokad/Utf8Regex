@@ -171,7 +171,7 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
     [InlineData(RegexOptions.CultureInvariant)] [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]
     public void FoldedSupplementaryLiteralFamilyKeepsScalarRangesWithoutFallback(RegexOptions options)
     {
-        var regex = new Utf8Regex("(?i:abcdefgh😀|xyzuvw😀|qwerty😀)", options);
+        var regex = new Utf8Regex("(?i:abcdefgh😀|xyzuvw😀|qwerty😀)", options: options);
         var subject = "xxABCDEFGH😀|xyzuvw😀|QWERTY😀yy"u8;
         Assert.True(regex.IsMatch(subject)); Assert.Equal(3, regex.Count(subject));
         var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));

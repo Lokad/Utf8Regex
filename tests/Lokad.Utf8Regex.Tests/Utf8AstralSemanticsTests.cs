@@ -91,7 +91,7 @@ public sealed class Utf8AstralSemanticsTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var expected = Ranges(coordinates);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var reverse = (options & RegexOptions.RightToLeft) != 0;
         using var source = new CancellationTokenSource();
         foreach (var token in new[] { CancellationToken.None, source.Token })

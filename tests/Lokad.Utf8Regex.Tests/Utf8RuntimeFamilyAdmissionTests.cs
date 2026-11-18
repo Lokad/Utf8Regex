@@ -185,8 +185,7 @@ public sealed class Utf8RuntimeFamilyAdmissionTests
     [InlineData(7, false)] [InlineData(7, true)] [InlineData(8, false)] [InlineData(8, true)]
     public void PublicFamiliesKeepWholeScalarByteRangesAndOwnedExecution(int family, bool compiled)
     {
-        var values = Family(family); var regex = new Utf8Regex(string.Join("|", values.Select(v => Regex.Escape(Encoding.UTF8.GetString(v)))),
-            RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var values = Family(family); var regex = new Utf8Regex(string.Join("|", values.Select(v => Regex.Escape(Encoding.UTF8.GetString(v)))), options:             RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = values.SelectMany(v => "😀|"u8.ToArray().Concat(v)).Concat("é!"u8.ToArray()).ToArray();
         Assert.Equal(values.Length, regex.Count(input)); Assert.True(regex.IsMatch(input));
         var ranges = new List<(int, int)>(); var last = 0;

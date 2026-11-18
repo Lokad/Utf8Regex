@@ -288,7 +288,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
         const string pattern = "Tom|Sawyer|Huckleberry|Finn";
         var reference = new Regex(pattern, options);
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             foreach (var text in new[] { "", "To", "Huckleberr", "ToxSawyeXHuckleberrXFixx/TomSawyerHuckleberryFinn/Huckleberr", "é😀FinnToméSawyer汉Huckleberry" })
             {
                 var input = Encoding.UTF8.GetBytes(text);
@@ -313,7 +313,7 @@ public sealed class Utf8ExactLiteralSetAdmissionTests
     [InlineData(RegexOptions.CultureInvariant | RegexOptions.RightToLeft)] [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft)]
     public void PublicSupplementaryPrefixFamilyKeepsCompleteScalarRanges(RegexOptions options)
     {
-        var regex = new Utf8Regex("(?:😀tail|😁tail|😀toe)", options); var subject = "xx😀tail|😁tail|😀toe"u8;
+        var regex = new Utf8Regex("(?:😀tail|😁tail|😀toe)", options: options); var subject = "xx😀tail|😁tail|😀toe"u8;
         Assert.Equal(3, regex.Count(subject)); var ranges = new List<(int, int)>();
         foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         var expected = new[] { (2, 8), (11, 8), (20, 7) }; if ((options & RegexOptions.RightToLeft) != 0) Array.Reverse(expected);

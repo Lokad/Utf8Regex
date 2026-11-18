@@ -16,7 +16,7 @@ public sealed class Utf8RegexPolicy
     /// <summary>Gets the independent eager construction timeout, or null for infinite.</summary>
     public TimeSpan? ConstructionTimeout { get; init; }
 
-    /// <summary>Gets caller-owned admission for compilation/program retention and default working storage, or null for numeric controls without shared funding.</summary>
+    /// <summary>Gets caller-owned admission for compilation/program retention and the default account on operations exposing shared working admission, or null for numeric controls without shared funding.</summary>
     /// <remarks>Disposing the compiled expression closes new uses and refunds after active calls/cursors finish. Explicitly funded programs prepare retained operation programs before publication. Result retention and separate per-operation working accounts keep their documented scopes; refusal never retries without admission.</remarks>
     public IUtf8MemoryAllowance? ProgramMemoryAllowance { get; init; }
 

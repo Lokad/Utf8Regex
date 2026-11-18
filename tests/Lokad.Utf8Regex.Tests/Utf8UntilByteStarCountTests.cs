@@ -16,7 +16,11 @@ public sealed class Utf8UntilByteStarCountTests
     public void PublicCountUsesTheProvedCounterWithOneByteStorageBudgets(RegexOptions options)
     {
         const string text = "alpha\n\nété😀\n\0tail";
-        var regex = new Utf8Regex(@"[^\n]*", options, Timeout.InfiniteTimeSpan, Policy);
+        var regex = new Utf8Regex(@"[^\n]*", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy
+        });
         using var live = new CancellationTokenSource();
         var diagnostics = Utf8SearchDiagnosticsSession.Start();
         try
@@ -42,7 +46,11 @@ public sealed class Utf8UntilByteStarCountTests
                 byte[] backing = [0xff, .. bytes, 0xff];
                 foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
                 {
-                    var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, Policy);
+                    var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+                    {
+                        MatchTimeout = Timeout.InfiniteTimeSpan,
+                        ResourcePolicy = Policy
+                    });
                     Assert.Equal(Regex.Count(text, pattern), regex.Count(backing.AsSpan(1, bytes.Length)));
                 }
             }
@@ -53,7 +61,7 @@ public sealed class Utf8UntilByteStarCountTests
     public void SeededMixedScalarCountsMatchIndependentRunOracle()
     {
         var random = new Random(71821);
-        var regex = new Utf8Regex(@"[^\n]*", RegexOptions.Compiled);
+        var regex = new Utf8Regex(@"[^\n]*", options: RegexOptions.Compiled);
         string[] scalars = ["a", "é", "😀", "\n", "\0", "夏", "\r"];
         for (var sample = 0; sample < 80; sample++)
         {
@@ -75,7 +83,7 @@ public sealed class Utf8UntilByteStarCountTests
     public void ExcludedModesRetainTheirResults(RegexOptions options)
     {
         const string text = "a😀\n\nété\nx";
-        var regex = new Utf8Regex(@"[^\n]*", options);
+        var regex = new Utf8Regex(@"[^\n]*", options: options);
         Assert.Equal(Regex.Count(text, @"[^\n]*", options), regex.Count(Encoding.UTF8.GetBytes(text)));
     }
 
@@ -99,8 +107,14 @@ public sealed class Utf8UntilByteStarCountTests
         var input = Encoding.UTF8.GetBytes(text); var denied = false; var admitted = false;
         for (ulong work = 1; work < 100; work++)
         {
-            var regex = new Utf8Regex(@"[^\n]*", RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Policy with { MaxWorkSteps = work });
+            var regex = new Utf8Regex(@"[^\n]*", options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy with
+                {
+                    MaxWorkSteps = work
+                }
+            });
             try { Assert.Equal(Regex.Count(text, @"[^\n]*"), regex.Count(input)); admitted = true; break; }
             catch (Utf8ResourceLimitExceededException error)
             { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); denied = true; }
@@ -127,7 +141,11 @@ public sealed class Utf8UntilByteStarCountTests
         long ticks = 0; var entered = false;
         using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex(@"[^\n]*", RegexOptions.None, TimeSpan.FromMilliseconds(50), Policy);
+        var regex = new Utf8Regex(@"[^\n]*", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Policy
+        });
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
         {
             if (steps < 1) return;
@@ -152,7 +170,11 @@ public sealed class Utf8UntilByteStarCountTests
         using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == trigger) { if (expire) ticks = 100; else token.Cancel(); } return ticks; });
-        var regex = new Utf8Regex(@"[^\n]*", RegexOptions.Compiled, TimeSpan.FromMilliseconds(50), Policy);
+        var regex = new Utf8Regex(@"[^\n]*", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Policy
+        });
         Assert.Equal(4, regex.Count("a\nb"u8, token.Token));
         trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Count("a\nb"u8, token.Token)).MatchTimeout);

@@ -10,14 +10,17 @@ public sealed class Utf8NoMatchReplacementTests
 {
     private static ulong Controls => 2 * Utf8SliceByteOutputScope.ControlBytes;
     private static Utf8Regex Create(RegexOptions options, ulong result, string pattern = "(cat)") =>
-        new(pattern, options | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy
+        new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = result
-            });
+            }
+        });
 
     [Theory]
     [InlineData(RegexOptions.None)]

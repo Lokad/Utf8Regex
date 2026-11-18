@@ -109,14 +109,14 @@ public sealed class Utf8SearchDispositionQualificationTests
             RegexOptions.RightToLeft | RegexOptions.Compiled })
         foreach (var pattern in new[] { "é|😀|中", "(?:é|😀|中)", "[é😀中]" })
         {
-            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant);
             var input = "aé😀中z"u8.ToArray(); Assert.Equal(3, regex.Count(input));
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(options.HasFlag(RegexOptions.RightToLeft) ? (7, 3) : (1, 2), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
             var enumerator = regex.EnumerateMatches(input); var count = 0;
                 while (enumerator.MoveNext()) { count++; Assert.True((enumerator.Current.EndOffsetInBytes - enumerator.Current.StartOffsetInBytes) > 0); }
                 Assert.Equal(3, count);
-            Assert.Equal(2, new Utf8Regex("", options).Count("😀"u8));
+            Assert.Equal(2, new Utf8Regex("", options: options).Count("😀"u8));
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancelled.Token));
         }

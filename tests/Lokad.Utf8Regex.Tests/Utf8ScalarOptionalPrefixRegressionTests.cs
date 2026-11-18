@@ -16,7 +16,7 @@ public sealed class Utf8ScalarOptionalPrefixRegressionTests
         {
             foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
             {
-                var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
+                var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant);
                 foreach (var subject in new[] { "b", "ab", "abb" })
                 {
                     var input = Encoding.UTF8.GetBytes(subject); Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
@@ -29,7 +29,7 @@ public sealed class Utf8ScalarOptionalPrefixRegressionTests
         {
             foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
             {
-                var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
+                var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant);
                 foreach (var subject in new[] { "a", "ab" })
                 {
                     var input = Encoding.UTF8.GetBytes(subject); Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));

@@ -38,7 +38,7 @@ public sealed class Utf8ScalarCountTests
         if (reverse && pattern == @"(.)\1") pattern = @"\1(.)";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0)
             | (reverse ? RegexOptions.RightToLeft : 0);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(subject);
         using var source = new CancellationTokenSource();
         Assert.Equal(expected, live ? regex.Count(input, source.Token) : regex.Count(input));
@@ -53,7 +53,7 @@ public sealed class Utf8ScalarCountTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0)
             | (reverse ? RegexOptions.RightToLeft : 0);
-        var regex = new Utf8Regex("", options);
+        var regex = new Utf8Regex("", options: options);
         var input = Encoding.UTF8.GetBytes("x😀𐐀y");
         int[] starts = [0, 1, 5, 9, 10];
         using var source = new CancellationTokenSource();
@@ -73,7 +73,7 @@ public sealed class Utf8ScalarCountTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void NativeEmptyCounterAndCursorHaveScalarResults(bool compiled, bool finite)
     {
-        var regex = new Utf8Regex("", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex("", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var runtime = Assert.IsAssignableFrom<Utf8CompiledEngineRuntime>(typeof(Utf8Regex)
             .GetProperty("_compiledEngineRuntime", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(regex));
         Assert.IsType<Utf8LiteralCompiledEngineRuntime>(runtime);
@@ -98,7 +98,7 @@ public sealed class Utf8ScalarCountTests
     [InlineData(false)] [InlineData(true)]
     public void OwnedCountDoesNotAllocateAWholeSubjectCoordinateMap(bool compiled)
     {
-        var regex = new Utf8Regex(@"(?s:.)", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex(@"(?s:.)", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀𐐀a", 20000)));
         Assert.Equal(60000, regex.Count(input));
         var before = GC.GetAllocatedBytesForCurrentThread();
@@ -118,7 +118,7 @@ public sealed class Utf8ScalarCountTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0)
             | (reverse ? RegexOptions.RightToLeft : 0);
-        AssertEmptyScalarOperations(new Utf8Regex("", options), reverse);
+        AssertEmptyScalarOperations(new Utf8Regex("", options: options), reverse);
     }
 
     internal static void AssertEmptyScalarOperations(Utf8Regex regex, bool reverse)
@@ -171,7 +171,7 @@ public sealed class Utf8ScalarCountTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void CountKeepsItsLiveTokenThroughScalarDiscovery(bool compiled, bool foldedLiteral)
     {
-        var regex = new Utf8Regex(foldedLiteral ? "Ж" : @"(?s:(.)\1*)", RegexOptions.CultureInvariant |
+        var regex = new Utf8Regex(foldedLiteral ? "Ж" : @"(?s:(.)\1*)", options: RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : 0) | (foldedLiteral ? RegexOptions.IgnoreCase : 0));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(foldedLiteral ? "ж" : "😀", 32768)));
         using var source = new CancellationTokenSource();

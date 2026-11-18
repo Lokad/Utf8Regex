@@ -15,7 +15,7 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
     [InlineData(true, true)]
     public void FallbackSearchPreparationDoesNotGrowWithCandidateCount(bool compiled, bool miss)
     {
-        var regex = new Utf8Regex("a?b[0-9]{2}", Options(compiled));
+        var regex = new Utf8Regex("a?b[0-9]{2}", options: Options(compiled));
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(
             miss ? " xx bxx abxx " : " xx b12 ab34 ", 1000)));
@@ -45,7 +45,7 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         foreach (var compiled in new[] { false, true })
         {
-            var regex = new Utf8Regex(pattern, Options(compiled));
+            var regex = new Utf8Regex(pattern, options: Options(compiled));
             foreach (var text in new[] { "", "b12", "ab12", "abb12", "b12ab34b56", " xx bxx abxx b12 ab34 ", "b12\nab34\nB56\n" })
             {
                 var bytes = Encoding.UTF8.GetBytes(text);
@@ -73,15 +73,25 @@ public sealed class Utf8SimpleCountSearchLifetimeTests
     {
         var input = Encoding.UTF8.GetBytes("😀ab12é b34");
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
-        var ordinary = new Utf8Regex("a?b[0-9]{2}", Options(compiled));
-        var finite = new Utf8Regex("a?b[0-9]{2}", Options(compiled), Regex.InfiniteMatchTimeout, policy);
+        var ordinary = new Utf8Regex("a?b[0-9]{2}", options: Options(compiled));
+        var finite = new Utf8Regex("a?b[0-9]{2}", options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         using var tokens = new CancellationTokenSource();
         Assert.Equal(2, ordinary.Count(input));
         Assert.Equal(2, finite.Count(input, tokens.Token));
         var match = ordinary.Match(input);
         Assert.Equal((4, 4), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
-        var denied = new Utf8Regex("a?b[0-9]{2}", Options(compiled), Regex.InfiniteMatchTimeout,
-            policy with { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex("a?b[0-9]{2}", options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy with
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
         tokens.Cancel();
         Assert.Throws<OperationCanceledException>(() => ordinary.Count(input, tokens.Token));

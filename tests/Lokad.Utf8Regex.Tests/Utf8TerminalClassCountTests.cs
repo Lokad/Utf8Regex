@@ -118,7 +118,11 @@ public sealed class Utf8TerminalClassCountTests
         bool compiled, bool finite)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, finite ? Funded : default);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = finite ? Funded : default
+        });
         var input = Encoding.UTF8.GetBytes(text);
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(expected, regex.Count(input));
@@ -141,8 +145,11 @@ public sealed class Utf8TerminalClassCountTests
     [InlineData(13, 0)]
     public void ByteFloorsCanBeginInsideARun(int floor, int expected)
     {
-        var regex = new Utf8Regex(@"\p{L}{2,3}", RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout, Funded);
+        var regex = new Utf8Regex(@"\p{L}{2,3}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         var input = "ééé x éé"u8;
         Assert.Equal(expected, regex.Count(input[floor..]));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
@@ -160,7 +167,10 @@ public sealed class Utf8TerminalClassCountTests
         var pattern = new string('(', groups) + "[a-z]{2,3}" + new string(')', groups);
         var input = "éabcdefg 😀 ab"u8.ToArray();
         {
-            var regex = new Utf8Regex(pattern, resourcePolicy: Funded);
+            var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = Funded
+            });
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(groups).Span));
             Assert.Equal(3, regex.Count(input));
@@ -171,9 +181,17 @@ public sealed class Utf8TerminalClassCountTests
     [Fact]
     public void SmallStorageAndDepthCapsStillAdmitNoOutputCount()
     {
-        var regex = new Utf8Regex(@"\p{L}+", RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy
-            { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(@"\p{L}+", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(3, regex.Count("é 中 x"u8));
     }
 
@@ -188,8 +206,11 @@ public sealed class Utf8TerminalClassCountTests
         foreach (var options in new[] { RegexOptions.CultureInvariant,
             RegexOptions.CultureInvariant | RegexOptions.RightToLeft,
             RegexOptions.CultureInvariant | RegexOptions.NonBacktracking })
-            Assert.Equal(expected, new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Funded)
-                .Count(Encoding.UTF8.GetBytes(text)));
+            Assert.Equal(expected, new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded
+            })                .Count(Encoding.UTF8.GetBytes(text)));
     }
 
     [Fact]
@@ -217,14 +238,23 @@ public sealed class Utf8TerminalClassCountTests
     public void OriginalWorkCancellationAndDeadlineStopTheWholeCount()
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éé ", 2048)));
-        var limited = new Utf8Regex(@"\p{L}{2,4}", RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout, Funded with { MaxWorkSteps = 32 });
+        var limited = new Utf8Regex(@"\p{L}{2,4}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 32
+            }
+        });
         var work = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, work.ResourceKind);
         Assert.Equal(33UL, work.Requested);
 
-        var regex = new Utf8Regex(@"\p{L}{2,4}", RegexOptions.CultureInvariant,
-            TimeSpan.FromSeconds(20), Funded);
+        var regex = new Utf8Regex(@"\p{L}{2,4}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(20),
+            ResourcePolicy = Funded
+        });
         using var cancellation = new CancellationTokenSource();
         var session = Utf8SearchDiagnosticsSession.Start(_ => cancellation.Cancel());
         try

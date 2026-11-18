@@ -25,8 +25,8 @@ public sealed class Utf8RegexCultureDiffTests
         // external/runtime/src/libraries/System.Text.RegularExpressions/tests/FunctionalTests/RegexCultureTests.cs
         using var _ = new ThreadCultureScope(cultureName);
 
-        var utf8Regex = new Utf8Regex(pattern, options);
-        var utf8Compiled = new Utf8Regex(pattern, options | RegexOptions.Compiled);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
+        var utf8Compiled = new Utf8Regex(pattern, options: options | RegexOptions.Compiled);
         var dotnet = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var dotnetCompiled = new Regex(pattern, options | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
         var bytes = Encoding.UTF8.GetBytes(input);

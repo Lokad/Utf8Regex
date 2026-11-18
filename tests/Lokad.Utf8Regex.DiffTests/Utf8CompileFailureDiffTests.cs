@@ -25,8 +25,8 @@ public sealed class Utf8CompileFailureDiffTests
         var options = RegexOptions.CultureInvariant;
         var expected = Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Regex(pattern, options));
         var expectedCompiled = Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new Regex(pattern, options | RegexOptions.Compiled));
-        var actual = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options));
-        var actualCompiled = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options | RegexOptions.Compiled));
+        var actual = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options: options));
+        var actualCompiled = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options: options | RegexOptions.Compiled));
 
         Assert.Equal("pattern", actual.ParamName);
         Assert.Equal("pattern", actualCompiled.ParamName);
@@ -44,8 +44,11 @@ public sealed class Utf8CompileFailureDiffTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options));
-            var actualTimeout = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout));
+            var actual = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options: options));
+            var actualTimeout = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout
+            }));
             var actualDefault = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern));
 
             Assert.Equal(error, expected.Error);
@@ -72,8 +75,11 @@ public sealed class Utf8CompileFailureDiffTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
             var oracle = new Regex(pattern, options);
-            var product = new Utf8Regex(pattern, options);
-            var productTimeout = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var product = new Utf8Regex(pattern, options: options);
+            var productTimeout = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout
+            });
 
             Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
             Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());

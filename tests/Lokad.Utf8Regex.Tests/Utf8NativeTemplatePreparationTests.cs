@@ -32,7 +32,7 @@ public sealed class Utf8NativeTemplatePreparationTests
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(expectedBytes, regex.Replace(input, "[$1]"));
             Assert.Equal(expectedBytes, regex.Replace(input, "[$1]"u8));
             Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "[$1]")));
@@ -47,7 +47,7 @@ public sealed class Utf8NativeTemplatePreparationTests
     [MemberData(nameof(Cases))]
     public void NativeTemplatesKeepScalarCapturesOptionsAndAllOutputForms(string pattern, string input, string template, RegexOptions options)
     {
-        var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant);
         var subject = Encoding.UTF8.GetBytes(input); var native = Encoding.UTF8.GetBytes(template);
         var expected = regex.Replace(subject, template);
         Assert.Equal(expected, regex.Replace(subject, native));

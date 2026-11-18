@@ -6,9 +6,16 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8PublicConstructionTests
 {
     private static Utf8Regex Compile(Utf8ConstructionPolicy policy, CancellationToken token = default)
-        => Utf8Regex.Compile("(?<x>😀){2,4}", RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxWorkSteps = 100000 },
-            policy, Regex.InfiniteMatchTimeout, token);
+        => Utf8Regex.Compile("(?<x>😀){2,4}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000
+            },
+            ConstructionPolicy = policy,
+            ConstructionTimeout = Regex.InfiniteMatchTimeout
+        }, cancellationToken: token);
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
@@ -55,10 +62,19 @@ public sealed class Utf8PublicConstructionTests
         using var constructionCancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = Utf8Regex.Compile("(?<x>😀){2,4}", options | RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 64, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 },
-            Utf8ConstructionPolicy.Default, TimeSpan.FromMilliseconds(20), constructionCancellation.Token);
+        var regex = Utf8Regex.Compile("(?<x>😀){2,4}", options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 64,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            },
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = TimeSpan.FromMilliseconds(20)
+        }, cancellationToken: constructionCancellation.Token);
         constructionCancellation.Cancel();
         ticks = 1000;
         Assert.False(Utf8ConstructionScope.IsActive);
@@ -82,9 +98,19 @@ public sealed class Utf8PublicConstructionTests
     public void PreCancellationPrecedesAllArgumentAndPatternFailures()
     {
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
-        var error = Assert.Throws<OperationCanceledException>(() => Utf8Regex.Compile("(",
-            (RegexOptions)(-1), TimeSpan.Zero, new() { MaxWorkSteps = 0 },
-            new() { MaxBytes = 0 }, TimeSpan.Zero, cancellation.Token));
+        var error = Assert.Throws<OperationCanceledException>(() => Utf8Regex.Compile("(", options:             (RegexOptions)(-1), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.Zero,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 0
+            },
+            ConstructionPolicy = new()
+            {
+                MaxBytes = 0
+            },
+            ConstructionTimeout = TimeSpan.Zero
+        }, cancellationToken: cancellation.Token));
         Assert.Equal(cancellation.Token, error.CancellationToken);
         Assert.False(Utf8ConstructionScope.IsActive);
     }
@@ -100,9 +126,13 @@ public sealed class Utf8PublicConstructionTests
             return 0;
         }))
         {
-            var error = Assert.Throws<OperationCanceledException>(() => Utf8Regex.Compile("(?<x>😀){2,4}",
-                RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited,
-                Utf8ConstructionPolicy.Default, TimeSpan.FromSeconds(30), cancellation.Token));
+            var error = Assert.Throws<OperationCanceledException>(() => Utf8Regex.Compile("(?<x>😀){2,4}", options:                 RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = Utf8ConstructionPolicy.Default,
+                ConstructionTimeout = TimeSpan.FromSeconds(30)
+            }, cancellationToken: cancellation.Token));
             Assert.Equal(cancellation.Token, error.CancellationToken);
         }
         Assert.Equal(8, reads);
@@ -113,11 +143,19 @@ public sealed class Utf8PublicConstructionTests
     [Fact]
     public void ExplicitLargeLimitsCannotRelaxFixedExpansionBackstop()
     {
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8Regex.Compile("a{1000000000}",
-            RegexOptions.NonBacktracking, Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited,
-            new() { MaxInstructionCapacity = ulong.MaxValue, MaxBytes = ulong.MaxValue,
-                MaxWorkSteps = ulong.MaxValue, MaxDepth = uint.MaxValue },
-            Regex.InfiniteMatchTimeout, CancellationToken.None));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8Regex.Compile("a{1000000000}", options:             RegexOptions.NonBacktracking, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = new()
+            {
+                MaxInstructionCapacity = ulong.MaxValue,
+                MaxBytes = ulong.MaxValue,
+                MaxWorkSteps = ulong.MaxValue,
+                MaxDepth = uint.MaxValue
+            },
+            ConstructionTimeout = Regex.InfiniteMatchTimeout
+        }, cancellationToken: CancellationToken.None));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionInstructionCapacity, error.ResourceKind);
         Assert.Equal(Utf8ConstructionScope.DefaultInstructionCapacity, error.Limit);
         Assert.False(Utf8ConstructionScope.IsActive);
@@ -126,13 +164,21 @@ public sealed class Utf8PublicConstructionTests
     [Fact]
     public void InvalidArgumentsAndSyntaxLeaveNoConstructionOwner()
     {
-        var error = Assert.Throws<ArgumentOutOfRangeException>(() => Utf8Regex.Compile("(", RegexOptions.None,
-            Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-            TimeSpan.Zero, CancellationToken.None));
-        Assert.Equal("constructionTimeout", error.ParamName);
-        Assert.Throws<ArgumentException>(() => Utf8Regex.Compile("(", RegexOptions.None,
-            Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-            Regex.InfiniteMatchTimeout, CancellationToken.None));
+        var error = Assert.Throws<ArgumentOutOfRangeException>(() => Utf8Regex.Compile("(", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = TimeSpan.Zero
+        }, cancellationToken: CancellationToken.None));
+        Assert.Equal("policy", error.ParamName);
+        Assert.Throws<ArgumentException>(() => Utf8Regex.Compile("(", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = Regex.InfiniteMatchTimeout
+        }, cancellationToken: CancellationToken.None));
         Assert.False(Utf8ConstructionScope.IsActive);
     }
 
@@ -141,9 +187,13 @@ public sealed class Utf8PublicConstructionTests
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
-        var error = Assert.Throws<RegexMatchTimeoutException>(() => Utf8Regex.Compile("😀+",
-            RegexOptions.None, Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited,
-            Utf8ConstructionPolicy.Default, TimeSpan.FromMilliseconds(1), CancellationToken.None));
+        var error = Assert.Throws<RegexMatchTimeoutException>(() => Utf8Regex.Compile("😀+", options:             RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = TimeSpan.FromMilliseconds(1)
+        }, cancellationToken: CancellationToken.None));
         Assert.Equal(TimeSpan.FromMilliseconds(1), error.MatchTimeout);
         Assert.Equal("😀+", error.Pattern);
         Assert.False(Utf8ConstructionScope.IsActive);
@@ -161,7 +211,7 @@ public sealed class Utf8PublicConstructionTests
             _ => new Utf8ConstructionPolicy { MaxBytes = 0 },
         };
         var error = Assert.Throws<ArgumentOutOfRangeException>(() => Compile(policy));
-        Assert.Equal("constructionPolicy", error.ParamName);
+        Assert.Equal("policy", error.ParamName);
         Assert.False(Utf8ConstructionScope.IsActive);
     }
 }

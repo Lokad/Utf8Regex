@@ -17,7 +17,7 @@ public sealed class Utf8ScalarPreparationAdmissionTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) |
             (nonBacktracking ? RegexOptions.NonBacktracking : 0);
-        var regex = new Utf8Regex("(?<x>.){2}", options);
+        var regex = new Utf8Regex("(?<x>.){2}", options: options);
         var publicProgram = (Utf8RegexProgram)typeof(Utf8Regex)
             .GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
         var scalar = publicProgram.PreparedRegex.ScalarProgram;
@@ -55,7 +55,7 @@ public sealed class Utf8ScalarPreparationAdmissionTests
         var program = Utf8RegexProgram.Compile("(?<x>a){0,2}?b", options, prepareRuntime: true);
         Assert.NotNull(program.PreparedRegex.ScalarProgram);
         Assert.Equal(compiled, program.PreparedRegex.ScalarProgram.UsesInterpretedLazyLoopSemantics);
-        var regex = new Utf8Regex("(?<x>a){0,2}?b", options);
+        var regex = new Utf8Regex("(?<x>a){0,2}?b", options: options);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("aab"u8.ToArray()));
         Assert.True(match.Success);
         Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromName("x")).Length);

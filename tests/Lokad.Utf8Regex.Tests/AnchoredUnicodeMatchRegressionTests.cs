@@ -22,7 +22,7 @@ public sealed class AnchoredUnicodeMatchRegressionTests
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var expected = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-            var actual = new Utf8Regex(pattern, options);
+            var actual = new Utf8Regex(pattern, options: options);
             var utf8 = Encoding.UTF8.GetBytes(input);
 
             var expectedMatch = expected.Match(input);

@@ -249,11 +249,25 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     public void WrappedLiteralConstructionAdmitsLinearWork(bool compiled)
     {
         var literal = "A" + new string('x', 3000);
-        var regex = Utf8Regex.Compile("(?:" + literal + ")",
-            RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 100, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
-            new() { MaxWorkSteps = 1000000, MaxDepth = 100, MaxBytes = 8 << 20, MaxInstructionCapacity = 1000000 },
-            Timeout.InfiniteTimeSpan, default);
+        var regex = Utf8Regex.Compile("(?:" + literal + ")", options:             RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 100,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            ConstructionPolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 100,
+                MaxBytes = 8 << 20,
+                MaxInstructionCapacity = 1000000
+            },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default);
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
         var input = Encoding.UTF8.GetBytes("😀" + literal + "中");
         Assert.Equal(1, regex.Count(input));
@@ -314,11 +328,25 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     public void LongExpandedLiteralsReachThePublicNativeRouteWithFinitePolicies(bool folded)
     {
         var suffix = new string('x', 512);
-        var regex = Utf8Regex.Compile((folded ? "[AaBb]" : "[AB]") + suffix,
-            RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None), Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 100, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
-            new() { MaxWorkSteps = 8000000, MaxDepth = 100, MaxBytes = 8 << 20, MaxInstructionCapacity = 1000000 },
-            Timeout.InfiniteTimeSpan, default);
+        var regex = Utf8Regex.Compile((folded ? "[AaBb]" : "[AB]") + suffix, options:             RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 100,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            ConstructionPolicy = new()
+            {
+                MaxWorkSteps = 8000000,
+                MaxDepth = 100,
+                MaxBytes = 8 << 20,
+                MaxInstructionCapacity = 1000000
+            },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default);
         Assert.Equal(folded ? NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals : NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         var input = Encoding.UTF8.GetBytes("😀A" + suffix + "中B" + suffix);
         Assert.Equal(2, regex.Count(input));
@@ -413,11 +441,25 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
     public void WrappedLiteralKeepsItsAdmittedPublicRoute(bool compiled, int length)
     {
         var suffix = new string('x', length);
-        var regex = Utf8Regex.Compile("(?:A" + suffix + ")",
-            RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 100, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 },
-            new() { MaxWorkSteps = 64000000, MaxDepth = 100, MaxBytes = 8 << 20, MaxInstructionCapacity = 1000000 },
-            Timeout.InfiniteTimeSpan, default);
+        var regex = Utf8Regex.Compile("(?:A" + suffix + ")", options:             RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 100,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            ConstructionPolicy = new()
+            {
+                MaxWorkSteps = 64000000,
+                MaxDepth = 100,
+                MaxBytes = 8 << 20,
+                MaxInstructionCapacity = 1000000
+            },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default);
         // The speculative lowerer admits at most 4096 token cells. Larger
         // patterns keep scalar execution rather than expanding this optimizer.
         Assert.Equal(length == 3000 ? NativeExecutionKind.ExactAsciiLiteral : NativeExecutionKind.FallbackRegex,
@@ -436,7 +478,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
             (Pattern: "[Aa][Bb]", Flags: RegexOptions.None, Subject: "😀AB中ab😀", Replaced: "😀X中X😀"),
             (Pattern: @"\.", Flags: RegexOptions.None, Subject: "😀.中.😀", Replaced: "😀X中X😀") })
         {
-            var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | row.Flags | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+            var regex = new Utf8Regex(row.Pattern, options: RegexOptions.CultureInvariant | row.Flags | (compiled ? RegexOptions.Compiled : RegexOptions.None));
             var input = Encoding.UTF8.GetBytes(row.Subject); Assert.True(regex.IsMatch(input)); Assert.Equal(2, regex.Count(input));
             var match = regex.Match(input); Assert.Equal(4, match.StartOffsetInBytes); Assert.Equal(row.Pattern == @"\." ? 1 : 2, (match.EndOffsetInBytes - match.StartOffsetInBytes));
             Assert.Equal(match.StartOffsetInBytes, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Value.StartOffsetInBytes);

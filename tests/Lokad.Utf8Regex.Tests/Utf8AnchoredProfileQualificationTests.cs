@@ -32,7 +32,7 @@ public sealed class Utf8AnchoredProfileQualificationTests
     private static void Oracle(string pattern, RegexOptions options, IEnumerable<string> subjects)
     {
         var oracle = new Regex(pattern, options);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         foreach (var text in subjects)
         {
             var expected = oracle.Match(text);
@@ -45,7 +45,7 @@ public sealed class Utf8AnchoredProfileQualificationTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var lane in rtl ? new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled } : new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options | lane); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            var regex = new Utf8Regex(pattern, options: options | lane); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
             Assert.Equal((0, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))); Assert.Equal((0, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
@@ -64,7 +64,7 @@ public sealed class Utf8AnchoredProfileQualificationTests
             var expected = new Regex(item.Item1, item.Item2).Match(item.Item3);
             foreach (var lane in new[] { RegexOptions.None, RegexOptions.Compiled })
             {
-                var actual = new Utf8Regex(item.Item1, item.Item2 | lane).Match(Encoding.ASCII.GetBytes(item.Item3));
+                var actual = new Utf8Regex(item.Item1, options: item.Item2 | lane).Match(Encoding.ASCII.GetBytes(item.Item3));
                 Assert.Equal(expected.Success, actual.Success);
                 if (actual.Success) Assert.Equal((expected.Index, expected.Length), (actual.StartOffsetInBytes, actual.EndOffsetInBytes - actual.StartOffsetInBytes));
             }
@@ -90,12 +90,12 @@ public sealed class Utf8AnchoredProfileQualificationTests
     [Fact]
     public void WholeColorAndSpreadsheetExecutorsRespectFinalLfRatherThanStrictEnd()
     {
-        var color = new Utf8Regex(Color, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var color = new Utf8Regex(Color, options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         foreach (var text in new[] { "abc\n", "#AbC\n", "#abcdef\n" }) Assert.Equal(text.Length - 1, color.Match(Encoding.ASCII.GetBytes(text)).EndOffsetInBytes);
         Assert.Equal(3, new Utf8Regex(Cell).Match("a12\n"u8).EndOffsetInBytes);
         Assert.Equal(7, new Utf8Regex(Range).Match("a12:b34\n"u8).EndOffsetInBytes);
         foreach (var text in new[] { "abc\n\n", "#abc\r\n", "a1\n\n", "a1:b2\r\n" })
-            Assert.False(new Utf8Regex(text.StartsWith("a1") ? Range : Color, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).IsMatch(Encoding.ASCII.GetBytes(text)));
+            Assert.False(new Utf8Regex(text.StartsWith("a1") ? Range : Color, options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).IsMatch(Encoding.ASCII.GetBytes(text)));
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public sealed class Utf8AnchoredProfileQualificationTests
         const string cell = @"(?i:\A(?<col>[a-z])(?<row>\p{Nd}+)\Z)";
         Oracle(cell, RegexOptions.CultureInvariant, Subjects("aA09:\n", 4));
         PublicRange(cell, RegexOptions.CultureInvariant, "K١٢\n", 7, true);
-        var match = Utf8MatchSequence.First(new Utf8Regex(cell, RegexOptions.CultureInvariant).CreateMatchCursor("K١٢\n"u8.ToArray()));
+        var match = Utf8MatchSequence.First(new Utf8Regex(cell, options: RegexOptions.CultureInvariant).CreateMatchCursor("K١٢\n"u8.ToArray()));
         Assert.True(match.TryGetGroup("col", out var col)); Assert.True(match.TryGetGroup("row", out var row));
         Assert.Equal((0, 3), (col.StartOffsetInBytes, (col.EndOffsetInBytes - col.StartOffsetInBytes))); Assert.Equal((3, 4), (row.StartOffsetInBytes, (row.EndOffsetInBytes - row.StartOffsetInBytes)));
     }
@@ -121,7 +121,7 @@ public sealed class Utf8AnchoredProfileQualificationTests
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
-var regex = new Utf8Regex(Cell, RegexOptions.IgnoreCase);
+var regex = new Utf8Regex(Cell, options: RegexOptions.IgnoreCase);
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
             Assert.False(regex.IsMatch("I1"u8)); Assert.True(regex.IsMatch("i1"u8)); Assert.True(regex.IsMatch("İ1"u8));
         }
@@ -136,7 +136,7 @@ var regex = new Utf8Regex(Cell, RegexOptions.IgnoreCase);
         Assert.False(new Utf8Regex(Quoted).IsMatch("\"\\\n\""u8));
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(Quoted, options); Assert.Equal(2, regex.Count("\"😀\"\"a\""u8));
+            var regex = new Utf8Regex(Quoted, options: options); Assert.Equal(2, regex.Count("\"😀\"\"a\""u8));
             var values = regex.EnumerateMatches("\"😀\"\"a\""u8); Assert.True(values.MoveNext());
             Assert.Equal((0, 6), (values.Current.StartOffsetInBytes, values.Current.EndOffsetInBytes)); Assert.True(values.MoveNext());
             Assert.Equal((6, 9), (values.Current.StartOffsetInBytes, values.Current.EndOffsetInBytes)); Assert.False(values.MoveNext());

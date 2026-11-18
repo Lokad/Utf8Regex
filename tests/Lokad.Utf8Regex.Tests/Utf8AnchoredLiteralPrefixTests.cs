@@ -99,16 +99,16 @@ public sealed class Utf8AnchoredLiteralPrefixTests
         {
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
-            var isMatchRegex = new Utf8Regex(pattern, options);
+            var isMatchRegex = new Utf8Regex(pattern, options: options);
             Assert.Equal(oracle.IsMatch(inputText), isMatchRegex.IsMatch(input));
             Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
-            var matchRegex = new Utf8Regex(pattern, options);
+            var matchRegex = new Utf8Regex(pattern, options: options);
             var expected = oracle.Match(inputText);
             var actual = matchRegex.Match(input);
             Assert.Equal(expected.Success, actual.Success);
 
-            var countRegex = new Utf8Regex(pattern, options);
+            var countRegex = new Utf8Regex(pattern, options: options);
             Assert.Equal(oracle.Matches(inputText).Count, countRegex.Count(input));
             Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -138,7 +138,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
         {
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             var expected = oracle.Match(inputText);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected.Success, actual.Success);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -161,7 +161,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
                 expectedCount++;
             }
 
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var actualCount = 0;
             var enumerator = regex.EnumerateMatches(input);
             while (enumerator.MoveNext())
@@ -192,17 +192,17 @@ public sealed class Utf8AnchoredLiteralPrefixTests
                 }
 
                 var expectedMatch = oracle.Match(inputText, offset);
-                var regex = new Utf8Regex(pattern, options);
+                var regex = new Utf8Regex(pattern, options: options);
                 var actualMatch = regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []);
                 Assert.Equal(expectedMatch.Success, actualMatch.Success);
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-                var regex2 = new Utf8Regex(pattern, options);
+                var regex2 = new Utf8Regex(pattern, options: options);
                 Assert.Equal(oracle.IsMatch(inputText, offset), regex2.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
                 Assert.True(regex2.Inspection.PreparedRegex.ScalarProgram is not null);
-                var regex3 = new Utf8Regex(pattern, options);
+                var regex3 = new Utf8Regex(pattern, options: options);
                 Assert.Equal(expectedMatch.Success, Utf8MatchSequence.First(regex3.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)))).Success);
                 Assert.True(regex3.Inspection.PreparedRegex.ScalarProgram is not null);
-                var regex4 = new Utf8Regex(pattern, options);
+                var regex4 = new Utf8Regex(pattern, options: options);
                 var actualEnum = 0;
                 var enumerator = regex4.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)));
                 while (enumerator.MoveNext())
@@ -230,7 +230,7 @@ public sealed class Utf8AnchoredLiteralPrefixTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var options = RegexOptions.CultureInvariant;
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
         Assert.Equal(oracle.Match(inputText).Success, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);

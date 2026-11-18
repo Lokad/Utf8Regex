@@ -11,8 +11,17 @@ public sealed class Utf8NativeCapturePreparationTests
     [InlineData(false)] [InlineData(true)]
     public void CapturedUnicodeFamilyKeepsScalarOperationsWithoutNativeProjectionTables(bool compiled)
     {
-        var regex = new Utf8Regex("((😀ab|中def))", Options(compiled), Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 512, MaxWorkingBytes = 2 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8Regex("((😀ab|中def))", options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 512,
+                MaxWorkingBytes = 2 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.NotNull(regex.Inspection.PreparedRegex.ExecutionTree);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram!.HasUnicodePatternAtoms);
@@ -41,7 +50,7 @@ public sealed class Utf8NativeCapturePreparationTests
     public void CapturedUnicodeFamilyDoesNotRetainUnusedBranchExpansions(bool compiled)
     {
         var pattern = string.Join("|", Enumerable.Range(0, 32).Select(i => $"(?<g{i}>😀token{i:D3}xxxxxxxx)"));
-        var regex = new Utf8Regex(pattern, Options(compiled));
+        var regex = new Utf8Regex(pattern, options: Options(compiled));
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram!.HasUnicodePatternAtoms);
         AssertNoMaps(regex);
@@ -58,7 +67,7 @@ public sealed class Utf8NativeCapturePreparationTests
     [InlineData(false)] [InlineData(true)]
     public void AbsentNativeTreeDoesNotStartProjectionPreparation(bool compiled)
     {
-        var regex = new Utf8Regex(@"(?<a>a+)\k<a>", Options(compiled));
+        var regex = new Utf8Regex(@"(?<a>a+)\k<a>", options: Options(compiled));
         Assert.Null(regex.Inspection.PreparedRegex.ExecutionTree);
         AssertNoMaps(regex);
         Assert.Equal("aa", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("aaaa"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromName("a")).Span));
@@ -68,12 +77,12 @@ public sealed class Utf8NativeCapturePreparationTests
     [InlineData(false)] [InlineData(true)]
     public void AsciiAndAnchoredConsumersPreserveCaptures(bool compiled)
     {
-        var grouped = new Utf8Regex("(a)(b)", Options(compiled));
+        var grouped = new Utf8Regex("(a)(b)", options: Options(compiled));
         Assert.NotNull(Field<object?>(grouped, "_groupedLiteralSpanTable"));
         Assert.Equal("<b:a> <b:a>", Encoding.UTF8.GetString(grouped.Replace("ab ab"u8, "<${2}:${1}>")));
-        var family = new Utf8Regex("(?<a>cat)|(?<b>horse)", Options(compiled));
+        var family = new Utf8Regex("(?<a>cat)|(?<b>horse)", options: Options(compiled));
         Assert.Equal("<cat|> <|horse>", Encoding.UTF8.GetString(family.Replace("cat horse"u8, "<${a}|${b}>")));
-        var prefix = new Utf8Regex("^((ab)c)", Options(compiled));
+        var prefix = new Utf8Regex("^((ab)c)", options: Options(compiled));
         Assert.NotNull(Field<object?>(prefix, "_groupedLiteralSpanTable"));
         Assert.NotNull(Field<object?>(prefix, "_caretAnchoredGroupedLiteralUtf8"));
         Assert.Equal(1, prefix.Count("abc abc"u8));
@@ -87,7 +96,7 @@ public sealed class Utf8NativeCapturePreparationTests
     [InlineData(true, true)]
     public void ElidedCaptureDeclarationsKeepAbsentSlots(bool compiled, bool unicode)
     {
-        var regex = new Utf8Regex("(?<gone>x){0}(?<alsoGone>y){0}(?:" + (unicode ? "😀|中" : "cat|horse") + ")", Options(compiled));
+        var regex = new Utf8Regex("(?<gone>x){0}(?<alsoGone>y){0}(?:" + (unicode ? "😀|中" : "cat|horse") + ")", options: Options(compiled));
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(2, regex.Inspection.PreparedRegex.ScalarProgram!.GroupCount);
         Assert.False(Field<bool>(regex, "_hasCaptures"));
@@ -108,8 +117,11 @@ public sealed class Utf8NativeCapturePreparationTests
     {
         var policy = deadline ? Utf8ResourcePolicy.Unlimited : new Utf8ResourcePolicy
         { MaxWorkSteps = 1000000, MaxDepth = 64, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
-        var regex = new Utf8Regex("(?<a>cat)|(?<b>horse)", Options(compiled),
-            deadline ? TimeSpan.FromSeconds(30) : Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8Regex("(?<a>cat)|(?<b>horse)", options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = deadline ? TimeSpan.FromSeconds(30) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.False(regex.Inspection.PreparedRegex.ScalarProgram!.HasUnicodePatternAtoms);
         AssertNoMaps(regex);

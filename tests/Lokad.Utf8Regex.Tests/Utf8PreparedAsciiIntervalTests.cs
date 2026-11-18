@@ -20,7 +20,7 @@ public sealed class Utf8PreparedAsciiIntervalTests
         var input = Encoding.UTF8.GetBytes("é😀" + wanted + "Ω");
         foreach (var options in new[] { RegexOptions.None, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(match.Success);
             Assert.Equal((6, 2), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));

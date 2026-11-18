@@ -17,8 +17,17 @@ public sealed class Utf8CountCaptureElisionTests
         var input = "ababcX cabX "u8.ToArray();
         var options = compiled ? RegexOptions.Compiled : RegexOptions.None;
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 4096, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 4096,
+                MaxResultBytes = 1
+            }
+        });
 
         Assert.Equal(2, regex.Count(input));
         Assert.Equal(2, regex.Count(input, cancellation.Token));
@@ -45,8 +54,17 @@ public sealed class Utf8CountCaptureElisionTests
             // Allow the value-only frame/journal stacks, while the additional
             // observed capture trail still needs its own admitted capacity.
             // This public allowance must not shrink with an elided trail.
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 1280, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxDepth = 128,
+                    MaxWorkingBytes = 1280,
+                    MaxResultBytes = 1
+                }
+            });
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, regex.Count(input, cancellation.Token));
             Assert.True(regex.IsMatch(input, cancellation.Token));
@@ -64,8 +82,17 @@ public sealed class Utf8CountCaptureElisionTests
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.RightToLeft, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 64, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 1,
+                    MaxWorkingBytes = 64,
+                    MaxResultBytes = 1
+                }
+            });
             Assert.Equal(expected, regex.Count("😀é"u8));
         }
     }
@@ -83,12 +110,30 @@ public sealed class Utf8CountCaptureElisionTests
         var expected = new Regex(pattern).Count(text);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var tiny = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = (ulong)Utf8SliceRunner.TrailReserveBytes - 1, MaxResultBytes = 1000000 });
+            var tiny = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxDepth = 128,
+                    MaxWorkingBytes = (ulong)Utf8SliceRunner.TrailReserveBytes - 1,
+                    MaxResultBytes = 1000000
+                }
+            });
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.Count(input)).ResourceKind);
-            var funded = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+            var funded = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxDepth = 128,
+                    MaxWorkingBytes = 1000000,
+                    MaxResultBytes = 1000000
+                }
+            });
             Assert.Equal(expected, funded.Count(input));
         }
     }
@@ -119,8 +164,17 @@ public sealed class Utf8CountCaptureElisionTests
     {
         const string pattern = "(?:(a)|b)+c";
         var input = Encoding.UTF8.GetBytes(new string('a', 32768) + "c");
-        var regex = new Utf8Regex(pattern, RegexOptions.None, TimeSpan.FromMilliseconds(20),
-            new() { MaxWorkSteps = 10000000, MaxDepth = 100000, MaxWorkingBytes = 16777216, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10000000,
+                MaxDepth = 100000,
+                MaxWorkingBytes = 16777216,
+                MaxResultBytes = 1
+            }
+        });
         var validation = new Utf8SliceInvocation(new(10000000, 0, 0), Regex.InfiniteMatchTimeout, default);
         _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;

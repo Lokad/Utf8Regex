@@ -16,9 +16,14 @@ public sealed class Utf8LiveTokenBooleanTests
     public void AnchoredBooleanLiveTokenAvoidsScalarTemporaryStorage(bool compiled, bool hit)
     {
         using var construction = new CancellationTokenSource();
-        var regex = Utf8Regex.Compile("^[A-Z]{3}[0-9]{4}$", RegexOptions.CultureInvariant |
-            (compiled ? RegexOptions.Compiled : RegexOptions.None), Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, construction.Token);
+        var regex = Utf8Regex.Compile("^[A-Z]{3}[0-9]{4}$", options: RegexOptions.CultureInvariant |
+            (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = default,
+                ConstructionPolicy = default,
+                ConstructionTimeout = Timeout.InfiniteTimeSpan
+            }, cancellationToken: construction.Token);
         construction.Cancel(); using var operation = new CancellationTokenSource();
         var input = hit ? "ABC0123"u8.ToArray() : "ABC012x"u8.ToArray();
         for (var index = 0; index < 1000; index++) Assert.Equal(hit, regex.IsMatch(input, operation.Token));
@@ -49,7 +54,7 @@ public sealed class Utf8LiveTokenBooleanTests
         var input = Encoding.UTF8.GetBytes(text); using var live = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant);
             Assert.Equal(expected, regex.IsMatch(input)); Assert.Equal(expected, regex.IsMatch(input, live.Token));
         }
     }
@@ -60,8 +65,10 @@ public sealed class Utf8LiveTokenBooleanTests
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var canceled = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ABC012x ", 8192)));
-        var regex = new Utf8Regex("[A-Z]{3}[0-9]{4}", RegexOptions.CultureInvariant,
-            timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Regex("[A-Z]{3}[0-9]{4}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan
+        });
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
         Utf8Validation.ThrowIfInvalidOnly(input, ref validation); var before = validation.Budget.Steps;
         var reached = false;
@@ -82,8 +89,14 @@ public sealed class Utf8LiveTokenBooleanTests
     public void ControlledBooleanStillAdmitsWorkBeforeNativeExecution()
     {
         using var live = new CancellationTokenSource();
-        var regex = new Utf8Regex("^[A-Z]{3}[0-9]{4}$", RegexOptions.CultureInvariant,
-            Timeout.InfiniteTimeSpan, new() { MaxWorkSteps = 1 });
+        var regex = new Utf8Regex("^[A-Z]{3}[0-9]{4}$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             regex.IsMatch("ABC0123"u8, live.Token)).ResourceKind);
     }

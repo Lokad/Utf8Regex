@@ -887,7 +887,7 @@ public sealed class PreparedSearchPrimitivesTests
         var pattern = string.Join('|', literals.Select(Regex.Escape));
         var regexes = new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.RightToLeft, RegexOptions.NonBacktracking }
-            .Select(options => new Utf8Regex(pattern, options)).Append(new Utf8Regex("(" + pattern + ")")).ToArray();
+            .Select(options => new Utf8Regex(pattern, options: options)).Append(new Utf8Regex("(" + pattern + ")")).ToArray();
         var rejected = literals[1][..(length / 2)] + "?" + literals[1][(length / 2 + 1)..];
         foreach (var padding in new[] { 0, 1, 7, 15, 31 })
         for (var tail = 0; tail < length; tail++)

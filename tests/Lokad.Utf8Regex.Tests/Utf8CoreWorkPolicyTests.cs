@@ -13,8 +13,14 @@ public sealed class Utf8CoreWorkPolicyTests
         "replace-bytes", "destination", "destination-bytes"];
 
     private static Utf8Regex Create(string pattern, ulong cap, RegexOptions options = RegexOptions.CultureInvariant,
-        TimeSpan? timeout = null) => new(pattern, options, timeout ?? Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = cap });
+        TimeSpan? timeout = null) => new(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout ?? Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = cap
+            }
+        });
 
     public static IEnumerable<object[]> OperationModes()
     {
@@ -32,7 +38,7 @@ public sealed class Utf8CoreWorkPolicyTests
         var token = live ? source.Token : default;
         var input = Encoding.UTF8.GetBytes("é😀 ab😀 ab");
         const string pattern = "😀|(?<x>ab)";
-        var baseline = Run(new Utf8Regex(pattern, options), operation, input, token);
+        var baseline = Run(new Utf8Regex(pattern, options: options), operation, input, token);
         Assert.Equal(baseline, Run(Create(pattern, 100000, options), operation, input, token));
         AssertWorkFailure(() => Run(Create(pattern, 1, options), operation, input, token), 1);
         // The largest finite value remains a real finite policy; arithmetic must not wrap.
@@ -89,7 +95,7 @@ public sealed class Utf8CoreWorkPolicyTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         foreach (var operation in Operations)
         {
-            var expected = Run(new Utf8Regex(pattern, options), operation, input, default);
+            var expected = Run(new Utf8Regex(pattern, options: options), operation, input, default);
             Assert.Equal(expected, Run(Create(pattern, 100000, options), operation, input, default));
             AssertWorkFailure(() => Run(Create(pattern, 1, options), operation, input, default), 1);
         }
@@ -109,7 +115,7 @@ public sealed class Utf8CoreWorkPolicyTests
         var input = Encoding.UTF8.GetBytes("é😀😀 ab😀");
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         foreach (var operation in Operations)
-            Assert.Equal(Run(new Utf8Regex(pattern, options), operation, input, default),
+            Assert.Equal(Run(new Utf8Regex(pattern, options: options), operation, input, default),
                 Run(Create(pattern, 100000, options), operation, input, default));
         var dot = Create(".", 100000, options);
         Assert.Equal(7, dot.Count(input));

@@ -151,7 +151,7 @@ public sealed class Utf8ScalarSubjectTests
             .Select(index => (Index: coordinates[index * 2], Length: coordinates[index * 2 + 1])).ToArray();
         if ((options & RegexOptions.RightToLeft) != 0) Array.Reverse(expected);
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         using var source = new CancellationTokenSource();
         foreach (var token in new[] { CancellationToken.None, source.Token })
         {
@@ -232,7 +232,7 @@ public sealed class Utf8ScalarSubjectTests
     public void RepeatedCaptureHistoryRetainsWholeScalarRanges()
     {
         var input = Encoding.UTF8.GetBytes("a\U0001f600\u0301");
-        var regex = new Utf8Regex("^((.)+)$", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("^((.)+)$", options: RegexOptions.CultureInvariant);
         var context = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(context.TryGetGroup(2, out var group));
         Assert.Equal(3, context.GetCaptures(2).Length);
@@ -247,7 +247,7 @@ public sealed class Utf8ScalarSubjectTests
     [Fact]
     public void Utf16StartsRejectAnInteriorSurrogatePosition()
     {
-        var regex = new Utf8Regex("(.)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(.)", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("\U0001f600a");
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match(input, 1, []).Success);
         Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, 1)));
@@ -287,7 +287,10 @@ public sealed class Utf8ScalarSubjectTests
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var regex = new Utf8Regex("((.)+)", options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex("((.)+)", options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout
+            });
             using var source = new CancellationTokenSource();
             var entered = false;
             var session = Utf8SearchDiagnosticsSession.Start(steps =>

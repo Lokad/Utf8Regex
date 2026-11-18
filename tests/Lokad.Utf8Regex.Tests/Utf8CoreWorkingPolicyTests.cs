@@ -12,7 +12,14 @@ public sealed class Utf8CoreWorkingPolicyTests
         "replace-bytes", "destination", "destination-bytes"];
 
     private static Utf8Regex Create(string pattern, ulong bytes, RegexOptions options)
-        => new(pattern, options, Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxWorkingBytes = bytes });
+        => new(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = bytes
+            }
+        });
 
     private static void Denied(Utf8ResourceLimitExceededException error, ulong bytes)
     {
@@ -50,7 +57,7 @@ public sealed class Utf8CoreWorkingPolicyTests
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         using var source = new CancellationTokenSource();
         var token = live ? source.Token : default;
-        var expected = Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options), operation, input, token, 0);
+        var expected = Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options: options), operation, input, token, 0);
         Assert.Equal(expected, Utf8CoreWorkPolicyTests.Run(Create(pattern, ulong.MaxValue, options), operation, input, token, 0));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             Utf8CoreWorkPolicyTests.Run(Create(pattern, 1, options), operation, input, token, 0)), 1, operation);
@@ -81,7 +88,7 @@ public sealed class Utf8CoreWorkingPolicyTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var operation in Operations)
-            Assert.Equal(Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options), operation, input, default, 0),
+            Assert.Equal(Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options: options), operation, input, default, 0),
                 Utf8CoreWorkPolicyTests.Run(Create(pattern, 1_048_576, options), operation, input, default, 0));
     }
 
@@ -99,7 +106,11 @@ public sealed class Utf8CoreWorkingPolicyTests
             MaxWorkingBytes = kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1 : ulong.MaxValue,
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue
         };
-        var regex = new Utf8Regex("(?<x>😀+)(?<y>😀ab)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8Regex("(?<x>😀+)(?<y>😀ab)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor("😀😀😀ab"u8.ToArray())));
         Assert.Equal(kind, error.ResourceKind); Assert.Equal(1UL, error.Limit); Assert.True(error.Requested > 1);
     }
@@ -166,7 +177,7 @@ public sealed class Utf8CoreWorkingPolicyTests
         const string pattern = "(ab)|(😀|😀😀)+ab";
         var input = Encoding.UTF8.GetBytes("ab " + string.Concat(Enumerable.Repeat("😀", 70)) + "ab");
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var program = new Utf8Regex(pattern, options).Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex(pattern, options: options).Inspection.AvailableOwnedSliceProgram!;
         var invocation = new Utf8SliceInvocation(new(0, 0, ulong.MaxValue), Regex.InfiniteMatchTimeout, default);
         var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
         invocation.ShareStorageForCursor();

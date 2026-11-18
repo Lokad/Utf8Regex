@@ -17,7 +17,7 @@ public sealed class Utf8DecodedFallbackTests
         int expectedCount)
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var bytes = Encoding.UTF8.GetBytes(subject);
 
         Assert.Equal(expectedCount, regex.Count(bytes));
@@ -45,7 +45,7 @@ public sealed class Utf8DecodedFallbackTests
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("Шерлок", options);
+        var regex = new Utf8Regex("Шерлок", options: options);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
     }
@@ -53,9 +53,7 @@ public sealed class Utf8DecodedFallbackTests
     [Fact]
     public void UnicodeLiteralFallbackHasBoundedValueOperationFacts()
     {
-        var regex = new Utf8Regex(
-            "Шерлок Холмс",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(            "Шерлок Холмс", options:             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         var prepared = regex.Inspection.PreparedRegex;
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, prepared.ExecutionKind);

@@ -258,7 +258,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         foreach (var input in new[] { "", "a", "ab", "aab", "xaab", "b", "aaab", "abb", "aabb", "1", "11", "a1" })
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(input);
@@ -296,7 +296,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
         Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
         foreach (var inputText in inputs)
@@ -372,7 +372,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
         Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
         foreach (var inputText in inputs)
@@ -421,7 +421,7 @@ public sealed class Utf8OwnedTreeParserLookaroundTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new System.Text.RegularExpressions.Regex(pattern, (RegexOptions)options, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         foreach (var input in inputs)
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(input);

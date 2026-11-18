@@ -9,7 +9,7 @@ namespace Lokad.Utf8Regex;
 
 public sealed partial class Utf8Regex
 {
-    // The owning facade holds program/cache admission until this returns. Cold
+    // The public entry holds any program/cache admission until this returns. Cold
     // key/parser loans stay live through output, including uncached large plans.
     internal OperationStatus TryReplaceFunded(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementUtf8,
         Span<byte> destination, out int bytesWritten, CancellationToken token, IUtf8MemoryAllowance working)
@@ -44,11 +44,13 @@ public sealed partial class Utf8Regex
     }
 
     /// <summary>Tests for a match with optional shared admission for temporary matching storage.</summary>
-    /// <remarks>Null allowance uses the engine numeric-policy route. Non-null allowance admits temporary storage separately from compilation and borrowed input. Numeric limits, original token and deadline still apply. Covered loans refund synchronously; refusal is terminal.</remarks>
+    /// <remarks>Null allowance inherits program funding when present, otherwise numeric limits only. An explicit allowance overrides working funding, separate from compilation and borrowed input. Numeric limits, original token and deadline still apply. Covered loans refund synchronously; refusal is terminal.</remarks>
     public bool IsMatch(ReadOnlySpan<byte> input, CancellationToken cancellationToken = default,
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
+        workingMemoryAllowance ??= _programMemory?.Allowance;
         if (workingMemoryAllowance is null)
         {
             try { return IsMatchCore(input, cancellationToken); }
@@ -78,11 +80,13 @@ public sealed partial class Utf8Regex
     }
 
     /// <summary>Counts matches with optional shared admission for temporary matching storage.</summary>
-    /// <remarks>Null allowance uses the engine numeric-policy route. Non-null allowance admits temporary storage separately from compilation and borrowed input. Work/result policies stay cumulative; covered loans refund synchronously on success, failure and interruption. Refusal is terminal.</remarks>
+    /// <remarks>Null allowance inherits program funding when present, otherwise numeric limits only. An explicit allowance overrides working funding, separate from compilation and borrowed input. Work/result policies stay cumulative; covered loans refund synchronously on success, failure and interruption. Refusal is terminal.</remarks>
     public int Count(ReadOnlySpan<byte> input, CancellationToken cancellationToken = default,
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
+        workingMemoryAllowance ??= _programMemory?.Allowance;
         if (workingMemoryAllowance is null)
         {
             try { return CountCore(input, cancellationToken); }

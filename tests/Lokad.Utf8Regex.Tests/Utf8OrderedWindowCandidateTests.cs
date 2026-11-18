@@ -44,7 +44,11 @@ public sealed class Utf8OrderedWindowCandidateTests
         byte[] storage = [0xff, .. input, 0xff];
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             using var token = new CancellationTokenSource();
             for (var start = 255; start <= text.Length; start++)
             {
@@ -67,7 +71,11 @@ public sealed class Utf8OrderedWindowCandidateTests
                 string.Concat(Enumerable.Repeat("😀", gap)) + "river");
             foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
             {
-                var regex = new Utf8Regex(Pattern, mode, Timeout.InfiniteTimeSpan, Funded);
+                var regex = new Utf8Regex(Pattern, options: mode, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = Funded
+                });
                 Assert.Equal(gap is >= 10 and <= 25 ? 1 : 0, regex.Count(input));
                 Assert.Equal(ScalarCount(regex, input, 0), regex.Count(input));
             }
@@ -78,23 +86,47 @@ public sealed class Utf8OrderedWindowCandidateTests
     public void DenseFalseFirstBytesUseBoundedWorkAndOnlyNeededWorkspace()
     {
         var input = Encoding.UTF8.GetBytes(new string('r', 100000) + "Tom!!!!!!!!!!river");
-        var regex = new Utf8Regex(Pattern, RegexOptions.Compiled, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkSteps = 4096 });
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 4096
+            }
+        });
         using var token = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(input, token.Token));
         // Complete terminal tails need no rewind state, including an
         // unobserved capture opening. A later backreference still needs slots.
-        Assert.Equal(1, new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkingBytes = 1 }).Count(input));
+        Assert.Equal(1, new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkingBytes = 1
+            }
+        }).Count(input));
         const string capturedTail = @"Tom.{10,25}(?<tail>river)|river.{10,25}Tom";
-        Assert.Equal(1, new Utf8Regex(capturedTail, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkingBytes = 1 }).Count(input));
+        Assert.Equal(1, new Utf8Regex(capturedTail, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkingBytes = 1
+            }
+        }).Count(input));
         const string observedTail = @"Tom.{10,25}(?<tail>river)\k<tail>|river.{10,25}Tom";
         byte[] observedInput = [.. input, .. "river"u8];
         Assert.Equal(1, new Utf8Regex(observedTail).Count(observedInput));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(observedTail,
-                RegexOptions.None, Timeout.InfiniteTimeSpan, Funded with { MaxWorkingBytes = 1 }).Count(observedInput)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(observedTail, options:                 RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkingBytes = 1
+                }
+            }).Count(observedInput)).ResourceKind);
         byte[] malformed = [.. input, 0xff];
         token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, token.Token)).CancellationToken);

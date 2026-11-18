@@ -23,7 +23,7 @@ public sealed class Utf8MemoryCursorTests
     public void PublicRangesPreserveGroupsAndHistories(string pattern, string subject, RegexOptions options)
     {
         var bcl = new Regex(pattern, options);
-        var expression = new Utf8Regex(pattern, options);
+        var expression = new Utf8Regex(pattern, options: options);
         using var cursor = expression.CreateMatchCursor(Encoding.UTF8.GetBytes(subject));
         foreach (Match expected in bcl.Matches(subject))
         {
@@ -54,7 +54,7 @@ public sealed class Utf8MemoryCursorTests
     [Theory] [InlineData(false)] [InlineData(true)]
     public void EmptyMatchesAdvanceOneScalarInEitherDirection(bool rtl)
     {
-        using var cursor = new Utf8Regex("", rtl ? RegexOptions.RightToLeft : RegexOptions.None).CreateMatchCursor("😀é"u8.ToArray());
+        using var cursor = new Utf8Regex("", options: rtl ? RegexOptions.RightToLeft : RegexOptions.None).CreateMatchCursor("😀é"u8.ToArray());
         var positions = new List<int>();
         while (cursor.MoveNext(out var match))
         {
@@ -165,8 +165,10 @@ public sealed class Utf8MemoryCursorTests
     public async Task DeadlineIncludesHostWaitAndRefundsScratch()
     {
         var root = new Root(); var working = new Account(root);
-        using var cursor = new Utf8Regex("(?<x>a)+", RegexOptions.None, TimeSpan.FromMilliseconds(250))
-            .CreateMatchCursor("aaa aaa"u8.ToArray(), workingMemoryAllowance: working);
+        using var cursor = new Utf8Regex("(?<x>a)+", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(250)
+        })            .CreateMatchCursor("aaa aaa"u8.ToArray(), workingMemoryAllowance: working);
         Assert.True(cursor.MoveNext(out var first)); await Task.Delay(350);
         var failure = Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
         Assert.Empty(failure.Input); Assert.Equal("(?<x>a)+", failure.Pattern);
@@ -184,7 +186,11 @@ public sealed class Utf8MemoryCursorTests
             2 => new Utf8ResourcePolicy { MaxResultBytes = 1 },
             _ => new Utf8ResourcePolicy { MaxDepth = 1 }
         };
-        var regex = new Utf8Regex("(?=(?=(a)))a", RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
+        var regex = new Utf8Regex("(?=(?=(a)))a", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             using var cursor = regex.CreateMatchCursor("a"u8.ToArray(), workingMemoryAllowance: working);
@@ -216,8 +222,14 @@ public sealed class Utf8MemoryCursorTests
             Assert.Equal(input.Length, count);
         }
         Assert.Equal(0UL, root.Used); Assert.True(working.Peak < 1024);
-        using var bounded = new Utf8Regex("x", RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 50000 }).CreateMatchCursor(input);
+        using var bounded = new Utf8Regex("x", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 50000
+            }
+        }).CreateMatchCursor(input);
         for (var index = 0; index < 8; index++) Assert.True(bounded.MoveNext(out _));
     }
 
@@ -236,8 +248,14 @@ public sealed class Utf8MemoryCursorTests
     public void ResultTrafficIsCumulativeEvenWhenEachPublishedLoanRefunds()
     {
         var root = new Root(); var working = new Account(root);
-        using var cursor = new Utf8Regex("x", RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxResultBytes = 150 }).CreateMatchCursor("xxxxx"u8.ToArray(), workingMemoryAllowance: working);
+        using var cursor = new Utf8Regex("x", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxResultBytes = 150
+            }
+        }).CreateMatchCursor("xxxxx"u8.ToArray(), workingMemoryAllowance: working);
         Assert.True(cursor.MoveNext(out var first));
         var published = 1;
         Assert.Throws<Utf8ResourceLimitExceededException>(() => { while (cursor.MoveNext(out _)) published++; });
@@ -263,8 +281,10 @@ public sealed class Utf8MemoryCursorTests
     {
         var root = new Root(); var working = new Account(root); var results = new Account(root);
         using var clock = Utf8DeadlineTestClock.Start();
-        using var cursor = new Utf8Regex("(a+)", matchTimeout: TimeSpan.FromMilliseconds(200))
-            .CreateMatchCursor("aaa"u8.ToArray(), workingMemoryAllowance: working);
+        using var cursor = new Utf8Regex("(a+)", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        })            .CreateMatchCursor("aaa"u8.ToArray(), workingMemoryAllowance: working);
         results.AfterGrant = () => clock.Advance(250);
         Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNextRetained(out _, resultMemoryAllowance: results));
         Assert.Equal(1, results.Attempts); Assert.Equal(0UL, root.Used);
@@ -303,8 +323,14 @@ public sealed class Utf8MemoryCursorTests
         }
     }
 
-    private static Utf8RegexProgramOwner Compile(string pattern, Account account) => Utf8Regex.Compile(pattern,
-        RegexOptions.None, Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account);
+    private static Utf8Regex Compile(string pattern, Account account) => Utf8Regex.Compile(pattern, options:         RegexOptions.None, policy: new Utf8RegexPolicy
+    {
+        MatchTimeout = Timeout.InfiniteTimeSpan,
+        ResourcePolicy = default,
+        ConstructionPolicy = default,
+        ConstructionTimeout = Timeout.InfiniteTimeSpan,
+        ProgramMemoryAllowance = account
+    }, cancellationToken: default);
 
     private sealed class Root { internal ulong Used; }
     private sealed class Account(Root root) : IUtf8MemoryAllowance

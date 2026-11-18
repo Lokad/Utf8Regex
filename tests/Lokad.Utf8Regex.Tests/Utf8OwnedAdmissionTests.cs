@@ -28,7 +28,7 @@ public sealed class Utf8OwnedAdmissionTests
         var tree = Utf8OwnedTreeParser.TryParse(pattern, options);
         Assert.NotNull(tree);
         Assert.NotNull(Utf8SliceParser.TryParse(options, tree));
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options);
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text, "", "😀", "a", "-", "[", "a]", "[]", "-]"]);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -48,7 +48,7 @@ public sealed class Utf8OwnedAdmissionTests
         var options = RegexOptions.ECMAScript | RegexOptions.CultureInvariant;
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, options));
         Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options));
     }
 
     [Theory]
@@ -80,7 +80,7 @@ public sealed class Utf8OwnedAdmissionTests
             Assert.True(diagnostic.IsSyntaxError);
             Assert.Equal(reason, diagnostic.Error.ToString());
             Assert.Equal(offset, diagnostic.Offset);
-            var failure = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            var failure = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options));
             Assert.StartsWith(diagnostic.Description, failure.Message, StringComparison.Ordinal);
             Assert.Contains($"pattern offset {offset}.", failure.Message, StringComparison.Ordinal);
         }
@@ -101,7 +101,7 @@ public sealed class Utf8OwnedAdmissionTests
             var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
             var checkpoint = owner.Budget.ReservedBytes;
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options));
             Assert.Equal(128ul, owner.Budget.ReservedBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
             Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
@@ -109,7 +109,7 @@ public sealed class Utf8OwnedAdmissionTests
             Assert.True(spent > 2);
             using (var recovery = Utf8ConstructionScope.Enter())
             {
-                var regex = new Utf8Regex(@"(?<x>😀)\k<x>", options);
+                var regex = new Utf8Regex(@"(?<x>😀)\k<x>", options: options);
                 Assert.Equal(new[] { "0", "x" }, regex.GetGroupNames());
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
                 Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

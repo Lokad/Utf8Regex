@@ -29,7 +29,7 @@ internal static partial class BenchmarkInspectReporter
     public static int RunInspectPattern(string pattern, string? optionsText)
     {
         var options = ParseRegexOptions(optionsText);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         WriteRegexInspection("pattern", pattern, options, inputChars: null, inputBytes: null, origin: null, regex);
         return 0;
     }
@@ -130,11 +130,9 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Samples           : {samples}");
 
         MeasureUtf8CaseLane("Utf8RegexConstruct", samples, iterations, () =>
-            RuntimeHelpers.GetHashCode(new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options)));
+            RuntimeHelpers.GetHashCode(new Utf8Regex(benchmarkCase.Pattern, options: benchmarkCase.Options)));
         MeasureUtf8CaseLane("Utf8CompiledConstruct", samples, iterations, () =>
-            RuntimeHelpers.GetHashCode(new Utf8Regex(
-                benchmarkCase.Pattern,
-                benchmarkCase.Options | RegexOptions.Compiled)));
+            RuntimeHelpers.GetHashCode(new Utf8Regex(                benchmarkCase.Pattern, options:                 benchmarkCase.Options | RegexOptions.Compiled)));
 
         if (benchmarkCase.Operation == Utf8RegexBenchmarkOperation.IsMatch &&
             context.Utf8Regex.Inspection.DebugTryIsMatchExactLiteral(context.InputBytes, out _))
@@ -686,7 +684,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
         var baselineRegex = benchmarkCase.Utf8Regex;
-        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
+        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, options: benchmarkCase.Options | RegexOptions.Compiled);
         var iterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
 
@@ -765,7 +763,7 @@ internal static partial class BenchmarkInspectReporter
         {
             var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
             var regex = benchmarkCase.Utf8Regex;
-            var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
+            var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, options: benchmarkCase.Options | RegexOptions.Compiled);
             var iterations = ParseIterations(iterationsText);
 
             if (regex.Inspection.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
@@ -892,7 +890,7 @@ internal static partial class BenchmarkInspectReporter
         Measure("PrimitiveCount", iterations, () => ExecuteIgnoreCaseLiteralPrimitiveCount(literal, benchmarkCase.InputBytes));
         Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
 
-        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options | RegexOptions.Compiled);
+        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, options: benchmarkCase.Options | RegexOptions.Compiled);
         Measure("Utf8Compiled", iterations, () => compiledUtf8Regex.Count(benchmarkCase.InputBytes));
 
         Measure("PredecodedRegex", iterations, benchmarkCase.CountPredecodedRegex);
@@ -1028,8 +1026,8 @@ internal static partial class BenchmarkInspectReporter
 
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
         var utf8Regex = false ? benchmarkCase.Utf8Regex
-            : new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options);
-        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, benchmarkCase.Options | RegexOptions.Compiled);
+            : new Utf8Regex(benchmarkCase.Utf8Pattern, options: benchmarkCase.Options);
+        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, options: benchmarkCase.Options | RegexOptions.Compiled);
         Console.WriteLine($"CaseId            : {caseId}; InputBytes={benchmarkCase.InputBytes.Length}; InputSha256={Convert.ToHexString(SHA256.HashData(benchmarkCase.InputBytes))}");
         var iterationTarget = GetReadmeReplicaIterationTarget(benchmarkCase, requestedIterations);
         var row = MeasureReadmeCase(
@@ -1679,7 +1677,7 @@ internal static partial class BenchmarkInspectReporter
             var input = RepeatToLength(control.Seed, 8_192);
             var inputBytes = Encoding.UTF8.GetBytes(input);
             var utf8Regex = new Utf8Regex(control.Pattern);
-            var utf8Compiled = new Utf8Regex(control.Pattern, RegexOptions.Compiled);
+            var utf8Compiled = new Utf8Regex(control.Pattern, options: RegexOptions.Compiled);
             var regex = new Regex(control.Pattern);
             var compiledRegex = new Regex(control.Pattern, RegexOptions.Compiled);
             var utf8Eligible = utf8Regex.TryGetSmallAsciiLiteralFamilySearch(inputBytes, out _);
@@ -2016,7 +2014,7 @@ internal static partial class BenchmarkInspectReporter
             resolvedCase.Pattern,
             resolvedCase.InputBytes,
             resolvedCase.Utf8Regex,
-            new Utf8Regex(resolvedCase.Utf8Pattern, resolvedCase.Options | RegexOptions.Compiled),
+            new Utf8Regex(resolvedCase.Utf8Pattern, options: resolvedCase.Options | RegexOptions.Compiled),
             resolvedCase.CountPredecodedRegex,
             resolvedCase.CountPredecodedCompiledRegex,
             iterations,
@@ -2471,7 +2469,7 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var replicaCase = ReplicaCountBenchmarkCase.Resolve(caseId);
-        var compiledUtf8Regex = new Utf8Regex(replicaCase.Utf8Pattern, replicaCase.Options | RegexOptions.Compiled);
+        var compiledUtf8Regex = new Utf8Regex(replicaCase.Utf8Pattern, options: replicaCase.Options | RegexOptions.Compiled);
         var compiledIterations = ParseIterations(iterationsText);
 
         WriteReplicaCaseHeader(replicaCase, compiledIterations);
@@ -2780,7 +2778,7 @@ internal static partial class BenchmarkInspectReporter
     public static int RunInspectDirectFamilyPattern(string pattern, string? optionsText)
     {
         var options = ParseRegexOptions(optionsText);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Console.WriteLine($"Pattern           : {pattern}");
         Console.WriteLine($"Options           : {options}");
         Console.WriteLine($"AnchoredLiteral   : {regex.Inspection.DebugAnchoredLiteralKind}");
@@ -2856,7 +2854,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
         var regex = benchmarkCase.Utf8Regex;
-        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
+        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, options: benchmarkCase.Options | RegexOptions.Compiled);
         var iterations = ParseIterations(iterationsText);
 
         WriteReplicaCaseHeader(benchmarkCase, iterations);
@@ -3432,7 +3430,7 @@ internal static partial class BenchmarkInspectReporter
     {
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
         var iterations = ParseIterations(iterationsText);
-        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
+        var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, options: benchmarkCase.Options | RegexOptions.Compiled);
         var baselineDiagnostics = benchmarkCase.Utf8Regex.CollectCountDiagnostics(benchmarkCase.InputBytes);
         var compiledDiagnostics = compiledUtf8Regex.CollectCountDiagnostics(benchmarkCase.InputBytes);
 

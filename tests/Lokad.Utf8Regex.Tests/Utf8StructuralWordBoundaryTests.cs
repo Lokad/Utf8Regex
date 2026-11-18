@@ -20,7 +20,7 @@ public sealed class Utf8StructuralWordBoundaryTests
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             foreach (var padding in new[] { 0, 1, 15, 16, 31, 32, 63, 64, 2047, 2048 })
             foreach (var body in new[]
             {
@@ -67,7 +67,7 @@ public sealed class Utf8StructuralWordBoundaryTests
         const string pattern = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             const string text = "éclass Nope 😀 class Alpha\u2003record Beta struct Gamma";
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(new Regex(pattern, options).Count(text), regex.Count(input));

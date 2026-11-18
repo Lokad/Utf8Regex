@@ -122,14 +122,17 @@ public sealed class Utf8CoreTemplateByteCeilingTests
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex("(?<x>😀|a)", RegexOptions.CultureInvariant,
-            TimeSpan.FromMilliseconds(20), new()
+        var regex = new Utf8Regex("(?<x>😀|a)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
             {
                 MaxWorkSteps = 100000,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
-            });
+            }
+        });
         using var token = new CancellationTokenSource();
         using var parent = Utf8ConstructionScope.Enter();
         var maximum = parent.Budget.MaximumBytes;
@@ -172,8 +175,14 @@ public sealed class Utf8CoreTemplateByteCeilingTests
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex("(?<x>😀|a)", RegexOptions.CultureInvariant,
-            TimeSpan.FromMilliseconds(100), new() { MaxWorkingBytes = 1 << 20 });
+        var regex = new Utf8Regex("(?<x>😀|a)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(100),
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1 << 20
+            }
+        });
         using var caller = new CancellationTokenSource();
         using var parentToken = new CancellationTokenSource();
         using var parent = Utf8ConstructionScope.Enter();
@@ -212,9 +221,17 @@ public sealed class Utf8CoreTemplateByteCeilingTests
         Assert.Equal("<😀><a>"u8.ToArray(), regex.Replace("😀a"u8, "<${x}>"u8));
     }
 
-    private static Utf8Regex Create(string pattern, ulong working) => new(pattern,
-        RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-        new() { MaxWorkSteps = 1000000, MaxDepth = 256, MaxWorkingBytes = working, MaxResultBytes = 1 << 20 });
+    private static Utf8Regex Create(string pattern, ulong working) => new(pattern, options:         RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+    {
+        MatchTimeout = Regex.InfiniteMatchTimeout,
+        ResourcePolicy = new()
+        {
+            MaxWorkSteps = 1000000,
+            MaxDepth = 256,
+            MaxWorkingBytes = working,
+            MaxResultBytes = 1 << 20
+        }
+    });
 
     private static Utf8ReplacementPlanCache Cache(Utf8Regex regex) =>
         Assert.IsType<Utf8ReplacementPlanCache>(typeof(Utf8Regex).GetField("_replacementCache",

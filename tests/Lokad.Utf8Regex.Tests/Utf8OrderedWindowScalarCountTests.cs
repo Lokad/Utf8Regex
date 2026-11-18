@@ -27,13 +27,17 @@ public sealed class Utf8OrderedWindowScalarCountTests
         using var cancellation = new CancellationTokenSource();
         foreach (var pattern in patterns)
         {
-            var regex = new Utf8Regex(pattern, options);
-            var scalar = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, resourcePolicy: new()
+            var regex = new Utf8Regex(pattern, options: options);
+            var scalar = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
             {
-                MaxWorkSteps = 1_000_000,
-                MaxDepth = 128,
-                MaxWorkingBytes = 1_048_576,
-                MaxResultBytes = 1_048_576
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 128,
+                    MaxWorkingBytes = 1_048_576,
+                    MaxResultBytes = 1_048_576
+                }
             });
             foreach (var text in texts)
             foreach (var offset in new[] { 0, 15, 31, 63 })
@@ -44,8 +48,8 @@ public sealed class Utf8OrderedWindowScalarCountTests
                 Assert.Equal(expected, regex.Count(input, cancellation.Token));
             }
         }
-        Assert.Equal(1, new Utf8Regex("a.{1,1}b", options).Count("a😀b"u8));
-        Assert.Equal(0, new Utf8Regex("a.{1,1}b", options).Count("a😀😀b"u8));
+        Assert.Equal(1, new Utf8Regex("a.{1,1}b", options: options).Count("a😀b"u8));
+        Assert.Equal(0, new Utf8Regex("a.{1,1}b", options: options).Count("a😀😀b"u8));
     }
 
     [Fact]

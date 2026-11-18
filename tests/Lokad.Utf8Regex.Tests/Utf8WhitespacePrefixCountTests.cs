@@ -29,7 +29,7 @@ public sealed class Utf8WhitespacePrefixCountTests
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var options = mode | RegexOptions.CultureInvariant;
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var oracle = new Regex(pattern, options & ~RegexOptions.Compiled);
             for (var sample = 0; sample < 30; sample++)
             {
@@ -55,8 +55,14 @@ public sealed class Utf8WhitespacePrefixCountTests
     {
         const string pattern = @"(\s*)#x";
         var input = Encoding.UTF8.GetBytes(new string('z', 300) + "\u00a0 #x");
-        var bounded = new Utf8Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1 });
+        var bounded = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Count(input));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
@@ -83,7 +89,11 @@ public sealed class Utf8WhitespacePrefixCountTests
         {
             if (mode == RegexOptions.NonBacktracking && pattern.Contains(@"\k<s>")) continue;
             if (mode == RegexOptions.NonBacktracking && pattern.Contains("(?=!")) continue;
-            var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, mode));
             using var token = new CancellationTokenSource();
             for (var start = 2040; start <= text.Length; start++)
@@ -101,15 +111,27 @@ public sealed class Utf8WhitespacePrefixCountTests
     {
         const string pattern = @"(?<space>\s*)#[Nn][Oo][Qq][Aa](?=!)";
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(new string('x', 128) + " # normal comment ", 512)) + "\u2003#NoQa!");
-        var regex = new Utf8Regex(pattern, RegexOptions.Compiled, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkSteps = 4096 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 4096
+            }
+        });
         using var token = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(input, token.Token));
         Assert.Equal("\u2003", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("x\u2003#NoQa!"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromName("space")).Span));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                    Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
+                new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = Funded with
+                    {
+                        MaxWorkingBytes = 1
+                    }
+                }).Count(input)).ResourceKind);
     }
 
     [Fact]
@@ -146,7 +168,11 @@ public sealed class Utf8WhitespacePrefixCountTests
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex(@"\s*#[aA]bc", RegexOptions.Compiled, TimeSpan.FromMilliseconds(20), Funded);
+        var regex = new Utf8Regex(@"\s*#[aA]bc", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Funded
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {

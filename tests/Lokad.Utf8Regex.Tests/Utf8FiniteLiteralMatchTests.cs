@@ -11,7 +11,17 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8FiniteLiteralMatchTests
 {
     private static Utf8Regex Create(string pattern, ulong work = 100000, RegexOptions options = RegexOptions.None)
-        => new(pattern, options | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        => new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = work,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
 
     [Theory]
     [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
@@ -60,8 +70,17 @@ public sealed class Utf8FiniteLiteralMatchTests
         AssertRange(tiny.Match("é😀dog"u8), "é😀dog", 3, 3);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(tiny.CreateMatchCursor("é😀dog"u8.ToArray()))).ResourceKind);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("é😀dog"u8.ToArray()));
         AssertRange(regex.Match("😀cat"u8), "😀cat", 2, 3);
         Assert.Equal("dog", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(regex.GroupNumberFromName("animal")).Span));
@@ -129,8 +148,17 @@ public sealed class Utf8FiniteLiteralMatchTests
             var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
             var pattern = "(?<hit>" + literal + ")";
             var options = reverse | compiled | RegexOptions.CultureInvariant;
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1_000_000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 32,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1 << 20
+                }
+            });
                         var expected = new Regex(pattern, options).Match(text);
             AssertRange(regex.Match(input, cancellationToken: source.Token), text, expected.Index, length);
             var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray(), cancellationToken: source.Token));
@@ -144,8 +172,17 @@ public sealed class Utf8FiniteLiteralMatchTests
     public void ByteStartRangesAndDetailedCapturesHaveSeparateAdmission(bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var regex = new Utf8Regex("(nee)(?<suffix>dle)", options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 32, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8Regex("(nee)(?<suffix>dle)", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 32,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         const string text = "é😀needle needle";
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
@@ -165,8 +202,17 @@ public sealed class Utf8FiniteLiteralMatchTests
         AssertRange(tiny.Match(input), text, 3, 6);
         foreach (var working in new[] { true, false })
         {
-            var limited = new Utf8Regex(regex.Pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 100000, MaxDepth = 32, MaxWorkingBytes = working ? 1UL : 1UL << 20, MaxResultBytes = working ? 1UL << 20 : 1UL });
+            var limited = new Utf8Regex(regex.Pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 32,
+                    MaxWorkingBytes = working ? 1UL : 1UL << 20,
+                    MaxResultBytes = working ? 1UL << 20 : 1UL
+                }
+            });
             var expected = working ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes;
             Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(limited.CreateMatchCursor(input))).ResourceKind);
             if (working)
@@ -222,9 +268,17 @@ public sealed class Utf8FiniteLiteralMatchTests
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant,
-            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes(new string('é', 160000) + "needle");
         var prepared = (Utf8PreparedRegex)typeof(Utf8Regex)
             .GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
@@ -292,8 +346,17 @@ public sealed class Utf8FiniteLiteralMatchTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { mode | RegexOptions.CultureInvariant, mode | RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxDepth = 1024,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1 << 20
+                }
+            });
             var expected = new Regex(pattern, options).Match(text);
             var actual = regex.Match(input);
             Assert.Equal(expected.Success, actual.Success);
@@ -338,9 +401,17 @@ public sealed class Utf8FiniteLiteralMatchTests
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex("needle", RegexOptions.CultureInvariant,
-            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8Regex("needle", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes(new string('é', 160000) + "needle");
         var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         _ = Utf8InputAnalyzer.Describe(input, ref probe);

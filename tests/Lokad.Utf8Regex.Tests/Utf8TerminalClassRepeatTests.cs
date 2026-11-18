@@ -50,7 +50,7 @@ public sealed class Utf8TerminalClassRepeatTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, failure.ResourceKind);
         var dependent = Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(@"(\w)+\1", 1).Count("aaa"u8));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, dependent.ResourceKind);
-        var reverse = new Utf8Regex(@"\w+", RegexOptions.CultureInvariant | RegexOptions.RightToLeft);
+        var reverse = new Utf8Regex(@"\w+", options: RegexOptions.CultureInvariant | RegexOptions.RightToLeft);
         Assert.Equal(2, reverse.Count("abc ééé"u8));
     }
 
@@ -94,12 +94,26 @@ public sealed class Utf8TerminalClassRepeatTests
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
-        var plain = new Utf8Regex(@"\w+", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
+        var plain = new Utf8Regex(@"\w+", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         Assert.Equal(2, plain.Count("abc ééé"u8));
-        var captured = new Utf8Regex(@"(\w+)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
+        var captured = new Utf8Regex(@"(\w+)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         Assert.Equal(2, captured.Count("abc ééé"u8));
-        var detailed = new Utf8Regex(@"(\w+)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
-            policy with { MaxResultBytes = 1 << 20 });
+        var detailed = new Utf8Regex(@"(\w+)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy with
+            {
+                MaxResultBytes = 1 << 20
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(detailed.CreateMatchCursor("abc ééé"u8.ToArray()))).ResourceKind);
     }
@@ -129,7 +143,15 @@ public sealed class Utf8TerminalClassRepeatTests
         finally { session.Complete(); }
     }
 
-    private static Utf8Regex Create(string pattern, uint depth) => new(pattern, RegexOptions.CultureInvariant,
-        Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy { MaxDepth = depth, MaxWorkSteps = 1000000,
-            MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+    private static Utf8Regex Create(string pattern, uint depth) => new(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+    {
+        MatchTimeout = Timeout.InfiniteTimeSpan,
+        ResourcePolicy = new Utf8ResourcePolicy
+        {
+            MaxDepth = depth,
+            MaxWorkSteps = 1000000,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1
+        }
+    });
 }

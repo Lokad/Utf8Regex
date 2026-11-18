@@ -15,7 +15,7 @@ public sealed class Utf8FromOffsetOriginTests
     {
         const string text = "abcabc";
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex("^abc", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("^abc", options: RegexOptions.CultureInvariant);
         var runtime = new Regex("^abc", RegexOptions.CultureInvariant);
 
         foreach (var offset in new[] { 1, 3 })
@@ -37,7 +37,7 @@ public sealed class Utf8FromOffsetOriginTests
     {
         const string text = "aword here";
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex("\\bword\\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("\\bword\\b", options: RegexOptions.CultureInvariant);
         var runtime = new Regex("\\bword\\b", RegexOptions.CultureInvariant);
 
         var expected = runtime.Match(text, 1);
@@ -56,7 +56,7 @@ public sealed class Utf8FromOffsetOriginTests
     {
         const string text = "zab";
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex("(?<=a)b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?<=a)b", options: RegexOptions.CultureInvariant);
         var runtime = new Regex("(?<=a)b", RegexOptions.CultureInvariant);
 
         var expected = runtime.Match(text, 2);
@@ -95,7 +95,7 @@ public sealed class Utf8FromOffsetOriginTests
     public void FromOffsetFirstMatchMatchesRuntime(string pattern, RegexOptions options, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var runtime = new Regex(pattern, options);
 
         for (var offset = 0; offset <= Math.Min(3, text.Length); offset++)

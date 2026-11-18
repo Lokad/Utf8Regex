@@ -13,8 +13,8 @@ internal sealed class RegexParityContext
     private RegexParityContext(RegexParityCase parityCase)
     {
         Case = parityCase;
-        Utf8 = new Utf8Regex(parityCase.Pattern, parityCase.Options);
-        Utf8Compiled = new Utf8Regex(parityCase.Pattern, parityCase.Options | RegexOptions.Compiled);
+        Utf8 = new Utf8Regex(parityCase.Pattern, options: parityCase.Options);
+        Utf8Compiled = new Utf8Regex(parityCase.Pattern, options: parityCase.Options | RegexOptions.Compiled);
         DotNet = new Regex(parityCase.Pattern, parityCase.Options, Regex.InfiniteMatchTimeout);
         DotNetCompiled = new Regex(parityCase.Pattern, parityCase.Options | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
     }

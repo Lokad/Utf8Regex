@@ -17,7 +17,11 @@ public sealed class Utf8ScalarReplacementOutputTests
         byte[][] templates = [[0x61, 0xff, 0xf0, 0x9f, 0x98, 0x80], [0xf0, 0x9f], [0xed, 0xa0, 0x80]];
         foreach (var compiled in new[] { false, true })
         {
-            var regex = new Utf8Regex("a", Options(compiled, false), Regex.InfiniteMatchTimeout, policy);
+            var regex = new Utf8Regex("a", options: Options(compiled, false), policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
             foreach (var text in new[] { "a😀a", "miss" })
             foreach (var template in templates)
             {
@@ -39,7 +43,7 @@ public sealed class Utf8ScalarReplacementOutputTests
     [InlineData(true, true)]
     public void TemplatesKeepCompleteScalarCapturesAcrossOutputForms(bool compiled, bool rtl)
     {
-        var regex = new Utf8Regex("(?<outer>(?<x>.))", Options(compiled, rtl));
+        var regex = new Utf8Regex("(?<outer>(?<x>.))", options: Options(compiled, rtl));
         using var source = new CancellationTokenSource();
         foreach (var text in new[] { "\U0001f600", "a\U0001f600b", "\u00e9\U0001f600" })
         {
@@ -68,7 +72,7 @@ public sealed class Utf8ScalarReplacementOutputTests
     [InlineData(true, true)]
     public void EmptySubstitutionsCannotCompleteLiteralSurrogates(bool compiled, bool rtl)
     {
-        var regex = new Utf8Regex("()", Options(compiled, rtl));
+        var regex = new Utf8Regex("()", options: Options(compiled, rtl));
         const string template = "\ud83d$1\ude00";
         const string expected = "\ufffd\ufffd\U0001f600\ufffd\ufffd";
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace("\U0001f600"u8, template));
@@ -86,7 +90,7 @@ public sealed class Utf8ScalarReplacementOutputTests
     [InlineData(true, true, "destination")]
     public void TemplateMissesAvoidSubjectMapsAndDecodedStaging(bool compiled, bool rtl, string operation)
     {
-        var regex = new Utf8Regex("(?<x>z)", Options(compiled, rtl));
+        var regex = new Utf8Regex("(?<x>z)", options: Options(compiled, rtl));
         var text = new string('\u00e9', 50000);
         var input = Encoding.UTF8.GetBytes(text);
         var destination = new byte[input.Length];

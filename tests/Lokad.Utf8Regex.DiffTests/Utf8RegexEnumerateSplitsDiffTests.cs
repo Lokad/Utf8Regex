@@ -35,7 +35,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
             var (start, units) = subject.Bytes(index, length);
             expected.Add((subject.Value(index, length), start, units));
         }
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.Equal(expected, EnumerateUtf8Splits(regex, input, count));
         foreach (var split in regex.EnumerateSplits(Encoding.UTF8.GetBytes(input), count))
             Assert.Equal(split.GetValueBytes().ToArray(), global::System.Text.Encoding.UTF8.GetBytes(split.GetValueString()));
@@ -48,7 +48,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
         const string input = "a,b,c,d";
         const string pattern = ",";
         const int count = 3;
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         var expected = EnumerateRuntimeSplits(input, pattern, count, RegexOptions.CultureInvariant);
         var actual = EnumerateUtf8Splits(utf8Regex, input, count);
@@ -61,7 +61,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     {
         const string input = "αcaféβcaféγ";
         const string pattern = "café";
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         var expected = EnumerateRuntimeSplits(input, pattern, int.MaxValue, RegexOptions.CultureInvariant);
         var actual = EnumerateUtf8Splits(utf8Regex, input, int.MaxValue);
@@ -74,7 +74,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     {
         const string input = "αcaféβniñoγrésuméδ";
         const string pattern = "café|niño|résumé";
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         var expected = EnumerateRuntimeSplits(input, pattern, int.MaxValue, RegexOptions.CultureInvariant);
         var actual = EnumerateUtf8Splits(utf8Regex, input, int.MaxValue);
@@ -87,7 +87,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     {
         const string input = "café niño caféx xniño résumé";
         const string pattern = @"\b(?:café|niño|résumé)\b";
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         var expected = EnumerateRuntimeSplits(input, pattern, int.MaxValue, RegexOptions.CultureInvariant);
         var actual = EnumerateUtf8Splits(utf8Regex, input, int.MaxValue);
@@ -100,7 +100,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     {
         const string input = "LogError(\"bad\"); LogDebug(\"skip\"); LogInformation (\"ok\");";
         const string pattern = @"\b(?:LogError|LogWarning|LogInformation)\s*\(";
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         var expected = EnumerateRuntimeSplits(input, pattern, int.MaxValue, RegexOptions.CultureInvariant);
         var actual = EnumerateUtf8Splits(utf8Regex, input, int.MaxValue);
@@ -113,7 +113,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     {
         const string input = "baac";
         const string pattern = "(a)";
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         var expected = EnumerateRuntimeSplits(input, pattern, int.MaxValue, RegexOptions.CultureInvariant);
         var actual = EnumerateUtf8Splits(utf8Regex, input, int.MaxValue);
@@ -128,7 +128,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
         const string input = "a:b:c:d";
         const string pattern = ":";
         const int count = 3;
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         var expected = EnumerateRuntimeSplits(input, pattern, count, RegexOptions.CultureInvariant);
         var actual = EnumerateUtf8Splits(utf8Regex, input, count);
@@ -143,7 +143,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
         const string pattern = ",";
         const int count = 3;
         const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = EnumerateRuntimeSplits(input, pattern, count, options);
         var actual = EnumerateUtf8Splits(utf8Regex, input, count);
@@ -176,7 +176,7 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     [InlineData("\\b(caf\u00E9|ni\u00F1o)\\b", "caf\u00E9 xcaf\u00E9 ni\u00F1o", int.MaxValue, RegexOptions.CultureInvariant)]
     public void EnumerateSplitsMatchesRuntimeForOwnedLiteralFamily(string pattern, string input, int count, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
         var expected = EnumerateRuntimeSplits(input, pattern, count, options);
         var actual = EnumerateUtf8Splits(utf8Regex, input, count);
 
@@ -219,8 +219,8 @@ public sealed class Utf8RegexEnumerateSplitsDiffTests
     {
         var expected = EnumerateRuntimeSplits(input, pattern, count, options);
         var expectedCompiled = EnumerateRuntimeSplits(input, pattern, count, options | RegexOptions.Compiled);
-        var actual = EnumerateUtf8Splits(new Utf8Regex(pattern, options), input, count);
-        var actualCompiled = EnumerateUtf8Splits(new Utf8Regex(pattern, options | RegexOptions.Compiled), input, count);
+        var actual = EnumerateUtf8Splits(new Utf8Regex(pattern, options: options), input, count);
+        var actualCompiled = EnumerateUtf8Splits(new Utf8Regex(pattern, options: options | RegexOptions.Compiled), input, count);
 
         Assert.Equal(expected, expectedCompiled);
         Assert.Equal(expected, actual);

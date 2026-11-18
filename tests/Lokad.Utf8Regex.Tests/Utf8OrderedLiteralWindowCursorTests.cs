@@ -33,7 +33,10 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var timeout = finiteTimeout ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout;
             var oracle = new Regex(pattern, options, timeout);
-            var regex = new Utf8Regex(pattern, options, timeout);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = timeout
+            });
 
                 var expectedMatches = oracle.Matches(text).Select(m => (System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)))).ToArray();
                 var actualMatches = new List<(int, int)>();
@@ -108,7 +111,7 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
         var oracle = new Regex(pattern, options);
         for (var offset = 0; offset <= text.Length; offset++)
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var expected = new List<(int, int)>();
             foreach (var match in oracle.EnumerateMatches(text, offset))
             {
@@ -150,7 +153,10 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
         var input = Encoding.UTF8.GetBytes(text);
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var timeout = TimeSpan.FromMilliseconds(1);
-        var regex = new Utf8Regex(pattern, options, timeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         var cursor = regex.EnumerateMatches(input);
         // Expire the invocation after its creation; the candidate loop must
         // observe its own deadline, rather than relying on construction checks.

@@ -49,7 +49,7 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
     public void PublicCountMatchesDotNetAcrossRandomAsciiSubjects(RegexOptions options)
     {
         var random = new Random(0x51A7);
-        var regex = new Utf8Regex(Literal, options);
+        var regex = new Utf8Regex(Literal, options: options);
         var oracle = new Regex(Literal, options, Regex.InfiniteMatchTimeout);
 
         for (var iteration = 0; iteration < 256; iteration++)
@@ -80,7 +80,7 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
     {
         const string repeatedLiteral = "aaaaaaaaaaaaaaaaa";
         var input = new string('a', 51);
-        var regex = new Utf8Regex(repeatedLiteral, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(repeatedLiteral, options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Regex.Count(input, repeatedLiteral), regex.Count(Encoding.UTF8.GetBytes(input)));
 
@@ -130,7 +130,7 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
     public void PublicCountFallsBackForNonAsciiAndRejectsMalformedUtf8(RegexOptions options)
     {
         const string input = "é CancellationToken λCancellationToken";
-        var regex = new Utf8Regex(Literal, options);
+        var regex = new Utf8Regex(Literal, options: options);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, Literal, options), regex.Count(bytes));
@@ -140,8 +140,14 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
     public void InfiniteTimeoutRouteUsesFusedCount()
     {
         var input = Encoding.UTF8.GetBytes(new string('x', 256) + Literal);
-        var infinite = new Utf8Regex(Literal, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var finite = new Utf8Regex(Literal, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1));
+        var infinite = new Utf8Regex(Literal, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
+        var finite = new Utf8Regex(Literal, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1)
+        });
 
         if (Vector256.IsHardwareAccelerated)
         {

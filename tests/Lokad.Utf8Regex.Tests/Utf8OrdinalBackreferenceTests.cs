@@ -26,8 +26,11 @@ public sealed class Utf8OrdinalBackreferenceTests
         {
             var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0) |
                 (compiled ? RegexOptions.Compiled : 0);
-            var regex = new Utf8Regex(Pattern(segment.EnumerateRunes().Count(), rtl), options,
-                Regex.InfiniteMatchTimeout, Limits());
+            var regex = new Utf8Regex(Pattern(segment.EnumerateRunes().Count(), rtl), options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Limits()
+            });
             var bytes = Encoding.UTF8.GetBytes(segment + segment);
             byte[] storage = [255, 255, .. bytes, 255];
             var input = storage.AsSpan(2, bytes.Length);
@@ -61,9 +64,11 @@ public sealed class Utf8OrdinalBackreferenceTests
         foreach (var length in new[] { 1, 2047, 2048, 2049, 8193 })
         {
             var segment = new string('a', length);
-            var regex = new Utf8Regex(Pattern(length, rtl),
-                RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0),
-                Regex.InfiniteMatchTimeout, Limits());
+            var regex = new Utf8Regex(Pattern(length, rtl), options:                 RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0), policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Limits()
+            });
             foreach (var changed in new[] { "b" + segment[1..], segment[..^1] + "b" })
             {
                 var input = Encoding.UTF8.GetBytes(rtl ? changed + segment : segment + changed);
@@ -81,8 +86,12 @@ public sealed class Utf8OrdinalBackreferenceTests
         var captured = new string('k', 2049);
         var reference = new string('K', 2049);
         var input = Encoding.UTF8.GetBytes(rtl ? reference + captured : captured + reference);
-        var regex = new Utf8Regex(Pattern(2049, rtl), RegexOptions.CultureInvariant | RegexOptions.IgnoreCase |
-            (rtl ? RegexOptions.RightToLeft : 0), Regex.InfiniteMatchTimeout, Limits());
+        var regex = new Utf8Regex(Pattern(2049, rtl), options: RegexOptions.CultureInvariant | RegexOptions.IgnoreCase |
+            (rtl ? RegexOptions.RightToLeft : 0), policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Limits()
+            });
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(match.Success);
         Assert.Equal(input.Length, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
@@ -95,7 +104,7 @@ public sealed class Utf8OrdinalBackreferenceTests
     public void EveryWorkCutoffKeepsCallerReservationAndNoPartialCount(bool rtl)
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
-        var regex = new Utf8Regex(Pattern(64, rtl), options);
+        var regex = new Utf8Regex(Pattern(64, rtl), options: options);
         var program = regex.Inspection.PreparedRegex.ScalarProgram!;
         var input = Encoding.UTF8.GetBytes(new string('a', 128));
         var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 1024, 1 << 20, 1 << 20),
@@ -117,7 +126,11 @@ public sealed class Utf8OrdinalBackreferenceTests
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
             // Internal progress is invalid after denial. The public operation
             // must throw instead of publishing that partial count.
-            var bounded = new Utf8Regex(Pattern(64, rtl), options, Regex.InfiniteMatchTimeout, Limits(cap));
+            var bounded = new Utf8Regex(Pattern(64, rtl), options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Limits(cap)
+            });
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Count(input)).ResourceKind);
         }
@@ -131,7 +144,7 @@ public sealed class Utf8OrdinalBackreferenceTests
     public void CompletedCaptureComparisonObservesOriginalAuthority(bool rtl, bool expire)
     {
         const int length = 600000;
-        var regex = new Utf8Regex(Pattern(length, rtl), RegexOptions.CultureInvariant |
+        var regex = new Utf8Regex(Pattern(length, rtl), options: RegexOptions.CultureInvariant |
             (rtl ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.PreparedRegex.ScalarProgram!;
         var input = Encoding.UTF8.GetBytes(new string('a', length * 2));

@@ -16,7 +16,10 @@ public sealed class Utf8OwnedReplacementInteropTests
     public void TemplatesPreserveBmpGrammarAndEncodeStringBoundaries(string pattern, RegexOptions options)
     {
         var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(30));
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(30));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(30)
+        });
         using var source = new CancellationTokenSource();
         foreach (var text in Texts)
         foreach (var template in new[] { "", "Q", "$&", "<$1>|$2|$3", "$`|$&|$'|$_|$+", "$1$2$&",
@@ -65,7 +68,7 @@ public sealed class Utf8OwnedReplacementInteropTests
         foreach (var template in new[] { "\ud83d", "\ude00", "\ud83d$&\ude00" })
         {
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var input = Encoding.UTF8.GetBytes(text);
             var expected = oracle.Replace(text, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template)));
             Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, template));
@@ -222,7 +225,7 @@ public sealed class Utf8OwnedReplacementInteropTests
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
                 (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-            var regex = new Utf8Regex("(.)", options);
+            var regex = new Utf8Regex("(.)", options: options);
             var input = "\U0001f600x"u8.ToArray();
             var template = new string('Q', 500000);
             var templateBytes = Encoding.UTF8.GetBytes(template);

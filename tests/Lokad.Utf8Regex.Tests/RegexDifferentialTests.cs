@@ -87,9 +87,19 @@ public sealed class RegexDifferentialTests
         foreach (var mode in new[] { "default", "token", "timeout", "budget", "compiled" })
         {
             var options = RegexOptions.CultureInvariant | (mode == "compiled" ? RegexOptions.Compiled : 0);
-            var regex = new Utf8Regex(pattern, options,
-                matchTimeout: mode == "timeout" ? TimeSpan.FromSeconds(10) : null,
-                resourcePolicy: mode == "budget" ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 } : default);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = mode == "timeout" ? TimeSpan.FromSeconds(10) : null,
+                ResourcePolicy = mode == "budget" ? new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 16 << 20,
+                    MaxResultBytes = 16 << 20
+                }
+
+                : default
+            });
             var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
             var token = mode == "token" ? cancellation.Token : default;
             var captures = new Utf8CaptureRange[regex.GetGroupNumbers().Length];
@@ -133,8 +143,13 @@ public sealed class RegexDifferentialTests
         foreach (var pattern in new[] { @"(?<x>a)+(b)?", @"(?:ab|a)+?", "", @"[^\n]*", @"(?<x>\w+): (\w+)",
             @"(?<day>[0-9]{1,2})/[0-9]{1,2}/[0-9]{4}" })
         {
-            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant,
-                resourcePolicy: new() { MaxWorkSteps = 1_000_000 });
+            var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1_000_000
+                }
+            });
             var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
             foreach (var text in new[] { "", "é aab ab\n", "é: Ω a: b", "abab", "\n\n", "é1/2/2020", "12/12/2020\n" })
                 foreach (var start in Enumerable.Range(0, text.Length + 1))
@@ -162,7 +177,13 @@ public sealed class RegexDifferentialTests
         string[] tokens = ["a", "é", "😀", "\n"];
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(pattern, options, resourcePolicy: new() { MaxWorkSteps = 1_000_000 });
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1_000_000
+                }
+            });
             var oracle = new Regex(pattern.Replace("😀", "\ue000"), options);
             for (var sample = 0; sample < 32; sample++)
             {
@@ -222,7 +243,7 @@ public sealed class RegexDifferentialTests
         foreach (var options in new[] { RegexOptions.Singleline, RegexOptions.Singleline | RegexOptions.Compiled })
             foreach (var text in new[] { "A1BA1B", "A\nB", "B\nA", "éA\nB中A1BA1B" })
             {
-                var regex = new Utf8Regex(pattern, options);
+                var regex = new Utf8Regex(pattern, options: options);
                 var oracle = new Regex(pattern, options);
                 var input = Encoding.UTF8.GetBytes(text);
                 Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
@@ -259,7 +280,7 @@ public sealed class RegexDifferentialTests
         using var cancellation = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(expected, regex.Count(input));
             Assert.Equal(expected, regex.Count(input, cancellation.Token));
         }

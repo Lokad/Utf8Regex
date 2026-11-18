@@ -79,11 +79,9 @@ public sealed class Utf8AsciiSearchHeuristicsTests
         var upper = needleText.ToUpperInvariant();
         var nearMiss = upper.ToCharArray();
         nearMiss[length / 2] = '0';
-        var ordinary = new Utf8Regex(needleText,
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+        var ordinary = new Utf8Regex(needleText, options:             System.Text.RegularExpressions.RegexOptions.IgnoreCase |
             System.Text.RegularExpressions.RegexOptions.CultureInvariant);
-        var compiled = new Utf8Regex(needleText,
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+        var compiled = new Utf8Regex(needleText, options:             System.Text.RegularExpressions.RegexOptions.IgnoreCase |
             System.Text.RegularExpressions.RegexOptions.CultureInvariant |
             System.Text.RegularExpressions.RegexOptions.Compiled);
 

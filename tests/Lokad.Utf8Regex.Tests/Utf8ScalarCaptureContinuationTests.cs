@@ -108,7 +108,7 @@ public sealed class Utf8ScalarCaptureContinuationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-        var regex = new Utf8Regex("(?<x>.)+", options);
+        var regex = new Utf8Regex("(?<x>.)+", options: options);
         var input = "a😀𐐨"u8;
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
         Assert.True(match.Success);
@@ -156,7 +156,10 @@ public sealed class Utf8ScalarCaptureContinuationTests
         var input = Encoding.ASCII.GetBytes(text);
         var timeout = expire ? TimeSpan.FromMilliseconds(100) : Regex.InfiniteMatchTimeout;
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, timeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         using var source = new CancellationTokenSource();
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>

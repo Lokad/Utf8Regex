@@ -27,7 +27,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
     {
         const string pattern = @"^a\D{2,}b$";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.True(regex.IsMatch("a??b"u8));
         Assert.False(regex.IsMatch("a😀b"u8));
         Assert.Equal(10, (regex.Match("a😀😀b"u8).EndOffsetInBytes - regex.Match("a😀😀b"u8).StartOffsetInBytes));
@@ -47,7 +47,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-        var regex = new Utf8Regex(Pattern(category, shape, capture), options);
+        var regex = new Utf8Regex(Pattern(category, shape, capture), options: options);
         foreach (var body in new[] { "", "?", "??", "😀", "😀😀", "?😀", "😀?" })
         {
             var text = shape == 2 ? "a" + body + "7" : body;

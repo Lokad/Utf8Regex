@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Search;
 using System.Text.RegularExpressions;
@@ -5,9 +6,11 @@ using System.Text.RegularExpressions;
 namespace Lokad.Utf8Regex;
 
 /// <summary>Enumerates regex split segments without allocating a string array.</summary>
-/// <remarks>This stack-only enumerator and its current segment borrow the original unchanged UTF-8 input.</remarks>
+/// <remarks>This stack-only enumerator and its current segment borrow the original unchanged UTF-8 input. Funded enumeration also borrows an open regex; close rejects later advances on all copies, while returned segments remain valid. Copies retain independent positions and shared numeric authority, without host working loans.</remarks>
 public ref struct Utf8ValueSplitEnumerator
 {
+    private Utf8FundedStorage? _programMemory;
+
     private readonly ReadOnlySpan<byte> _input;
     private readonly bool _rightToLeft;
     private Utf8OperationMatchCursor _matchCursor;
@@ -46,6 +49,20 @@ public ref struct Utf8ValueSplitEnumerator
     /// <exception cref="RegexMatchTimeoutException">The configured matching timeout elapsed.</exception>
     /// <exception cref="Utf8ResourceLimitExceededException">The cumulative execution allowance was exhausted.</exception>
     public bool MoveNext()
+    {
+        if (_programMemory is null) return MoveNextCore();
+        _matchCursor.CheckCancellationAtEntry();
+        using var use = _programMemory.Enter();
+        return MoveNextCore();
+    }
+
+    internal Utf8ValueSplitEnumerator WithProgramMemory(Utf8FundedStorage? memory)
+    {
+        _programMemory = memory;
+        return this;
+    }
+
+    private bool MoveNextCore()
     {
         try
         {

@@ -30,8 +30,8 @@ readonly struct Utf8RangeMatch
   method ReadOnlyMemory<Byte> GetGroupMemory(Int32 number)
   method ReadOnlyMemory<Byte> GetValueMemory()
   method ReadOnlySpan<Utf8CaptureRange> GetCaptures(Int32 number)
-sealed class Utf8Regex
-  ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options = 512, Nullable<TimeSpan> matchTimeout = null, Utf8ResourcePolicy resourcePolicy = default)
+sealed class Utf8Regex : IDisposable
+  ctor Utf8Regex(String pattern, Text.RegularExpressions.RegexOptions options = 512, Utf8RegexPolicy policy = null)
   property Int32 CaptureGroupCount { get; }
   property String Pattern { get; }
   property Text.RegularExpressions.RegexOptions Options { get; }
@@ -40,7 +40,7 @@ sealed class Utf8Regex
   property static TimeSpan DefaultMatchTimeout { get; set; }
   method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Buffers.OperationStatus TryCopyPatternUtf8(Span<Byte> destination, out Int32 bytesRequired, Threading.CancellationToken cancellationToken = default)
-  method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Span<Byte> destination, out Int32 bytesWritten, Threading.CancellationToken cancellationToken = default)
+  method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Span<Byte> destination, out Int32 bytesWritten, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, String replacement, Span<Byte> destination, out Int32 bytesWritten, Threading.CancellationToken cancellationToken = default)
   method Byte[] Replace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Threading.CancellationToken cancellationToken = default)
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Threading.CancellationToken cancellationToken = default)
@@ -55,11 +55,9 @@ sealed class Utf8Regex
   method Utf8RegexMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Nullable<Int32> startOffsetInBytes = null, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<Byte> input, Nullable<Int32> startOffsetInBytes = null, Threading.CancellationToken cancellationToken = default)
   method Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<Byte> input, Int32 count = 2147483647, Threading.CancellationToken cancellationToken = default)
-  method static Utf8Regex Compile(ReadOnlySpan<Byte> patternUtf8, Text.RegularExpressions.RegexOptions options = 0)
-  method static Utf8Regex Compile(ReadOnlySpan<Byte> patternUtf8, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
-  method static Utf8Regex Compile(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken)
-  method static Utf8RegexProgramOwner Compile(ReadOnlySpan<Byte> patternUtf8, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
-  method static Utf8RegexProgramOwner Compile(String pattern, Text.RegularExpressions.RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy, Utf8ConstructionPolicy constructionPolicy, TimeSpan constructionTimeout, Threading.CancellationToken cancellationToken, IUtf8MemoryAllowance programMemoryAllowance)
+  method Void Dispose()
+  method static Utf8Regex Compile(ReadOnlySpan<Byte> patternUtf8, Text.RegularExpressions.RegexOptions options = 0, Utf8RegexPolicy policy = null, Threading.CancellationToken cancellationToken = default)
+  method static Utf8Regex Compile(String pattern, Text.RegularExpressions.RegexOptions options = 512, Utf8RegexPolicy policy = null, Threading.CancellationToken cancellationToken = default)
 sealed class Utf8RegexMatchCursor : IDisposable
   method Boolean MoveNext(out Utf8RangeMatch match, Threading.CancellationToken cancellationToken = default)
   method Boolean MoveNextRetained(out Utf8RetainedRangeMatch match, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance resultMemoryAllowance = null)
@@ -71,17 +69,6 @@ sealed class Utf8RegexPolicy
   property Nullable<TimeSpan> MatchTimeout { get; init; }
   property Utf8ConstructionPolicy ConstructionPolicy { get; init; }
   property Utf8ResourcePolicy ResourcePolicy { get; init; }
-sealed class Utf8RegexProgramOwner : IDisposable
-  property Int32 CaptureGroupCount { get; }
-  method Boolean IsMatch(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Buffers.OperationStatus TryCopyPatternUtf8(Span<Byte> destination, out Int32 bytesRequired, Threading.CancellationToken cancellationToken = default)
-  method Buffers.OperationStatus TryReplace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementUtf8, Span<Byte> destination, out Int32 bytesWritten, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Int32 Count(ReadOnlySpan<Byte> input, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Int32 GroupNumberFromCaptureSlot(Int32 captureSlot)
-  method Int32 GroupNumberFromUtf8Name(ReadOnlySpan<Byte> nameUtf8, Threading.CancellationToken cancellationToken = default)
-  method Utf8CaptureRange Match(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes, Span<Utf8CaptureRange> captures, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null, Nullable<Int32> endOffsetInBytes = null)
-  method Utf8RegexMatchCursor CreateMatchCursor(ReadOnlyMemory<Byte> input, Nullable<Int32> startOffsetInBytes = null, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
-  method Void Dispose()
 sealed class Utf8ResourceLimitExceededException : InvalidOperationException, Runtime.Serialization.ISerializable
   property UInt64 Limit { get; }
   property UInt64 Requested { get; }

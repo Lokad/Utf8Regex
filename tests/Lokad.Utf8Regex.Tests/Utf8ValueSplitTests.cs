@@ -8,7 +8,7 @@ public sealed class Utf8ValueSplitTests
     [InlineData(false)] [InlineData(true)]
     public void OptionalCountKeepsUnlimitedScalarByteSegments(bool rtl)
     {
-        var regex = new Utf8Regex(",", rtl ? RegexOptions.RightToLeft : RegexOptions.None);
+        var regex = new Utf8Regex(",", options: rtl ? RegexOptions.RightToLeft : RegexOptions.None);
         using var source = new CancellationTokenSource();
         var expected = rtl ? new[] { (9, 1), (3, 5), (0, 2) } : new[] { (0, 2), (3, 5), (9, 1) };
         var defaults = new List<(int, int)>();
@@ -24,7 +24,7 @@ public sealed class Utf8ValueSplitTests
     [Fact]
     public void SplitByteAccessPreservesScalarBoundaries()
     {
-        var regex = new Utf8Regex(".", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(".", options: RegexOptions.CultureInvariant);
         var byteRanges = new List<(int, int)>();
         foreach (var split in regex.EnumerateSplits("😀"u8))
         {

@@ -13,7 +13,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void SupplementaryAtomsUseCompleteScalarRanges(string pattern, string text, int byteLength, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input));
         Assert.Equal(1, regex.Count(input));
@@ -29,7 +29,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     [InlineData("needle", "haystack with needle inside")]
     public void IsMatchMatchesRuntimeForNativeLiteralSubset(string pattern, string input)
     {
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         var expected = Regex.IsMatch(input, pattern, RegexOptions.CultureInvariant);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -44,7 +44,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForInvariantAsciiIgnoreCaseLiteralSubset(string pattern, string input)
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -84,7 +84,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     {
         var subject = new Utf8ScalarDiffSubject(input);
         var expected = subject.Comparator(pattern, options).IsMatch(subject.Projected);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -95,7 +95,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     [InlineData(@"é\B", "éé z", RegexOptions.CultureInvariant)]
     public void IsMatchMatchesRuntimeForNativeBoundaryWrappedLiteralSubset(string pattern, string input, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -111,7 +111,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForNativeUtf8LiteralAlternationSubset(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -126,7 +126,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForInvariantAsciiIgnoreCaseLiteralAlternationSubset(string pattern, string input)
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -141,7 +141,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForBoundaryWrappedAsciiLiteralAlternationSubset(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -156,7 +156,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForAsciiStructuralIdentifierFamily(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -170,7 +170,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForUtf8HaystackAgainstUtf8ByteSafeAsciiSimplePattern(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -184,7 +184,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void CountMatchesRuntimeForUtf8HaystackAgainstUtf8ByteSafeAsciiSimplePattern(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.Count(input, pattern, options);
         var actual = utf8Regex.Count(Encoding.UTF8.GetBytes(input));
@@ -198,7 +198,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void CountMatchesRuntimeForUtf8HaystackAgainstUtf8ByteSafeFallbackInterpreterPattern(string pattern, string input)
     {
         var options = RegexOptions.None;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.Count(input, pattern, options);
         var actual = utf8Regex.Count(Encoding.UTF8.GetBytes(input));
@@ -213,7 +213,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForAsciiDeclarationIdentifierFamily(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -228,7 +228,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForAsciiLoggingInvocationFamily(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -242,7 +242,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForNativeUtf8LiteralLookaheadSubset(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -256,7 +256,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string pattern = @"\d{2,4}";
         const string input = "1 12 123 1234";
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = new List<(int Index, int Length)>();
         foreach (var match in Regex.EnumerateMatches(input, pattern, options))
@@ -282,7 +282,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "LogError(\"bad\"); LogDebug(\"skip\"); LogInformation (\"ok\");";
         var options = RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = new List<(int Index, int Length)>();
         foreach (var match in Regex.EnumerateMatches(input, pattern, options))
@@ -312,8 +312,10 @@ public sealed class Utf8RegexIsMatchDiffTests
         var pattern = captured ? $"({basePattern})" : basePattern;
         const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
         var utf8Regex = finiteTimeout
-            ? new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10))
-            : new Utf8Regex(pattern, options);
+            ? new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(10)
+            })            : new Utf8Regex(pattern, options: options);
 
         var expected = new List<(int IndexInBytes, int LengthInBytes)>();
         foreach (var match in Regex.EnumerateMatches(input, pattern, options))
@@ -342,7 +344,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForInvariantIgnoreCaseAsciiSimplePatternSubset(string pattern, string input)
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -360,7 +362,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForFiniteLiteralExpandedSimplePatterns(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -374,7 +376,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void MatchMatchesRuntimeForFiniteLiteralExpandedSimplePatterns(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.Match(input, pattern, options);
         var actual = utf8Regex.Match(Encoding.UTF8.GetBytes(input));
@@ -395,7 +397,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForInvariantIgnoreCaseFiniteLiteralExpandedSimplePatterns(string pattern, string input)
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -417,7 +419,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     [InlineData("(?m:.){2}", "a\nb", RegexOptions.CultureInvariant)]
     public void IsMatchMatchesRuntimeForAdditionalNativeOptionFamilies(string pattern, string input, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -432,7 +434,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForLeadingGlobalInlineIgnoreCaseLiteralSubset(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -448,7 +450,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForInvariantIgnoreCasePositiveLiteralLookaheadSubset(string pattern, string input)
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -463,7 +465,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void MatchMatchesRuntimeForPositiveSeparatorLiteralLookaheadSubset(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expectedIsMatch = Regex.IsMatch(input, pattern, options);
         var expectedMatch = Regex.Match(input, pattern, options);
@@ -482,7 +484,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "HttpClient client HttpClientFactory client HttpClient\nclient";
         const string pattern = "HttpClient(?=\\s+client)";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -496,7 +498,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForLeadingGlobalInlineIgnoreCaseSimplePatternSubset(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -507,7 +509,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     [Fact]
     public void MatchReturnsByteAlignedCoordinatesForNativeLiteral()
     {
-        var match = new Utf8Regex("abc", RegexOptions.CultureInvariant).Match("xxabcxx"u8);
+        var match = new Utf8Regex("abc", options: RegexOptions.CultureInvariant).Match("xxabcxx"u8);
 
         Assert.True(match.Success);
         Assert.True(match.Success);
@@ -520,7 +522,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     [Fact]
     public void MatchReturnsUtf16AndByteCoordinatesForNativeUtf8Literal()
     {
-        var match = new Utf8Regex("😀", RegexOptions.CultureInvariant).Match("x😀y"u8);
+        var match = new Utf8Regex("😀", options: RegexOptions.CultureInvariant).Match("x😀y"u8);
 
         Assert.True(match.Success);
         Assert.True(match.Success);
@@ -532,7 +534,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     [Fact]
     public void MatchReturnsCompleteScalarCoordinates()
     {
-        var regex = new Utf8Regex(".", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(".", options: RegexOptions.CultureInvariant);
         var match = regex.Match("😀"u8);
         Assert.True(match.Success);
         Assert.True(match.Success);
@@ -546,7 +548,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "prefix LogInformation (\"ok\") suffix";
         const string pattern = @"\b(?:LogError|LogWarning|LogInformation)\s*\(";
         var expected = Regex.Match(input, pattern, RegexOptions.CultureInvariant);
-        var actual = new Utf8Regex(pattern, RegexOptions.CultureInvariant).Match(Encoding.UTF8.GetBytes(input));
+        var actual = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant).Match(Encoding.UTF8.GetBytes(input));
 
         Assert.True(expected.Success);
         Assert.True(actual.Success);
@@ -561,7 +563,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void CountMatchesRuntimeForNativeLiteral()
     {
         const string input = "abcxxabcabc";
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(
             Regex.Count(input, "abc", RegexOptions.CultureInvariant),
@@ -573,7 +575,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     {
         const string input = "ab abb abbb";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex("ab+", options);
+        var regex = new Utf8Regex("ab+", options: options);
 
         Assert.Equal(
             Regex.Count(input, "ab+", options),
@@ -586,7 +588,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "Преступление наказание short слово";
         const string pattern = @"\p{L}{8,13}";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -604,7 +606,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     {
         const string pattern = "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+";
         var options = RegexOptions.Multiline;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(expectedCount, Regex.Count(input, pattern, options));
         Assert.Equal(expectedCount, regex.Count(Encoding.UTF8.GetBytes(input)));
@@ -616,7 +618,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "xx foobaz yy foobar zz";
         const string pattern = "foo(?>bar|baz)";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         var expectedIsMatch = Regex.IsMatch(input, pattern, options);
         var expectedMatch = Regex.Match(input, pattern, options);
@@ -673,7 +675,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void IsMatchMatchesRuntimeForAsciiSimplePatternSubset(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.IsMatch(input, pattern, options);
         var actual = utf8Regex.IsMatch(Encoding.UTF8.GetBytes(input));
@@ -686,7 +688,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     {
         const string input = "abXcd abYcd zz";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex("ab.cd", options);
+        var regex = new Utf8Regex("ab.cd", options: options);
 
         Assert.Equal(
             Regex.Count(input, "ab.cd", options),
@@ -698,7 +700,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     {
         const string input = "ab1d ab2d abXd";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex("ab[0-9]d", options);
+        var regex = new Utf8Regex("ab[0-9]d", options: options);
 
         Assert.Equal(
             Regex.Count(input, "ab[0-9]d", options),
@@ -710,7 +712,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     {
         const string input = "abc";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex("^abc$", options);
+        var regex = new Utf8Regex("^abc$", options: options);
 
         Assert.Equal(
             Regex.Count(input, "^abc$", options),
@@ -722,7 +724,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     {
         const string input = "café niño café resume niño";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex("café|niño", options);
+        var regex = new Utf8Regex("café|niño", options: options);
 
         Assert.Equal(
             Regex.Count(input, "café|niño", options),
@@ -735,7 +737,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "Task TaskFactory ValueTask IAsyncEnumerable Task";
         const string pattern = @"\b(?:Task|ValueTask|IAsyncEnumerable)\b";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -748,7 +750,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "TryGetCustomerRecordAsync GetvalueAsync CreateBuilderAsync GetAlpha";
         const string pattern = @"\b(?:Get|TryGet|Create)[A-Z][A-Za-z0-9]+Async\b";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -761,7 +763,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "record CustomerExportJob struct worker_state class Worker_State";
         const string pattern = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -774,7 +776,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "LogError(\"bad\"); LogDebug(\"skip\"); LogInformation (\"ok\");";
         const string pattern = @"\b(?:LogError|LogWarning|LogInformation)\s*\(";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -787,7 +789,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "AKIAABCDEFGHIJKLMNOP AROAABCDEFGH12345678 ASIAABCDEFGH123456789";
         const string pattern = @"((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -800,7 +802,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "abcdefghij blah blah Result more words klmnopqrst xx short Result tiny abc";
         const string pattern = @"[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -813,7 +815,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "abcdefghij préface Result après klmnopqrst";
         const string pattern = @"[A-Za-z]{10}\s+[\s\S]{0,100}Result[\s\S]{0,100}\s+[A-Za-z]{10}";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -826,7 +828,7 @@ public sealed class Utf8RegexIsMatchDiffTests
         const string input = "Alpha Beta Gamma Delta Epsilon Zeta Eta Theta Iota Kappa Lambda\nalpha beta gamma";
         const string pattern = @"(?:[A-Z][a-z]+\s*){10,100}";
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -850,7 +852,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void CountMatchesRuntimeForEscapedAsciiSimplePatternSubset(string pattern, string input)
     {
         var options = RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -862,7 +864,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     [InlineData("a.b", "a\nb xa\nb", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
     public void CountMatchesRuntimeForAdditionalNativeOptionFamilies(string pattern, string input, RegexOptions options)
     {
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(
             Regex.Count(input, pattern, options),
@@ -873,7 +875,7 @@ public sealed class Utf8RegexIsMatchDiffTests
     public void AsciiSimplePatternMatchesCompleteNonAsciiScalar()
     {
         const string input = "ab😀cd";
-        var regex = new Utf8Regex("ab.cd", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("ab.cd", options: RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
         Assert.True(regex.IsMatch(bytes));
         var match = regex.Match(bytes);

@@ -13,8 +13,8 @@ public sealed class Utf8UriVectorBoundaryTests
     public void UriVectorsAndTailsKeepWholeAndCountRanges(int offset)
     {
         var oracle = new Regex(Pattern, RegexOptions.CultureInvariant);
-        var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant);
-        var compiled = new Utf8Regex(Pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         for (var length = 0; length <= 97; length++)
         {
             var text = "x://" + new string('a', length) + "?q#f";
@@ -39,9 +39,18 @@ public sealed class Utf8UriVectorBoundaryTests
     public void EveryAsciiStopByteKeepsContinuationAndScalarFallback(int position)
     {
         var oracle = new Regex(Pattern, RegexOptions.CultureInvariant);
-        var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant);
-        var finite = new Utf8Regex(Pattern, RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant);
+        var finite = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            }
+        });
         for (var value = 0; value < 128; value++)
         {
             var text = "x://aa" + new string('b', position) + (char)value + "tail?query#fragment y://zz";
@@ -55,7 +64,7 @@ public sealed class Utf8UriVectorBoundaryTests
     }
     private static void AssertUriRanges(Regex oracle, string text, ReadOnlySpan<byte> input)
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant); var start = 0;
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant); var start = 0;
         foreach (Match expected in oracle.Matches(text))
         {
             var actual = regex.Match(input, start, Span<Utf8CaptureRange>.Empty);

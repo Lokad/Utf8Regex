@@ -21,6 +21,7 @@ internal sealed class Utf8ReplacementPlanCache
 
     internal int Count => _plans.Count;
     internal ulong PayloadBytes => _plans.PayloadBytes;
+    internal ulong MaximumRetainedBytes => _plans.MaximumMetadataBytes + _plans.MaximumPayloadBytes;
 
     internal Utf8AnalyzedReplacement GetOrAdd<TState>(
         object replacement,

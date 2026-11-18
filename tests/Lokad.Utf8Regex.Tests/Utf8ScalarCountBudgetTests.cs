@@ -11,7 +11,7 @@ public sealed class Utf8ScalarCountBudgetTests
     [InlineData(false)] [InlineData(true)]
     public void EveryWorkCutoffKeepsCallerStorageAndStopsCounting(bool reverse)
     {
-        var regex = new Utf8Regex("(?:😀|a)*", RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var regex = new Utf8Regex("(?:😀|a)*", options: RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
         var input = Encoding.UTF8.GetBytes("😀a😀");
         var start = reverse ? input.Length : 0;
@@ -37,7 +37,7 @@ public sealed class Utf8ScalarCountBudgetTests
     [InlineData(false)] [InlineData(true)]
     public void EveryScratchCutoffKeepsTheBorrowedReservation(bool reverse)
     {
-        var regex = new Utf8Regex("(?:😀|a)*", RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var regex = new Utf8Regex("(?:😀|a)*", options: RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
         var input = Encoding.UTF8.GetBytes("😀a😀");
         var start = reverse ? input.Length : 0;
@@ -60,7 +60,7 @@ public sealed class Utf8ScalarCountBudgetTests
     [InlineData(false)] [InlineData(true)]
     public void CancellationReleasesOnlyOwnedScratch(bool reverse)
     {
-        var regex = new Utf8Regex("(?:😀|a)*", RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var regex = new Utf8Regex("(?:😀|a)*", options: RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀a", 512)));
         using var source = new CancellationTokenSource();

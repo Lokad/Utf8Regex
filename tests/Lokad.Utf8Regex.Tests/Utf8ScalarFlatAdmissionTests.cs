@@ -21,7 +21,7 @@ public sealed class Utf8ScalarFlatAdmissionTests
     {
         string[] patterns = ["\ud83d", "\ude00", @"\ud83d", "(\ud83d)", "(?<x>\ude00)", "a\ud83d", "\ud83db"];
         var pattern = patterns[patternId];
-        var regex = new Utf8Regex(pattern, Options(compiled, nonBacktracking));
+        var regex = new Utf8Regex(pattern, options: Options(compiled, nonBacktracking));
         var input = "\ufffd a\ufffd \ufffdb \U0001f600"u8.ToArray();
         using var source = new CancellationTokenSource();
         Assert.False(regex.IsMatch(input));
@@ -45,7 +45,7 @@ public sealed class Utf8ScalarFlatAdmissionTests
         using var source = new CancellationTokenSource();
         foreach (var pattern in new[] { ".", "(.)", "^.$", "[\U0001f600]", "(?<x>\U0001f600)", "\ud83d|\U0001f600" })
         {
-            var regex = new Utf8Regex(pattern, Options(compiled, true));
+            var regex = new Utf8Regex(pattern, options: Options(compiled, true));
             AssertOwned(regex);
             Assert.True(regex.IsMatch("\U0001f600"u8, source.Token));
             Assert.Equal(1, regex.Count("\U0001f600"u8, source.Token));
@@ -69,12 +69,12 @@ public sealed class Utf8ScalarFlatAdmissionTests
         var options = Options(compiled, false) | (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
         foreach (var pattern in new[] { "\ud83d?", "(?:\ude00){0}", "(?=\ud83d)", "(?<=\ude00)" })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var expected = pattern.StartsWith("(?=", StringComparison.Ordinal) || pattern.StartsWith("(?<=", StringComparison.Ordinal) ? 0 : 3;
             Assert.Equal(expected, regex.Count("\U0001f600\ufffd"u8));
             AssertOwned(regex);
         }
-        var alternative = new Utf8Regex("\ud83d|a", options);
+        var alternative = new Utf8Regex("\ud83d|a", options: options);
         var match = alternative.Match("\ufffda"u8);
         Assert.Equal((3, 1), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         AssertOwned(alternative);

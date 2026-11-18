@@ -10,7 +10,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
     [InlineData(false)] [InlineData(true)]
     public void WorkspacePeakIncludesEveryCompleteStateVector(bool captured)
     {
-        var regex = new Utf8Regex(captured ? "(?<x>.)+b" : ".+b", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(captured ? "(?<x>.)+b" : ".+b", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
         var states = program.Instructions.Length;
         var registers = 2 * program.GroupCount + program.NonBacktrackingCaptureOpeningCount;
@@ -58,7 +58,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
     {
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         var oracle = new Regex(pattern, options);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.Inspection.AvailableOwnedSliceProgram?.IsNonBacktracking);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -95,7 +95,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         // one and reports "bc". Keep the correct structural capture "abc",
         // shared with ordinary owned execution; do not reproduce that defect.
         Assert.Equal("abc", new Regex(pattern, options).Match("abc").Groups["x"].Value);
-        var regex = new Utf8Regex(pattern, options | RegexOptions.NonBacktracking);
+        var regex = new Utf8Regex(pattern, options: options | RegexOptions.NonBacktracking);
         Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("abc"u8.ToArray())).TryGetGroup("x", out var group));
         Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("abc"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromName("x")).Span));
         Assert.Equal(1, Utf8MatchSequence.First(regex.CreateMatchCursor("abc"u8.ToArray())).GetCaptures(regex.GroupNumberFromName("x")).Length);
@@ -108,7 +108,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
     {
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         var input = "a😀😀b"u8.ToArray();
-        var regex = new Utf8Regex("(?<x>😀)+", options);
+        var regex = new Utf8Regex("(?<x>😀)+", options: options);
         Assert.Equal(1, regex.Count(input));
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal((1, 8), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
@@ -121,10 +121,10 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.True(cursor.MoveNext(out var fromOffset));
         Assert.Equal((5, 9), (fromOffset.Value.StartOffsetInBytes, fromOffset.Value.EndOffsetInBytes));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-        Assert.True(new Utf8Regex("^.$", options).IsMatch("😀"u8));
-        Assert.False(new Utf8Regex("^..$", options).IsMatch("😀"u8));
-        Assert.Equal(2, new Utf8Regex(".*?", options).Count("😀"u8));
-        var dots = new Utf8Regex("(.)", options);
+        Assert.True(new Utf8Regex("^.$", options: options).IsMatch("😀"u8));
+        Assert.False(new Utf8Regex("^..$", options: options).IsMatch("😀"u8));
+        Assert.Equal(2, new Utf8Regex(".*?", options: options).Count("😀"u8));
+        var dots = new Utf8Regex("(.)", options: options);
         var ranges = new List<(int, int)>();
         foreach (var item in dots.EnumerateMatches(input)) ranges.Add((item.StartOffsetInBytes, (item.EndOffsetInBytes - item.StartOffsetInBytes)));
         Assert.Equal(new[] { (0, 1), (1, 4), (5, 4), (9, 1) }, ranges);
@@ -136,7 +136,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
     [InlineData("a.*b")] [InlineData("(?<x>a+)(?<y>b)")]
     public void UnanchoredMissWorkGrowsLinearly(string pattern)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("NFA missing.");
         ulong previous = 0;
         foreach (var length in new[] { 512, 1024, 2048, 4096 })
@@ -157,7 +157,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
     [InlineData(false)] [InlineData(true)]
     public void WorkStorageAndCancellationFailuresReleaseWorkspace(bool histories)
     {
-        var regex = new Utf8Regex("(?<x>.)+b", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?<x>.)+b", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("NFA missing.");
         var input = "😀😀b"u8.ToArray();
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
@@ -199,7 +199,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
     [Fact]
     public void CancellationAtTheFinalHistoryCheckpointReleasesUnpublishedCaptures()
     {
-        var regex = new Utf8Regex("(a)", RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a)", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("NFA missing.");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         var measured = Utf8SliceRunner.TryFindFirst(program, "a"u8, 0, new int[1], new int[1], true, ref baseline);

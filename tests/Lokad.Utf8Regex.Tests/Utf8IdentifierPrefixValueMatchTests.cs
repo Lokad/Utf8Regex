@@ -19,8 +19,16 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
         using var live = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(Pattern, Options | mode, Timeout.InfiniteTimeSpan,
-                Policy with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: Options | mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy with
+                {
+                    MaxDepth = 1,
+                    MaxWorkingBytes = 1,
+                    MaxResultBytes = 1
+                }
+            });
             var oracle = new Regex(Pattern, Options | mode);
             foreach (var text in new[] { "", "_abc", "9abc", "a", "I_i0", "AbC123_DEF-tail", "a\0tail", "a\nZ", "\nabc" })
             {
@@ -49,7 +57,7 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
             {
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
                 var options = RegexOptions.IgnoreCase | (invariant ? RegexOptions.CultureInvariant : RegexOptions.None);
-                var regex = new Utf8Regex(Pattern, options); var oracle = new Regex(Pattern, options);
+                var regex = new Utf8Regex(Pattern, options: options); var oracle = new Regex(Pattern, options);
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
                 // The shared scalar fixture recompiles its oracle under the
                 // current culture. These classes consume only BMP scalars, so
@@ -74,9 +82,16 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
     public void LongSubjectsRetainTightWorkingAdmission(int length)
     {
         var input = Encoding.ASCII.GetBytes(new string('A', length));
-        Assert.Equal(length, (new Utf8Regex(Pattern, Options).Match(input).EndOffsetInBytes - new Utf8Regex(Pattern, Options).Match(input).StartOffsetInBytes));
-        var tight = new Utf8Regex(Pattern, Options, Timeout.InfiniteTimeSpan,
-            Policy with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        Assert.Equal(length, (new Utf8Regex(Pattern, options: Options).Match(input).EndOffsetInBytes - new Utf8Regex(Pattern, options: Options).Match(input).StartOffsetInBytes));
+        var tight = new Utf8Regex(Pattern, options: Options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy with
+            {
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         // The scalar continuation also needs no mutable repeat buffers.
         Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
     }
@@ -86,25 +101,25 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
     {
         foreach (var pattern in new[] { Pattern, Pattern + "x", @"\G[a-z][a-z0-9_]*?" })
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft })
-            Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(pattern, Options | mode), new Regex(pattern, Options | mode),
+            Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(pattern, options: Options | mode), new Regex(pattern, Options | mode),
                 ["AbC12x_tail", "Kabc_9", "a😀tail", "no match", "0bad"]);
-        var captured = new Utf8Regex(@"\G(?<id>[a-z][a-z0-9_]*)", Options);
+        var captured = new Utf8Regex(@"\G(?<id>[a-z][a-z0-9_]*)", options: Options);
         var bytes = "AbC_9!tail"u8.ToArray(); var retained = Utf8MatchSequence.First(captured.CreateMatchCursor(bytes));
         var cursor = captured.EnumerateMatches(bytes); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext()); var first = alias.Current;
         Assert.Equal(first, cursor.Current); Assert.False(cursor.MoveNext()); Assert.Equal(first, alias.Current);
         _ = captured.Match("Other"u8); Assert.Equal("AbC_9", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(captured.GroupNumberFromName("id")).Span));
-        var offset = new Utf8Regex(Pattern, Options).Match("😀!AbC9!tail"u8, 5, []);
+        var offset = new Utf8Regex(Pattern, options: Options).Match("😀!AbC9!tail"u8, 5, []);
         Assert.Equal((5, 4), (offset.StartOffsetInBytes, offset.EndOffsetInBytes - offset.StartOffsetInBytes));
         var nbPattern = Pattern.Replace(@"\G", @"\A");
-        Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(nbPattern, Options | RegexOptions.NonBacktracking),
+        Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(nbPattern, options: Options | RegexOptions.NonBacktracking),
             new Regex(nbPattern, Options | RegexOptions.NonBacktracking), ["AbC_9!", "Kabc", "0bad"]);
     }
 
     [Fact]
     public void FullValidationAndOriginalEntryCancellationRemainStrict()
     {
-        var regex = new Utf8Regex(Pattern, Options);
+        var regex = new Utf8Regex(Pattern, options: Options);
         foreach (var text in new[] { "AbC9", "0bad" })
         {
             byte[] invalid = [.. Encoding.ASCII.GetBytes(text), 0xff];
@@ -121,8 +136,17 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
         var input = Encoding.ASCII.GetBytes(text); var denied = false; var admitted = false;
         for (ulong work = 1; work < 100; work++)
         {
-            var regex = new Utf8Regex(Pattern, Options, Timeout.InfiniteTimeSpan,
-                Policy with { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: Options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy with
+                {
+                    MaxWorkSteps = work,
+                    MaxDepth = 1,
+                    MaxWorkingBytes = 1,
+                    MaxResultBytes = 1
+                }
+            });
             try { Assert.Equal(success, regex.Match(input).Success); admitted = true; break; }
             catch (Utf8ResourceLimitExceededException failure)
             { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind); denied = true; }
@@ -138,7 +162,11 @@ public sealed class Utf8IdentifierPrefixValueMatchTests
         using var live = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == trigger) { if (expire) ticks = 100; else live.Cancel(); } return ticks; });
-        var regex = new Utf8Regex(Pattern, Options, TimeSpan.FromMilliseconds(50), Policy);
+        var regex = new Utf8Regex(Pattern, options: Options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Policy
+        });
         Assert.True(regex.Match("AbC_9-tail"u8, cancellationToken: live.Token).Success);
         trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("AbC_9-tail"u8, cancellationToken: live.Token)).MatchTimeout);

@@ -19,7 +19,10 @@ public sealed class Utf8ResidualScalarRouteTests
         foreach (var compiled in new[] { false, true })
         foreach (var timeout in new[] { Regex.InfiniteMatchTimeout, TimeSpan.FromSeconds(3) })
         {
-            var regex = new Utf8Regex(pattern, Options(compiled), timeout);
+            var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = timeout
+            });
             Assert.Equal(index >= 0, regex.IsMatch(input));
             Assert.Equal(index >= 0 ? 1 : 0, regex.Count(input));
             var match = regex.Match(input);
@@ -46,7 +49,7 @@ public sealed class Utf8ResidualScalarRouteTests
             var text = (reverse ? "Watson" : "Holmes") +
                 string.Concat(Enumerable.Repeat("\U0001f600", gap)) + (reverse ? "Holmes" : "Watson");
             var bytes = Encoding.UTF8.GetBytes(text);
-            var regex = new Utf8Regex(pattern, Options(compiled));
+            var regex = new Utf8Regex(pattern, options: Options(compiled));
             var expected = gap == 25 ? 1 : 0;
             Assert.Equal(expected, regex.Count(bytes));
             var input = Utf8ValidatedInput.Create(bytes);
@@ -76,7 +79,7 @@ public sealed class Utf8ResidualScalarRouteTests
         {
             using var source = new CancellationTokenSource();
             var token = liveToken ? source.Token : CancellationToken.None;
-            var regex = new Utf8Regex(pattern, Options(compiled));
+            var regex = new Utf8Regex(pattern, options: Options(compiled));
             Assert.Equal(expectedBytes, regex.Replace(input, "Q", token));
             Assert.Equal(expectedBytes, regex.Replace(input, "Q"u8, token));
             Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "Q", token)));
@@ -97,7 +100,7 @@ public sealed class Utf8ResidualScalarRouteTests
     {
         foreach (var compiled in new[] { false, true })
         {
-            var regex = new Utf8Regex(pattern, Options(compiled));
+            var regex = new Utf8Regex(pattern, options: Options(compiled));
             var input = "a,\U0001f600,b"u8.ToArray();
             Assert.Equal("count", Assert.Throws<ArgumentOutOfRangeException>(() =>
             {

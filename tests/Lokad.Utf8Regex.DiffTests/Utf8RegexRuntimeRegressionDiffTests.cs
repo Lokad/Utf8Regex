@@ -104,7 +104,7 @@ public sealed class Utf8RegexRuntimeRegressionDiffTests
         if (fixedOracle) Assert.False(prefix.MoveNext());
         foreach (var selection in new[] { options, options | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, selection);
+            var regex = new Utf8Regex(pattern, options: selection);
             var bytes = Encoding.UTF8.GetBytes(input);
             Assert.Equal(4, regex.Count(bytes));
             var matches = regex.EnumerateMatches(bytes);

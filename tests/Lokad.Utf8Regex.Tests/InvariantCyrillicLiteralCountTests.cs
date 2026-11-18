@@ -15,7 +15,7 @@ public sealed class InvariantCyrillicLiteralCountTests
     [InlineData(RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled)]
     public void SherlockLiteralUsesNativeCountStrategy(RegexOptions options)
     {
-        var regex = new Utf8Regex("Шерлок Холмс", options);
+        var regex = new Utf8Regex("Шерлок Холмс", options: options);
         var oracle = new Regex("Шерлок Холмс", options, Regex.InfiniteMatchTimeout);
         const string input = "шерлок холмс; ШЕРЛОК ХОЛМС; Шерлок ХоЛмС; Шерлок Уолмс";
 
@@ -32,7 +32,7 @@ public sealed class InvariantCyrillicLiteralCountTests
     {
         const string pattern = "Шерлок Холмс|Джон Уотсон|Ирен Адлер|инспектор Лестрейд|профессор Мориарти";
         const string input = "шерлок холмс; ДЖОН УОТСОН; ирен адлер; ИнСпЕкТоР ЛеСтРеЙд; ПРОФЕССОР МОРИАРТИ; Шерлок Уолмс";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         Assert.True(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
@@ -49,7 +49,7 @@ public sealed class InvariantCyrillicLiteralCountTests
     [InlineData("АБ|Б", "АББ")]
     public void LiteralAlternationPreservesLeftmostBranchOrderAndNonOverlap(string pattern, string input)
     {
-        var regex = new Utf8Regex(pattern, Options);
+        var regex = new Utf8Regex(pattern, options: Options);
         var oracle = new Regex(pattern, Options, Regex.InfiniteMatchTimeout);
 
         Assert.True(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
@@ -67,7 +67,7 @@ public sealed class InvariantCyrillicLiteralCountTests
 
         foreach (var pattern in patterns)
         {
-            var regex = new Utf8Regex(pattern.ToString(), Options);
+            var regex = new Utf8Regex(pattern.ToString(), options: Options);
             var oracle = new Regex(pattern.ToString(), Options, Regex.InfiniteMatchTimeout);
             Assert.True(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
 
@@ -89,7 +89,7 @@ public sealed class InvariantCyrillicLiteralCountTests
     [InlineData("Шерлок|abc")]
     public void StrategyRejectsPatternsOutsideItsExactSemanticSubset(string pattern)
     {
-        var regex = new Utf8Regex(pattern, Options);
+        var regex = new Utf8Regex(pattern, options: Options);
 
         Assert.False(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
     }
@@ -97,7 +97,10 @@ public sealed class InvariantCyrillicLiteralCountTests
     [Fact]
     public void StrategyRejectsFiniteTimeouts()
     {
-        var regex = new Utf8Regex("Шерлок Холмс", Options, TimeSpan.FromSeconds(1));
+        var regex = new Utf8Regex("Шерлок Холмс", options: Options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1)
+        });
 
         Assert.False(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
     }
@@ -106,17 +109,27 @@ public sealed class InvariantCyrillicLiteralCountTests
     public void SingleLiteralFiniteAndLiveTokenCallsKeepTheirInvocationAuthority()
     {
         var input = "ШЕРЛОК ХОЛМС; шерлок холмс"u8.ToArray();
-        var regex = new Utf8Regex("Шерлок Холмс", Options, TimeSpan.FromSeconds(5), new()
+        var regex = new Utf8Regex("Шерлок Холмс", options: Options, policy: new Utf8RegexPolicy
         {
-            MaxWorkSteps = 100_000,
-            MaxDepth = 1024,
-            MaxWorkingBytes = 1_048_576,
-            MaxResultBytes = 1_048_576
+            MatchTimeout = TimeSpan.FromSeconds(5),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            }
         });
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(2, regex.Count(input, cancellation.Token));
-        var denied = new Utf8Regex("Шерлок Холмс", Options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex("Шерлок Холмс", options: Options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         cancellation.Cancel();
@@ -133,20 +146,30 @@ public sealed class InvariantCyrillicLiteralCountTests
     {
         var options = Options | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var input = Encoding.UTF8.GetBytes(new string('x', 4096) + "ШЕРЛОК ХОЛМС; шерлок холмс");
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.True(regex.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
 
-        var finite = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, new()
+        var finite = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
         {
-            MaxWorkSteps = 50_000_000,
-            MaxDepth = 1024,
-            MaxWorkingBytes = 64 * 1_048_576,
-            MaxResultBytes = 128 * 1_048_576
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 50_000_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 64 * 1_048_576,
+                MaxResultBytes = 128 * 1_048_576
+            }
         });
         Assert.True(finite.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
         Assert.Equal(2, finite.Count(input));
-        var denied = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.True(denied.Inspection.DebugHasInvariantCyrillicLiteralCountStrategy);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
@@ -169,8 +192,8 @@ public sealed class InvariantCyrillicLiteralCountTests
     [Fact]
     public void SingleLiteralCountCoversEveryVectorLaneAndTail()
     {
-        var ordinary = new Utf8Regex("Шерлок Холмс", Options);
-        var compiled = new Utf8Regex("Шерлок Холмс", Options | RegexOptions.Compiled);
+        var ordinary = new Utf8Regex("Шерлок Холмс", options: Options);
+        var compiled = new Utf8Regex("Шерлок Холмс", options: Options | RegexOptions.Compiled);
         var oracle = new Regex("Шерлок Холмс", Options, Regex.InfiniteMatchTimeout);
         var literal = "Шерлок Холмс"u8;
 
@@ -200,8 +223,8 @@ public sealed class InvariantCyrillicLiteralCountTests
     [InlineData("1Ш 2Х", "1ш 2х")]
     public void AsciiPrefixBeforeFirstCyrillicScalarCanBelongToTheMatch(string pattern, string value)
     {
-        var ordinary = new Utf8Regex(pattern, Options);
-        var compiled = new Utf8Regex(pattern, Options | RegexOptions.Compiled);
+        var ordinary = new Utf8Regex(pattern, options: Options);
+        var compiled = new Utf8Regex(pattern, options: Options | RegexOptions.Compiled);
         var oracle = new Regex(pattern, Options);
         for (var padding = 0; padding < 64; padding++)
         {
@@ -219,8 +242,8 @@ public sealed class InvariantCyrillicLiteralCountTests
     public void FusedSingleLiteralCountResumesAcrossMixedWidthScalars()
     {
         const string input = "ШЕРЛОК ХОЛМС € 夏 😀 шерлок холмс λ Шерлок Уолмс";
-        var ordinary = new Utf8Regex("Шерлок Холмс", Options);
-        var compiled = new Utf8Regex("Шерлок Холмс", Options | RegexOptions.Compiled);
+        var ordinary = new Utf8Regex("Шерлок Холмс", options: Options);
+        var compiled = new Utf8Regex("Шерлок Холмс", options: Options | RegexOptions.Compiled);
         var oracle = new Regex("Шерлок Холмс", Options, Regex.InfiniteMatchTimeout);
         var bytes = Encoding.UTF8.GetBytes(input);
 
@@ -234,8 +257,8 @@ public sealed class InvariantCyrillicLiteralCountTests
     [InlineData("😀")]
     public void WiderScalarResumePreservesEveryBlockBoundaryAndBorrowedOffset(string scalar)
     {
-        var ordinary = new Utf8Regex("Шерлок Холмс", Options);
-        var compiled = new Utf8Regex("Шерлок Холмс", Options | RegexOptions.Compiled);
+        var ordinary = new Utf8Regex("Шерлок Холмс", options: Options);
+        var compiled = new Utf8Regex("Шерлок Холмс", options: Options | RegexOptions.Compiled);
         foreach (var borrowedOffset in new[] { 1, 17, 31 })
         for (var padding = 0; padding < 64; padding++)
         {
@@ -253,8 +276,8 @@ public sealed class InvariantCyrillicLiteralCountTests
     [Fact]
     public void FusedSingleLiteralCountMatchesDotNetOnDeterministicValidSubjects()
     {
-        var ordinary = new Utf8Regex("Шерлок Холмс", Options);
-        var compiled = new Utf8Regex("Шерлок Холмс", Options | RegexOptions.Compiled);
+        var ordinary = new Utf8Regex("Шерлок Холмс", options: Options);
+        var compiled = new Utf8Regex("Шерлок Холмс", options: Options | RegexOptions.Compiled);
         var oracle = new Regex("Шерлок Холмс", Options, Regex.InfiniteMatchTimeout);
         var random = new Random(0x5E210C);
         string[] fragments =

@@ -194,7 +194,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(@"(?:é|😀)[\s\S]{0,2}中", options | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(@"(?:é|😀)[\s\S]{0,2}中", options: options | RegexOptions.CultureInvariant);
             var input = "xéa😀中z😀中"u8.ToArray();
             Assert.True(regex.IsMatch(input)); Assert.Equal(2, regex.Count(input));
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -205,9 +205,9 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Assert.Equal(expected, ranges);
             using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
             Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, cancelled.Token));
-            var direct = new Utf8Regex("é|😀|中", options | RegexOptions.CultureInvariant);
+            var direct = new Utf8Regex("é|😀|中", options: options | RegexOptions.CultureInvariant);
             Assert.Equal(5, direct.Count(input));
-            Assert.Equal(2, new Utf8Regex("", options).Count("😀"u8));
+            Assert.Equal(2, new Utf8Regex("", options: options).Count("😀"u8));
         }
     }
 }

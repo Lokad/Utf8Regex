@@ -33,7 +33,10 @@ public sealed class Utf8SliceReplacementLifetimeTests
             var timeout = TimeSpan.FromSeconds(30);
             var subject = new Utf8AsciiScalarOperationAssertions.Subject(text);
             var oracle = Utf8AsciiScalarOperationAssertions.Comparator(pattern, options);
-            var regex = new Utf8Regex(pattern, options, timeout);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = timeout
+            });
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
             using var source = new CancellationTokenSource();
             foreach (var replacement in new[] { "Q", "", template, "$`|$&|$'|$_" })
@@ -93,7 +96,10 @@ public sealed class Utf8SliceReplacementLifetimeTests
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var regex = new Utf8Regex("(a|ab)+$", options, timeout);
+            var regex = new Utf8Regex("(a|ab)+$", options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = timeout
+            });
             using var source = new CancellationTokenSource();
             var entered = false;
             var session = Utf8SearchDiagnosticsSession.Start(steps =>
@@ -133,7 +139,10 @@ public sealed class Utf8SliceReplacementLifetimeTests
             // This witness expires after VM entry. Allow preparation and JIT
             // work to reach the hook even during a parallel full-suite run.
             var timeout = TimeSpan.FromMilliseconds(200);
-            var regex = new Utf8Regex("(a|ab)+$", options, timeout);
+            var regex = new Utf8Regex("(a|ab)+$", options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = timeout
+            });
             var entered = false;
             var session = Utf8SearchDiagnosticsSession.Start(_ =>
             {

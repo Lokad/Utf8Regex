@@ -98,6 +98,15 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     private static Utf8Regex Create(bool compiled, ulong work, uint depth, ulong working, ulong result) =>
-        new(Pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None),
-            TimeSpan.FromSeconds(1), new() { MaxWorkSteps = work, MaxDepth = depth, MaxWorkingBytes = working, MaxResultBytes = result });
+        new(Pattern, options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = work,
+                MaxDepth = depth,
+                MaxWorkingBytes = working,
+                MaxResultBytes = result
+            }
+        });
 }

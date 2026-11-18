@@ -16,7 +16,13 @@ public sealed class Utf8FundedProgramOwnerTests
         var ordinary = new Utf8Regex("a+");
         if (exists) Assert.True(ordinary.IsMatch("aaaa"u8, workingMemoryAllowance: null));
         else Assert.Equal(1, ordinary.Count("aaaa"u8, workingMemoryAllowance: null));
-        var bounded = new Utf8Regex("(?=(a+))a+", resourcePolicy: new() { MaxWorkSteps = 1 });
+        var bounded = new Utf8Regex("(?=(a+))a+", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             if (exists) _ = bounded.IsMatch("aaaa"u8, workingMemoryAllowance: null);
@@ -46,9 +52,15 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(0UL, root.Used);
     }
 
-    private static Utf8RegexProgramOwner Compile(string pattern, Account account, RegexOptions options = RegexOptions.None,
-        Utf8ResourcePolicy policy = default, CancellationToken token = default) => Utf8Regex.Compile(pattern,
-            options, Timeout.InfiniteTimeSpan, policy, default, Timeout.InfiniteTimeSpan, token, account);
+    private static Utf8Regex Compile(string pattern, Account account, RegexOptions options = RegexOptions.None,
+        Utf8ResourcePolicy policy = default, CancellationToken token = default) => Utf8Regex.Compile(pattern, options:             options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: token);
 
     [Fact]
     public void CallerCaptureSlotsKeepSparseNumbersAndSurviveOwnerDisposal()
@@ -108,7 +120,7 @@ public sealed class Utf8FundedProgramOwnerTests
     public void WorkingAndFundedRoutesPreserveScalarAndExecutionContracts(string pattern, string subject, RegexOptions options, int count)
     {
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
-        var regex = new Utf8Regex(pattern, options); var bytes = Encoding.UTF8.GetBytes(subject);
+        var regex = new Utf8Regex(pattern, options: options); var bytes = Encoding.UTF8.GetBytes(subject);
         Assert.Equal(count, regex.Count(bytes, default, working)); Assert.True(regex.IsMatch(bytes, default, working));
         Assert.Equal(0UL, root.Used);
         using (var owner = Compile(pattern, programs, options))
@@ -225,9 +237,14 @@ public sealed class Utf8FundedProgramOwnerTests
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
         using var token = new CancellationTokenSource();
         // The overlapping required letter makes repeat storage genuinely live.
-        using var owner = Utf8Regex.Compile("([a-z]+)[a-z]-([0-9]+)", RegexOptions.None,
-            timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan, default, default,
-            Timeout.InfiniteTimeSpan, default, programs);
+        using var owner = Utf8Regex.Compile("([a-z]+)[a-z]-([0-9]+)", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = programs
+        }, cancellationToken: default);
         var held = programs.Used;
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("alpha-123 ", 1024)));
         var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
@@ -268,8 +285,14 @@ public sealed class Utf8FundedProgramOwnerTests
         const string pattern = "(?<12>😀)";
         var encoded = Encoding.UTF8.GetBytes(pattern);
         var root = new SharedRoot(); var account = new Account(root);
-        using var owner = native ? Utf8Regex.Compile(encoded, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, default, account) : Compile(pattern, account);
+        using var owner = native ? Utf8Regex.Compile(encoded, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default): Compile(pattern, account);
         var held = account.Used; var destination = new byte[encoded.Length];
         Assert.Equal(1, owner.CaptureGroupCount);
         Assert.Equal(12, owner.GroupNumberFromUtf8Name("12"u8));
@@ -298,7 +321,7 @@ public sealed class Utf8FundedProgramOwnerTests
     {
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
         var input = Encoding.UTF8.GetBytes(subject); var native = Encoding.UTF8.GetBytes(template);
-        var expected = new Utf8Regex(pattern, options).Replace(input, native);
+        var expected = new Utf8Regex(pattern, options: options).Replace(input, native);
         var owner = Compile(pattern, programs, options); var held = programs.Used;
         var destination = new byte[expected.Length + 4];
         foreach (var warm in new[] { false, true })
@@ -366,9 +389,14 @@ public sealed class Utf8FundedProgramOwnerTests
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
-        using var owner = Utf8Regex.Compile("(a)", RegexOptions.None,
-            timeout ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan, default, default,
-            Timeout.InfiniteTimeSpan, default, programs);
+        using var owner = Utf8Regex.Compile("(a)", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = programs
+        }, cancellationToken: default);
         var held = programs.Used; using var canceled = new CancellationTokenSource();
         working.AfterGrant = () => { if (timeout) ticks = 20; else canceled.Cancel(); };
         var error = Record.Exception(() => owner.TryReplace("a"u8, "é[$1]"u8, new byte[32], out _, canceled.Token, working));

@@ -18,7 +18,10 @@ public sealed class Utf8NativeDeadlineAdmissionTests
         foreach (var operation in new[] { 0, 1, 2 })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var regex = new Utf8Regex(pattern, options, TimeSpan.FromMilliseconds(1));
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(1)
+            });
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
             var error = Assert.Throws<RegexMatchTimeoutException>(() => operation switch
@@ -41,7 +44,10 @@ public sealed class Utf8NativeDeadlineAdmissionTests
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1));
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(1)
+            });
             var input = Encoding.UTF8.GetBytes(text);
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(static () => 0);
             Assert.True(regex.IsMatch(input));

@@ -45,7 +45,7 @@ public sealed class Utf8AsciiValidityFastReturnTests
             Assert.Equal(valid.Length, error);
             foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
             {
-                var regex = new Utf8Regex(".*(ss)", options);
+                var regex = new Utf8Regex(".*(ss)", options: options);
                 Assert.True(regex.IsMatch(valid));
             }
         }
@@ -55,8 +55,14 @@ public sealed class Utf8AsciiValidityFastReturnTests
     public void AnAsciiProofRetainsInvocationLimitsAndOriginalToken()
     {
         var input = Encoding.UTF8.GetBytes(new string('x', 8192) + "ss");
-        var limited = new Utf8Regex(".*(ss)", RegexOptions.Compiled, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1 });
+        var limited = new Utf8Regex(".*(ss)", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.IsMatch(input)).ResourceKind);
         using var token = new CancellationTokenSource();

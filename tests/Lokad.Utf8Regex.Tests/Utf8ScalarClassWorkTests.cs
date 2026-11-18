@@ -21,9 +21,17 @@ public sealed class Utf8ScalarClassWorkTests
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase,
             RegexOptions.CultureInvariant | RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(@"\A[" + members + @"]\z", options, Regex.InfiniteMatchTimeout,
-                new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxWorkingBytes = 1_000_000,
-                    MaxResultBytes = 1_000_000, MaxDepth = 128 });
+            var regex = new Utf8Regex(@"\A[" + members + @"]\z", options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = 100_000,
+                    MaxWorkingBytes = 1_000_000,
+                    MaxResultBytes = 1_000_000,
+                    MaxDepth = 128
+                }
+            });
             foreach (var index in new[] { 0, Math.Min(31, count - 1), count - 1 })
             {
                 var input = Encoding.UTF8.GetBytes("x" + (char)(0x100 + 2 * index) + "y");
@@ -56,9 +64,15 @@ public sealed class Utf8ScalarClassWorkTests
         bool expected, RegexOptions options)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(expected, new Utf8Regex(pattern, options).IsMatch(input));
-        var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 32 });
+        Assert.Equal(expected, new Utf8Regex(pattern, options: options).IsMatch(input));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 32
+            }
+        });
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
         Assert.Equal(32UL, failure.Limit);
@@ -66,7 +80,7 @@ public sealed class Utf8ScalarClassWorkTests
         failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
         Assert.Equal(33UL, failure.Requested);
-        Assert.Equal(expected ? 1 : 0, new Utf8Regex(pattern, options).Count(input));
+        Assert.Equal(expected ? 1 : 0, new Utf8Regex(pattern, options: options).Count(input));
     }
 
     [Theory]
@@ -76,8 +90,14 @@ public sealed class Utf8ScalarClassWorkTests
     {
         var pattern = @"\A[a-[" + string.Concat(Enumerable.Repeat(@"\s", 4096)) + @"]]\z";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 32 });
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 32
+            }
+        });
         Assert.True(regex.IsMatch("a"u8));
         Assert.Equal(1, regex.Count("a"u8));
         Assert.False(regex.IsMatch(" "u8));
@@ -88,9 +108,14 @@ public sealed class Utf8ScalarClassWorkTests
     [InlineData(true)]
     public void CancellationInterruptsInsideOnePredicate(bool categories)
     {
-        var regex = new Utf8Regex(@"\A[" + (categories ? ManyCategories : ManyRanges) + @"]\z",
-            RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 });
+        var regex = new Utf8Regex(@"\A[" + (categories ? ManyCategories : ManyRanges) + @"]\z", options:             RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000
+            }
+        });
         var input = Encoding.UTF8.GetBytes(categories ? "1" : "\U0010FFFF");
         using var cancellation = new CancellationTokenSource();
         ulong checkpoint = 0;
@@ -114,10 +139,16 @@ public sealed class Utf8ScalarClassWorkTests
     [InlineData(true)]
     public void DeadlineExpiresInsideOnePredicate(bool categories)
     {
-        var regex = new Utf8Regex(@"\A[" + (categories ? ManyCategories : ManyRanges) + @"]\z",
-            RegexOptions.CultureInvariant, TimeSpan.FromSeconds(20),
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1_000_000,
-                MaxResultBytes = 1_000_000 });
+        var regex = new Utf8Regex(@"\A[" + (categories ? ManyCategories : ManyRanges) + @"]\z", options:             RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(20),
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxWorkingBytes = 1_000_000,
+                MaxResultBytes = 1_000_000
+            }
+        });
         var input = Encoding.UTF8.GetBytes(categories ? "1" : "\U0010FFFF");
         var expired = false;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => expired ? long.MaxValue / 4 : 0);

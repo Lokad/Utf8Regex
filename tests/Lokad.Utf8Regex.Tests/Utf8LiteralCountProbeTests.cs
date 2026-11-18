@@ -22,8 +22,19 @@ public sealed class Utf8LiteralCountProbeTests
         foreach (var controlled in new[] { false, true })
         {
             using var token = new CancellationTokenSource();
-            var regex = new Utf8Regex(literal, options, Timeout.InfiniteTimeSpan,
-                controlled ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default);
+            var regex = new Utf8Regex(literal, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = controlled ? new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 1024,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1 << 20
+                }
+
+                : default
+            });
                 foreach (var offset in new[] { 0, 1, 31, 32 })
             {
                 byte[] storage = [.. Enumerable.Repeat((byte)0xff, offset), .. bytes, 0xff];
@@ -49,7 +60,11 @@ public sealed class Utf8LiteralCountProbeTests
         {
             using var cancellation = new CancellationTokenSource();
                 var policy = controlled ? new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 256, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 } : default;
-                var regex = new Utf8Regex(literal, options, Timeout.InfiniteTimeSpan, policy);
+                var regex = new Utf8Regex(literal, options: options, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                });
             var prefix = "";
             foreach (var scalar in literal.EnumerateRunes().SkipLast(1))
             {
@@ -82,7 +97,7 @@ public sealed class Utf8LiteralCountProbeTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled,
             RegexOptions.CultureInvariant | RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(Regex.Escape(literal), options);
+            var regex = new Utf8Regex(Regex.Escape(literal), options: options);
             foreach (var tail in new[] { "", literal[..^1] })
             {
                 // Keep every input a complete scalar, including a supplementary tail.

@@ -10,9 +10,17 @@ public sealed partial class Utf8Regex
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var invocation = workingMemoryAllowance is null
-            ? new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) : new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
-        return new Utf8RegexMatchCursor(input, this, _ownedSliceProgram, _program.CaptureCatalog,
-            startOffsetInBytes ?? (_ownedSliceProgram.RightToLeft ? input.Length : 0), invocation);
+        var programUse = _programMemory?.Enter();
+        try
+        {
+            workingMemoryAllowance ??= _programMemory?.Allowance;
+            var invocation = workingMemoryAllowance is null
+                ? new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) : new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+            var cursor = new Utf8RegexMatchCursor(input, this, _ownedSliceProgram, _program.CaptureCatalog,
+                startOffsetInBytes ?? (_ownedSliceProgram.RightToLeft ? input.Length : 0), invocation);
+            if (programUse is not null) cursor.AttachProgramUse(programUse);
+            return cursor;
+        }
+        catch { programUse?.Dispose(); throw; }
     }
 }

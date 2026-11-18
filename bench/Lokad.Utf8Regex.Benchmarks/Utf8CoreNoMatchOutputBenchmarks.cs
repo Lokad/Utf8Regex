@@ -35,10 +35,18 @@ public class Utf8CoreNoMatchOutputBenchmarks
             MaxWorkingBytes = 64 << 20,
             MaxResultBytes = 128 << 20
         };
-        _finite = new CoreRegex("(cat)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
-        _native = new CoreRegex("cat", RegexOptions.CultureInvariant);
-        _matched = new CoreRegex("(dog)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
-        _nativeGrouped = new CoreRegex("^((cat))$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        _finite = new CoreRegex("(cat)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
+        _native = new CoreRegex("cat", options: RegexOptions.CultureInvariant);
+        _matched = new CoreRegex("(dog)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
+        _nativeGrouped = new CoreRegex("^((cat))$", options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         _regex = new Regex("(cat)", RegexOptions.CultureInvariant);
         _matchedRegex = new Regex("(dog)", RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();

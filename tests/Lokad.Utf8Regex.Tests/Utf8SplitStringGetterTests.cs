@@ -19,7 +19,7 @@ public sealed class Utf8SplitStringGetterTests
     {
         const string text = "é😀 ab tail";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
-        Assert.Equal(text, ReadValue(new Utf8Regex("(zz)", options), Encoding.UTF8.GetBytes(text), count));
+        Assert.Equal(text, ReadValue(new Utf8Regex("(zz)", options: options), Encoding.UTF8.GetBytes(text), count));
     }
 
     [Theory]
@@ -28,7 +28,7 @@ public sealed class Utf8SplitStringGetterTests
     [InlineData("")]
     public void AsciiBmpAndEmptyStringsDecodeOnlyTheRequestedBytes(string text)
     {
-        var value = ReadValue(new Utf8Regex("(zz)", RegexOptions.CultureInvariant), Encoding.UTF8.GetBytes(text), 1);
+        var value = ReadValue(new Utf8Regex("(zz)", options: RegexOptions.CultureInvariant), Encoding.UTF8.GetBytes(text), 1);
         Assert.Equal(text, value);
         if (text.Length == 0) Assert.Same(string.Empty, value);
     }
@@ -42,7 +42,7 @@ public sealed class Utf8SplitStringGetterTests
     {
         const string text = "é😀 ab tail";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
-        Assert.Equal(rtl ? " tail" : "é😀 ", ReadValue(new Utf8Regex("(ab)", options), Encoding.UTF8.GetBytes(text), 0));
+        Assert.Equal(rtl ? " tail" : "é😀 ", ReadValue(new Utf8Regex("(ab)", options: options), Encoding.UTF8.GetBytes(text), 0));
     }
 
     private static string ReadValue(Utf8Regex regex, byte[] input, int count)

@@ -22,7 +22,7 @@ public class Utf8RegexConstructionBenchmarks
     [Benchmark(Baseline = true)]
     public Utf8Regex ConstructUtf8Regex()
     {
-        return new Utf8Regex(Pattern, Options);
+        return new Utf8Regex(Pattern, options: Options);
     }
 
     [Benchmark]

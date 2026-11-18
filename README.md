@@ -75,11 +75,14 @@ capacity and result-capacity limits:
 ```csharp
 var bounded = new Utf8Regex(
     @"(?<word>\w+)", RegexOptions.CultureInvariant,
-    matchTimeout: TimeSpan.FromSeconds(1),
-    resourcePolicy: new Utf8ResourcePolicy
+    policy: new Utf8RegexPolicy
     {
-        MaxWorkSteps = 1_000_000, MaxDepth = 256,
-        MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576
+        MatchTimeout = TimeSpan.FromSeconds(1),
+        ResourcePolicy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = 1_000_000, MaxDepth = 256,
+            MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576
+        }
     });
 
 using var cancellation = new CancellationTokenSource();
@@ -88,12 +91,15 @@ int count = bounded.Count("café tea"u8, cancellation.Token); // 2
 
 Core operations have optional cancellation parameters. IsMatch/Count also accept
 `workingMemoryAllowance:` for shared temporary-storage admission. Omitting it or
-passing null keeps the engine's numeric limits; a refused non-null account fails
+passing null keeps numeric limits and inherits program funding when selected;
+a refused non-null account fails
 without retry. For span enumeration, name the token `cancellationToken:`.
 
 These caps are examples. Defaults have unlimited invocation
 budgets. Byte limits cover modeled engine/result capacities, not total process
-memory. `Compile` offers separate construction controls.
+memory. Constructors and `Compile` accept immutable `Utf8RegexPolicy` construction
+controls and optional program funding. Dispose funded expressions. Span enumerators
+borrow an open regex; persistent cursors can retain admission after it closes.
 See the [resource contract](docs/SPEC.md#cancellation-deadlines-and-resource-limits)
 for failure, deadline and ownership details.
 

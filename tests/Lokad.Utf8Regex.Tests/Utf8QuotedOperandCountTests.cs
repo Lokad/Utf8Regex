@@ -16,7 +16,7 @@ public sealed class Utf8QuotedOperandCountTests
     [InlineData(RegexOptions.Compiled)]
     public void NecessaryOperandsRetainBothOrdersLazyRepeatsAndCaptures(RegexOptions extra)
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.Multiline | extra);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Multiline | extra);
         var oracle = new Regex(Pattern, RegexOptions.Multiline | extra);
         foreach (var text in new[] { "", "EASTASIA AB12 CD34", "\"AB12\"", "\"ABxx\" \"abc\"",
             "\"AB12\"😀\"abc\"", "'abc' λ 'CD34'", "\"AB12\"\nctx\n\"abc\"",
@@ -48,7 +48,7 @@ public sealed class Utf8QuotedOperandCountTests
     public void OuterRepeatsPreserveCounts(string quantifier)
     {
         var pattern = Pattern[..^1] + quantifier;
-        var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Multiline);
         foreach (var text in new[] { "\"AB12\"\"abc\"", "\"AB12\"\"abc\"\"CD34\"\"abc\"" })
             Assert.Equal(new Regex(pattern, RegexOptions.Multiline).Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
     }
@@ -58,10 +58,24 @@ public sealed class Utf8QuotedOperandCountTests
     [InlineData(true)]
     public void QuotedRelationsRespectFiniteWorkingAdmissionOnHitsAndMisses(bool count)
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.Multiline, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20 });
-        var denied = new Utf8Regex(Pattern, RegexOptions.Multiline, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkingBytes = 1 });
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 4096,
+                MaxWorkingBytes = 1 << 20
+            }
+        });
+        var denied = new Utf8Regex(Pattern, options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         foreach (var text in new[] { "EASTASIA AB12 CD34 😀", "\"AB12\" \"abc\"" })
         {
             var bytes = Encoding.UTF8.GetBytes(text);
@@ -80,7 +94,7 @@ public sealed class Utf8QuotedOperandCountTests
     [Fact]
     public void UnicodeTailPredicatesRetainScalarSemantics()
     {
-        var regex = new Utf8Regex(Pattern.Replace("[0-9]", "[^q]"), RegexOptions.Multiline);
+        var regex = new Utf8Regex(Pattern.Replace("[0-9]", "[^q]"), options: RegexOptions.Multiline);
         Assert.Equal(1, regex.Count("\"AB😀é\" \"abc\""u8));
         Assert.True(regex.IsMatch("\"abc\" \"CD😀é\""u8));
     }
@@ -88,7 +102,7 @@ public sealed class Utf8QuotedOperandCountTests
     [Fact]
     public void ByteOffsetsKeepTheirExistingMeaning()
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.Multiline);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Multiline);
         const string text = "é\"AB12\" \"abc\" 😀 'abc' 'CD34'";
         var bytes = Encoding.UTF8.GetBytes(text);
         Assert.Equal(new Regex(Pattern, RegexOptions.Multiline).Matches(text, 14).Count,
@@ -108,9 +122,16 @@ public sealed class Utf8QuotedOperandCountTests
             if (++reads == trigger) { if (expire) ticks = 100; else source.Cancel(); }
             return ticks;
         });
-        var regex = new Utf8Regex(Pattern, RegexOptions.Multiline,
-            TimeSpan.FromMilliseconds(50),
-            new() { MaxWorkSteps = 10_000_000, MaxDepth = 4096, MaxWorkingBytes = 4 << 20 });
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10_000_000,
+                MaxDepth = 4096,
+                MaxWorkingBytes = 4 << 20
+            }
+        });
         Assert.Equal(0, regex.Count(input, source.Token));
         Assert.True(reads > 1); trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout,

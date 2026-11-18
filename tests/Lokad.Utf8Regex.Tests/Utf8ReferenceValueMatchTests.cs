@@ -22,8 +22,16 @@ public sealed class Utf8ReferenceValueMatchTests
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var options = mode | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var oracle = new Regex(pattern, options);
             foreach (var text in new[] { "", "a", "a1", "A123", "I14", "K1", "a1\n", "a1\r\n", "a1\n\n",
                 "a1b2", "A123:B456", "I14k1", "a1:b2\n", "a1:b2\r\n", "a1::b2", "aa1", "a1!", " a1", "a1\0" })
@@ -51,7 +59,7 @@ public sealed class Utf8ReferenceValueMatchTests
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(name);
                 foreach (var pattern in new[] { Cell, Range })
                 {
-                    var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase);
+                    var regex = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase);
                     var oracle = new Regex(pattern, RegexOptions.IgnoreCase);
                     if (name != "en-US") Assert.Equal(Utf8AnchoredLiteralKind.None,
                         regex.Inspection.PreparedRegex.AnchoredLiteral.Kind);
@@ -66,7 +74,7 @@ public sealed class Utf8ReferenceValueMatchTests
             }
         }
         finally { CultureInfo.CurrentCulture = saved; }
-        var supplementary = new Utf8Regex(Cell, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).Match("a𝟙"u8);
+        var supplementary = new Utf8Regex(Cell, options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant).Match("a𝟙"u8);
         Assert.True(supplementary.Success);
         Assert.Equal((0, 5), (supplementary.StartOffsetInBytes, supplementary.EndOffsetInBytes));
     }
@@ -74,7 +82,7 @@ public sealed class Utf8ReferenceValueMatchTests
     [Fact]
     public void DetailedDigitHistoriesAliasesDeclinesAndStrictTailsRemainOwned()
     {
-        var regex = new Utf8Regex(Cell, RegexOptions.IgnoreCase);
+        var regex = new Utf8Regex(Cell, options: RegexOptions.IgnoreCase);
         var bytes = "a123"u8.ToArray(); var value = regex.Match(bytes); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
         Assert.Equal("123", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromName("row")).Span));
         Assert.Equal(3, detailed.GetCaptures(1).Length);
@@ -87,11 +95,18 @@ public sealed class Utf8ReferenceValueMatchTests
         foreach (var mode in new[] { RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
             var subject = "a123"; var expected = new Regex(Cell, mode | RegexOptions.IgnoreCase).Match(subject);
-            var actual = new Utf8Regex(Cell, mode | RegexOptions.IgnoreCase).Match(bytes);
+            var actual = new Utf8Regex(Cell, options: mode | RegexOptions.IgnoreCase).Match(bytes);
             Assert.Equal((expected.Success, System.Text.Encoding.UTF8.GetByteCount(subject.AsSpan(expected.Index, expected.Length))), (actual.Success, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
         }
         using var token = new CancellationTokenSource(); token.Cancel();
-        var denied = new Utf8Regex(Cell, RegexOptions.IgnoreCase, Timeout.InfiniteTimeSpan, Funded with { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex(Cell, options: RegexOptions.IgnoreCase, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(bytes));
     }
 
@@ -106,7 +121,11 @@ public sealed class Utf8ReferenceValueMatchTests
             if (++reads == trigger) { if (expire) ticks = 100; else token.Cancel(); }
             return ticks;
         });
-        var regex = new Utf8Regex(Range, RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(50), Funded);
+        var regex = new Utf8Regex(Range, options: RegexOptions.IgnoreCase, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Funded
+        });
         Assert.True(regex.Match("a123:b456"u8, cancellationToken: token.Token).Success);
         trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("a123:b456"u8, cancellationToken: token.Token)).MatchTimeout);

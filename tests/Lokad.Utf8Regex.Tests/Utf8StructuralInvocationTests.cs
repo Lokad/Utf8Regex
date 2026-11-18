@@ -59,7 +59,7 @@ public sealed class Utf8StructuralInvocationTests
             ref invocation, out var raw, out var found));
         Assert.True(found);
         Assert.Equal(3, raw.Index);
-        var regex = new Utf8Regex("abcde|d", RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
+        var regex = new Utf8Regex("abcde|d", options: RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamily(Prepared(regex).SearchPlan,
             "abcde"u8, 0, 5, true, ref invocation, out var execution, out found));
         Assert.True(found);
@@ -166,7 +166,10 @@ public sealed class Utf8StructuralInvocationTests
     public void CompleteOwnedOperationsAndLiveTokenValuesRetainUnicodeAndCaptureSemantics(string pattern, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         var oracle = new Regex(pattern, options);
         string[] texts = ["", "getAlpha setBeta LogError ( LogWarning( foo End bar End foobarAlpha",
             "é😀 getAlphaé setBeta中 LogInformation\u2003( foo\u2003End bar End", "xgetA getA_ getAé\nsetB\r\nLogError ( "];
@@ -212,7 +215,10 @@ public sealed class Utf8StructuralInvocationTests
         foreach (var text in new[] { "é😀 getAlphaé setBeta中 LogInformation\u2003( ", "xgetA getA_ getAé\nsetB\r\nLogError ( " })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var regex = new Utf8Regex(pattern, options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout
+            });
             var oracle = new Regex(pattern, options);
             var input = Encoding.UTF8.GetBytes(text);
             using var source = new CancellationTokenSource();
@@ -245,7 +251,10 @@ public sealed class Utf8StructuralInvocationTests
         const string pattern = @"(?:foo|foobar)[A-Z][A-Za-z0-9_]*";
         const string text = "foobarAlpha fooBeta foobarGamma";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout
+        });
         var oracle = new Regex(pattern, options);
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
@@ -274,7 +283,10 @@ public sealed class Utf8StructuralInvocationTests
         using var clock = Utf8DeadlineTestClock.Start();
         var pattern = method ? @"\b(?:LogError|LogWarning|LogInformation)\s*\(" : @"(?:get|set)[A-Z][A-Za-z0-9_]*";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout
+        });
         var text = phase == "execution" ? (method ? "LogError" + new string(' ', 320000) + "(" : "getA" + new string('a', 320000))
             : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
@@ -394,8 +406,7 @@ public sealed class Utf8StructuralInvocationTests
     [InlineData(true)]
     public void PublicCountCancelsDuringRepeatedMatchesWithoutReturningPartialTotal(bool compiled)
     {
-        var regex = new Utf8Regex(@"(?:get|set)[A-Z][A-Za-z0-9_]*",
-            RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex(@"(?:get|set)[A-Z][A-Za-z0-9_]*", options:             RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("getAlpha setBeta ", 2000)));
         using var source = new CancellationTokenSource();
         var entered = false;

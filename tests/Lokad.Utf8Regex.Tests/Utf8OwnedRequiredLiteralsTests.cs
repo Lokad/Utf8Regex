@@ -115,7 +115,7 @@ public sealed class Utf8OwnedRequiredLiteralsTests
             RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
             var input = Encoding.UTF8.GetBytes(row.Subject);
-            var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | mode);
+            var regex = new Utf8Regex(row.Pattern, options: RegexOptions.CultureInvariant | mode);
             Assert.True(regex.IsMatch(input), $"{row.Pattern} / {mode}: {row.Subject}");
             Assert.Equal(1, regex.Count(input));
             var first = regex.Match(input);

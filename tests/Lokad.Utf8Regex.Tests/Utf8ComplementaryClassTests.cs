@@ -29,8 +29,13 @@ public sealed class Utf8ComplementaryClassTests
         {
             var options = RegexOptions.NonBacktracking | RegexOptions.IgnoreCase |
                 RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-            var regex = Utf8Regex.Compile("(?<g>" + emptyClass + "){1000000000}", options,
-                Timeout.InfiniteTimeSpan, invocation, construction, Timeout.InfiniteTimeSpan, default);
+            var regex = Utf8Regex.Compile("(?<g>" + emptyClass + "){1000000000}", options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = invocation,
+                ConstructionPolicy = construction,
+                ConstructionTimeout = Timeout.InfiniteTimeSpan
+            }, cancellationToken: default);
             Assert.Equal(0, regex.Count("a😀b"u8));
             Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor("a😀b"u8.ToArray())).Success);
         }
@@ -45,7 +50,7 @@ public sealed class Utf8ComplementaryClassTests
         {
             var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
                 RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var ranges = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches("aAé😀\n"u8))
                 ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
@@ -65,16 +70,16 @@ public sealed class Utf8ComplementaryClassTests
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0);
-            var required = new Utf8Regex("(?<g>" + emptyClass + "){1000000000,2147483646}", options);
+            var required = new Utf8Regex("(?<g>" + emptyClass + "){1000000000,2147483646}", options: options);
             Assert.False(required.IsMatch("a😀b"u8));
             Assert.Equal(0, required.Count("a😀b"u8));
             Assert.InRange(required.Inspection.AvailableOwnedSliceProgram!.Instructions.Length, 1, 32);
 
-            var optional = new Utf8Regex("(?<g>" + emptyClass + "){0,2147483646}", options);
+            var optional = new Utf8Regex("(?<g>" + emptyClass + "){0,2147483646}", options: options);
             Assert.Equal(4, optional.Count("a😀b"u8));
             Assert.False((Utf8MatchSequence.First(optional.CreateMatchCursor("a😀b"u8.ToArray())).TryGetGroup("g", out var range1) ? range1.Success : default));
 
-            var alternative = new Utf8Regex("(?<g>" + emptyClass + "){1000000000}|(?<g>😀)", options);
+            var alternative = new Utf8Regex("(?<g>" + emptyClass + "){1000000000}|(?<g>😀)", options: options);
             Assert.True(Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).TryGetGroup("g", out var group));
             Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).GetGroupMemory(alternative.GroupNumberFromName("g")).Span));
             Assert.Equal((1, 4, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes), Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).GetCaptures(alternative.GroupNumberFromName("g")).Length));
@@ -92,7 +97,7 @@ public sealed class Utf8ComplementaryClassTests
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase, RegexOptions.ECMAScript,
             RegexOptions.NonBacktracking, RegexOptions.NonBacktracking | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(allScalars, options);
+            var regex = new Utf8Regex(allScalars, options: options);
             Assert.Equal(4, regex.Count("é😀b\n"u8));
             var ranges = new List<(int, int)>();
             foreach (var match in regex.EnumerateMatches("é😀b\n"u8))
@@ -106,7 +111,7 @@ public sealed class Utf8ComplementaryClassTests
     public void ConsumingRepeatsKeepTheirConstructionBackstop(bool compiled)
     {
         var options = RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0);
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("a{1000000000}", options));
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("a{1000000000}", options: options));
     }
 
     [Fact]

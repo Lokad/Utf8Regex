@@ -28,7 +28,7 @@ public sealed class Utf8SliceVerboseTests
             RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant | RegexOptions.Compiled,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
         }
     }
@@ -72,7 +72,7 @@ public sealed class Utf8SliceVerboseTests
             RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant | RegexOptions.Compiled,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(expected, regex.IsMatch(input));
             if (regex.Inspection.DebugUsesOwnedSliceProgram)
             {
@@ -86,7 +86,7 @@ public sealed class Utf8SliceVerboseTests
     public void UnterminatedCommentMatchesOracle(string pattern)
     {
         var oracle = new Regex(pattern, RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant);
         Assert.Equal(oracle.IsMatch("a"), regex.IsMatch(Encoding.UTF8.GetBytes("a")));
     }
 
@@ -95,6 +95,6 @@ public sealed class Utf8SliceVerboseTests
     public void UnterminatedShapesFailConstruction(string pattern)
     {
         Utf8PatternFailureAssert.Throws(
-            () => new Utf8Regex(pattern, RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant));
+            () => new Utf8Regex(pattern, options: RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant));
     }
 }

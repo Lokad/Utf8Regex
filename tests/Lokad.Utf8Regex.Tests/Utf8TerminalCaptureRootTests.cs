@@ -23,7 +23,7 @@ public sealed class Utf8TerminalCaptureRootTests
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft })
         {
-            var program = new Utf8Regex(pattern, options).Inspection.AvailableOwnedSliceProgram;
+            var program = new Utf8Regex(pattern, options: options).Inspection.AvailableOwnedSliceProgram;
             foreach (var text in new[] { "", "item-", "item-12", "item-123x", "xitem-345!",
                 "é😀item-12a", "XABC", "item-aé", "item-123item-45", "other-345!", "aa123", "abcX12", ",;", "é😀,;x" })
             {
@@ -53,7 +53,7 @@ public sealed class Utf8TerminalCaptureRootTests
         var input = storage.AsSpan(1, storage.Length - 2);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
-            var program = new Utf8Regex(pattern, options).Inspection.AvailableOwnedSliceProgram;
+            var program = new Utf8Regex(pattern, options: options).Inspection.AvailableOwnedSliceProgram;
             for (var start = 0; start <= input.Length; start++)
             {
                 if (start < input.Length && (input[start] & 0xc0) == 0x80) continue;

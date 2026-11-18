@@ -19,7 +19,7 @@ public sealed class Utf8WordRunCountTests
         var text = "short 123456789 1234567890 _abcdEFGHij " + new string('z', 31) + " " + new string('a', 32) + " " + new string('_', 33) + " !";
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.IgnoreCase })
         {
-            var regex = new Utf8Regex(pattern, options); var input = Encoding.UTF8.GetBytes(text);
+            var regex = new Utf8Regex(pattern, options: options); var input = Encoding.UTF8.GetBytes(text);
             var expected = new Regex(pattern, options).Count(text);
             var diagnostic = regex.CollectCountDiagnostics(input);
             Assert.Equal(expected, diagnostic.Result);             Assert.Equal(expected, regex.Count(input)); Assert.Equal(expected, regex.Count(input, CancellationToken.None));
@@ -63,7 +63,7 @@ public sealed class Utf8WordRunCountTests
     public void DirectionAndOtherExecutionContractsRetainOwnedBehavior(RegexOptions options)
     {
         const string pattern = @"\b\w{10,}\b"; const string text = "abc abcdefghijkl abcdefghijklmno";
-        var regex = new Utf8Regex(pattern, options); var diagnostic = regex.CollectCountDiagnostics(Encoding.UTF8.GetBytes(text));
+        var regex = new Utf8Regex(pattern, options: options); var diagnostic = regex.CollectCountDiagnostics(Encoding.UTF8.GetBytes(text));
         Assert.Equal(new Regex(pattern, options).Count(text), diagnostic.Result);
     }
 
@@ -75,7 +75,7 @@ public sealed class Utf8WordRunCountTests
         foreach (var text in texts)
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options); var diagnostic = regex.CollectCountDiagnostics(Encoding.UTF8.GetBytes(text));
+            var regex = new Utf8Regex(pattern, options: options); var diagnostic = regex.CollectCountDiagnostics(Encoding.UTF8.GetBytes(text));
             Assert.Equal(1, diagnostic.Result);         }
     }
 
@@ -96,9 +96,9 @@ public sealed class Utf8WordRunCountTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(expected, regex.Count(input));
-            Assert.Equal(expected, new Utf8Regex(pattern, RegexOptions.NonBacktracking).Count(input));
+            Assert.Equal(expected, new Utf8Regex(pattern, options: RegexOptions.NonBacktracking).Count(input));
         }
     }
 
@@ -124,7 +124,7 @@ public sealed class Utf8WordRunCountTests
         foreach (var pattern in new[] { @"\w+", @"\w{2,}", @"\b\w{2,}\b", @"\b(\w{10,})\b" })
         {
             var regex = new Utf8Regex(pattern);
-            var independent = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+            var independent = new Utf8Regex(pattern, options: RegexOptions.NonBacktracking);
             for (var trial = 0; trial < 64; trial++)
             {
                 var text = string.Concat(Enumerable.Range(0, 100).Select(_ => alphabet[random.Next(alphabet.Length)]));
@@ -142,13 +142,28 @@ public sealed class Utf8WordRunCountTests
     {
         const string pattern = @"\b(\w{10,})\b";
         var input = Encoding.UTF8.GetBytes(new string('é', 10) + " " + string.Concat(Enumerable.Repeat("𐐀", 10)));
-        var regex = new Utf8Regex(pattern, resourcePolicy: new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 8 << 20,
+                MaxResultBytes = 1
+            }
+        });
         var account = new Account();
         Assert.True(account.TryReserve(17));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal(2, regex.Count(input, default, account));
         Assert.Equal(17UL, account.Used);
-        var denied = new Utf8Regex(pattern, resourcePolicy: new() { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input, default, account));
         Assert.Equal(17UL, account.Used);
         using var source = new CancellationTokenSource(); source.Cancel();
@@ -167,12 +182,27 @@ public sealed class Utf8WordRunCountTests
     [Fact]
     public void UsefulFinitePoliciesAdmitScalarCounting()
     {
-        var regex = new Utf8Regex(@"\b\w{10,}\b", RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(@"\b\w{10,}\b", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 8 << 20,
+                MaxResultBytes = 1
+            }
+        });
         using var token = new CancellationTokenSource();
         Assert.Equal(2, regex.Count("abcdefghijkl abcdefghijklmno"u8, token.Token));
-        var tooLittle = new Utf8Regex(@"\b\w{10,}\b", RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1 });
+        var tooLittle = new Utf8Regex(@"\b\w{10,}\b", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            }
+        });
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => tooLittle.Count(new byte[4096]));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
     }
@@ -186,8 +216,14 @@ public sealed class Utf8WordRunCountTests
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var canceled = new CancellationTokenSource();
-        var regex = new Utf8Regex(@"\b\w{10,}\b", RegexOptions.None, timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 1 << 20 });
+        var regex = new Utf8Regex(@"\b\w{10,}\b", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1 << 20
+            }
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(wider ? "éééééééééé𐐀 " : "abcdefghijkl ", 1024))); var reached = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -218,16 +254,28 @@ public sealed class Utf8WordRunCountTests
     {
         const string pattern = @"\b\w{10,}\b";
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abcdefghijkl ", 1024))); ulong firstNative = 0;
-        var reference = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 });
+        var reference = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000
+            }
+        });
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
             if (firstNative == 0 && steps >= 64) firstNative = steps;
         });
         try { Assert.Equal(1024, reference.Count(input)); } finally { session.Complete(); }
         Assert.True(firstNative > 1);
-        var limited = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = firstNative - 1 });
+        var limited = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = firstNative - 1
+            }
+        });
         session = Utf8SearchDiagnosticsSession.Start();
         try
         {

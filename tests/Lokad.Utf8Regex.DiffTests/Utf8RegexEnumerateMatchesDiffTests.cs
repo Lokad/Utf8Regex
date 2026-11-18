@@ -21,7 +21,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForNativeLiteral()
     {
         const string input = "abcxxabc";
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -42,7 +42,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForNativeUtf8Literal()
     {
         const string input = "😀 café 😀";
-        var regex = new Utf8Regex("😀", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("😀", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -65,7 +65,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForBoundaryWrappedUtf8Literal()
     {
         const string input = "é a éb é é";
-        var regex = new Utf8Regex(@"\bé\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\bé\b", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -88,7 +88,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForUtf8LiteralAlternation()
     {
         const string input = "café niño cafe niño café";
-        var regex = new Utf8Regex("café|niño", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("café|niño", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -111,7 +111,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForBoundaryWrappedUtf8LiteralAlternation()
     {
         const string input = "café niño caféx xniño niño";
-        var regex = new Utf8Regex(@"\b(?:café|niño)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:café|niño)\b", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -135,7 +135,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     {
         const string input = "Task ValueTask TaskFactory IAsyncEnumerable Task";
         const string pattern = @"\b(?:Task|ValueTask|IAsyncEnumerable)\b";
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -158,7 +158,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForUtf8LiteralLookahead()
     {
         const string input = "café noir café gris café noir";
-        var regex = new Utf8Regex("café(?= noir)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("café(?= noir)", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int ByteIndex, int ByteLength)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -181,7 +181,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForFallbackRegex()
     {
         const string input = "ab abb abbb";
-        var regex = new Utf8Regex("ab+", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("ab+", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -202,7 +202,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForEmptyNativeLiteral()
     {
         const string input = "abc";
-        var regex = new Utf8Regex(string.Empty, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(string.Empty, options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -223,7 +223,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForAnchoredAsciiSimplePattern()
     {
         const string input = "abc";
-        var regex = new Utf8Regex("^abc$", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("^abc$", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -244,7 +244,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForEscapedAsciiSimplePattern()
     {
         const string input = "12 34 xx";
-        var regex = new Utf8Regex(@"\d\d", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\d\d", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -266,7 +266,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     {
         const string input = "xxABxCDyy";
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex("ab.cd", options);
+        var regex = new Utf8Regex("ab.cd", options: options);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -287,7 +287,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForExactQuantifiedAsciiSimplePattern()
     {
         const string input = "12 345 67";
-        var regex = new Utf8Regex(@"\d{2}", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\d{2}", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -308,7 +308,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForEscapedAsciiCharClassPattern()
     {
         const string input = "3Z 9X zz";
-        var regex = new Utf8Regex(@"[\d][A-Z]", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"[\d][A-Z]", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -329,7 +329,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForControlEscapePattern()
     {
         const string input = "a\nb\nc";
-        var regex = new Utf8Regex(@"\n", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\n", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -350,7 +350,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForHexEscapePattern()
     {
         const string input = "A BA";
-        var regex = new Utf8Regex(@"\x41", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\x41", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -371,7 +371,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForAsciiSimpleAlternation()
     {
         const string input = "cat dog fish dog";
-        var regex = new Utf8Regex("cat|dog", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("cat|dog", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -392,7 +392,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForMixedLengthAsciiSimpleAlternation()
     {
         const string input = "cat horse fish horse";
-        var regex = new Utf8Regex("cat|horse", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("cat|horse", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -413,7 +413,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForBoundedAsciiQuantifierPattern()
     {
         const string input = "1 12 123 1234";
-        var regex = new Utf8Regex(@"\d{2,4}", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\d{2,4}", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -434,7 +434,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForGroupedAsciiSimplePattern()
     {
         const string input = "cat horse fish horse";
-        var regex = new Utf8Regex("(?:cat|horse)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?:cat|horse)", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -455,7 +455,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     public void EnumerateMatchesMatchesRuntimeForDollarAnchorBeforeTrailingNewline()
     {
         const string input = "abc\n";
-        var regex = new Utf8Regex("abc$", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc$", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -477,7 +477,7 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
     {
         const string input = "abc\nzzz\nabc";
         var options = RegexOptions.Multiline | RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex("^abc", options);
+        var regex = new Utf8Regex("^abc", options: options);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -499,8 +499,8 @@ public sealed class Utf8RegexEnumerateMatchesDiffTests
         var bytes = Encoding.UTF8.GetBytes(input);
         var expected = EnumerateRuntimeMatches(new Regex(pattern, options, Regex.InfiniteMatchTimeout), input);
         var expectedCompiled = EnumerateRuntimeMatches(new Regex(pattern, options | RegexOptions.Compiled, Regex.InfiniteMatchTimeout), input);
-        var actual = EnumerateUtf8Matches(new Utf8Regex(pattern, options), bytes);
-        var actualCompiled = EnumerateUtf8Matches(new Utf8Regex(pattern, options | RegexOptions.Compiled), bytes);
+        var actual = EnumerateUtf8Matches(new Utf8Regex(pattern, options: options), bytes);
+        var actualCompiled = EnumerateUtf8Matches(new Utf8Regex(pattern, options: options | RegexOptions.Compiled), bytes);
 
         Assert.Equal(expected, expectedCompiled);
         Assert.Equal(expected, actual);

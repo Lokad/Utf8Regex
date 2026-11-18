@@ -14,8 +14,11 @@ public sealed class Utf8DeferredRepeatStateTests
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000, MaxDepth = 1,
             MaxWorkingBytes = 1, MaxResultBytes = 1 };
-        var regex = new Utf8Regex("""^import\s+(?<shared>shared\s+)?"(?<path>(\.|[^\\"]*))".*$""",
-            RegexOptions.Multiline, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8Regex("""^import\s+(?<shared>shared\s+)?"(?<path>(\.|[^\\"]*))".*$""", options:             RegexOptions.Multiline, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         using var token = new CancellationTokenSource();
         Assert.Equal(2, regex.Count("import \"x\";\nimport shared \"y\";"u8, token.Token));
     }

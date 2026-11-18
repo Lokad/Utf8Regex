@@ -31,7 +31,7 @@ public sealed class Utf8NonBacktrackingBatchTests
             var options = RegexOptions.NonBacktracking | RegexOptions.Multiline | RegexOptions.CultureInvariant |
                 (compiled ? RegexOptions.Compiled : 0);
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var matches = oracle.Matches(text);
             Assert.Equal(matches.Count, regex.Count(input));
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
@@ -78,8 +78,8 @@ public sealed class Utf8NonBacktrackingBatchTests
                 (compiled ? RegexOptions.Compiled : 0);
             // Ordinary owned matching is a scalar oracle even for supplementary dots.
             // Only last capture values/ranges are shared with NonBacktracking.
-            var ordinary = new Utf8Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options | RegexOptions.NonBacktracking);
+            var ordinary = new Utf8Regex(pattern, options: options);
+            var regex = new Utf8Regex(pattern, options: options | RegexOptions.NonBacktracking);
             Assert.Equal(ordinary.Count(input), regex.Count(input));
             Assert.Equal(ordinary.IsMatch(input), regex.IsMatch(input));
             Assert.Equal(Encoding.UTF8.GetString(ordinary.Replace(input, "<$0>")), Encoding.UTF8.GetString(regex.Replace(input, "<$0>")));
@@ -109,7 +109,7 @@ public sealed class Utf8NonBacktrackingBatchTests
         {
             var literal = new string('a', length);
             var pattern = $"(?<x>{literal})|(?<last>b)$";
-            var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+            var regex = new Utf8Regex(pattern, options: RegexOptions.NonBacktracking);
             var width = regex.Inspection.AvailableOwnedSliceProgram.Instructions.Length;
             if (width is < 63 or > 65) continue;
             widths.Add(width);
@@ -168,8 +168,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     }
 
     private static Utf8SliceProgram Program(string pattern) =>
-        new Utf8Regex(pattern, RegexOptions.NonBacktracking | RegexOptions.CultureInvariant)
-            .Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");
+        new Utf8Regex(pattern, options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant)            .Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");
 
     [Theory]
     [InlineData("a*b|", false)]
@@ -205,7 +204,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     public void ScalarBatchesPreserveOffsetsSplitAndBothReplacementForms(bool compiled)
     {
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var regex = new Utf8Regex("(?<x>😀)*z|", options);
+        var regex = new Utf8Regex("(?<x>😀)*z|", options: options);
         var input = "😀😀"u8.ToArray();
         Assert.Equal(3, regex.Count(input));
         var ranges = new List<(int, int)>();
@@ -219,7 +218,7 @@ public sealed class Utf8NonBacktrackingBatchTests
         var pieces = new List<string>();
         foreach (var piece in regex.EnumerateSplits(input)) pieces.Add(piece.GetValueString());
         Assert.Equal(new[] { "", "😀", "😀", "" }, pieces);
-        var shared = new Utf8Regex("(?<x>a(?<x>b)c)", options);
+        var shared = new Utf8Regex("(?<x>a(?<x>b)c)", options: options);
         Assert.Equal("<abc>", Encoding.UTF8.GetString(shared.Replace("abc"u8, "<${x}>")));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(shared.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -355,7 +354,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     [InlineData(false)] [InlineData(true)]
     public void PublicEnumerationWorkGrowsLinearlyAndCopiesKeepTheirPosition(bool compiled)
     {
-        var regex = new Utf8Regex("a*b|", RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex("a*b|", options: RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
         ulong previous = 0;
         foreach (var size in new[] { 64, 128, 256, 512 })
         {
@@ -397,7 +396,7 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal(small.NonBacktrackingCaptureOpeningCount, large.NonBacktrackingCaptureOpeningCount);
         var nested = Program("(?<x>a(?<x>b)c){16}");
         Assert.Equal(2, nested.NonBacktrackingCaptureOpeningCount);
-        var regex = new Utf8Regex("(?<x>a(?<x>b)c){16}", RegexOptions.NonBacktracking);
+        var regex = new Utf8Regex("(?<x>a(?<x>b)c){16}", options: RegexOptions.NonBacktracking);
         var result = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abc", 16)))));
         Assert.Equal("abc", Encoding.UTF8.GetString(result.GetGroupMemory(regex.GroupNumberFromName("x")).Span));
     }
@@ -406,7 +405,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     [InlineData(false)] [InlineData(true)]
     public void CopiedAndAbandonedCursorsShareOneTableLoan(bool compiled)
     {
-        var regex = new Utf8Regex("(?<x>.)*z|", RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex("(?<x>.)*z|", options: RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));

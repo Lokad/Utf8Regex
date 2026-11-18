@@ -33,7 +33,10 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
-            var regex = new Utf8Regex("(?i:^I)", RegexOptions.None, TimeSpan.FromSeconds(20));
+            var regex = new Utf8Regex("(?i:^I)", options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(20)
+            });
             using var source = new CancellationTokenSource();
             Assert.False(regex.Match("i"u8, 0, [], source.Token).Success);
             var dotless = regex.Match("ı"u8, 0, [], source.Token);
@@ -61,7 +64,10 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
     [InlineData("^(abc)", "abc", 0, 0, 3)]
     public void ControlledOffsetCallsPreserveScalarRangesFloorsAndAnchorContext(string pattern, string text, int floor, int start, int length)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(20));
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(20)
+        });
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
         var expected = start >= 0;

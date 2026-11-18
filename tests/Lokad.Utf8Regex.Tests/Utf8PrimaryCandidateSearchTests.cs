@@ -15,8 +15,16 @@ public sealed class Utf8PrimaryCandidateSearchTests
     {
         var text = "é" + new string('x', 16384) + (hit ? "A12B" : "");
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex(Pattern, RegexOptions.Singleline, resourcePolicy: new()
-            { MaxWorkSteps = 256, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Singleline, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 256,
+                MaxDepth = 4096,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         using var source = new CancellationTokenSource();
         var captures = new Utf8CaptureRange[3];
         captures[2] = new(7, 9);
@@ -44,7 +52,13 @@ public sealed class Utf8PrimaryCandidateSearchTests
     [Fact]
     public void DenseFalseCandidatesStillConsumeWorkAndClearWrittenSlots()
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.Singleline, resourcePolicy: new() { MaxWorkSteps = 256 });
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Singleline, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 256
+            }
+        });
         var input = Encoding.ASCII.GetBytes(new string('A', 8192));
         var captures = new[] { new Utf8CaptureRange(7, 9), new Utf8CaptureRange(7, 9) };
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
@@ -62,7 +76,7 @@ public sealed class Utf8PrimaryCandidateSearchTests
     public void PrefixSearchRetainsOriginalSynchronousCancellation(int operation)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex(Pattern, RegexOptions.Singleline);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Singleline);
         var input = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + "A12B");
         var session = Utf8SearchDiagnosticsSession.Start(_ => source.Cancel());
         try

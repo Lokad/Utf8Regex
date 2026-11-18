@@ -29,7 +29,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
             RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
             var options = mode | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var oracle = new Regex(pattern, options);
             Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text]);
         }
@@ -52,7 +52,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         }
 
         var expected = new Regex(pattern, options);
-        var actual = new Utf8Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(Subject);
 
         Assert.Equal(expected.IsMatch(Subject), actual.IsMatch(input));
@@ -94,7 +94,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
 
         var expectedRegex = new Regex(pattern, options);
         var expected = expectedRegex.Replace(Subject, replacement);
-        var actual = new Utf8Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(Subject);
 
         Assert.Equal(expected, Encoding.UTF8.GetString(actual.Replace(input, replacement)));
@@ -129,7 +129,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var expected = new Regex(pattern, options);
-        var actual = new Utf8Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(expected.Count(subject), actual.Count(Encoding.UTF8.GetBytes(subject)));
     }
@@ -146,7 +146,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var expected = new Regex(pattern, options);
-        var actual = new Utf8Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options: options);
 
         Assert.Equal(expected.Count(subject), actual.Count(Encoding.UTF8.GetBytes(subject)));
     }
@@ -166,7 +166,10 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var subject = $"{falsePrefix}nEeDlE aqqq OMEGA";
         var input = Encoding.UTF8.GetBytes(subject);
         var expected = new Regex(pattern, options, TimeSpan.FromSeconds(1));
-        var actual = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1));
+        var actual = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1)
+        });
 
         Assert.Equal(expected.IsMatch(subject), actual.IsMatch(input));
         Assert.Equal(expected.Count(subject), actual.Count(input));
@@ -210,7 +213,10 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
         var expected = new Regex(pattern, options, timeout);
-        var actual = new Utf8Regex(pattern, options, timeout);
+        var actual = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         var input = Encoding.UTF8.GetBytes(subject);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, actual.Inspection.ExecutionKind);
@@ -260,7 +266,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var expected = new Regex(pattern, options);
-        var actual = new Utf8Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options: options);
         var analysis = Utf8FrontEnd.Compile(pattern, options);
         var input = Encoding.UTF8.GetBytes(subject);
         var validation = Utf8Validation.Validate(input);
@@ -321,7 +327,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
 
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         var expected = new List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
@@ -352,7 +358,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         var expected = new List<(int Index, int Length)>();
         foreach (Match expectedMatch in oracle.Matches(text))
@@ -399,7 +405,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         const int count = int.MaxValue;
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         var expected = new List<(string Value, int Index, int Length)>();
         foreach (var range in oracle.EnumerateSplits(text, count))
@@ -437,7 +443,7 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
 
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         var expected = new List<(string Value, int Index, int Length)>();
         foreach (var range in oracle.EnumerateSplits(text, count))
@@ -484,13 +490,13 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var expected = oracle.Replace(text, template);
 
-        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesRegex = new Utf8Regex(pattern, options: options);
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
-        var stringRegex = new Utf8Regex(pattern, options);
+        var stringRegex = new Utf8Regex(pattern, options: options);
         var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -520,13 +526,13 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var expected = oracle.Replace(text, template);
 
-        var bytesRegex = new Utf8Regex(pattern, options);
+        var bytesRegex = new Utf8Regex(pattern, options: options);
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
         Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(bytesRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, bytesRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
 
-        var stringRegex = new Utf8Regex(pattern, options);
+        var stringRegex = new Utf8Regex(pattern, options: options);
         var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
         Assert.Equal(expected, stringActual);
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);

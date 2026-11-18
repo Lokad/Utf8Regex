@@ -26,7 +26,7 @@ public sealed class Utf8CompletedBackreferenceTests
     [InlineData(@"(?<x>a)(?<-x>b)\k<x>", RegexOptions.None)]
     [InlineData(@"(a)\1", RegexOptions.RightToLeft)]
     public void OpenExternalSharedAndComplexReferencesKeepTheirJournal(string pattern, RegexOptions options)
-        => Assert.True(new Utf8Regex(pattern, options).Inspection.AvailableOwnedSliceProgram!.UsesCaptureOpeningJournal);
+        => Assert.True(new Utf8Regex(pattern, options: options).Inspection.AvailableOwnedSliceProgram!.UsesCaptureOpeningJournal);
 
     [Theory]
     [InlineData(@"([a-z]+)-\1", "x token-token y token-other")]

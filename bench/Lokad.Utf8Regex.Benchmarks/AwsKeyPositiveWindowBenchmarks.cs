@@ -25,7 +25,7 @@ public class AwsKeyPositiveWindowBenchmarks
     {
         _inputString = BuildInput(Scenario);
         _inputBytes = Encoding.UTF8.GetBytes(_inputString);
-        _utf8Regex = new Utf8Regex(Pattern, RegexOptions.Multiline);
+        _utf8Regex = new Utf8Regex(Pattern, options: RegexOptions.Multiline);
         _regex = new Regex(Pattern, RegexOptions.Multiline, Regex.InfiniteMatchTimeout);
 
         var utf8Count = _utf8Regex.Count(_inputBytes);

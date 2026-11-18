@@ -10,7 +10,7 @@ public sealed class Utf8ScalarSimpleCaptureTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void CapturedCandidateScanningKeepsAllocationIndependentOfSubjectLength(bool compiled, bool count)
     {
-        var regex = new Utf8Regex("(a(.)c)", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex("(a(.)c)", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = Encoding.UTF8.GetBytes(new string('x', 100000) + "ayc");
         // A live token selects scalar discovery; qualified no-token native lanes
         // remain available and are outside this allocation control.
@@ -29,7 +29,7 @@ public sealed class Utf8ScalarSimpleCaptureTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void AsciiCapturedDetailedDiscoveryDoesNotDecodeWholeSubject(bool compiled, bool miss)
     {
-        var regex = new Utf8Regex("(a(.)c)", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex("(a(.)c)", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = Encoding.UTF8.GetBytes(new string('x', 100000) + (miss ? "ayz" : "ayc"));
         Assert.Equal(!miss, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
         var before = GC.GetAllocatedBytesForCurrentThread();
@@ -56,7 +56,7 @@ public sealed class Utf8ScalarSimpleCaptureTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) |
             (reverse ? RegexOptions.RightToLeft : 0);
-        var regex = new Utf8Regex("(a|(.)c)", options);
+        var regex = new Utf8Regex("(a|(.)c)", options: options);
         var text = supplementary ? "x😀c" : "xac";
         var input = Encoding.UTF8.GetBytes(text);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));

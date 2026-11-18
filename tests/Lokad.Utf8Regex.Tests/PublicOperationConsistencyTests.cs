@@ -72,7 +72,7 @@ public sealed class PublicOperationConsistencyTests
         RegexOptions options, string inputText)
     {
         Assert.NotEmpty(name);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(inputText);
         var ranges = new List<(int Start, int Length)>();
         foreach (var match in regex.EnumerateMatches(input))

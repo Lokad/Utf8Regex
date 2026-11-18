@@ -16,7 +16,7 @@ public sealed class Utf8ProfileTokenQualificationTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant); Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
+            var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant); Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
             var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal((index, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
@@ -24,7 +24,7 @@ public sealed class Utf8ProfileTokenQualificationTests
     private static void AsciiOracle(string pattern, IEnumerable<string> subjects)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         foreach (var text in subjects)
         {
             var input = Encoding.ASCII.GetBytes(text);
@@ -44,7 +44,7 @@ public sealed class Utf8ProfileTokenQualificationTests
     {
         foreach (var text in new[] { "x://😀", "𐐀://😀?q#f", "x://𐐀", "x:///😀😀" })
         {
-            foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled }) Assert.Equal(0, new Utf8Regex(Uri, options).Count(Encoding.UTF8.GetBytes(text)));
+            foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled }) Assert.Equal(0, new Utf8Regex(Uri, options: options).Count(Encoding.UTF8.GetBytes(text)));
         }
         Range(Uri, " x://😀/ ", 1, 9); Range(Uri, " 𐐀://😀😀?q#f ", 1, 19);
         Assert.Equal(1, new Utf8Regex(Uri).Count("𐐀://😀😀"u8));
@@ -95,8 +95,16 @@ public sealed class Utf8ProfileTokenQualificationTests
         foreach (var pattern in new[] { @"\d{1}/\d{1}/\d{1}", @"\d{1,2}/\d{1,2}/\d{1,3}", @"\b\d{1,2}/\d{1,2}/\d{2,4}\b" })
         {
             var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-            var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, resourcePolicy: new()
-            { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+            var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1 << 20
+                }
+            });
             foreach (var text in subjects.Concat(["1/2/3", "11/22/333", "a1/2/33b", " 11/2/33 ", "1/2/3 1/2/3"]))
             {
                 var input = Encoding.ASCII.GetBytes(text);
@@ -124,7 +132,7 @@ public sealed class Utf8ProfileTokenQualificationTests
         // backtracks to the three-digit arm. Keep both directional outcomes.
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(reordered, options | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(reordered, options: options | RegexOptions.CultureInvariant);
             var expectedLength = (options & RegexOptions.RightToLeft) != 0 ? 12 : 11;
             var match = regex.Match("00.11.22.255"u8); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor("00.11.22.255"u8.ToArray()));
             Assert.Equal((0, expectedLength), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));

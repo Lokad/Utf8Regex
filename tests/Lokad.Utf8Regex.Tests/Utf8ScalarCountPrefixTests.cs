@@ -34,9 +34,18 @@ public sealed class Utf8ScalarCountPrefixTests
             RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
             var expected = new Regex(pattern, options).Count(subject);
-            var unlimited = new Utf8Regex(pattern, options);
-            var finite = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan,
-                new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+            var unlimited = new Utf8Regex(pattern, options: options);
+            var finite = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 1048576,
+                    MaxResultBytes = 1048576
+                }
+            });
             var storage = Encoding.UTF8.GetBytes("unused" + subject + "unused");
             var input = storage.AsSpan(6, Encoding.UTF8.GetByteCount(subject));
             Assert.Equal(expected, unlimited.Count(input));
@@ -50,8 +59,17 @@ public sealed class Utf8ScalarCountPrefixTests
     public void RtlUnanchoredAlternativeRetainsScalarCapturesAndValidation(bool compiled)
     {
         var options = RegexOptions.RightToLeft | (compiled ? RegexOptions.Compiled : 0);
-        var regex = new Utf8Regex("a\\G|(?<x>😀)", options, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+        var regex = new Utf8Regex("a\\G|(?<x>😀)", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            }
+        });
         var storage = "prefix😀 x😀tail"u8.ToArray();
         var input = storage.AsSpan(6, 10);
         using var source = new CancellationTokenSource();
@@ -73,7 +91,7 @@ public sealed class Utf8ScalarCountPrefixTests
     [InlineData(true)]
     public void MandatoryInitialRtlContiguousAnchorKeepsBoundedStop(bool compiled)
     {
-        var regex = new Utf8Regex("a\\G", RegexOptions.RightToLeft | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex("a\\G", options: RegexOptions.RightToLeft | (compiled ? RegexOptions.Compiled : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.UTF8.GetBytes(new string('x', 32768));
         var invocation = new Utf8SliceInvocation(new(16, 64, 8192, 1), Timeout.InfiniteTimeSpan, default);
@@ -94,8 +112,17 @@ public sealed class Utf8ScalarCountPrefixTests
         var validation = new Utf8SliceInvocation(new(10000000, 0, 0), Timeout.InfiniteTimeSpan, default);
         _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
-        var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft, TimeSpan.FromMilliseconds(20),
-            new() { MaxWorkSteps = 10000000, MaxDepth = 128, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.RightToLeft, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10000000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            }
+        });
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
@@ -118,8 +145,17 @@ public sealed class Utf8ScalarCountPrefixTests
         Assert.True(entered);
         ticks = 0;
         Assert.Equal(2, regex.Count(input));
-        var limited = new Utf8Regex(pattern, RegexOptions.RightToLeft, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 10000, MaxDepth = 128, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+        var limited = new Utf8Regex(pattern, options: RegexOptions.RightToLeft, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
     }
@@ -130,14 +166,14 @@ public sealed class Utf8ScalarCountPrefixTests
     [InlineData("😀x+", "é😀xxx 😀x 😀", 2)]
     public void UnicodePrefixesKeepWholeScalarCoordinates(string pattern, string subject, int expected)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(subject)));
     }
 
     [Fact]
     public void CandidateSearchReducesImpossibleVmAttemptsWithEveryCutoffPreserved()
     {
-        var regex = new Utf8Regex("(ab|cd)+", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(ab|cd)+", options: RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var plan = regex.Inspection.SearchPlan;
         var input = Encoding.UTF8.GetBytes(new string('x', 4097) + "abcd xx cd");
@@ -164,7 +200,7 @@ public sealed class Utf8ScalarCountPrefixTests
     public void LongCandidateMissPollsOriginalInvocationAndReleasesScratch(bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
-        var regex = new Utf8Regex("(ab|cd)+", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(ab|cd)+", options: RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.UTF8.GetBytes(new string('x', 200000));
         using var source = new CancellationTokenSource();

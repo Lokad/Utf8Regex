@@ -21,7 +21,7 @@ public sealed class Utf8FiniteLiteralCountTests
             var text = new string('a', prefix) + rejected + "😀" + literal + " " + literal;
             var input = Encoding.UTF8.GetBytes(text);
             byte[] storage = [0xff, .. input, 0xff];
-            var ordinary = new Utf8Regex(literal, mode);
+            var ordinary = new Utf8Regex(literal, options: mode);
             var finite = Create(literal, 1000000, mode);
             Assert.Equal(2, ordinary.Count(storage.AsSpan(1, input.Length)));
             Assert.Equal(2, finite.Count(storage.AsSpan(1, input.Length), token.Token));
@@ -30,8 +30,17 @@ public sealed class Utf8FiniteLiteralCountTests
     }
 
     private static Utf8Regex Create(string pattern, ulong work, RegexOptions options)
-        => new(pattern, options | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        => new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = work,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
 
     [Theory]
     [InlineData("aa|a", "aaa", 2)]
@@ -96,7 +105,7 @@ public sealed class Utf8FiniteLiteralCountTests
             var text = new string('a', prefixLength) + "é😃" + hits + "😃x";
             var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
             var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
-            var baseline = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
+            var baseline = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant);
             var limited = Create(pattern, 1_000_000, options);
             Assert.Equal(expected, baseline.Count(input));
             Assert.Equal(expected, limited.Count(input));
@@ -120,7 +129,10 @@ public sealed class Utf8FiniteLiteralCountTests
                 string.Concat(Enumerable.Repeat("夏洛克x", 256)) + "猫猫猫猫猫猫犬犬犬约翰华生";
             var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
             var input = storage.AsSpan(7, Encoding.UTF8.GetByteCount(text));
-            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant, timeout);
+            var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = timeout
+            });
             Assert.Equal(new Regex(pattern, options).Count(text), regex.Count(input, source.Token));
         }
     }
@@ -200,14 +212,32 @@ public sealed class Utf8FiniteLiteralCountTests
     {
         var input = "é😀ababxabab"u8.ToArray();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var regex = new Utf8Regex("(a)(b)", options, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
-        var baseline = new Utf8Regex("(a)(b)", options);
+        var regex = new Utf8Regex("(a)(b)", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            }
+        });
+        var baseline = new Utf8Regex("(a)(b)", options: options);
         foreach (var offset in new[] { 0, 1, 3, 4, 5, 7, 9 })
             Assert.Equal(Utf8MatchSequence.Count(baseline.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)))), Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)))));
         Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(input, 3)));
-        var tight = new Utf8Regex("(a)(b)", options, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1_048_576 });
+        var tight = new Utf8Regex("(a)(b)", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1_048_576
+            }
+        });
         Assert.Equal(4, tight.Count(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.Count(tight.EnumerateMatches(input, 0))).ResourceKind);
@@ -230,8 +260,11 @@ public sealed class Utf8FiniteLiteralCountTests
         using var source = new CancellationTokenSource();
         var input = new byte[320000]; Array.Fill(input, (byte)'x');
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled,
-            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         _ = Utf8InputAnalyzer.Describe(input, ref probe);
         var validationSteps = probe.Budget.Steps;
@@ -276,9 +309,18 @@ public sealed class Utf8FiniteLiteralCountTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var options = mode | RegexOptions.CultureInvariant;
-        var baseline = new Utf8Regex(pattern, options);
-        var limited = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
+        var baseline = new Utf8Regex(pattern, options: options);
+        var limited = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            }
+        });
         Assert.Equal(baseline.Count(input), limited.Count(input));
         var offset = text.StartsWith("😀", StringComparison.Ordinal) ? 2 : 1;
         Assert.Equal(Utf8MatchSequence.Count(baseline.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)))), Utf8MatchSequence.Count(limited.EnumerateMatches(input, Encoding.UTF8.GetByteCount(Encoding.UTF8.GetString(input).AsSpan(0, offset)))));

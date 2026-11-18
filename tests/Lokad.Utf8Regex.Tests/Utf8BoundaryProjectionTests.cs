@@ -74,7 +74,7 @@ public sealed class Utf8BoundaryProjectionTests
     }
 
     private static Utf8Regex CreateUtf8Regex(string pattern, bool compiled)
-        => new(pattern, compiled ? RegexOptions.Compiled | RegexOptions.CultureInvariant : RegexOptions.CultureInvariant);
+        => new(pattern, options: compiled ? RegexOptions.Compiled | RegexOptions.CultureInvariant : RegexOptions.CultureInvariant);
 
     private static Regex CreateRuntimeRegex(string pattern, bool compiled)
         => new(pattern, compiled ? RegexOptions.Compiled | RegexOptions.CultureInvariant : RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);

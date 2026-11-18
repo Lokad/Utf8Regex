@@ -39,7 +39,7 @@ public sealed class Utf8OwnedTreeUtf8Tests
         Assert.NotNull(tree);
         var program = Utf8SliceParser.TryParse(options, tree);
         Assert.NotNull(program);
-        var text = new Utf8Regex(pattern, options);
+        var text = new Utf8Regex(pattern, options: options);
         Assert.Equal(text.GetGroupNumbers(), tree.CaptureCatalog!.GroupNumbers);
         Assert.Equal(text.GetGroupNames(), tree.CaptureNames);
         // Parsing borrows only for this call, including names and literal runs.

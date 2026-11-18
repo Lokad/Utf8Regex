@@ -13,7 +13,7 @@ internal static class Utf8ScalarNullableOperationAssertions
     {
         const string text = "😀a😀";
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options);
         var reverse = (options & RegexOptions.RightToLeft) != 0;
         (int Origin, int Byte, int Length, int Unit, int Units)[] rows = reverse

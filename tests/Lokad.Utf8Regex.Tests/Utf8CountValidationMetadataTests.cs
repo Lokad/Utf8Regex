@@ -17,8 +17,8 @@ public sealed class Utf8CountValidationMetadataTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
             var reference = new Regex(pattern, options);
-            var strict = new Utf8Regex(pattern, options);
-            var trusted = new Utf8Regex(pattern, options);
+            var strict = new Utf8Regex(pattern, options: options);
+            var trusted = new Utf8Regex(pattern, options: options);
             foreach (var length in new[] { 0, 1, 15, 16, 31, 32, 63, 64, 127, 128, 4095, 4096 })
             foreach (var tail in new[] { "", "é😀 夏洛克·福尔摩斯 abcé needle" })
             {
@@ -40,13 +40,22 @@ public sealed class Utf8CountValidationMetadataTests
     {
         var input = Encoding.ASCII.GetBytes(new string('a', 262144));
         {
-            var limited = new Utf8Regex("夏洛克·福尔摩斯", resourcePolicy: new() { MaxWorkSteps = 1 });
+            var limited = new Utf8Regex("夏洛克·福尔摩斯", policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1
+                }
+            });
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input)).ResourceKind);
             long ticks = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
             using var source = new CancellationTokenSource();
-            var regex = new Utf8Regex("夏洛克·福尔摩斯", matchTimeout: TimeSpan.FromMilliseconds(20));
+            var regex = new Utf8Regex("夏洛克·福尔摩斯", policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(20)
+            });
             var entered = false;
             var session = Utf8SearchDiagnosticsSession.Start(_ =>
             {
@@ -105,8 +114,17 @@ public sealed class Utf8CountValidationMetadataTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan,
-                new() { MaxWorkSteps = 1_000_000, MaxDepth = 10000, MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 });
+            var regex = new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 10000,
+                    MaxWorkingBytes = 1 << 24,
+                    MaxResultBytes = 1 << 24
+                }
+            });
             using var live = new CancellationTokenSource();
             Assert.Equal(new Regex(pattern, mode).Count(text), regex.Count(input, live.Token));
         }
@@ -120,8 +138,15 @@ public sealed class Utf8CountValidationMetadataTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Regex("abc[0-9]{2}", RegexOptions.None, TimeSpan.FromMilliseconds(20),
-            new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20 });
+        var regex = new Utf8Regex("abc[0-9]{2}", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxWorkingBytes = 1 << 20
+            }
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -139,8 +164,15 @@ public sealed class Utf8CountValidationMetadataTests
         Assert.True(entered);
         ticks = 0;
         Assert.Equal(1, regex.Count("abc12"u8));
-        var denied = new Utf8Regex("abc[0-9]{2}", RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 1, MaxWorkingBytes = 1 << 20 });
+        var denied = new Utf8Regex("abc[0-9]{2}", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1,
+                MaxWorkingBytes = 1 << 20
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
     }

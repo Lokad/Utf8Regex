@@ -57,7 +57,7 @@ public sealed class Utf8SliceCategoryBlockTests
             RegexOptions.Compiled | IgnoreCaseOptions,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString() + " pattern=" + pattern);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, options.ToString() + " pattern=" + pattern);
         }
@@ -137,7 +137,7 @@ public sealed class Utf8SliceCategoryBlockTests
         foreach (var compiled in new[] { false, true })
         {
             var effective = compiled ? options | RegexOptions.Compiled : options;
-            var regex = new Utf8Regex(pattern, effective);
+            var regex = new Utf8Regex(pattern, options: effective);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, effective.ToString() + " pattern=" + pattern);
             Assert.Equal(expected, regex.IsMatch(input));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, effective.ToString() + " pattern=" + pattern);
@@ -161,7 +161,7 @@ public sealed class Utf8SliceCategoryBlockTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, IgnoreCaseOptions, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
+        var regex = new Utf8Regex(pattern, options: IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -185,7 +185,7 @@ public sealed class Utf8SliceCategoryBlockTests
         Assert.True(expected.Success);
         Assert.Equal(expectedStart, expected.Index);
         Assert.Equal(expectedLength, expected.Length);
-        var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
+        var regex = new Utf8Regex(pattern, options: IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         var found = regex.Match(input);
         Assert.True(found.Success);
@@ -202,7 +202,7 @@ public sealed class Utf8SliceCategoryBlockTests
         var oracle = new Regex(pattern, IgnoreCaseOptions, Regex.InfiniteMatchTimeout);
         var expected = oracle.Match(inputText);
         Assert.True(expected.Success);
-        var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
+        var regex = new Utf8Regex(pattern, options: IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(detailed.Success);
@@ -233,7 +233,7 @@ public sealed class Utf8SliceCategoryBlockTests
             wanted.Add(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, match.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(match.Index, match.Length)));
         }
 
-        var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
+        var regex = new Utf8Regex(pattern, options: IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         var actual = new List<string>();
         foreach (var match in regex.EnumerateMatches(input))
@@ -267,7 +267,7 @@ public sealed class Utf8SliceCategoryBlockTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, IgnoreCaseOptions, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.Replace(inputText, "<$&>"));
-        var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
+        var regex = new Utf8Regex(pattern, options: IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, "<$&>")));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -285,7 +285,7 @@ public sealed class Utf8SliceCategoryBlockTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, IgnoreCaseOptions, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.Split(inputText, count));
-        var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
+        var regex = new Utf8Regex(pattern, options: IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         var actual = new List<string>();
         foreach (var split in regex.EnumerateSplits(input, count))
@@ -305,7 +305,7 @@ public sealed class Utf8SliceCategoryBlockTests
         var oracle = new Regex(pattern, IgnoreCaseOptions, Regex.InfiniteMatchTimeout);
         var wanted = oracle.Match(inputText, startAt);
         Assert.Equal(expectedSuccess, wanted.Success);
-        var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
+        var regex = new Utf8Regex(pattern, options: IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         var found = regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, startAt)), []);
         Assert.Equal(expectedSuccess, found.Success);
@@ -342,7 +342,7 @@ public sealed class Utf8SliceCategoryBlockTests
         Assert.Equal(expectedSuccess, wanted.Success);
         Assert.Equal(expectedStart, wanted.Index);
         Assert.Equal(expectedLength, wanted.Length);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         var found = regex.Match(input);
         Assert.Equal(expectedSuccess, found.Success);
@@ -365,7 +365,7 @@ public sealed class Utf8SliceCategoryBlockTests
         var oracle = new Regex(pattern, IgnoreCaseOptions, Regex.InfiniteMatchTimeout);
         // The program stays owned; astral inputs divert per operation while the
         // oracle tests astral halves, and the fallback answers unit-exact.
-        var regex = new Utf8Regex(pattern, IgnoreCaseOptions);
+        var regex = new Utf8Regex(pattern, options: IgnoreCaseOptions);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
@@ -397,8 +397,8 @@ public sealed class Utf8SliceCategoryBlockTests
         // scalar whose equivalents straddle the block hits both parities: the
         // negated test is not the complement of the positive test.
         var input = Encoding.UTF8.GetBytes("K");
-        var positive = new Utf8Regex("\\p{IsBasicLatin}+", IgnoreCaseOptions);
-        var negated = new Utf8Regex("\\P{IsBasicLatin}+", IgnoreCaseOptions);
+        var positive = new Utf8Regex("\\p{IsBasicLatin}+", options: IgnoreCaseOptions);
+        var negated = new Utf8Regex("\\P{IsBasicLatin}+", options: IgnoreCaseOptions);
         Assert.True(positive.Inspection.DebugUsesOwnedSliceProgram, "positive");
         Assert.True(negated.Inspection.DebugUsesOwnedSliceProgram, "negated");
         Assert.True(positive.IsMatch(input), "positive");
@@ -424,9 +424,9 @@ public sealed class Utf8SliceCategoryBlockTests
         Assert.False(oraclePlain.IsMatch("k"), "oracle plain");
         Assert.False(oracleDouble.IsMatch("k"), "oracle double");
         Assert.True(oracleBare.IsMatch("k"), "oracle bare");
-        var plain = new Utf8Regex("[^\\p{IsBasicLatin}]+", IgnoreCaseOptions);
-        var doubled = new Utf8Regex("[^\\P{IsBasicLatin}]+", IgnoreCaseOptions);
-        var bare = new Utf8Regex("[\\P{IsBasicLatin}]+", IgnoreCaseOptions);
+        var plain = new Utf8Regex("[^\\p{IsBasicLatin}]+", options: IgnoreCaseOptions);
+        var doubled = new Utf8Regex("[^\\P{IsBasicLatin}]+", options: IgnoreCaseOptions);
+        var bare = new Utf8Regex("[\\P{IsBasicLatin}]+", options: IgnoreCaseOptions);
         Assert.True(plain.Inspection.DebugUsesOwnedSliceProgram, "plain");
         Assert.True(doubled.Inspection.DebugUsesOwnedSliceProgram, "doubled");
         Assert.True(bare.Inspection.DebugUsesOwnedSliceProgram, "bare");

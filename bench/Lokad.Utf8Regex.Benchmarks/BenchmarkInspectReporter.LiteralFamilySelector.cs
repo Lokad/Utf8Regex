@@ -39,14 +39,12 @@ internal static partial class BenchmarkInspectReporter
             var input = Encoding.UTF8.GetBytes(control.Input);
             var literals = control.Pattern.Split('|').Select(Encoding.UTF8.GetBytes).ToArray();
             var hasCounter = PreparedShortAsciiLiteralFamilyCounter.TryCreate(literals, out var counter);
-            var ordinary = new Utf8Regex(control.Pattern, RegexOptions.CultureInvariant);
-            var compiled = new Utf8Regex(
-                control.Pattern,
-                RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            var finite = new Utf8Regex(
-                control.Pattern,
-                RegexOptions.CultureInvariant | RegexOptions.Compiled,
-                TimeSpan.FromSeconds(10));
+            var ordinary = new Utf8Regex(control.Pattern, options: RegexOptions.CultureInvariant);
+            var compiled = new Utf8Regex(                control.Pattern, options:                 RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            var finite = new Utf8Regex(                control.Pattern, options:                 RegexOptions.CultureInvariant | RegexOptions.Compiled, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(10)
+            });
             var regex = new Regex(
                 control.Pattern,
                 RegexOptions.CultureInvariant,
@@ -98,11 +96,9 @@ internal static partial class BenchmarkInspectReporter
             {
                 var constructionIterations = Math.Min(iterations, 100);
                 Measure("ConstructOrdinary", samples, constructionIterations, () =>
-                    (int)new Utf8Regex(control.Pattern, RegexOptions.CultureInvariant).Inspection.CompiledEngineKind);
+                    (int)new Utf8Regex(control.Pattern, options: RegexOptions.CultureInvariant).Inspection.CompiledEngineKind);
                 Measure("ConstructCompiled", samples, constructionIterations, () =>
-                    (int)new Utf8Regex(
-                        control.Pattern,
-                        RegexOptions.CultureInvariant | RegexOptions.Compiled).Inspection.CompiledEngineKind);
+                    (int)new Utf8Regex(                        control.Pattern, options:                         RegexOptions.CultureInvariant | RegexOptions.Compiled).Inspection.CompiledEngineKind);
             }
         }
 
@@ -137,12 +133,12 @@ internal static partial class BenchmarkInspectReporter
         {
             var oracleInput = Encoding.UTF8.GetString(benchmarkCase.Input);
             var expected = Regex.Count(oracleInput, pattern, RegexOptions.CultureInvariant);
-            var ordinary = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-            var compiled = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            var finite = new Utf8Regex(
-                pattern,
-                RegexOptions.CultureInvariant | RegexOptions.Compiled,
-                TimeSpan.FromSeconds(10));
+            var ordinary = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
+            var compiled = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            var finite = new Utf8Regex(                pattern, options:                 RegexOptions.CultureInvariant | RegexOptions.Compiled, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(10)
+            });
             var pcre2 = new Utf8Pcre2Regex(pattern);
 
             AssertSelectorResult(benchmarkCase.Name, "ordinary", expected, ordinary.Count(benchmarkCase.Input));

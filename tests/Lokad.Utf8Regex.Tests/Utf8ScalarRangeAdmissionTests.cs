@@ -15,7 +15,7 @@ public sealed class Utf8ScalarRangeAdmissionTests
     {
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            var failure = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options));
+            var failure = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options: options));
             Assert.Equal("pattern", failure.ParamName);
             Assert.Contains("Unicode scalar order", failure.Message);
         }
@@ -38,7 +38,7 @@ public sealed class Utf8ScalarRangeAdmissionTests
         Assert.False(mask.Contains((byte)'a'));
         var program = Utf8OwnedTreeSliceLowerer.TryLower(tree, RegexOptions.CultureInvariant);
         Assert.NotNull(program);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(2, regex.Count(Encoding.UTF8.GetBytes("\U00010400\U00010401\U00010402")));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }

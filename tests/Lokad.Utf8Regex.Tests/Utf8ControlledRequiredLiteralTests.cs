@@ -13,14 +13,17 @@ public sealed class Utf8ControlledRequiredLiteralTests
     [InlineData(true)]
     public void MissingRequiredLiteralNeedsNoVmWorkingCapacity(bool count)
     {
-        var regex = new Utf8Regex(@"[a-z]+@[a-z]+\.[a-z]+", RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout, new()
+        var regex = new Utf8Regex(@"[a-z]+@[a-z]+\.[a-z]+", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
             {
                 MaxWorkSteps = 1024,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
-            });
+            }
+        });
         Assert.True(regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue);
         var input = Encoding.UTF8.GetBytes(new string('a', 100000));
         if (count) Assert.Equal(0, regex.Count(input));
@@ -49,14 +52,17 @@ public sealed class Utf8ControlledRequiredLiteralTests
         foreach (var unlimited in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | extra;
-            var regex = unlimited ? new Utf8Regex(pattern, options) : new Utf8Regex(pattern, options,
-                Regex.InfiniteMatchTimeout, new()
+            var regex = unlimited ? new Utf8Regex(pattern, options: options): new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
                 {
                     MaxWorkSteps = 1000000,
                     MaxDepth = 8192,
                     MaxWorkingBytes = 1048576,
                     MaxResultBytes = 1048576
-                });
+                }
+            });
                 var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(expected != 0, regex.IsMatch(input));
             Assert.Equal(expected, regex.Count(input));
@@ -66,8 +72,14 @@ public sealed class Utf8ControlledRequiredLiteralTests
     [Fact]
     public void WholeSubjectScreeningPreservesLookbehindBeforeAnOffset()
     {
-        var regex = new Utf8Regex("(?<=foo)bar", RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = 10000 });
+        var regex = new Utf8Regex("(?<=foo)bar", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10000
+            }
+        });
         Assert.True(regex.Match("éfoobar"u8, 5, []).Success);
         Assert.Equal(1, Utf8MatchSequence.Count(regex.EnumerateMatches("éfoobar"u8, 5)));
     }
@@ -88,8 +100,17 @@ public sealed class Utf8ControlledRequiredLiteralTests
         using var token = new CancellationTokenSource();
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         const string pattern = @"[a-z]+@[a-z]+\.[a-z]+";
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, timeout,
-            new() { MaxWorkSteps = 1024, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1024,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         var entered = false;
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
         {

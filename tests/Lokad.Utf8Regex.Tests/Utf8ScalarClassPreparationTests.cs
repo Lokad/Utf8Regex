@@ -107,7 +107,7 @@ public sealed class Utf8ScalarClassPreparationTests
             (Pattern: @"(?:using|await)[ \t]+([A-Z][a-z]*)[ \t]*\([ \t]*\)", First: "using Name()", Second: "await Other ( )"),
         })
         {
-            var regex = new Utf8Regex(row.Pattern, options);
+            var regex = new Utf8Regex(row.Pattern, options: options);
             var input = Encoding.UTF8.GetBytes("😀" + row.First + "中" + row.Second + "😀");
             Assert.True(regex.IsMatch(input)); Assert.Equal(2, regex.Count(input));
             var rtl = (options & RegexOptions.RightToLeft) != 0; var match = regex.Match(input);

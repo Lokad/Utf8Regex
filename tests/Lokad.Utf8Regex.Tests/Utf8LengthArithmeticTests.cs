@@ -55,7 +55,7 @@ public sealed class Utf8LengthArithmeticTests
     [Fact]
     public void MidSizeRepeatMatchesEndToEnd()
     {
-        var regex = new Utf8Regex("(?:ab){1000}", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?:ab){1000}", options: RegexOptions.CultureInvariant);
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(new string('a', 1000).Replace("a", "ab"))));
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("ab")));
     }

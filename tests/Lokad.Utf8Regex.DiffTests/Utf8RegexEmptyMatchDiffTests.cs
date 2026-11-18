@@ -66,7 +66,7 @@ public sealed class Utf8RegexEmptyMatchDiffTests
         {
             var options = RegexOptions.CultureInvariant |
                 (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var actual = new List<(int Index, int Length)>();
             foreach (var match in regex.EnumerateMatches(bytes))
             {

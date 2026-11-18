@@ -11,7 +11,14 @@ public sealed class Utf8CoreDepthPolicyTests
         "capture-offset", "matches", "matches-offset", "split", "split-count", "replace",
         "replace-bytes", "destination", "destination-bytes"];
     private static Utf8Regex Create(string pattern, uint cap, RegexOptions options)
-        => new(pattern, options, Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxDepth = cap });
+        => new(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = cap
+            }
+        });
     public static IEnumerable<object[]> Modes()
     {
         foreach (var operation in Operations)
@@ -31,7 +38,7 @@ public sealed class Utf8CoreDepthPolicyTests
         var input = "😀😀😀ab"u8.ToArray();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         using var source = new CancellationTokenSource(); var token = live ? source.Token : default;
-        var baseline = Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options), operation, input, token, 0);
+        var baseline = Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options: options), operation, input, token, 0);
         Assert.Equal(baseline, Utf8CoreWorkPolicyTests.Run(Create(pattern, uint.MaxValue, options), operation, input, token, 0));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8CoreWorkPolicyTests.Run(Create(pattern, 1, options), operation, input, token, 0)), 1);
         uint low = 1, high = 256;
@@ -55,7 +62,7 @@ public sealed class Utf8CoreDepthPolicyTests
     {
         var input = Encoding.UTF8.GetBytes(text); var options = mode | RegexOptions.CultureInvariant;
         foreach (var operation in Operations)
-            Assert.Equal(Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options), operation, input, default, 0),
+            Assert.Equal(Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options: options), operation, input, default, 0),
                 Utf8CoreWorkPolicyTests.Run(Create(pattern, 4096, options), operation, input, default, 0));
         Assert.False(Create("absent", 1, options).IsMatch(input));
     }
@@ -79,7 +86,14 @@ public sealed class Utf8CoreDepthPolicyTests
         var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => { if (triggered) return; triggered = true; if (deadline) clock.Advance(250); else token.Cancel(); });
         try
         {
-            var regex = new Utf8Regex("(a|aa)+", RegexOptions.CultureInvariant, deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, new Utf8ResourcePolicy { MaxDepth = 1 });
+            var regex = new Utf8Regex("(a|aa)+", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxDepth = 1
+                }
+            });
             var input = Encoding.UTF8.GetBytes(new string('é', 10000) + "aaaa");
             if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, token.Token));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
@@ -115,9 +129,8 @@ public sealed class Utf8CoreDepthPolicyTests
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant
             | (compiled ? RegexOptions.Compiled : 0);
         const string prefix = "(?:((?:😀|é))|a)";
-        var small = new Utf8Regex(prefix, options).Inspection.AvailableOwnedSliceProgram!;
-        var large = new Utf8Regex(prefix + string.Concat(Enumerable.Repeat("()", 1024)), options)
-            .Inspection.AvailableOwnedSliceProgram!;
+        var small = new Utf8Regex(prefix, options: options).Inspection.AvailableOwnedSliceProgram!;
+        var large = new Utf8Regex(prefix + string.Concat(Enumerable.Repeat("()", 1024)), options: options)            .Inspection.AvailableOwnedSliceProgram!;
         var smallInvocation = new Utf8SliceInvocation(new(0, 1, 0), Regex.InfiniteMatchTimeout, default);
         var largeInvocation = new Utf8SliceInvocation(new(0, 1, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(smallInvocation.Ledger.TryReserve(7));
@@ -160,7 +173,11 @@ public sealed class Utf8CoreDepthPolicyTests
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
             MaxDepth = kind == Utf8ResourceLimitKind.ExecutionDepth ? 1 : uint.MaxValue
         };
-        var regex = new Utf8Regex("(?<x>😀+)(?<y>😀ab)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8Regex("(?<x>😀+)(?<y>😀ab)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor("😀😀😀ab"u8.ToArray())));
         Assert.Equal(kind, error.ResourceKind);
         Assert.Equal(1UL, error.Limit);

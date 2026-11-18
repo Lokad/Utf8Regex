@@ -10,7 +10,7 @@ public sealed class Utf8ScalarDiscoveryTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void BooleanAndValueDiscoveryDoNotAllocateWholeSubjectMaps(bool compiled, bool value)
     {
-        var regex = new Utf8Regex("(?s:.)", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex("(?s:.)", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀𐐀a", 20000)));
         if (value) Assert.Equal(4, regex.Match(input, 0, []).EndOffsetInBytes);
         else Assert.True(regex.IsMatch(input));
@@ -29,7 +29,7 @@ public sealed class Utf8ScalarDiscoveryTests
     [InlineData(false)] [InlineData(true)]
     public void CaptureCursorBorrowsSelectedValuesWithoutSubjectMaps(bool compiled)
     {
-        var regex = new Utf8Regex("(?s:.)", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex("(?s:.)", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀𐐀a", 20000)));
         Assert.Equal(4, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Value.EndOffsetInBytes);
         var before = GC.GetAllocatedBytesForCurrentThread();
@@ -49,7 +49,7 @@ public sealed class Utf8ScalarDiscoveryTests
     [InlineData(false)] [InlineData(true)]
     public void FailedCaptureDiscoveryNeedsNeitherMapNorDecodedSubject(bool compiled)
     {
-        var regex = new Utf8Regex("z(?=\\z)", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex("z(?=\\z)", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀𐐀a", 20000)));
         using var source = new CancellationTokenSource();
         Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)).Success);
@@ -68,7 +68,7 @@ public sealed class Utf8ScalarDiscoveryTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void RetainedCursorHistoriesUseCompleteScalars(bool compiled, bool reverse)
     {
-        var regex = new Utf8Regex("(?<word>(?<scalar>.)+)", RegexOptions.CultureInvariant |
+        var regex = new Utf8Regex("(?<word>(?<scalar>.)+)", options: RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : 0) | (reverse ? RegexOptions.RightToLeft : 0));
         var input = "é😀𐐀a"u8.ToArray();
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -103,7 +103,7 @@ public sealed class Utf8ScalarDiscoveryTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void ExplicitStartsKeepOriginalLookbehindContext(bool compiled, bool reverse)
     {
-        var regex = new Utf8Regex("(?<=x)(.)", RegexOptions.CultureInvariant |
+        var regex = new Utf8Regex("(?<=x)(.)", options: RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : 0) | (reverse ? RegexOptions.RightToLeft : 0));
         var input = "x😀y"u8.ToArray();
         var start = reverse ? 5 : 1;

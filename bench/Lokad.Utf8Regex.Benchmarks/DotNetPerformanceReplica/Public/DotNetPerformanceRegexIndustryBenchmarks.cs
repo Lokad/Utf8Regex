@@ -67,7 +67,7 @@ public class DotNetPerformanceRegexIndustryBenchmarks
 
         _inputBytes = Encoding.UTF8.GetBytes(_input);
         _regex = new Regex(pattern, Options, Regex.InfiniteMatchTimeout);
-        _utf8Regex = new Utf8Regex(pattern, Options);
+        _utf8Regex = new Utf8Regex(pattern, options: Options);
     }
 
     [Benchmark(Baseline = true)]
@@ -121,7 +121,7 @@ public class DotNetPerformanceRegexSliceSliceBenchmarks
             .ToArray();
 
         _regexes = words.Select(w => new Regex(w, Options, Regex.InfiniteMatchTimeout)).ToArray();
-        _utf8Regexes = words.Select(w => new Utf8Regex(w, Options)).ToArray();
+        _utf8Regexes = words.Select(w => new Utf8Regex(w, options: Options)).ToArray();
     }
 
     [Benchmark(Baseline = true)]

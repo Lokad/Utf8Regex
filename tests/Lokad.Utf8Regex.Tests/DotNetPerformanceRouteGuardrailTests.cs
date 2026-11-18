@@ -10,9 +10,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
     [Fact]
     public void SherlockEnglishLiteralFamilyStaysOnHybridAutomatonPortfolio()
     {
-        var regex = new Utf8Regex(
-            "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty",
-            RegexOptions.None);
+        var regex = new Utf8Regex(            "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", options:             RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -24,9 +22,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
     [Fact]
     public void SherlockEnglishMixedLiteralFamilyStaysOnHybridAutomatonPortfolio()
     {
-        var regex = new Utf8Regex(
-            "Sherlock Holmes|John Watson|Mycroft Holmes|Mary Morstan|Mrs Hudson",
-            RegexOptions.None);
+        var regex = new Utf8Regex(            "Sherlock Holmes|John Watson|Mycroft Holmes|Mary Morstan|Mrs Hudson", options:             RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -37,9 +33,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
     [Fact]
     public void SherlockEnglishNoMatchLiteralFamilyStaysOnHybridAutomatonPortfolio()
     {
-        var regex = new Utf8Regex(
-            "Mycroft Holmes|Mary Morstan|Mrs Hudson|Sebastian Moran|Charles Augustus Milverton",
-            RegexOptions.None);
+        var regex = new Utf8Regex(            "Mycroft Holmes|Mary Morstan|Mrs Hudson|Sebastian Moran|Charles Augustus Milverton", options:             RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -50,9 +44,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
     [Fact]
     public void SherlockChineseLiteralFamilyStaysOnPackedUtf8Portfolio()
     {
-        var regex = new Utf8Regex(
-            "夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授",
-            RegexOptions.None);
+        var regex = new Utf8Regex(            "夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授", options:             RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -63,9 +55,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
     [Fact]
     public void SherlockEnglishIgnoreCaseLiteralFamilyStaysOnIgnoreCaseFamilyPortfolio()
     {
-        var regex = new Utf8Regex(
-            "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(            "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", options:             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -75,9 +65,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
     [Fact]
     public void RuffTweakedRetainsItsScalarPrefilter()
     {
-        var regex = new Utf8Regex(
-            "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?",
-            RegexOptions.None);
+        var regex = new Utf8Regex(            "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?", options:             RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
@@ -92,7 +80,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
     [Fact]
     public void DictionarySingleStaysOnLiteralFamilyAutomatonPortfolio()
     {
-        var regex = new Utf8Regex("absentmindedness|Zubeneschamali's", RegexOptions.None);
+        var regex = new Utf8Regex("absentmindedness|Zubeneschamali's", options: RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);

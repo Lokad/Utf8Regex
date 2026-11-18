@@ -32,8 +32,17 @@ public sealed class Utf8AdjacentSetRepeatTests
     {
         var options = RegexOptions.CultureInvariant;
         var oracle = new Regex(pattern, options);
-        var owner = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 10000, MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 24 });
+        var owner = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 10000,
+                MaxWorkingBytes = 1 << 24,
+                MaxResultBytes = 1 << 24
+            }
+        });
         var bytes = Encoding.UTF8.GetBytes(text);
         var expected = oracle.Match(text);
         var actual = Utf8MatchSequence.First(owner.CreateMatchCursor(bytes));
@@ -51,7 +60,7 @@ public sealed class Utf8AdjacentSetRepeatTests
         const string text = "abc12 def345";
         options |= RegexOptions.CultureInvariant;
         var oracle = new Regex(pattern, options);
-        var owner = new Utf8Regex(pattern, options);
+        var owner = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(text);
         var actual = Utf8MatchSequence.First(owner.CreateMatchCursor(input));
         Utf8MatchSequence.AssertCaptures(oracle.Match(text), actual, input, text);
@@ -76,7 +85,11 @@ public sealed class Utf8AdjacentSetRepeatTests
         const string pattern = @"\Aitem\s+[0-9]+\z";
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1,
             MaxWorkingBytes = 1, MaxResultBytes = 1 };
-        var owner = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var owner = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         Assert.True(owner.Match("item   12345"u8, 0, []).Success);
     }
 
@@ -92,8 +105,16 @@ public sealed class Utf8AdjacentSetRepeatTests
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var owner = new Utf8Regex(pattern, RegexOptions.None, TimeSpan.FromMilliseconds(20),
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 128, MaxWorkingBytes = 1 << 20 });
+        var owner = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1 << 20
+            }
+        });
         var interrupted = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {

@@ -11,7 +11,7 @@ public sealed class Utf8ConcurrentSharedInstanceTests
     [Fact]
     public void SharedLiteralInstanceAnswersConcurrently()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant);
         var hit = Encoding.UTF8.GetBytes("xxabcxx");
         var miss = Encoding.UTF8.GetBytes("xxabxx");
 
@@ -28,7 +28,7 @@ public sealed class Utf8ConcurrentSharedInstanceTests
     [Fact]
     public void SharedFallbackInstanceAnswersConcurrently()
     {
-        var regex = new Utf8Regex("[a-z]+@[a-z]+", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("[a-z]+@[a-z]+", options: RegexOptions.CultureInvariant);
         var hit = Encoding.UTF8.GetBytes("mail a@b ok");
         var miss = Encoding.UTF8.GetBytes("no address here 123");
         var expectedReplacement = regex.Replace(hit, "Z");

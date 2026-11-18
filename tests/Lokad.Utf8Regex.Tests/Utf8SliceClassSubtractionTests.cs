@@ -20,7 +20,7 @@ public sealed class Utf8SliceClassSubtractionTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options));
             Assert.Equal("pattern", actual.ParamName);
         }
     }
@@ -101,7 +101,7 @@ public sealed class Utf8SliceClassSubtractionTests
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant));
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(new Regex(pattern, options).IsMatch("a"), regex.IsMatch(Encoding.UTF8.GetBytes("a")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }

@@ -25,7 +25,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForNativeLiteralSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -56,7 +56,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForNativeUtf8LiteralSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -70,7 +70,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForNativeUtf8LiteralAlternationSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -84,7 +84,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForBoundaryWrappedUtf8LiteralAlternationSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -98,7 +98,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForUtf8LiteralLookaheadSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -112,7 +112,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForCapturedUtf8LiteralAlternationSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -126,7 +126,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForCapturedBoundaryWrappedUtf8LiteralAlternationSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -140,7 +140,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForCapturedUtf8LiteralSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -154,7 +154,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForDeterministicCaptureTemplateSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -169,7 +169,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceUsesRuntimeReplacementSemanticsForNativeLiteralSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -188,7 +188,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceKeepsLiteralOnlyReplacementPatternsOnNativePaths(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -202,7 +202,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForInvariantIgnoreCaseLiteralSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -241,7 +241,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForAsciiSimplePatternSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -255,7 +255,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForStructuralLinearLiteralReplacement(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -270,7 +270,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceMatchesRuntimeForInvariantIgnoreCaseAsciiSimplePatternSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -290,7 +290,7 @@ public sealed class Utf8RegexReplaceDiffTests
     public void ReplaceUsesRuntimeReplacementSemanticsForAsciiSimplePatternSubset(string pattern, string input, string replacement)
     {
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -303,7 +303,7 @@ public sealed class Utf8RegexReplaceDiffTests
     [InlineData("a.b", "a\nb xx a\nb", "Q", RegexOptions.Singleline | RegexOptions.CultureInvariant)]
     public void ReplaceMatchesRuntimeForAdditionalNativeOptionFamilies(string pattern, string input, string replacement, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -317,7 +317,7 @@ public sealed class Utf8RegexReplaceDiffTests
     [InlineData("(a)(b)?", "xab ay", "$`|$'|$+|$_", RegexOptions.CultureInvariant)]
     public void ReplaceFallsBackAndStillMatchesRuntime(string pattern, string input, string replacement, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);
@@ -336,7 +336,7 @@ public sealed class Utf8RegexReplaceDiffTests
     [InlineData(@"\bé\b", "é a éb é é", "x", RegexOptions.CultureInvariant)]
     public void ReplaceUtf8OverloadMatchesRuntime(string pattern, string input, string replacement, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), Encoding.UTF8.GetBytes(replacement));
@@ -350,7 +350,7 @@ public sealed class Utf8RegexReplaceDiffTests
     [InlineData("café", "αcaféβcaféγ", "茶", RegexOptions.CultureInvariant)]
     public void TryReplaceWritesReplacementWhenDestinationIsLargeEnough(string pattern, string input, string replacement, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var destination = new byte[expected.Length];
 
@@ -372,7 +372,7 @@ public sealed class Utf8RegexReplaceDiffTests
     [InlineData("café", "αcaféβcaféγ", "$&!", RegexOptions.CultureInvariant)]
     public void TryReplaceMatchesRuntimeForNativeReplacementPlans(string pattern, string input, string replacement, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, pattern, replacement, options));
         var destination = new byte[expected.Length];
 
@@ -390,7 +390,7 @@ public sealed class Utf8RegexReplaceDiffTests
     [Fact]
     public void TryReplaceReturnsDestinationTooSmallWhenNeeded()
     {
-        var utf8Regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant);
         Span<byte> destination = stackalloc byte[3];
         "xyz"u8.CopyTo(destination);
 
@@ -404,7 +404,7 @@ public sealed class Utf8RegexReplaceDiffTests
     [Fact]
     public void TryReplaceReturnsDestinationTooSmallForNativeReplacementPlan()
     {
-        var utf8Regex = new Utf8Regex("(ab)(cd)", RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex("(ab)(cd)", options: RegexOptions.CultureInvariant);
         Span<byte> destination = stackalloc byte[5];
         "12345"u8.CopyTo(destination);
 
@@ -421,7 +421,7 @@ public sealed class Utf8RegexReplaceDiffTests
     [InlineData("(a)(b)?", "xab ay", "$`|$'|$+|$_", RegexOptions.CultureInvariant)]
     public void StringTemplateByteReplacementMatchesRuntime(string pattern, string input, string replacement, RegexOptions options)
     {
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
 
         var expected = Regex.Replace(input, pattern, replacement, options);
         var actual = Encoding.UTF8.GetString(utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement));
@@ -439,7 +439,7 @@ public sealed class Utf8RegexReplaceDiffTests
         const string input = "abc";
         const string replacement = "-";
         var options = RegexOptions.CultureInvariant;
-        var utf8Regex = new Utf8Regex(string.Empty, options);
+        var utf8Regex = new Utf8Regex(string.Empty, options: options);
 
         var expected = Encoding.UTF8.GetBytes(Regex.Replace(input, string.Empty, replacement, options));
         var actual = utf8Regex.Replace(Encoding.UTF8.GetBytes(input), replacement);

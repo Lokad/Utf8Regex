@@ -31,7 +31,11 @@ public sealed class Utf8FiniteSimplePatternCountTests
             // Use the stable interpreted overlapping-semantics comparator;
             // the two complete matches remain b12 and ab34 in our NB route.
             var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Funded);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded
+            });
             using var live = new CancellationTokenSource();
             foreach (var text in new[] { "", "a", "b1", "b12", "ab12", "abb12", "aab123",
                 "b12ab34b56", " xx bxx abxx b12 ab34 ", "b12\nab34\nB56\n", "ab12\n", "ab12\nx" })
@@ -53,8 +57,16 @@ public sealed class Utf8FiniteSimplePatternCountTests
     public void CompleteAsciiCountNeedsNoVmWorkingBuffers(bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("a?b[0-9]{2}", options, Regex.InfiniteMatchTimeout,
-            Funded with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8Regex("a?b[0-9]{2}", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with
+            {
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(2000, regex.Count(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("b12 ab34 ", 1000)))));
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
@@ -72,7 +84,11 @@ public sealed class Utf8FiniteSimplePatternCountTests
     [InlineData("a?b[0-9]{2}", "ab12\u212ab34")]
     public void ScalarAndContextDependentCasesKeepTheirRoutes(string pattern, string text)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, Funded);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(new Regex(pattern, RegexOptions.CultureInvariant).Count(text), regex.Count(input));
     }
@@ -83,13 +99,23 @@ public sealed class Utf8FiniteSimplePatternCountTests
     [InlineData("b12 ab34", 2)]
     public void EveryWorkCutoffBoundsPublicSearchAndPublication(string text, int expected)
     {
-        var regex = new Utf8Regex("a?b[0-9]{2}", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, Funded);
+        var regex = new Utf8Regex("a?b[0-9]{2}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         var input = Encoding.UTF8.GetBytes(text);
         ulong required = 0;
         for (ulong work = 1; work <= 128; work++)
         {
-            var candidate = new Utf8Regex("a?b[0-9]{2}", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-                Funded with { MaxWorkSteps = work });
+            var candidate = new Utf8Regex("a?b[0-9]{2}", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkSteps = work
+                }
+            });
             try { Assert.Equal(expected, candidate.Count(input)); required = work; break; }
             catch (Utf8ResourceLimitExceededException error)
             { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
@@ -109,7 +135,11 @@ public sealed class Utf8FiniteSimplePatternCountTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Regex("(?<n>a?b[0-9]{2})", options, TimeSpan.FromMilliseconds(20), Funded);
+        var regex = new Utf8Regex("(?<n>a?b[0-9]{2})", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Funded
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("b12 ab34 ", 256)));
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         var measured = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1 << 20), Regex.InfiniteMatchTimeout, default);

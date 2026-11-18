@@ -159,7 +159,7 @@ public sealed class Utf8SliceParserTests
     public void MalformedShapesHaveOwnedConstructionFailures(string pattern)
     {
         Assert.Throws<System.Text.RegularExpressions.RegexParseException>(() => new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant));
-        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: System.Text.RegularExpressions.RegexOptions.CultureInvariant));
     }
 
     [Fact]
@@ -259,6 +259,6 @@ public sealed class Utf8SliceParserTests
     [Fact]
     public void UnclosedGroupFailsOwnedConstruction()
     {
-        Utf8PatternFailureAssert.Throws(() => new Utf8Regex("(a", RegexOptions.CultureInvariant));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex("(a", options: RegexOptions.CultureInvariant));
     }
 }

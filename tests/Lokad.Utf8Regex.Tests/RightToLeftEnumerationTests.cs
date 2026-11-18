@@ -60,7 +60,7 @@ public sealed class RightToLeftEnumerationTests
             var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft |
                 (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var expected = new Regex(pattern, options);
-            var actual = new Utf8Regex(pattern, options);
+            var actual = new Utf8Regex(pattern, options: options);
             var bytes = Encoding.UTF8.GetBytes(input);
             var expectedMatches = new List<(int Index, int Length)>();
             var actualMatches = new List<(int Index, int Length)>();
@@ -90,7 +90,10 @@ public sealed class RightToLeftEnumerationTests
             var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft |
                 (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var expected = new Regex(pattern, options, TimeSpan.FromSeconds(1));
-            var actual = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1));
+            var actual = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(1)
+            });
             var bytes = Encoding.UTF8.GetBytes(input);
             var expectedMatches = new List<(int Index, int Length)>();
             var actualMatches = new List<Utf8CaptureRange>();
@@ -125,7 +128,10 @@ public sealed class RightToLeftEnumerationTests
         TimeSpan timeout)
     {
         var expected = new Regex(pattern, options, timeout);
-        var actual = new Utf8Regex(pattern, options, timeout);
+        var actual = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(expected.IsMatch(input), actual.IsMatch(bytes));

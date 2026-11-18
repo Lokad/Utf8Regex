@@ -207,7 +207,7 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
     [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]
     public void PublicSupplementaryLiteralFamilyKeepsScalarByteRangesWithoutFallback(RegexOptions options)
     {
-        var regex = new Utf8Regex("(?:é😀|é中|😀é|😀中|中é|中😀)", options);
+        var regex = new Utf8Regex("(?:é😀|é中|😀é|😀中|中é|中😀)", options: options);
         var subject = "xxé😀|é中|😀é|😀中|中é|中😀xx"u8;
         Assert.True(regex.IsMatch(subject)); Assert.Equal(6, regex.Count(subject));
         var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));

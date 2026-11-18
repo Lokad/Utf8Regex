@@ -44,11 +44,11 @@ public sealed class Utf8WholeMatchRangeTests
     [InlineData(RegexOptions.NonBacktracking)]
     public void DefaultMissAndSuccessfulEmptyRangeRemainDistinct(RegexOptions options)
     {
-        var miss = new Utf8Regex("a", options).Match("😀"u8);
+        var miss = new Utf8Regex("a", options: options).Match("😀"u8);
         Assert.Equal(default(Utf8CaptureRange), miss);
         Assert.False(miss.Success);
         Assert.Equal((0,0), (miss.StartOffsetInBytes, miss.EndOffsetInBytes));
-        var empty = new Utf8Regex("^", options).Match("😀"u8);
+        var empty = new Utf8Regex("^", options: options).Match("😀"u8);
         Assert.True(empty.Success);
         Assert.Equal((0,0), (empty.StartOffsetInBytes, empty.EndOffsetInBytes));
     }
@@ -58,7 +58,7 @@ public sealed class Utf8WholeMatchRangeTests
     [InlineData(true)]
     public void LiteralMatchReturnsTheSelectedCompleteScalar(bool reverse)
     {
-        var regex = new Utf8Regex("😀", RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var regex = new Utf8Regex("😀", options: RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var match = regex.Match("x😀y😀"u8);
         Assert.True(match.Success);
         Assert.Equal(reverse ? (6, 10) : (1, 5), (match.StartOffsetInBytes, match.EndOffsetInBytes));
@@ -71,8 +71,16 @@ public sealed class Utf8WholeMatchRangeTests
     [InlineData(RegexOptions.NonBacktracking)]
     public void ValueCursorCopiesRetainIndependentPositionsAndPublishedRanges(RegexOptions options)
     {
-        var regex = new Utf8Regex("(.)", options | RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = 1_000_000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8Regex("(.)", options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         var input = "a😀b"u8.ToArray();
         var original = regex.EnumerateMatches(input);
         Assert.True(original.MoveNext());

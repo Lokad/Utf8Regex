@@ -31,7 +31,7 @@ public sealed class Utf8SliceIgnoreCaseTests
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
         }
     }
@@ -68,7 +68,7 @@ public sealed class Utf8SliceIgnoreCaseTests
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(expected, regex.IsMatch(input));
             using var source = new CancellationTokenSource();
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
@@ -104,7 +104,7 @@ public sealed class Utf8SliceIgnoreCaseTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.IsMatch(input));
         if (regex.Inspection.DebugUsesOwnedSliceProgram)
         {
@@ -130,7 +130,7 @@ public sealed class Utf8SliceIgnoreCaseTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.IsMatch(input));
         if (regex.Inspection.DebugUsesOwnedSliceProgram)
         {
@@ -146,7 +146,7 @@ public sealed class Utf8SliceIgnoreCaseTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -155,7 +155,7 @@ public sealed class Utf8SliceIgnoreCaseTests
     [Fact]
     public void OwnedDetailedProjectsFoldedGroups()
     {
-        var regex = new Utf8Regex("(a)+(b)+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a)+(b)+", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("AB")));
         Assert.True(detailed.Success);
@@ -173,7 +173,7 @@ public sealed class Utf8SliceIgnoreCaseTests
             CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
             var oracle = new Regex("i", RegexOptions.IgnoreCase, Regex.InfiniteMatchTimeout);
             Assert.False(oracle.IsMatch("I"));
-            var regex = new Utf8Regex("i", RegexOptions.IgnoreCase);
+            var regex = new Utf8Regex("i", options: RegexOptions.IgnoreCase);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
             Assert.Equal(oracle.IsMatch("I"), regex.IsMatch(Encoding.UTF8.GetBytes("I")));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -197,7 +197,7 @@ public sealed class Utf8SliceIgnoreCaseTests
             expectedSegments.Add(inputText[range]);
         }
 
-        var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         var actualSegments = new List<string>();
         foreach (var split in regex.EnumerateSplits(input, expected))

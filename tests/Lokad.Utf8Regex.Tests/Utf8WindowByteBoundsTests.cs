@@ -198,7 +198,7 @@ public sealed class Utf8WindowByteBoundsTests
             (Pattern: "(first|second).{1,2}last", Text: "!first😀last!secondé😀last!", First: 13, Second: 16),
         })
         {
-            var regex = new Utf8Regex(row.Pattern, options);
+            var regex = new Utf8Regex(row.Pattern, options: options);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
             var input = Encoding.UTF8.GetBytes(row.Text);

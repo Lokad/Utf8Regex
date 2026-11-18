@@ -101,7 +101,7 @@ public sealed class Utf8OwnedTreeParserToggleTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         foreach (var inputText in new string[] { "", "a" })
         {
             var input = Encoding.UTF8.GetBytes(inputText);

@@ -24,9 +24,17 @@ public sealed class Utf8EscapedClassRangeTests
                 MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20,
             } : default;
             var oracle = new Regex(pattern, options);
-            var textPattern = new Utf8Regex(pattern, options, resourcePolicy: policy);
-            var bytePattern = Utf8Regex.Compile(Encoding.UTF8.GetBytes(pattern), options,
-                Regex.InfiniteMatchTimeout, policy, default, Timeout.InfiniteTimeSpan, default);
+            var textPattern = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = policy
+            });
+            var bytePattern = Utf8Regex.Compile(Encoding.UTF8.GetBytes(pattern), options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy,
+                ConstructionPolicy = default,
+                ConstructionTimeout = Timeout.InfiniteTimeSpan
+            }, cancellationToken: default);
             using var token = new CancellationTokenSource();
             foreach (var regex in new[] { textPattern, bytePattern })
             foreach (var scalar in new[] { 'Z', '[', '\\', ']', '^', '-' })

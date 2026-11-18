@@ -7,9 +7,15 @@ public sealed class Utf8ResourcePolicyTests
     [Fact]
     public void NullableConstructorDefaultInheritsTimeoutButTypedZeroIsRejected()
     {
-        var inherited = new Utf8Regex("a", System.Text.RegularExpressions.RegexOptions.None, default);
+        var inherited = new Utf8Regex("a", options: System.Text.RegularExpressions.RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = default
+        });
         Assert.Equal(Utf8Regex.DefaultMatchTimeout, inherited.MatchTimeout);
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("a", System.Text.RegularExpressions.RegexOptions.None, default(TimeSpan)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("a", options: System.Text.RegularExpressions.RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = default(TimeSpan)
+        }));
     }
 
     [Fact]
@@ -29,13 +35,21 @@ public sealed class Utf8ResourcePolicyTests
     public void ZeroBudgetsAreRejected(ulong? work, uint? depth, ulong? workingBytes, ulong? resultBytes)
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = depth, MaxWorkingBytes = workingBytes, MaxResultBytes = resultBytes };
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("cat", System.Text.RegularExpressions.RegexOptions.None, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout, policy));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("cat", options: System.Text.RegularExpressions.RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        }));
     }
 
     [Fact]
     public void UnlimitedPolicyConstructsAndRoundTrips()
     {
-        var regex = new Utf8Regex("cat", System.Text.RegularExpressions.RegexOptions.None, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited);
+        var regex = new Utf8Regex("cat", options: System.Text.RegularExpressions.RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited
+        });
         Assert.Equal(Utf8ResourcePolicy.Unlimited, regex.ResourcePolicy);
         Assert.True(regex.IsMatch("cat"u8));
     }
@@ -48,21 +62,33 @@ public sealed class Utf8ResourcePolicyTests
     public void FiniteBudgetsConstructAndExecute(ulong? work, uint? depth, ulong? workingBytes, ulong? resultBytes)
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = work, MaxDepth = depth, MaxWorkingBytes = workingBytes, MaxResultBytes = resultBytes };
-        var regex = new Utf8Regex("cat", RegexOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8Regex("cat", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         Assert.Equal(policy, regex.ResourcePolicy); Assert.True(regex.IsMatch("cat"u8));
     }
     [Fact]
     public void ValidFinitePolicyPreservesPatternSyntaxFailure()
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100ul, MaxWorkingBytes = 1024ul };
-        Assert.Throws<ArgumentException>(() => new Utf8Regex("[invalid", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy));
+        Assert.Throws<ArgumentException>(() => new Utf8Regex("[invalid", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        }));
     }
 
     [Fact]
     public void ZeroPolicyIsRejectedBeforePatternCompilation()
     {
         var policy = new Utf8ResourcePolicy { MaxDepth = 0u };
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("[invalid", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, policy));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("[invalid", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        }));
     }
 
     [Fact]
@@ -70,8 +96,11 @@ public sealed class Utf8ResourcePolicyTests
     {
         // R06 compatibility decision: legacy defaults keep unlimited invocation limits;
         // execution work budgets are opt-in via the policy overload.
-        Assert.Equal(Utf8ResourcePolicy.Unlimited, new Utf8Regex("cat", RegexOptions.CultureInvariant).ResourcePolicy);
-        Assert.Equal(Utf8ResourcePolicy.Unlimited, new Utf8Regex("cat", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).ResourcePolicy);
+        Assert.Equal(Utf8ResourcePolicy.Unlimited, new Utf8Regex("cat", options: RegexOptions.CultureInvariant).ResourcePolicy);
+        Assert.Equal(Utf8ResourcePolicy.Unlimited, new Utf8Regex("cat", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        }).ResourcePolicy);
     }
 
     [Theory]
@@ -84,8 +113,12 @@ public sealed class Utf8ResourcePolicyTests
         // on both an owned literal route and an owned scalar loop route.
         var options = RegexOptions.CultureInvariant;
         var input = Encoding.UTF8.GetBytes(inputText);
-        var baseline = new Utf8Regex(pattern, options);
-        var explicitUnlimited = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Utf8ResourcePolicy.Unlimited);
+        var baseline = new Utf8Regex(pattern, options: options);
+        var explicitUnlimited = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited
+        });
 
         Assert.Equal(baseline.IsMatch(input), explicitUnlimited.IsMatch(input));
         var expectedMatch = baseline.Match(input);

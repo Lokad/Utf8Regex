@@ -24,7 +24,7 @@ public sealed class Utf8DynamicCodeCapabilityTests
         {
             if (pattern.Contains("\\k") && mode is RegexOptions.NonBacktracking or RegexOptions.RightToLeft) continue;
             var options = mode | RegexOptions.CultureInvariant;
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(options, regex.Options);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(count, regex.Count(input));
@@ -38,8 +38,17 @@ public sealed class Utf8DynamicCodeCapabilityTests
             canceled.Cancel();
             Assert.Equal(canceled.Token,
                 Assert.Throws<OperationCanceledException>(() => regex.Count(input, canceled.Token)).CancellationToken);
-            var finite = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 2048, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
+            var finite = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 2048,
+                    MaxWorkingBytes = 1_048_576,
+                    MaxResultBytes = 1_048_576
+                }
+            });
             Assert.Equal(count, finite.Count(input));
         }
     }

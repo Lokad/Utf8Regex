@@ -20,7 +20,7 @@ internal sealed class Utf8Pcre2BenchmarkContext
 
         if ((benchmarkCase.SupportedBackends & Utf8Pcre2BenchmarkBackend.Utf8Regex) != 0)
         {
-            Utf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options);
+            Utf8Regex = new Utf8Regex(benchmarkCase.Pattern, options: benchmarkCase.Options);
         }
 
         if ((benchmarkCase.SupportedBackends & (Utf8Pcre2BenchmarkBackend.DecodeThenRegex | Utf8Pcre2BenchmarkBackend.PredecodedRegex)) != 0)

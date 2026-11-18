@@ -254,12 +254,18 @@ and [host admission](SPEC.md#host-admission).
 
 ## Program owners, cursors and retained results
 
-Core's funded Compile returns a disposable `Utf8RegexProgramOwner`:
+Core constructors and Compile now take options and immutable `Utf8RegexPolicy`.
+Both funded and unfunded creation return disposable `Utf8Regex`; remove references
+to `Utf8RegexProgramOwner`. Move legacy controls into policy properties:
 
 ```csharp
 using var program = Utf8Regex.Compile(pattern, RegexOptions.None,
-    matchTimeout, resourcePolicy, constructionPolicy, constructionTimeout,
-    compileToken, programMemoryAllowance);
+    policy: new Utf8RegexPolicy
+    {
+        MatchTimeout = matchTimeout, ResourcePolicy = resourcePolicy,
+        ConstructionPolicy = constructionPolicy, ConstructionTimeout = constructionTimeout,
+        ProgramMemoryAllowance = programMemoryAllowance
+    }, cancellationToken: compileToken);
 int count = program.Count(subject.Span, callToken, workingMemoryAllowance);
 Span<byte> destination = stackalloc byte[256];
 var status = program.TryReplace(subject.Span, "[$0]"u8, destination,
@@ -271,6 +277,21 @@ Core/PCRE2 funded programs conservatively prepay their bounded replacement cache
 maximum (currently 4MiB payload plus metadata), including before first use. This
 is modeled admission, not eager allocation. Cold template work and output stay
 admitted through final copying. Short caller-owned destinations remain unchanged.
+
+Core creation now enforces that cache-capacity prepayment, including before first
+use: allow 4MiB payload plus 64KiB metadata beyond compilation capacity. Errors
+for policy fields name policy. Null match timeout inherits DefaultMatchTimeout;
+null construction timeout is infinite. Text defaults remain CultureInvariant,
+while UTF8 Compile retains None. Recompile old callers; method-group signatures
+and the separate owner type changed. Unfunded Dispose is a no-op.
+
+Funded span match/split enumerators borrow an open expression. Copies retain
+independent positions, but closing the regex rejects later advances on all copies;
+already returned values remain valid. No host working loan survives between span
+advances. They keep numeric limits; persistent memory cursors retain program
+admission through waits and close. Shared working admission remains on matching,
+counting, persistent cursors and UTF8 destination replacement, with null inheriting
+program funding. Owned-output/text-template operations retain numeric controls.
 
 Persistent memory cursors can cross calls/awaits:
 
@@ -387,17 +408,15 @@ deadlines and meaningful byte/work/depth limits remain on the retained APIs.
 
 ### Constructor signatures
 
-Core, PCRE2 and POSIX constructors retain one optional nullable-timeout signature
-per supported pattern representation. PythonRe uses the policy described below. Short source calls still work;
-previously compiled callers of removed overloads must be recompiled, including
-adapters. Core UTF-8 compilation remains on Compile; no public span constructor
-is added. Explicit construction limits, cancellation and program funding retain
-their factory contracts.
+Core, PythonRe and POSIX constructors use Utf8RegexPolicy as described in their
+sections. PCRE2 retains its optional nullable-timeout signature per supported
+pattern representation. Recompile callers and selected adapters. Core UTF-8
+compilation remains on Compile; no public span constructor is added.
 
-An omitted or null timeout inherits DefaultMatchTimeout (infinite for POSIX).
-A positional bare default in that nullable slot now has the same meaning.
-TimeSpan.Zero and default(TimeSpan) still fail timeout validation. Options,
-resource-policy ordering, strict pattern checks and scalar matching are unchanged.
+An omitted/null policy match timeout inherits the profile default (infinite for
+POSIX). PCRE2's positional bare default in its nullable slot has that meaning.
+Explicit TimeSpan.Zero and default(TimeSpan) remain invalid. Strict pattern checks
+and scalar matching remain independent of these constructor controls.
 
 ### PythonRe operation signatures
 
@@ -487,7 +506,7 @@ Move the former matchTimeout, resourcePolicy, constructionPolicy,
 constructionTimeout and programMemoryAllowance arguments into its corresponding
 properties. Compile's cancellationToken remains a separate argument. Recompile
 callers; legacy long signatures are removed. Resource/timeout argument errors now
-name policy. Core and PCRE2 compilation surfaces have not yet migrated.
+name policy. PCRE2 compilation retains its existing separate controls.
 
 Null MatchTimeout uses PythonRe.DefaultMatchTimeout; null ConstructionTimeout means
 infinite. Explicit TimeSpan.Zero remains invalid. Compile eagerly prepares FullMatch;

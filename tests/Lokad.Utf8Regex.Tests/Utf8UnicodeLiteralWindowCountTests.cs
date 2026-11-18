@@ -24,7 +24,7 @@ public sealed class Utf8UnicodeLiteralWindowCountTests
         var storage = Encoding.UTF8.GetBytes("pad" + text + "pad");
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant);
             var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             Assert.Equal(expected, regex.Count(input));
             // Match/cursor keep their existing coordinate paths. They provide
@@ -34,8 +34,17 @@ public sealed class Utf8UnicodeLiteralWindowCountTests
             while (cursor.MoveNext()) count++;
             Assert.Equal(expected, count);
             using var token = new CancellationTokenSource();
-            var limited = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant,
-                Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+            var limited = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 1024,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             Assert.Equal(expected, limited.Count(input, token.Token));
         }
     }
@@ -48,7 +57,7 @@ public sealed class Utf8UnicodeLiteralWindowCountTests
         var text = "é left" + new string('x', gap - 1) + "😀right!";
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
-            Assert.Equal(1, new Utf8Regex(pattern, options).Count(input));
+            Assert.Equal(1, new Utf8Regex(pattern, options: options).Count(input));
     }
 
     [Theory]
@@ -57,18 +66,24 @@ public sealed class Utf8UnicodeLiteralWindowCountTests
     public void UnicodeSeparatorsKeepTheirScalarAdmission(string pattern, string text, int expected)
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
-            Assert.Equal(expected, new Utf8Regex(pattern, options).Count(Encoding.UTF8.GetBytes(text)));
+            Assert.Equal(expected, new Utf8Regex(pattern, options: options).Count(Encoding.UTF8.GetBytes(text)));
     }
 
     [Fact]
     public void ScalarWindowCountPreservesOriginalCancellationAndWorkLimit()
     {
-        var regex = new Utf8Regex("a.{0,2}b", RegexOptions.Compiled);
+        var regex = new Utf8Regex("a.{0,2}b", options: RegexOptions.Compiled);
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
             regex.Count("é a😀b"u8, token.Token)).CancellationToken);
-        var limited = new Utf8Regex("a.{0,2}b", RegexOptions.Compiled, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1 });
+        var limited = new Utf8Regex("a.{0,2}b", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count("é a😀b"u8)).ResourceKind);
     }

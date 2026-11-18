@@ -11,7 +11,7 @@ public sealed class Utf8NativeTemplateNoMatchTests
     {
         var text = string.Concat(Enumerable.Repeat("dog fox bird ", 512));
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex("^((cat))$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("^((cat))$", options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         for (var i = 0; i < 16; i++) Assert.Equal(input, regex.Replace(input, "$1-$2"));
         var before = GC.GetAllocatedBytesForCurrentThread();
         var output = regex.Replace(input, "$1-$2");
@@ -27,7 +27,7 @@ public sealed class Utf8NativeTemplateNoMatchTests
     [InlineData("(?m:^((cat))$)", "dog\ncat\ncat\ndog", "dog\ncat-cat\ncat-cat\ndog")]
     public void FirstAndSubsequentMatchesKeepTheirCaptures(string pattern, string text, string expected)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(text);
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         Assert.Equal(expectedBytes, regex.Replace(input, "$1-$2"));

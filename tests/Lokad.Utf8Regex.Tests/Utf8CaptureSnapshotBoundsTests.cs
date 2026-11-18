@@ -41,7 +41,10 @@ public sealed class Utf8CaptureSnapshotBoundsTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options, resourcePolicy: policy);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = policy
+            });
             var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Utf8MatchSequence.AssertCaptures(oracle.Match(text), actual, input, text);
         }
@@ -59,7 +62,7 @@ public sealed class Utf8CaptureSnapshotBoundsTests
         var oracle = new Regex(pattern, option);
         var expected = oracle.Match(text);
         {
-            var regex = new Utf8Regex(pattern, option);
+            var regex = new Utf8Regex(pattern, options: option);
             var input = Encoding.UTF8.GetBytes(text);
             var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
@@ -70,7 +73,11 @@ public sealed class Utf8CaptureSnapshotBoundsTests
     public void ResultBudgetAdmitsBorrowedRangesButBoundsCaptureHistoryStorage()
     {
         var policy = new Utf8ResourcePolicy { MaxResultBytes = 4096, MaxWorkingBytes = 1 << 20, MaxWorkSteps = 1_000_000 };
-        var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)", RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
+        var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         var input = Encoding.UTF8.GetBytes("éaaab" + new string('x', 8192) + "😀");
         using var token = new CancellationTokenSource();
         var session = Utf8SearchDiagnosticsSession.Start();
@@ -80,16 +87,30 @@ public sealed class Utf8CaptureSnapshotBoundsTests
             Assert.Equal("aaa"u8.ToArray(), result.GetGroupMemory(regex.GroupNumberFromName("run")).ToArray());
         }
         finally { session.Complete(); }
-        var far = new Utf8Regex(@"a(?=(?<far>.*))(?<far>)", RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
+        var far = new Utf8Regex(@"a(?=(?<far>.*))(?<far>)", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         var farResult = Utf8MatchSequence.First(far.CreateMatchCursor(input));
         Assert.True(farResult.Success);
         Assert.Equal(2, farResult.GetCaptures(far.GroupNumberFromName("far")).Length);
         // Distant endpoints borrow the subject; per-scalar history needs owned ranges.
-        var history = new Utf8Regex("(?<each>.)+", RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
+        var history = new Utf8Regex("(?<each>.)+", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(history.CreateMatchCursor(input)));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
-        var working = new Utf8Regex(regex.Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
+        var working = new Utf8Regex(regex.Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(working.CreateMatchCursor(input))).ResourceKind);
     }

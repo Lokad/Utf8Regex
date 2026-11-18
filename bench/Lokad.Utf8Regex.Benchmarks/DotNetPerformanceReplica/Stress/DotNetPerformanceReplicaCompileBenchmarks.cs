@@ -30,7 +30,7 @@ public class DotNetPerformanceReplicaCompileBenchmarks
     public void Setup() => _context = new DotNetPerformanceReplicaBenchmarkContext(DotNetPerformanceReplicaBenchmarkCatalog.Get(CaseId));
 
     [Benchmark(Baseline = true)]
-    public Utf8Regex ConstructUtf8Regex() => new(_context.Pattern, _context.BenchmarkCase.Options);
+    public Utf8Regex ConstructUtf8Regex() => new(_context.Pattern, options: _context.BenchmarkCase.Options);
 
     [Benchmark]
     public Regex ConstructDotNetRegex() => new(_context.Pattern, _context.BenchmarkCase.Options, Regex.InfiniteMatchTimeout);

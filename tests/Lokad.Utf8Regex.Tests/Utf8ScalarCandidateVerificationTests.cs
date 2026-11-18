@@ -21,7 +21,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
         const RegexOptions options = RegexOptions.CultureInvariant;
         var token = pattern.StartsWith("[A-Z]", StringComparison.Ordinal) ? "A😀😀 " : "foo😀😀 ";
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(token, 40)));
-        var regex = new Utf8Regex(pattern, options | (emitted ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex(pattern, options: options | (emitted ? RegexOptions.Compiled : 0));
         Assert.Equal(40, regex.Count(input)); Assert.True(regex.IsMatch(input));
     }
 
@@ -29,7 +29,7 @@ public sealed class Utf8ScalarCandidateVerificationTests
     public void CompiledCandidateRuntimeProjectsScalarsWithoutItsFormerBclMatchPath()
     {
         const string pattern = @"foo(?<x>.)\k<x>";
-        var runtime = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var runtime = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo😀😀 ", 40)));
         Assert.True(runtime.IsMatch(input));
         Assert.Equal(40, runtime.Count(input));

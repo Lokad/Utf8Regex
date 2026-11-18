@@ -14,7 +14,10 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorExposesConfiguration()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(3));
+        var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(3)
+        });
 
         Assert.Equal("abc", regex.Pattern);
         Assert.Equal(RegexOptions.CultureInvariant, regex.Options);
@@ -33,7 +36,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorClassifiesPlainUtf8LiteralAsNative()
     {
-        var regex = new Utf8Regex("café", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("café", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literal, regex.Inspection.ExecutionKind);
     }
@@ -41,7 +44,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorClassifiesUtf8LiteralAlternationAsNative()
     {
-        var regex = new Utf8Regex("café|niño", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("café|niño", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8SearchKind.ExactUtf8Literals, regex.Inspection.SearchPlan.Kind);
@@ -51,7 +54,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorClassifiesBoundaryWrappedAsciiLiteralAlternationAsNative()
     {
-        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
@@ -62,7 +65,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorKeepsBoundaryWrappedSharedPrefixAlternationOnLiteralExecution()
     {
-        var regex = new Utf8Regex(@"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
@@ -79,7 +82,7 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
         const string input = "LogTrace xLogDebug LogInformationX LogWarning LogError\nLogDebug éLogTrace LogDebugé Log";
         var options = mode | RegexOptions.CultureInvariant;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
@@ -89,7 +92,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void StructuralIdentifierFamilyMatchesAsyncSuffixCase()
     {
-        var regex = new Utf8Regex(@"\b(?:Get|TryGet|Create)[A-Z][A-Za-z0-9]+Async\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:Get|TryGet|Create)[A-Z][A-Za-z0-9]+Async\b", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("prefix TryGetCustomerAsync suffix");
 
         Assert.True(regex.IsMatch(input));
@@ -98,7 +101,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void StructuralIdentifierFamilyMatchesIdentifierSuffixWindowCase()
     {
-        var regex = new Utf8Regex(@"\b(?:using\s+var|await\s+using\s+var)\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*await\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:using\s+var|await\s+using\s+var)\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*await\b", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("await using var scope = await resource");
 
         Assert.True(regex.IsMatch(input));
@@ -107,7 +110,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorClassifiesBoundaryWrappedUtf8LiteralAsNative()
     {
-        var regex = new Utf8Regex(@"\bé\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\bé\b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literal, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
@@ -117,7 +120,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorPreservesBoundaryWrappedAsciiLiteralSearchRequirements()
     {
-        var regex = new Utf8Regex(@"\bword\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\bword\b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8BoundaryRequirement.Boundary, regex.Inspection.SearchPlan.LeadingBoundary);
@@ -127,8 +130,8 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorPreservesOneSidedBoundaryWrappedUtf8LiteralSearchRequirements()
     {
-        var leading = new Utf8Regex(@"\bé", RegexOptions.CultureInvariant);
-        var trailing = new Utf8Regex(@"é\B", RegexOptions.CultureInvariant);
+        var leading = new Utf8Regex(@"\bé", options: RegexOptions.CultureInvariant);
+        var trailing = new Utf8Regex(@"é\B", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literal, leading.Inspection.ExecutionKind);
         Assert.Equal(Utf8BoundaryRequirement.Boundary, leading.Inspection.SearchPlan.LeadingBoundary);
@@ -153,7 +156,7 @@ public sealed class Utf8RegexConstructionTests
     public void ConstructorQualifiesEscapedQuoteImportAlias()
     {
         const string pattern = "^import\\s+(?<shared>shared\\s+)?\\\"(?<path>(\\.|[^\\\\\\\"]*))\\\".*$";
-        var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Multiline);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(1, regex.Count("import \"😀\nx\"tail"u8));
@@ -165,7 +168,7 @@ public sealed class Utf8RegexConstructionTests
     public void ConstructorKeepsNonBacktrackingScalarCaptures()
     {
         const string pattern = @"^\s*///(?<title>#.*)$";
-        var regex = new Utf8Regex(pattern, RegexOptions.Multiline | RegexOptions.NonBacktracking);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Multiline | RegexOptions.NonBacktracking);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("unsupported_options", regex.Inspection.FallbackReason);
@@ -176,7 +179,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledIdentifierPreservesWholeByteMatch()
     {
-        var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var match = regex.Match("Alpha_42"u8.ToArray());
 
         Assert.True(match.Success);
@@ -205,7 +208,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void NonCompiledAnchoredFixedLengthHexValidatorMatchesWholeSpan()
     {
-        var regex = new Utf8Regex("^[a-f0-9]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("^[a-f0-9]{3}$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         var match = regex.Match("A0f"u8.ToArray());
 
         Assert.True(match.Success);
@@ -217,7 +220,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledAnchoredFixedLengthHexValidatorMatchesWholeSpan()
     {
-        var regex = new Utf8Regex("^[a-f0-9]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex("^[a-f0-9]{3}$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var match = regex.Match("A0f"u8.ToArray());
 
         Assert.True(match.Success);
@@ -245,7 +248,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CapturedRgbHexPreservesItsByteGroups()
     {
-        var regex = new Utf8Regex("^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[4];
         Assert.Equal(new Utf8CaptureRange(0, 6), regex.Match("A0f1c2"u8, 0, slots));
         Assert.Equal(new Utf8CaptureRange(0, 2), slots[regex.GroupNumberFromName("red")]);
@@ -256,7 +259,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledAnchoredRgbHexValidatorMatchesWholeSpan()
     {
-        var regex = new Utf8Regex("^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex("^(?<red>[a-f0-9]{2})(?<green>[a-f0-9]{2})(?<blue>[a-f0-9]{2})$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var match = regex.Match("A0f1c2"u8.ToArray());
 
         Assert.True(match.Success);
@@ -284,7 +287,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledAnchoredLiteralThenRunValidatorMatchesIgnoreCaseWholeSpan()
     {
-        var regex = new Utf8Regex("^ab[a-f0-9]{2}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex("^ab[a-f0-9]{2}$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var match = regex.Match("AB0F"u8.ToArray());
         Assert.True(match.Success);
         Assert.Equal(4, (match.EndOffsetInBytes - match.StartOffsetInBytes));
@@ -293,7 +296,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledIdentifierMatchesValidAscii()
     {
-        var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         var match = regex.Match("alpha_123"u8);
 
@@ -305,7 +308,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledIdentifierRejectsInvalidLeadingDigit()
     {
-        var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         var match = regex.Match("1alpha"u8);
 
@@ -315,7 +318,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledAsciiIdentifierRejectsNonAsciiScalar()
     {
-        var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex("^[a-z][a-z0-9_]*$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         Assert.False(regex.Match("alphé"u8).Success);
     }
@@ -323,7 +326,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledLiteralThenRunValidatorMatchesBaselineAcrossCorpus()
     {
-        var compiled = new Utf8Regex("^ab[0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex("^ab[0-9]{2}$", options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         AssertCompiledMatchesBaseline(
             "^ab[0-9]{2}$",
@@ -342,7 +345,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledIgnoreCaseLiteralThenRunValidatorMatchesBaselineAcrossCorpus()
     {
-        var compiled = new Utf8Regex("^ab[a-f0-9]{2}$", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        var compiled = new Utf8Regex("^ab[a-f0-9]{2}$", options: RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
         AssertCompiledMatchesBaseline(
             "^ab[a-f0-9]{2}$",
@@ -361,7 +364,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledHelperIdentifierCanMatchWithoutValidation()
     {
-        var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
+        var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", options: RegexOptions.Compiled);
 
         var match = regex.Match("123alpha9"u8);
 
@@ -374,7 +377,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledHelperIdentifierCanRejectWithoutValidation()
     {
-        var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
+        var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", options: RegexOptions.Compiled);
 
         var match = regex.Match("123__"u8);
 
@@ -384,7 +387,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledHelperIdentifierNeedsValidationForNonAsciiBeforeAsciiMatch()
     {
-        var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", RegexOptions.Compiled);
+        var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", options: RegexOptions.Compiled);
 
         var handled = regex.TryMatchDirectWithoutValidation("éalpha"u8, out _);
 
@@ -394,7 +397,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void DateTokensPreservePublicByteRanges()
     {
-        var regex = new Utf8Regex(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", RegexOptions.Compiled);
+        var regex = new Utf8Regex(@"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", options: RegexOptions.Compiled);
 
         var match = regex.Match("Today is 11/18/2019 and tomorrow is 11/19/2019."u8);
         Assert.True(match.Success);
@@ -406,7 +409,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void UriTokensPreservePublicByteRanges()
     {
-        var regex = new Utf8Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", RegexOptions.Compiled);
+        var regex = new Utf8Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", options: RegexOptions.Compiled);
 
         var input = "https://atlas.example.org/reports/export?id=42"u8;
         var match = regex.Match(input);
@@ -426,7 +429,7 @@ public sealed class Utf8RegexConstructionTests
     [InlineData("#abcdex", false)]
     public void HexColorAlternationPlanMatchesWholeSpan(string value, bool expected)
     {
-        var regex = new Utf8Regex("^#?([a-f0-9]{6}|[a-f0-9]{3})$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex("^#?([a-f0-9]{6}|[a-f0-9]{3})$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         var match = regex.Match(Encoding.ASCII.GetBytes(value));
 
@@ -440,7 +443,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void AnchoredHexRejectsNonAsciiInput()
     {
-        var regex = new Utf8Regex("^[a-f0-9]{3}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("^[a-f0-9]{3}$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         var match = regex.Match("éab"u8.ToArray());
 
         Assert.False(match.Success);
@@ -454,7 +457,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "tempus";
         const string input = "tempus é tempus xtempus";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
@@ -468,7 +471,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "Twain";
         const string input = "Twain é Twain 夏 MarkTwain";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
@@ -482,7 +485,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "Sherlock Holmes";
         const string input = "é Sherlock Holmes 夏 Sherlock Holmes Sherlock Watson";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
@@ -496,7 +499,7 @@ public sealed class Utf8RegexConstructionTests
         const string literal = "ConfigureAwait(";
         var pattern = Regex.Escape(literal);
         const string input = "é ConfigureAwait( 夏 ConfigureAwait(false";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literal, regex.Inspection.ExecutionKind);
@@ -511,7 +514,7 @@ public sealed class Utf8RegexConstructionTests
     [InlineData(@"\btempus\b", "xtempus tempus tempusx")]
     public void ConstrainedExactAsciiLiteralCountRetainsSemanticRoute(string pattern, string input)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
@@ -520,7 +523,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledMatchUsesDirectDocLinePath()
     {
-        var regex = new Utf8Regex("\\G///[^\\n]*\\n", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex("\\G///[^\\n]*\\n", options: RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var match = regex.Match("/// doc line\n"u8.ToArray());
 
         Assert.True(match.Success);
@@ -532,7 +535,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledDocLineDirectHookHandlesMatchWithoutValidation()
     {
-        var regex = new Utf8Regex("\\G///[^\\n]*\\n", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex("\\G///[^\\n]*\\n", options: RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var match = regex.Match("/// doc line\n"u8);
 
         Assert.True(match.Success);
@@ -545,7 +548,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\p{L}{8,13}";
         const string input = "abcdefghijklmnop";
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
@@ -556,7 +559,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorAcceptsUnicodeSymbolCategory()
     {
-        var regex = new Utf8Regex(@"\p{Sm}", RegexOptions.None);
+        var regex = new Utf8Regex(@"\p{Sm}", options: RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
@@ -565,7 +568,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorClassifiesAsciiUntilByteStarCount()
     {
-        var regex = new Utf8Regex(@"[^\n]*", RegexOptions.None);
+        var regex = new Utf8Regex(@"[^\n]*", options: RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
     }
@@ -575,7 +578,7 @@ public sealed class Utf8RegexConstructionTests
     [InlineData(@"\b\w{10,}\b")]
     public void ConstructorClassifiesWordRunCount(string pattern)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.None);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
@@ -586,8 +589,8 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"\p{Sm}+";
         const string input = "sum=∑ x + y ≠ z and text";
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var compiled = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), regex.Count(bytes));
@@ -599,7 +602,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"\p{Sm}";
         const string input = "sum=∑ x + y ≠ z and text ∫ 𐄂 < > | ~";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -608,7 +611,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void DeterministicFixedTokenPatternPreservesPublicBehavior()
     {
-        var regex = new Utf8Regex(@"ab[0-9]d", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"ab[0-9]d", options: RegexOptions.CultureInvariant);
         var input = "xx ab3d yy ab7d zz"u8;
 
         Assert.True(regex.IsMatch(input));
@@ -622,7 +625,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void AnyByteDeterministicFixedTokenPatternPreservesPublicBehavior()
     {
-        var regex = new Utf8Regex(@"ab.[0-9]d", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"ab.[0-9]d", options: RegexOptions.CultureInvariant);
         var input = "xx ab_3d yy ab!7d zz"u8;
 
         Assert.True(regex.IsMatch(input));
@@ -636,7 +639,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorClassifiesIgnoreCaseAsFallbackInFirstVersion()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCase, regex.Inspection.ExecutionKind);
     }
@@ -644,7 +647,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorClassifiesNonInvariantIgnoreCaseAsFallback()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.IgnoreCase);
+        var regex = new Utf8Regex("abc", options: RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
@@ -653,7 +656,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorClearsUnsupportedLoopReasonForDirectCellReferenceFamily()
     {
-        var regex = new Utf8Regex("^(?<col>[a-z])(?<row>(\\d)+)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("^(?<col>[a-z])(?<row>(\\d)+)$", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
     }
@@ -661,7 +664,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorUsesOwnedCultureProgramForDirectCellReferenceFamily()
     {
-        var regex = new Utf8Regex("^(?<col>[a-z])(?<row>(\\d)+)$", RegexOptions.IgnoreCase);
+        var regex = new Utf8Regex("^(?<col>[a-z])(?<row>(\\d)+)$", options: RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
@@ -673,7 +676,7 @@ public sealed class Utf8RegexConstructionTests
     public void ConstructorUsesOwnedCultureProgramForDashboardUrlIgnoreCasePattern()
     {
         const string pattern = "^(?<before>.*)(https://go(\\.testing)?\\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/d/(?<topicId>\\d+)/?\\?t=(?<tab>[^ ?]+)(?<rest>.*)$";
-        var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
@@ -685,7 +688,7 @@ public sealed class Utf8RegexConstructionTests
     public void ConstructorUsesOwnedCultureProgramForDownloadUrlIgnoreCasePattern()
     {
         const string pattern = "^(?<before>.*)(https://go(\\.testing)?\\.lokad.com|~)(?<trigram>/[a-zA-Z0-9]+)?/gateway/BigFiles/Browse/Download\\?hash=(?<hash>[a-fA-F0-9]*)(?<optPath>[?&]path=[^& \\n]+)?[?&]name=(?<name>[^& ]+)(?<optPath2>[?&]path=[^& \\n]+)?(?<rest>.*)$";
-        var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal("culture_sensitive_ignore_case", regex.Inspection.FallbackReason);
@@ -696,7 +699,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorExposesFallbackReasonForDeferredOptions()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.RightToLeft | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
         Assert.Null(regex.Inspection.FallbackReason);
@@ -705,7 +708,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorAcceptsCompiledOptionAsNonSemanticHint()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         Assert.Equal(RegexOptions.Compiled | RegexOptions.CultureInvariant, regex.Options);
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
@@ -715,8 +718,8 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledHintPreservesScalarLoopOperations()
     {
-        var baseline = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
-        var compiled = new Utf8Regex("a.*b", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var baseline = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex("a.*b", options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
         Assert.True(baseline.IsMatch("😀 a𐐀b"u8));
@@ -729,8 +732,8 @@ public sealed class Utf8RegexConstructionTests
     public void BalancingConditionalsKeepPublicResultsAcrossCompilationOptions()
     {
         const string pattern = "BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\\s\\S]))*END(?(open)(?!))";
-        var baseline = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var baseline = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var input = "BEGIN x BEGIN y END z END BEGIN END"u8;
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, compiled.Inspection.ExecutionKind);
@@ -745,8 +748,8 @@ public sealed class Utf8RegexConstructionTests
         RegexOptions options,
         byte[][] inputs)
     {
-        var baseline = new Utf8Regex(pattern, options);
-        var compiled = new Utf8Regex(pattern, options | RegexOptions.Compiled);
+        var baseline = new Utf8Regex(pattern, options: options);
+        var compiled = new Utf8Regex(pattern, options: options | RegexOptions.Compiled);
 
         foreach (var input in inputs)
         {
@@ -781,7 +784,7 @@ public sealed class Utf8RegexConstructionTests
     public void ConstructorPreservesCompiledOptionOnOwnedBalancingProgram()
     {
         const string pattern = "BEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\\s\\S]))*END(?(open)(?!))";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         Assert.True((compiled.Options & RegexOptions.Compiled) != 0);
         Assert.True(compiled.Inspection.DebugUsesOwnedSliceProgram);
@@ -800,8 +803,8 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\p{L}{8,13}";
         const string input = "контексты словообразование abcdefghijklmn data123 короткий";
-        var baseline = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var baseline = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.True(compiled.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
@@ -815,7 +818,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\p{L}{8,13}";
         const string input = "𐐀𐐁𐐂𐐃𐐄𐐅𐐆𐐇 tail";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(1, compiled.Count(bytes));
@@ -830,7 +833,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\p{L}{3,5}";
         const string input = "контексты alpha beta 世界世界世界 log42";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -841,7 +844,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "[\\w\\.+-]+@[\\w\\.-]+\\.[\\w\\.-]+";
         const string input = "ops.dispatch@northwind-control.net and admin@example.org";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -852,7 +855,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "[\\w]+://[^/\\s?#]+[^\\s?#]+(?:\\?[^\\s#]*)?(?:#[^\\s]*)?";
         const string input = "https://atlas.example.org/reports/export?id=42 and ftp://mirror.example.net/pub";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -863,7 +866,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
         const string input = " sing  bringing  abcdefghijklming  abcdefghijklmning  ring ";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -874,7 +877,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
         const string input = " sing  bringing  abcdefghijklming  abcdefghijklmning  ring ";
-        var baseline = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var baseline = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), baseline.Count(bytes));
@@ -885,7 +888,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
         const string input = " café sing résumé bringing naïve ring 東京 abcdefghijklmning ";
-        var baseline = new Utf8Regex(pattern, RegexOptions.None);
+        var baseline = new Utf8Regex(pattern, options: RegexOptions.None);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), baseline.Count(bytes));
@@ -898,7 +901,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
         const string input = "\u00A0sing\u2003 café \u0085bringing\u2028 naïve ring 東京";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var bytes = Encoding.UTF8.GetBytes(input);
         Assert.Equal(Regex.Count(input, pattern, options), regex.Count(bytes));
     }
@@ -910,11 +913,14 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"\s[a-zA-Z]{0,12}ing\s";
         var input = Encoding.UTF8.GetBytes("😀\u00a0sing\u2003𐐀");
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         using var source = new CancellationTokenSource();
         Assert.Equal(1, regex.Count(input));
         Assert.Equal(1, regex.Count(input, source.Token));
-        Assert.Equal(1, new Utf8Regex(pattern, options, TimeSpan.FromSeconds(1)).Count(input));
+        Assert.Equal(1, new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1)
+        }).Count(input));
         source.Cancel();
         Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token));
         Assert.Throws<OperationCanceledException>(() => regex.Count(new byte[] { 0xff }, source.Token));
@@ -927,7 +933,7 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
         const string input = "\u00A0SING\u2003 café \u0085BrInGiNg\u2028";
         const RegexOptions options = RegexOptions.IgnoreCase;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern, options), regex.Count(bytes));
@@ -938,7 +944,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
         const string input = "word sing next";
-        var baseline = new Utf8Regex(pattern, RegexOptions.None);
+        var baseline = new Utf8Regex(pattern, options: RegexOptions.None);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), baseline.Count(bytes));
@@ -949,7 +955,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\s[a-zA-Z]{0,12}ing\\s";
         const string input = " abcdefghijklmning ";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.False(compiled.Match(bytes).Success);
@@ -963,7 +969,7 @@ public sealed class Utf8RegexConstructionTests
 
         foreach (var input in inputs)
         {
-            var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
             var bytes = Encoding.UTF8.GetBytes(input);
             Assert.Equal(Regex.IsMatch(input, pattern), compiled.IsMatch(bytes));
         }
@@ -974,7 +980,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "\\p{L}{3,5}";
         const string input = "контексты alpha beta 世界世界世界 log42";
-        var baseline = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var baseline = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), baseline.Count(bytes));
@@ -985,7 +991,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
         const string input = "bad 1.2.3.4 then 25.26.27.28 and 999.0.0.1 ok 012.200.033.199 and 255.10.0.2 end";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -996,7 +1002,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
         const string input = "prefix 012.200.033.199 suffix";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         var match = compiled.Match(bytes);
@@ -1009,7 +1015,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
         const string input = "999.200.033.199";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.IsMatch(input, pattern), compiled.IsMatch(bytes));
@@ -1021,8 +1027,8 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
         const string alphabet = "0123456789... abcxyz";
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-        var ordinary = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var ordinary = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var random = new Random(0x4950_7634);
 
         for (var sample = 0; sample < 256; sample++)
@@ -1065,7 +1071,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"[^\n]*";
         const string input = "alpha\n\nbeta\ngamma";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -1076,7 +1082,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"[^\n]*";
         const string input = "alpha\ncafeé\nαβ\n";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -1087,7 +1093,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"\p{L}";
         const string input = "alpha βγ 夏洛克 𐐀 123 _";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         Assert.Equal(11, compiled.Count(Encoding.UTF8.GetBytes(input)));
         Utf8AsciiScalarOperationAssertions.Operations(pattern, RegexOptions.Compiled, input);
     }
@@ -1097,7 +1103,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
         const string input = "été alpha@example.org βγ ops.dispatch@northwind-control.net 夏洛克";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -1108,7 +1114,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
         const string input = "été https://atlas.example.org/reports/export?id=42 βγ http://northwind-control.net/a#frag 夏洛克";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -1127,7 +1133,7 @@ public sealed class Utf8RegexConstructionTests
         var bytes = Encoding.UTF8.GetBytes(input);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Utf8AsciiScalarOperationAssertions.Operations(pattern, options, input);
             Assert.Equal(expected, regex.Count(bytes));
         }
@@ -1144,7 +1150,7 @@ public sealed class Utf8RegexConstructionTests
         var bytes = Encoding.UTF8.GetBytes(input);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             Assert.Equal(oracle.Count(input), regex.Count(bytes));
         }
@@ -1155,7 +1161,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"[A-Za-z]+://[A-Za-z0-9.]+[A-Za-z0-9/]+";
         const string input = "é https://atlas.example/path 夏";
-        var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         Assert.Equal(Regex.Count(input, pattern), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 
@@ -1164,7 +1170,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
         const string input = "https://atlas.example.org/reports/export?id=42";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.IsMatch(input, pattern), compiled.IsMatch(bytes));
@@ -1176,7 +1182,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "夏洛克·福尔摩斯";
         const string input = "夏洛克·福尔摩斯 abc 夏洛克·福尔摩斯";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literal, compiled.Inspection.ExecutionKind);
@@ -1189,7 +1195,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "夏洛克·福尔摩斯";
         const string input = "𐐀𐐁 夏洛克·福尔摩斯 𐐂";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -1214,7 +1220,7 @@ public sealed class Utf8RegexConstructionTests
                          RegexOptions.CultureInvariant | RegexOptions.Compiled,
                      })
             {
-                var regex = new Utf8Regex(pattern, options);
+                var regex = new Utf8Regex(pattern, options: options);
                 Assert.Equal(oracle.Count(input), regex.Count(bytes));
             }
         }
@@ -1225,7 +1231,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授";
         const string input = "夏洛克·福尔摩斯 约翰华生 x 阿德勒 雷斯垂德 莫里亚蒂教授";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, compiled.Inspection.ExecutionKind);
@@ -1238,7 +1244,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授";
         const string input = "𐐀 夏洛克·福尔摩斯 𐐁 约翰华生";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -1249,7 +1255,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "阿|阿德勒|雷斯垂德";
         const string input = "𐐀 阿 x 阿德勒 y 雷斯垂德 z 阿";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -1261,7 +1267,7 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "tempus|magna|semper";
         const string input = "tempus magna semper et tempus";
         const string replacement = "amoveatur";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Replace(input, pattern, replacement), Encoding.UTF8.GetString(compiled.Replace(bytes, replacement)));
@@ -1272,7 +1278,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "tempus|magna|semper";
         const string input = "tempus magna semper et tempus";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
         var expected = Regex.Split(input, pattern);
         var actual = new List<string>();
@@ -1301,7 +1307,7 @@ public sealed class Utf8RegexConstructionTests
 
         foreach (var testCase in cases)
         {
-            var regex = new Utf8Regex(testCase.Pattern, options);
+            var regex = new Utf8Regex(testCase.Pattern, options: options);
             var bytes = Encoding.UTF8.GetBytes(testCase.Input);
             var actual = new List<string>();
 
@@ -1331,7 +1337,7 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "tempus|magna|semper";
         const string input = "tempus magna semper et tempus";
         var options = compiled ? RegexOptions.Compiled : RegexOptions.None;
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var managed = new Regex(pattern, options);
         var bytes = Encoding.UTF8.GetBytes(input);
 
@@ -1350,7 +1356,7 @@ public sealed class Utf8RegexConstructionTests
     public void SmallAsciiLiteralFamilySplitEnumerationDoesNotAllocatePerCall(bool compiled)
     {
         var options = compiled ? RegexOptions.Compiled : RegexOptions.None;
-        var regex = new Utf8Regex("tempus|magna|semper", options);
+        var regex = new Utf8Regex("tempus|magna|semper", options: options);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("tempus magna semper ", 64)));
 
         var count = 0;
@@ -1386,7 +1392,7 @@ public sealed class Utf8RegexConstructionTests
 
         foreach (var testCase in cases)
         {
-            var regex = new Utf8Regex(testCase.Pattern, options);
+            var regex = new Utf8Regex(testCase.Pattern, options: options);
             var bytes = Encoding.UTF8.GetBytes(testCase.Input);
             var actual = new List<string>();
 
@@ -1399,18 +1405,15 @@ public sealed class Utf8RegexConstructionTests
             Assert.Equal(Regex.Split(testCase.Input, testCase.Pattern, options), actual);
         }
 
-        Assert.False(new Utf8Regex("(alpha|bravo|charlie)", options)
-            .TryGetSmallAsciiLiteralFamilySearch("alpha bravo"u8, out _));
-        Assert.False(new Utf8Regex(
-                "alpha|bravo|charlie",
-                options,
-                TimeSpan.FromSeconds(1))
-            .TryGetSmallAsciiLiteralFamilySearch("alpha bravo"u8, out _));
-        Assert.False(new Utf8Regex("alpha|bravo|charlie", options | RegexOptions.RightToLeft)
-            .TryGetSmallAsciiLiteralFamilySearch("alpha bravo"u8, out _));
+        Assert.False(new Utf8Regex("(alpha|bravo|charlie)", options: options)            .TryGetSmallAsciiLiteralFamilySearch("alpha bravo"u8, out _));
+        Assert.False(new Utf8Regex(                "alpha|bravo|charlie", options:                 options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1)
+        })            .TryGetSmallAsciiLiteralFamilySearch("alpha bravo"u8, out _));
+        Assert.False(new Utf8Regex("alpha|bravo|charlie", options: options | RegexOptions.RightToLeft)            .TryGetSmallAsciiLiteralFamilySearch("alpha bravo"u8, out _));
 
         var malformed = new byte[] { (byte)'a', 0xC3, 0x28, (byte)'b' };
-        var eligible = new Utf8Regex("alpha|bravo|charlie", options);
+        var eligible = new Utf8Regex("alpha|bravo|charlie", options: options);
         Assert.False(eligible.TryGetSmallAsciiLiteralFamilySearch(malformed, out _));
     }
 
@@ -1430,7 +1433,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "Tom|Sawyer|Huckleberry|Finn";
         const string input = "Tom Finn Sawyer Huckleberry and Tom again";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(Regex.Count(input, pattern), compiled.Count(bytes));
@@ -1448,7 +1451,10 @@ public sealed class Utf8RegexConstructionTests
         var options = RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
-        var regex = new Utf8Regex(pattern, options, timeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         var oracle = new Regex(pattern, options, timeout);
 
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
@@ -1467,7 +1473,10 @@ public sealed class Utf8RegexConstructionTests
         var options = RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
-        var regex = new Utf8Regex(pattern, options, timeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         var oracle = new Regex(pattern, options, timeout);
         string[] inputs =
         [
@@ -1511,7 +1520,7 @@ public sealed class Utf8RegexConstructionTests
         var bytes = Encoding.UTF8.GetBytes(input);
         foreach (var pattern in patterns)
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
             Assert.Equal(oracle.Count(input), regex.Count(bytes));
         }
@@ -1522,7 +1531,7 @@ public sealed class Utf8RegexConstructionTests
     {
         const string pattern = "Tom|Sawyer|Huckleberry|Finn";
         const string input = "noise Sawyer tail";
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var bytes = Encoding.UTF8.GetBytes(input);
         var match = compiled.Match(bytes);
 
@@ -1549,7 +1558,10 @@ public sealed class Utf8RegexConstructionTests
             (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
-        var regex = new Utf8Regex(pattern, options, timeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         var oracle = new Regex(pattern, options, timeout);
         string[] inputs =
         [
@@ -1587,7 +1599,10 @@ public sealed class Utf8RegexConstructionTests
         var options = RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
-        var regex = new Utf8Regex(pattern, options, timeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         var oracle = new Regex(pattern, options, timeout);
         string[] inputs =
         [
@@ -1611,7 +1626,7 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "кошка|собака|лисица|медведь|волк";
         var options = RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         string[] inputs =
         [
@@ -1643,7 +1658,7 @@ public sealed class Utf8RegexConstructionTests
         var options = RegexOptions.CultureInvariant |
             (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         string[] inputs =
         [
@@ -1683,7 +1698,7 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "alpha|alphabet|bravo|charlie|delta";
         var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         string[] inputs =
         [
@@ -1719,7 +1734,7 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "alpha|alphabet|bravo|charlie|delta";
         var options = RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes("é " + new string('x', 32_768) + " 夏");
         // Warm the measured call site through delayed tiering, rather than
         // switching from a short warmup loop to a different measured loop.
@@ -1743,7 +1758,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledExactAsciiLiteralFamilyCanMatchWithoutValidation()
     {
-        var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
+        var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.None);
 
         var handled = regex.TryMatchDirectWithoutValidation("xxx magna yyy"u8, out var match);
 
@@ -1768,7 +1783,7 @@ public sealed class Utf8RegexConstructionTests
             builder.Append(paragraph);
         }
 
-        var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
+        var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.None);
         var bytes = Encoding.UTF8.GetBytes(builder.ToString());
 
         var handled = regex.TryMatchDirectWithoutValidation(bytes, out var match);
@@ -1781,7 +1796,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ExactAsciiLiteralFamilyDirectMatchValidatesNonAsciiSuffix()
     {
-        var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
+        var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.None);
         var bytes = Encoding.UTF8.GetBytes("magna café");
 
         var handled = regex.TryMatchDirectWithoutValidation(bytes, out var match);
@@ -1795,7 +1810,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ExactAsciiLiteralFamilyDirectMatchDeclinesNonAsciiPrefixProjection()
     {
-        var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.None);
+        var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.None);
         var bytes = Encoding.UTF8.GetBytes("café magna");
 
         Assert.False(regex.TryMatchDirectWithoutValidation(bytes, out _));
@@ -1815,7 +1830,7 @@ public sealed class Utf8RegexConstructionTests
         var options = RegexOptions.CultureInvariant |
             (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("tempus|magna|semper", options);
+        var regex = new Utf8Regex("tempus|magna|semper", options: options);
 
         var handled = regex.TryMatchDirectWithoutValidation("xxx nihil yyy"u8, out var match);
 
@@ -1833,7 +1848,7 @@ public sealed class Utf8RegexConstructionTests
         var options = RegexOptions.CultureInvariant |
             (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", options);
+        var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", options: options);
 
         var handled = regex.TryMatchDirectWithoutValidation("xxx foxtrot yyy"u8, out var match);
 
@@ -1850,7 +1865,7 @@ public sealed class Utf8RegexConstructionTests
     [InlineData("ab+", "unsupported_loop")]
     public void ConstructorExposesSemanticFallbackReasonForUnsupportedPatternFamilies(string pattern, string expectedReason)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(expectedReason, regex.Inspection.FallbackReason);
@@ -1859,7 +1874,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorClassifiesPositiveLiteralLookaheadAsAsciiSimplePattern()
     {
-        var regex = new Utf8Regex("foo(?=bar)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("foo(?=bar)", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactAsciiLiteral, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
@@ -1869,7 +1884,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorKeepsInvariantIgnoreCasePositiveLiteralLookaheadOnFallback()
     {
-        var regex = new Utf8Regex("foo(?=bar)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("foo(?=bar)", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
     }
@@ -1877,7 +1892,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorKeepsInvariantIgnoreCasePositiveLiteralAlternationLookaheadOnFallback()
     {
-        var regex = new Utf8Regex("(?:cat|dog)(?=house)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?:cat|dog)(?=house)", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
     }
@@ -1898,7 +1913,7 @@ public sealed class Utf8RegexConstructionTests
 
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
 
             Assert.Equal(1, regex.Count(input));
         }
@@ -1915,14 +1930,14 @@ public sealed class Utf8RegexConstructionTests
 
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            Assert.Equal(Regex.Count(input, pattern, options), new Utf8Regex(pattern, options).Count(bytes));
+            Assert.Equal(Regex.Count(input, pattern, options), new Utf8Regex(pattern, options: options).Count(bytes));
         }
     }
 
     [Fact]
     public void OrderedLiteralWindowLiteralFamilyCountPreservesBehavior()
     {
-        var regex = new Utf8Regex(@"\b(?:public|private|internal)\b\s+.{0,80}\bclass\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:public|private|internal)\b\s+.{0,80}\bclass\b", options: RegexOptions.CultureInvariant);
         var input = """
             public sealed class First
             private readonly struct Skip
@@ -1952,7 +1967,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void OrderedLiteralWindowLiteralFamilyIgnoresInvalidEarlierTrailingLiteral()
     {
-        var regex = new Utf8Regex(@"\b(?:public|private|internal)\b\s+.{0,80}\bclass\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:public|private|internal)\b\s+.{0,80}\bclass\b", options: RegexOptions.CultureInvariant);
         var input = "publicclass noise public sealed class Valid"u8;
 
         Assert.Equal(1, regex.Count(input));
@@ -1965,7 +1980,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void SeparatorOnlyIdentifierFamilyIgnoresMissingWhitespace()
     {
-        var regex = new Utf8Regex(@"\b(?:public|private|internal)\s+class\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:public|private|internal)\s+class\b", options: RegexOptions.CultureInvariant);
         var input = "publicclass public class internal\tclass"u8;
 
         Assert.Equal(2, regex.Count(input));
@@ -1977,7 +1992,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void DeclarationIdentifierFamilySkipsInvalidEarlierPrefixForMatch()
     {
-        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", options: RegexOptions.CultureInvariant);
         var input = "class lowercase record CustomerExportJob"u8;
 
         Assert.Equal(1, regex.Count(input));
@@ -1990,7 +2005,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledDeclarationIdentifierFamilyMatchesExpected()
     {
-        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = "class lowercase record CustomerExportJob struct lower"u8;
 
         Assert.Equal(1, regex.Count(input));
@@ -2003,7 +2018,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledLoggingInvocationFamilyMatchesExpected()
     {
-        var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex(@"\b(?:LogError|LogWarning|LogInformation)\s*\(", options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = "LogWarningx LogInformation ("u8;
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
@@ -2015,7 +2030,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void CompiledOrderedLiteralWindowMatchesExpected()
     {
-        var regex = new Utf8Regex(@"\bpublic\s+async\b", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex(@"\bpublic\s+async\b", options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = "xpublic async public   asyncz public async"u8;
         Assert.Equal(1, regex.Count(input));
         var match = regex.Match(input);
@@ -2028,7 +2043,7 @@ public sealed class Utf8RegexConstructionTests
     public void CompiledBoundedOrderedLiteralWindowMatchesExpected()
     {
         const string pattern = @"\bawait\b\s+.{0,60}\bConfigureAwait\b";
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var input = """
             awaitx ConfigureAwait
             await ConfigureAwait
@@ -2048,7 +2063,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorPromotesOptionalAsciiLiteralPatternToLiteralFamily()
     {
-        var regex = new Utf8Regex("ab?c", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("ab?c", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -2058,7 +2073,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorPromotesFiniteAsciiLiteralAlternationLoopToLiteralFamily()
     {
-        var regex = new Utf8Regex("(?:ab|cd){2}", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?:ab|cd){2}", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -2068,7 +2083,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorPromotesInvariantIgnoreCaseOptionalAsciiLiteralPatternToLiteralFamily()
     {
-        var regex = new Utf8Regex("ab?c", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("ab?c", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -2078,7 +2093,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorPromotesInvariantIgnoreCaseFiniteAsciiCharClassPatternToLiteralFamily()
     {
-        var regex = new Utf8Regex("a[bc]?d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("a[bc]?d", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -2088,7 +2103,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorPromotesInvariantIgnoreCaseFiniteAsciiCharClassPatternWithoutOptionalToLiteralFamily()
     {
-        var regex = new Utf8Regex("a[bc]d", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("a[bc]d", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -2098,7 +2113,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorPromotesFiniteAsciiCharClassOptionalPatternToLiteralFamily()
     {
-        var regex = new Utf8Regex("a[bc]?d", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("a[bc]?d", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -2108,7 +2123,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorPromotesFiniteAsciiCharClassRepeatPatternToLiteralFamily()
     {
-        var regex = new Utf8Regex("[ab]{2}", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("[ab]{2}", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -2124,13 +2139,16 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void ConstructorDoesNotTreatZeroTimeoutAsDefaultSentinel()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("abc", RegexOptions.CultureInvariant, TimeSpan.Zero));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("abc", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.Zero
+        }));
     }
 
     [Fact]
     public void DirectPrefixFamilyCanMatchDocLineDirectly()
     {
-        var regex = new Utf8Regex("\\G///[^\\n]*\\n", RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("\\G///[^\\n]*\\n", options: RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.CultureInvariant);
         var match = regex.Match("/// summary line\n"u8);
 
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
@@ -2143,7 +2161,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void FallbackRegexCanMatchEnvisionQuotedStringDirectly()
     {
-        var regex = new Utf8Regex("\\G\"([^\"\\\\]|\\\\.)*\"", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("\\G\"([^\"\\\\]|\\\\.)*\"", options: RegexOptions.CultureInvariant);
         var match = regex.Match("\"hello\\\"world\""u8);
 
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
@@ -2157,7 +2175,7 @@ public sealed class Utf8RegexConstructionTests
     [Fact]
     public void FallbackRegexCanMatchEnvisionQuotedStringDirectlyWithUtf8Content()
     {
-        var regex = new Utf8Regex("\\G\"([^\"\\\\]|\\\\.)*\"", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("\\G\"([^\"\\\\]|\\\\.)*\"", options: RegexOptions.CultureInvariant);
         var match = regex.Match("\"été\""u8);
 
         Assert.True(match.Success);

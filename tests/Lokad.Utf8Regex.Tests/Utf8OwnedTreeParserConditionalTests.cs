@@ -77,7 +77,7 @@ public sealed class Utf8OwnedTreeParserConditionalTests
         Assert.NotNull(actual);
         Assert.Equal(2, actual.CaptureCount);
         Assert.Throws<NotSupportedException>(() => new Regex("(a)(?(1)b|c)", RegexOptions.NonBacktracking));
-        Assert.Throws<NotSupportedException>(() => new Utf8Regex("(a)(?(1)b|c)", RegexOptions.NonBacktracking));
+        Assert.Throws<NotSupportedException>(() => new Utf8Regex("(a)(?(1)b|c)", options: RegexOptions.NonBacktracking));
     }
 
     [Theory]
@@ -109,7 +109,7 @@ public sealed class Utf8OwnedTreeParserConditionalTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         foreach (var inputText in inputs)
         {
             var input = Encoding.UTF8.GetBytes(inputText);
@@ -134,7 +134,7 @@ public sealed class Utf8OwnedTreeParserConditionalTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         foreach (var inputText in inputs)
         {
             var input = Encoding.UTF8.GetBytes(inputText);
@@ -161,7 +161,7 @@ public sealed class Utf8OwnedTreeParserConditionalTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         foreach (var inputText in inputs)
         {
             var input = Encoding.UTF8.GetBytes(inputText);

@@ -94,7 +94,7 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
     {
         Assert.NotNull(Utf8OwnedTreeParser.TryParse("[-[a]]", RegexOptions.CultureInvariant));
         var oracle = new Regex("[-[a]]", RegexOptions.CultureInvariant);
-        var product = new Utf8Regex("[-[a]]", RegexOptions.CultureInvariant);
+        var product = new Utf8Regex("[-[a]]", options: RegexOptions.CultureInvariant);
         Assert.Equal(oracle.ToString(), product.Pattern);
         Utf8SliceSparseGroupTests.AssertOwnedOperations(product, oracle, ["-]", "[]", "a]", "a", "-", "[", "😀-]"]);
         Assert.True(product.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -114,7 +114,7 @@ public sealed class Utf8OwnedTreeParserSubtractionTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         foreach (var inputText in inputs)
         {
             var input = Encoding.UTF8.GetBytes(inputText);

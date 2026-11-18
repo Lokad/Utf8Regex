@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Caching;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Search;
@@ -14,16 +15,22 @@ namespace Lokad.Utf8Regex;
 
 /// <summary>Matches Unicode scalars directly over well-formed UTF-8 input.</summary>
 /// <remarks>Matching results expose byte ranges; callers derive character coordinates.</remarks>
-public sealed partial class Utf8Regex
+public sealed partial class Utf8Regex : IDisposable
 {
 
     /// <summary>Compiles an expression for caller-valid, unchanged UTF-8 subjects.</summary>
     /// <remarks>Subjects must be valid unchanged UTF-8; pattern/template checks are independent. A null timeout uses DefaultMatchTimeout.
     /// Work and result traffic are cumulative per operation/cursor; depth and working bytes bound live modeled major state, buffers and growth overlap.
     /// Admission precedes acquisition and can conservatively count shared storage. Borrowed subjects and host decoding/collections are excluded.
-    /// Construction/preparation and program funding have separate scope; use Compile for explicit construction limits and cancellation.</remarks>
-    public Utf8Regex(string pattern, RegexOptions options = RegexOptions.CultureInvariant, TimeSpan? matchTimeout = null, Utf8ResourcePolicy resourcePolicy = default)
-        : this(new Utf8ConstructionPattern(pattern), options, matchTimeout ?? DefaultMatchTimeout, resourcePolicy) { }
+    /// Policy construction controls are independent of matching; Compile additionally accepts an original construction token. Funded creation prepays bounded cache capacity and requires explicit disposal.</remarks>
+    public Utf8Regex(string pattern, RegexOptions options = RegexOptions.CultureInvariant, Utf8RegexPolicy? policy = null)
+        : this(new Utf8ConstructionPattern(pattern), options, policy, default, explicitCompile: false) { }
+
+    private readonly Utf8FundedStorage? _programMemory;
+
+    /// <summary>Closes caller-funded program admission after active calls and persistent cursors finish.</summary>
+    /// <remarks>No-op without funding. Copied span enumerators require an open regex at each advance; their returned values remain valid. Persistent memory cursors retain their admitted program use after close. No finalizer is used.</remarks>
+    public void Dispose() => _programMemory?.Close();
 
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
 
@@ -41,128 +48,156 @@ public sealed partial class Utf8Regex
     private readonly Utf8SliceProgram _ownedSliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache;
 
-    private Utf8Regex(Utf8ConstructionPattern pattern, RegexOptions options, TimeSpan matchTimeout, Utf8ResourcePolicy resourcePolicy)
+    private Utf8Regex(Utf8ConstructionPattern pattern, RegexOptions options, Utf8RegexPolicy? policy,
+        CancellationToken token, bool explicitCompile)
     {
-        ValidateCorePolicy(resourcePolicy, nameof(resourcePolicy));
-        using var construction = Utf8ConstructionScope.Enter();
-
-        Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
-        ValidateOptions(options);
-        if (!pattern.IsUtf8) ArgumentNullException.ThrowIfNull(pattern.Text, nameof(pattern));
-        _patternText = pattern.IsUtf8 ? null : pattern.Text;
-        Options = options;
-        MatchTimeout = matchTimeout;
-        ResourcePolicy = resourcePolicy;
-        HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
-            resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
-        construction.Budget.CheckBytes(ProgramFixedMetadataBytes);
-        construction.Budget.ChargeWork(1);
-        construction.Budget.ReserveBytes(ProgramFixedMetadataBytes);
-
-        _program = Utf8RegexProgram.Compile(pattern, options, prepareRuntime: !HasFiniteExecutionLimits);
-        var preparedRegex = _program.PreparedRegex;
-        _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);
-        _fusedAsciiLiteralCountAnchorOffset =
-            _prioritizePlainAsciiLiteralCount &&
-            matchTimeout == Regex.InfiniteMatchTimeout &&
-            preparedRegex.LiteralUtf8 is { } fusedAsciiLiteral
-                ? Utf8AsciiExactLiteralCountExecutor.SelectRarestAnchorOffset(fusedAsciiLiteral)
-                : -1;
-        _prioritizeBoundaryLiteralFamilyCount =
-            (options & RegexOptions.RightToLeft) == 0 &&
-            preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-            preparedRegex.SearchPlan.HasBoundaryRequirements &&
-            Utf8EmittedLiteralFamilyCounter.CanCreate(
-                preparedRegex.SearchPlan,
-                preparedRegex.SearchPlan.CountOperation,
-                preparedRegex.SearchPlan.FirstMatchOperation);
-        if (matchTimeout == Regex.InfiniteMatchTimeout &&
-            (options & RegexOptions.RightToLeft) == 0 &&
-            _program.CompiledEngineRuntime is Utf8LiteralCompiledEngineRuntime literalRuntime &&
-            literalRuntime._emittedLiteralFamilyCounter is { SupportsAsciiValidatedCount: true } boundaryLiteralFamilyCounter)
+        token.ThrowIfCancellationRequested();
+        policy ??= Utf8RegexPolicy.Default;
+        var resourcePolicy = policy.ResourcePolicy;
+        ValidateCorePolicy(resourcePolicy, nameof(policy));
+        var matchTimeout = Utf8MatchTimeout.Validate(policy.MatchTimeout ?? DefaultMatchTimeout, nameof(policy));
+        var constructionPolicy = policy.ConstructionPolicy;
+        constructionPolicy.Validate(nameof(policy));
+        var constructionTimeout = Utf8MatchTimeout.Validate(policy.ConstructionTimeout ?? Timeout.InfiniteTimeSpan, nameof(policy));
+        var account = policy.ProgramMemoryAllowance;
+        var ownsConstruction = explicitCompile || account is not null || constructionPolicy != default ||
+            constructionTimeout != Timeout.InfiniteTimeSpan;
+        using var construction = !ownsConstruction ? Utf8ConstructionScope.Enter() : account is null
+            ? Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token)
+            : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token, account);
+        try
         {
-            _fusedAsciiBoundaryLiteralFamilyCounter = boundaryLiteralFamilyCounter;
-        }
-        _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
-        _invariantCyrillicLiteralCountStrategy =
-            Utf8InvariantCyrillicLiteralCountStrategy.TryCreate(
-                pattern,
-                options,
-                matchTimeout,
-                out var invariantCyrillicLiteralCountStrategy)
-                    ? invariantCyrillicLiteralCountStrategy
-                    : null;
-        _packedNibbleLiteralFamilyCountStrategy =
-            Utf8PackedNibbleLiteralFamilyCountStrategy.TryCreate(
-                preparedRegex,
-                options,
-                matchTimeout,
-                out var packedNibbleLiteralFamilyCountStrategy)
-                    ? packedNibbleLiteralFamilyCountStrategy
-                    : null;
-        // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
-        // scalar slice. Instruction-capacity exhaustion fails in owned admission;
-        // pattern nesting and resource failure do not select a BCL engine.
-        // NonBacktracking regular graphs lower to ordered scalar NFA states,
-        // including loops and shared captures. They do not use the backtracker.
-        var ownedSliceProgram = preparedRegex.ScalarProgram
-            ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
-        _ownedSliceProgram = ownedSliceProgram;
-        _hasCaptures = ownedSliceProgram.GroupCount != 0 &&
-            (preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !preparedRegex.AnchoredLiteral.HasValue ||
-             HasOwnedCaptures(preparedRegex.ExecutionTree));
-        // Grouped literal metadata still proves replacement eligibility and an
-        // anchored value-cursor shortcut. Full capture snapshots use the byte
-        // cursor, independently of this remaining native preparation.
-        var scalarCaptureProjection = pattern.IsUtf8 || HasFiniteExecutionLimits || matchTimeout != Regex.InfiniteMatchTimeout ||
-            _hasCaptures && ownedSliceProgram.HasUnicodePatternAtoms;
-        var hasNativeCaptureTree = preparedRegex.ExecutionTree is not null && !UsesRightToLeft();
-        // The anchored prefix table also supplies a value-cursor proof before
-        // scalar selection. Preserve that dependency and its existing fences.
-        _groupedLiteralSpanTable = _hasCaptures && hasNativeCaptureTree &&
-            (!scalarCaptureProjection || _anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix)
-                ? Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram) : null;
-        // The existing literal proof respects each anchor's scoped options. Borrow
-        // its admitted bytes instead of collecting/copying the execution tree again.
-        _caretAnchoredGroupedLiteralUtf8 =
-            _groupedLiteralSpanTable is { } spanTable &&
-            (options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.NonBacktracking)) == 0 &&
-            _anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
-            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } prefix &&
-            prefix.Length == spanTable.TotalLengthInUtf16
-                ? prefix : null;
-        static bool CanPrioritizePlainAsciiLiteralCount(
-            Utf8ConstructionPattern pattern, Utf8PreparedRegex preparedRegex, RegexOptions options)
-        {
-            if (preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
-                (options & RegexOptions.RightToLeft) != 0 ||
-                preparedRegex.LiteralUtf8 is not { } literal ||
-                pattern.Length != literal.Length)
+            ValidateOptions(options);
+            if (!pattern.IsUtf8) ArgumentNullException.ThrowIfNull(pattern.Text, nameof(pattern));
+            _patternText = pattern.IsUtf8 ? null : pattern.Text;
+            Options = options;
+            MatchTimeout = matchTimeout;
+            ResourcePolicy = resourcePolicy;
+            HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
+                resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
+            construction.Budget.CheckBytes(ProgramFixedMetadataBytes);
+            construction.Budget.ChargeWork(1);
+            construction.Budget.ReserveBytes(ProgramFixedMetadataBytes);
+
+            _program = Utf8RegexProgram.Compile(pattern, options, prepareRuntime: !HasFiniteExecutionLimits);
+            var preparedRegex = _program.PreparedRegex;
+            _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);
+            _fusedAsciiLiteralCountAnchorOffset =
+                _prioritizePlainAsciiLiteralCount &&
+                matchTimeout == Regex.InfiniteMatchTimeout &&
+                preparedRegex.LiteralUtf8 is { } fusedAsciiLiteral
+                    ? Utf8AsciiExactLiteralCountExecutor.SelectRarestAnchorOffset(fusedAsciiLiteral)
+                    : -1;
+            _prioritizeBoundaryLiteralFamilyCount =
+                (options & RegexOptions.RightToLeft) == 0 &&
+                preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
+                preparedRegex.SearchPlan.HasBoundaryRequirements &&
+                Utf8EmittedLiteralFamilyCounter.CanCreate(
+                    preparedRegex.SearchPlan,
+                    preparedRegex.SearchPlan.CountOperation,
+                    preparedRegex.SearchPlan.FirstMatchOperation);
+            if (matchTimeout == Regex.InfiniteMatchTimeout &&
+                (options & RegexOptions.RightToLeft) == 0 &&
+                _program.CompiledEngineRuntime is Utf8LiteralCompiledEngineRuntime literalRuntime &&
+                literalRuntime._emittedLiteralFamilyCounter is { SupportsAsciiValidatedCount: true } boundaryLiteralFamilyCounter)
             {
-                return false;
+                _fusedAsciiBoundaryLiteralFamilyCounter = boundaryLiteralFamilyCounter;
             }
-
-            for (var i = 0; i < literal.Length; i++)
+            _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
+            _invariantCyrillicLiteralCountStrategy =
+                Utf8InvariantCyrillicLiteralCountStrategy.TryCreate(
+                    pattern,
+                    options,
+                    matchTimeout,
+                    out var invariantCyrillicLiteralCountStrategy)
+                        ? invariantCyrillicLiteralCountStrategy
+                        : null;
+            _packedNibbleLiteralFamilyCountStrategy =
+                Utf8PackedNibbleLiteralFamilyCountStrategy.TryCreate(
+                    preparedRegex,
+                    options,
+                    matchTimeout,
+                    out var packedNibbleLiteralFamilyCountStrategy)
+                        ? packedNibbleLiteralFamilyCountStrategy
+                        : null;
+            // R02a: fallback-shaped literal/concat/alt/repeat/capture patterns run the owned
+            // scalar slice. Instruction-capacity exhaustion fails in owned admission;
+            // pattern nesting and resource failure do not select a BCL engine.
+            // NonBacktracking regular graphs lower to ordered scalar NFA states,
+            // including loops and shared captures. They do not use the backtracker.
+            var ownedSliceProgram = preparedRegex.ScalarProgram
+                ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
+            _ownedSliceProgram = ownedSliceProgram;
+            _hasCaptures = ownedSliceProgram.GroupCount != 0 &&
+                (preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex && !preparedRegex.AnchoredLiteral.HasValue ||
+                 HasOwnedCaptures(preparedRegex.ExecutionTree));
+            // Grouped literal metadata still proves replacement eligibility and an
+            // anchored value-cursor shortcut. Full capture snapshots use the byte
+            // cursor, independently of this remaining native preparation.
+            var scalarCaptureProjection = pattern.IsUtf8 || HasFiniteExecutionLimits || matchTimeout != Regex.InfiniteMatchTimeout ||
+                _hasCaptures && ownedSliceProgram.HasUnicodePatternAtoms;
+            var hasNativeCaptureTree = preparedRegex.ExecutionTree is not null && !UsesRightToLeft();
+            // The anchored prefix table also supplies a value-cursor proof before
+            // scalar selection. Preserve that dependency and its existing fences.
+            _groupedLiteralSpanTable = _hasCaptures && hasNativeCaptureTree &&
+                (!scalarCaptureProjection || _anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix)
+                    ? Utf8GroupedLiteralSpanTable.TryCreate(preparedRegex.ExecutionTree, ownedSliceProgram) : null;
+            // The existing literal proof respects each anchor's scoped options. Borrow
+            // its admitted bytes instead of collecting/copying the execution tree again.
+            _caretAnchoredGroupedLiteralUtf8 =
+                _groupedLiteralSpanTable is { } spanTable &&
+                (options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.NonBacktracking)) == 0 &&
+                _anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
+                _anchoredLiteral.LiteralUtf8 is { Length: > 0 } prefix &&
+                prefix.Length == spanTable.TotalLengthInUtf16
+                    ? prefix : null;
+            static bool CanPrioritizePlainAsciiLiteralCount(
+                Utf8ConstructionPattern pattern, Utf8PreparedRegex preparedRegex, RegexOptions options)
             {
-                if (pattern[i] != literal[i])
+                if (preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
+                    (options & RegexOptions.RightToLeft) != 0 ||
+                    preparedRegex.LiteralUtf8 is not { } literal ||
+                    pattern.Length != literal.Length)
                 {
                     return false;
                 }
+
+                for (var i = 0; i < literal.Length; i++)
+                {
+                    if (pattern[i] != literal[i])
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
-            return true;
+            _replacementCache = Utf8ReplacementPlanCache.Create();
+            if (pattern.IsUtf8)
+            {
+                // Parsing borrows only during this call. Retained source bytes are
+                // separately admitted and copied before the expression can escape.
+                _patternUtf8 = construction.Budget.AllocateArray<byte>(pattern.Utf8.Length, false);
+                construction.Budget.ChargeWork((ulong)pattern.Utf8.Length);
+                pattern.Utf8.CopyTo(_patternUtf8);
+            }
+            if (account is not null)
+            {
+                // Prepay the bounded lazy cache once. Its future retained
+                // payload must not escape the program's admission contract.
+                construction.Budget.ReserveBytes(_replacementCache.MaximumRetainedBytes);
+                var storage = construction.Budget.AllocateObject(account,
+                    static allowance => new Utf8FundedStorage(allowance, nameof(Utf8Regex)));
+                construction.Budget.ChargeWork(0);
+                storage.Retain(construction.Budget.TransferFundedBytes());
+                _programMemory = storage;
+            }
+            else if (ownsConstruction) construction.Budget.ChargeWork(0);
+            construction.Complete();
         }
-
-        _replacementCache = Utf8ReplacementPlanCache.Create();
-        if (pattern.IsUtf8)
-        {
-            // Parsing borrows only during this call. Retained source bytes are
-            // separately admitted and copied before the expression can escape.
-            _patternUtf8 = construction.Budget.AllocateArray<byte>(pattern.Utf8.Length, false);
-            construction.Budget.ChargeWork((ulong)pattern.Utf8.Length);
-            pattern.Utf8.CopyTo(_patternUtf8);
-        }
-        construction.Complete();
+        catch (Utf8ExecutionDeadlineExpiredException) when (ownsConstruction)
+        { throw new RegexMatchTimeoutException(string.Empty, pattern.IsUtf8 ? string.Empty : pattern.Text, constructionTimeout); }
     }
 
     // ResourcePolicy is an immutable value copied by the shared constructor.
@@ -247,6 +282,7 @@ public sealed partial class Utf8Regex
     /// <summary>Returns the number assigned to a group name, or <c>-1</c> when the name is undefined.</summary>
     public int GroupNumberFromName(string name)
     {
+        using var programUse = _programMemory?.Enter();
         if (name is null) throw new ArgumentNullException(nameof(name));
         return _program.CaptureCatalog.GroupNumberFromName(name);
     }
@@ -254,18 +290,21 @@ public sealed partial class Utf8Regex
     /// <summary>Returns the name assigned to a group number, or an empty string when the number is undefined.</summary>
     public string GroupNameFromNumber(int i)
     {
+        using var programUse = _programMemory?.Enter();
         return _program.CaptureCatalog.GroupNameFromNumber(i);
     }
 
     /// <summary>Returns the group names defined by the expression, including group zero.</summary>
     public string[] GetGroupNames()
     {
+        using var programUse = _programMemory?.Enter();
         return _program.CaptureCatalog.GroupNames.AsSpan().ToArray();
     }
 
     /// <summary>Returns the group numbers defined by the expression, including group zero.</summary>
     public int[] GetGroupNumbers()
     {
+        using var programUse = _programMemory?.Enter();
         return _program.CaptureCatalog.GroupNumbers.AsSpan().ToArray();
     }
 
@@ -1063,11 +1102,11 @@ public sealed partial class Utf8Regex
     public Utf8ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int? startOffsetInBytes = null, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (startOffsetInBytes is { } start)
-            return CreateOwnedByteOffsetEnumerator(input, start, cancellationToken);
-        return cancellationToken.CanBeCanceled
-            ? EnumerateMatchesWithToken(input, cancellationToken)
-            : EnumerateMatchesWithoutToken(input);
+        using var programUse = _programMemory?.Enter();
+        var cursor = startOffsetInBytes is { } start
+            ? CreateOwnedByteOffsetEnumerator(input, start, cancellationToken)
+            : cancellationToken.CanBeCanceled ? EnumerateMatchesWithToken(input, cancellationToken) : EnumerateMatchesWithoutToken(input);
+        return cursor.WithProgramMemory(_programMemory);
     }
     /// <summary>Enumerates at most the requested number of split segments.</summary>
     private Utf8ValueSplitEnumerator EnumerateSplitsWithoutToken(ReadOnlySpan<byte> input, int count)
@@ -1154,9 +1193,10 @@ public sealed partial class Utf8Regex
     public Utf8ValueSplitEnumerator EnumerateSplits(ReadOnlySpan<byte> input, int count = int.MaxValue, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (!cancellationToken.CanBeCanceled) return EnumerateSplitsWithoutToken(input, count);
+        using var programUse = _programMemory?.Enter();
+        if (!cancellationToken.CanBeCanceled) return EnumerateSplitsWithoutToken(input, count).WithProgramMemory(_programMemory);
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
-        return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, count == 0 ? int.MaxValue : count, cancellationToken);
+        return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, count == 0 ? int.MaxValue : count, cancellationToken).WithProgramMemory(_programMemory);
     }
 
     private Utf8ValueSplitEnumerator OwnedSliceEnumerateSplits(ReadOnlySpan<byte> input, Utf8SliceProgram program, int count, CancellationToken token)
@@ -1185,6 +1225,7 @@ public sealed partial class Utf8Regex
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         try
         {
             return ReplaceStringCore(input, replacement, cancellationToken);
@@ -1210,6 +1251,7 @@ public sealed partial class Utf8Regex
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         try
         {
             return ReplaceUtf8Core(input, replacementPatternUtf8, cancellationToken);
@@ -1314,6 +1356,7 @@ public sealed partial class Utf8Regex
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, string replacement, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         try
         {
             return TryReplaceStringCore(input, replacement, destination, out bytesWritten, cancellationToken);
@@ -1331,9 +1374,13 @@ public sealed partial class Utf8Regex
     /// <param name="bytesWritten">When this method returns, the number of bytes written to the destination.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
-    public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken = default)
+    public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
+        workingMemoryAllowance ??= _programMemory?.Allowance;
+        if (workingMemoryAllowance is not null)
+            return TryReplaceFunded(input, replacementPatternUtf8, destination, out bytesWritten, cancellationToken, workingMemoryAllowance);
         try
         {
             return TryReplaceUtf8Core(input, replacementPatternUtf8, destination, out bytesWritten, cancellationToken);

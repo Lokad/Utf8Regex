@@ -12,7 +12,7 @@ internal sealed class DotNetPerformanceReplicaBenchmarkContext
         Pattern = LoadPattern(dataRoot, benchmarkCase);
         InputString = LoadHaystack(dataRoot, benchmarkCase);
         InputBytes = Encoding.UTF8.GetBytes(InputString);
-        Utf8Regex = new Utf8Regex(Pattern, benchmarkCase.Options);
+        Utf8Regex = new Utf8Regex(Pattern, options: benchmarkCase.Options);
         Regex = new Regex(Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
         CompiledRegex = new Regex(Pattern, benchmarkCase.Options | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
     }

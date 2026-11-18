@@ -48,8 +48,17 @@ public sealed class Utf8LeadingDigitsBooleanTests
         using var token = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(Pattern, options, Timeout.InfiniteTimeSpan,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var input = buffer.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             var session = Utf8SearchDiagnosticsSession.Start();
             try
@@ -68,7 +77,7 @@ public sealed class Utf8LeadingDigitsBooleanTests
         foreach (var pattern in new[] { Pattern, Alias, @"^[0-9]+(1|$).*$", @"^[0-9]+(\n|$).*$" })
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking, RegexOptions.RightToLeft, RegexOptions.Multiline, RegexOptions.Singleline })
         {
-            var regex = new Utf8Regex(pattern, mode);
+            var regex = new Utf8Regex(pattern, options: mode);
             foreach (var text in texts)
             {
                 var input = Encoding.UTF8.GetBytes(text);
@@ -124,8 +133,17 @@ public sealed class Utf8LeadingDigitsBooleanTests
             var validationSteps = probe.Budget.Steps;
             var entered = false;
             var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
-            var regex = new Utf8Regex(Pattern, RegexOptions.None, timeout,
-                new() { MaxWorkSteps = 10000000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = timeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 10000000,
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             using var currentToken = new CancellationTokenSource();
             var session = Utf8SearchDiagnosticsSession.Start(steps =>
             {
@@ -178,8 +196,17 @@ public sealed class Utf8LeadingDigitsBooleanTests
             if (++reads == cancelAt) token.Cancel();
             return 0;
         });
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromSeconds(1),
-            new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 8 << 20,
+                MaxResultBytes = 1
+            }
+        });
         Assert.True(regex.IsMatch("123-😀é"u8, token.Token));
         Assert.True(reads > 1);
         cancelAt = reads; reads = 0;

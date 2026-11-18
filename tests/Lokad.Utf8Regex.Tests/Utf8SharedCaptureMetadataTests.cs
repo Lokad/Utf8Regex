@@ -42,7 +42,7 @@ public sealed class Utf8SharedCaptureMetadataTests
         // These expressions capture whole scalars, so BCL metadata and returned
         // text overlap the UTF-8 contract, including supplementary literals.
         var oracle = new Regex(pattern, options);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var names = regex.GetGroupNames(); var numbers = regex.GetGroupNumbers();
         Assert.Equal(oracle.GetGroupNames(), names); Assert.Equal(oracle.GetGroupNumbers(), numbers);
         Array.Fill(names, "corrupted"); Array.Fill(numbers, -1);

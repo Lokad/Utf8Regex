@@ -40,8 +40,14 @@ public sealed class Utf8CapturedSimpleBooleanTests
         using var token = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan,
-                Funded with { MaxResultBytes = 1 });
+            var regex = new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxResultBytes = 1
+                }
+            });
             var storage = Encoding.UTF8.GetBytes("pad" + text + "tail");
             var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             var session = Utf8SearchDiagnosticsSession.Start();
@@ -66,7 +72,11 @@ public sealed class Utf8CapturedSimpleBooleanTests
         foreach (var pattern in patterns)
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.IgnoreCase })
         {
-            var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             using var token = new CancellationTokenSource();
             foreach (var text in texts)
             {
@@ -76,7 +86,7 @@ public sealed class Utf8CapturedSimpleBooleanTests
                 Assert.Equal((pattern, mode, text, expected), (pattern, mode, text, regex.IsMatch(input, token.Token)));
             }
         }
-        var linear = new Utf8Regex(Pattern, RegexOptions.NonBacktracking);
+        var linear = new Utf8Regex(Pattern, options: RegexOptions.NonBacktracking);
         Assert.True(linear.IsMatch("1234-5678-1234-456"u8));
         Assert.True(linear.IsMatch(Encoding.UTF8.GetBytes("١٢٣٤-٥٦٧٨-١٢٣٤-٤٥٦")));
     }
@@ -109,8 +119,17 @@ public sealed class Utf8CapturedSimpleBooleanTests
         ulong required = 0;
         for (ulong work = 1; work <= 256; work++)
         {
-            var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Funded with { MaxWorkSteps = work, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkSteps = work,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 1 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             try { Assert.True(regex.IsMatch(input)); required = work; break; }
             catch (Utf8ResourceLimitExceededException error)
             { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
@@ -130,7 +149,11 @@ public sealed class Utf8CapturedSimpleBooleanTests
         Utf8InputAnalyzer.Describe(input, ref validation);
         var entered = false;
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, timeout, Funded);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = Funded
+        });
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
             if (entered || steps <= validation.Budget.Steps) return;
@@ -153,7 +176,11 @@ public sealed class Utf8CapturedSimpleBooleanTests
         var reads = 0; var cancelAt = int.MaxValue;
         using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => { if (++reads == cancelAt) token.Cancel(); return 0; });
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromSeconds(1), Funded);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1),
+            ResourcePolicy = Funded
+        });
         Assert.True(regex.IsMatch("1234-5678-1234-456"u8, token.Token));
         cancelAt = reads; reads = 0;
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch("1234-5678-1234-456"u8, token.Token)).CancellationToken);

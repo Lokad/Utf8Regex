@@ -18,7 +18,7 @@ public sealed class Utf8ParseTreeRetentionTests
     [InlineData("(?i:ab[0-9]{2})", false)] [InlineData("(?i:ab[0-9]{2})", true)]
     public void PublishedRegexDoesNotRetainConstructionTreeObjects(string pattern, bool compiled)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var objects = InspectLibraryGraph(regex);
         Assert.DoesNotContain(objects, static value => value is Utf8OwnedRegexTree or Utf8TreeNode);
         Assert.NotNull(regex.Inspection.PreparedRegex.ScalarProgram);
@@ -69,7 +69,7 @@ public sealed class Utf8ParseTreeRetentionTests
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
-            var regex = new Utf8Regex("(?<n>i.)", RegexOptions.IgnoreCase | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+            var regex = new Utf8Regex("(?<n>i.)", options: RegexOptions.IgnoreCase | (compiled ? RegexOptions.Compiled : RegexOptions.None));
             var catalog = regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog;
             Assert.NotNull(catalog);
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");

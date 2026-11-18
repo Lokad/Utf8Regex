@@ -33,14 +33,16 @@ public sealed class Utf8UnobservedValueCaptureTests
     [InlineData(false)] [InlineData(true)]
     public void ValuesFitSmallWorkingBudgetWhileDetailedAndCursorCapturesKeepAdmission(bool rtl)
     {
-        var regex = new Utf8Regex("abcdef([0-9]+)", rtl ? RegexOptions.RightToLeft : RegexOptions.None,
-            // Mirrored repeats retain their ordinary frames and repeat journal.
-            Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy
+        var regex = new Utf8Regex("abcdef([0-9]+)", options: rtl ? RegexOptions.RightToLeft : RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 // Elided capture storage must not determine the value allowance.
                 MaxWorkingBytes = rtl ? 1280UL : 256UL,
                 MaxWorkSteps = 100000
-            });
+            }
+        });
         var input = "xxabcdef123"u8.ToArray();
         using var token = new CancellationTokenSource();
         Assert.True(regex.IsMatch(input, token.Token));
@@ -65,8 +67,15 @@ public sealed class Utf8UnobservedValueCaptureTests
     public void OriginalConservativeExclusionsRetainTheirCaptureWorkingStorage(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 256, MaxWorkSteps = 100000 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 256,
+                MaxWorkSteps = 100000
+            }
+        });
         Assert.True(new Utf8Regex(pattern).IsMatch(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input)).ResourceKind);
@@ -79,14 +88,28 @@ public sealed class Utf8UnobservedValueCaptureTests
     {
         const string pattern = "abcdef(?<12>[0-9]+)";
         var input = "abcdef123"u8.ToArray();
-        var admitted = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 256, MaxWorkSteps = 100000 });
+        var admitted = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 256,
+                MaxWorkSteps = 100000
+            }
+        });
         Assert.True(admitted.IsMatch(input));
         Assert.Equal(9, (admitted.Match(input).EndOffsetInBytes - admitted.Match(input).StartOffsetInBytes));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(admitted.CreateMatchCursor(input))).ResourceKind);
-        var denied = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 1, MaxWorkSteps = 100000 });
+        var denied = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1,
+                MaxWorkSteps = 100000
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(input)).ResourceKind);
     }
@@ -100,8 +123,15 @@ public sealed class Utf8UnobservedValueCaptureTests
         var admitted = false;
         for (ulong limit = 1; limit <= 256; limit++)
         {
-            var regex = new Utf8Regex("abcdef([0-9]+)", RegexOptions.None, Timeout.InfiniteTimeSpan,
-                new Utf8ResourcePolicy { MaxWorkSteps = limit, MaxWorkingBytes = 256 });
+            var regex = new Utf8Regex("abcdef([0-9]+)", options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = limit,
+                    MaxWorkingBytes = 256
+                }
+            });
             try
             {
                 if (boolean) Assert.True(regex.IsMatch(input));
@@ -122,8 +152,15 @@ public sealed class Utf8UnobservedValueCaptureTests
     [InlineData(true, true)]
     public void OriginalInterruptionAndMalformedTailsRemainAuthoritative(bool boolean, bool expire)
     {
-        var regex = new Utf8Regex("abcdef([0-9]+)", RegexOptions.None, TimeSpan.FromMilliseconds(20),
-            new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxWorkingBytes = 256 });
+        var regex = new Utf8Regex("abcdef([0-9]+)", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxWorkingBytes = 256
+            }
+        });
         var input = Encoding.ASCII.GetBytes(new string('x', 262144) + "abcdef123");
         using var token = new CancellationTokenSource(); long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

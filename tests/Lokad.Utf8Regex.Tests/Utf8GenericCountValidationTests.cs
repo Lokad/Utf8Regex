@@ -6,14 +6,17 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8GenericCountValidationTests
 {
     private static Utf8Regex Create(string pattern, RegexOptions options = RegexOptions.None)
-        => new(pattern, options | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy
+        => new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 1000000,
                 MaxDepth = 128,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
-            });
+            }
+        });
 
     [Theory]
     [InlineData("(?=.)", RegexOptions.None, "aé😀中", 4)]

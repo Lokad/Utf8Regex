@@ -78,7 +78,7 @@ public sealed class Utf8OwnedCharClassTests
         Assert.Equal(new[] { 0, 2, 0, 0, 0x110000 }, Assert.Single(HarvestClasses(tree.Root)).Data);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex("(?s:.)", options);
+            var regex = new Utf8Regex("(?s:.)", options: options);
             foreach (var code in new[] { 0, 10, 0xffff, 0x10400, 0x1f600, 0x10ffff })
             {
                 var input = Encoding.UTF8.GetBytes(new Rune(code).ToString());
@@ -115,7 +115,7 @@ public sealed class Utf8OwnedCharClassTests
         var parsed = Utf8OwnedTreeParser.TryParse(pattern, options);
         if (parsed is null)
         {
-            var failure = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options));
+            var failure = Assert.Throws<ArgumentException>(() => new Utf8Regex(pattern, options: options));
             Assert.Equal("pattern", failure.ParamName);
             return;
         }
@@ -125,7 +125,7 @@ public sealed class Utf8OwnedCharClassTests
         // The interpreted comparator avoids compiled U+FFFF class-loop bugs.
         // Neither comparator behavior nor surrogate halves define scalar matching.
         var oracle = new Regex(@"\A(?:" + pattern + @")\z", options & ~RegexOptions.Compiled);
-        var regexes = new[] { new Utf8Regex(pattern, options), new Utf8Regex(pattern, options | RegexOptions.Compiled) };
+        var regexes = new[] { new Utf8Regex(pattern, options: options), new Utf8Regex(pattern, options: options | RegexOptions.Compiled)};
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         foreach (var code in corpus)
@@ -363,7 +363,7 @@ public sealed class Utf8OwnedCharClassTests
         {
             var sandwich = "a" + joiner + "b";
             Assert.Equal(new[] { 0, 3 }, boundaryOracle.Matches(sandwich).Select(static match => match.Index));
-            var regex = new Utf8Regex(@"\b", RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(@"\b", options: RegexOptions.CultureInvariant);
             var positions = new List<int>();
             foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(sandwich))) positions.Add(match.StartOffsetInBytes);
             Assert.Equal(new[] { 0, 5 }, positions);

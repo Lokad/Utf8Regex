@@ -21,7 +21,7 @@ public sealed class DotNetPerformanceReplicaRuntimeTests
         var inputBytes = Encoding.UTF8.GetBytes(input);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
 
             int selectedCount;
             if (regex._packedNibbleLiteralFamilyCountStrategy is { } packed)
@@ -51,7 +51,7 @@ Invalid samples include ops.dispatch@northwind-control and just-a-symbol@.
 Escalate to audit.queue@delta-hub.example when the incident repeats.
 """;
 
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
@@ -63,7 +63,7 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
         const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
         const string input = "alpha@example.com,beta@example.net;gamma@example without-tail";
 
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
@@ -75,7 +75,7 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
         const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
         const string input = "Reach équipe@exemple.fr and δοκιμή@παράδειγμα.gr.";
 
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
@@ -91,7 +91,7 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
         const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(input)));
             Utf8AsciiScalarOperationAssertions.Operations(pattern, options, input);
         }
@@ -108,7 +108,7 @@ Escalate to audit.queue@delta-hub.example when the incident repeats.
     public void EmailIsMatchMatchesDotNetOnRepresentativeInput(string input)
     {
         const string pattern = @"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,12}|[0-9]{1,3})(\]?)$";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -124,7 +124,7 @@ Skip malformed values like http://x and proto:// only-blank.
 Keep mailto://ops?bad and ssh://edge-node/control?mode=full#tail in scope.
 """;
 
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
@@ -136,7 +136,7 @@ Keep mailto://ops?bad and ssh://edge-node/control?mode=full#tail in scope.
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
         const string input = "Open δοκιμή://παράδειγμα.gr/διαδρομή and https://example.net/café.";
 
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
@@ -152,7 +152,7 @@ Reject 300.001.002.003 and 1.2.3.4 because the source regex does not accept one-
 Keep 019.120.111.042 and 204.020.199.088 in the final count.
 """;
 
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
@@ -163,7 +163,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     {
         const string pattern = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";
         const string input = "Today is 11/18/2019 and tomorrow is 11/19/2019.";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -181,7 +181,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     {
         const string pattern = @"^[-+]?\d*\.?\d*$";
         const string input = "-3.14159";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -192,7 +192,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     {
         const string pattern = @"^[-+]?\d*\.?\d*$";
         const string input = "٣.١٤";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -203,8 +203,8 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     {
         const string pattern = @"^[-+]?\d*\.?\d*$";
         const string alphabet = "09.+-x\n";
-        var ordinary = new Utf8Regex(pattern, RegexOptions.None);
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var ordinary = new Utf8Regex(pattern, options: RegexOptions.None);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var oracle = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         for (var length = 0; length <= 5; length++)
@@ -241,7 +241,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     public void FtpLineIsMatchMatchesDotNetOnRepresentativeInputs(string input)
     {
         const string pattern = @"^([0-9]+)(\-| |$)(.*)$";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -260,7 +260,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     public void OneNodeBacktrackingIsMatchMatchesDotNetOnRepresentativeInput(string input)
     {
         const string pattern = @"[^a]+\.[^z]+";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -273,7 +273,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     public void BacktrackingIsMatchMatchesDotNetOnRepresentativeInput(string input)
     {
         const string pattern = @".*(ss)";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -284,7 +284,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     {
         const string pattern = @".*(ss)";
         const string input = "Essential services are provided by regular exprs.";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         var utf8Match = utf8.Match(Encoding.UTF8.GetBytes(input));
@@ -300,7 +300,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     {
         const string pattern = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";
         const string input = "Today is 11/18/201A and tomorrow is 11/19/201A.";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -311,7 +311,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     {
         const string pattern = @"\b\d{1,2}\-\d{1,2}\-\d{2,4}\b";
         const string input = "Today is 11-18-2019 and tomorrow is 11-19-2019.";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -322,7 +322,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     {
         const string pattern = @"\b\d{4}\-\d{1,2}\-\d{1,2}\b";
         const string input = "Release dates include 2024-11-18 and 2025-01-09 in the ledger.";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -333,7 +333,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     {
         const string pattern = @"\b\d{1,2}\.\d{1,2}\.\d{2,4}\b";
         const string input = "Today is 11.18.2019 and tomorrow is 11.19.2019.";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -344,7 +344,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
     {
         const string pattern = @"\b\d{4}\.\d{1,2}\.\d{1,2}\b";
         const string input = "Release dates include 2024.11.18 and 2025.01.09 in the ledger.";
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.IsMatch(input), utf8.IsMatch(Encoding.UTF8.GetBytes(input)));
@@ -356,7 +356,7 @@ Keep 019.120.111.042 and 204.020.199.088 in the final count.
         const string pattern = @"\p{Sm}";
         const string input = "Rivers ∑ flow + merge ≠ divide; prices < costs but √growth > 0.";
 
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(dotnet.Count(input), utf8.Count(Encoding.UTF8.GetBytes(input)));
@@ -375,8 +375,8 @@ Holmes
 Watson should not count across a newline.
 """;
 
-        var utf8 = new Utf8Regex(pattern, RegexOptions.None);
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.None);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
         var bytes = Encoding.UTF8.GetBytes(input);
 
@@ -390,7 +390,7 @@ Watson should not count across a newline.
         const string pattern = @"Holmes.{0,25}Watson|Watson.{0,25}Holmes";
         const string input = "Holmes x Watson y Watson";
 
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
         var match = compiled.Match(bytes);
         var dotnetMatch = Regex.Match(input, pattern);
@@ -413,8 +413,8 @@ Watson should not count across a newline.
     [InlineData(@"Tom.{10,25}river|river.{10,25}Tom", "Tom\n1234567890 river should not count.")]
     public void CompiledPairedOrderedWindowCountMatchesDotNetAcrossOracleCases(string pattern, string input)
     {
-        var baseline = new Utf8Regex(pattern, RegexOptions.None);
-        var compiled = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var baseline = new Utf8Regex(pattern, options: RegexOptions.None);
+        var compiled = new Utf8Regex(pattern, options: RegexOptions.Compiled);
         var bytes = Encoding.UTF8.GetBytes(input);
         var dotnet = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
 

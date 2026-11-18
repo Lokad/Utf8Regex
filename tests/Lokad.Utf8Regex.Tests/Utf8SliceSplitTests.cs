@@ -33,7 +33,7 @@ public sealed class Utf8SliceSplitTests
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
         }
     }
@@ -87,7 +87,7 @@ public sealed class Utf8SliceSplitTests
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var actual = new List<(string Value, int Index, int Length)>();
             foreach (var split in regex.EnumerateSplits(input, count))
             {
@@ -123,7 +123,7 @@ public sealed class Utf8SliceSplitTests
             expected.Add((value, global::System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), global::System.Text.Encoding.UTF8.GetByteCount(value)));
         }
 
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var actual = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, count))
         {
@@ -147,7 +147,7 @@ public sealed class Utf8SliceSplitTests
     public void CountOneReturnsWholeInput(string pattern, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var segments = new List<(string Value, int Index, int Length)>();
         foreach (var split in regex.EnumerateSplits(input, 1))
         {
@@ -179,7 +179,7 @@ public sealed class Utf8SliceSplitTests
             oracleError = ex;
         }
 
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         if (oracleError is not null)
         {
             var actualError = Assert.Throws(oracleError.GetType(), () =>

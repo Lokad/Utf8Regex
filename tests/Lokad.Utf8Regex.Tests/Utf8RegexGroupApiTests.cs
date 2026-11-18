@@ -8,7 +8,7 @@ public sealed class Utf8RegexGroupApiTests
     public void GroupNameAndNumberApisMirrorRegexMetadata()
     {
         const string pattern = "(?<word>ab)(cd)";
-        var utf8Regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8Regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var regex = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
 
         var groupNumber = regex.GroupNumberFromName("word");

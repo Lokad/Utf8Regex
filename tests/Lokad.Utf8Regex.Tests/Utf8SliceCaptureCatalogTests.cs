@@ -24,7 +24,7 @@ public sealed class Utf8SliceCaptureCatalogTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             foreach (var name in new[] { "", "0", "00", "1", "01", "2", "12", "012", "x", "é", "missing", "-1", " 1", "2147483648" })
                 Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
             foreach (var number in new[] { -1, 0, 1, 2, 3, 12, int.MaxValue })
@@ -59,7 +59,7 @@ public sealed class Utf8SliceCaptureCatalogTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options));
             Assert.Equal("pattern", actual.ParamName);
         }
     }
@@ -78,7 +78,7 @@ public sealed class Utf8SliceCaptureCatalogTests
         var literal = new string('a', 1024);
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var reference = bare ? "\\" + name : @"\k<" + name + ">";
-        var regex = new Utf8Regex("(?<" + name + ">" + literal + ")(?i:" + reference + ")", options);
+        var regex = new Utf8Regex("(?<" + name + ">" + literal + ")(?i:" + reference + ")", options: options);
         var program = regex.Inspection.OwnedSliceProgram;
         Assert.NotNull(program);
         Assert.Contains(program.Instructions, instruction => instruction.Kind == Utf8SliceInstructionKind.Backref);

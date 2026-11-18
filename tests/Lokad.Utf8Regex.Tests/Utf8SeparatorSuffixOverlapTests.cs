@@ -41,7 +41,11 @@ public sealed class Utf8SeparatorSuffixOverlapTests
             var policy = finite
                 ? new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 }
                 : default;
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, policy);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
             Assert.Equal(expected.Count, regex.Count(input));
             Assert.Equal(expected.Count, regex.Count(input, cancellation.Token));
             Assert.Equal(expected.Count != 0, regex.IsMatch(input));

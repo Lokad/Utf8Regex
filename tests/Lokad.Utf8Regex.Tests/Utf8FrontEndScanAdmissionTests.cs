@@ -295,7 +295,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
         Assert.NotNull(negative.SemanticRegex.RuntimeTree);
         object?[] declined = [negative.SemanticRegex.RuntimeTree.Root, null, 0];
         Assert.False(Assert.IsType<bool>(Call(typeof(Utf8FrontEndSearchAnalyzer), "TryFindQuotedAsciiRun", declined)));
-        var regex = new Utf8Regex("'[^a]{2}'", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("'[^a]{2}'", options: RegexOptions.CultureInvariant);
         var match = regex.Match("'😀b'"u8);
         Assert.True(match.Success);
         Assert.Equal(0, match.StartOffsetInBytes);

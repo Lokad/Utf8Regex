@@ -17,8 +17,16 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         using var token = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(Pattern, mode | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
-                Policy with { MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: mode | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy with
+                {
+                    MaxDepth = 1,
+                    MaxWorkingBytes = 1,
+                    MaxResultBytes = 1
+                }
+            });
             foreach (var text in new[] { "", "word+=", " +", "+", "==!=rest", "+-^*/.<>~!&|?=tail", "=\0tail", "=\r\n+", "\n++" })
             {
                 var expected = new Regex(Pattern, mode | RegexOptions.CultureInvariant).Match(text);
@@ -43,8 +51,15 @@ public sealed class Utf8OperatorPrefixValueMatchTests
     {
         var input = Encoding.ASCII.GetBytes(new string('+', length));
         Assert.Equal(length, (new Utf8Regex(Pattern).Match(input).EndOffsetInBytes - new Utf8Regex(Pattern).Match(input).StartOffsetInBytes));
-        var tight = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            Policy with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var tight = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy with
+            {
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(length, (tight.Match(input).EndOffsetInBytes - tight.Match(input).StartOffsetInBytes));
     }
 
@@ -56,7 +71,11 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         foreach (var text in new[] { "+=rest", "+=😀", "😀+=", "a+=", "==\n+" })
         {
             var expected = new Regex(Pattern, mode | RegexOptions.CultureInvariant).Match(text);
-            var regex = new Utf8Regex(Pattern, mode | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, Policy);
+            var regex = new Utf8Regex(Pattern, options: mode | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy
+            });
             var input = Encoding.UTF8.GetBytes(text); var actual = regex.Match(input, cancellationToken: token.Token);
             Assert.Equal(expected.Success, actual.Success);
             if (actual.Success)
@@ -76,15 +95,25 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         _ = captured.Match("++"u8);
         Assert.Equal("+=-", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(captured.GroupNumberFromName("op")).Span));
         Assert.Equal(1, captured.Count(bytes));
-        var nonBacktracking = new Utf8Regex(Pattern.Replace(@"\G", @"\A"), RegexOptions.NonBacktracking, Timeout.InfiniteTimeSpan, Policy);
+        var nonBacktracking = new Utf8Regex(Pattern.Replace(@"\G", @"\A"), options: RegexOptions.NonBacktracking, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy
+        });
         Assert.Equal(3, (nonBacktracking.Match(bytes, cancellationToken: token.Token).EndOffsetInBytes - nonBacktracking.Match(bytes, cancellationToken: token.Token).StartOffsetInBytes));
     }
 
     [Fact]
     public void LargeReverseFallbackStillEnforcesItsWorkLimit()
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.RightToLeft, Timeout.InfiniteTimeSpan,
-            Policy with { MaxWorkSteps = 1000 });
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.RightToLeft, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy with
+            {
+                MaxWorkSteps = 1000
+            }
+        });
         var input = Encoding.ASCII.GetBytes(new string('+', 2049));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input)).ResourceKind);
@@ -110,8 +139,16 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         var input = Encoding.ASCII.GetBytes(text); var admitted = false; var denied = false;
         for (ulong work = 1; work < 100; work++)
         {
-            var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Policy with { MaxWorkSteps = work, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy with
+                {
+                    MaxWorkSteps = work,
+                    MaxWorkingBytes = 1,
+                    MaxResultBytes = 1
+                }
+            });
             try { Assert.Equal(success, regex.Match(input).Success); admitted = true; break; }
             catch (Utf8ResourceLimitExceededException error) { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); denied = true; }
         }
@@ -126,7 +163,11 @@ public sealed class Utf8OperatorPrefixValueMatchTests
         using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == trigger) { if (expire) ticks = 100; else token.Cancel(); } return ticks; });
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50), Policy);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Policy
+        });
         Assert.True(regex.Match("+=!rest"u8, cancellationToken: token.Token).Success);
         trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("+=!rest"u8, cancellationToken: token.Token)).MatchTimeout);

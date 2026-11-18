@@ -22,14 +22,17 @@ public class Utf8RequiredLiteralBenchmarks
     {
         _text = new string('a', 512) + (Hit ? "@example.com" : string.Empty);
         _input = Encoding.UTF8.GetBytes(_text);
-        _finite = new Utf8Regex(Pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy
+        _finite = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 50000000,
                 MaxDepth = 8192,
                 MaxWorkingBytes = 64UL << 20,
                 MaxResultBytes = 128UL << 20
-            });
+            }
+        });
         _baseline = new Regex(Pattern, RegexOptions.CultureInvariant);
         _cancellation = new CancellationTokenSource();
         if (FiniteIsMatch() != Hit || LiveTokenIsMatch() != Hit ||

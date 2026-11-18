@@ -16,7 +16,7 @@ public sealed class Utf8LoweringDepthTests
     public void DeepNestingKeepsOwnedExecutionAndCorrectResults(int depth)
     {
         var pattern = new string('(', depth) + "abc" + new string(')', depth);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("xxabcxx")));
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("xxabxx")));
@@ -41,7 +41,7 @@ public sealed class Utf8LoweringDepthTests
         }
 
         builder.Append(')');
-        var regex = new Utf8Regex(builder.ToString(), RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(builder.ToString(), options: RegexOptions.CultureInvariant);
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("xxalt123xx")));
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("xxzzzqqxx")));
     }
@@ -50,7 +50,7 @@ public sealed class Utf8LoweringDepthTests
     public void DeepNestingKeepsGroupMetadataCorrect()
     {
         var pattern = new string('(', 500) + "(?<word>abc)" + new string(')', 500);
-        var utf8 = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var runtime = new Regex(pattern, RegexOptions.CultureInvariant);
         Assert.Equal(runtime.GetGroupNames(), utf8.GetGroupNames());
         Assert.Equal(runtime.GetGroupNumbers(), utf8.GetGroupNumbers());

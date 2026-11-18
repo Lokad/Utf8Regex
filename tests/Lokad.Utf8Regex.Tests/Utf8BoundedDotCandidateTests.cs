@@ -23,8 +23,16 @@ public sealed class Utf8BoundedDotCandidateTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.Singleline })
         {
             var referencePattern = pattern.Replace(".", @"(?:(?=[\s\S]).)");
-            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, Funded);
-            var reference = new Utf8Regex(referencePattern, options, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
+            var reference = new Utf8Regex(referencePattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             foreach (var text in new[] { "Aé😀" + tail + "中" + tail, "A\n" + tail,
                 "A" + new string('x', 25) + tail, "A" + new string('x', 26) + tail,
                 "AéW-not-a-tail Z", "Aé" + tail[..^1], "Aé" + tail + "\n" + tail })
@@ -47,7 +55,11 @@ public sealed class Utf8BoundedDotCandidateTests
         var tail = "W" + new string('z', length - 1);
         var pattern = @"\AA(?<gap>.{0,25})" + tail;
         var input = Encoding.UTF8.GetBytes("Aé😀" + tail);
-        var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded
+        });
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(match.TryGetGroup("gap", out _));
         Assert.Equal("é😀", Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromName("gap")).Span));
@@ -61,8 +73,16 @@ public sealed class Utf8BoundedDotCandidateTests
         {
             var referencePattern = pattern.Replace(".", @"(?:(?=[\s\S]).)");
             var input = "AéWatsonX中Watson"u8.ToArray();
-            var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded);
-            var reference = new Utf8Regex(referencePattern, RegexOptions.None, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
+            var reference = new Utf8Regex(referencePattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             Utf8MatchSequence.EqualCaptures(Utf8MatchSequence.First(reference.CreateMatchCursor(input)),
                 Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
         }
@@ -147,7 +167,11 @@ public sealed class Utf8BoundedDotCandidateTests
             RegexOptions.IgnoreCase, RegexOptions.RightToLeft })
         {
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             foreach (var text in new[] { "", "AxZ", "AxxxxxxxxZxxZ", "AxxxxxxxxY AxxxxxxxxZ", "Axxxxxxxxz",
                 "Axxxxxxxx\nZ", "HolmesWatson", "Holmes" + new string('x', 25) + "Watson",
                 "Holmes" + new string('x', 26) + "Watson", "HolmesxxxxW-not-a-tail", "Watson\nHolmes" })
@@ -172,8 +196,16 @@ public sealed class Utf8BoundedDotCandidateTests
         var referencePattern = pattern.Replace(".", @"(?:(?=[\s\S]).)");
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.Singleline })
         {
-            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, Funded);
-            var reference = new Utf8Regex(referencePattern, options, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
+            var reference = new Utf8Regex(referencePattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             Assert.Contains(reference.Inspection.AvailableOwnedSliceProgram.Instructions,
                 instruction => instruction.Kind == Utf8SliceInstructionKind.Fork && instruction.B == 1);
             foreach (var scalar in new[] { "x", "é", "中", "😀" })
@@ -199,8 +231,16 @@ public sealed class Utf8BoundedDotCandidateTests
         {
             var pattern = @"\AA(?<gap>.{0," + maximum + "})" + tail;
             var referencePattern = pattern.Replace(".", @"(?:(?=[\s\S]).)");
-            var regex = new Utf8Regex(pattern, RegexOptions.Compiled, Timeout.InfiniteTimeSpan, Funded);
-            var reference = new Utf8Regex(referencePattern, RegexOptions.Compiled, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
+            var reference = new Utf8Regex(referencePattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             foreach (var scalar in new[] { "x", "é", "中", "😀" })
             foreach (var length in new[] { maximum - 1, maximum, maximum + 1 })
             foreach (var suffix in new[] { tail == "Watson123456789" ? tail : "Watson", "Wats", "Wxxxxx" })
@@ -227,7 +267,11 @@ public sealed class Utf8BoundedDotCandidateTests
         var input = "😀xA😀😀Z xx AxxxxZ"u8.ToArray();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex("A.{0,25}Z", options, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex("A.{0,25}Z", options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             Assert.Equal(1, regex.Count(input)); // Greedy selection reaches the final Z.
             Assert.Equal(5, regex.Match(input).StartOffsetInBytes);
             Assert.Equal(5, regex.Match(input, 5, []).StartOffsetInBytes);
@@ -265,7 +309,11 @@ public sealed class Utf8BoundedDotCandidateTests
         Utf8InputAnalyzer.Describe(input, ref validation);
         long ticks = 0; using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex("A.{8,25}Z", RegexOptions.None, TimeSpan.FromMilliseconds(20), Funded);
+        var regex = new Utf8Regex("A.{8,25}Z", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Funded
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -295,7 +343,11 @@ public sealed class Utf8BoundedDotCandidateTests
         Assert.Equal("xxxxxxxx", Encoding.UTF8.GetString(group.Span));
         foreach (var policy in new[] { Funded with { MaxWorkingBytes = 1 }, Funded with { MaxResultBytes = 1 } })
             Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(
-                new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, policy).CreateMatchCursor(input)));
+                new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy
+                }).CreateMatchCursor(input)));
         byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, token.Token)).CancellationToken);

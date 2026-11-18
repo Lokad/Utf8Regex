@@ -46,8 +46,16 @@ public sealed class Utf8EmailBooleanTests
         using var token = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(Pattern, mode, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var storage = Encoding.UTF8.GetBytes("pad" + text + "tail");
             var input = storage.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             var session = Utf8SearchDiagnosticsSession.Start();
@@ -67,7 +75,11 @@ public sealed class Utf8EmailBooleanTests
         foreach (var pattern in new[] { Pattern, alias, Pattern.Replace("$", @"\z"), Pattern.Replace("^", "(?m:^)") })
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking, RegexOptions.RightToLeft, RegexOptions.IgnoreCase })
         {
-            var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             using var token = new CancellationTokenSource();
             foreach (var text in new[] { "", "missing at sign", "a@a.ab", "a@a.ab\n", "a@a.ab\n\n",
                 "é@a.ab", "a@[١.٢.٣.٤]", "a@[𝟙.𝟚.𝟛.𝟜]", "x\na@a.ab", new string('a', 2044) + "@x.ab" })
@@ -105,8 +117,16 @@ public sealed class Utf8EmailBooleanTests
         var succeeded = false;
         for (ulong work = 1; work < 100; work++)
         {
-            var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Funded with { MaxWorkSteps = work, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkSteps = work,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             try { Assert.Equal(expected, regex.IsMatch(input)); succeeded = true; break; }
             catch (Utf8ResourceLimitExceededException error) { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
         }
@@ -125,7 +145,11 @@ public sealed class Utf8EmailBooleanTests
                 if (++reads == trigger) { if (expire) ticks += 100; else token.Cancel(); }
                 return ticks;
             });
-            var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50), Funded);
+            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(50),
+                ResourcePolicy = Funded
+            });
             Assert.True(regex.IsMatch("a@a.ab"u8, token.Token));
             trigger = reads; reads = 0;
             if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch("a@a.ab"u8, token.Token)).MatchTimeout);

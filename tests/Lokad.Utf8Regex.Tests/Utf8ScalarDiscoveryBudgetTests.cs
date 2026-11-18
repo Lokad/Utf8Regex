@@ -10,8 +10,7 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void FailedCapturedCandidatesResetTrailsRepeatsAndHeads(bool reverse, bool histories)
     {
-        var regex = new Utf8Regex(reverse ? "(?<y>b)(?<x>a+)" : "(?<x>a+)(?<y>b)",
-            RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var regex = new Utf8Regex(reverse ? "(?<y>b)(?<x>a+)" : "(?<x>a+)(?<y>b)", options:             RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
         AssertCutoffs(program, reverse ? "baa😀aa"u8.ToArray() : "aa😀aab"u8.ToArray(), histories,
             reverse ? 0 : 6, reverse ? 3 : 9, reverse ? [0] : [6], reverse ? [1] : [2]);
@@ -22,7 +21,7 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void CapturedCandidateCancellationReleasesReusedStorage(bool reverse, bool count)
     {
-        var regex = new Utf8Regex("(a(.)c)", RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var regex = new Utf8Regex("(a(.)c)", options: RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
         // Exercise failed captured attempts in either direction. A subject
         // with no starting literal may finish in the prefix search alone.
@@ -57,7 +56,7 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void EveryWorkAndScratchCutoffPreservesBorrowedStorage(bool reverse, bool histories)
     {
-        var regex = new Utf8Regex("(.)b", RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var regex = new Utf8Regex("(.)b", options: RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
         var input = "é😀b"u8.ToArray();
         AssertCutoffs(program, input, histories, 2, 7, [2], [4]);
@@ -67,8 +66,7 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
     [InlineData(false)] [InlineData(true)]
     public void BalancedHistoriesAdmitArrayReplacementBeforeShrinking(bool reverse)
     {
-        var regex = new Utf8Regex(reverse ? "(?<-x>.)(?<x>.)+" : "(?<x>.)+(?<-x>.)",
-            RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var regex = new Utf8Regex(reverse ? "(?<-x>.)(?<x>.)+" : "(?<x>.)+(?<-x>.)", options:             RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
         AssertCutoffs(program, "é😀ab"u8.ToArray(), true, 0, 8, reverse ? [7, 6] : [0, 2], reverse ? [1, 1] : [2, 4]);
     }
@@ -132,7 +130,7 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
     [Fact]
     public void HistoryCancellationReleasesMaterializationAndPreservesItsToken()
     {
-        var regex = new Utf8Regex("(?<x>.)+", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?<x>.)+", options: RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Scalar program missing.");
         var input = System.Text.Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", 4096)));
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);

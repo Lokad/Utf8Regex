@@ -39,8 +39,16 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(Pattern, mode, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var input = Encoding.ASCII.GetBytes(text);
             byte[] storage = [0xff, .. input, 0xff];
             var expected = Scalar(regex, input);
@@ -62,7 +70,11 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
             Pattern.Replace("$", @"\z"), Pattern.Replace("^", "(?m:^)") })
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.IgnoreCase, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             using var token = new CancellationTokenSource();
             foreach (var text in new[] { "/// text", "///\n", "/// text\n", "///\r\n", "///\n\n",
                 "\u2003[|\u00a0/// 😀", "/// é😀", "///\n😀", "x\n/// text", "[|///" + new string('x', 2049) })
@@ -101,8 +113,16 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
         var succeeded = false;
         for (ulong work = 1; work < 100; work++)
         {
-            var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Funded with { MaxWorkSteps = work, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkSteps = work,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             try { Assert.Equal(success, regex.Match(input).Success); succeeded = true; break; }
             catch (Utf8ResourceLimitExceededException error) { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
         }
@@ -120,7 +140,11 @@ public sealed class Utf8TrimmedPrefixValueMatchTests
             if (++reads == trigger) { if (expire) ticks = 100; else token.Cancel(); }
             return ticks;
         });
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50), Funded);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Funded
+        });
         Assert.True(regex.Match("/// text"u8, cancellationToken: token.Token).Success);
         trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("/// text"u8, cancellationToken: token.Token)).MatchTimeout);

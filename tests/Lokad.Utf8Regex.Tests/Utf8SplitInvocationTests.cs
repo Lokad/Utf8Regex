@@ -27,7 +27,7 @@ public sealed class Utf8SplitInvocationTests
     [InlineData(2)]
     public void PreparationWorkCutoffsPreserveBorrowedCapacityWithoutCoordinateStorage(int count)
     {
-        var regex = new Utf8Regex("(ab)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(ab)", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("é😀 abab ab");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(7));
@@ -76,7 +76,10 @@ public sealed class Utf8SplitInvocationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes("é😀 abab ab");
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(30));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(30)
+        });
         var cursor = regex.EnumerateSplits(input, count);
         if (count == 2) Assert.True(cursor.MoveNext());
         if (count == 0) while (cursor.MoveNext()) { }
@@ -98,7 +101,7 @@ public sealed class Utf8SplitInvocationTests
         Assert.True(expired);
         Assert.Equal(prior, (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
         using var source = new CancellationTokenSource();
-        var token = new Utf8Regex(pattern, options).EnumerateSplits(input, count, source.Token);
+        var token = new Utf8Regex(pattern, options: options).EnumerateSplits(input, count, source.Token);
         if (count == 2) Assert.True(token.MoveNext());
         if (count == 0) while (token.MoveNext()) { }
         prior = (token.Current.IndexInBytes, token.Current.LengthInBytes);
@@ -120,7 +123,7 @@ public sealed class Utf8SplitInvocationTests
     public void EofAndInterruptedMovesKeepByteViewsWithoutCoordinateStorage(bool rtl, int count)
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
-        var regex = new Utf8Regex("(ab)", options);
+        var regex = new Utf8Regex("(ab)", options: options);
         var input = Encoding.UTF8.GetBytes("é😀 abab ab");
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);

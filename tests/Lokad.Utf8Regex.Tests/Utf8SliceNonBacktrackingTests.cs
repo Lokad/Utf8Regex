@@ -36,7 +36,7 @@ public sealed class Utf8SliceNonBacktrackingTests
             RegexOptions.NonBacktracking | RegexOptions.Compiled | RegexOptions.CultureInvariant,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
             if (pattern is "abc" or "a|ab" or "\\bword\\b")
             {
@@ -77,7 +77,7 @@ public sealed class Utf8SliceNonBacktrackingTests
     {
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant;
         Assert.Throws<NotSupportedException>(() => new Regex(pattern, options));
-        Assert.Throws<NotSupportedException>(() => new Utf8Regex(pattern, options));
+        Assert.Throws<NotSupportedException>(() => new Utf8Regex(pattern, options: options));
     }
 
     [Theory]
@@ -88,7 +88,7 @@ public sealed class Utf8SliceNonBacktrackingTests
     {
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant;
         Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+        Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options));
     }
 
     public static IEnumerable<object?[]> ParityCases()
@@ -123,7 +123,7 @@ public sealed class Utf8SliceNonBacktrackingTests
         Assert.Equal(expected, oracle.IsMatch(inputText));
         var backtracking = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, backtracking.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.Equal(expected, regex.IsMatch(input));
         using var source = new CancellationTokenSource();
@@ -144,7 +144,7 @@ public sealed class Utf8SliceNonBacktrackingTests
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant | extra;
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
@@ -172,7 +172,10 @@ public sealed class Utf8SliceNonBacktrackingTests
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant;
         var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(5));
         Assert.False(oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(5));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(5)
+        });
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.False(regex.IsMatch(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -188,7 +191,10 @@ public sealed class Utf8SliceNonBacktrackingTests
         var budget = TimeSpan.FromTicks(1);
         var oracle = new Regex(pattern, options, budget);
         Assert.Throws<RegexMatchTimeoutException>(() => oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, options, budget);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = budget
+        });
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var failure = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
         Assert.Equal(pattern, failure.Pattern);
@@ -203,7 +209,7 @@ public sealed class Utf8SliceNonBacktrackingTests
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant;
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var wanted = oracle.Match(inputText, 1);
         var found = regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, 1)), []);
@@ -217,7 +223,7 @@ public sealed class Utf8SliceNonBacktrackingTests
             expectedSplits.Add(split);
         }
 
-        var splitRegex = new Utf8Regex("a+", options);
+        var splitRegex = new Utf8Regex("a+", options: options);
         var actualSplits = new List<string>();
         foreach (var split in splitRegex.EnumerateSplits(Encoding.UTF8.GetBytes("baab"), 0))
         {
@@ -258,13 +264,13 @@ public sealed class Utf8SliceNonBacktrackingTests
         foreach (var options in new[] { RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, RegexOptions.NonBacktracking | RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-            var isMatchRegex = new Utf8Regex(pattern, options);
+            var isMatchRegex = new Utf8Regex(pattern, options: options);
             Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
             Assert.True(isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-            var countRegex = new Utf8Regex(pattern, options);
+            var countRegex = new Utf8Regex(pattern, options: options);
             Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
             Assert.True(countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-            var matchRegex = new Utf8Regex(pattern, options);
+            var matchRegex = new Utf8Regex(pattern, options: options);
             var expectedMatch = oracle.Match(text);
             var actualMatch = matchRegex.Match(input);
             Assert.Equal(expectedMatch.Success, actualMatch.Success);
@@ -274,7 +280,7 @@ public sealed class Utf8SliceNonBacktrackingTests
                 Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
             }
             Assert.True(matchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-            var detailedRegex = new Utf8Regex(pattern, options);
+            var detailedRegex = new Utf8Regex(pattern, options: options);
             var expectedDetailed = oracle.Match(text);
             var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
             Assert.Equal(expectedDetailed.Success, actualDetailed.Success);
@@ -283,7 +289,7 @@ public sealed class Utf8SliceNonBacktrackingTests
                 Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
             }
             Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-            var enumerateRegex = new Utf8Regex(pattern, options);
+            var enumerateRegex = new Utf8Regex(pattern, options: options);
             var expectedPositions = new System.Collections.Generic.List<string>();
             foreach (Match m in oracle.Matches(text))
             {
@@ -296,7 +302,7 @@ public sealed class Utf8SliceNonBacktrackingTests
             }
             Assert.Equal(expectedPositions, actualPositions);
             Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-            var splitRegex = new Utf8Regex(pattern, options);
+            var splitRegex = new Utf8Regex(pattern, options: options);
             var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
             foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
             {
@@ -313,15 +319,15 @@ public sealed class Utf8SliceNonBacktrackingTests
             Assert.True(splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);
             var expected = oracle.Replace(text, template);
             var expectedBytes = Encoding.UTF8.GetBytes(expected);
-            var bytesRegex = new Utf8Regex(pattern, options);
+            var bytesRegex = new Utf8Regex(pattern, options: options);
             var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
             Assert.Equal(expectedBytes, bytesActual);
             Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-            var stringRegex = new Utf8Regex(pattern, options);
+            var stringRegex = new Utf8Regex(pattern, options: options);
             var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, template));
             Assert.Equal(expected, stringActual);
             Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-            var destinationRegex = new Utf8Regex(pattern, options);
+            var destinationRegex = new Utf8Regex(pattern, options: options);
             var status = destinationRegex.TryReplace(input, template, destination, out var bytesWritten);
             Assert.Equal(System.Buffers.OperationStatus.Done, status);
             Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());

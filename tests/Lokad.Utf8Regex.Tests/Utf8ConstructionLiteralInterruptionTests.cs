@@ -85,9 +85,13 @@ public sealed class Utf8ConstructionLiteralInterruptionTests
     public void PublicConstructionKeepsTheCompleteLiteral()
     {
         var pattern = new string('a', 2047) + "😀" + new string('é', 3000);
-        var regex = Utf8Regex.Compile(pattern, RegexOptions.CultureInvariant,
-            Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-            Timeout.InfiniteTimeSpan, CancellationToken.None);
+        var regex = Utf8Regex.Compile(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None);
         var bytes = Encoding.UTF8.GetBytes(pattern);
         Assert.Equal(1, regex.Count(bytes));
         Assert.Equal(2, regex.Count(Encoding.UTF8.GetBytes(pattern + "!" + pattern)));

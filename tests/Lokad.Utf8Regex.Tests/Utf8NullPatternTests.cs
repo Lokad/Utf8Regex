@@ -6,7 +6,13 @@ public sealed class Utf8NullPatternTests
         Utf8ConstructionPolicy construction = default, TimeSpan? constructionTimeout = null, CancellationToken token = default)
     {
         var timeout = constructionTimeout ?? Timeout.InfiniteTimeSpan;
-        return Utf8Regex.Compile((string)null!, default, Timeout.InfiniteTimeSpan, policy, construction, timeout, token);
+        return Utf8Regex.Compile((string)null!, options: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy,
+            ConstructionPolicy = construction,
+            ConstructionTimeout = timeout
+        }, cancellationToken: token);
     }
 
     [Fact]
@@ -24,9 +30,19 @@ public sealed class Utf8NullPatternTests
     [Fact]
     public void ExistingArgumentAndPreCancellationPrecedenceIsPreserved()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex(null!, default, TimeSpan.Zero));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex(null!, (System.Text.RegularExpressions.RegexOptions)(1 << 30)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex((string)null!, default, Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy { MaxWorkSteps = 0 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex((string)null!, options: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.Zero
+        }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex((string)null!, options: (System.Text.RegularExpressions.RegexOptions)(1 << 30)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex((string)null!, options: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 0
+            }
+        }));
         Assert.Throws<ArgumentOutOfRangeException>(() => Compile(construction: new Utf8ConstructionPolicy { MaxBytes = 0 }));
         Assert.Throws<ArgumentOutOfRangeException>(() => Compile(constructionTimeout: TimeSpan.Zero));
         using var cancellation = new CancellationTokenSource();

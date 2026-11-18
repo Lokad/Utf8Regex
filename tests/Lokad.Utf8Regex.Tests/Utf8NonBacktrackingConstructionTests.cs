@@ -29,8 +29,8 @@ public sealed class Utf8NonBacktrackingConstructionTests
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         // The ordinary owned scalar engine retains every completion. Compare
         // its last value/range, while NonBacktracking exposes one completion.
-        var ordinary = new Utf8Regex(pattern, options);
-        var regex = new Utf8Regex(pattern, options | RegexOptions.NonBacktracking);
+        var ordinary = new Utf8Regex(pattern, options: options);
+        var regex = new Utf8Regex(pattern, options: options | RegexOptions.NonBacktracking);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(ordinary.IsMatch(input), regex.IsMatch(input));
         Assert.Equal(ordinary.Count(input), regex.Count(input));
@@ -63,13 +63,13 @@ public sealed class Utf8NonBacktrackingConstructionTests
     public void NumericZeroWidthBoundsDoNotGrowThePreparedGraph(bool compiled)
     {
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var small = new Utf8Regex("(?<x>){3}", options);
-        var modest = new Utf8Regex("(?<x>){512}", options);
+        var small = new Utf8Regex("(?<x>){3}", options: options);
+        var modest = new Utf8Regex("(?<x>){512}", options: options);
         Assert.Equal(small.Inspection.AvailableOwnedSliceProgram?.Instructions.Length,
             modest.Inspection.AvailableOwnedSliceProgram?.Instructions.Length);
         // This modest structural assertion must pass before the huge witness;
         // restoring old expansion fails promptly without running a billion steps.
-        var huge = new Utf8Regex("(?<x>){1000000000,2147483646}", options);
+        var huge = new Utf8Regex("(?<x>){1000000000,2147483646}", options: options);
         Assert.Equal(small.Inspection.AvailableOwnedSliceProgram?.Instructions.Length,
             huge.Inspection.AvailableOwnedSliceProgram?.Instructions.Length);
         Assert.Equal(2, huge.Count("😀"u8));
@@ -91,7 +91,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         {
             pattern = "(?<x>)";
             for (var index = 0; index < depth; index++) pattern = "(?:" + pattern + ")*";
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");
             Assert.InRange(program.Instructions.Length, 1, depth + 4);
             Assert.Equal(2, regex.Count("😀"u8));
@@ -110,7 +110,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
             var pattern = "(?<x>a*)";
             for (var index = 0; index < depth; index++) pattern = "(?:" + pattern + ")*";
             pattern += "b";
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");
             Assert.InRange(program.Instructions.Length, 1, 8 * (depth + 1) * (depth + 1));
             // The smallest graph assertion guards deeper witnesses against the
@@ -147,8 +147,8 @@ public sealed class Utf8NonBacktrackingConstructionTests
     public void ProgressStatesPreserveNullablePriorityAndLastCaptures(string pattern, string text, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-        var ordinary = new Utf8Regex(pattern, options);
-        var regex = new Utf8Regex(pattern, options | RegexOptions.NonBacktracking);
+        var ordinary = new Utf8Regex(pattern, options: options);
+        var regex = new Utf8Regex(pattern, options: options | RegexOptions.NonBacktracking);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(ordinary.Count(input), regex.Count(input));
         var expected = Utf8MatchSequence.First(ordinary.CreateMatchCursor(input));
@@ -193,7 +193,11 @@ public sealed class Utf8NonBacktrackingConstructionTests
             MaxWorkingBytes = 1 << 20,
             MaxResultBytes = 1 << 20
         };
-        var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, policy);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input));
         Assert.Equal(1, regex.Count(input));
@@ -229,7 +233,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         Assert.NotNull(Utf8OwnedTreeParser.TryParse(pattern, options));
         Assert.Throws<NotSupportedException>(() => Utf8FrontEnd.Analyze(pattern, options));
-        var error = Assert.Throws<NotSupportedException>(() => new Utf8Regex(pattern, options));
+        var error = Assert.Throws<NotSupportedException>(() => new Utf8Regex(pattern, options: options));
         Assert.StartsWith("NonBacktracking does not support ", error.Message);
     }
 }

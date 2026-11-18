@@ -39,9 +39,18 @@ public sealed class Utf8CategoryVectorBoundaryTests
     public void PublicCategoryCountKeepsScalarAndBorrowedBoundarySemantics(int offset)
     {
         var ordinary = new Utf8Regex(@"\p{Sm}");
-        var compiled = new Utf8Regex(@"\p{Sm}", RegexOptions.Compiled);
-        var finite = new Utf8Regex(@"\p{Sm}", RegexOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+        var compiled = new Utf8Regex(@"\p{Sm}", options: RegexOptions.Compiled);
+        var finite = new Utf8Regex(@"\p{Sm}", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            }
+        });
         for (var length = 0; length <= 97; length++)
         foreach (var suffix in new[] { "", "é", "😀", "𝛁", "∑" })
         {

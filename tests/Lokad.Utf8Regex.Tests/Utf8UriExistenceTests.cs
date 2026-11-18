@@ -16,8 +16,8 @@ public sealed class Utf8UriExistenceTests
     [InlineData(RegexOptions.Compiled)]
     public void ExistenceRetainsScalarResultsAndOffsetContext(RegexOptions options)
     {
-        var regex = new Utf8Regex(Pattern, options);
-        var captured = new Utf8Regex("(?<uri>" + Pattern + ")", options);
+        var regex = new Utf8Regex(Pattern, options: options);
+        var captured = new Utf8Regex("(?<uri>" + Pattern + ")", options: options);
         foreach (var text in new[] { "", "x://a?query", "x://😀", "𐐀://😀😀", "é://ab", "١://ab",
             "x://😀/", "x:///😀😀", "😀://ab", "x://a x://ab", "x://ab?#tail x://cd" })
         {
@@ -131,6 +131,15 @@ public sealed class Utf8UriExistenceTests
     }
 
     private static Utf8Regex Limited(ulong work, RegexOptions options = RegexOptions.None, TimeSpan? timeout = null)
-        => new(Pattern, options, timeout ?? Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = work, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+        => new(Pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout ?? Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = work,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 8 << 20,
+                MaxResultBytes = 1
+            }
+        });
 }

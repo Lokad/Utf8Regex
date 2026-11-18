@@ -36,7 +36,7 @@ public sealed class Utf8SliceAdmissionTests
         var program = Utf8SliceParser.TryParse(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(program);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var input = Encoding.UTF8.GetBytes("xyx");
         Assert.Equal(oracle.IsMatch("xyx"), regex.IsMatch(input));
@@ -86,7 +86,7 @@ public sealed class Utf8SliceAdmissionTests
     {
         var pattern = RepeatSliceShape(6000);
         Assert.True(pattern.Length <= HistoricalPatternLengthLimit);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "length=" + pattern.Length);
         var input = Encoding.UTF8.GetBytes("xxaaabbyy");
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
@@ -100,7 +100,7 @@ public sealed class Utf8SliceAdmissionTests
     {
         var pattern = RepeatSliceShape(9000);
         Assert.True(pattern.Length > HistoricalPatternLengthLimit);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "length=" + pattern.Length);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "construction must stay lazy");
         var input = Encoding.UTF8.GetBytes("xxaaabbyy");

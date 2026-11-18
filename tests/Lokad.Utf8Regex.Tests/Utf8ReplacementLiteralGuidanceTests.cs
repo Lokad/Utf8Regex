@@ -9,14 +9,17 @@ public sealed class Utf8ReplacementLiteralGuidanceTests
 {
     private static Utf8Regex Create(string pattern, RegexOptions options = RegexOptions.None,
         ulong work = 1000000, TimeSpan? timeout = null) =>
-        new(pattern, options | RegexOptions.CultureInvariant, timeout ?? Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy
+        new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = work,
                 MaxDepth = 256,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1 << 20
-            });
+            }
+        });
 
     [Theory]
     [InlineData(false)]

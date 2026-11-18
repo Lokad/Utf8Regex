@@ -21,8 +21,17 @@ public sealed class Utf8SliceBalanceTests
         using var cancellation = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 128,
+                    MaxWorkingBytes = 1000000,
+                    MaxResultBytes = 1000000
+                }
+            });
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("z😀é😀é"u8.ToArray(), cancellationToken: cancellation.Token));
             Assert.True(retained.Success);
             Assert.Equal(1, retained.Value.StartOffsetInBytes);
@@ -58,7 +67,7 @@ public sealed class Utf8SliceBalanceTests
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
         }
     }
@@ -75,7 +84,7 @@ public sealed class Utf8SliceBalanceTests
             RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             foreach (var text in new[] { "", "x", "abc", "xxx" })
             {
                 var input = Encoding.UTF8.GetBytes(text);
@@ -96,7 +105,7 @@ public sealed class Utf8SliceBalanceTests
     public void UndefinedBalanceShapesFailConstruction(string pattern)
     {
         Utf8PatternFailureAssert.Throws(
-            () => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+            () => new Utf8Regex(pattern, options: RegexOptions.CultureInvariant));
     }
 
     public static IEnumerable<object?[]> IsMatchCases()
@@ -134,7 +143,7 @@ public sealed class Utf8SliceBalanceTests
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
             Assert.Equal(expected, regex.IsMatch(input));
             using var source = new CancellationTokenSource();
@@ -157,7 +166,7 @@ public sealed class Utf8SliceBalanceTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -166,7 +175,7 @@ public sealed class Utf8SliceBalanceTests
     [Fact]
     public void OwnedDetailedDrainsPoppedCaptures()
     {
-        var regex = new Utf8Regex("(?<open>a)+(?<-open>b)+", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?<open>a)+(?<-open>b)+", options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var oracle = new Regex("(?<open>a)+(?<-open>b)+", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match("aab");
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("aab")));
@@ -182,7 +191,7 @@ public sealed class Utf8SliceBalanceTests
     [Fact]
     public void OwnedDetailedProjectsIntervalCaptures()
     {
-        var regex = new Utf8Regex("(?<a>x)(?<b-a>y)(?<c-b>z)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?<a>x)(?<b-a>y)(?<c-b>z)", options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("xyz")));
         Assert.True(detailed.Success);
@@ -200,7 +209,7 @@ public sealed class Utf8SliceBalanceTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var expected = oracle.Match(inputText, offset);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(expected.Success, regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
         var actual = regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []);
         Assert.Equal(expected.Success, actual.Success);
@@ -220,7 +229,7 @@ public sealed class Utf8SliceBalanceTests
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Replace(inputText, replacement);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -230,7 +239,10 @@ public sealed class Utf8SliceBalanceTests
     public void OwnedCatastrophicBalanceIsMatchTimesOut()
     {
         var input = Encoding.UTF8.GetBytes("bc" + new string('a', 25));
-        var regex = new Utf8Regex("(?<o>(a+)+)(?<-o>b)c", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Regex("(?<o>(a+)+)(?<-o>b)c", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=(?<o>(a+)+)(?<-o>b)c");
@@ -251,7 +263,7 @@ public sealed class Utf8SliceBalanceTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -272,7 +284,7 @@ public sealed class Utf8SliceBalanceTests
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -295,7 +307,7 @@ public sealed class Utf8SliceBalanceTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);

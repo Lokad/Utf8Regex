@@ -10,13 +10,13 @@ public sealed class Utf8ClassFamilyQualificationTests
 {
     private static void ScalarRange(string pattern, string text, RegexOptions options, int index, int length)
     {
-        var regex = new Utf8Regex(pattern, options); var input = Encoding.UTF8.GetBytes(text);
+        var regex = new Utf8Regex(pattern, options: options); var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input)); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal((index, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
     }
     private static void TrustedPublicCount(string pattern, ReadOnlySpan<byte> input, int expected)
     {
-        Assert.Equal(expected, new Utf8Regex(pattern, RegexOptions.CultureInvariant).Count(input));
+        Assert.Equal(expected, new Utf8Regex(pattern, options: RegexOptions.CultureInvariant).Count(input));
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public sealed class Utf8ClassFamilyQualificationTests
         ScalarRange(operators, "=+-^*/.<>~!&|?", RegexOptions.CultureInvariant, 0, 14);
         const string identifier = @"[\x41-\x5A\x61-\x7A][A-Za-z0-9]*";
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
-        { ScalarRange(identifier, "😀 A2 é", options, 5, 2); Assert.Equal(1, new Utf8Regex(identifier, options).Count("😀 A2 é"u8)); }
+        { ScalarRange(identifier, "😀 A2 é", options, 5, 2); Assert.Equal(1, new Utf8Regex(identifier, options: options).Count("😀 A2 é"u8)); }
     }
 
     [Fact]
@@ -90,9 +90,9 @@ public sealed class Utf8ClassFamilyQualificationTests
         foreach (var pattern in new[] { @"[\p{Lu}]", @"(?:\p{Lu})", @"\p{Lu}{1}" })
         {
 foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
-                Assert.Equal(2, new Utf8Regex(pattern, options).Count("𐐀A😀é"u8));
+                Assert.Equal(2, new Utf8Regex(pattern, options: options).Count("𐐀A😀é"u8));
         }
-        Assert.Equal(2, new Utf8Regex(@"(?i:\p{Lu})", RegexOptions.CultureInvariant).Count("aA"u8));
+        Assert.Equal(2, new Utf8Regex(@"(?i:\p{Lu})", options: RegexOptions.CultureInvariant).Count("aA"u8));
         TrustedPublicCount(@"[\p{Lu}]", "𐐀A😀é"u8, 2);
     }
 
@@ -102,7 +102,7 @@ foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexO
         foreach (var pattern in new[] { @"(?:\p{L}){2,3}", @"[\p{L}]{2,3}", @"(\p{L}){2,3}" })
         {
             foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
-                Assert.Equal(2, new Utf8Regex(pattern, options).Count("𐐀AéB😀CΩ"u8));
+                Assert.Equal(2, new Utf8Regex(pattern, options: options).Count("𐐀AéB😀CΩ"u8));
         }
         Assert.Equal(3, new Utf8Regex(@"[\p{L}]").Count("𐐀Aé😀"u8));
         TrustedPublicCount(@"[\p{L}]", "𐐀Aé😀"u8, 3);
@@ -115,7 +115,7 @@ foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexO
         foreach (var pattern in new[] { @"[^\x00]*", @"[^\0]{0,}", @"(?:[^\u0000])*" })
         {
             foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
-            { var regex = new Utf8Regex(pattern, options); Assert.Equal(4, regex.Count("😀\0A"u8)); Assert.Equal(2, regex.Count("😀"u8)); }
+            { var regex = new Utf8Regex(pattern, options: options); Assert.Equal(4, regex.Count("😀\0A"u8)); Assert.Equal(2, regex.Count("😀"u8)); }
         }
     }
 

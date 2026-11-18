@@ -27,7 +27,7 @@ public sealed class Utf8LookaroundRegressionTests
     [InlineData("ab(?=c)cd", "abcd", true, 0, 4)]
     public void LookaroundPositionsAgreeWithOracle(string pattern, string input, bool expectedSuccess, int expectedStart, int expectedEnd)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.None);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None);
         var oracle = new Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout);
         var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
         var oracleMatch = oracle.Match(input);

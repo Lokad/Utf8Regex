@@ -19,7 +19,7 @@ public sealed class Utf8TemplateInputPreparationTests
         const string template = "<$1>";
         var input = Encoding.UTF8.GetBytes(text);
         var expected = Encoding.UTF8.GetBytes(new Regex(pattern, RegexOptions.CultureInvariant).Replace(text, template));
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var session = Utf8SearchDiagnosticsSession.Start();
         try
         {

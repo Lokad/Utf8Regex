@@ -36,7 +36,7 @@ public sealed class Utf8RegexSliceSplitDiffTests
     {
         var options = RegexOptions.CultureInvariant;
         // Bare shapes keep native precedence; quantified shapes ride the owned slice arm. Either way no BCL fallback may appear: native split shaping uses owned kernels.
-        var utf8Regex = new Utf8Regex(pattern, options);
+        var utf8Regex = new Utf8Regex(pattern, options: options);
         var expected = EnumerateRuntimeSplits(input, pattern, count, options);
         var actual = EnumerateUtf8Splits(utf8Regex, input, count);
         Assert.Equal(expected, actual);
@@ -61,7 +61,7 @@ public sealed class Utf8RegexSliceSplitDiffTests
             var (start, units) = subject.Bytes(index, length);
             expected.Add((subject.Value(index, length), start, units));
         }
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(expected, EnumerateUtf8Splits(regex, input, int.MaxValue));
         foreach (var split in regex.EnumerateSplits(Encoding.UTF8.GetBytes(input), int.MaxValue))
             Assert.Equal(split.GetValueBytes().ToArray(), global::System.Text.Encoding.UTF8.GetBytes(split.GetValueString()));

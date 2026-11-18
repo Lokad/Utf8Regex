@@ -20,7 +20,7 @@ public sealed class Utf8LiteralMatchProbeTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled,
             RegexOptions.CultureInvariant | RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var bytes = Encoding.UTF8.GetBytes(text);
             foreach (var offset in new[] { 0, 1, 31 })
             {

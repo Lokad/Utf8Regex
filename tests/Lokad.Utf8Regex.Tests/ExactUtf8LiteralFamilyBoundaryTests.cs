@@ -71,7 +71,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     [InlineData(@"(?:foo|foobar|baz)", false)]
     public void PrefixOverlapIsPreparedOnce(string pattern, bool expected)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         Assert.Equal(expected, regex.Inspection.SearchPlan.HasAlternateLiteralPrefixOverlap);
     }
@@ -83,7 +83,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     [InlineData(@"\b(?:café|niño|résumé)\b", false)]
     public void ProperStartOverlapIsPreparedOnce(string pattern, bool expected)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         Assert.Equal(expected, regex.Inspection.SearchPlan.HasAlternateLiteralProperStartOverlap);
     }
@@ -91,12 +91,8 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     [Fact]
     public void CompiledAsciiBoundaryFamiliesUseTheNativeLiteralRuntime()
     {
-        var prefix = new Utf8Regex(
-            @"\b(?:foo|foobar|baz)\b",
-            RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        var noPrefix = new Utf8Regex(
-            @"\b(?:foo|quux|baz)\b",
-            RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var prefix = new Utf8Regex(            @"\b(?:foo|foobar|baz)\b", options:             RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var noPrefix = new Utf8Regex(            @"\b(?:foo|quux|baz)\b", options:             RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         Assert.True(prefix.Inspection.SearchPlan.HasAlternateLiteralPrefixOverlap);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, prefix.Inspection.CompiledEngineKind);
@@ -135,7 +131,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         var options = RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var expected = new Regex(pattern, options);
-        var actual = new Utf8Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options: options);
         var bytes = Encoding.UTF8.GetBytes(input);
         var actualValues = new List<string>();
 
@@ -166,7 +162,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         {
             var caseOptions = options | testCase.ExtraOptions;
             var expected = new Regex(testCase.Pattern, caseOptions);
-            var actual = new Utf8Regex(testCase.Pattern, caseOptions);
+            var actual = new Utf8Regex(testCase.Pattern, options: caseOptions);
             var actualValues = new List<string>();
 
             Assert.False(actual.CanUseNativeSplit(Utf8Validation.Validate(bytes)));
@@ -220,7 +216,7 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var expected = new Regex(pattern, options);
-        var actual = new Utf8Regex(pattern, options);
+        var actual = new Utf8Regex(pattern, options: options);
         var bytes = Encoding.UTF8.GetBytes(input);
 
         Assert.Equal(expected.IsMatch(input), actual.IsMatch(bytes));
@@ -244,7 +240,10 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         foreach (var timeout in new[] { Regex.InfiniteMatchTimeout, TimeSpan.FromSeconds(1) })
         {
-            var regex = new Utf8Regex(pattern, options, timeout);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = timeout
+            });
             Assert.Equal(1, regex.Count("𐐀 x𐐀x"u8));
             var match = regex.Match("𐐀 x𐐀x"u8);
             Assert.True(match.Success);
@@ -272,7 +271,10 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         var projectedPattern = pattern.Replace("\U00010400", "\u0531", StringComparison.Ordinal)
             .Replace("\U0001f600", "\ue000", StringComparison.Ordinal);
         var expected = new Regex(projectedPattern, options & ~RegexOptions.Compiled, timeout);
-        var actual = new Utf8Regex(pattern, options, timeout);
+        var actual = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         Assert.Equal(new Regex(pattern, options & ~RegexOptions.Compiled).GetGroupNumbers(), expected.GetGroupNumbers());
         var bytes = subject.Input;
 

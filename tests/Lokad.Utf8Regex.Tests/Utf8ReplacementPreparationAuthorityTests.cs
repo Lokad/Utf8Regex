@@ -13,7 +13,7 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
     [InlineData(4093, 4)] [InlineData(4094, 4)] [InlineData(4095, 4)] [InlineData(4096, 4)]
     public void InvalidUtf8TemplateKeepsAbsoluteOffsetsBeforeInputAndDestinationWork(int prefix, int route)
     {
-        var regex = new Utf8Regex("(a)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a)", options: RegexOptions.CultureInvariant);
         var bytes = Enumerable.Repeat((byte)'x', prefix).Concat(new byte[] { 0xed, 0xa0, 0x80 }).ToArray();
         var destination = Enumerable.Repeat((byte)0x5a, 8).ToArray();
         using var token = new CancellationTokenSource();
@@ -29,7 +29,7 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
     [InlineData(false, true)] [InlineData(true, true)]
     public void ForeignPreparationInterruptionDoesNotBecomeTheUncontrolledCallersFailure(bool deadline, bool native)
     {
-        var regex = new Utf8Regex("(a)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a)", options: RegexOptions.CultureInvariant);
         var template = string.Concat(Enumerable.Repeat("$1", 64));
         var templateBytes = Encoding.UTF8.GetBytes(template);
         using var foreign = new CancellationTokenSource();
@@ -53,7 +53,10 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void NullTemplatePrecedesAnElapsedClock(int route)
     {
-        var regex = new Utf8Regex("(a)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Regex("(a)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks += 100);
         var failure = Assert.Throws<ArgumentNullException>(() => Replace(regex, route, "a"u8.ToArray(), null!, [], new byte[8], CancellationToken.None));
@@ -64,8 +67,14 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
     public void SuccessfulPreparationDoesNotRestartTheRemainingMatchingDeadline(int route)
     {
-        var regex = new Utf8Regex("(a)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(20),
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 });
+        var regex = new Utf8Regex("(a)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000
+            }
+        });
         var template = string.Concat(Enumerable.Repeat("$1", 32));
         var templateBytes = Encoding.UTF8.GetBytes(template);
         var destination = new byte[8192];
@@ -96,7 +105,10 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)]
     public void TimeoutOnlyCallsIncludePreparationWithoutForcingAToken(int route)
     {
-        var regex = new Utf8Regex("(a)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Regex("(a)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var template = string.Concat(Enumerable.Repeat("$1", 128));
         var input = "a"u8.ToArray();
         var bytes = Encoding.UTF8.GetBytes(template);
@@ -114,8 +126,14 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
     [InlineData(3)] [InlineData(4)]
     public void Utf8TemplateKeyIsAdmittedBeforeItsMajorAllocation(int route)
     {
-        var regex = new Utf8Regex("(a)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 });
+        var regex = new Utf8Regex("(a)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000
+            }
+        });
         _ = regex.Replace("a"u8, "$1"u8); // Warm the codec/cache/exception call paths.
         var template = new string('x', 32768) + "$1";
         var bytes = Encoding.UTF8.GetBytes(template);
@@ -160,8 +178,17 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
     [InlineData(0, true)] [InlineData(1, true)] [InlineData(2, true)] [InlineData(3, true)] [InlineData(4, true)]
     public void ColdPreparationUsesCallerAuthorityAndRollsBackBeforePublication(int route, bool timeout)
     {
-        var regex = new Utf8Regex("(a)", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(20),
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1UL << 20, MaxResultBytes = 1UL << 20 });
+        var regex = new Utf8Regex("(a)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1UL << 20,
+                MaxResultBytes = 1UL << 20
+            }
+        });
         var template = string.Concat(Enumerable.Repeat("$1", 2048));
         var templateBytes = Encoding.UTF8.GetBytes(template);
         var destination = Enumerable.Repeat((byte)0x5a, 8192).ToArray();

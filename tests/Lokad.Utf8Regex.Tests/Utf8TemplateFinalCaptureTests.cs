@@ -29,8 +29,17 @@ public sealed class Utf8TemplateFinalCaptureTests
         var expected = new Regex(pattern, options).Replace(text, template);
         var input = Encoding.UTF8.GetBytes(text);
         var bytes = Encoding.UTF8.GetBytes(expected);
-        var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 8 << 20, MaxResultBytes = 8 << 20 });
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 8 << 20,
+                MaxResultBytes = 8 << 20
+            }
+        });
         Assert.Equal(bytes, regex.Replace(input, template));
         Assert.Equal(bytes, regex.Replace(input, Encoding.UTF8.GetBytes(template)));
         var output = new byte[bytes.Length];

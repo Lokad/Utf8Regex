@@ -64,7 +64,7 @@ public sealed class Utf8AsciiScalarWitnessTests
         var comparator = Utf8AsciiScalarOperationAssertions.Comparator(pattern, options);
         Assert.Equal(expected, comparator.Matches(subject.Projected).Cast<Match>()
             .Select(match => subject.Bytes(match.Index, match.Length)));
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var cursor = regex.EnumerateMatches(subject.Input);
         foreach (var range in expected)
         {
@@ -89,7 +89,7 @@ public sealed class Utf8AsciiScalarWitnessTests
     public void RepeatedCaptureHistoryUsesWholeScalars(RegexOptions options)
     {
         var subject = new Utf8AsciiScalarOperationAssertions.Subject(Text);
-        var regex = new Utf8Regex("(?<x>.)+", options);
+        var regex = new Utf8Regex("(?<x>.)+", options: options);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input));
         Assert.True(match.Success);
         Assert.Equal((0, 18), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));

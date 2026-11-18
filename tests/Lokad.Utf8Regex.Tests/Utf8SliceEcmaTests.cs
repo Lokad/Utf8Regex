@@ -78,7 +78,7 @@ public sealed class Utf8SliceEcmaTests
             // Membership uses the stable interpreted oracle; Compiled changes
             // the owned selection without changing the profile's sets.
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+            var regex = new Utf8Regex(pattern, options: options | (compiled ? RegexOptions.Compiled : RegexOptions.None));
             // Keep the entire 63,488-scalar BMP membership sweep unprojected.
             // Its final U+FFFF is non-word, so adding non-word emoji leaves all
             // BMP boundary decisions unchanged. Declare the emoji outcome below.
@@ -142,7 +142,7 @@ public sealed class Utf8SliceEcmaTests
             var options = RegexOptions.ECMAScript | RegexOptions.CultureInvariant |
                 (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options));
             Assert.Equal("pattern", actual.ParamName);
             Assert.Null(Utf8SliceParser.TryParse(pattern, options));
         }
@@ -158,7 +158,7 @@ public sealed class Utf8SliceEcmaTests
     {
         var options = RegexOptions.ECMAScript | invalid;
         var expected = Assert.Throws<ArgumentOutOfRangeException>(() => new Regex("a", options));
-        var actual = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("a", options));
+        var actual = Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex("a", options: options));
         Assert.Equal(expected.ParamName, actual.ParamName);
         Assert.Equal(expected.Message, actual.Message);
     }
@@ -208,7 +208,7 @@ public sealed class Utf8SliceEcmaTests
             Utf8SliceRunner.IsMatch(program, input, starts, ends, ref canceled));
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.False(regex.IsMatch(input));
         Assert.True(regex.IsMatch("aaabac"u8));
         Assert.True(regex.IsMatch("c"u8)); // The absent reference matches empty.

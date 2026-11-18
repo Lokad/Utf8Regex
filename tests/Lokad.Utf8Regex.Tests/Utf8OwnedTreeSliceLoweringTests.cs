@@ -61,7 +61,7 @@ public sealed class Utf8OwnedTreeSliceLoweringTests
         Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options, comparisonTexts, oraclePattern, options);
         if (scalarUniversalClass)
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var input = "\U0001f600ab\U0001f600"u8.ToArray();
             Assert.True(regex.IsMatch(input));
             Assert.Equal(1, regex.Count(input));

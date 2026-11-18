@@ -27,7 +27,7 @@ public sealed class Utf8LiteralAssertionTests
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft,
             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant })
         {
-            var regex = new Utf8Regex(pattern, mode); var oracle = new Regex(pattern, mode);
+            var regex = new Utf8Regex(pattern, options: mode); var oracle = new Regex(pattern, mode);
             foreach (var text in new[] { "", "bar", "foobar", "fooxbar", "FOObar", "goobar", "barfoo",
                 "éfoobar😀", "😀bar", "foobarbazfoobar", "fobar", "foo", "bar\n" })
             {
@@ -104,8 +104,14 @@ public sealed class Utf8LiteralAssertionTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("foo", 1000)) + "bar");
         using var token = new CancellationTokenSource(); long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex("(?:foo(?<=foo)){1000}bar", RegexOptions.None,
-            TimeSpan.FromMilliseconds(20), new Utf8ResourcePolicy { MaxWorkSteps = 100000 });
+        var regex = new Utf8Regex("(?:foo(?<=foo)){1000}bar", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000
+            }
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ => { entered = true; if (expire) ticks = 50; else token.Cancel(); });
         try

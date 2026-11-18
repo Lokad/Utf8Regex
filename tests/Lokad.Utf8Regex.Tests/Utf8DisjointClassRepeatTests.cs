@@ -11,8 +11,16 @@ public sealed class Utf8DisjointClassRepeatTests
     public void AdjacentCaptureBoundariesKeepFiniteLongRuns()
     {
         var first = new string('a', 8192); var second = new string('1', 8192);
-        var regex = new Utf8Regex("([a-z]+)([0-9]+)", resourcePolicy: new()
-        { MaxWorkSteps = 1000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8Regex("([a-z]+)([0-9]+)", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         var input = Encoding.UTF8.GetBytes("é😀!" + first + second + "!");
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(match.Success);
@@ -135,7 +143,7 @@ public sealed class Utf8DisjointClassRepeatTests
     public void CapturesAndFallbackKeepOverlappingBclSemantics(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(text);
         var expected = oracle.Match(text);
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -171,8 +179,11 @@ public sealed class Utf8DisjointClassRepeatTests
         var input = Encoding.UTF8.GetBytes("😀" + new string('a', length) + "-");
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
         using var token = new CancellationTokenSource();
-        var match = Utf8MatchSequence.First(new Utf8Regex("([a-z]{1,4096})-", RegexOptions.None,
-            Timeout.InfiniteTimeSpan, policy).CreateMatchCursor(input, cancellationToken: token.Token));
+        var match = Utf8MatchSequence.First(new Utf8Regex("([a-z]{1,4096})-", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        }).CreateMatchCursor(input, cancellationToken: token.Token));
         Assert.True(match.Success);
         Assert.Equal(4 + Math.Max(0, length - 4096), match.Value.StartOffsetInBytes);
         Assert.Equal(Math.Min(length, 4096) + 1, match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes);
@@ -183,7 +194,7 @@ public sealed class Utf8DisjointClassRepeatTests
     public void RightToLeftKeepsItsExistingTraversalAndCapture()
     {
         var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft;
-        var match = Utf8MatchSequence.First(new Utf8Regex("([a-z]+)-", options).CreateMatchCursor("abc- def-"u8.ToArray()));
+        var match = Utf8MatchSequence.First(new Utf8Regex("([a-z]+)-", options: options).CreateMatchCursor("abc- def-"u8.ToArray()));
         Assert.Equal("def-", Encoding.UTF8.GetString(match.GetValueMemory().Span));
         Assert.Equal("def", Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
     }
@@ -198,7 +209,7 @@ public sealed class Utf8DisjointClassRepeatTests
         const string text = "aaab aac";
         var options = RegexOptions.CultureInvariant | option;
         var oracle = new Regex(pattern, options);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(oracle.Count(text), regex.Count(input));
         var expected = oracle.Match(text);
@@ -282,8 +293,14 @@ public sealed class Utf8DisjointClassRepeatTests
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         }
-        var limited = new Utf8Regex(regex.Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkingBytes = 1 });
+        var limited = new Utf8Regex(regex.Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         // Count discards captures. Disjoint tails need no rewind vectors even
         // when capture boundaries lie between the repeat and its required atom.
         Assert.Equal(2, limited.Count(input));
@@ -294,7 +311,10 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData(true)]
     public void ForkTailMatchingObservesOriginalInterruption(bool timeout)
     {
-        var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)", RegexOptions.None, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Regex(@"(?<run>a+)(?:b|c)", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var input = Encoding.UTF8.GetBytes(new string('a', 200000) + "b");
         using var token = new CancellationTokenSource();
         long ticks = 0;
@@ -323,13 +343,19 @@ public sealed class Utf8DisjointClassRepeatTests
     {
         var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkSteps = 100000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
         var text = Encoding.UTF8.GetBytes(new string('a', 2048) + "-");
-        var disjoint = new Utf8Regex(new string('(', nesting) + "[a-z]+" + new string(')', nesting) + "-",
-            RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, policy);
+        var disjoint = new Utf8Regex(new string('(', nesting) + "[a-z]+" + new string(')', nesting) + "-", options:             RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         if (nesting <= 32) Assert.Equal(1, disjoint.Count(text));
         else Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => disjoint.Count(text)).ResourceKind);
-        var overlapping = new Utf8Regex("([a-z]+)a", RegexOptions.CultureInvariant,
-            Timeout.InfiniteTimeSpan, policy);
+        var overlapping = new Utf8Regex("([a-z]+)a", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => overlapping.Count(text));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, error.ResourceKind);
     }

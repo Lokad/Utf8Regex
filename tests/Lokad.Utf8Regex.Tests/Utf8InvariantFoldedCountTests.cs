@@ -23,7 +23,7 @@ public sealed class Utf8InvariantFoldedCountTests
             var bytes = Encoding.UTF8.GetBytes(text);
             var options = Invariant | mode;
             var reference = new Regex(pattern, options);
-                var regex = new Utf8Regex(pattern, options);
+                var regex = new Utf8Regex(pattern, options: options);
                 Assert.Equal(reference.IsMatch(text), regex.IsMatch(bytes));
             Assert.Equal(reference.Count(text), regex.Count(bytes));
                     var expected = reference.Matches(text).Select(m => (
@@ -81,8 +81,8 @@ public sealed class Utf8InvariantFoldedCountTests
         {
             var options = Invariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
             var expected = new Regex(pattern, options).Count(text);
-            var regex = new Utf8Regex(pattern, options);
-                var trusted = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
+                var trusted = new Utf8Regex(pattern, options: options);
                 var bytes = Encoding.UTF8.GetBytes(text);
             for (var offset = 0; offset < 4; offset++)
             {
@@ -106,8 +106,8 @@ public sealed class Utf8InvariantFoldedCountTests
             var bytes = Encoding.UTF8.GetBytes(text);
             var options = Invariant | RegexOptions.Compiled;
             var expected = new Regex(pattern, options).Count(text);
-            Assert.Equal(expected, new Utf8Regex(pattern, options).Count(bytes));
-                var trusted = new Utf8Regex(pattern, options);
+            Assert.Equal(expected, new Utf8Regex(pattern, options: options).Count(bytes));
+                var trusted = new Utf8Regex(pattern, options: options);
                 var session = Utf8SearchDiagnosticsSession.Start();
             try
             {
@@ -123,7 +123,7 @@ public sealed class Utf8InvariantFoldedCountTests
         var input = Encoding.UTF8.GetBytes("é K K 😀");
         foreach (var option in new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
-            Assert.Equal(8, new Utf8Regex("k|", Invariant | option).Count(input));
+            Assert.Equal(8, new Utf8Regex("k|", options: Invariant | option).Count(input));
     }
 
     [Theory]
@@ -136,10 +136,10 @@ public sealed class Utf8InvariantFoldedCountTests
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(name);
             var oracle = new Regex("I|i|kit|s", RegexOptions.IgnoreCase);
-            var regex = new Utf8Regex("I|i|kit|s", RegexOptions.IgnoreCase);
+            var regex = new Utf8Regex("I|i|kit|s", options: RegexOptions.IgnoreCase);
             var text = "é I i İ ı Kit ſ";
             Assert.Equal(oracle.Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
-            Assert.Equal(oracle.Count(text), new Utf8Regex("I|i|kit|s", RegexOptions.IgnoreCase).Count(Encoding.UTF8.GetBytes(text)));
+            Assert.Equal(oracle.Count(text), new Utf8Regex("I|i|kit|s", options: RegexOptions.IgnoreCase).Count(Encoding.UTF8.GetBytes(text)));
         }
         finally { CultureInfo.CurrentCulture = previous; }
     }
@@ -152,30 +152,60 @@ public sealed class Utf8InvariantFoldedCountTests
         var options = Invariant | (compiled ? RegexOptions.Compiled : 0);
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é Sherlock Holmes John Watson ", 256)));
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
-        var finite = new Utf8Regex("Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout, policy);
+        var finite = new Utf8Regex("Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         Assert.Equal(512, finite.Count(input));
-        var trusted = new Utf8Regex("Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout, policy);
+        var trusted = new Utf8Regex("Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         Assert.Equal(512, trusted.Count(input));
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(
-            "Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout, policy with { MaxWorkSteps = 1 }).Count(input));
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(
-            "Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout,
-            policy with { MaxWorkSteps = 1 }).Count(input));
-        var tiny = new Utf8Regex("Sherlock Holmes|John Watson", options, Regex.InfiniteMatchTimeout,
-            policy with { MaxWorkingBytes = 1, MaxDepth = 1, MaxResultBytes = 1 });
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(            "Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy with
+            {
+                MaxWorkSteps = 1
+            }
+        }).Count(input));
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(            "Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy with
+            {
+                MaxWorkSteps = 1
+            }
+        }).Count(input));
+        var tiny = new Utf8Regex("Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy with
+            {
+                MaxWorkingBytes = 1,
+                MaxDepth = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(512, tiny.Count(input));
         var withKelvin = input.Concat(" K "u8.ToArray()).ToArray();
         Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.Count(withKelvin));
         using var tokens = new CancellationTokenSource();
         tokens.Cancel();
-        var ordinary = new Utf8Regex("Sherlock Holmes|John Watson", options);
+        var ordinary = new Utf8Regex("Sherlock Holmes|John Watson", options: options);
         Assert.Throws<OperationCanceledException>(() => ordinary.Count(input, tokens.Token));
         Assert.Throws<OperationCanceledException>(() => finite.Count(input, tokens.Token));
         Assert.Equal(tokens.Token, Assert.Throws<OperationCanceledException>(() => trusted.Count(input, tokens.Token)).CancellationToken);
 
         var clockReads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => clockReads++ == 0 ? 0 : 25);
-        var timed = new Utf8Regex("Sherlock Holmes|John Watson", options, TimeSpan.FromMilliseconds(20));
+        var timed = new Utf8Regex("Sherlock Holmes|John Watson", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         Assert.Throws<RegexMatchTimeoutException>(() => timed.Count(input));
     }
 
@@ -185,11 +215,20 @@ public sealed class Utf8InvariantFoldedCountTests
     {
         var text = new string('x', offset) + "K K k";
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
-        var regex = new Utf8Regex("k|kit", Invariant, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8Regex("k|kit", options: Invariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         Assert.Equal(3, regex.Count(Encoding.UTF8.GetBytes(text)));
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(
-            "k|kit", Invariant, Regex.InfiniteMatchTimeout,
-            policy with { MaxWorkingBytes = 1 }).Count(Encoding.UTF8.GetBytes(text)));
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(            "k|kit", options: Invariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy with
+            {
+                MaxWorkingBytes = 1
+            }
+        }).Count(Encoding.UTF8.GetBytes(text)));
     }
 
     [Theory]
@@ -202,8 +241,11 @@ public sealed class Utf8InvariantFoldedCountTests
         _ = Utf8InputAnalyzer.Describe(input, ref validation);
         var validationSteps = validation.Budget.Steps;
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
-        var regex = new Utf8Regex("kit|k", Invariant | (compiled ? RegexOptions.Compiled : 0),
-            Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8Regex("kit|k", options: Invariant | (compiled ? RegexOptions.Compiled : 0), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         ulong stoppedAt = 0;
         var session = Utf8SearchDiagnosticsSession.Start(step =>
         {
@@ -232,8 +274,12 @@ public sealed class Utf8InvariantFoldedCountTests
         foreach (var compiled in new[] { false, true })
         {
             var options = Invariant | (compiled ? RegexOptions.Compiled : 0);
-            var ordinary = new Utf8Regex(pattern, options);
-            var finite = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, policy);
+            var ordinary = new Utf8Regex(pattern, options: options);
+            var finite = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
             for (var offset = 0; offset < 3; offset++)
             {
                 var padded = new byte[offset + bytes.Length + 2];

@@ -25,7 +25,7 @@ public sealed class Utf8ReplacementAliasingTests
             var storage = new byte[128];
             var input = Encoding.UTF8.GetBytes(text);
             input.CopyTo(storage, inputStart);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var status = utf8Template
                 ? regex.TryReplace(storage.AsSpan(inputStart, input.Length), Encoding.UTF8.GetBytes(template),
                     storage.AsSpan(destinationStart), out var written)
@@ -46,7 +46,7 @@ public sealed class Utf8ReplacementAliasingTests
     {
         var storage = new byte[64];
         "XY"u8.CopyTo(storage.AsSpan(1));
-        var regex = new Utf8Regex("a", RegexOptions.CultureInvariant | options);
+        var regex = new Utf8Regex("a", options: RegexOptions.CultureInvariant | options);
 
         var status = regex.TryReplace("a-b-a"u8, storage.AsSpan(1, 2), storage, out var written);
 
@@ -61,7 +61,7 @@ public sealed class Utf8ReplacementAliasingTests
     {
         var storage = Encoding.UTF8.GetBytes("a-b-a-c");
         var original = storage.ToArray();
-        var regex = new Utf8Regex("a", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("a", options: RegexOptions.CultureInvariant);
 
         var status = utf8Template
             ? regex.TryReplace(storage, "LONG"u8, storage, out var written)
@@ -80,8 +80,14 @@ public sealed class Utf8ReplacementAliasingTests
         var storage = new byte[64];
         "a-b-a-c"u8.CopyTo(storage);
         var original = storage.ToArray();
-        var regex = new Utf8Regex("a", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxResultBytes = 1 });
+        var regex = new Utf8Regex("a", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxResultBytes = 1
+            }
+        });
 
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {

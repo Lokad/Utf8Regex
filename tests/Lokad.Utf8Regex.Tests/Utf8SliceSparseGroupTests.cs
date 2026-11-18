@@ -67,12 +67,18 @@ public sealed class Utf8SliceSparseGroupTests
         try { oracle = new Regex(oraclePattern, oracleOptions, TimeSpan.FromSeconds(10)); }
         catch (RegexParseException expected)
         {
-            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10)));
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(10)
+            }));
             Assert.Equal("pattern", actual.ParamName);
             Assert.Null(Utf8SliceParser.TryParse(pattern, options));
             return;
         }
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         var program = Utf8SliceParser.TryParse(pattern, options);
         Assert.NotNull(program);
         var numbers = oracle.GetGroupNumbers();
@@ -203,7 +209,7 @@ public sealed class Utf8SliceSparseGroupTests
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         var match = oracle.Match(text);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         foreach (var template in new[] { "$+", "$12|$5|$2147483647", "$00|$01|$" + "{012}" })
         {
             Assert.Equal(match.Result(template), Encoding.UTF8.GetString(regex.Replace(Encoding.UTF8.GetBytes(text), template)));
@@ -221,7 +227,7 @@ public sealed class Utf8SliceSparseGroupTests
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(text);
         var match = oracle.Match(text);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Utf8MatchSequence.AssertCaptures(match, actual, input, text);
         var numbers = oracle.GetGroupNumbers();
@@ -248,7 +254,7 @@ public sealed class Utf8SliceSparseGroupTests
             RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
             var expected = Assert.Throws<RegexParseException>(() => new Regex(pattern, options));
-            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+            var actual = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options));
             Assert.Equal("pattern", actual.ParamName);
             Assert.Null(Utf8SliceParser.TryParse(pattern, options));
         }

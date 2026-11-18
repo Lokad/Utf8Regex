@@ -48,7 +48,7 @@ public sealed class Utf8OwnedCaseFoldTests
         foreach (var (pattern, subject) in new[] { (left, right), (right, left) })
         foreach (var compiled in new[] { false, true })
         {
-            var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase |
+            var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | RegexOptions.IgnoreCase |
                 (compiled ? RegexOptions.Compiled : RegexOptions.None));
             var input = Encoding.UTF8.GetBytes(subject);
             var match = regex.Match(input);
@@ -65,7 +65,7 @@ public sealed class Utf8OwnedCaseFoldTests
     public void NewerHostCasingDoesNotChangeOwnedUnicode16Matching(string left, string right)
     {
         var flags = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
-        Assert.False(new Utf8Regex(left, flags).IsMatch(Encoding.UTF8.GetBytes(right)));
-        Assert.False(new Utf8Regex(right, flags).IsMatch(Encoding.UTF8.GetBytes(left)));
+        Assert.False(new Utf8Regex(left, options: flags).IsMatch(Encoding.UTF8.GetBytes(right)));
+        Assert.False(new Utf8Regex(right, options: flags).IsMatch(Encoding.UTF8.GetBytes(left)));
     }
 }

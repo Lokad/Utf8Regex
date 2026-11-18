@@ -29,7 +29,7 @@ public sealed class Utf8NegatedPairRewindTests
         // Excluded prefix blocks force the delimiter window to find a later
         // scalar start. The long suffix also exposes absent/dense tail searches.
         text = new string('b', 2049) + text + new string('b', 2049);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(oracle.Count(text), regex.Count(input));

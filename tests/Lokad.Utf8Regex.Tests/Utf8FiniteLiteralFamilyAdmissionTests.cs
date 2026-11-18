@@ -24,7 +24,11 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         using var token = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Small);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Small
+            });
             Assert.Equal(new Regex(pattern, options).Count(text), regex.Count(storage.AsSpan(5, input.Length), token.Token));
         }
     }
@@ -40,7 +44,11 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         using var token = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Small);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Small
+            });
             Assert.Equal(new Regex(pattern, options).Count(text), regex.Count(Encoding.UTF8.GetBytes(text), token.Token));
         }
     }
@@ -51,7 +59,11 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         var literals = Enumerable.Range(0, 5).Select(i => (char)('a' + i) + new string('x', 1025) + "z").ToArray();
         var pattern = string.Join('|', literals);
         var text = "é😀" + literals[4] + " " + literals[1] + "xx";
-        var regex = new Utf8Regex(pattern, RegexOptions.Compiled, Regex.InfiniteMatchTimeout, Small);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Small
+        });
         Assert.Equal(new Regex(pattern).Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
     }
 
@@ -63,8 +75,17 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
     {
         const string pattern = "cat|catalog|dog|emu|fox";
         const string text = "CAT catalog cat dog emu fox";
-        var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         Assert.Equal(new Regex(pattern, options).Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
     }
 
@@ -73,28 +94,59 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
     {
         const string pattern = "猫猫猫|狗狗狗|猴猴猴|兔兔兔|马马马";
         const string text = "😀猫猫猫 狗狗狗 猴猴猴";
-        var regex = new Utf8Regex(pattern, RegexOptions.Compiled, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         using var token = new CancellationTokenSource();
         Assert.Equal(3, Utf8MatchSequence.Count(regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), 4, token.Token)));
         Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), 1, token.Token)));
-        var denied = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var denied = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(3, Utf8MatchSequence.Count(denied.EnumerateMatches(Encoding.UTF8.GetBytes(text), 4)));
     }
 
     [Fact]
     public void NullableFamiliesKeepScalarEmptyProgression()
     {
-        var regex = new Utf8Regex("cat|dog|emu|fox|x*", RegexOptions.Compiled, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8Regex("cat|dog|emu|fox|x*", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         Assert.Equal(4, regex.Count("cat😀xx"u8));
     }
 
     [Fact]
     public void CallerFundedCountRefundsItsScopeWithoutVmScratch()
     {
-        var regex = new Utf8Regex("猫猫猫|狗狗狗|猴猴猴|兔兔兔|马马马", RegexOptions.Compiled, Regex.InfiniteMatchTimeout, Small);
+        var regex = new Utf8Regex("猫猫猫|狗狗狗|猴猴猴|兔兔兔|马马马", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Small
+        });
         var allowance = new Account();
         using var token = new CancellationTokenSource();
         Assert.Equal(2, regex.Count("😀猫猫猫狗狗狗"u8, token.Token, allowance));
@@ -109,7 +161,11 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         const string pattern = "cat|dog|emu|fox|yak";
-        var regex = new Utf8Regex(pattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(20), Small);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Small
+        });
         var input = Encoding.ASCII.GetBytes(new string('x', 262144) + "cat");
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
@@ -128,8 +184,17 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         Assert.True(entered);
         ticks = 0;
         Assert.Equal(1, regex.Count("cat"u8));
-        var denied = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var denied = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
     }
@@ -147,7 +212,11 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         using var token = new CancellationTokenSource();
         foreach (var count in new[] { 3, 4 })
         {
-            var regex = new Utf8Regex(string.Join('|', literals.Take(count)), RegexOptions.Compiled, Regex.InfiniteMatchTimeout, Small);
+            var regex = new Utf8Regex(string.Join('|', literals.Take(count)), options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Small
+            });
             Assert.Equal(count, regex.Count(backing.AsSpan(5, input.Length), token.Token));
         }
     }
@@ -176,7 +245,11 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         const string pattern = "Sawyer|Finn|Tom|Huckleberry";
-        var regex = new Utf8Regex(pattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(20), Small);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Small
+        });
         var input = Encoding.ASCII.GetBytes(new string('x', 262144) + "Tom");
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>

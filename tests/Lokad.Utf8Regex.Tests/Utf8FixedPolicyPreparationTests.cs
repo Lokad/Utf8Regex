@@ -20,7 +20,7 @@ public sealed class Utf8FixedPolicyPreparationTests
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | mode | (compiled ? RegexOptions.Compiled : 0);
-            var baseline = new Utf8Regex(pattern, options);
+            var baseline = new Utf8Regex(pattern, options: options);
             var expected = Utf8MatchSequence.First(baseline.CreateMatchCursor(input));
             Assert.True(expected.Success);
             foreach (var policy in new[] {
@@ -29,7 +29,11 @@ public sealed class Utf8FixedPolicyPreparationTests
                 new Utf8ResourcePolicy { MaxWorkingBytes = 1_048_576 },
                 new Utf8ResourcePolicy { MaxResultBytes = 1_048_576 } })
             {
-                var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, policy);
+                var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = policy
+                });
                 var program = (Utf8RegexProgram)typeof(Utf8Regex)
                     .GetField("_program", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex)!;
                 Assert.Null(program.CompiledEngineRuntime);
@@ -46,9 +50,16 @@ public sealed class Utf8FixedPolicyPreparationTests
                 Assert.Equal(canceled.Token,
                     Assert.Throws<OperationCanceledException>(() => regex.Count(input, canceled.Token)).CancellationToken);
                 Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes,
-                    Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8Regex.Compile(pattern, options,
-                        Regex.InfiniteMatchTimeout, policy, new Utf8ConstructionPolicy { MaxBytes = 1 },
-                        Regex.InfiniteMatchTimeout, CancellationToken.None)).ResourceKind);
+                    Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8Regex.Compile(pattern, options: options, policy: new Utf8RegexPolicy
+                    {
+                        MatchTimeout = Regex.InfiniteMatchTimeout,
+                        ResourcePolicy = policy,
+                        ConstructionPolicy = new Utf8ConstructionPolicy
+                        {
+                            MaxBytes = 1
+                        },
+                        ConstructionTimeout = Regex.InfiniteMatchTimeout
+                    }, cancellationToken: CancellationToken.None)).ResourceKind);
             }
         }
     }

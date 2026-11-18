@@ -18,7 +18,7 @@ public sealed class Utf8ConstructionAdmissionTests
         int expectedCount;
         using (var measured = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity))
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             peak = measured.Budget.Peak;
             retained = measured.Budget.Reserved;
@@ -29,7 +29,7 @@ public sealed class Utf8ConstructionAdmissionTests
         {
             using var scope = new Utf8ConstructionScope(limit);
             Utf8Regex? regex = null;
-            var failure = Record.Exception(() => regex = new Utf8Regex(pattern, options));
+            var failure = Record.Exception(() => regex = new Utf8Regex(pattern, options: options));
             if (failure is null)
             {
                 Assert.NotNull(regex);
@@ -57,13 +57,13 @@ public sealed class Utf8ConstructionAdmissionTests
     {
         var options = RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0);
         using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("(?<x>a){1000000000}", options));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("(?<x>a){1000000000}", options: options));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionInstructionCapacity, failure.ResourceKind);
         Assert.Equal(Utf8ConstructionScope.DefaultInstructionCapacity, failure.Limit);
         Assert.True(failure.Requested >= 1_000_000_000ul);
         Assert.True(scope.Budget.Peak < 32ul); // Numeric preflight, not one million emitted copies.
         Assert.Equal(0ul, scope.Budget.Reserved);
-        Assert.Equal(2, new Utf8Regex("(?<x>){1000000000}", options).Count("😀"u8));
+        Assert.Equal(2, new Utf8Regex("(?<x>){1000000000}", options: options).Count("😀"u8));
     }
 
     [Theory]
@@ -135,12 +135,12 @@ public sealed class Utf8ConstructionAdmissionTests
             {
                 if (index % 2 == 0)
                 {
-                    Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("(?<x>a?)*b", RegexOptions.NonBacktracking));
+                    Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("(?<x>a?)*b", options: RegexOptions.NonBacktracking));
                     Assert.Equal(0ul, scope.Budget.Reserved);
                 }
                 else
                 {
-                    Assert.True(new Utf8Regex("(?<x>a?)*b", RegexOptions.NonBacktracking).IsMatch("aaab"u8));
+                    Assert.True(new Utf8Regex("(?<x>a?)*b", options: RegexOptions.NonBacktracking).IsMatch("aaab"u8));
                     Assert.True(scope.Budget.Reserved > 0);
                 }
             }

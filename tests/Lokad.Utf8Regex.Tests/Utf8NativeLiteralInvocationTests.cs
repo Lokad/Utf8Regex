@@ -143,7 +143,7 @@ public sealed class Utf8NativeLiteralInvocationTests
     [InlineData(true)]
     public void EveryWorkCutoffAcrossSuccessiveSearchAndProjectionLeavesNoResultAndKeepsCallerLease(bool reverse)
     {
-        var regex = new Utf8Regex("target", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant);
         var plan = Prepared(regex);
         var input = Encoding.UTF8.GetBytes("target" + new string('中', 5000) + "target" + new string('é', 5000) + "target");
         var baseline = new Utf8OperationMatchCursor(input, plan, reverse, new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
@@ -234,7 +234,7 @@ public sealed class Utf8NativeLiteralInvocationTests
     public void CursorBoundariesInspectOriginalNeighborsAcrossMatches(string pattern, string text, bool reverse)
     {
         var options = RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(text);
         var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), reverse, new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None));
         foreach (Match expected in new Regex(pattern, options).Matches(text))
@@ -273,7 +273,10 @@ public sealed class Utf8NativeLiteralInvocationTests
     [MemberData(nameof(NonBacktrackingCases))]
     public void NonBacktrackingLiteralsServeAllOwnedOperations(string pattern, RegexOptions options)
     {
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
         Assert.Equal(Utf8ExecutionBackend.NativeLiteral, Prepared(regex).ExecutionBackend);
         // Owned graph admission and verifier preparation borrow the scalar tree.
@@ -293,7 +296,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         const string pattern = "(?<x>(?<x>a)b)";
         var options = RegexOptions.CultureInvariant | RegexOptions.NonBacktracking |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options).Match("ab");
         Assert.Equal(Utf8ExecutionBackend.FallbackRegex, Prepared(regex).ExecutionBackend);
         Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).TryGetGroup("x", out var actual));
@@ -321,7 +324,7 @@ public sealed class Utf8NativeLiteralInvocationTests
     public void NativeSelectionKeepsScalarFoldingAndOptionSemantics(int patternId, string pattern, RegexOptions options)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         if ((options & RegexOptions.NonBacktracking) != 0) ;        foreach (var text in new[] { "éÉ", "éa a", "abcd ABCD", "KkK", "\U0001f600\U0001f600", "target target" })
         {
             var input = Encoding.UTF8.GetBytes(text);
@@ -367,7 +370,7 @@ public sealed class Utf8NativeLiteralInvocationTests
     public void NativeEnumerationRetainsCancellationBetweenMatches(bool compiled, bool reverse)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex("target", RegexOptions.CultureInvariant |
+        var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None) | (reverse ? RegexOptions.RightToLeft : RegexOptions.None));
         var enumerator = regex.EnumerateMatches("target target"u8, cancellationToken: source.Token);
         Assert.True(enumerator.MoveNext());
@@ -388,7 +391,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         using var source = new CancellationTokenSource();
         foreach (var text in new[] { "", "target target", "é中\U0001f600 target 中 abCD", "aaa a aé éa", "miss" })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var input = Encoding.UTF8.GetBytes(text);
             var actual = regex.EnumerateMatches(input, cancellationToken: source.Token);
             foreach (Match expected in new Regex(pattern, options).Matches(text))
@@ -411,8 +414,10 @@ public sealed class Utf8NativeLiteralInvocationTests
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex("target", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None),
-            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
         var armed = false;
         var entered = false;

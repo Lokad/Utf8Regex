@@ -29,7 +29,11 @@ public sealed class Utf8AnchoredLinePairTests
         foreach (var options in new[] { RegexOptions.Multiline, RegexOptions.Multiline | RegexOptions.Compiled })
         {
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Policy);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Policy
+            });
             Assert.Equal(oracle.Count(text), regex.Count(storage.AsSpan(1, input.Length), live.Token));
             foreach (var floor in new[] { 0, prefixLength + 1, prefixLength + 2, text.Length })
             {
@@ -48,7 +52,11 @@ public sealed class Utf8AnchoredLinePairTests
             var literal = ((char)first).ToString();
             var pattern = "^" + Regex.Escape(literal) + "[0-9]";
             var oracle = new Regex(pattern, RegexOptions.Multiline);
-            var regex = new Utf8Regex(pattern, RegexOptions.Multiline, Regex.InfiniteMatchTimeout, Policy);
+            var regex = new Utf8Regex(pattern, options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Policy
+            });
             foreach (var text in new[] { "", literal, literal + "7", "\n" + literal + "7\n",
                 "é😀\n" + literal + "7\nx" + literal + "8\n", new string('x', 2047) + "\n" + literal + "7" })
                 Assert.Equal(oracle.Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
@@ -66,7 +74,11 @@ public sealed class Utf8AnchoredLinePairTests
     {
         const string text = "i7x\nI8x\n9x\né12x\nx i3x\ni45x\n";
         var oracle = new Regex(pattern, options);
-        var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Policy);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Policy
+        });
         Assert.Equal(oracle.Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
         var expected = oracle.Match(text);
         var actual = regex.Match(Encoding.UTF8.GetBytes(text));
@@ -80,7 +92,11 @@ public sealed class Utf8AnchoredLinePairTests
         // A non-literal assertion keeps this public Count on the scalar seeker.
         const string pattern = @"^i(?<x>[0-9]+)x(?=$)";
         var input = Encoding.UTF8.GetBytes(new string('\n', 16_384) + "x i7x\n");
-        var regex = new Utf8Regex(pattern, RegexOptions.Multiline, Regex.InfiniteMatchTimeout, Policy);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Policy
+        });
         Assert.Equal(0, regex.Count(input));
         // Measure this production seeker's work independently of the public
         // operation's existing preparation and capture-slot admission.
@@ -92,21 +108,32 @@ public sealed class Utf8AnchoredLinePairTests
         Assert.Equal(0, outcome.Count);
         Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
         Assert.InRange(invocation.Budget.Steps, 1UL, 32UL);
-        var hit = new Utf8Regex(pattern, RegexOptions.Multiline, Regex.InfiniteMatchTimeout,
-            Policy with { MaxWorkingBytes = 1 });
+        var hit = new Utf8Regex(pattern, options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Policy with
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => hit.Count("\ni7x\n"u8)).ResourceKind);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern,
-                RegexOptions.Multiline, Regex.InfiniteMatchTimeout,
-                Policy with { MaxWorkSteps = 1 }).Count(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern, options:                 RegexOptions.Multiline, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Policy with
+                {
+                    MaxWorkSteps = 1
+                }
+            }).Count(input)).ResourceKind);
     }
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public void ProductionSeekerObservesOriginalCancellationAndDeadline(bool expire)
     {
-        var regex = new Utf8Regex(@"^i[0-9]+x", RegexOptions.Multiline);
+        var regex = new Utf8Regex(@"^i[0-9]+x", options: RegexOptions.Multiline);
         var program = regex.Inspection.PreparedRegex.ScalarProgram!;
         var input = Encoding.UTF8.GetBytes(new string('\n', 16_384) + "x i7x\n");
         using var source = new CancellationTokenSource();

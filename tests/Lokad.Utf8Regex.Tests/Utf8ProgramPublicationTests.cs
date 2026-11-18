@@ -28,7 +28,7 @@ public sealed class Utf8ProgramPublicationTests
             {
                 Utf8Regex? unpublished = null;
                 var workBefore = owner.Budget.WorkSteps;
-                var error = Assert.ThrowsAny<ArgumentException>(() => unpublished = new Utf8Regex("(", options));
+                var error = Assert.ThrowsAny<ArgumentException>(() => unpublished = new Utf8Regex("(", options: options));
                 Assert.Null(unpublished);
                 if (first is not null) { Assert.Equal(first.Message, error.Message); Assert.Equal(first.ParamName, error.ParamName); }
                 first = error;
@@ -36,12 +36,12 @@ public sealed class Utf8ProgramPublicationTests
                 Assert.Equal(0ul, owner.Budget.Depth); Assert.True(owner.Budget.WorkSteps > workBefore);
             }
             Assert.Equal(17, parent.Value);
-            var recovered = new Utf8Regex("(?<x>a)", options);
+            var recovered = new Utf8Regex("(?<x>a)", options: options);
             Assert.Equal(1, recovered.Count("😀a"u8));
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(recovered.CreateMatchCursor("😀a"u8.ToArray())).GetGroupMemory(recovered.GroupNumberFromName("x")).Span));
             return;
         }
-        var regex = new Utf8Regex("(?<x>a)", options);
+        var regex = new Utf8Regex("(?<x>a)", options: options);
         var prepared = regex.Inspection.PreparedRegex;
         var scalar = prepared.ScalarProgram;
         Assert.NotNull(scalar);

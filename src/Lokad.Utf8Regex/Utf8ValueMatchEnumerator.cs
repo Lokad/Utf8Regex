@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using System.Text.RegularExpressions;
@@ -6,9 +7,11 @@ namespace Lokad.Utf8Regex;
 
 /// <summary>Enumerates non-overlapping regex matches without allocating a match collection.</summary>
 /// <remarks>The enumerator borrows the original UTF-8 input for traversal; keep it unchanged while enumerating.
-/// Its current coordinate-only value does not retain the input.</remarks>
+/// Its current coordinate-only value does not retain the input. Funded enumeration borrows an open regex; close rejects later advances on all copies. Copies retain independent positions and shared numeric authority, without host working loans.</remarks>
 public ref struct Utf8ValueMatchEnumerator
 {
+    private Utf8FundedStorage? _programMemory;
+
     private Utf8OperationMatchCursor _cursor;
     internal Utf8SliceInvocation ExportWorkingInvocation() => _cursor.ExportWorkingInvocation();
     internal bool DebugIsOwnedSlice => _cursor.DebugIsOwnedSlice;
@@ -19,6 +22,7 @@ public ref struct Utf8ValueMatchEnumerator
     internal Utf8ValueMatchEnumerator(Utf8OperationMatchCursor cursor)
     {
         _cursor = cursor;
+        _programMemory = null;
         _timeoutInput = default;
         _timeoutRegex = null;
     }
@@ -40,6 +44,20 @@ public ref struct Utf8ValueMatchEnumerator
     /// <exception cref="RegexMatchTimeoutException">The configured matching timeout elapsed.</exception>
     /// <exception cref="Utf8ResourceLimitExceededException">The cumulative execution work or result-capacity allowance was exhausted.</exception>
     public bool MoveNext()
+    {
+        if (_programMemory is null) return MoveNextCore();
+        _cursor.CheckCancellationAtEntry();
+        using var use = _programMemory.Enter();
+        return MoveNextCore();
+    }
+
+    internal Utf8ValueMatchEnumerator WithProgramMemory(Utf8FundedStorage? memory)
+    {
+        _programMemory = memory;
+        return this;
+    }
+
+    private bool MoveNextCore()
     {
         try
         {

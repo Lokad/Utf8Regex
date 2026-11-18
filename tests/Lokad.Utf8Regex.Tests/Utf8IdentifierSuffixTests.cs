@@ -18,7 +18,7 @@ public sealed class Utf8IdentifierSuffixTests
         foreach (var pattern in new[] { @"(?:call|invoke)[ \t]+[A-Z][a-z]*\(", @"call[\s\S]{0,3}Result",
             @"(?:call[\s\S]{0,3}Result|invoke[\s\S]{0,3}Other)", @"call(?=[ \t]+Result)" })
         {
-            var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+            var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
             var subject = pattern.Contains("[A-Z]") ? "😀call Name(中invoke Name("
                 : pattern.Contains("?=") ? "😀call Result中call Result" : "😀call xResult中call xResult";
             var bytes = Encoding.UTF8.GetBytes(subject); Assert.True(regex.IsMatch(bytes)); Assert.Equal(2, regex.Count(bytes));

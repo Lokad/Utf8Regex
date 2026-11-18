@@ -32,7 +32,7 @@ public sealed class Utf8SliceLegacyFootprintTests
         string pattern,
         string expectedReason)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(expectedReason, regex.Inspection.FallbackReason);

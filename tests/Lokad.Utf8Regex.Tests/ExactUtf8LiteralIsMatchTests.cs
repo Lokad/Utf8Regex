@@ -47,10 +47,16 @@ public sealed class ExactUtf8LiteralIsMatchTests
         const string input = "café first, café last";
         var inputBytes = Encoding.UTF8.GetBytes(input);
         var timeout = TimeSpan.FromSeconds(1);
-        var finite = new Utf8Regex("café", RegexOptions.CultureInvariant, timeout);
-        var finiteLookahead = new Utf8Regex("foo(?=bar)", RegexOptions.CultureInvariant, timeout);
+        var finite = new Utf8Regex("café", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
+        var finiteLookahead = new Utf8Regex("foo(?=bar)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout
+        });
         var rightToLeftOptions = RegexOptions.CultureInvariant | RegexOptions.RightToLeft;
-        var rightToLeft = new Utf8Regex("café", rightToLeftOptions);
+        var rightToLeft = new Utf8Regex("café", options: rightToLeftOptions);
 
         var finiteOracle = new Regex("café", RegexOptions.CultureInvariant, timeout);
         var rightToLeftOracle = new Regex("café", rightToLeftOptions);
@@ -70,7 +76,7 @@ public sealed class ExactUtf8LiteralIsMatchTests
     private static void AssertParity(string pattern, string input, RegexOptions options)
     {
         var oracle = new Regex(pattern, options);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         AssertParity(oracle, regex, input);
     }

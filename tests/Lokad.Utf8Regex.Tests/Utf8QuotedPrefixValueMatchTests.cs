@@ -18,8 +18,16 @@ public sealed class Utf8QuotedPrefixValueMatchTests
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
             var options = mode | RegexOptions.CultureInvariant;
-            var regex = new Utf8Regex(Pattern, options, Timeout.InfiniteTimeSpan,
-                Policy with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy with
+                {
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var oracle = new Regex(Pattern, options);
             foreach (var text in new[] { "", "no quote", "\"", "\"\"tail", "\"abc\"tail", "\"a\\\"b\"tail",
                 "\"a\\\\b\"tail", "\"a\nb\"tail", "\"a\\\nb\"tail", "\"a\0b\"tail", "\"abc\\", "x\"a\"", "\n\"a\"" })
@@ -44,7 +52,7 @@ public sealed class Utf8QuotedPrefixValueMatchTests
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.IgnoreCase,
             RegexOptions.Singleline, RegexOptions.RightToLeft })
-            Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(Pattern, options), new Regex(Pattern, options),
+            Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(Pattern, options: options), new Regex(Pattern, options),
                 ["\"é😀\\😀x\"tail", "\"abc\"😀", "😀\"abc\"", "\"a\\\nb\"", "\"a\nb\""]);
         var regex = new Utf8Regex(Pattern); var bytes = "\"abc\"\"def\""u8.ToArray();
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
@@ -57,7 +65,7 @@ public sealed class Utf8QuotedPrefixValueMatchTests
         var offset = regex.Match("😀x\"abc\"tail"u8, 5, []);
         Assert.Equal((5, 5), (offset.StartOffsetInBytes, offset.EndOffsetInBytes - offset.StartOffsetInBytes));
         var nbPattern = Pattern.Replace(@"\G", @"\A");
-        Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(nbPattern, RegexOptions.NonBacktracking),
+        Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(nbPattern, options: RegexOptions.NonBacktracking),
             new Regex(nbPattern, RegexOptions.NonBacktracking), ["\"abc\"tail", "\"a\\\nb\"", "\"é😀\""]);
         Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(Pattern + "x"), new Regex(Pattern + "x"), ["\"abc\"x", "\"abc\"tail"]);
     }
@@ -82,8 +90,17 @@ public sealed class Utf8QuotedPrefixValueMatchTests
         var input = Encoding.ASCII.GetBytes(text); var denied = false; var admitted = false;
         for (ulong work = 1; work < 512; work++)
         {
-            var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Policy with { MaxWorkSteps = work, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy with
+                {
+                    MaxWorkSteps = work,
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             try { Assert.Equal(success, regex.Match(input).Success); admitted = true; break; }
             catch (Utf8ResourceLimitExceededException failure)
             { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind); denied = true; }
@@ -99,7 +116,11 @@ public sealed class Utf8QuotedPrefixValueMatchTests
         using var live = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == trigger) { if (expire) ticks = 100; else live.Cancel(); } return ticks; });
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50), Policy);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Policy
+        });
         Assert.True(regex.Match("\"abc\"tail"u8, cancellationToken: live.Token).Success);
         trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("\"abc\"tail"u8, cancellationToken: live.Token)).MatchTimeout);

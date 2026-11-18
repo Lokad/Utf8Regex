@@ -28,7 +28,11 @@ public sealed class Utf8HexColorValueMatchTests
             @"\A#?(?<color>[A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})\Z" })
         {
             var options = Fold | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             var oracle = new Regex(pattern, options);
             foreach (var text in new[] { "", "#", "ab", "abc", "ABC", "#aBc", "abcd", "abcdef", "#ABC123",
                 "#abcd", "aBc123\n", "#abc\n", "abc\r\n", "abc\n\n", "abcdefg", "abc def", "#12g", "abc\0" })
@@ -58,7 +62,7 @@ public sealed class Utf8HexColorValueMatchTests
             @"^#?([a-g0-9]{6}|[a-g0-9]{3})$", @"^#?((?-i:[a-f0-9]){6}|(?-i:[a-f0-9]){3})$" })
         foreach (var options in new[] { Fold, Fold | RegexOptions.NonBacktracking, Fold | RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             foreach (var text in new[] { "abc", "#ABC123", "ggg", "ABC\n", "abc\nrest", "😀abc", "abc😀", "ébc", "１２３" })
             {
                 var input = Encoding.UTF8.GetBytes(text); var expected = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); var actual = regex.Match(input);
@@ -67,7 +71,7 @@ public sealed class Utf8HexColorValueMatchTests
                         (actual.StartOffsetInBytes, (actual.EndOffsetInBytes - actual.StartOffsetInBytes)));
                 }
         }
-        var offset = new Utf8Regex(Color, Fold); var bytes = "#abc"u8.ToArray();
+        var offset = new Utf8Regex(Color, options: Fold); var bytes = "#abc"u8.ToArray();
         Assert.True(offset.Match(bytes, 0, []).Success);
         Assert.False(offset.Match(bytes, 1, []).Success);
         Assert.False(offset.Match(new byte[2049]).Success);
@@ -77,7 +81,7 @@ public sealed class Utf8HexColorValueMatchTests
             foreach (var culture in new[] { "en-US", "tr-TR" })
             {
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
-                var regex = new Utf8Regex(Color, RegexOptions.IgnoreCase);
+                var regex = new Utf8Regex(Color, options: RegexOptions.IgnoreCase);
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
                 Assert.Equal(7, (regex.Match("#AbC123\n"u8).EndOffsetInBytes - regex.Match("#AbC123\n"u8).StartOffsetInBytes));
             }
@@ -88,10 +92,24 @@ public sealed class Utf8HexColorValueMatchTests
     [Fact]
     public void ValueRangePreservesFundedResultsAndWorkAdmission()
     {
-        var tight = new Utf8Regex(Color, Fold, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+        var tight = new Utf8Regex(Color, options: Fold, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkingBytes = 8 << 20,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(7, (tight.Match("#ABC123"u8).EndOffsetInBytes - tight.Match("#ABC123"u8).StartOffsetInBytes));
-        var denied = new Utf8Regex(Color, Fold, Timeout.InfiniteTimeSpan, Funded with { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex(Color, options: Fold, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match("#ABC123"u8)).ResourceKind);
     }
@@ -117,7 +135,11 @@ public sealed class Utf8HexColorValueMatchTests
             if (expire) return 50;
             token.Cancel(); return 0;
         });
-        var regex = new Utf8Regex(Color, Fold, timeout, Funded);
+        var regex = new Utf8Regex(Color, options: Fold, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = Funded
+        });
         if (expire) Assert.Equal(regex.MatchTimeout,
             Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, cancellationToken: token.Token)).MatchTimeout);
         else Assert.Equal(token.Token,
@@ -128,7 +150,7 @@ public sealed class Utf8HexColorValueMatchTests
     [Fact]
     public void DetailedCapturesRetainedAliasesAndStrictInputStayOwned()
     {
-        var regex = new Utf8Regex(Color, Fold); var input = "#AbC123\n"u8.ToArray();
+        var regex = new Utf8Regex(Color, options: Fold); var input = "#AbC123\n"u8.ToArray();
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); Assert.True(detailed.TryGetGroup(1, out var group));
         var value = regex.Match(input); var cursor = regex.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());

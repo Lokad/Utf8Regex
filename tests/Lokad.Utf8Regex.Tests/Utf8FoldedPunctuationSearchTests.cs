@@ -77,7 +77,10 @@ public sealed class Utf8FoldedPunctuationSearchTests
             var input = Encoding.UTF8.GetBytes(text);
             var policy = finite ? new Utf8ResourcePolicy
             { MaxWorkSteps = 1_000_000, MaxDepth = 2048, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 } : default;
-                var regex = new Utf8Regex(pattern, options, resourcePolicy: policy);
+                var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+                {
+                    ResourcePolicy = policy
+                });
                 Assert.Equal(reference.Count(text), regex.Count(input));
             Assert.Equal(reference.IsMatch(text), regex.IsMatch(input));
             var expected = reference.Match(text);

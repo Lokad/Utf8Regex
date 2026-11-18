@@ -71,8 +71,8 @@ internal sealed class LokadPublicBenchmarkContext
         (InputString, Replacement, Pattern, Options) = Resolve(caseId);
         Operation = GetOperation(caseId);
         InputBytes = Encoding.UTF8.GetBytes(InputString);
-        Utf8Regex = new Utf8Regex(Pattern, Options);
-        CompiledUtf8Regex = new Utf8Regex(Pattern, Options | RegexOptions.Compiled);
+        Utf8Regex = new Utf8Regex(Pattern, options: Options);
+        CompiledUtf8Regex = new Utf8Regex(Pattern, options: Options | RegexOptions.Compiled);
         Regex = new Regex(Pattern, Options, Regex.InfiniteMatchTimeout);
         CompiledRegex = new Regex(Pattern, Options | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
         HasCompiledLiteralFamilyRawMatch = CompiledUtf8Regex.Inspection.DebugTryMatchCompiledAsciiLiteralFamilyRaw(InputBytes, out _compiledLiteralFamilyRawIndex, out _compiledLiteralFamilyRawLength);

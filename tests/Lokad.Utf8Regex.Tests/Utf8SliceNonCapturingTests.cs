@@ -32,7 +32,7 @@ public sealed class Utf8SliceNonCapturingTests
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
         }
     }
@@ -71,7 +71,7 @@ public sealed class Utf8SliceNonCapturingTests
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(expected, regex.IsMatch(input));
             using var source = new CancellationTokenSource();
             Assert.Equal(expected, regex.IsMatch(input, source.Token));
@@ -82,7 +82,7 @@ public sealed class Utf8SliceNonCapturingTests
     [Fact]
     public void TransparentDetailedSkipsNonCapturingGroups()
     {
-        var regex = new Utf8Regex("(a)(?:b)(c)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a)(?:b)(c)", options: RegexOptions.CultureInvariant);
         var oracle = new Regex("(a)(?:b)(c)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match("abc");
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("abc")));
         Assert.True(detailed.Success);
@@ -108,7 +108,7 @@ public sealed class Utf8SliceNonCapturingTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.Count(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
@@ -121,7 +121,7 @@ public sealed class Utf8SliceNonCapturingTests
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Replace(inputText, replacement);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
         if (regex.Inspection.DebugUsesOwnedSliceProgram)
         {
@@ -136,7 +136,7 @@ public sealed class Utf8SliceNonCapturingTests
     public void UnterminatedShapesFailConstruction(string pattern)
     {
         Utf8PatternFailureAssert.Throws(
-            () => new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+            () => new Utf8Regex(pattern, options: RegexOptions.CultureInvariant));
     }
 
     [Theory]
@@ -148,7 +148,7 @@ public sealed class Utf8SliceNonCapturingTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var expected = oracle.Match(inputText, offset);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(expected.Success, regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
         var actual = regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []);
         Assert.Equal(expected.Success, actual.Success);

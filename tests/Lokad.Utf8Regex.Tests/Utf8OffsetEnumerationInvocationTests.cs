@@ -30,7 +30,10 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     public void EveryByteStartRetainsFullOriginAndScalarEmptyProgression(string pattern, bool compiled, bool rtl, bool finite, bool live)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
-        var regex = new Utf8Regex(pattern, options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout
+        });
         var oracle = new Regex(pattern, options);
         using var source = new CancellationTokenSource();
         foreach (var text in new[] { "", "abc abab aaab aabc ab1d getAlpha setBeta abc\n", "é😀 abc abab 中aaab aabc ab12d getAlpha 😀abc", "abc\nabc\r\nabc" })
@@ -121,7 +124,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         using var source = new CancellationTokenSource();
         var expected = Enumerable.Range(0, ranges.Length / 2).Select(index => (ranges[index * 2], ranges[index * 2 + 1])).ToArray();
         var projection = ProjectFixtureSubject(text);
@@ -164,7 +167,10 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-            var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(10)
+            });
             var ascii = regex.EnumerateMatches("abc ab1d getAlpha"u8, 1);
             Assert.False(ascii.DebugIsOwnedSlice);
             var mixed = Encoding.UTF8.GetBytes("é😀 abc ab1d getAlpha");
@@ -172,7 +178,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
             Assert.Equal("startOffsetInBytes", failure.ParamName);
             var forward = regex.EnumerateMatches(mixed, 6);
             while (forward.MoveNext()) Assert.True(forward.Current.Success);
-            var reverse = new Utf8Regex(pattern, options | RegexOptions.RightToLeft).EnumerateMatches(mixed, 6);
+            var reverse = new Utf8Regex(pattern, options: options | RegexOptions.RightToLeft).EnumerateMatches(mixed, 6);
             Assert.True(reverse.DebugIsOwnedSlice);
             using var source = new CancellationTokenSource();
             var token = regex.EnumerateMatches("abc ab1d getAlpha"u8, 1, source.Token);
@@ -187,7 +193,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData(@"\G(ab)")]
     public void ZeroWidthAndAssertionProgramsRetainOwnedScalarCursors(string pattern)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var cursor = regex.EnumerateMatches("abab"u8, 1);
         Assert.True(cursor.DebugIsOwnedSlice);
     }
@@ -197,7 +203,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [InlineData(true)]
     public void InvalidInputAndOffsetKeepTheirExceptionOrderAndPrecancellation(bool live)
     {
-        var regex = new Utf8Regex("(ab)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(ab)", options: RegexOptions.CultureInvariant);
         using var source = new CancellationTokenSource();
         var token = live ? source.Token : default;
         byte[] malformed = [0xc3, 0xa9, 0xff];
@@ -223,7 +229,10 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     {
         using var clock = Utf8DeadlineTestClock.Start();
         var input = Encoding.UTF8.GetBytes("abc abab ab1d abc");
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(200));
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        });
         var cursor = regex.EnumerateMatches(input, 0);
         Assert.True(cursor.MoveNext());
         var previous = cursor.Current;
@@ -240,7 +249,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
         Assert.True(expired);
         Assert.Equal(previous, cursor.Current);
         using var source = new CancellationTokenSource();
-        var live = new Utf8Regex(pattern, RegexOptions.CultureInvariant).EnumerateMatches(input, 0, source.Token);
+        var live = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant).EnumerateMatches(input, 0, source.Token);
         while (live.MoveNext()) { }
         previous = live.Current;
         source.Cancel();
@@ -298,7 +307,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
 
     public void NativeFactoryKeepsValidationWorkAndBorrowedAdmission(string pattern)
     {
-        var prepared = Prepared(new Utf8Regex(pattern, RegexOptions.CultureInvariant));
+        var prepared = Prepared(new Utf8Regex(pattern, options: RegexOptions.CultureInvariant));
         var input = Encoding.UTF8.GetBytes(new string('x', 8193) + "abc ab1d getAlpha é");
         // Structural/window lanes require ASCII; Unicode literals retain mixed projection.
         if (pattern.StartsWith("a.", StringComparison.Ordinal) || pattern.StartsWith("(?:get", StringComparison.Ordinal))

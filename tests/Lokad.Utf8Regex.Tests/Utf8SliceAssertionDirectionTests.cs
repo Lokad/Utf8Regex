@@ -120,7 +120,7 @@ public sealed class Utf8SliceAssertionDirectionTests
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
             Utf8SliceRunner.IsMatch(program, input, starts, ends, ref denied).Breach);
         Assert.Equal(0UL, denied.Ledger.ReservedBytes);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.Equal(1, regex.Count(input));
         Assert.False((Utf8MatchSequence.First(regex.CreateMatchCursor(input)).TryGetGroup("o", out var range1) ? range1.Success : default));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -145,7 +145,7 @@ public sealed class Utf8SliceAssertionDirectionTests
             Utf8SliceRunner.TryMatchAt(program, input, 1024, starts, ends, true, ref invocation));
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         using var cursor = regex.CreateMatchCursor(input, 1024);
         Assert.True(cursor.MoveNext(out var match));
         Assert.Equal(1024, match.GetCaptures(regex.GroupNumberFromName("o")).Length);

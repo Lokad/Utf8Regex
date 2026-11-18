@@ -38,9 +38,18 @@ public sealed class Utf8LiteralCensusBoundaryTests
     [Fact]
     public void ScalarCountAgreesWithFinitePublicControls()
     {
-        var regex = new Utf8Regex("éé", RegexOptions.Compiled);
-        var finite = new Utf8Regex("éé", RegexOptions.Compiled, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+        var regex = new Utf8Regex("éé", options: RegexOptions.Compiled);
+        var finite = new Utf8Regex("éé", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            }
+        });
         var text = string.Concat(Enumerable.Repeat("xéééx😀éé ", 20000));
         var input = Encoding.UTF8.GetBytes(text);
         var expected = new Regex("éé").Count(text);

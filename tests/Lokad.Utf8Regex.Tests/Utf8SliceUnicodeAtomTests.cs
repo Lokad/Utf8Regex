@@ -85,7 +85,10 @@ public sealed class Utf8SliceUnicodeAtomTests
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, options));
         var oracle = CreateFixtureOracle(patternId, options);
         var metadata = new Regex(pattern, options & ~RegexOptions.Compiled);
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         using var source = new CancellationTokenSource();
         foreach (var text in Texts)
         {
@@ -146,7 +149,10 @@ public sealed class Utf8SliceUnicodeAtomTests
         var options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         Assert.NotNull(Utf8SliceParser.TryParse(pattern, options));
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input));
         Assert.Equal(oracle.Count(text), regex.Count(input));
@@ -183,7 +189,10 @@ public sealed class Utf8SliceUnicodeAtomTests
         foreach (var operation in new[] { 0, 1, 2, 3 })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout
+            });
             using var source = new CancellationTokenSource();
             var entered = false;
             var session = Utf8SearchDiagnosticsSession.Start(steps =>
@@ -252,7 +261,10 @@ public sealed class Utf8SliceUnicodeAtomTests
             RegexOptions.CultureInvariant | RegexOptions.Compiled, RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
             var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(20));
-            var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(20));
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(20)
+            });
             Assert.Equal(oracle.Count(text), regex.Count(input));
             AssertSequence(text, oracle.EnumerateMatches(text), regex.EnumerateMatches(input));
             AssertOwned(regex);
@@ -355,7 +367,7 @@ public sealed class Utf8SliceUnicodeAtomTests
         }).ToArray();
         Assert.Equal(expected, projected);
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex(AtomPatterns[patternId], options);
+        var regex = new Utf8Regex(AtomPatterns[patternId], options: options);
         using var source = new CancellationTokenSource();
         Assert.Equal(expected.Length != 0, regex.IsMatch(input, source.Token));
         Assert.Equal(expected.Length, regex.Count(input, source.Token));

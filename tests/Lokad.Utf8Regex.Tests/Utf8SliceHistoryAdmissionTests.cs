@@ -73,7 +73,7 @@ public sealed class Utf8SliceHistoryAdmissionTests
     [InlineData(true)]
     public void PublishedScalarHistoriesRemainValidAcrossLaterRuns(bool reverse)
     {
-        var regex = new Utf8Regex("(?<x>.)+", RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
+        var regex = new Utf8Regex("(?<x>.)+", options: RegexOptions.CultureInvariant | (reverse ? RegexOptions.RightToLeft : 0));
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
         var input = "é😀a"u8.ToArray();
         var invocation = Invocation(new(ulong.MaxValue, 0, 0));

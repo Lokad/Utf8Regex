@@ -21,7 +21,11 @@ public sealed class PythonReCaptureAliasTests
     {
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
         var translation = PythonReTranslator.Translate(parse, true);
-        var native = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, Timeout.InfiniteTimeSpan, default);
+        var native = new Utf8Regex(translation.NativePatternUtf8, options: translation.NativeRegexOptions, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default
+        });
         var input = Encoding.UTF8.GetBytes(hit);
         var absent = Encoding.UTF8.GetBytes(miss);
         Assert.True(native.IsMatch(input));
@@ -45,7 +49,7 @@ public sealed class PythonReCaptureAliasTests
                     MaxResultBytes = 1_048_576
                 }
 
-    : default
+                : default
             });
             Assert.Equal(["0", first, second], regex.GetGroupNames());
             Assert.True(regex.IsMatch(input));
@@ -77,7 +81,11 @@ public sealed class PythonReCaptureAliasTests
         const string pattern = "(?P<α>a)(b)(?P<g1>c)(?P=α)\\2";
         var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
         var translation = PythonReTranslator.Translate(parse, true);
-        var native = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, Timeout.InfiniteTimeSpan, default);
+        var native = new Utf8Regex(translation.NativePatternUtf8, options: translation.NativeRegexOptions, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default
+        });
         Assert.True(native.IsMatch("abcab"u8));
         Assert.False(native.IsMatch("abccb"u8));
         var regex = new Utf8PythonRegex(pattern);

@@ -23,7 +23,7 @@ public sealed class Utf8SimplePrefixCountTests
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
         foreach (var compiled in new[] { false, true })
         {
-            var regex = new Utf8Regex(pattern, Options(compiled));
+            var regex = new Utf8Regex(pattern, options: Options(compiled));
             foreach (var text in new[] { "", "AB", "ABxXY12", "aba12 ab34 a56", "AB12XY34ABxxAB56",
                 "😀ab12é AB34", "prefix1prefixxprefix2", "1longsuffix 2longsuffix", "aB12 AB34",
                 "éclass Foo 😀class Bar record Baz struct lower class Last",
@@ -49,7 +49,11 @@ public sealed class Utf8SimplePrefixCountTests
     {
         const string pattern = "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
-        var regex = new Utf8Regex(pattern, Options(compiled), Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         // Necessary prefixes skip misses in valid mixed text. Complete hits
         // use the general program's admitted workspace.
         var input = Encoding.UTF8.GetBytes("😀" + new string('x', 65536));
@@ -58,11 +62,24 @@ public sealed class Utf8SimplePrefixCountTests
         Assert.Equal(1, regex.Count("😀ASIAABCDEFGHIJKLMNOP"u8, token.Token));
         // A backreference still depends on captured values and retains admission
         // for its real scalar workspace under the same small allowance.
-        var dependent = new Utf8Regex(pattern + @"\1", Options(compiled), Regex.InfiniteMatchTimeout, policy with { MaxWorkingBytes = 256 });
-        Assert.Equal(1, new Utf8Regex(pattern + @"\1", Options(compiled)).Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8));
+        var dependent = new Utf8Regex(pattern + @"\1", options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy with
+            {
+                MaxWorkingBytes = 256
+            }
+        });
+        Assert.Equal(1, new Utf8Regex(pattern + @"\1", options: Options(compiled)).Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8));
         Assert.Throws<Utf8ResourceLimitExceededException>(() => dependent.Count("😀ASIAABCDEFGHIJKLMNOPASIAABCDEFGHIJKLMNOP"u8, token.Token));
-        var denied = new Utf8Regex(pattern, Options(compiled), Regex.InfiniteMatchTimeout,
-            policy with { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy with
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input));
         token.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token));
@@ -74,7 +91,7 @@ public sealed class Utf8SimplePrefixCountTests
     [InlineData(true)]
     public void PrefixProofDoesNotAcceptCandidatesOrChangeRetainedCaptures(bool compiled)
     {
-        var regex = new Utf8Regex("((?:AB|XY)([0-9]{2}))", Options(compiled));
+        var regex = new Utf8Regex("((?:AB|XY)([0-9]{2}))", options: Options(compiled));
         var input = "😀ABxxXY12 AB34 XY"u8.ToArray();
         Assert.Equal(2, regex.Count(input));
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -115,7 +132,7 @@ public sealed class Utf8SimplePrefixCountTests
         // an oracle for this case.
         foreach (var compiled in new[] { false, true })
         {
-            var regex = new Utf8Regex("#.[a-z]+", Options(compiled));
+            var regex = new Utf8Regex("#.[a-z]+", options: Options(compiled));
             Assert.Equal(2, regex.Count("#😀word #xfoo"u8));
         }
         var deep = new Utf8Regex(new string('(', 100) + "#x" + new string(')', 100));

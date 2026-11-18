@@ -20,8 +20,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
         foreach (var hit in new[] { false, true })
         {
             var needle = new string('z', width);
-            var program = new Utf8Regex("(?<x>" + needle + ")", RegexOptions.NonBacktracking)
-                .Inspection.AvailableOwnedSliceProgram!;
+            var program = new Utf8Regex("(?<x>" + needle + ")", options: RegexOptions.NonBacktracking)                .Inspection.AvailableOwnedSliceProgram!;
             var prefixText = string.Concat(Enumerable.Repeat(scalar, prefix));
             var input = Encoding.UTF8.GetBytes(prefixText + (hit ? needle : ""));
             var owner = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
@@ -73,8 +72,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [InlineData(true, true)]
     public void CandidateQuantaKeepBoundedInterruptionAndTableLoans(bool expire, bool wide)
     {
-        var program = new Utf8Regex("(?<x>" + new string('z', wide ? 70 : 1) + ")", RegexOptions.NonBacktracking)
-            .Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex("(?<x>" + new string('z', wide ? 70 : 1) + ")", options: RegexOptions.NonBacktracking)            .Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes(new string('a', 128));
         var owner = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         Assert.True(owner.Ledger.TryReserve(13));
@@ -107,7 +105,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [InlineData(false)] [InlineData(true)]
     public void LastCandidateQuantumCannotPublishNoMatchAfterInterruption(bool expire)
     {
-        var program = new Utf8Regex("(?<x>z)", RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex("(?<x>z)", options: RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes(new string('a', 63));
         var owner = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         Assert.True(owner.Ledger.TryReserve(13));
@@ -147,7 +145,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
         var input = Encoding.UTF8.GetBytes(new string('a', prefix)).Concat(new byte[] { 0xc3 }).ToArray();
         foreach (var compiled in new[] { false, true })
         {
-            var regex = new Utf8Regex("(?<x>a+)|$", RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
+            var regex = new Utf8Regex("(?<x>a+)|$", options: RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));
             using var live = new CancellationTokenSource();
             live.Cancel();
             Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, live.Token)).CancellationToken);
@@ -167,7 +165,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     {
         var text = new string('a', prefix) + string.Concat(Enumerable.Repeat(unit, repeats));
         var input = Encoding.UTF8.GetBytes(text);
-        var program = new Utf8Regex("(.)?", RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex("(.)?", options: RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
         var invocation = new Utf8SliceInvocation(new(1_000_000, 0, 1_000_000), Timeout.InfiniteTimeSpan, default);
         Assert.True(invocation.Ledger.TryReserve(13));
         Assert.Equal(Utf8ExecutionLimitKind.None,
@@ -199,7 +197,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     public void SizeAndOffsetBlocksKeepBoundedInterruptionAndRefunds(bool offsets, bool expire)
     {
         var input = Encoding.UTF8.GetBytes(new string('a', offsets ? 65 : 4097));
-        var program = new Utf8Regex("a", RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex("a", options: RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var live = new CancellationTokenSource();
@@ -295,7 +293,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [InlineData(".", true)]
     public void LastSimpleAtomCannotPublishAfterInterruption(string pattern, bool cancel)
     {
-        var program = new Utf8Regex(pattern, RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex(pattern, options: RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
         var measured = new Utf8SliceInvocation(new(1_000_000, 0, 1_000_000), Timeout.InfiniteTimeSpan, default);
         Assert.Equal(Utf8ExecutionLimitKind.None,
             Utf8NonBacktrackingSearchState.TryCreate(program, "1"u8, ref measured, out var complete));
@@ -326,7 +324,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [InlineData(false)] [InlineData(true)]
     public void LongEmptyRowKeepsBoundedInterruptionAndRefundsTheUnpublishedTable(bool expire)
     {
-        var regex = new Utf8Regex(string.Concat(Enumerable.Repeat("a?", 2048)), RegexOptions.NonBacktracking);
+        var regex = new Utf8Regex(string.Concat(Enumerable.Repeat("a?", 2048)), options: RegexOptions.NonBacktracking);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         Assert.True(program.Instructions.Length > 4096);
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -353,7 +351,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [Fact]
     public void CancellationOnTheLastQuantumCannotPublishTheTable()
     {
-        var regex = new Utf8Regex(new string('a', 4031), RegexOptions.NonBacktracking);
+        var regex = new Utf8Regex(new string('a', 4031), options: RegexOptions.NonBacktracking);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(4032, program.Instructions.Length);
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -371,7 +369,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [Fact]
     public void DeadlineExpiringAfterTheLastQuantumCannotPublishTheTable()
     {
-        var program = new Utf8Regex("", RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex("", options: RegexOptions.NonBacktracking).Inspection.AvailableOwnedSliceProgram!;
         Assert.Single(program.Instructions);
         var reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++reads >= 4 ? 100 : 0);
@@ -394,8 +392,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [InlineData(4097, 66)]
     public void EmptyRowWorkBoundsEachQuantumAndRefusesBeforeItRuns(int states, ulong steps)
     {
-        var program = new Utf8Regex(new string('a', states - 1), RegexOptions.NonBacktracking)
-            .Inspection.AvailableOwnedSliceProgram!;
+        var program = new Utf8Regex(new string('a', states - 1), options: RegexOptions.NonBacktracking)            .Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(states, program.Instructions.Length);
         for (ulong limit = 1; limit <= steps; limit++)
         {

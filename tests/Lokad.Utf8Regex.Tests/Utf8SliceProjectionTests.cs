@@ -19,7 +19,7 @@ public sealed class Utf8SliceProjectionTests
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match(inputText);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var actual = regex.Match(input);
         Assert.Equal(oracle.Success, actual.Success);
@@ -42,7 +42,7 @@ public sealed class Utf8SliceProjectionTests
     [Fact]
     public void OwnedDetailedProjectsGroups()
     {
-        var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a+)(b+)", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("xxaaabbyy");
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         var oracle = new Regex("(a+)(b+)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match("xxaaabbyy");
@@ -58,7 +58,7 @@ public sealed class Utf8SliceProjectionTests
     [Fact]
     public void OwnedDetailedReportsUnmatchedGroups()
     {
-        var regex = new Utf8Regex("(a)|(b)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a)|(b)", options: RegexOptions.CultureInvariant);
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("xb")));
         var oracle = new Regex("(a)|(b)", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Match("xb");
         Assert.True(actual.Success);
@@ -71,7 +71,7 @@ public sealed class Utf8SliceProjectionTests
     [Fact]
     public void OwnedDetailedMissIsUnsuccessful()
     {
-        var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a+)(b+)", options: RegexOptions.CultureInvariant);
         Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("xyz"))).Success);
     }
 
@@ -89,7 +89,7 @@ public sealed class Utf8SliceProjectionTests
     [Fact]
     public void AbandonedEnumerationLeavesNoCorruption()
     {
-        var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a+)(b+)", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("aab aabb aaabbb");
         var enumerator = regex.EnumerateMatches(input);
         Assert.True(enumerator.MoveNext());
@@ -106,7 +106,7 @@ public sealed class Utf8SliceProjectionTests
     [Fact]
     public void MidEnumerationCancellationAborts()
     {
-        var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a+)(b+)", options: RegexOptions.CultureInvariant);
         using var source = new CancellationTokenSource();
         var enumerator = regex.EnumerateMatches(Encoding.UTF8.GetBytes("aab aabb aaabbb"), cancellationToken: source.Token);
         Assert.True(enumerator.MoveNext());
@@ -125,7 +125,7 @@ public sealed class Utf8SliceProjectionTests
     [Fact]
     public void PreCanceledEnumerationThrowsAtBegin()
     {
-        var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a+)(b+)", options: RegexOptions.CultureInvariant);
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         Assert.Throws<OperationCanceledException>(() => regex.EnumerateMatches(Encoding.UTF8.GetBytes("aab"), cancellationToken: canceled.Token));

@@ -17,7 +17,10 @@ public sealed class Utf8ResidualRouteOwnershipTests
     [InlineData("(?#(?<100>a)a", true)]
     public void CommentPatternsKeepOwnedOffsetDiscovery(string pattern, bool compiled)
     {
-        var regex = new Utf8Regex(pattern, Options(compiled), TimeSpan.FromSeconds(1));
+        var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1)
+        });
         var bytes = "😀xab 😀ab"u8.ToArray();
         var subject = Utf8ValidatedInput.Create(bytes);
         var start = subject.GetBytePosition(7, "startOffsetInBytes");
@@ -46,7 +49,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
     [InlineData(true, true)]
     public void RtlBoundaryEnumerationRetainsWholeScalarContext(bool compiled, bool supplementary)
     {
-        var regex = new Utf8Regex(@"\bword\b", Options(compiled) | RegexOptions.RightToLeft);
+        var regex = new Utf8Regex(@"\bword\b", options: Options(compiled) | RegexOptions.RightToLeft);
         var input = Encoding.UTF8.GetBytes(supplementary ? "𐐀word word😀 word" : "word word");
         var actual = new List<(int, int)>();
         foreach (var match in regex.EnumerateMatches(input)) actual.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
@@ -64,7 +67,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
     [InlineData(true, "#ab", false)]
     public void HexColorNativeMissesRemainOwned(bool compiled, string text, bool success)
     {
-        var regex = new Utf8Regex("^#?([a-f0-9]{6}|[a-f0-9]{3})$", Options(compiled));
+        var regex = new Utf8Regex("^#?([a-f0-9]{6}|[a-f0-9]{3})$", options: Options(compiled));
         var match = regex.Match(Encoding.UTF8.GetBytes(text));
         Assert.Equal(success, match.Success);
         if (success) Assert.Equal((0, 7), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
@@ -101,7 +104,7 @@ public sealed class Utf8ResidualRouteOwnershipTests
         var bytes = Encoding.UTF8.GetBytes(text);
         foreach (var compiled in new[] { false, true })
         {
-            var regex = new Utf8Regex(pattern, Options(compiled));
+            var regex = new Utf8Regex(pattern, options: Options(compiled));
             Assert.Equal(success, regex.IsMatch(bytes));
             Assert.Equal(success ? 1 : 0, regex.Count(bytes));
             var value = regex.Match(bytes);

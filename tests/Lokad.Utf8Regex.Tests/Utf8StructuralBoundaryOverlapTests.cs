@@ -20,7 +20,7 @@ public sealed class Utf8StructuralBoundaryOverlapTests
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(new Regex(pattern).Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
         }
     }
@@ -42,9 +42,19 @@ public sealed class Utf8StructuralBoundaryOverlapTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
         foreach (var controlled in new[] { false, true })
         {
-            var regex = new Utf8Regex(Declaration, options, Regex.InfiniteMatchTimeout, controlled
-                ? new() { MaxWorkSteps = 1000000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 }
-                : default);
+            var regex = new Utf8Regex(Declaration, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = controlled ? new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxDepth = 128,
+                    MaxWorkingBytes = 1000000,
+                    MaxResultBytes = 1000000
+                }
+
+                : default
+            });
             var input = buffer.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             Assert.Equal(expected.Count, regex.Count(input));
             Assert.Equal(expected.Count, regex.Count(input, cancellation.Token));
@@ -85,7 +95,7 @@ public sealed class Utf8StructuralBoundaryOverlapTests
         var expected = new Regex(pattern).Matches(text);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(expected.Count, regex.Count(input));
             Assert.Equal(expected.Count != 0, regex.IsMatch(input));
             var first = regex.Match(input);

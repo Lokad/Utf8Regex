@@ -29,8 +29,17 @@ public sealed class Utf8FiniteIdentifierCountTests
         using var cancellation = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 128,
+                    MaxWorkingBytes = 1000000,
+                    MaxResultBytes = 1
+                }
+            });
             var slice = input.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             Assert.Equal(expected, regex.Count(slice));
             Assert.Equal(expected, regex.Count(slice, cancellation.Token));
@@ -47,8 +56,17 @@ public sealed class Utf8FiniteIdentifierCountTests
     [InlineData(KeywordPattern, "éclass Wrong 😀class\u2003Right record Good", 2)]
     public void UnicodeAndOverlappingPrefixesRetainScalarVerification(string pattern, string text, int expected)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text)));
     }
 
@@ -58,12 +76,30 @@ public sealed class Utf8FiniteIdentifierCountTests
     public void FiniteCountEnforcesWorkAndWorkingStorage(string pattern, string prefix, string suffix)
     {
         var input = Encoding.UTF8.GetBytes(prefix + new string(' ', 4096) + suffix);
-        var regex = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1000000,
+                MaxResultBytes = 1000000
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input)).ResourceKind);
-        var tiny = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1, MaxResultBytes = 1000000 });
+        var tiny = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1000000
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             {
@@ -96,9 +132,17 @@ public sealed class Utf8FiniteIdentifierCountTests
         });
         try
         {
-            var regex = new Utf8Regex(pattern, RegexOptions.None,
-                expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 10000000, MaxDepth = 128, MaxWorkingBytes = 1000000, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 10000000,
+                    MaxDepth = 128,
+                    MaxWorkingBytes = 1000000,
+                    MaxResultBytes = 1
+                }
+            });
             if (expire)
             {
                 var timeout = Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, cancellation.Token));

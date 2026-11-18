@@ -14,7 +14,7 @@ internal sealed class LokadReplicaCodeBenchmarkContext
             : benchmarkCase.Pattern;
         InputString = LoadCorpus();
         InputBytes = Encoding.UTF8.GetBytes(InputString);
-        Utf8Regex = new Utf8Regex(CompiledPattern, benchmarkCase.Options);
+        Utf8Regex = new Utf8Regex(CompiledPattern, options: benchmarkCase.Options);
         Regex = new Regex(CompiledPattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
         CompiledRegex = new Regex(CompiledPattern, benchmarkCase.Options | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
     }

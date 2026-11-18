@@ -45,7 +45,11 @@ public sealed class Utf8BoundedGapCandidateTests
         byte[] storage = [0xff, .. input, 0xff];
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.IgnoreCase })
         {
-            var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             using var token = new CancellationTokenSource();
             for (var start = 255; start <= text.Length; start++)
             {
@@ -74,7 +78,11 @@ public sealed class Utf8BoundedGapCandidateTests
             var input = Encoding.UTF8.GetBytes(new string('!', 260) + text);
             foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
             {
-                var regex = new Utf8Regex(Pattern, mode, Timeout.InfiniteTimeSpan, Funded);
+                var regex = new Utf8Regex(Pattern, options: mode, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = Funded
+                });
                 // Neighboring whitespace runs may absorb the newline gap.
                 var expectedCount = scalar == "\n" ? 1 : expected;
                 Assert.Equal(expectedCount, ScalarCount(regex, input, 0));
@@ -92,7 +100,11 @@ public sealed class Utf8BoundedGapCandidateTests
         foreach (var tail in new[] { "aResultb ResultaResultb", "abc Result?Resultabc", "abc Resultabc Resultabc" })
         {
             var input = Encoding.UTF8.GetBytes(new string('!', 260) + tail);
-            var regex = new Utf8Regex(pattern, RegexOptions.Compiled, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             var expected = ScalarCount(regex, input, 0);
             Assert.True(expected > 0);
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -106,16 +118,34 @@ public sealed class Utf8BoundedGapCandidateTests
     public void DiscoveryRespectsFiniteAdmissionAndEveryWorkCutoff()
     {
         var input = Encoding.UTF8.GetBytes(new string('!', 100000) + "abcdefghij 😀Result klmnopqrst");
-        var efficient = new Utf8Regex(Pattern, RegexOptions.Compiled, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkSteps = 4096 });
+        var efficient = new Utf8Regex(Pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 4096
+            }
+        });
         using var token = new CancellationTokenSource();
         Assert.Equal(1, efficient.Count(input, token.Token));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(Pattern,
-                RegexOptions.None, Timeout.InfiniteTimeSpan, Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(Pattern, options:                 RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkingBytes = 1
+                }
+            }).Count(input)).ResourceKind);
         var longClass = Encoding.UTF8.GetBytes(new string('a', 100000) + " Result klmnopqrst");
-        Assert.Equal(1, new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkSteps = 16384 }).Count(longClass, token.Token));
+        Assert.Equal(1, new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 16384
+            }
+        }).Count(longClass, token.Token));
 
         var regex = new Utf8Regex(@"(?<w>[a-z]{2,4})\s+[\s\S]{0,3}Result\k<w>");
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
@@ -147,7 +177,11 @@ public sealed class Utf8BoundedGapCandidateTests
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex(Pattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(20), Funded);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Funded
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {

@@ -154,7 +154,7 @@ public sealed class Utf8ProgramContinuationTests
         var oracleOptions = options & ~RegexOptions.Compiled; // Standing interpreted finite-lazy bug disposition.
         Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options, texts, oracleOptions);
         var oracle = new Regex(pattern, oracleOptions);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         foreach (var text in texts)
         {
             var input = Encoding.UTF8.GetBytes(text);

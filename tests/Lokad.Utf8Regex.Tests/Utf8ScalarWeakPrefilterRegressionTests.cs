@@ -19,7 +19,7 @@ public sealed class Utf8ScalarWeakPrefilterRegressionTests
         foreach (var item in new[] { (email, "😀 𐐀@é.org tail", 5, 11), (uri, "😀 https://é😀/x?q=𐐀#尾 rest", 5, 27) })
         foreach (var lane in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex("(?<value>" + item.Item1 + ")", RegexOptions.CultureInvariant | lane);
+            var regex = new Utf8Regex("(?<value>" + item.Item1 + ")", options: RegexOptions.CultureInvariant | lane);
             var input = Encoding.UTF8.GetBytes(item.Item2);
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
             var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -36,7 +36,7 @@ public sealed class Utf8ScalarWeakPrefilterRegressionTests
         foreach (var text in new[] { "", "admin@example.org", "https://example.org/a?q=x#z", "miss / @", "a@b.co a@c.co" })
         {
             var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-            var owned = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+            var owned = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
             var input = Encoding.ASCII.GetBytes(text);
             Assert.Equal(oracle.Count(text), owned.Count(input)); Assert.Equal(oracle.IsMatch(text), owned.IsMatch(input));
         }

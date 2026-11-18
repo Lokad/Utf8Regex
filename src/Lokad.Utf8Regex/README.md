@@ -44,16 +44,24 @@ construction controls. Memory accounting admits modeled major capacity before
 allocation; it is not total heap/RSS, all preparation, callbacks or retained-host
 storage containment. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits).
 
-Caller-funded `Compile` returns `Utf8RegexProgramOwner`. Its byte-template
+Constructors and `Compile` accept `Utf8RegexPolicy`, combining execution and
+construction limits/timeouts with optional `ProgramMemoryAllowance`. Both funded
+and unfunded factories return `Utf8Regex`; dispose funded expressions. The bounded
+replacement cache is conservatively prepaid before publication (4MiB payload plus
+64KiB metadata), without eagerly allocating it. The UTF8-template
 `TryReplace` writes into caller-owned storage; cold preparation and output share
 working admission, while cached plans remain covered by the program allowance.
 Temporary loans refund synchronously and copied output survives owner disposal.
-This API uses the controlled scalar replacement route, preserving RTL, captures,
+With shared working admission this uses the controlled scalar replacement route, preserving RTL, captures,
 NonBacktracking, cancellation and numeric limits.
 
 Keep borrowed subjects unchanged and their owners alive. Owned snapshots remain
 valid after advance/failure/disposal. Copied value cursors retain independent
-positions while sharing allowance/deadline. A host must separately account for
+positions while sharing numeric allowance/deadline. Funded span enumeration borrows
+an open regex and rejects later advances after close; Current values remain valid.
+Use the memory cursor for traversal surviving close or shared working admission.
+Span/owned-output/text-template operations keep numeric controls; APIs exposing a
+working allowance inherit program funding when it is null. A host must separately account for
 retained results and its own storage.
 
 Optional `Lokad.Utf8Regex.PythonRe`, `Lokad.Utf8Regex.Pcre2` and

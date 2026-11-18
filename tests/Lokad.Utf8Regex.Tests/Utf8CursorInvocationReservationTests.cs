@@ -26,7 +26,7 @@ public sealed class Utf8CursorInvocationReservationTests
     public void LinearCopiesKeepTheirTablesAndCreditsWithoutRootingAbandonedPayloads(bool compiled)
     {
         var options = RegexOptions.CultureInvariant | RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0);
-        var regex = new Utf8Regex("(?<x>😀|é)", options);
+        var regex = new Utf8Regex("(?<x>😀|é)", options: options);
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 4096), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(7));
         var arrays = ExerciseLinearCopies(Program(regex), ref invocation, out var held);
@@ -88,7 +88,7 @@ public sealed class Utf8CursorInvocationReservationTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex("(?<x>😀|é)", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+        var regex = new Utf8Regex("(?<x>😀|é)", options: RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 4096),
             deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(7));
@@ -109,7 +109,7 @@ public sealed class Utf8CursorInvocationReservationTests
     [Fact]
     public void CursorSetupWorkFailureReturnsOnlyUnpublishedPayloads()
     {
-        var regex = new Utf8Regex("(?<x>😀|é)", RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+        var regex = new Utf8Regex("(?<x>😀|é)", options: RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
         var input = "😀é😀"u8.ToArray();
         var validation = Utf8Validation.Validate(input);
         // Cover every cutoff through map and table preparation. Denied setup

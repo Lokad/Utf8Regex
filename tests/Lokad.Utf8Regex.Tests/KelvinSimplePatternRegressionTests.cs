@@ -20,7 +20,7 @@ public sealed class KelvinSimplePatternRegressionTests
         {
             var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var expected = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-            var actual = new Utf8Regex(pattern, options);
+            var actual = new Utf8Regex(pattern, options: options);
             var utf8 = Encoding.UTF8.GetBytes("\u212A");
 
             Assert.Equal(expected.IsMatch("\u212A"), actual.IsMatch(utf8));

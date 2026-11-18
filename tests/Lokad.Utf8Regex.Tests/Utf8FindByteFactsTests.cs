@@ -91,7 +91,7 @@ public sealed class Utf8FindByteFactsTests
             RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
             var input = Encoding.UTF8.GetBytes(row.Subject);
-            var regex = new Utf8Regex(row.Pattern, RegexOptions.CultureInvariant | mode);
+            var regex = new Utf8Regex(row.Pattern, options: RegexOptions.CultureInvariant | mode);
             var expected = (mode & RegexOptions.RightToLeft) == 0 ? row.Matches : row.Matches.Reverse().ToArray();
             Assert.True(regex.IsMatch(input));
             Assert.Equal(expected.Length, regex.Count(input));
@@ -208,7 +208,7 @@ public sealed class Utf8FindByteFactsTests
             var prefixes = Utf8OwnedFindOptimizations.FindAlternatePrefixes(tree.Root, options)?.Select(Encoding.UTF8.GetString).ToArray();
             Assert.NotNull(prefixes);
             var input = Encoding.UTF8.GetBytes(row.Subject);
-            var regex = new Utf8Regex(row.Pattern, options);
+            var regex = new Utf8Regex(row.Pattern, options: options);
             Assert.Equal(row.Matches.Length, regex.Count(input));
             var expected = (options & RegexOptions.RightToLeft) == 0 ? row.Matches : row.Matches.Reverse().ToArray();
             var matches = new List<(int, int)>();
@@ -391,7 +391,7 @@ public sealed class Utf8FindByteFactsTests
             RegexOptions.CultureInvariant | RegexOptions.RightToLeft,
             RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex("x[ab]", options | RegexOptions.IgnoreCase);
+            var regex = new Utf8Regex("x[ab]", options: options | RegexOptions.IgnoreCase);
             foreach (var input in new[] { "!XA!", "!XB!", "!xa!", "!xb!" })
             {
                 var match = regex.Match(Encoding.UTF8.GetBytes(input));
@@ -399,7 +399,7 @@ public sealed class Utf8FindByteFactsTests
                 Assert.Equal(1, match.StartOffsetInBytes);
                 Assert.Equal(2, (match.EndOffsetInBytes - match.StartOffsetInBytes));
             }
-            var wide = new Utf8Regex("x[😀🙏]", options);
+            var wide = new Utf8Regex("x[😀🙏]", options: options);
             Assert.Equal(2, wide.Count("!x😀!x🙏!"u8));
             var matchWide = wide.Match("!x😀!x🙏!"u8);
             Assert.True(matchWide.Success);
@@ -549,7 +549,7 @@ public sealed class Utf8FindByteFactsTests
             (Pattern: "a{2,4}bc", Subject: "aaaabc"),
             (Pattern: rtl ? @"\k<x>(?<x>😀)ab" : @"(?<x>😀)\k<x>ab", Subject: "😀😀ab") })
         {
-            var regex = new Utf8Regex(row.Pattern, options);
+            var regex = new Utf8Regex(row.Pattern, options: options);
             var input = Encoding.UTF8.GetBytes("!" + row.Subject + "!");
             Assert.True(regex.IsMatch(input), row.Pattern);
             Assert.Equal(1, regex.Count(input));

@@ -21,8 +21,8 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         Pattern = benchmarkCase.Pattern;
         Regex = new Regex(Pattern, benchmarkCase.Utf8Options, Regex.InfiniteMatchTimeout);
         CompiledRegex = new Regex(Pattern, benchmarkCase.DotNetOptions | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
-        Utf8Regex = new Utf8Regex(Pattern, benchmarkCase.Utf8Options);
-        CompiledUtf8Regex = new Utf8Regex(Pattern, benchmarkCase.Utf8Options | RegexOptions.Compiled);
+        Utf8Regex = new Utf8Regex(Pattern, options: benchmarkCase.Utf8Options);
+        CompiledUtf8Regex = new Utf8Regex(Pattern, options: benchmarkCase.Utf8Options | RegexOptions.Compiled);
         if (Regex.Options != Utf8Regex.Options || CompiledRegex.Options != CompiledUtf8Regex.Options)
             throw new InvalidOperationException("Benchmark producer/comparator compilation options must match.");
 

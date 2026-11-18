@@ -17,8 +17,8 @@ public sealed class Utf8ScalarLiteralPairTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
         {
-            var actual = new Utf8Regex(pattern, options);
-            var expected = new Utf8Regex(equivalent, options);
+            var actual = new Utf8Regex(pattern, options: options);
+            var expected = new Utf8Regex(equivalent, options: options);
             Assert.Equal(expected.Count(input), actual.Count(input));
             Assert.Equal(Ranges(expected, input), Ranges(actual, input));
             Assert.Equal(expected.IsMatch(input), actual.IsMatch(input));
@@ -57,10 +57,20 @@ public sealed class Utf8ScalarLiteralPairTests
             MaxWorkingBytes = 1,
             MaxResultBytes = 1
         };
-        var regex = new Utf8Regex("[,，]", RegexOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var regex = new Utf8Regex("[,，]", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         Assert.Equal(2, regex.Count("東京，大阪,尾"u8));
-        var denied = new Utf8Regex("[,，]", RegexOptions.None, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex("[,，]", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("東京，大阪,尾"u8)).ResourceKind);
         using var token = new CancellationTokenSource(); token.Cancel();

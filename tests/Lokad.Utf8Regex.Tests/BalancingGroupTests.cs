@@ -18,7 +18,7 @@ public sealed class BalancingGroupTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             for (var length = 0; length <= 8; length++)
             for (var combination = 0; combination < 1 << length; combination++)
             {
@@ -45,8 +45,19 @@ public sealed class BalancingGroupTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         foreach (var finite in new[] { false, true })
         {
-            var regex = new Utf8Regex(pattern, options, matchTimeout: finite ? TimeSpan.FromSeconds(10) : null,
-                resourcePolicy: finite ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20 } : default);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = finite ? TimeSpan.FromSeconds(10) : null,
+                ResourcePolicy = finite ? new()
+                {
+                    MaxWorkSteps = 1_000_000,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 16 << 20,
+                    MaxResultBytes = 16 << 20
+                }
+
+                : default
+            });
                 var oracle = new Regex(pattern, options);
             foreach (var text in subjects)
             {
@@ -79,7 +90,7 @@ public sealed class BalancingGroupTests
             original.Replace("*END", "*?END"), original.Replace("(?(open)(?!))", ""), @"(?<open>x?)" + original })
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.IgnoreCase })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var oracle = new Regex(pattern, options);
             foreach (var text in new[] { "BEGINEND", "BEGIN😀BEGINéEND tail END BEGINxEND", "BEGINBEGIN😀END", "beginEND", "BEGIN\nEND" })
             {
@@ -104,7 +115,7 @@ public sealed class BalancingGroupTests
         // against .NET 11; the owned engine does not reproduce the .NET 10 crash.
         var pattern = Pattern("BEGIN", "END").Replace("(?<-open>END)", "(?<open-open>END)");
         foreach (var options in new[] { RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
-            Assert.Equal(expected, new Utf8Regex(pattern, options).Count(Encoding.UTF8.GetBytes(text)));
+            Assert.Equal(expected, new Utf8Regex(pattern, options: options).Count(Encoding.UTF8.GetBytes(text)));
     }
 
     [Fact]
@@ -129,7 +140,10 @@ public sealed class BalancingGroupTests
         var input = "BEGINBEGIN😀ENDEND"u8.ToArray();
         foreach (var policy in new[] { new Utf8ResourcePolicy { MaxWorkSteps = 1 }, new() { MaxDepth = 1 }, new() { MaxWorkingBytes = 1 } })
         {
-            var regex = new Utf8Regex(pattern, resourcePolicy: policy);
+            var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = policy
+            });
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count(input));
         }
         using var cancellation = new CancellationTokenSource();

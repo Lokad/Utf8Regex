@@ -21,8 +21,11 @@ public sealed class Utf8StructuralPublicControlsTests
         foreach (var limits in new Utf8ResourcePolicy?[] { null, policy })
         {
             var regex = limits is { } finite
-                ? new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, finite)
-                : new Utf8Regex(pattern, options);
+                ? new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = finite
+                })                : new Utf8Regex(pattern, options: options);
             var input = Encoding.UTF8.GetBytes("é😀 " + value);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(1, regex.Count(input));
@@ -46,7 +49,7 @@ public sealed class Utf8StructuralPublicControlsTests
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+")]
     public void SelectingPreparedEngineDoesNotAcquireDiscardedKernelBuffers(string pattern)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         using var owner = new Utf8ConstructionScope(ulong.MaxValue, 0, ulong.MaxValue, ulong.MaxValue);
         var engine = Utf8CompiledEngineSelector.Select(regex.Inspection.PreparedRegex);
         Assert.Equal(0ul, owner.Budget.ReservedBytes);

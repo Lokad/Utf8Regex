@@ -14,7 +14,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ConstructorCreatesExactLiteralSearchPlanForPlainAsciiLiteral()
     {
-        var regex = new Utf8Regex("needle", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("needle", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.SearchPlan.HasLiteral);
@@ -26,7 +26,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ConstructorCreatesIgnoreCaseSearchPlanForInvariantIgnoreCaseLiteral()
     {
-        var regex = new Utf8Regex("needle", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("needle", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiteral, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.SearchPlan.HasLiteral);
@@ -36,7 +36,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ConstructorCreatesIgnoreCaseSearchPlanForInvariantIgnoreCaseLiteralAlternation()
     {
-        var regex = new Utf8Regex("needle|thread|fiber", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("needle|thread|fiber", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchKind.AsciiFoldedByteLiterals, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
@@ -57,7 +57,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ScalarFallbackRetainsSearchFactsWithoutUnusedTreeGuards()
     {
-        var regex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.SearchPlan.HasLiteral);
@@ -76,7 +76,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ConstructorCanCreateAlternationPrefixSearchPlanForAsciiAlternation()
     {
-        var regex = new Utf8Regex("cat|horse", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("cat|horse", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
@@ -90,7 +90,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ConstructorCanCreateAlternationSearchPlanForUtf8Alternation()
     {
-        var regex = new Utf8Regex("café|niño", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("café|niño", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchKind.ExactUtf8Literals, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.SearchPlan.HasAlternateLiterals);
@@ -101,7 +101,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ConstructorCanCreateBoundaryWrappedAlternationSearchPlanForUtf8Alternation()
     {
-        var regex = new Utf8Regex(@"\b(?:café|niño)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:café|niño)\b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchKind.ExactUtf8Literals, regex.Inspection.SearchPlan.Kind);
         Assert.True(regex.Inspection.SearchPlan.HasAlternateLiterals);
@@ -116,7 +116,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ConstructorCanSelectEarliestPortfolioForTinyLongUtf8Alternation()
     {
-        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(Utf8SearchPortfolioKind.ExactEarliestFamily, regex.Inspection.SearchPortfolioKind);
@@ -126,7 +126,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void StructuralSearchPlanCanFilterBoundaryWrappedUtf8AlternationCandidates()
     {
-        var regex = new Utf8Regex(@"\b(?:café|niño)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:café|niño)\b", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("xcafé café niñoz niño");
         var firstExpected = Encoding.UTF8.GetByteCount("xcafé ");
         var secondExpected = Encoding.UTF8.GetByteCount("xcafé café niñoz ");
@@ -142,7 +142,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void StructuralSearchPlanCanFindLastFilteredUtf8AlternationCandidate()
     {
-        var regex = new Utf8Regex(@"\b(?:café|niño)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:café|niño)\b", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("xcafé café niñoz niño");
         var expected = Encoding.UTF8.GetByteCount("xcafé café niñoz ");
 
@@ -153,7 +153,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void SearchExecutorUsesStructuralPlanForFilteredSingleLiteralSearch()
     {
-        var regex = new Utf8Regex(@"\bfoo\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\bfoo\b", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("xfoo foo fooz");
 
         Assert.Equal(5, Utf8SearchExecutor.FindFirst(regex.Inspection.SearchPlan, input));
@@ -194,7 +194,7 @@ public sealed class Utf8SearchPlanTests
         var family = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(analysis.SemanticRegex.RuntimeTree!.Root);
         Assert.True(family is { Length: > 0 }, DumpNode(analysis.SemanticRegex.RuntimeTree.Root));
 
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         // Neither foo nor bar is mandatory across both branches. The shared
         // covering credential family remains the required prefilter.
@@ -216,7 +216,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void FallbackSearchPlanCarriesExplicitCandidateStageForFallbackPattern()
     {
-        var regex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
 
         Assert.True(regex.Inspection.SearchPlan.HasFallbackCandidates);
         Assert.NotNull(regex.Inspection.SearchPlan.FallbackCandidatePlans);
@@ -228,7 +228,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void NativeSearchPlanCarriesExplicitCandidateSourceForExactLiteral()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, regex.Inspection.SearchPlan.NativeCandidateSource.Kind);
         Assert.Equal(regex.Inspection.SearchPlan.PreparedSearcher.Kind, regex.Inspection.SearchPlan.NativeCandidateSource.PreparedSearcher.Kind);
@@ -238,7 +238,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void SearchPlanCarriesHybridStrategyForLargeAutomatonLiteralFamilies()
     {
-        var regex = new Utf8Regex("Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.CountOperation.Kind);
         Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.FirstMatchOperation.Kind);
@@ -249,8 +249,8 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void SearchPlanCarriesConfirmationAndProjectionPlans()
     {
-        var boundaryRegex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
-        var fallbackRegex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
+        var boundaryRegex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
+        var fallbackRegex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8ConfirmationKind.BoundaryRequirements, boundaryRegex.Inspection.SearchPlan.ConfirmationPlan.Kind);
         Assert.Equal(Utf8ConfirmationKind.None, fallbackRegex.Inspection.SearchPlan.ConfirmationPlan.Kind);
@@ -259,8 +259,8 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void SearchPlanCarriesExecutablePipelines()
     {
-        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
-        var fallbackRegex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
+        var fallbackRegex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchOperationKind.SearchThenConfirm, regex.Inspection.SearchPlan.EnumerationOperation.Kind);
         Assert.Equal(Utf8ConfirmationKind.BoundaryRequirements, regex.Inspection.SearchPlan.EnumerationOperation.Confirmation.Kind);
@@ -273,8 +273,8 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void SearchPlanCarriesBackendInstructionPrograms()
     {
-        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
-        var fallbackRegex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
+        var fallbackRegex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
 
         Assert.True(regex.Inspection.SearchPlan.EnumerationOperation.CandidateSource.HasValue);
         Assert.True(regex.Inspection.SearchPlan.EnumerationOperation.Confirmation.HasValue);
@@ -287,10 +287,10 @@ public sealed class Utf8SearchPlanTests
     public void CompiledFamiliesUseSelectedRuntimesAndNativeKernels()
     {
         const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
-        var literal = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options);
-        var fallback = new Utf8Regex("a.*b", options);
-        var identifier = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", options);
-        var window = new Utf8Regex(@"\bpublic\s+async\b", options);
+        var literal = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: options);
+        var fallback = new Utf8Regex("a.*b", options: options);
+        var identifier = new Utf8Regex(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", options: options);
+        var window = new Utf8Regex(@"\bpublic\s+async\b", options: options);
 
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, literal.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, fallback.Inspection.CompiledEngineKind);
@@ -303,7 +303,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void RegexPlanCarriesExplicitPrimaryExecutionEngineKinds()
     {
-        var literalFamily = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
+        var literalFamily = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
         var fallback = Utf8FrontEnd.Compile("a.*b", RegexOptions.CultureInvariant);
         var structural = Utf8FrontEnd.Compile("ab[0-9][0-9]cd", RegexOptions.CultureInvariant);
         var orderedWindow = Utf8FrontEnd.Compile(@"\b(?:using\s+var|await\s+using\s+var)\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*await\b", RegexOptions.CultureInvariant);
@@ -317,7 +317,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void EmittedLiteralFamilyCounterMatchesInstructionExecutor()
     {
-        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
 
         Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.CountOperation, regex.Inspection.SearchPlan.FirstMatchOperation, out var counter));
@@ -330,7 +330,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void EmittedLiteralFamilyCounterSupportsSharedPrefixBoundaries()
     {
-        var regex = new Utf8Regex(@"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b", options: RegexOptions.CultureInvariant);
         var plan = regex.Inspection.SearchPlan;
         var input = Encoding.UTF8.GetBytes("LogTrace xLogError LogWarning_ LogDebug");
 
@@ -344,7 +344,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void EmittedLiteralFamilyCounterMatchesInstructionExecutorForIsMatch()
     {
-        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
         var hit = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
         var miss = Encoding.UTF8.GetBytes("task IAsyncEnumerableX stream");
 
@@ -361,7 +361,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void EmittedLiteralFamilyCounterMatchesInstructionExecutorForFirstMatch()
     {
-        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
         var hit = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
         var miss = Encoding.UTF8.GetBytes("task IAsyncEnumerableX stream");
 
@@ -382,7 +382,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void EmittedUnconstrainedExactLiteralFamilyMatchesInstructionExecutor()
     {
-        var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("\u00e9 ALPHA alpha bravo CHARLIE delta echo \ud83d\ude00");
         var plan = regex.Inspection.SearchPlan;
 
@@ -407,9 +407,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void UnconstrainedIgnoreCaseLiteralFamilyUsesPreparedInstructionLoop()
     {
-        var regex = new Utf8Regex(
-            "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex(            "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", options:             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var plan = regex.Inspection.SearchPlan;
 
         Assert.Equal(Utf8ConfirmationKind.None, plan.CountOperation.Confirmation.Kind);
@@ -421,7 +419,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void SearchGuidedOwnedRuntimeMatchesTheOriginalHitAndMissSubjects()
     {
-        var regex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
         var analysis = Utf8FrontEnd.Compile("a.*b", RegexOptions.CultureInvariant);
         var hit = Encoding.UTF8.GetBytes("zzza123bzzz");
         var miss = Encoding.UTF8.GetBytes("zzza123czzz");
@@ -434,7 +432,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ProductionSearchCanCountAndMatchLiteralFamilies()
     {
-        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
 
         var plan = regex.Inspection.SearchPlan;
@@ -449,7 +447,7 @@ public sealed class Utf8SearchPlanTests
     {
         const string pattern = "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\")[a-zA-Z0-9+/]{40}('|\"))+|('|\")[a-zA-Z0-9+/]{40}('|\").*?(\\n^.*?){0,3}('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\"))+";
         const string input = "\"AIDAABCDEFGHIJKLMNOP\"\nctx = 1\nctx = 2\n\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n\n\"AIDAABCDEFGHIJKLMNOP\"\nctx = 3\nctx = 4\n\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n";
-        var regex = new Utf8Regex(pattern, RegexOptions.Multiline);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Multiline);
         var bytes = Encoding.UTF8.GetBytes(input);
         Assert.Equal(2, regex.Count(bytes));
 
@@ -514,7 +512,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void StructuralSearchPlanCanProduceFallbackStartCandidates()
     {
-        var regex = new Utf8Regex("a.*b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("zzza123bzzz");
         var state = new Utf8StructuralSearchState(new PreparedSearchScanState(0, default), new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
 
@@ -534,7 +532,7 @@ public sealed class Utf8SearchPlanTests
         foreach (var subject in new[] { "   # NOQA: ABC123", "\u00a0# NOQA: ABC123", "\u2003# NOQA: ABC123" })
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.Compiled | RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(pattern, mode);
+            var regex = new Utf8Regex(pattern, options: mode);
             var bytes = Encoding.UTF8.GetBytes(subject);
             Assert.True(regex.IsMatch(bytes));
             Assert.Equal(1, regex.Count(bytes));
@@ -774,7 +772,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ExactLengthFallbackSliceVerificationRequiresFullCandidateCoverage()
     {
-        var regex = new Utf8Regex("(foo)\\1", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(foo)\\1", options: RegexOptions.CultureInvariant);
 
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("xxfoofooyy")));
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes("xxfooxxxyy")));
@@ -795,7 +793,7 @@ public sealed class Utf8SearchPlanTests
         // the full-tail anchored mode so misses away from the string start stay misses.
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
 
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
@@ -817,7 +815,7 @@ public sealed class Utf8SearchPlanTests
     public void OffsetMatchingReusesOnePreparedUnicodeProgram()
     {
         var input = Encoding.UTF8.GetBytes("éfoofooéfoofoo");
-        var regex = new Utf8Regex("(foo)\\1", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(foo)\\1", options: RegexOptions.CultureInvariant);
         var first = regex.Match(input);
         var second = regex.Match(input, first.StartOffsetInBytes + (first.EndOffsetInBytes - first.StartOffsetInBytes), []);
         Assert.Equal((2, 6), (first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)));
@@ -890,7 +888,7 @@ public sealed class Utf8SearchPlanTests
     [Fact]
     public void ConstructorCanCreateTrailingFixedLengthAnchorSearchPlan()
     {
-        var regex = new Utf8Regex(@"abc\z", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"abc\z", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchKind.TrailingAnchorFixedLengthEnd, regex.Inspection.SearchPlan.Kind);
         Assert.Equal(3, regex.Inspection.SearchPlan.MinRequiredLength);

@@ -17,15 +17,24 @@ public sealed class Utf8CooperativeBooleanContractTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
-        var ordinary = new Utf8Regex(Pattern, RegexOptions.CultureInvariant);
+        var ordinary = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(expected, ordinary.IsMatch(input, CancellationToken.None));
         Assert.Equal(expected, ordinary.IsMatch(input, source.Token));
         // Tight major-buffer admission proves the ASCII route does not acquire
         // discarded match/capture arrays. Invocation metadata has separate scope.
         if (!input.AsSpan().ContainsAnyInRange((byte)128, byte.MaxValue))
         {
-            var limited = new Utf8Regex(Pattern, RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
-                new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 4096, MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            var limited = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 1,
+                    MaxResultBytes = 1
+                }
+            });
             Assert.Equal(expected, limited.IsMatch(input, CancellationToken.None));
             Assert.Equal(expected, limited.IsMatch(input, source.Token));
         }
@@ -36,7 +45,7 @@ public sealed class Utf8CooperativeBooleanContractTests
     [InlineData("abc0123")]
     public void WholeSubjectValidationAndOriginalEntryCancellationPrecedeTheAnswer(string text)
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant);
         byte[] malformed = [.. Encoding.UTF8.GetBytes(text), 0xff];
         using var source = new CancellationTokenSource();
         source.Cancel();

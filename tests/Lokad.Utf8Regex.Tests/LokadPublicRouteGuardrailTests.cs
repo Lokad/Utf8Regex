@@ -14,7 +14,7 @@ public sealed class LokadPublicRouteGuardrailTests
         const string pattern = @"[\w\.+-]+@[\w\.-]+\.[\w\.-]+";
 
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
-        var regex = new Utf8Regex(pattern, RegexOptions.None);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None);
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
     }
@@ -25,7 +25,7 @@ public sealed class LokadPublicRouteGuardrailTests
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
 
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
-        var regex = new Utf8Regex(pattern, RegexOptions.None);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None);
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, regex.Inspection.CompiledEngineKind);
     }
@@ -33,7 +33,7 @@ public sealed class LokadPublicRouteGuardrailTests
     [Fact]
     public void SherlockIngCountStaysOnAsciiSimplePatternInterpreter()
     {
-        var regex = new Utf8Regex(@"\s[a-zA-Z]{0,12}ing\s", RegexOptions.None);
+        var regex = new Utf8Regex(@"\s[a-zA-Z]{0,12}ing\s", options: RegexOptions.None);
         // The prefix has variable UTF-8 width; the suffix is a candidate, not a fixed offset.
         Assert.Equal(Utf8SearchKind.ExactAsciiLiteral, regex.Inspection.SearchPlan.Kind);
     }
@@ -45,7 +45,7 @@ public sealed class LokadPublicRouteGuardrailTests
     [InlineData(RegexOptions.Compiled | RegexOptions.RightToLeft)]
     public void SherlockWordHolmesUsesOwnedScalarExecutionWithoutAFixedOffset(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"\w+\s+Holmes", options);
+        var regex = new Utf8Regex(@"\w+\s+Holmes", options: options);
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         // Historic compiled-plan labels do not describe the scalar VM selected
         // before native/fallback dispatch. No offset through these loops is fixed.
@@ -79,7 +79,7 @@ public sealed class LokadPublicRouteGuardrailTests
     [Fact]
     public void LeipzigNameFamilyStaysOnLiteralFamilyEngine()
     {
-        var regex = new Utf8Regex("Tom|Sawyer|Huckleberry|Finn", RegexOptions.None);
+        var regex = new Utf8Regex("Tom|Sawyer|Huckleberry|Finn", options: RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -92,7 +92,7 @@ public sealed class LokadPublicRouteGuardrailTests
     public void CommonIpMatchUsesAsciiDirectFamilyForMatch(RegexOptions options)
     {
         const string pattern = @"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         string[] inputs =
@@ -131,7 +131,7 @@ public sealed class LokadPublicRouteGuardrailTests
     public void BoostDatePreservesUnicodeDigitsAndAnchors(RegexOptions options)
     {
         const string pattern = @"^\d{1,2}/\d{1,2}/\d{4}$";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.True(regex.IsMatch("12/12/2001"u8));
 
         string[] inputs =
@@ -157,7 +157,7 @@ public sealed class LokadPublicRouteGuardrailTests
     public void CommonUriMatchUsesStructuredTokenDirectFamilyForMatch(RegexOptions options)
     {
         const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var isMatch = regex.IsMatch("https://example.com/path?q=1"u8);
         Assert.True(isMatch);
@@ -196,7 +196,7 @@ public sealed class LokadPublicRouteGuardrailTests
     [Fact]
     public void OneNodeBacktrackingPatternUsesNegatedRunLiteralFamily()
     {
-        var regex = new Utf8Regex(@"[^a]+\.[^z]+", RegexOptions.Compiled);
+        var regex = new Utf8Regex(@"[^a]+\.[^z]+", options: RegexOptions.Compiled);
         var asciiMatch = regex.IsMatch("bbb.ccc"u8);
         Assert.True(asciiMatch);
         var asciiMiss = regex.IsMatch("no literal"u8);
@@ -207,7 +207,7 @@ public sealed class LokadPublicRouteGuardrailTests
     [Fact]
     public void CommonBacktrackingUsesLeadingAnyRunTrailingLiteralFamily()
     {
-        var regex = new Utf8Regex(@".*(ss)", RegexOptions.None);
+        var regex = new Utf8Regex(@".*(ss)", options: RegexOptions.None);
         var isMatch = regex.IsMatch("Essential services are provided by regular exprs."u8);
         Assert.True(isMatch);
         Assert.True(regex.IsMatch("ss at the start"u8));
@@ -216,7 +216,7 @@ public sealed class LokadPublicRouteGuardrailTests
         Assert.True(regex.IsMatch("café ss"u8));
         Assert.False(regex.IsMatch("s\ns"u8));
 
-        var noncapturing = new Utf8Regex(@".*(?:needle)", RegexOptions.Compiled);
+        var noncapturing = new Utf8Regex(@".*(?:needle)", options: RegexOptions.Compiled);
         Assert.True(noncapturing.IsMatch("a needle in text"u8));
         Assert.False(noncapturing.IsMatch("no match"u8));
     }
@@ -227,7 +227,7 @@ public sealed class LokadPublicRouteGuardrailTests
     public void CommonDateMatchKeepsScalarResults(RegexOptions options)
     {
         const string pattern = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         string[] inputs =
         [
@@ -250,7 +250,7 @@ public sealed class LokadPublicRouteGuardrailTests
     public void CommonDateMatcherMatchesDotNetAcrossFieldWidthsAndBoundaries(RegexOptions options)
     {
         const string pattern = @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         string[] boundaries = [string.Empty, " ", "x"];
 
@@ -282,14 +282,14 @@ public sealed class LokadPublicRouteGuardrailTests
 
     [Fact]
     public void WholeDatePreservesItsPublicByteRange()
-    { var regex = new Utf8Regex(@"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", RegexOptions.Compiled); Assert.Equal(new Utf8CaptureRange(0, 10), regex.Match("12/12/2001"u8)); }
+    { var regex = new Utf8Regex(@"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", options: RegexOptions.Compiled); Assert.Equal(new Utf8CaptureRange(0, 10), regex.Match("12/12/2001"u8)); }
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
     public void BoostdocsPostcodeMatchPreservesOptionalShapeSemantics(RegexOptions options)
     {
         const string pattern = "^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         string[] inputs =
         [
@@ -318,7 +318,7 @@ public sealed class LokadPublicRouteGuardrailTests
     public void BoostdocsFloatMatchUsesNoValidationSignedDecimalFastPath(RegexOptions options)
     {
         const string pattern = @"^[-+]?\d*\.?\d*$";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         var match = regex.Match("-3.14159"u8);
         Assert.True(match.Success);
@@ -348,7 +348,7 @@ public sealed class LokadPublicRouteGuardrailTests
     public void CreditCardAlternativesKeepScalarResults(RegexOptions options)
     {
         const string pattern = @"([0-9]{4}[- ]){3}[0-9]{3,4}";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         string[] inputs =
         [
@@ -376,7 +376,7 @@ public sealed class LokadPublicRouteGuardrailTests
     public void BoostdocsFtpLineMatchUsesPrioritizedAnchoredLeadingDigitsTailFamily(RegexOptions options)
     {
         const string pattern = @"^([0-9]+)(\-| |$)(.*)$";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         string[] inputs =
         [
@@ -403,7 +403,7 @@ public sealed class LokadPublicRouteGuardrailTests
     public void OrderedLiteralWindowGapMinimumAgreesWithOracle(RegexOptions options)
     {
         const string pattern = @"river.{10,25}Tom";
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
         foreach (var gap in new[] { 8, 9, 10, 11, 25, 26 })
@@ -463,7 +463,7 @@ public sealed class LokadPublicRouteGuardrailTests
 
         foreach (var row in rows)
         {
-            var regex = new Utf8Regex(row.Pattern, options);
+            var regex = new Utf8Regex(row.Pattern, options: options);
             var oracle = new Regex(row.Pattern, options, Regex.InfiniteMatchTimeout);
             var inputBytes = System.Text.Encoding.UTF8.GetBytes(row.Input);
 
@@ -490,7 +490,7 @@ public sealed class LokadPublicRouteGuardrailTests
             (@"a\s{2,}b", "xa  b"),
         })
         {
-            var regex = new Utf8Regex(control.Pattern, options);
+            var regex = new Utf8Regex(control.Pattern, options: options);
             var oracle = new Regex(control.Pattern, options, Regex.InfiniteMatchTimeout);
             var inputBytes = System.Text.Encoding.UTF8.GetBytes(control.Input);
             Assert.Equal(oracle.IsMatch(control.Input), regex.IsMatch(inputBytes));

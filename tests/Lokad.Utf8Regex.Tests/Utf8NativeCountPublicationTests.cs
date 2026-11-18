@@ -72,7 +72,11 @@ public sealed class Utf8NativeCountPublicationTests
             MaxWorkingBytes = 1,
             MaxResultBytes = 1
         } : Utf8ResourcePolicy.Unlimited;
-        var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(20), policy);
+        var regex = new Utf8Regex(pattern, options: mode | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = policy
+        });
         byte[] input = [];
         var expected = 0;
         ulong terminal = 0;

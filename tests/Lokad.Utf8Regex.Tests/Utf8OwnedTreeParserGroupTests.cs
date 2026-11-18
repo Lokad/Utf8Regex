@@ -322,7 +322,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
         Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
         foreach (var inputText in inputs)
@@ -366,7 +366,7 @@ public sealed class Utf8OwnedTreeParserGroupTests
         var actual = Utf8OwnedTreeParser.TryParse(pattern, (RegexOptions)options);
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
-        var product = new Utf8Regex(pattern, (RegexOptions)options);
+        var product = new Utf8Regex(pattern, options: (RegexOptions)options);
         Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
         Assert.Equal(oracle.GetGroupNumbers(), product.GetGroupNumbers());
         Assert.Equal(oracle.GetGroupNames(), actual.CaptureNames ?? []);

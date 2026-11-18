@@ -18,7 +18,7 @@ public sealed class Utf8LinePrefixQualificationTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var lane in rtl ? new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled } : new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options | lane); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            var regex = new Utf8Regex(pattern, options: options | lane); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
             Assert.Equal((index, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
@@ -59,7 +59,7 @@ public sealed class Utf8LinePrefixQualificationTests
         foreach (var prefix in new[] { "///", "[| ///", " \n///" })
         {
             var text = prefix + tail; var expected = oracle.Match(text);
-            var actual = new Utf8Regex(alias, RegexOptions.Multiline | RegexOptions.CultureInvariant).Match(Encoding.ASCII.GetBytes(text));
+            var actual = new Utf8Regex(alias, options: RegexOptions.Multiline | RegexOptions.CultureInvariant).Match(Encoding.ASCII.GetBytes(text));
             var found = actual.Success; var length = actual.EndOffsetInBytes;
             Assert.Equal(expected.Success, found); if (found) Assert.Equal(expected.Length, length);
         }
@@ -69,13 +69,13 @@ public sealed class Utf8LinePrefixQualificationTests
     public void PublicTitleCountsConsumeUnicodeIndentAndCompletePrefixes()
     {
         var input = " ///#😀\n\t///#x\n"u8;
-        Assert.Equal(2, new Utf8Regex(Title, RegexOptions.Multiline).Count(input));
+        Assert.Equal(2, new Utf8Regex(Title, options: RegexOptions.Multiline).Count(input));
         const string alias = @"^\s*(?:\x2f/)(?<title>/\x23[^\n]*)$";
         foreach (var options in new[] { RegexOptions.Multiline, RegexOptions.Multiline | RegexOptions.Compiled })
-            Assert.Equal(2, new Utf8Regex(alias, options).Count(input));
-        Assert.True(Utf8MatchSequence.First(new Utf8Regex(alias, RegexOptions.Multiline).CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray())).TryGetGroup("title", out var capture));
+            Assert.Equal(2, new Utf8Regex(alias, options: options).Count(input));
+        Assert.True(Utf8MatchSequence.First(new Utf8Regex(alias, options: RegexOptions.Multiline).CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray())).TryGetGroup("title", out var capture));
         Assert.Equal((5, 6), (capture.StartOffsetInBytes, (capture.EndOffsetInBytes - capture.StartOffsetInBytes)));
-        Assert.Equal(1, new Utf8Regex(@"^a\na.*$", RegexOptions.Multiline).Count("a\na\na\n"u8));
+        Assert.Equal(1, new Utf8Regex(@"^a\na.*$", options: RegexOptions.Multiline).Count("a\na\na\n"u8));
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public sealed class Utf8LinePrefixQualificationTests
         foreach (var item in new[] { ("import2 \"x\"", "import2", 1), ("import\n\"😀\"", "import", 1), ("import \"a\nb\"", "import", 1), ("import \"a\\b\"", "import", 0) })
         {
             var pattern = "^" + Regex.Escape(item.Item2) + "\\s+\"[^\"\\\\]*\".*$";
-            Assert.Equal(item.Item3, new Utf8Regex(pattern, RegexOptions.Multiline).Count(Encoding.UTF8.GetBytes(item.Item1)));
+            Assert.Equal(item.Item3, new Utf8Regex(pattern, options: RegexOptions.Multiline).Count(Encoding.UTF8.GetBytes(item.Item1)));
         }
         const string alias = "^\\x69(?<i>m)port\\s+(?:shared\\s+)?\"(?<p>(\\.|[^\\\\\"]*))\"[^\\n]*$";
         PublicRange(alias, RegexOptions.Multiline | RegexOptions.CultureInvariant, "import shared \"😀\nx\"tail", 0, 28, false);
@@ -98,8 +98,8 @@ public sealed class Utf8LinePrefixQualificationTests
         foreach (var b in new[] { "", "\nimport \"z\"", " import \"x\"", "\n///#x", "\n ///#y" })
         {
             var text = a + b; var input = Encoding.UTF8.GetBytes(text);
-            Assert.Equal(imports.Count(text), new Utf8Regex(Import, RegexOptions.Multiline).Count(input));
-            Assert.Equal(titles.Count(text), new Utf8Regex(Title, RegexOptions.Multiline).Count(input));
+            Assert.Equal(imports.Count(text), new Utf8Regex(Import, options: RegexOptions.Multiline).Count(input));
+            Assert.Equal(titles.Count(text), new Utf8Regex(Title, options: RegexOptions.Multiline).Count(input));
         }
     }
 

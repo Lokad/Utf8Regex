@@ -10,7 +10,7 @@ public sealed class Utf8RegexEnumerateAsciiSimplePatternDiffTests
     public void EnumerateMatchesMatchesRuntimeForAsciiSimplePattern()
     {
         const string input = "abXcd zz abYcd";
-        var regex = new Utf8Regex("ab.cd", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("ab.cd", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))
@@ -31,7 +31,7 @@ public sealed class Utf8RegexEnumerateAsciiSimplePatternDiffTests
     public void EnumerateMatchesMatchesRuntimeForAsciiCharacterClassSimplePattern()
     {
         const string input = "ab1d zz ab2d abXd";
-        var regex = new Utf8Regex("ab[0-9]d", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("ab[0-9]d", options: RegexOptions.CultureInvariant);
 
         var actual = new List<(int Index, int Length)>();
         foreach (var match in regex.EnumerateMatches(Encoding.UTF8.GetBytes(input)))

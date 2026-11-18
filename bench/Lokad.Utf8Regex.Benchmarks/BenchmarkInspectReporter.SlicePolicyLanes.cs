@@ -76,9 +76,12 @@ internal static partial class BenchmarkInspectReporter
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = policy
         });
-        var core = new Utf8Regex("(a)(b)", RegexOptions.CultureInvariant);
-        var coreFinite = new Utf8Regex("(a)(b)", RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout, policy);
+        var core = new Utf8Regex("(a)(b)", options: RegexOptions.CultureInvariant);
+        var coreFinite = new Utf8Regex("(a)(b)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         var baseline = new Regex("(a)(b)", RegexOptions.CultureInvariant);
         using var source = new CancellationTokenSource();
         Console.WriteLine("PythonRe handoff bulk: (a)(b), ab repeated with spaces; work=50000000 depth=1024 working=67108864 result=134217728");
@@ -180,7 +183,7 @@ internal static partial class BenchmarkInspectReporter
             "Case: pattern=" + sliceCase.Pattern +
             " inputBytes=" + input.Length);
 
-        var core = new Utf8Regex(sliceCase.Pattern, RegexOptions.None);
+        var core = new Utf8Regex(sliceCase.Pattern, options: RegexOptions.None);
         var policy = new Utf8ResourcePolicy
         {
             MaxWorkSteps = 1_000_000,
@@ -188,8 +191,11 @@ internal static partial class BenchmarkInspectReporter
             MaxWorkingBytes = 1_048_576,
             MaxResultBytes = 1_048_576
         };
-        var coreFinite = new Utf8Regex(
-            sliceCase.Pattern, RegexOptions.None, Regex.InfiniteMatchTimeout, policy);
+        var coreFinite = new Utf8Regex(            sliceCase.Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = policy
+        });
         var baseline = new Regex(sliceCase.Pattern, RegexOptions.CultureInvariant);
         Console.WriteLine(
             "  Core routes: ownedSlice=" +

@@ -26,10 +26,22 @@ public sealed class Utf8OrderedWindowInvocationTests
         Assert.True(match.Success);
         Assert.Equal(3, match.StartOffsetInBytes);
         Assert.Equal(3 + length + 5, match.EndOffsetInBytes);
-        var denied = new Utf8Regex(head + ".{1,2}z", resourcePolicy: new() { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex(head + ".{1,2}z", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(bytes)).ResourceKind);
-        denied = new Utf8Regex(head + ".{1,2}z", resourcePolicy: new() { MaxWorkingBytes = 1 });
+        denied = new Utf8Regex(head + ".{1,2}z", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(bytes)).ResourceKind);
     }
@@ -59,7 +71,10 @@ public sealed class Utf8OrderedWindowInvocationTests
     public void ValueAndEnumerationModesPreserveGreedyRangesSeparatorsAndBranchPriority(string pattern, bool compiled, bool finite, bool liveToken)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout
+        });
         var oracle = new Regex(pattern, options);
         using var source = new CancellationTokenSource();
         var token = liveToken ? source.Token : default;
@@ -102,7 +117,10 @@ public sealed class Utf8OrderedWindowInvocationTests
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         foreach (var pattern in Patterns)
         {
-            var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromSeconds(10)
+            });
             var oracle = new Regex(pattern, options);
             for (var trial = 0; trial < 40; trial++)
             {
@@ -142,7 +160,10 @@ public sealed class Utf8OrderedWindowInvocationTests
         using var source = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == trigger) { if (expire) ticks = 100; else source.Cancel(); } return ticks; });
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromMilliseconds(50));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50)
+        });
         void Run()
         {
             if (operation == "ismatch") _ = regex.IsMatch(input, source.Token);
@@ -172,7 +193,10 @@ public sealed class Utf8OrderedWindowInvocationTests
     public void CompleteOperationsKeepCapturesOffsetsSplitsAndReplacement(string pattern, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(pattern, options), Texts);
     }
 
@@ -186,7 +210,10 @@ public sealed class Utf8OrderedWindowInvocationTests
         using var source = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == trigger) source.Cancel(); return ticks; });
-        var regex = new Utf8Regex(@"a\s+b", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), TimeSpan.FromMilliseconds(50));
+        var regex = new Utf8Regex(@"a\s+b", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50)
+        });
         reads = 0; Assert.Equal(4000, regex.Count(input, source.Token));
         Assert.True(reads > 4); trigger = reads / 2; reads = 0;
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);

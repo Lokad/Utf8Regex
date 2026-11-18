@@ -12,7 +12,7 @@ public sealed class Utf8CaptureSlotMatchTests
     [InlineData(RegexOptions.RightToLeft, 12, 15)]
     public void OmittedStartUsesDirectionAndSelectedEnd(RegexOptions options, int start, int end)
     {
-        var regex = new Utf8Regex("(?<word>[a-z]+)", options | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?<word>[a-z]+)", options: options | RegexOptions.CultureInvariant);
         var input = "é one 😀 two"u8.ToArray();
         var slots = new Utf8CaptureRange[2];
         var match = regex.Match(input, captures: slots);
@@ -46,9 +46,18 @@ public sealed class Utf8CaptureSlotMatchTests
     {
         options |= RegexOptions.CultureInvariant;
         var oracle = new Regex(pattern, options);
-        var regex = new Utf8Regex(pattern, options, resourcePolicy: controlled
-            ? new() { MaxWorkSteps = 1_000_000, MaxDepth = 512, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 }
-            : default);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = controlled ? new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 512,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+
+            : default
+        });
         using var source = new CancellationTokenSource();
         var numbers = oracle.GetGroupNumbers();
         Assert.Equal(numbers, regex.GetGroupNumbers());
@@ -92,7 +101,7 @@ public sealed class Utf8CaptureSlotMatchTests
     [InlineData(RegexOptions.RightToLeft)] [InlineData(RegexOptions.NonBacktracking)]
     public void SupplementaryCapturesAndHistoryRemainScalarRanges(RegexOptions options)
     {
-        var regex = new Utf8Regex("(?<scalar>.)+", options | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?<scalar>.)+", options: options | RegexOptions.CultureInvariant);
         var input = "é😀a"u8.ToArray();
         var slots = new Utf8CaptureRange[2];
         var actual = regex.Match(input, options == RegexOptions.RightToLeft ? input.Length : 0, slots);
@@ -136,7 +145,10 @@ public sealed class Utf8CaptureSlotMatchTests
             1 => new Utf8ResourcePolicy { MaxWorkingBytes = 1 },
             _ => new Utf8ResourcePolicy { MaxDepth = 1 },
         };
-        var regex = new Utf8Regex(@"(?=(?=(a)))a", resourcePolicy: policy);
+        var regex = new Utf8Regex(@"(?=(?=(a)))a", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = policy
+        });
         var sentinel = new Utf8Regex("a").Match("a"u8, 0, []);
         var output = new[] { sentinel, sentinel, sentinel };
         var account = new Account();
@@ -158,7 +170,10 @@ public sealed class Utf8CaptureSlotMatchTests
     [Fact]
     public void MatchingUsesOriginalTokenAndAbsoluteDeadline()
     {
-        var regex = new Utf8Regex("(a+)", matchTimeout: TimeSpan.FromMilliseconds(100));
+        var regex = new Utf8Regex("(a+)", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(100)
+        });
         var input = Encoding.UTF8.GetBytes(new string('a', 256));
         var output = new Utf8CaptureRange[2];
         using var source = new CancellationTokenSource();

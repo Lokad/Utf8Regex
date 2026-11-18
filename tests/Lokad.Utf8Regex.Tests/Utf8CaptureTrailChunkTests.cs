@@ -20,7 +20,7 @@ public sealed class Utf8CaptureTrailChunkTests
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft })
         {
             var oracle = new Regex(pattern, mode);
-            var regex = new Utf8Regex(pattern, mode);
+            var regex = new Utf8Regex(pattern, options: mode);
             var expected = oracle.Match(text);
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Utf8MatchSequence.AssertCaptures(expected, retained, input, text);
@@ -40,7 +40,7 @@ public sealed class Utf8CaptureTrailChunkTests
         const string pattern = "(?<v>é|😀)+X";
         var oracle = new Regex(pattern, options);
         var expected = oracle.Match(text);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Utf8MatchSequence.AssertCaptures(expected, retained, input, text);
         Assert.True(regex.IsMatch("éX"u8));

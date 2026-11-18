@@ -36,8 +36,16 @@ public sealed class Utf8Ipv4BooleanTests
         foreach (var tail in new[] { "012.200.033.199", "99.99.99.99", "1.2.3.4", "99.99.99.999", "bad.address" })
         {
             var text = "é" + new string('x', boundary) + tail + "😀";
-            var regex = new Utf8Regex(Pattern, mode, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var buffer = Encoding.UTF8.GetBytes("pad" + text + "tail");
             var input = buffer.AsSpan(3, Encoding.UTF8.GetByteCount(text));
             var expected = Regex.IsMatch(text, Pattern);
@@ -58,7 +66,11 @@ public sealed class Utf8Ipv4BooleanTests
             @"\A" + Pattern + @"\z", Pattern + @"\b" })
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             using var token = new CancellationTokenSource();
             foreach (var text in new[] { "", "012.200.033.199", "256.200.033.199", "123.234.345.456",
                 "é99.99.99.999😀", "0١2.2٠٠.0٣٣.1٩9", "0𝟙2.2𝟘𝟘.0𝟛𝟛.1𝟡9", "1.2.3.4", "..99.99.99.99.99" })
@@ -89,7 +101,11 @@ public sealed class Utf8Ipv4BooleanTests
         var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         Utf8Validation.ThrowIfInvalidOnly(input, ref validation);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, timeout, Funded);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout,
+            ResourcePolicy = Funded
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -113,7 +129,11 @@ public sealed class Utf8Ipv4BooleanTests
         var reads = 0; var cancelAt = int.MaxValue;
         using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => { if (++reads == cancelAt) token.Cancel(); return 0; });
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromSeconds(1), Funded);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1),
+            ResourcePolicy = Funded
+        });
         Assert.True(regex.IsMatch("012.200.033.199"u8, token.Token));
         cancelAt = reads; reads = 0;
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch("012.200.033.199"u8, token.Token)).CancellationToken);

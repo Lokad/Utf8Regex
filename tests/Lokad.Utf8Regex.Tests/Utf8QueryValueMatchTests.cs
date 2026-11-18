@@ -24,9 +24,21 @@ public sealed class Utf8QueryValueMatchTests
         var tail = hex ? Route + "ABCD&path=a?name=x&name=y" : "/d/12?t=x";
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, Fold | mode, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
-            var control = new Utf8Regex(pattern, Fold | mode, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(pattern, options: Fold | mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
+            var control = new Utf8Regex(pattern, options: Fold | mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             var oracle = new Regex(pattern, Fold | mode);
             foreach (var text in new[] { "", "wrong", "~", "~" + tail, "~" + tail + "\n", "~" + tail + " \n",
                 "~" + tail + "\nz", "~" + tail + "?tail\n", "https://go.lokad.com/ABC" + tail,
@@ -61,7 +73,11 @@ public sealed class Utf8QueryValueMatchTests
             foreach (var options in new[] { RegexOptions.IgnoreCase, Fold, Fold | RegexOptions.RightToLeft, Fold | RegexOptions.NonBacktracking })
             {
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
-                var regex = new Utf8Regex(Digits, options, Timeout.InfiniteTimeSpan, Funded);
+                var regex = new Utf8Regex(Digits, options: options, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = Funded
+                });
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
                 foreach (var text in new[] { "HTTPS://GO.TESTING.LOKAD.COM/d/12?t=x", "😀~/d/١?t=é\n",
                     "~/d/1?t=😀", "~/d/1?t=x\n", new string('x', 2049) + "~/d/1?t=x" })
@@ -75,10 +91,10 @@ public sealed class Utf8QueryValueMatchTests
             }
         }
         finally { CultureInfo.CurrentCulture = original; }
-        var offset = new Utf8Regex(Digits, Fold); var bytes = "x~/d/1?t=x"u8.ToArray();
+        var offset = new Utf8Regex(Digits, options: Fold); var bytes = "x~/d/1?t=x"u8.ToArray();
         Assert.True(offset.Match(bytes, 0, []).Success);
         Assert.False(offset.Match(bytes, 1, []).Success);
-        var scoped = new Utf8Regex(Digits.Replace("https", "(?-i:https)"), Fold);
+        var scoped = new Utf8Regex(Digits.Replace("https", "(?-i:https)"), options: Fold);
         Assert.False(scoped.Match("HTTPS://go.lokad.com/d/1?t=x"u8).Success);
     }
 
@@ -91,7 +107,11 @@ public sealed class Utf8QueryValueMatchTests
         Utf8InputAnalyzer.Describe(input, ref validation);
         long ticks = 0; using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex(Digits, Fold, TimeSpan.FromMilliseconds(20), Funded);
+        var regex = new Utf8Regex(Digits, options: Fold, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Funded
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -110,7 +130,7 @@ public sealed class Utf8QueryValueMatchTests
     [Fact]
     public void DetailedCapturesAliasesAndStrictTailsRemainOwned()
     {
-        var regex = new Utf8Regex(Digits, Fold); var input = "~/ABC/d/12?t=tab"u8.ToArray();
+        var regex = new Utf8Regex(Digits, options: Fold); var input = "~/ABC/d/12?t=tab"u8.ToArray();
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); Assert.True(retained.TryGetGroup("tab", out var tab));
         var value = regex.Match(input); var cursor = regex.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());

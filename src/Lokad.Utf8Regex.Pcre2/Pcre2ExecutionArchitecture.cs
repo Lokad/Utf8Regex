@@ -80,8 +80,15 @@ internal static class Pcre2Compiler
         {
             var source = request.ConstructionPattern;
             regex = source.IsUtf8
-                ? new Utf8Regex(source.Utf8, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy)
-                : new Utf8Regex(source.Text, ToRegexOptions(request.Options), request.MatchTimeout, request.CoreResourcePolicy);
+                ? new Utf8Regex(source.Utf8, options: ToRegexOptions(request.Options), policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = request.MatchTimeout,
+                    ResourcePolicy = request.CoreResourcePolicy
+                })                : new Utf8Regex(source.Text, options: ToRegexOptions(request.Options), policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = request.MatchTimeout,
+                    ResourcePolicy = request.CoreResourcePolicy
+                });
             return true;
         }
         catch (ArgumentException)

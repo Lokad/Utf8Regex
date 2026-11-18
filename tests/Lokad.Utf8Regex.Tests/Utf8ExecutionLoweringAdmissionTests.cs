@@ -33,14 +33,14 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
             for (var value = 0; value < 128; value++)
             {
                 var expected = accepted.Contains((char)value);
-                var match = new Utf8Regex(pattern, RegexOptions.CultureInvariant).Match([(byte)value]);
+                var match = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant).Match([(byte)value]);
                 Assert.Equal(expected, match.Success);
                 if (expected) Assert.Equal(1, (match.EndOffsetInBytes - match.StartOffsetInBytes));
             }
         }
-        Assert.Equal(2, (new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("ab"u8).EndOffsetInBytes - new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("ab"u8).StartOffsetInBytes));
-        Assert.Equal(4, (new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("😀"u8).EndOffsetInBytes - new Utf8Regex("(?s:.{1,2})", RegexOptions.CultureInvariant).Match("😀"u8).StartOffsetInBytes));
-        Assert.False(new Utf8Regex("\\p{L}+", RegexOptions.CultureInvariant).IsMatch("\0"u8));
+        Assert.Equal(2, (new Utf8Regex("(?s:.{1,2})", options: RegexOptions.CultureInvariant).Match("ab"u8).EndOffsetInBytes - new Utf8Regex("(?s:.{1,2})", options: RegexOptions.CultureInvariant).Match("ab"u8).StartOffsetInBytes));
+        Assert.Equal(4, (new Utf8Regex("(?s:.{1,2})", options: RegexOptions.CultureInvariant).Match("😀"u8).EndOffsetInBytes - new Utf8Regex("(?s:.{1,2})", options: RegexOptions.CultureInvariant).Match("😀"u8).StartOffsetInBytes));
+        Assert.False(new Utf8Regex("\\p{L}+", options: RegexOptions.CultureInvariant).IsMatch("\0"u8));
     }
 
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
@@ -212,7 +212,7 @@ public sealed class Utf8ExecutionLoweringAdmissionTests
     [Fact]
     public void ScalarSharedDeclarationsRetainEveryCaptureAndTheFinalByteRange()
     {
-        var regex = new Utf8Regex("(?<x>a)(?<x>😀)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?<x>a)(?<x>😀)", options: RegexOptions.CultureInvariant);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("a😀"u8.ToArray()));
         Assert.True(match.Success);
         Assert.True(match.TryGetGroup("x", out var group));

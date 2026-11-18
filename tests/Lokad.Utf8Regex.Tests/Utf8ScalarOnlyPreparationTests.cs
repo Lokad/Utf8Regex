@@ -12,8 +12,17 @@ public sealed class Utf8ScalarOnlyPreparationTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         const string pattern = @"(?<x>(?:a|ab){2,3})\k<x>";
-        var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-            new() { MaxWorkSteps = 1000000, MaxDepth = 512, MaxWorkingBytes = 2 << 20, MaxResultBytes = 1 << 20 });
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 512,
+                MaxWorkingBytes = 2 << 20,
+                MaxResultBytes = 1 << 20
+            }
+        });
         AssertScalarPreparation(regex);
         const string text = "😀abababab中abababab";
         var input = Encoding.UTF8.GetBytes(text);
@@ -39,8 +48,7 @@ public sealed class Utf8ScalarOnlyPreparationTests
     [InlineData(false)] [InlineData(true)]
     public void RightToLeftFallbackKeepsCaptureAndReferenceOrder(bool compiled)
     {
-        var regex = new Utf8Regex(@"\k<x>(?<x>(?:ab|ba){2})",
-            RegexOptions.CultureInvariant | RegexOptions.RightToLeft | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex(@"\k<x>(?<x>(?:ab|ba){2})", options:             RegexOptions.CultureInvariant | RegexOptions.RightToLeft | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         AssertScalarPreparation(regex);
         var input = "😀abababab中"u8;
         Assert.Equal(1, regex.Count(input));
@@ -53,8 +61,7 @@ public sealed class Utf8ScalarOnlyPreparationTests
     [InlineData(false)] [InlineData(true)]
     public void NonBacktrackingFallbackKeepsWholeScalarsAndLastCapture(bool compiled)
     {
-        var regex = new Utf8Regex(@"(?<x>\p{Lu}){2}",
-            RegexOptions.CultureInvariant | RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex(@"(?<x>\p{Lu}){2}", options:             RegexOptions.CultureInvariant | RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         AssertScalarPreparation(regex);
         var input = "😀A𐐀中"u8;
         Assert.Equal(1, regex.Count(input));
@@ -68,7 +75,7 @@ public sealed class Utf8ScalarOnlyPreparationTests
     [InlineData(false)] [InlineData(true)]
     public void NativeFamilyRetainsItsRealPreparation(bool compiled)
     {
-        var regex = new Utf8Regex("^cat", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex("^cat", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var prepared = regex.Inspection.PreparedRegex;
         Assert.True(prepared.AnchoredLiteral.HasValue);
         Assert.NotNull(prepared.ExecutionTree);

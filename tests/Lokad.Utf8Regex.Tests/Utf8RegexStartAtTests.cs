@@ -7,7 +7,7 @@ public sealed class Utf8RegexStartAtTests
     [Fact]
     public void ByteStartMatchPreservesOriginalAnchorContext()
     {
-        var regex = new Utf8Regex(@"\Aabc", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\Aabc", options: RegexOptions.CultureInvariant);
 
         Assert.False(regex.Match("xxabc"u8, 2, []).Success);
     }
@@ -15,7 +15,7 @@ public sealed class Utf8RegexStartAtTests
     [Fact]
     public void CountStartAtMatchesRuntimeSemantics()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(1, Utf8MatchSequence.Count(regex.EnumerateMatches("abcabc"u8, 3)));
     }
@@ -23,7 +23,7 @@ public sealed class Utf8RegexStartAtTests
     [Fact]
     public void ByteStartMatchReturnsFirstSelectedRange()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant);
 
         var match = regex.Match("xxabcxxabc"u8, 5, []);
 
@@ -35,7 +35,7 @@ public sealed class Utf8RegexStartAtTests
     [Fact]
     public void CaptureCursorStartsAtTheRequestedBytePosition()
     {
-        var regex = new Utf8Regex("(abc)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(abc)", options: RegexOptions.CultureInvariant);
 
         using var cursor = regex.CreateMatchCursor("xxabcxxabc"u8.ToArray(), 5);
         Assert.True(cursor.MoveNext(out var match));
@@ -51,7 +51,7 @@ public sealed class Utf8RegexStartAtTests
     {
         var options = RegexOptions.CultureInvariant | RegexOptions.RightToLeft |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("abc", options);
+        var regex = new Utf8Regex("abc", options: options);
 
         var enumerator = regex.EnumerateMatches("xxabcxxabc"u8, 6);
         Assert.True(enumerator.MoveNext());
@@ -65,7 +65,7 @@ public sealed class Utf8RegexStartAtTests
     [Fact]
     public void EnumerateMatchesStartAtReturnsByteAlignedMatchesFromScalarBoundary()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant);
 
         var enumerator = regex.EnumerateMatches("éabcéabc"u8, 2);
         Assert.True(enumerator.MoveNext());
@@ -81,9 +81,7 @@ public sealed class Utf8RegexStartAtTests
     [Fact]
     public void CompiledStructuralFamilyEnumerationStartAtPreservesBaseOffsets()
     {
-        var regex = new Utf8Regex(
-            @"\b(?:LogError|LogWarning|LogInformation)\s*\(",
-            RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex(            @"\b(?:LogError|LogWarning|LogInformation)\s*\(", options:             RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         var enumerator = regex.EnumerateMatches("é LogError( xx LogWarning ("u8, 13);
         Assert.True(enumerator.MoveNext());
@@ -106,7 +104,7 @@ public sealed class Utf8RegexStartAtTests
     [Fact]
     public void StartAtThrowsWhenBeyondSubjectLength()
     {
-        var regex = new Utf8Regex("abc", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant);
 
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("abc"u8, 4, []).Success);
         Assert.Throws<ArgumentOutOfRangeException>(() => Utf8MatchSequence.Count(regex.EnumerateMatches("abc"u8, 4)));

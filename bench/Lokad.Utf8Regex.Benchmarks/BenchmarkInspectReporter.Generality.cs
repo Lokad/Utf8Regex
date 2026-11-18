@@ -137,7 +137,11 @@ internal static partial class BenchmarkInspectReporter
             _numbers = _oracle.GetGroupNumbers();
         }
 
-        private Utf8Regex Create(bool timeout = false, bool limits = false, bool compiled = false) => new(_pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0), matchTimeout: timeout ? TimeSpan.FromSeconds(10) : null, resourcePolicy: limits ? Limits : default);
+        private Utf8Regex Create(bool timeout = false, bool limits = false, bool compiled = false) => new(_pattern, options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout ? TimeSpan.FromSeconds(10) : null,
+            ResourcePolicy = limits ? Limits : default
+        });
 
         internal int Execute(string operation, string lane)
         {

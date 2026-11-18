@@ -85,7 +85,7 @@ internal static class Utf8AsciiScalarOperationAssertions
         var metadata = new Regex(pattern, options & ~RegexOptions.Compiled);
         var expected = oracle.Matches(subject.Projected).Cast<Match>().ToArray();
         var startOffset = (options & RegexOptions.RightToLeft) != 0 ? subject.Input.Length : 0;
-        var metadataRegex = new Utf8Regex(pattern, options);
+        var metadataRegex = new Utf8Regex(pattern, options: options);
         if (requireSlice) Assert.True(metadataRegex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(metadata.GetGroupNames(), oracle.GetGroupNames());
         Assert.Equal(metadata.GetGroupNumbers(), oracle.GetGroupNumbers());
@@ -95,21 +95,21 @@ internal static class Utf8AsciiScalarOperationAssertions
 
         // Keep independent cold instances for every public operation, as in the
         // old batteries; one operation cannot prepare the route for another.
-        var isMatch = new Utf8Regex(pattern, options);
+        var isMatch = new Utf8Regex(pattern, options: options);
         Assert.Equal(expected.Length != 0, isMatch.IsMatch(subject.Input));
-        var count = new Utf8Regex(pattern, options);
+        var count = new Utf8Regex(pattern, options: options);
         Assert.Equal(expected.Length, count.Count(subject.Input));
-        var match = new Utf8Regex(pattern, options);
+        var match = new Utf8Regex(pattern, options: options);
         Value(subject, oracle.Match(subject.Projected), match.Match(subject.Input, startOffset, []));
-        var captures = new Utf8Regex(pattern, options);
+        var captures = new Utf8Regex(pattern, options: options);
         Utf8MatchSequence.AssertCaptures(oracle.Match(subject.Projected),
             Utf8MatchSequence.First(captures.CreateMatchCursor(subject.Input)),
             subject.Input, index => subject.ByteBoundaries[index]);
-        var enumerate = new Utf8Regex(pattern, options);
+        var enumerate = new Utf8Regex(pattern, options: options);
         Sequence(subject, expected, enumerate.EnumerateMatches(subject.Input));
         foreach (var maximum in new[] { 0, 1, 2, int.MaxValue })
         {
-            var split = new Utf8Regex(pattern, options);
+            var split = new Utf8Regex(pattern, options: options);
             if (maximum == 1)
             {
                 // .NET 10.0.12 ValueSplitEnumerator throws for count=1 even on
@@ -127,14 +127,14 @@ internal static class Utf8AsciiScalarOperationAssertions
         var replacement = subject.Restore(oracle.Replace(subject.Projected,
             Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template))));
         var bytes = Encoding.UTF8.GetBytes(replacement);
-        var byteReplace = new Utf8Regex(pattern, options);
+        var byteReplace = new Utf8Regex(pattern, options: options);
         Assert.Equal(bytes, byteReplace.Replace(subject.Input, template));
-        var utf8Replace = new Utf8Regex(pattern, options);
+        var utf8Replace = new Utf8Regex(pattern, options: options);
         var utf8Template = Encoding.UTF8.GetBytes(template);
         Assert.Equal(bytes, utf8Replace.Replace(subject.Input, utf8Template));
         foreach (var utf8 in new[] { false, true })
         {
-            var destinationRegex = new Utf8Regex(pattern, options);
+            var destinationRegex = new Utf8Regex(pattern, options: options);
             var destination = new byte[bytes.Length + 1];
             var status = utf8 ? destinationRegex.TryReplace(subject.Input, utf8Template, destination, out var written)
                 : destinationRegex.TryReplace(subject.Input, template, destination, out written);
@@ -144,7 +144,7 @@ internal static class Utf8AsciiScalarOperationAssertions
         }
 
         using var source = new CancellationTokenSource();
-        var live = new Utf8Regex(pattern, options);
+        var live = new Utf8Regex(pattern, options: options);
         Assert.Equal(expected.Length != 0, live.IsMatch(subject.Input, source.Token));
         Assert.Equal(expected.Length, live.Count(subject.Input, source.Token));
         Value(subject, oracle.Match(subject.Projected), live.Match(subject.Input, startOffset, [], source.Token));
@@ -163,7 +163,7 @@ internal static class Utf8AsciiScalarOperationAssertions
         using var source = new CancellationTokenSource();
         foreach (var token in new[] { CancellationToken.None, source.Token })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             if (floor < 0)
             {
                 var byteOffset = offset < 0 ? -1 : offset > text.Length ? subject.Input.Length + 1 :
@@ -179,18 +179,18 @@ internal static class Utf8AsciiScalarOperationAssertions
             var expected = oracle.Matches(subject.Projected, floor).Cast<Match>().ToArray();
             Assert.Equal(expected.Length != 0, regex.Match(subject.Input, subject.ByteBoundaries[floor], [], token).Success);
             Owned(regex);
-            regex = new Utf8Regex(pattern, options);
+            regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(expected.Length, Utf8MatchSequence.Count(regex.EnumerateMatches(subject.Input, subject.ByteBoundaries[floor], token)));
             Owned(regex);
-            regex = new Utf8Regex(pattern, options);
+            regex = new Utf8Regex(pattern, options: options);
             Value(subject, oracle.Match(subject.Projected, floor), regex.Match(subject.Input, subject.ByteBoundaries[floor], [], token));
             Owned(regex);
-            regex = new Utf8Regex(pattern, options);
+            regex = new Utf8Regex(pattern, options: options);
             Utf8MatchSequence.AssertCaptures(oracle.Match(subject.Projected, floor),
                 Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input, subject.ByteBoundaries[floor], token)),
                 subject.Input, index => subject.ByteBoundaries[index]);
             Owned(regex);
-            regex = new Utf8Regex(pattern, options);
+            regex = new Utf8Regex(pattern, options: options);
             Sequence(subject, expected, regex.EnumerateMatches(subject.Input, subject.ByteBoundaries[floor], token));
             Owned(regex);
         }

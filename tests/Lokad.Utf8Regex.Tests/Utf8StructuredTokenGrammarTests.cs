@@ -38,7 +38,7 @@ public sealed class Utf8StructuredTokenGrammarTests
         }
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex("[a-z]+:[a-z]+[0-9]+", options);
+            var regex = new Utf8Regex("[a-z]+:[a-z]+[0-9]+", options: options);
             Assert.True(regex.IsMatch("😀 a:abc12 é"u8));
             Assert.Equal(1, regex.Count("😀 a:abc12 é"u8));
             var match = regex.Match("😀 a:abc12 é"u8);

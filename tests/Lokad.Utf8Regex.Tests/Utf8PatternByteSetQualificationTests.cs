@@ -104,7 +104,7 @@ public sealed class Utf8PatternByteSetQualificationTests
             { Assert.IsType<PreparedByteSet>(anchor); Assert.IsType<byte[]>(masks); }
             foreach (var compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
             {
-                var regex = new Utf8Regex(pattern, CyrillicOptions | compiled);
+                var regex = new Utf8Regex(pattern, options: CyrillicOptions | compiled);
                 Assert.Equal(expected, regex.Count(input));
                 using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
                 Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancellation.Token));

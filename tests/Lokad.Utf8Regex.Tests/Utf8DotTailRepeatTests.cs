@@ -21,7 +21,11 @@ public sealed class Utf8DotTailRepeatTests
     {
         var text = new string('a', 4096) + "😀\né\0\r\n";
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex("(?s:^(?<body>.+)$)", mode, Timeout.InfiniteTimeSpan, Policy(1));
+        var regex = new Utf8Regex("(?s:^(?<body>.+)$)", options: mode, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy(1)
+        });
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(retained.Success);
         Assert.Equal(input.Length, retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes);
@@ -51,7 +55,11 @@ public sealed class Utf8DotTailRepeatTests
         var input = memory.Span;
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex("(?m:^(?<line>.*)$)", mode, Timeout.InfiniteTimeSpan, Policy());
+            var regex = new Utf8Regex("(?m:^(?<line>.*)$)", options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy()
+            });
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(memory));
             Assert.True(retained.Success);
             Assert.Equal(0, retained.Value.StartOffsetInBytes);
@@ -84,7 +92,11 @@ public sealed class Utf8DotTailRepeatTests
         {
             var options = mode | RegexOptions.CultureInvariant;
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options, Timeout.InfiniteTimeSpan, Policy());
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy()
+            });
             var expected = oracle.Match(text);
             var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal(expected.Success, regex.IsMatch(input));
@@ -98,7 +110,11 @@ public sealed class Utf8DotTailRepeatTests
     [InlineData(RegexOptions.None)] [InlineData(RegexOptions.Compiled)]
     public void DotBoundsCountScalarsAndPreserveCapturedByteRanges(RegexOptions mode)
     {
-        var regex = new Utf8Regex("(?m:^(.{1,2})$)", mode, Timeout.InfiniteTimeSpan, Policy(1));
+        var regex = new Utf8Regex("(?m:^(.{1,2})$)", options: mode, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy(1)
+        });
         var input = "😀é\n中"u8.ToArray();
         Assert.Equal(2, regex.Count(input));
         var first = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -114,9 +130,16 @@ public sealed class Utf8DotTailRepeatTests
     {
         var input = Encoding.UTF8.GetBytes(new string('a', 2048) + "\n");
         var policy = Policy(1, 1);
-        Assert.Equal(1, new Utf8Regex("(?m:^(.+)$)", RegexOptions.None,
-            Timeout.InfiniteTimeSpan, policy).Count(input));
-        var overlapping = new Utf8Regex("(?m:^(.+)a$)", RegexOptions.None, Timeout.InfiniteTimeSpan, policy);
+        Assert.Equal(1, new Utf8Regex("(?m:^(.+)$)", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        }).Count(input));
+        var overlapping = new Utf8Regex("(?m:^(.+)a$)", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy
+        });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => overlapping.Count(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, error.ResourceKind);
     }
@@ -129,8 +152,11 @@ public sealed class Utf8DotTailRepeatTests
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var match = Utf8MatchSequence.First(new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, Policy())
-                .CreateMatchCursor(Encoding.UTF8.GetBytes(text)));
+            var match = Utf8MatchSequence.First(new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Policy()
+            })                .CreateMatchCursor(Encoding.UTF8.GetBytes(text)));
             Assert.Equal(captured is not null, match.Success);
             if (match.Success) Assert.Equal(captured, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
         }

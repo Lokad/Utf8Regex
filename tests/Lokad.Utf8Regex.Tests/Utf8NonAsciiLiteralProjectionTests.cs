@@ -43,7 +43,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
     {
         const string text = "x\U0001F600abxcd";
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex("ab|cd", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("ab|cd", options: RegexOptions.CultureInvariant);
         var runtime = new Regex("ab|cd", RegexOptions.CultureInvariant);
 
         foreach (var offset in new[] { 0, 1, 3, 4 })
@@ -92,7 +92,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
         foreach (var lane in new[] { options, options | RegexOptions.Compiled })
         {
             var oracle = new Regex(pattern, lane, Regex.InfiniteMatchTimeout);
-            var regex = new Utf8Regex(pattern, lane);
+            var regex = new Utf8Regex(pattern, options: lane);
 
             var expected = oracle.Match(text);
             var actual = regex.Match(input);
@@ -136,7 +136,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
         const int count = int.MaxValue;
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         var expected = new List<(string Value, int Index, int Length)>();
         foreach (var range in oracle.EnumerateSplits(text, count))
@@ -169,15 +169,15 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.Compiled | RegexOptions.CultureInvariant })
         {
             var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-            var isMatchRegex = new Utf8Regex(pattern, options);
+            var isMatchRegex = new Utf8Regex(pattern, options: options);
             Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
             Assert.Equal(expectOwnedDiscovery, isMatchRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
-            var countRegex = new Utf8Regex(pattern, options);
+            var countRegex = new Utf8Regex(pattern, options: options);
             Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
             Assert.Equal(expectOwnedDiscovery, countRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
-            var enumRegex = new Utf8Regex(pattern, options);
+            var enumRegex = new Utf8Regex(pattern, options: options);
             var expected = new System.Collections.Generic.List<(int Index, int Length)>();
             foreach (Match expectedMatch in oracle.Matches(text))
             {
@@ -193,20 +193,20 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
             Assert.Equal(expected.Count, actual.Count);
             Assert.Equal(expectOwnedEnumeration, enumRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
-            var detailedRegex = new Utf8Regex(pattern, options);
+            var detailedRegex = new Utf8Regex(pattern, options: options);
             var expectedFirst = oracle.Match(text);
             var actualFirst = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
             Assert.Equal(expectedFirst.Success, actualFirst.Success);
             // Detailed captures borrow the same catalog as the scalar program.
             Assert.True(ReferenceEquals(detailedRegex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, detailedRegex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
             const int count = int.MaxValue;
-            var replaceRegex = new Utf8Regex(pattern, options);
+            var replaceRegex = new Utf8Regex(pattern, options: options);
             var expectedReplaced = oracle.Replace(text, "x");
             var actualReplaced = Encoding.UTF8.GetString(replaceRegex.Replace(input, "x"));
             Assert.Equal(expectedReplaced, actualReplaced);
             Assert.Equal(expectOwnedReplacement, replaceRegex.Inspection.PreparedRegex.ScalarProgram is not null);
 
-            var splitRegex = new Utf8Regex(pattern, options);
+            var splitRegex = new Utf8Regex(pattern, options: options);
             var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
             foreach (var range in oracle.EnumerateSplits(text, count))
             {

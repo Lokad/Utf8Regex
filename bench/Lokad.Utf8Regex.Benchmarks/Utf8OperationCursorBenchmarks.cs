@@ -8,7 +8,7 @@ namespace Lokad.Utf8Regex.Benchmarks;
 public class Utf8OperationCursorBenchmarks
 {
     private byte[] _input = [];
-    private Utf8Regex _regex = new("ab", RegexOptions.CultureInvariant);
+    private Utf8Regex _regex = new("ab", options: RegexOptions.CultureInvariant);
 
     [Params(false, true)]
     public bool Compiled { get; set; }
@@ -19,7 +19,7 @@ public class Utf8OperationCursorBenchmarks
         _input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("xxabyy", 1024)));
         var options = RegexOptions.CultureInvariant |
             (Compiled ? RegexOptions.Compiled : RegexOptions.None);
-        _regex = new Utf8Regex("ab", options);
+        _regex = new Utf8Regex("ab", options: options);
     }
 
     [Benchmark]

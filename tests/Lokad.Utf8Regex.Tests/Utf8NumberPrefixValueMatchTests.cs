@@ -34,8 +34,16 @@ public sealed class Utf8NumberPrefixValueMatchTests
         using var token = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(Pattern, mode | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
-                Funded with { MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: mode | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var oracle = new Regex(Pattern, mode | RegexOptions.CultureInvariant);
             foreach (var text in new[] { "", "-", "--1", "+1", ".5", "x1", " 1", "1", "-0", "0123",
                 "-12.34e-56!", "1.", "1.e3", "1e", "1e+", "1e-", "1.2e+", "1.2e-3x", "1E3", "1\n2" })
@@ -61,7 +69,11 @@ public sealed class Utf8NumberPrefixValueMatchTests
         using var token = new CancellationTokenSource();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.IgnoreCase, RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(Pattern, mode | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(Pattern, options: mode | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             foreach (var text in new[] { "-1.25e+3!", "12😀", "١٢", "-1.é", "12E3", "😀12", "12.3!" + new string(' ', 2049) })
             {
                 var input = Encoding.UTF8.GetBytes(text);
@@ -72,7 +84,11 @@ public sealed class Utf8NumberPrefixValueMatchTests
         }
         foreach (var options in new[] { RegexOptions.None, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(Pattern.Replace(@"\G", @"\A"), options, Timeout.InfiniteTimeSpan, Funded);
+            var regex = new Utf8Regex(Pattern.Replace(@"\G", @"\A"), options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded
+            });
             Assert.Equal(Scalar(regex, "-12.34e-5!"u8.ToArray()), regex.Match("-12.34e-5!"u8, cancellationToken: token.Token));
         }
         var offsetRegex = new Utf8Regex(Pattern);
@@ -84,8 +100,14 @@ public sealed class Utf8NumberPrefixValueMatchTests
     [Fact]
     public void LongReverseSearchStillObservesTheWorkLimit()
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.RightToLeft, Timeout.InfiniteTimeSpan,
-            Funded with { MaxWorkSteps = 1000 });
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.RightToLeft, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 1000
+            }
+        });
         var input = Encoding.ASCII.GetBytes(new string('1', 2049));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input)).ResourceKind);
@@ -120,8 +142,16 @@ public sealed class Utf8NumberPrefixValueMatchTests
         var input = Encoding.ASCII.GetBytes(text); var admitted = false;
         for (ulong work = 1; work < 100; work++)
         {
-            var regex = new Utf8Regex(Pattern, RegexOptions.None, Timeout.InfiniteTimeSpan,
-                Funded with { MaxWorkSteps = work, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkSteps = work,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             try { Assert.Equal(success, regex.Match(input).Success); admitted = true; break; }
             catch (Utf8ResourceLimitExceededException error) { Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind); }
         }
@@ -139,7 +169,11 @@ public sealed class Utf8NumberPrefixValueMatchTests
             if (++reads == trigger) { if (expire) ticks = 100; else token.Cancel(); }
             return ticks;
         });
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50), Funded);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Funded
+        });
         Assert.True(regex.Match("12.3e-4!"u8, cancellationToken: token.Token).Success);
         trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match("12.3e-4!"u8, cancellationToken: token.Token)).MatchTimeout);

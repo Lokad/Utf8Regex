@@ -19,7 +19,7 @@ public sealed class Utf8DeclarationIdentifierTests
     {
         const string pattern = @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+";
         byte[] input = Encoding.UTF8.GetBytes("😀 class Worker_State; érecord Bogus; record CustomerExportJob; struct worker_state");
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         Assert.Equal(2, regex.Count(input));
         var first = regex.Match(input); Assert.Equal(5, first.StartOffsetInBytes);
         Assert.Equal("class Worker_State"u8.ToArray(), input.AsSpan(first.StartOffsetInBytes, (first.EndOffsetInBytes - first.StartOffsetInBytes)).ToArray());

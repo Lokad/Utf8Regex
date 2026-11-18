@@ -84,7 +84,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
             Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
             Assert.Equal(oracle.Count(text), regex.Count(input));
@@ -168,7 +168,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             for (var start = 0; start <= text.Length; start++)
             {
                 var expected = new List<(int, int)>();
@@ -199,7 +199,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var oracle = new Regex(pattern, options);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(oracle.Replace(text, template), Encoding.UTF8.GetString(regex.Replace(input, template)));
         }
     }
@@ -214,7 +214,7 @@ public sealed class Utf8ScalarMinimumOverlapTests
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.False(regex.IsMatch(input));
             Assert.Equal(0, regex.Count(input));
             Assert.False(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);

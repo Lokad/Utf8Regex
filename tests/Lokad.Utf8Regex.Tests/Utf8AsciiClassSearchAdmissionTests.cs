@@ -162,7 +162,7 @@ public sealed class Utf8AsciiClassSearchAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void ScalarPublicOperationsPreserveAsciiClassesAcrossSupplementarySubjectsWithoutBcl(bool compiled)
     {
-        var regex = new Utf8Regex("[ABCD]{2,4}", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex("[ABCD]{2,4}", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var subject = Encoding.UTF8.GetBytes("😀ABCD中ABC😀A");
         Assert.True(regex.IsMatch(subject)); Assert.Equal(2, regex.Count(subject));
         var match = regex.Match(subject); Assert.Equal(4, match.StartOffsetInBytes); Assert.Equal(4, (match.EndOffsetInBytes - match.StartOffsetInBytes));

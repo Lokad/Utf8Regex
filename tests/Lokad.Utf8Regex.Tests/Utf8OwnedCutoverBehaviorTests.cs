@@ -71,7 +71,7 @@ public sealed class Utf8OwnedCutoverBehaviorTests
 
         try
         {
-            product = new Utf8Regex(pattern, options);
+            product = new Utf8Regex(pattern, options: options);
         }
         catch (Exception ex)
         {

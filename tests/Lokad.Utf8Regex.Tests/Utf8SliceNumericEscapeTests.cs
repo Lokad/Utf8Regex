@@ -108,7 +108,7 @@ public sealed class Utf8SliceNumericEscapeTests
         Assert.NotNull(program);
         Assert.Contains(program.Instructions, instruction =>
             instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A == value);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(((char)value).ToString())));
     }
     [Theory]
@@ -192,7 +192,7 @@ public sealed class Utf8SliceNumericEscapeTests
             Utf8SliceRunner.IsMatch(program, input, starts, ends, ref canceled));
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var recovered = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(text, System.Text.Encoding.UTF8.GetString(recovered.GetGroupMemory(12).Span));
         Assert.Equal(17, recovered.GetCaptures(12).Length);
@@ -207,7 +207,7 @@ public sealed class Utf8SliceNumericEscapeTests
     public void NativeAsciiUnitCountAndSplitKeepCancellationAcrossMatches(bool compiled, bool split)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("a", options);
+        var regex = new Utf8Regex("a", options: options);
         var input = Encoding.ASCII.GetBytes(new string('a', 2000));
         using var source = new CancellationTokenSource();
         ulong checkpoint = 0;

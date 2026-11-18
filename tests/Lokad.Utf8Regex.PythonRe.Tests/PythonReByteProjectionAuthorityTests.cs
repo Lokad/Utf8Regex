@@ -6,8 +6,7 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReByteProjectionAuthorityTests
 {
-    private static Utf8SliceProgram Program => new global::Lokad.Utf8Regex.Utf8Regex(".")
-        .Inspection.AvailableOwnedSliceProgram!;
+    private static Utf8SliceProgram Program => new global::Lokad.Utf8Regex.Utf8Regex(".")        .Inspection.AvailableOwnedSliceProgram!;
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(4095)]

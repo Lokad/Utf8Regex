@@ -20,7 +20,7 @@ public sealed class Utf8RepeatedSegmentCountTests
             "xxxxAbCd\0EfGh", "Ab" + new string('b', 2050) + new string(' ', 2050) + "Cd" };
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var reference = new Regex(pattern, options);
             using var live = new CancellationTokenSource();
             foreach (var text in texts)
@@ -54,7 +54,7 @@ public sealed class Utf8RepeatedSegmentCountTests
     [InlineData(@"(?:[A-Z][A-Za-z]+\s*){2,3}", RegexOptions.None)]
     public void NeighbouringGrammarsPreservePublicCounts(string pattern, RegexOptions options)
     {
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.Equal(new Regex(pattern, options).Count("Ab Cd Ef !"), regex.Count("Ab Cd Ef !"u8));
     }
 
@@ -63,11 +63,25 @@ public sealed class Utf8RepeatedSegmentCountTests
     {
         const string pattern = @"(?:[A-Z][a-z]+\s*){2,3}";
         var input = "xx Ab\u00a0Cd\u2028Ef GhIj "u8.ToArray();
-        var regex = new Utf8Regex(pattern, resourcePolicy: new() { MaxWorkSteps = 1_000_000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20 });
+        var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 4096,
+                MaxWorkingBytes = 1 << 20
+            }
+        });
         var account = new WorkingAllowance(1 << 20); Assert.True(account.TryReserve(13));
         Assert.Equal(new Regex(pattern).Count(System.Text.Encoding.UTF8.GetString(input)), regex.Count(input, default, account));
         Assert.Equal(13UL, account.Used);
-        var denied = new Utf8Regex(pattern, resourcePolicy: new() { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input, default, account)).ResourceKind);
         Assert.Equal(13UL, account.Used);
         var refusing = new WorkingAllowance(13); Assert.True(refusing.TryReserve(13));
@@ -96,8 +110,16 @@ public sealed class Utf8RepeatedSegmentCountTests
         long ticks = 0; var reads = 0; var trigger = int.MaxValue;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (++reads == trigger) { if (expire) ticks = 100; else live.Cancel(); } return ticks; });
-        var regex = new Utf8Regex(pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50),
-            new() { MaxWorkSteps = 10_000_000, MaxDepth = 100000, MaxWorkingBytes = 16 << 20 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 10_000_000,
+                MaxDepth = 100000,
+                MaxWorkingBytes = 16 << 20
+            }
+        });
         _ = regex.Count(bytes, live.Token);
         Assert.True(reads > 0); trigger = reads; reads = 0;
         if (expire) Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(bytes, live.Token)).MatchTimeout);
@@ -108,7 +130,17 @@ public sealed class Utf8RepeatedSegmentCountTests
     public void PublicAdmissionAndStrictTailValidationStillApply()
     {
         const string pattern = @"(?:[A-Z][a-z]+\s*){2,3}";
-        var regex = new Utf8Regex(pattern, RegexOptions.None, Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 4096,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(1, regex.Count("Ab\u2003Cd"u8));
         var malformed = "AbCd"u8.ToArray().Concat(new byte[] { 0xc3 }).ToArray();
         using var live = new CancellationTokenSource(); live.Cancel();

@@ -65,7 +65,7 @@ public sealed class PackedNibbleLiteralFamilyCountTests
             actual.Add(candidate);
         Assert.Equal(Enumerable.Range(0, 24).Select(index => prefix + 12 * index), actual);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
-            Assert.Equal(0, new Utf8Regex(pattern, options).Count(input));
+            Assert.Equal(0, new Utf8Regex(pattern, options: options).Count(input));
     }
 
     [Theory]
@@ -74,7 +74,7 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     public void ChineseLiteralFamilyUsesPackedNibbleCountStrategy(RegexOptions options)
     {
         const string input = "夏洛克·福尔摩斯和约翰华生拜访阿德勒。雷斯垂德追踪莫里亚蒂教授。";
-        var regex = new Utf8Regex(Pattern, options);
+        var regex = new Utf8Regex(Pattern, options: options);
         var oracle = new Regex(Pattern, options, Regex.InfiniteMatchTimeout);
         var bytes = Encoding.UTF8.GetBytes(input);
 
@@ -89,7 +89,7 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     [Fact]
     public void CountCoversEveryVectorLaneAndTheScalarTail()
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var oracle = new Regex(
             Pattern,
             RegexOptions.CultureInvariant | RegexOptions.Compiled,
@@ -111,7 +111,7 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     [InlineData("猫猫猫|狗狗狗", "猫猫猫猫猫猫狗狗狗")]
     public void CountPreservesLeftmostBranchOrderAndNonOverlap(string pattern, string input)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
 
         Assert.Equal(oracle.Count(input), regex.Count(Encoding.UTF8.GetBytes(input)));
@@ -123,7 +123,7 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     {
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(Pattern, options);
+            var regex = new Utf8Regex(Pattern, options: options);
             var oracle = new Regex(Pattern, options);
             foreach (var prefix in new[] { 31, 32, 33, 2047, 2048, 2049, 4096 })
             {
@@ -140,7 +140,7 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     [Fact]
     public void CountMatchesDotNetOnDeterministicValidSubjects()
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant);
         var oracle = new Regex(Pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var random = new Random(0x43A11);
         string[] fragments =
@@ -166,10 +166,10 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     [Fact]
     public void FiniteTimeoutRetainsTheBudgetedCountRoute()
     {
-        var regex = new Utf8Regex(
-            Pattern,
-            RegexOptions.CultureInvariant,
-            TimeSpan.FromSeconds(1));
+        var regex = new Utf8Regex(            Pattern, options:             RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1)
+        });
 
         Assert.False(regex.Inspection.DebugHasPackedNibbleLiteralFamilyCountStrategy);
         Assert.Equal(2, regex.Count("夏洛克·福尔摩斯和阿德勒"u8));
@@ -180,12 +180,16 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]
     public void FiniteAndLiveTokenCallsKeepTheirScalarAuthority(RegexOptions options)
     {
-        var regex = new Utf8Regex(Pattern, options, TimeSpan.FromSeconds(5), new()
+        var regex = new Utf8Regex(Pattern, options: options, policy: new Utf8RegexPolicy
         {
-            MaxWorkSteps = 100_000,
-            MaxDepth = 1024,
-            MaxWorkingBytes = 1_048_576,
-            MaxResultBytes = 1_048_576
+            MatchTimeout = TimeSpan.FromSeconds(5),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            }
         });
         using var cancellation = new CancellationTokenSource();
         Assert.Equal(2, regex.Count("夏洛克·福尔摩斯和阿德勒"u8, cancellation.Token));
@@ -203,7 +207,7 @@ public sealed class PackedNibbleLiteralFamilyCountTests
     [InlineData(Pattern, RegexOptions.CultureInvariant | RegexOptions.RightToLeft)]
     public void SelectorRejectsUnprovenFamilyShapes(string pattern, RegexOptions options)
     {
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
 
         Assert.False(regex.Inspection.DebugHasPackedNibbleLiteralFamilyCountStrategy);
     }

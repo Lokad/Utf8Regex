@@ -32,7 +32,7 @@ public sealed class Utf8CaptureCursorShapingTests
     {
         var subject = new Utf8ScalarCaptureFixture.Subject(text);
         var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, options));
-        var utf8 = new Utf8Regex(pattern, options);
+        var utf8 = new Utf8Regex(pattern, options: options);
         var expected = oracle.Match(subject.Projected);
         var actual = Utf8MatchSequence.First(utf8.CreateMatchCursor(subject.Input));
         Utf8MatchSequence.AssertCaptures(expected, actual, subject.Input, index => subject.Bytes[index]);
@@ -56,7 +56,7 @@ public sealed class Utf8CaptureCursorShapingTests
     public void ByteStartsMatchRuntimeShaping(string pattern, string text, int offset)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        var utf8 = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var utf8 = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var expected = new Regex(pattern, RegexOptions.CultureInvariant).Match(text, offset);
         var actual = Utf8MatchSequence.First(utf8.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))));
         Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
@@ -68,7 +68,7 @@ public sealed class Utf8CaptureCursorShapingTests
     {
         const string text = "xxabxx";
         var input = Encoding.UTF8.GetBytes(text);
-        var utf8 = new Utf8Regex("(a)(b)", RegexOptions.CultureInvariant);
+        var utf8 = new Utf8Regex("(a)(b)", options: RegexOptions.CultureInvariant);
         var expected = new Regex("(a)(b)", RegexOptions.CultureInvariant).Match(text);
         var actual = Utf8MatchSequence.First(utf8.CreateMatchCursor(input));
         Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
@@ -93,7 +93,7 @@ public sealed class Utf8CaptureCursorShapingTests
             var subject = new Utf8ScalarCaptureFixture.Subject(text);
             var storage = Encoding.UTF8.GetBytes("padding" + text + "padding");
             var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, options));
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(storage.AsMemory(7, subject.Input.Length)));
             Utf8MatchSequence.AssertCaptures(oracle.Match(subject.Projected), actual,
                 subject.Input, index => subject.Bytes[index]);

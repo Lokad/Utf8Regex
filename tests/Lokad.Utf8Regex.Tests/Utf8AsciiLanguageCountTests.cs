@@ -18,9 +18,18 @@ public sealed class Utf8AsciiLanguageCountTests
     {
         foreach (var pattern in new[] { Pattern, Pattern.Replace("25", @"\x32\x35").Replace(@"\.", @"\x2e") })
         {
-            var regex = new Utf8Regex(pattern, options);
-            var controlled = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout,
-                new() { MaxWorkSteps = 1000000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(pattern, options: options);
+            var controlled = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 1000000,
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 8 << 20,
+                    MaxResultBytes = 1
+                }
+            });
             var oracle = new Regex(pattern, options);
             foreach (var text in new[] { "", "1.2.3.4", "..😀..", "😀00.11.22.25500é",
                 "٣٣.44.55.66 00.11.22.255😀255.249.199.000é", "999.999.999.999", "00.00.00.00" })
@@ -41,7 +50,7 @@ public sealed class Utf8AsciiLanguageCountTests
     [Fact]
     public void DenseFalseCandidatesAndUnicodeTailsAgreeWithOrderedOracle()
     {
-        var regex = new Utf8Regex(Pattern, RegexOptions.Compiled);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Compiled);
         var oracle = new Regex(Pattern);
         string[] alphabet = ["0", "1", "2", "5", "9", ".", ".", " ", "é", "😀", "٣"];
         var random = new Random(0x49507634);
@@ -65,7 +74,7 @@ public sealed class Utf8AsciiLanguageCountTests
     [InlineData(RegexOptions.NonBacktracking)]
     public void DirectionAndNonBacktrackingRetainTheirExistingExecutors(RegexOptions options)
     {
-        var regex = new Utf8Regex(Pattern, options);
+        var regex = new Utf8Regex(Pattern, options: options);
         const string text = "😀00.11.22.25500é255.249.199.000";
         var session = Utf8SearchDiagnosticsSession.Start();
         try
@@ -79,10 +88,16 @@ public sealed class Utf8AsciiLanguageCountTests
     public void FiniteWorkAndOriginalTokenStillGovernThePublicCall()
     {
         var bytes = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + "00.11.22.255");
-        var denied = new Utf8Regex(Pattern, RegexOptions.Compiled, Regex.InfiniteMatchTimeout,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex(Pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(bytes));
-        var regex = new Utf8Regex(Pattern, RegexOptions.Compiled);
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Compiled);
         using var source = new CancellationTokenSource();
         source.Cancel();
         Assert.Equal(source.Token,
@@ -102,7 +117,10 @@ public sealed class Utf8AsciiLanguageCountTests
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex(Pattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(10));
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(10)
+        });
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor("😀00.11.22.255é"u8.ToArray()));
         var bytes = Encoding.UTF8.GetBytes(new string('x', 1 << 20));
         var session = Utf8SearchDiagnosticsSession.Start(_ => ticks = 20);
@@ -122,8 +140,17 @@ public sealed class Utf8AsciiLanguageCountTests
             if (++reads == cancelAt) cancellation.Cancel();
             return 0;
         });
-        var regex = new Utf8Regex(Pattern, RegexOptions.None, TimeSpan.FromSeconds(1),
-            new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 8 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1),
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 8 << 20,
+                MaxResultBytes = 1
+            }
+        });
         Assert.Equal(1, regex.Count("😀00.11.22.255é"u8, cancellation.Token));
         Assert.True(reads > 1);
         cancelAt = reads;

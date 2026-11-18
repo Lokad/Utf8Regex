@@ -9,7 +9,7 @@ public sealed class Utf8ReversibleMatchStateTests
     [Fact]
     public void ScalarRollbackKeepsEarlierCapturesAndDiscardsFailedBranchHistory()
     {
-        var regex = new Utf8Regex("(?<x>😀)(?:(?<x>𐐨)(?<y>a)q|(?<x>𐐨)(?<y>a))z", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?<x>😀)(?:(?<x>𐐨)(?<y>a)q|(?<x>𐐨)(?<y>a))z", options: RegexOptions.CultureInvariant);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("😀𐐨az"u8.ToArray()));
         Assert.True(match.Success);
         Assert.Equal((0, 10), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
@@ -25,7 +25,7 @@ public sealed class Utf8ReversibleMatchStateTests
     [Fact]
     public void HugeSyntacticRepeatUsesReachableSubjectBound()
     {
-        var regex = new Utf8Regex("((?:a|b){0,2147483647})z", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("((?:a|b){0,2147483647})z", options: RegexOptions.CultureInvariant);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("abz"u8.ToArray()));
         Assert.True(match.Success);
         Assert.Equal(3, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
@@ -35,7 +35,7 @@ public sealed class Utf8ReversibleMatchStateTests
     [Fact]
     public void FailedAlternativeRestoresScalarCaptures()
     {
-        var regex = new Utf8Regex("(?:(a)c|(b))d", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(?:(a)c|(b))d", options: RegexOptions.CultureInvariant);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("bd"u8.ToArray()));
         Assert.True(match.Success);
         Assert.Equal(2, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));

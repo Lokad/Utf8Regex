@@ -26,7 +26,10 @@ public sealed class Utf8MappedEntryInvocationTests
     public void CompleteOperationsPreserveUnitsCapturesAnchorsAndSplitTail(string pattern, bool compiled, bool rtl)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(pattern, options),
             ["", "abab aaab aabc", "é😀 abab 中aaab aabc 😀", "abab\naaab\naabc"]);
     }

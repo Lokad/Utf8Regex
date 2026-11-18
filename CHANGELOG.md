@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Fold Core program funding into disposable Utf8Regex and immutable Utf8RegexPolicy;
+  remove the separate program-owner type. Preserve admitted calls/persistent
+  cursors after close. Funded span enumerators borrow an open regex. Prepay bounded
+  replacement-cache capacity before publication; recompile and migrate controls.
+
 - Add optional caller-owned PCRE2 capture slots to the primary Match signature
   and funded owners. Share existing capture publication without a result array;
   preserve byte-fragment status, limits and lifetimes. Name former positional

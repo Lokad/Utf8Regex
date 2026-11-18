@@ -48,7 +48,7 @@ public sealed class Utf8NativePreparationTests
         var scored = Utf8OwnedRequiredLiterals.FindBestRequiredLiteralFamily(Tree("abc[0]😀", native).Root);
         Assert.Equal(new[] { "😀"u8.ToArray() }, scored);
 
-        var expression = new Utf8Regex("[ab](😀|\ue000)|[cd](😀|\ue000)", RegexOptions.CultureInvariant);
+        var expression = new Utf8Regex("[ab](😀|\ue000)|[cd](😀|\ue000)", options: RegexOptions.CultureInvariant);
         var input = "a😀 b\ue000 c😀 d\ue000"u8.ToArray();
         Assert.Equal(4, expression.Count(input));
         using var cursor = expression.CreateMatchCursor(input);

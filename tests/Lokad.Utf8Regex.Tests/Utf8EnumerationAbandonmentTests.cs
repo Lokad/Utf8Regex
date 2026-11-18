@@ -14,10 +14,10 @@ public sealed class Utf8EnumerationAbandonmentTests
     {
         var options = RegexOptions.CultureInvariant;
         var input = Encoding.UTF8.GetBytes(inputText);
-        var expectedCount = new Utf8Regex(pattern, options).Count(input);
+        var expectedCount = new Utf8Regex(pattern, options: options).Count(input);
         Assert.True(expectedCount > 1);
 
-        var reused = new Utf8Regex(pattern, options);
+        var reused = new Utf8Regex(pattern, options: options);
         var enumerator = reused.EnumerateMatches(input);
         Assert.True(enumerator.MoveNext());
         // Abandoned without exhausting: the stack-only enumerator carries no

@@ -17,8 +17,18 @@ public sealed class Utf8CallerValidTextTests
         foreach (var finite in new[] { false, true })
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options, resourcePolicy: finite ? new()
-                { MaxWorkSteps = 128, MaxDepth = 4096, MaxWorkingBytes = 1 << 24, MaxResultBytes = 1 << 20 } : default);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = finite ? new()
+                {
+                    MaxWorkSteps = 128,
+                    MaxDepth = 4096,
+                    MaxWorkingBytes = 1 << 24,
+                    MaxResultBytes = 1 << 20
+                }
+
+                : default
+            });
             var session = Utf8SearchDiagnosticsSession.Start(step => Assert.True(step < 128, "An early result must not scan the suffix."));
             try
             {
@@ -62,7 +72,14 @@ public sealed class Utf8CallerValidTextTests
     public void FundedFactoryKeepsCallerTextAcrossCountCursorAndReplacement()
     {
         var account = new Account();
-        using (var owner = Utf8Regex.Compile("needle",RegexOptions.None,Timeout.InfiniteTimeSpan,            default,default,Timeout.InfiniteTimeSpan,default,account))
+        using (var owner = Utf8Regex.Compile("needle", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default))
         {
             Assert.Equal(2, owner.Count("needle é😀 needle"u8));
             using (var cursor = owner.CreateMatchCursor("needle é😀 needle"u8.ToArray()))
@@ -95,7 +112,10 @@ public sealed class Utf8CallerValidTextTests
         long now = 0;
         using var clock = Internal.Execution.Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex("needle",matchTimeout: deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Regex("needle", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan
+        });
         var bytes = Encoding.UTF8.GetBytes(new string('x', 256 * 1024) + "needle");
         var triggered = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ => { triggered = true; if (deadline) now = 101; else source.Cancel(); });
@@ -111,9 +131,21 @@ public sealed class Utf8CallerValidTextTests
     [Fact]
     public void CallerTextRetainsFiniteWorkAndWorkingAdmission()
     {
-        var work = new Utf8Regex(@"(a+)\1",resourcePolicy: new() { MaxWorkSteps = 1 });
+        var work = new Utf8Regex(@"(a+)\1", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => work.Count("aaaa"u8));
-        var memory = new Utf8Regex(@"(a+)\1",resourcePolicy: new() { MaxWorkingBytes = 1 });
+        var memory = new Utf8Regex(@"(a+)\1", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(memory.CreateMatchCursor("aaaa"u8.ToArray())));
     }
 

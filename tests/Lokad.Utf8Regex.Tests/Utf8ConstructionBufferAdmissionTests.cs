@@ -20,7 +20,7 @@ public sealed class Utf8ConstructionBufferAdmissionTests
         int count;
         using (var measured = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity))
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             count = regex.Count(input);
             peak = measured.Budget.PeakBytes;
@@ -37,7 +37,7 @@ public sealed class Utf8ConstructionBufferAdmissionTests
             {
                 using var scope = new Utf8ConstructionScope(Utf8ConstructionScope.DefaultInstructionCapacity, cutoff);
                 Utf8Regex? regex = null;
-                var failure = Record.Exception(() => regex = new Utf8Regex(pattern, options));
+                var failure = Record.Exception(() => regex = new Utf8Regex(pattern, options: options));
                 Assert.True(scope.Budget.PeakBytes <= cutoff);
                 if (failure is null)
                 {
@@ -58,7 +58,7 @@ public sealed class Utf8ConstructionBufferAdmissionTests
             }
         }
         Assert.False(Utf8ConstructionScope.IsActive);
-        Assert.Equal(count, new Utf8Regex(pattern, options).Count(input));
+        Assert.Equal(count, new Utf8Regex(pattern, options: options).Count(input));
     }
 
     [Theory]

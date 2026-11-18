@@ -61,7 +61,7 @@ public sealed class Utf8ScalarCaptureFixtureTests
         var oracle = Utf8ScalarCaptureFixture.Project(original);
         Assert.Equal(expected, oracle.Matches(subject.Projected).Cast<Match>()
             .Select(match => subject.ByteRange(match.Index, match.Length)));
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var cursor = regex.EnumerateMatches(subject.Input);
         foreach (var range in expected)
         {
@@ -86,7 +86,7 @@ public sealed class Utf8ScalarCaptureFixtureTests
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-        var regex = new Utf8Regex("(?<12>.)+", options);
+        var regex = new Utf8Regex("(?<12>.)+", options: options);
         var subject = new Utf8ScalarCaptureFixture.Subject(Text);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input));
         Assert.Equal((0, 14), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
@@ -118,7 +118,7 @@ public sealed class Utf8ScalarCaptureFixtureTests
         var pattern = rtl ? @"(?i:\k<x>(?<x>.))" : @"(?i:(?<x>.)\k<x>)";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var subject = new Utf8ScalarCaptureFixture.Subject(Text);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input));
         Assert.True(match.Success);
@@ -139,7 +139,7 @@ public sealed class Utf8ScalarCaptureFixtureTests
         const string scalar = @"(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF\n])";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
             (rtl ? RegexOptions.RightToLeft : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var subject = new Utf8ScalarCaptureFixture.Subject("😀\U00010400x");
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(subject.Input));
         Assert.True(match.Success);

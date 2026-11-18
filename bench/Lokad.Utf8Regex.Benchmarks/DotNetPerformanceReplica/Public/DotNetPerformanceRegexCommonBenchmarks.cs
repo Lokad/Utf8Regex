@@ -68,7 +68,7 @@ public class DotNetPerformanceRegexCommonBenchmarks
 
         _inputBytes = Encoding.UTF8.GetBytes(_input);
         _regex = new Regex(pattern, Options, Regex.InfiniteMatchTimeout);
-        _utf8Regex = new Utf8Regex(pattern, Options);
+        _utf8Regex = new Utf8Regex(pattern, options: Options);
     }
 
     [Benchmark(Baseline = true)]
@@ -158,7 +158,7 @@ public class DotNetPerformanceRegexConstructionBenchmarks
     [Benchmark(Baseline = true)]
     public int Utf8RegexCtor()
     {
-        var regex = new Utf8Regex(_pattern, Options);
+        var regex = new Utf8Regex(_pattern, options: Options);
         return regex.GetGroupNumbers().Length;
     }
 
@@ -172,7 +172,7 @@ public class DotNetPerformanceRegexConstructionBenchmarks
     [Benchmark]
     public int Utf8RegexCtorInvoke()
     {
-        var regex = new Utf8Regex(_pattern, Options);
+        var regex = new Utf8Regex(_pattern, options: Options);
         return regex.IsMatch(_inputBytes) ? 1 : 0;
     }
 

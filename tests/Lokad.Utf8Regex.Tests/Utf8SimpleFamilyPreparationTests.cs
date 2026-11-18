@@ -22,7 +22,7 @@ public sealed class Utf8SimpleFamilyPreparationTests
             // optional-prefix search discrepancy; scalar NB still keeps both hits.
             var oracleOptions = (mode & ~RegexOptions.NonBacktracking) | RegexOptions.CultureInvariant;
             var oracle = new Regex(pattern, oracleOptions);
-            var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, options: mode | RegexOptions.CultureInvariant);
             foreach (var text in new[] { "", "a", "b1", "b12", "ab12", "aab12",
                 "abxx b12 ab34", "b12ab34b56", "Ab12 B34", "\nab12\nb34\n",
                 "ad9 acd8", new string('a', 4096) + "b12" })
@@ -39,7 +39,7 @@ public sealed class Utf8SimpleFamilyPreparationTests
         var prefix = new string('a', prefixLength);
         var pattern = $"(?:{prefix})?b[0-9]";
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var full = "xx " + prefix + "b7 b8 " + prefix + "x9";
         for (var length = 0; length <= full.Length; length++)
             Compare(oracle, regex, full[..length]);
@@ -50,7 +50,7 @@ public sealed class Utf8SimpleFamilyPreparationTests
     [InlineData(true)]
     public void RepeatedCountDoesNotRebuildShortFamilyMaps(bool compiled)
     {
-        var regex = new Utf8Regex("a?b[0-9]{2}", RegexOptions.CultureInvariant |
+        var regex = new Utf8Regex("a?b[0-9]{2}", options: RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("xx ab12 b34 ", 256)));
         for (var i = 0; i < 32; i++) Assert.Equal(512, regex.Count(input));

@@ -30,7 +30,7 @@ public sealed class Utf8SliceWiringTests
     {
         foreach (var options in Selections)
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
         }
     }
@@ -40,7 +40,7 @@ public sealed class Utf8SliceWiringTests
     [InlineData("a{2,3}b")]
     [InlineData("a.c")]
     public void PreservePublicSemanticsdShapesKeepPublicSemantics(string pattern)
-{ var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant); var oracle = new Regex(pattern, RegexOptions.CultureInvariant); foreach(var text in new[] { "", "a", "1", "a1b", "word", ":", "é", "abc", "aabc", "aaab" }) { var bytes = System.Text.Encoding.UTF8.GetBytes(text); Assert.Equal(oracle.IsMatch(text), regex.IsMatch(bytes)); Assert.Equal(oracle.Count(text), regex.Count(bytes)); } }
+{ var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant); var oracle = new Regex(pattern, RegexOptions.CultureInvariant); foreach(var text in new[] { "", "a", "1", "a1b", "word", ":", "é", "abc", "aabc", "aaab" }) { var bytes = System.Text.Encoding.UTF8.GetBytes(text); Assert.Equal(oracle.IsMatch(text), regex.IsMatch(bytes)); Assert.Equal(oracle.Count(text), regex.Count(bytes)); } }
     [Theory]
     [InlineData("(a+)(b+)", "xxaaabbyy", true)]
     [InlineData("(a+)(b+)", "xxaaayy", false)]
@@ -60,7 +60,7 @@ public sealed class Utf8SliceWiringTests
         Assert.Equal(expected, oracle.IsMatch(inputText));
         foreach (var options in Selections)
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
             Assert.Equal(expected, regex.IsMatch(input));
             using var source = new CancellationTokenSource();
@@ -81,7 +81,7 @@ public sealed class Utf8SliceWiringTests
         Assert.Equal(expected, oracle.Matches(inputText).Count);
         foreach (var options in Selections)
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.Equal(expected, regex.Count(input));
             using var source = new CancellationTokenSource();
             Assert.Equal(expected, regex.Count(input, source.Token));
@@ -93,7 +93,7 @@ public sealed class Utf8SliceWiringTests
     {
         // Covers every operation the slice serves; Replace/Split/from-offset
         // paths still use fallback until their own migration lands.
-        var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a+)(b+)", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("xxaaabbyy zz");
         Assert.True(regex.IsMatch(input));
         Assert.Equal(1, regex.Count(input));
@@ -116,7 +116,7 @@ public sealed class Utf8SliceWiringTests
     [Fact]
     public void PreCanceledTokenAbortsOwnedIsMatch()
     {
-        var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a+)(b+)", options: RegexOptions.CultureInvariant);
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         var exception = Assert.Throws<OperationCanceledException>(
@@ -127,7 +127,7 @@ public sealed class Utf8SliceWiringTests
     [Fact]
     public void MalformedInputThrowsOnOwnedPath()
     {
-        var regex = new Utf8Regex("(a+)(b+)", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("(a+)(b+)", options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
     }
 }

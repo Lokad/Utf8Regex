@@ -9,7 +9,7 @@ public sealed class LokadCodeRouteGuardrailTests
     [Fact]
     public void TypeTokenFamilyStaysOnLiteralFamilyEngine()
     {
-        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -20,7 +20,7 @@ public sealed class LokadCodeRouteGuardrailTests
     [Fact]
     public void MethodTokenFamilyUsesLiteralFamilyEngine()
     {
-        var regex = new Utf8Regex(@"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(@"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
@@ -31,7 +31,7 @@ public sealed class LokadCodeRouteGuardrailTests
     {
         const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
         const string input = "é LogTrace λLogError LogWarning_ LogDebug.";
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var bytes = System.Text.Encoding.UTF8.GetBytes(input);
         var expected = Regex.Count(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
 

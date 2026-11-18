@@ -10,8 +10,8 @@ internal sealed class Utf8RegexBenchmarkContext
         BenchmarkCase = benchmarkCase;
         InputString = benchmarkCase.Input;
         InputBytes = Encoding.UTF8.GetBytes(benchmarkCase.Input);
-        Utf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options);
-        CompiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, benchmarkCase.Options | RegexOptions.Compiled);
+        Utf8Regex = new Utf8Regex(benchmarkCase.Pattern, options: benchmarkCase.Options);
+        CompiledUtf8Regex = new Utf8Regex(benchmarkCase.Pattern, options: benchmarkCase.Options | RegexOptions.Compiled);
         Regex = new Regex(benchmarkCase.Pattern, benchmarkCase.Options, Regex.InfiniteMatchTimeout);
         CompiledRegex = new Regex(
             benchmarkCase.Pattern,

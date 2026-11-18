@@ -34,7 +34,10 @@ public sealed class Utf8SimpleCursorInvocationTests
     [MemberData(nameof(Modes))]
     public void RangesPreserveAnchorsRunsCapturesMixedScalarsAndInvocationModes(string pattern, bool compiled, bool finite, bool live)
     {
-        var regex = new Utf8Regex(pattern, Options(compiled), finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout
+        });
         var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, Options(compiled)));
         using var source = new CancellationTokenSource();
         foreach (var text in Texts)
@@ -65,7 +68,10 @@ public sealed class Utf8SimpleCursorInvocationTests
     [MemberData(nameof(CompleteCases))]
     public void FullOperationSemanticsRemainOwned(string pattern, bool compiled)
     {
-        var regex = new Utf8Regex(pattern, Options(compiled), TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(pattern, Options(compiled)), Texts.Where(text => text.Length <= 128).ToArray());
     }
 
@@ -74,7 +80,7 @@ public sealed class Utf8SimpleCursorInvocationTests
     public void OffsetFactoryUsesFullSubjectAnchorsAndOriginalDeadline(string pattern, bool compiled)
     {
         using var clock = Utf8DeadlineTestClock.Start();
-        var regex = new Utf8Regex(pattern, Options(compiled));
+        var regex = new Utf8Regex(pattern, options: Options(compiled));
         var prepared = Prepared(regex);
         const string text = "ab1d ab12d xyAz a1 ab2 ZZ 123 Abc\nab1d\nxyBz\nAbc\nX9\n";
         var input = Encoding.UTF8.GetBytes(text);
@@ -115,7 +121,10 @@ public sealed class Utf8SimpleCursorInvocationTests
         var pattern = phase == "verifier" ? @"(?:ab[0-9]{60}|ab[A-Z])" : @"ab[0-9]{1,2}d";
         var text = phase == "verifier" ? "ab" + new string('1', 60) : phase == "projection" ? new string('é', 160000) + "ab12d" : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex(pattern, Options(compiled), expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout
+        });
         using var source = new CancellationTokenSource();
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps => {
@@ -157,7 +166,10 @@ public sealed class Utf8SimpleCursorInvocationTests
         var text = (mixed ? "é😀 " : "") + Texts[2];
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Regex(pattern, Options(compiled), expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout
+        });
         var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token);
         Assert.True(cursor.MoveNext());
         var previous = cursor.Current;
@@ -181,7 +193,10 @@ public sealed class Utf8SimpleCursorInvocationTests
     [InlineData(true)]
     public void MalformedInputAndPreCanceledIdentityRemainStrict(bool compiled)
     {
-        var regex = new Utf8Regex(Patterns[0], Options(compiled), TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(Patterns[0], options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         using var source = new CancellationTokenSource();
         var malformed = "ab12d"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
         source.Cancel();
@@ -198,7 +213,10 @@ public sealed class Utf8SimpleCursorInvocationTests
     {
         using var clock = Utf8DeadlineTestClock.Start();
         var input = Encoding.UTF8.GetBytes(mixed ? "é😀 ab1d ab12d" : "ab1d ab12d");
-        var regex = new Utf8Regex(Patterns[0], Options(compiled), TimeSpan.FromMilliseconds(200));
+        var regex = new Utf8Regex(Patterns[0], options: Options(compiled), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        });
         var cursor = regex.EnumerateMatches(input);
         clock.Advance(250);
         Exception? observed = null;
@@ -221,7 +239,10 @@ public sealed class Utf8SimpleCursorInvocationTests
         foreach (var finite in new[] { false, true })
         foreach (var live in new[] { false, true })
         {
-            var regex = new Utf8Regex(pattern, Options(compiled), finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout
+            });
             using var source = new CancellationTokenSource();
             foreach (var text in new[] { "ab1x ab12d ab2d xyAz xyBx", "é😀 ab1x ab12d ab2d xyAz xyBx" })
             {

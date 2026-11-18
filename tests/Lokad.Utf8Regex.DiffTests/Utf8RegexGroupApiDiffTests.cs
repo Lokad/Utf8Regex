@@ -37,7 +37,7 @@ public sealed class Utf8RegexGroupApiDiffTests
     [MemberData(nameof(GroupPatterns))]
     public void GroupApisMatchRuntime(string pattern, RegexOptions options)
     {
-        var utf8 = new Utf8Regex(pattern, options);
+        var utf8 = new Utf8Regex(pattern, options: options);
         var runtime = new Regex(pattern, options);
 
         Assert.Equal(runtime.GetGroupNames(), utf8.GetGroupNames());

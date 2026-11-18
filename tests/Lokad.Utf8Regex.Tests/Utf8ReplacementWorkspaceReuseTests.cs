@@ -6,14 +6,17 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ReplacementWorkspaceReuseTests
 {
     private static Utf8Regex Create(string pattern, RegexOptions options = RegexOptions.None, ulong working = 1 << 20) =>
-        new(pattern, options | RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy
+        new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 1000000,
                 MaxDepth = 256,
                 MaxWorkingBytes = working,
                 MaxResultBytes = 1 << 20
-            });
+            }
+        });
 
     [Theory]
     [InlineData(false)]

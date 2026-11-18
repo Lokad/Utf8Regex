@@ -174,7 +174,11 @@ public sealed partial class Utf8PythonRegex
             {
                 try
                 {
-                    var core = new Utf8Regex(translation.NativePatternUtf8, translation.NativeRegexOptions, MatchTimeout, resourcePolicy);
+                    var core = new Utf8Regex(translation.NativePatternUtf8, options: translation.NativeRegexOptions, policy: new Utf8RegexPolicy
+                    {
+                        MatchTimeout = MatchTimeout,
+                        ResourcePolicy = resourcePolicy
+                    });
                     // Preparation can discover useful native result lanes or exact
                     // start hints. Discard roots declined by every current consumer;
                     // their transient construction remains conservatively admitted.

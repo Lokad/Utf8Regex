@@ -24,7 +24,7 @@ public sealed class Utf8PositiveCategoryRepeatTests
                      RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
             var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
-            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant);
             Assert.Equal(oracle.Count(text), regex.Count(input));
             var expected = oracle.Match(text);
             var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -42,7 +42,7 @@ public sealed class Utf8PositiveCategoryRepeatTests
     {
         const string pattern = @"([a\p{L}\p{Nd}_]{2})!";
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         for (var value = 0; value < 128; value++)
         {
             var text = "a" + (char)value + "!";

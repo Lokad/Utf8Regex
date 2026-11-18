@@ -21,7 +21,7 @@ public sealed class Utf8CaptureMissStorageTests
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var smallBytes = MissAllocation(regex, small);
             var largeBytes = MissAllocation(regex, large);
             Assert.True(largeBytes <= smallBytes + 4096, $"Miss allocation grew from {smallBytes} to {largeBytes} bytes.");

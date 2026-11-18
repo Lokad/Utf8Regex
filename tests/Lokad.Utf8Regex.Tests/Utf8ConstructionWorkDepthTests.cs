@@ -217,12 +217,12 @@ public sealed class Utf8ConstructionWorkDepthTests
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
             var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                new Utf8Regex(new string('(', 32) + "." + new string(')', 32), options));
+                new Utf8Regex(new string('(', 32) + "." + new string(')', 32), options: options));
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
             Assert.Equal(8ul, failure.Limit);
             Assert.Equal(0ul, scope.Budget.Depth);
             Assert.Equal(0ul, scope.Budget.ReservedBytes);
-            Assert.True(new Utf8Regex(".", options).IsMatch("😀"u8));
+            Assert.True(new Utf8Regex(".", options: options).IsMatch("😀"u8));
         }
         Assert.False(Utf8ConstructionScope.IsActive);
     }

@@ -39,8 +39,17 @@ public sealed class Utf8PlainForkViabilityTests
     {
         const string pattern = """^import\s+(?<shared>shared\s+)?"(?<path>(\.|[^\\"]*))".*$""";
         var input = Encoding.UTF8.GetBytes("import \"_Common\" as Common\nimport shared \"_Calendar\" as Calendar\n");
-        var regex = new Utf8Regex(pattern, RegexOptions.Multiline, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 256, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 256,
+                MaxResultBytes = 1
+            }
+        });
         using var live = new CancellationTokenSource();
         Assert.Equal(2, regex.Count(input, live.Token));
         Assert.Equal(2, regex.Count(input));
@@ -52,7 +61,7 @@ public sealed class Utf8PlainForkViabilityTests
     private static void Compare(string pattern, string text, RegexOptions option)
     {
         var oracle = new Regex(pattern, option);
-        var regex = new Utf8Regex(pattern, option);
+        var regex = new Utf8Regex(pattern, options: option);
         var input = Encoding.UTF8.GetBytes(text);
         var expected = oracle.Match(text);
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));

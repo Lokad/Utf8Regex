@@ -18,12 +18,25 @@ public sealed class Utf8LeadingAsciiCandidateTests
         using var cancellation = new CancellationTokenSource();
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(StraightPrefixPattern, options, Regex.InfiniteMatchTimeout,
-                Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(StraightPrefixPattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkingBytes = 1,
+                    MaxResultBytes = 1
+                }
+            });
             Assert.Equal(0, regex.Count(storage.AsSpan(1, input.Length), cancellation.Token));
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(StraightPrefixPattern,
-                    options, Regex.InfiniteMatchTimeout, Funded with { MaxWorkSteps = 1 }).Count(input)).ResourceKind);
+                Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(StraightPrefixPattern, options:                     options, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = Funded with
+                    {
+                        MaxWorkSteps = 1
+                    }
+                }).Count(input)).ResourceKind);
             Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
                 Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count("# noqa: A123"u8)).ResourceKind);
         }
@@ -47,8 +60,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft })
         {
             var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
-            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant,
-                Regex.InfiniteMatchTimeout, Funded);
+            var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded
+            });
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             using var cancellation = new CancellationTokenSource();
             foreach (var start in new[] { 0, 3, 4, text.Length })
@@ -57,8 +73,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
             Assert.Equal(oracle.Count(text), regex.Count(storage.AsSpan(1, input.Length), cancellation.Token));
             Assert.Equal(oracle.Match(text).Value, System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         }
-        var nonBacktracking = new Utf8Regex(StraightPrefixPattern, RegexOptions.NonBacktracking,
-            Regex.InfiniteMatchTimeout, Funded);
+        var nonBacktracking = new Utf8Regex(StraightPrefixPattern, options: RegexOptions.NonBacktracking, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         Assert.Equal(new Regex(StraightPrefixPattern, RegexOptions.NonBacktracking).Count(text),
             nonBacktracking.Count(input));
     }
@@ -72,8 +91,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex(StraightPrefixPattern, RegexOptions.Compiled,
-            expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, Funded);
+        var regex = new Utf8Regex(StraightPrefixPattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -107,7 +129,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
         foreach (var options in new[] { RegexOptions.Multiline, RegexOptions.Multiline | RegexOptions.Compiled })
         {
             var oracle = new Regex(pattern, options | RegexOptions.CultureInvariant);
-            var regex = new Utf8Regex(pattern, options | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout, Funded);
+            var regex = new Utf8Regex(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded
+            });
             var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             using var live = new CancellationTokenSource();
             foreach (var start in new[] { 0, 1, Math.Min(2, text.Length), text.Length })
@@ -150,7 +176,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Funded);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded
+            });
             var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, options));
             foreach (var tail in new[] { "", "Ab", "Ab Cd", "Ab Cd Ef Gh Ij Kl", "Ab\u2003Cd", "Éa Βa",
                 "ABaB", "xAa", "A1 A2 A3", "aab", "DAa XBza", "Aa😀Bb Cc\u00a0Dd" })
@@ -168,7 +198,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
                 }
             }
         }
-        var captured = new Utf8Regex(@"(?<w>[A-Z]+)[a-z]\k<w>", RegexOptions.None, Regex.InfiniteMatchTimeout, Funded);
+        var captured = new Utf8Regex(@"(?<w>[A-Z]+)[a-z]\k<w>", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         Assert.Equal(1, captured.Count("éABaB😀"u8));
         Assert.Equal("B", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(captured.CreateMatchCursor("éABaB😀"u8.ToArray())).GetGroupMemory(captured.GroupNumberFromName("w")).Span));
     }
@@ -177,7 +211,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
     [InlineData(2046)] [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4095)]
     public void WindowTailsAndUnicodeSeparatorsRemainScalar(int prefixLength)
     {
-        var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){2,4}", RegexOptions.Compiled, Regex.InfiniteMatchTimeout, Funded);
+        var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){2,4}", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', prefixLength) + "😀Ab\u2003Cd😀Ef Gh");
         using var live = new CancellationTokenSource();
         Assert.Equal(2, regex.Count(input));
@@ -191,11 +229,23 @@ public sealed class Utf8LeadingAsciiCandidateTests
     {
         const string pattern = @"(?:[A-Z][a-z]+\s*){2,4}";
         var input = Encoding.UTF8.GetBytes(new string('A', (1 << 20)) + "😀A");
-        Assert.Equal(0, new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            Funded with { MaxWorkingBytes = 1 }).Count(input));
+        Assert.Equal(0, new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkingBytes = 1
+            }
+        }).Count(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern,
-                RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkSteps = 4096 }).Count(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern, options:                 RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkSteps = 4096
+                }
+            }).Count(input)).ResourceKind);
     }
 
     [Theory]
@@ -205,7 +255,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
     [InlineData(RegexOptions.ECMAScript)]
     public void OtherOptionsKeepTheirOwnScalarExecution(RegexOptions options)
     {
-        var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){2,4}", options, Regex.InfiniteMatchTimeout, Funded);
+        var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){2,4}", options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         var input = "Ab\u2003Cd😀ab cd Ef Gh Ij Kl"u8;
         var cursor = regex.EnumerateMatches(input);
         var expected = 0;
@@ -218,24 +272,54 @@ public sealed class Utf8LeadingAsciiCandidateTests
     {
         const string pattern = @"(?:[A-Z][a-z]+\s*){2,4}";
         var input = Encoding.UTF8.GetBytes(new string('x', (1 << 20)) + "😀Ab Cd");
-        Assert.Equal(1, new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            Funded with { MaxWorkSteps = 4096 }).Count(input));
+        Assert.Equal(1, new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 4096
+            }
+        }).Count(input));
         // The external complete-repeat plan is retired. Both root forms now
         // admit the scalar verifier storage after the independent start filter.
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern,
-                RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern, options:                 RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkingBytes = 1
+                }
+            }).Count(input)).ResourceKind);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("(?<x>" + pattern + ")",
-                RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
-        var anchored = new Utf8Regex("(?<x>^" + pattern + ")", RegexOptions.Multiline,
-            Regex.InfiniteMatchTimeout, Funded with { MaxWorkingBytes = 1 });
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex("(?<x>" + pattern + ")", options:                 RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkingBytes = 1
+                }
+            }).Count(input)).ResourceKind);
+        var anchored = new Utf8Regex("(?<x>^" + pattern + ")", options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkingBytes = 1
+            }
+        });
         Assert.Equal(0, anchored.Count(Encoding.UTF8.GetBytes(new string('x', 8192) + "😀")));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => anchored.Count("xx\nAb Cd"u8)).ResourceKind);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern,
-                RegexOptions.None, Regex.InfiniteMatchTimeout, Funded with { MaxWorkSteps = 1 }).Count(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => new Utf8Regex(pattern, options:                 RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkSteps = 1
+                }
+            }).Count(input)).ResourceKind);
     }
 
     [Theory]
@@ -281,9 +365,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex(anchored ? @"^(?:[A-Z][a-z]+\s*){2,4}" : @"(?:[A-Z][a-z]+\s*){2,4}",
-            RegexOptions.Compiled | (anchored ? RegexOptions.Multiline : RegexOptions.None),
-            expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, Funded);
+        var regex = new Utf8Regex(anchored ? @"^(?:[A-Z][a-z]+\s*){2,4}" : @"(?:[A-Z][a-z]+\s*){2,4}", options:             RegexOptions.Compiled | (anchored ? RegexOptions.Multiline : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -311,7 +397,11 @@ public sealed class Utf8LeadingAsciiCandidateTests
             if (++reads == cancelAt) cancellation.Cancel();
             return 0;
         });
-        var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){2,4}", RegexOptions.None, TimeSpan.FromSeconds(1), Funded);
+        var regex = new Utf8Regex(@"(?:[A-Z][a-z]+\s*){2,4}", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1),
+            ResourcePolicy = Funded
+        });
         var input = Encoding.UTF8.GetBytes("😀Ab Cd" + new string('!', 8192));
         Assert.Equal(1, regex.Count(input, cancellation.Token));
         Assert.True(reads > 1);

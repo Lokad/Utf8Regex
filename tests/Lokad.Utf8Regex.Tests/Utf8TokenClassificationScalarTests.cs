@@ -12,7 +12,7 @@ public sealed class Utf8TokenClassificationScalarTests
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options); var input = Encoding.UTF8.GetBytes(text);
+            var regex = new Utf8Regex(pattern, options: options); var input = Encoding.UTF8.GetBytes(text);
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
             var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.Equal((index, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));

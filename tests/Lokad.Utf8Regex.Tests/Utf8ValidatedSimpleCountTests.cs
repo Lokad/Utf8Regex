@@ -29,7 +29,10 @@ public sealed class Utf8ValidatedSimpleCountTests
         using var token = new CancellationTokenSource();
         foreach (var mode in new[] { 0, 1, 2 })
         {
-            var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, resourcePolicy: mode == 0 ? default : Limits);
+            var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = mode == 0 ? default : Limits
+            });
             var account = new Account();
             account.TryReserve(17);
             var session = Utf8SearchDiagnosticsSession.Start();
@@ -49,7 +52,10 @@ public sealed class Utf8ValidatedSimpleCountTests
     [InlineData(RegexOptions.RightToLeft)] [InlineData(RegexOptions.NonBacktracking)]
     public void OtherExecutionContractsKeepTheirScalarCounter(RegexOptions options)
     {
-        var regex = new Utf8Regex("([A-Z]{2})([0-9]{4})", options, resourcePolicy: Limits);
+        var regex = new Utf8Regex("([A-Z]{2})([0-9]{4})", options: options, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = Limits
+        });
         Assert.Equal(2, regex.Count("é😀AB1234 A😀1234 CD5678"u8));
     }
 
@@ -66,8 +72,15 @@ RegexOptions options, bool unicodePrefix)
         using var token = new CancellationTokenSource();
         foreach (var pattern in new[] { "[A-Za-z]{8,13}", "([A-Za-z]{8,13})", "([A-Za-z]){8,13}" })
         {
-            var regex = new Utf8Regex(pattern, options, resourcePolicy: Limits with
-            { MaxWorkSteps = 4096, MaxWorkingBytes = 1, MaxDepth = 1 });
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = Limits with
+                {
+                    MaxWorkSteps = 4096,
+                    MaxWorkingBytes = 1,
+                    MaxDepth = 1
+                }
+            });
             var account = new Account();
             account.TryReserve(17);
             var session = Utf8SearchDiagnosticsSession.Start();
@@ -87,9 +100,18 @@ RegexOptions options, bool unicodePrefix)
     public void CompleteAsciiBranchesRespectFiniteStorageAndRefuseWork()
     {
         const string pattern = "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
-        var regex = new Utf8Regex(pattern, resourcePolicy: Limits);
+        var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = Limits
+        });
         Assert.Equal(1, regex.Count("é😀ASIAABCDEFGHIJKLMNOP"u8));
-        var denied = new Utf8Regex(pattern, resourcePolicy: Limits with { MaxWorkSteps = 1 });
+        var denied = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = Limits with
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count("é😀ASIAABCDEFGHIJKLMNOP"u8)).ResourceKind);
     }
@@ -102,7 +124,11 @@ RegexOptions options, bool unicodePrefix)
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         const string pattern = "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))";
-        var regex = new Utf8Regex(pattern, matchTimeout: TimeSpan.FromMilliseconds(20), resourcePolicy: Limits);
+        var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = Limits
+        });
         var input = Encoding.UTF8.GetBytes("é😀" + new string('x', 262144) + "ASIAABCDEFGHIJKLMNOP");
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>

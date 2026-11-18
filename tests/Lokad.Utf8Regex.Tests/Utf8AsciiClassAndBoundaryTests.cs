@@ -117,7 +117,7 @@ public sealed class Utf8AsciiClassAndBoundaryTests
         ];
         foreach (var value in cases)
         {
-            var regex = new Utf8Regex(value.Pattern, options);
+            var regex = new Utf8Regex(value.Pattern, options: options);
             var expected = value.Ranges.ToArray();
             if (rtl) Array.Reverse(expected);
             Assert.True(regex.IsMatch(input));

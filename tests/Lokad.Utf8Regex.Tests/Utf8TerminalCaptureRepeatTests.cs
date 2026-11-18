@@ -27,7 +27,7 @@ public sealed class Utf8TerminalCaptureRepeatTests
     public void TerminalAndExcludedShapesKeepCapturesAndProgression(string pattern, string text)
     {
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(text);
         var expected = oracle.Match(text);
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
@@ -87,7 +87,7 @@ public sealed class Utf8TerminalCaptureRepeatTests
     [Fact]
     public void RightToLeftKeepsItsExistingCapture()
     {
-        var regex = new Utf8Regex("([a-z]+)", RegexOptions.CultureInvariant | RegexOptions.RightToLeft);
+        var regex = new Utf8Regex("([a-z]+)", options: RegexOptions.CultureInvariant | RegexOptions.RightToLeft);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("abc def"u8.ToArray()));
         Assert.Equal("def", Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
     }
@@ -95,8 +95,17 @@ public sealed class Utf8TerminalCaptureRepeatTests
     [Fact]
     public void CountCanAvoidFramesButCaptureSnapshotsStillRequireResultAdmission()
     {
-        var regex = new Utf8Regex("([a-z]+)", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 });
+        var regex = new Utf8Regex("([a-z]+)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            }
+        });
         var input = Encoding.UTF8.GetBytes(new string('a', 2048));
         Assert.Equal(1, regex.Count(input));
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));

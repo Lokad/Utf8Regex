@@ -11,7 +11,7 @@ public sealed class Utf8ScalarCaptureRangeTests
     [InlineData("(.)", true)]
     public void MatchAndCaptureConsumeOneCompleteScalar(string pattern, bool compiled)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         var input = "😀"u8.ToArray();
         using var cursor = regex.CreateMatchCursor(input);
         Assert.True(cursor.MoveNext(out var match));

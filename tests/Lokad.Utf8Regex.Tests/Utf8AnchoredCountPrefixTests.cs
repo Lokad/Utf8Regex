@@ -25,7 +25,11 @@ public sealed class Utf8AnchoredCountPrefixTests
             var policy = finite
                 ? new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 }
                 : new Utf8ResourcePolicy();
-            var actual = new Utf8Regex(pattern, options | mode, Timeout.InfiniteTimeSpan, policy);
+            var actual = new Utf8Regex(pattern, options: options | mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = policy
+            });
             var input = storage.AsSpan(7, length);
             Assert.Equal(first.Success, actual.IsMatch(input));
             var detailed = Utf8MatchSequence.First(actual.CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray()));
@@ -63,9 +67,18 @@ public sealed class Utf8AnchoredCountPrefixTests
         var expected = new Regex(pattern, options).Count(text);
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var plain = new Utf8Regex(pattern, options | mode);
-            var finite = new Utf8Regex(pattern, options | mode, Timeout.InfiniteTimeSpan,
-                new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+            var plain = new Utf8Regex(pattern, options: options | mode);
+            var finite = new Utf8Regex(pattern, options: options | mode, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 8192,
+                    MaxWorkingBytes = 1048576,
+                    MaxResultBytes = 1048576
+                }
+            });
             Assert.Equal(expected, plain.Count(storage.AsSpan(7, length)));
             Assert.Equal(expected, finite.Count(storage.AsSpan(7, length)));
         }
@@ -74,7 +87,7 @@ public sealed class Utf8AnchoredCountPrefixTests
     [Fact]
     public void EveryWorkCutoffKeepsBorrowedStorageAcrossAnchoredStarts()
     {
-        var regex = new Utf8Regex("^i.+$", RegexOptions.Multiline);
+        var regex = new Utf8Regex("^i.+$", options: RegexOptions.Multiline);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.UTF8.GetBytes("x\né\n😀\ni1\r\nx\nimport");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
@@ -100,8 +113,17 @@ public sealed class Utf8AnchoredCountPrefixTests
     {
         const string text = "é😀\nabc\r\nxabc\nabc";
         var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex("^a.+$", RegexOptions.Multiline, Timeout.InfiniteTimeSpan,
-            new() { MaxWorkSteps = 100000, MaxDepth = 8192, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 });
+        var regex = new Utf8Regex("^a.+$", options: RegexOptions.Multiline, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            }
+        });
         var oracle = new Regex("^a.+$", RegexOptions.Multiline);
         foreach (var offset in new[] { 0, 1, 3, 4, 5, 8, 9, 10, 14, text.Length })
             Assert.Equal(oracle.Matches(text, offset).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset)))));
@@ -116,7 +138,7 @@ public sealed class Utf8AnchoredCountPrefixTests
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Regex("^a.+$", RegexOptions.Multiline);
+        var regex = new Utf8Regex("^a.+$", options: RegexOptions.Multiline);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("x\n", 32)));
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0),

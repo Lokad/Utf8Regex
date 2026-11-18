@@ -54,7 +54,7 @@ public sealed class Utf8ScalarClassRepresentationTests
                 for (var index = 0; index < node.ChildCount; index++) pending.Push(node.Child(index));
             }
             var input = Encoding.UTF8.GetBytes(row.Subject);
-            var regex = new Utf8Regex(row.Pattern, options);
+            var regex = new Utf8Regex(row.Pattern, options: options);
             var expected = rtl ? row.Ranges.Reverse().ToArray() : row.Ranges;
             Assert.True(regex.IsMatch(input));
             Assert.Equal(expected.Length, regex.Count(input));
@@ -154,7 +154,7 @@ public sealed class Utf8ScalarClassRepresentationTests
         foreach (var shape in new[] { 0, 1, 2 })
         {
             var pattern = "[" + (shape == 1 ? "^" : "") + SparseMembers + (shape == 2 ? "-[\U00010400]]" : "]");
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             var expected = shape switch
             {
                 0 => new[] { (1, 4), (9, 4) },
@@ -197,7 +197,7 @@ public sealed class Utf8ScalarClassRepresentationTests
             AssertOwned(regex);
         }
         // The far-plane endpoint remains distinct from its adjacent scalar.
-        var endpoint = new Utf8Regex("[" + SparseMembers + "]", options);
+        var endpoint = new Utf8Regex("[" + SparseMembers + "]", options: options);
         Assert.True(endpoint.IsMatch("\U0010fffe"u8));
         Assert.False(endpoint.IsMatch("\U0010ffff"u8));
         AssertOwned(endpoint);
@@ -210,7 +210,7 @@ public sealed class Utf8ScalarClassRepresentationTests
     {
         var options = Options(compiled, rtl);
         var atom = "[" + SparseMembers + "]";
-        var regex = new Utf8Regex("(?<x>" + atom + "){2}", options);
+        var regex = new Utf8Regex("(?<x>" + atom + "){2}", options: options);
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("\U0001f600\U00010400"u8.ToArray()));
         Assert.True(match.Success);
         Assert.Equal((0, 8), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
@@ -222,14 +222,14 @@ public sealed class Utf8ScalarClassRepresentationTests
             Assert.Equal((rtl ? 4 - 4 * index : 4 * index, 4), (capture.StartOffsetInBytes, (capture.EndOffsetInBytes - capture.StartOffsetInBytes)));
         }
         AssertOwned(regex);
-        var reference = new Utf8Regex(rtl ? @"\k<x>(?<x>" + atom + ")" : "(?<x>" + atom + @")\k<x>", options);
+        var reference = new Utf8Regex(rtl ? @"\k<x>(?<x>" + atom + ")" : "(?<x>" + atom + @")\k<x>", options: options);
         Assert.True(reference.IsMatch("\U0001f600\U0001f600"u8));
         Assert.False(reference.IsMatch("\U0001f600\U0001f601"u8));
         AssertOwned(reference);
-        var assertion = new Utf8Regex("(?=" + atom + ")" + atom, options);
+        var assertion = new Utf8Regex("(?=" + atom + ")" + atom, options: options);
         Assert.Equal(1, assertion.Count("\U0001f600\U0001f601"u8));
         AssertOwned(assertion);
-        var folded = new Utf8Regex("[A" + SparseMembers + "]", options | RegexOptions.IgnoreCase);
+        var folded = new Utf8Regex("[A" + SparseMembers + "]", options: options | RegexOptions.IgnoreCase);
         Assert.Equal(2, folded.Count("a\U0001f600\U0001f601"u8));
         AssertOwned(folded);
     }
@@ -240,7 +240,7 @@ public sealed class Utf8ScalarClassRepresentationTests
     {
         foreach (var negated in new[] { false, true })
         {
-            var regex = new Utf8Regex("[" + (negated ? "^" : "") + RepeatedCategories + "]", Options(compiled, false));
+            var regex = new Utf8Regex("[" + (negated ? "^" : "") + RepeatedCategories + "]", options: Options(compiled, false));
             Assert.Equal(negated ? 2 : 1, regex.Count("\U00010400\U00010428\U0001f600"u8));
             Assert.Equal(negated ? "\U00010400QQ" : "Q\U00010428\U0001f600",
                 Encoding.UTF8.GetString(regex.Replace("\U00010400\U00010428\U0001f600"u8, "Q")));
@@ -325,7 +325,7 @@ public sealed class Utf8ScalarClassRepresentationTests
         var atom = "[" + SparseMembers + "]";
         foreach (var suffix in new[] { "{2}", "{2}?", "+", "+?" })
         {
-            var regex = new Utf8Regex("(?<x>" + atom + suffix + ")", options);
+            var regex = new Utf8Regex("(?<x>" + atom + suffix + ")", options: options);
             // The lazy unbounded repeat gives one complete scalar per match.
             var singles = suffix == "+?";
             Assert.True(regex.IsMatch(input));

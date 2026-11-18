@@ -72,7 +72,7 @@ public sealed class Utf8ScalarRepeatAndStateLifetimeTests
     public void NativeExpandedBranchesDistinguishAbsoluteFinalNewlineAndLineEnds(string pattern, RegexOptions options)
     {
         var oracle = new Regex(pattern, options);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         foreach (var text in new[] { "abcacbx", "abcacbx\n", "abcacbx\n\n", "abcacbx\nrest", "\nabcacbx\n", "\r\nabcacbx\n" })
         {
             var input = Encoding.ASCII.GetBytes(text);

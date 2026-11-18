@@ -82,7 +82,7 @@ public sealed class Utf8OwnedParserRetirementTests
         Assert.Null(Utf8OwnedTreeParser.TryParse(pattern, options));
         // Some formerly invalid conditional option forms are admitted by
         // .NET 11. Pin the owned admission contract independently of the BCL.
-        var error = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options));
+        var error = Utf8PatternFailureAssert.Throws(() => new Utf8Regex(pattern, options: options));
         Assert.Equal("pattern", error.ParamName);
     }
 }

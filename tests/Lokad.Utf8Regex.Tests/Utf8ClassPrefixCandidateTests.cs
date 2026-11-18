@@ -16,8 +16,15 @@ public sealed class Utf8ClassPrefixCandidateTests
     {
         var input = Encoding.UTF8.GetBytes(new string('!', 260) + string.Concat(Enumerable.Repeat(tail, 64)));
         byte[] storage = [0xff, .. input, 0xff];
-        var regex = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout,
-            Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            }
+        });
         using var live = new CancellationTokenSource();
         Assert.Equal(0, regex.Count(storage.AsSpan(1, input.Length), live.Token));
     }
@@ -28,7 +35,11 @@ public sealed class Utf8ClassPrefixCandidateTests
     public void RejectedWindowsKeepLaterValidStarts(string pattern, string tail)
     {
         var input = Encoding.UTF8.GetBytes(new string('!', 260) + tail);
-        var regex = new Utf8Regex(pattern, RegexOptions.None, Regex.InfiniteMatchTimeout, Funded);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         var cursor = regex.EnumerateMatches(input);
         var expected = 0;
         while (cursor.MoveNext()) expected++;
@@ -63,9 +74,15 @@ public sealed class Utf8ClassPrefixCandidateTests
         });
         try
         {
-            var regex = new Utf8Regex(pattern, RegexOptions.None,
-                expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
-                Funded with { MaxWorkingBytes = 1, MaxResultBytes = 1 });
+            var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded with
+                {
+                    MaxWorkingBytes = 1,
+                    MaxResultBytes = 1
+                }
+            });
             if (expire) Assert.IsType<RegexMatchTimeoutException>(Record.Exception(() => regex.Count(input, token.Token)));
             else Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
             Assert.True(entered);
@@ -95,7 +112,11 @@ public sealed class Utf8ClassPrefixCandidateTests
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, Funded);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = Funded
+            });
             var oracle = Utf8ScalarCaptureFixture.Project(new Regex(pattern, options));
             foreach (var tail in new[] { "", "Holmes", "ab Holmes", "ab Holmesb", "é\u0301\u2003Holmes",
                 "𐐀\u00a0Holmes", "😀 Holmes", "aé😀\tHolmes", "aHolmes Holmes",
@@ -127,18 +148,36 @@ public sealed class Utf8ClassPrefixCandidateTests
     public void CandidateSearchPreservesBoundedWorkAndVmStorageAdmission()
     {
         var input = Encoding.UTF8.GetBytes(new string('!', 100000) + "é Holmes");
-        var efficient = new Utf8Regex(@"\w+\s+Holmes", RegexOptions.Compiled, Regex.InfiniteMatchTimeout,
-            Funded with { MaxWorkSteps = 4096 });
+        var efficient = new Utf8Regex(@"\w+\s+Holmes", options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with
+            {
+                MaxWorkSteps = 4096
+            }
+        });
         Assert.Equal(1, efficient.Count(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                new Utf8Regex(@"\w+\s+Holmes", RegexOptions.None, Regex.InfiniteMatchTimeout,
-                    Funded with { MaxWorkingBytes = 1 }).Count(input)).ResourceKind);
+                new Utf8Regex(@"\w+\s+Holmes", options: RegexOptions.None, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = Funded with
+                    {
+                        MaxWorkingBytes = 1
+                    }
+                }).Count(input)).ResourceKind);
         var invalid = input.Append((byte)255).ToArray();
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                new Utf8Regex(@"\w+\s+Holmes", RegexOptions.None, Regex.InfiniteMatchTimeout,
-                    Funded with { MaxWorkSteps = 1 }).Count(invalid)).ResourceKind);
+                new Utf8Regex(@"\w+\s+Holmes", options: RegexOptions.None, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Regex.InfiniteMatchTimeout,
+                    ResourcePolicy = Funded with
+                    {
+                        MaxWorkSteps = 1
+                    }
+                }).Count(invalid)).ResourceKind);
     }
 
     [Theory]
@@ -194,8 +233,11 @@ public sealed class Utf8ClassPrefixCandidateTests
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex(@"\w+\s+Holmes" + (phase == 3 ? "(?=!)" : ""), RegexOptions.Compiled,
-            expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout, Funded);
+        var regex = new Utf8Regex(@"\w+\s+Holmes" + (phase == 3 ? "(?=!)" : ""), options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
@@ -223,7 +265,11 @@ public sealed class Utf8ClassPrefixCandidateTests
             if (++reads == cancelAt) cancellation.Cancel();
             return 0;
         });
-        var regex = new Utf8Regex(@"\w+\s+Holmes", RegexOptions.None, TimeSpan.FromSeconds(1), Funded);
+        var regex = new Utf8Regex(@"\w+\s+Holmes", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(1),
+            ResourcePolicy = Funded
+        });
         var input = Encoding.UTF8.GetBytes("word Holmes" + new string('!', 8192));
         Assert.Equal(1, regex.Count(input, cancellation.Token));
         Assert.True(reads > 1);

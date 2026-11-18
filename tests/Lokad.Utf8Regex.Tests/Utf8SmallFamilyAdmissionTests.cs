@@ -221,8 +221,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
         Assert.Equal(appendValid ? falseCandidate.Length + 1 : -1, index); Assert.Equal(appendValid ? values[2].Length : 0, length);
         foreach (var compiled in new[] { false, true })
         {
-            var regex = new Utf8Regex(string.Join("|", values.Select(Encoding.UTF8.GetString)),
-                RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+            var regex = new Utf8Regex(string.Join("|", values.Select(Encoding.UTF8.GetString)), options:                 RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
             Assert.True(regex.TryGetSmallAsciiLiteralFamilySearch(input, out _));
             Assert.Equal(appendValid, regex.IsMatch(input)); Assert.Equal(appendValid ? 1 : 0, regex.Count(input));
             var gaps = new List<(int, int)>(); foreach (var gap in regex.EnumerateSplits(input)) gaps.Add((gap.IndexInBytes, gap.LengthInBytes));
@@ -234,7 +233,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
     [InlineData(false)] [InlineData(true)]
     public void PublicAsciiFamilySplitRetainsSupplementaryGapByteRanges(bool compiled)
     {
-        var regex = new Utf8Regex("alpha|bravo|charlie", RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex("alpha|bravo|charlie", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = "😀alpha|ébravo|中charlie!"u8; Assert.Equal(3, regex.Count(input));
         var ranges = new List<(int, int)>(); foreach (var split in regex.EnumerateSplits(input)) ranges.Add((split.IndexInBytes, split.LengthInBytes));
         Assert.Equal(new[] { (0, 4), (9, 3), (17, 4), (28, 1) }, ranges); Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
@@ -247,7 +246,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
         foreach (var pattern in new[] { "tempus|magna|semper", "alphabet|alpha|bravo", "abcde|bcdef|cdefg" })
         {
             var flags = options | RegexOptions.CultureInvariant;
-            var regex = new Utf8Regex(pattern, flags);
+            var regex = new Utf8Regex(pattern, options: flags);
             var reference = new Regex(pattern, flags);
             var body = string.Join('/', pattern.Split('|')) + "/abcdefghij/" + pattern.Split('|')[0];
             for (var offset = 0; offset < 32; offset++)
@@ -273,7 +272,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.IgnoreCase })
         {
             var flags = options | RegexOptions.CultureInvariant;
-            var regex = new Utf8Regex(pattern, flags);
+            var regex = new Utf8Regex(pattern, options: flags);
             Assert.False(regex.TryGetSmallAsciiLiteralFamilySearch(input, out _));
             var expected = new Regex(pattern, flags).Replace(text, "[x]");
             Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, "[x]"));
@@ -284,7 +283,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
     [Fact]
     public void ReplacementMissRetainsDiagnosticSearchCheckpoints()
     {
-        var regex = new Utf8Regex("tempus|magna|semper", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(new string('x', 1 << 20));
         Assert.True(regex.TryGetSmallAsciiLiteralFamilySearch(input, out _));
         var interrupted = new InvalidOperationException("Search checkpoint reached.");

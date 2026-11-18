@@ -12,8 +12,14 @@ public sealed class Utf8PrefixCountPublicationTests
     [InlineData(true)]
     public void PublicPrefixCountNeverPublishesAfterDiscoveryCancellation(bool priorMatch)
     {
-        var regex = new Utf8Regex("(ab|cd)+", RegexOptions.CultureInvariant,
-            Regex.InfiniteMatchTimeout, new() { MaxWorkSteps = 50000000 });
+        var regex = new Utf8Regex("(ab|cd)+", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 50000000
+            }
+        });
         Assert.True(regex.Inspection.SearchPlan.CanGuideFallbackStarts);
         Assert.Equal(0, regex.Inspection.SearchPlan.Distance);
         var observed = 0;
@@ -51,7 +57,7 @@ public sealed class Utf8PrefixCountPublicationTests
     [InlineData(true, false, "#[xy]+")] [InlineData(true, true, "#[xy]+")]
     public void ExhaustedPrefixChecksOriginalAuthorityAtTheFinalAdmittedStep(bool priorMatch, bool expire, string pattern)
     {
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var plan = regex.Inspection.SearchPlan;
         var input = Encoding.UTF8.GetBytes(priorMatch ? (pattern[0] == '#' ? "#x xxxx" : "ab xxxx") : "xxxx");

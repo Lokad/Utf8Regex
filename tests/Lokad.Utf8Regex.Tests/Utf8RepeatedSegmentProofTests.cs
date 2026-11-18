@@ -19,7 +19,7 @@ public sealed class Utf8RepeatedSegmentProofTests
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(pattern, mode); var oracle = new Regex(pattern, mode);
+            var regex = new Utf8Regex(pattern, options: mode); var oracle = new Regex(pattern, mode);
             foreach (var text in new[] { subject, "😀" + subject + "é" })
             {
                 var input = Encoding.UTF8.GetBytes(text); byte[] storage = [0xff, .. input, 0xff];
@@ -45,8 +45,17 @@ public sealed class Utf8RepeatedSegmentProofTests
                 while (alias.MoveNext()) count++;
                 Assert.Equal(expected.Length, count);
                 using var token = new CancellationTokenSource();
-                var controlled = new Utf8Regex(pattern, mode, Timeout.InfiniteTimeSpan, new Utf8ResourcePolicy
-                { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 });
+                var controlled = new Utf8Regex(pattern, options: mode, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = new Utf8ResourcePolicy
+                    {
+                        MaxWorkSteps = 100000,
+                        MaxDepth = 256,
+                        MaxWorkingBytes = 1 << 20,
+                        MaxResultBytes = 1 << 20
+                    }
+                });
                 Assert.Equal(expected.Length, controlled.Count(input, token.Token));
                 token.Cancel();
             }

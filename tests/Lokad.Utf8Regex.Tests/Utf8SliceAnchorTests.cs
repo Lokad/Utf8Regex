@@ -33,7 +33,7 @@ public sealed class Utf8SliceAnchorTests
             RegexOptions.Multiline | RegexOptions.CultureInvariant,
         })
         {
-            var regex = new Utf8Regex(pattern, options);
+            var regex = new Utf8Regex(pattern, options: options);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
         }
     }
@@ -78,7 +78,7 @@ public sealed class Utf8SliceAnchorTests
             options | RegexOptions.Compiled,
         })
         {
-            var regex = new Utf8Regex(pattern, candidate);
+            var regex = new Utf8Regex(pattern, options: candidate);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, candidate.ToString());
             Assert.Equal(expected, regex.IsMatch(input));
             using var source = new CancellationTokenSource();
@@ -115,7 +115,7 @@ public sealed class Utf8SliceAnchorTests
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         Assert.Equal(expectedSuccess, oracle.IsMatch(inputText));
         Assert.Equal(expectedCount, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.Equal(expectedSuccess, regex.IsMatch(input));
         Assert.Equal(expectedCount, regex.Count(input));
     }
@@ -145,7 +145,7 @@ public sealed class Utf8SliceAnchorTests
             | (multiline ? RegexOptions.Multiline : RegexOptions.None);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.Count(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -180,7 +180,7 @@ public sealed class Utf8SliceAnchorTests
             options | RegexOptions.Compiled,
         })
         {
-            var regex = new Utf8Regex(pattern, candidate);
+            var regex = new Utf8Regex(pattern, options: candidate);
             Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, candidate.ToString());
             var actual = new List<int>();
             foreach (var match in regex.EnumerateMatches(input))
@@ -205,7 +205,7 @@ public sealed class Utf8SliceAnchorTests
         Assert.True(oracle.Success);
         Assert.Equal(expectedStart, oracle.Index);
         Assert.Equal(expectedEnd, oracle.Index + oracle.Length);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var actual = regex.Match(input);
         Assert.True(actual.Success);
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedStart)), actual.StartOffsetInBytes);
@@ -229,7 +229,7 @@ public sealed class Utf8SliceAnchorTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.Match(inputText, offset).Success);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
         Assert.Equal(expected, regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
@@ -244,7 +244,7 @@ public sealed class Utf8SliceAnchorTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.Match(inputText, offset).Success);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.Equal(expected, regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
         Assert.Equal(expected, regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
     }
@@ -257,7 +257,7 @@ public sealed class Utf8SliceAnchorTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expectedSuccess, oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "construction must stay lazy");
         Assert.Equal(expectedSuccess, regex.IsMatch(input));
@@ -272,7 +272,7 @@ public sealed class Utf8SliceAnchorTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expectedSuccess, oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "construction must stay lazy");
         Assert.Equal(expectedSuccess, regex.IsMatch(input));
@@ -289,7 +289,7 @@ public sealed class Utf8SliceAnchorTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
@@ -310,7 +310,7 @@ public sealed class Utf8SliceAnchorTests
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         Assert.Equal(expectedCount, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expectedCount, regex.Count(input));
         var enumerated = new List<int>();
@@ -330,7 +330,7 @@ public sealed class Utf8SliceAnchorTests
         const string inputText = "\U0001F600a\nbxc";
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.Multiline | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, RegexOptions.Multiline | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Multiline | RegexOptions.CultureInvariant);
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
@@ -341,7 +341,7 @@ public sealed class Utf8SliceAnchorTests
         const string inputText = "\U0001F600";
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex("^", RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Replace(inputText, "Z");
-        var regex = new Utf8Regex("^", RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("^", options: RegexOptions.CultureInvariant);
         Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, "Z")));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
@@ -355,7 +355,7 @@ public sealed class Utf8SliceAnchorTests
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Replace(inputText, replacement);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(oracle, Encoding.UTF8.GetString(regex.Replace(input, replacement)));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);

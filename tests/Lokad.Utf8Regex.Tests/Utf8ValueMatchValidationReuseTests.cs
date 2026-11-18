@@ -20,7 +20,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
         var text = new string('x', padding) + "é😀bravo " + new string('中', 8192);
         var bytes = Encoding.UTF8.GetBytes(text);
         var expected = new Regex(pattern, RegexOptions.CultureInvariant).Match(text);
-        var regex = new Utf8Regex(pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         foreach (var offset in new[] { 0, 1, 7, 31 })
         {
             var storage = new byte[offset + bytes.Length + 1];
@@ -53,7 +53,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled, RegexOptions.NonBacktracking })
         {
-            var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, options: mode | RegexOptions.CultureInvariant);
             var expected = new Regex(pattern, mode | RegexOptions.CultureInvariant).Match(text);
             var bytes = Encoding.UTF8.GetBytes(text);
             byte[] storage = [0xFF, .. bytes, 0xFF];
@@ -80,7 +80,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
         {
-            var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex(pattern, options: mode | RegexOptions.CultureInvariant);
             byte[] bytes = [.. Encoding.UTF8.GetBytes(text), 0xff];
             using var source = new CancellationTokenSource();
             source.Cancel();
@@ -100,7 +100,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex("needle", mode | RegexOptions.CultureInvariant);
+            var regex = new Utf8Regex("needle", options: mode | RegexOptions.CultureInvariant);
             var expected = new Regex("needle", mode | RegexOptions.CultureInvariant).Match(text);
             AssertRange(regex.Match(bytes), text, expected.Index, expected.Length);
             byte[] malformed = [.. bytes, 0xff];
@@ -204,9 +204,17 @@ public sealed class Utf8ValueMatchValidationReuseTests
     }
 
     private static Utf8Regex Create(string pattern, RegexOptions mode, ulong? work) =>
-        new(pattern, mode | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout,
-            work is null ? Utf8ResourcePolicy.Unlimited : new()
-            { MaxWorkSteps = work, MaxDepth = 1024, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 });
+        new(pattern, options: mode | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = work is null ? Utf8ResourcePolicy.Unlimited : new()
+            {
+                MaxWorkSteps = work,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            }
+        });
 
     private static void AssertRange(Utf8CaptureRange match, string text, int index, int length)
         => Utf8MatchSequence.AssertRange(match, text, index, length);

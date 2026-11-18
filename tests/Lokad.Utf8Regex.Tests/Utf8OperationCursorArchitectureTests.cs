@@ -11,7 +11,7 @@ public sealed class Utf8OperationCursorArchitectureTests
     [Fact]
     public void DiagnosticSessionsNestWithoutChangingResults()
     {
-        var regex = new Utf8Regex("ab.*cd", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("ab.*cd", options: RegexOptions.Compiled | RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("ab12cd xx ab34cd");
         var expected = regex.Count(input);
         var outer = Utf8SearchDiagnosticsSession.Start();
@@ -53,8 +53,8 @@ public sealed class Utf8OperationCursorArchitectureTests
     {
         var baseOptions = RegexOptions.CultureInvariant |
             (rightToLeft ? RegexOptions.RightToLeft : RegexOptions.None);
-        var interpreted = new Utf8Regex(pattern, baseOptions);
-        var compiled = new Utf8Regex(pattern, baseOptions | RegexOptions.Compiled);
+        var interpreted = new Utf8Regex(pattern, options: baseOptions);
+        var compiled = new Utf8Regex(pattern, options: baseOptions | RegexOptions.Compiled);
         var input = Encoding.UTF8.GetBytes(text);
 
         Assert.Equal(interpreted.IsMatch(input), compiled.IsMatch(input));

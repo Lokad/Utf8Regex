@@ -99,8 +99,8 @@ a miss; the cursor returns a default result on a miss, with no group catalog.
 
 No match or a failure after matching entry clears the defined output window.
 Pre-cancellation leaves it unchanged. Interrupted publication clears the whole
-defined window; extra caller entries remain untouched. `Utf8RegexProgramOwner`
-exposes the same operation while retaining program admission; a closed owner
+defined window; extra caller entries remain untouched. A caller-funded `Utf8Regex`
+retains program admission during the operation; a closed expression
 rejects entry without modifying output. Returned ranges need no producer lifetime.
 
 ## Input and pattern language
@@ -699,18 +699,42 @@ invocation metadata, borrowed input and the compiled expression are separate.
 Funded timeout diagnostics omit subject text rather than decoding it without
 admission. Retained literal searches and scalar execution keep bounded metering.
 
-Core's `Compile(..., token, programMemoryAllowance)` returns a disposable
-`Utf8RegexProgramOwner`. It admits conservative compilation capacities before
-acquisition and transfers their charge to explicit ownership. The owner offers
-Boolean matching, Count, byte-template destination replacement and persistent range cursors, using its program allowance for working storage by
-default; the optional working allowance selects a separate host child account.
-The private expression cannot escape the owner. Dispose rejects new calls and
-refunds compilation after the final active call/cursor; active users retain their
-program reference and finish under their original controls. This new owner keeps
-legacy copied span-enumerator lifetimes separate. PCRE2 has its own funded program owner, byte-range memory cursor
+Core constructors and `Compile` accept one immutable `Utf8RegexPolicy` for match
+limits/timeout, construction limits/timeout and optional `ProgramMemoryAllowance`.
+Both funded and unfunded factories return `Utf8Regex`; the separate
+`Utf8RegexProgramOwner` is removed. Null match timeout uses DefaultMatchTimeout;
+null construction timeout is infinite. Compile has a separate construction token,
+checked before policy/pattern work and not retained for matching. Default
+constructors inherit internal admission; explicit Compile/construction/funding
+controls own one scope and cannot replace an active owner. Text construction and
+Compile default to CultureInvariant; UTF8 Compile retains its None options default.
+
+Funded creation admits covered compilation before acquisition and prepays the
+bounded replacement cache (4MiB payload plus 64KiB metadata) before publication.
+This is conservative capacity, not eager cache allocation; construction/host byte
+allowances must cover it. Dispose rejects new uses and refunds after the last
+admitted call or persistent cursor. Original controls remain authoritative for
+admitted work. Unfunded Dispose is a no-op. Pattern/options/timeouts/resource policy
+remain readable; program-dependent metadata retains its open-gate requirement.
+
+Shared working admission is available on IsMatch, Match, Count, CreateMatchCursor
+and UTF8-template TryReplace. Null inherits program funding when present; an
+explicit account overrides working admission only. Span enumerators, owned-byte
+Replace and text-template TryReplace retain numeric work/working/result limits
+without a host working account. Program funding still protects their active calls.
+Caller retention remains outside operation admission.
+
+Copied span match/split enumerators keep independent positions and original
+shared numeric authority. A funded span borrows an open regex: creation and each
+advance hold program admission, with original cancellation checked before the
+closed gate. Close between advances rejects future advances on every copy;
+retained Current values remain valid under the unchanged input lifetime. They
+hold no host working loan between advances and need no disposal/finalizer lease.
+Use a persistent memory cursor for shared working funding or traversal surviving
+regex close. PCRE2 retains its own funded program owner, byte-range memory cursor
 and retained receipts under the [profile contract](SPEC-PCRE2.md).
 
-`Utf8RegexProgramOwner.TryReplace(input, replacementUtf8, destination, out written,
+`Utf8Regex.TryReplace(input, replacementUtf8, destination, out written,
 token, workingAllowance)` uses strict native templates and caller-owned output.
 The program's prepaid conservative cache maximum covers retained keys/plans.
 Cold key/parser capacity borrows the invocation's existing working ledger and
@@ -731,7 +755,7 @@ program close. No additional retained output receipt or string convenience is
 required for this route.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>, startOffsetInBytes, token, workingAllowance)`
-on Core expressions and program owners returns `Utf8RegexMatchCursor`. Null start
+on Core expressions returns `Utf8RegexMatchCursor`. Null start
 selects zero for LTR or the subject end for RTL; explicit starts are scalar-aligned
 bytes within the original subject, preserving assertion context. The cursor borrows already-valid unchanged text without a validity pass. Byte discovery and capture
 histories need neither captured strings nor a whole-subject UTF-16 map. NonBacktracking
@@ -794,11 +818,12 @@ payload caches retain conservative bounds on complete immutable keys/values;
 shared storage can be charged more than once. Cache bounds are not process or
 total-program memory bounds.
 
-Explicit `Compile` accepts separate construction policy, timeout and token;
-pre-cancellation wins, nested preparation shares the owner, and authority is not
-retained for execution. Ordinary constructors
+Core constructors/Compile accept construction policy/timeout through Utf8RegexPolicy;
+Compile retains a separate construction token. Other profiles use their documented
+creation forms. Construction pre-cancellation wins, nested preparation shares
+the owner, and authority is not retained for execution. Ordinary constructors
 keep fixed backstops; positive construction values tighten them, null keeps them.
-The three profiles' caller-funded program overloads instead delegate byte admission to
+The profiles' caller-funded creation forms delegate byte admission to
 their shared allowance, with an optional additional `MaxBytes`; the other
 backstops below remain. See [program lifetime](SPEC-PYTHONRE.md#construction-and-execution-controls).
 
@@ -844,7 +869,7 @@ Construction remains a conservative capacity backstop, including discarded
 intermediate storage.
 Native source extents use bytes, so admission/work requirements may differ from
 legacy decoded-key charges. PythonRe funded hits keep their existing active uses;
-Core program owners retain their existing conservative cache-capacity reservation.
+Funded Core expressions retain the conservative cache-capacity reservation.
 Preliminary byte-template scans admit work before reading through the construction
 owner or fixed scan ceiling. Interrupted preparation is retryable and never
 published. Ordinary policies do not combine construction/execution/retention.

@@ -24,7 +24,10 @@ public sealed class Utf8FundedCountFactsTests
         foreach (var options in new[] { RegexOptions.None, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
             if ((options & RegexOptions.NonBacktracking) != 0 && pattern == @"(a+)\1") continue;
-            var regex = new Utf8Regex(pattern, options, resourcePolicy: Limits);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = Limits
+            });
             var account = new Account();
             Assert.True(account.TryReserve(17));
             var session = Utf8SearchDiagnosticsSession.Start();
@@ -46,7 +49,13 @@ public sealed class Utf8FundedCountFactsTests
     {
         using var token = new CancellationTokenSource();
         var account = new Account();
-        var regex = new Utf8Regex("needle", resourcePolicy: Limits with { MaxWorkSteps = 1 });
+        var regex = new Utf8Regex("needle", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = Limits with
+            {
+                MaxWorkSteps = 1
+            }
+        });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Count("é😀needle"u8, token.Token, account)).ResourceKind);
         Assert.Equal(0UL, account.Used);

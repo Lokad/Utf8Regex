@@ -35,7 +35,7 @@ public sealed class Utf8ScalarCultureTests
                 var pattern = scoped ? "(?i:" + body + ")" : body;
                 var options = Options(compiled, rtl, scoped);
                 var oracle = new Regex(pattern, options);
-                var regex = new Utf8Regex(pattern, options);
+                var regex = new Utf8Regex(pattern, options: options);
                 Assert.NotNull(regex.Inspection.AvailableOwnedSliceProgram);
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
                 foreach (var text in subjects)
@@ -93,7 +93,7 @@ public sealed class Utf8ScalarCultureTests
                 var prefix = culture is "tr-TR" or "az-Latn-AZ" ? "\u0130" : "I";
                 var text = prefix + "\U0001f600\U0001f600";
                 var input = Encoding.UTF8.GetBytes(text);
-                var regex = new Utf8Regex(scoped ? "(?i:" + body + ")" : body, Options(compiled, rtl, scoped));
+                var regex = new Utf8Regex(scoped ? "(?i:" + body + ")" : body, options: Options(compiled, rtl, scoped));
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
                 var all = body.Contains('+') || body == "i(.)(.)";
                 var length = Encoding.UTF8.GetByteCount(prefix) + (all ? 8 : 4);
@@ -122,7 +122,7 @@ public sealed class Utf8ScalarCultureTests
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
                 var prefix = culture is "tr-TR" or "az-Latn-AZ" ? "\u0130" : "I";
                 var body = "i(" + atom + ")";
-                var regex = new Utf8Regex(scoped ? "(?i:" + body + ")" : body, Options(compiled, rtl, scoped));
+                var regex = new Utf8Regex(scoped ? "(?i:" + body + ")" : body, options: Options(compiled, rtl, scoped));
                 CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
                 var input = Encoding.UTF8.GetBytes(prefix + "\U00010428");
                 var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
@@ -136,7 +136,7 @@ public sealed class Utf8ScalarCultureTests
 
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
             var referenceBody = rtl ? "i\\k<x>(?<x>\U00010400)" : "i(?<x>\U00010400)\\k<x>";
-            var referenceRegex = new Utf8Regex(scoped ? "(?i:" + referenceBody + ")" : referenceBody, Options(compiled, rtl, scoped));
+            var referenceRegex = new Utf8Regex(scoped ? "(?i:" + referenceBody + ")" : referenceBody, options: Options(compiled, rtl, scoped));
             var referencePrefix = culture is "tr-TR" or "az-Latn-AZ" ? "\u0130" : "I";
             var referenceInput = Encoding.UTF8.GetBytes(referencePrefix +
                 (rtl ? "\U00010400\U00010428" : "\U00010428\U00010400"));
@@ -164,7 +164,7 @@ public sealed class Utf8ScalarCultureTests
             {
                 var options = Options(compiled, false, false) | RegexOptions.NonBacktracking |
                     (invariant ? RegexOptions.CultureInvariant : RegexOptions.None);
-                var regex = new Utf8Regex("i(.)", options);
+                var regex = new Utf8Regex("i(.)", options: options);
                 var prefix = culture == "tr-TR" && !invariant ? "\u0130" : "I";
                 var input = Encoding.UTF8.GetBytes(prefix + "\U0001f600");
                 AssertOwned(regex);
@@ -195,7 +195,7 @@ public sealed class Utf8ScalarCultureTests
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
             var prefix = culture == "tr-TR" ? "\u0130" : "I";
-            var regex = new Utf8Regex(scoped ? "(?i:i(.))" : "i(.)", Options(compiled, false, scoped));
+            var regex = new Utf8Regex(scoped ? "(?i:i(.))" : "i(.)", options: Options(compiled, false, scoped));
             var firstSegment = "a" + prefix + "\U0001f600b";
             var input = Utf8ValidatedInput.Create(Encoding.UTF8.GetBytes(firstSegment + prefix + "\U0001f600"));
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");

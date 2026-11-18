@@ -56,7 +56,7 @@ public sealed class CoreCompilationArchitectureTests
 
         const string pattern = "(?:a|b)(?:c|d)(?:e|f)(?:g|h)(?:i|j)(?:k|l)(?:m|n)(?:o|p)(?:q|r)";
         var prepared = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant);
-        var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("xxacegikmoqyy");
 
         Assert.NotEqual(NativeExecutionKind.ExactUtf8Literals, prepared.ExecutionKind);

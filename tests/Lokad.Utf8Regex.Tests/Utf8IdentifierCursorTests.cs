@@ -30,7 +30,11 @@ public sealed class Utf8IdentifierCursorTests
                 MaxWorkSteps = 1_000_000, MaxDepth = 8192,
                 MaxWorkingBytes = 16 << 20, MaxResultBytes = 16 << 20,
             } : Utf8ResourcePolicy.Unlimited;
-            var regex = new Utf8Regex(pattern, options, Regex.InfiniteMatchTimeout, policy);
+            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Regex.InfiniteMatchTimeout,
+                ResourcePolicy = policy
+            });
             foreach (var text in new[] { "!call Name(", "invoke X( call Abc(", "!call name(", "call Name", "é😀 call Name( invoke X(" })
             {
                 var input = Encoding.UTF8.GetBytes(text);
@@ -75,7 +79,10 @@ public sealed class Utf8IdentifierCursorTests
     public void GlobalRangesPreservePrefixPriorityUnicodeAndEveryInvocationMode(string pattern, bool compiled, bool finite, bool live)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout
+        });
         var oracle = new Regex(pattern, options);
         using var source = new CancellationTokenSource();
         foreach (var text in Texts)
@@ -108,7 +115,10 @@ public sealed class Utf8IdentifierCursorTests
     public void CompleteOperationsRetainCapturesOffsetsSplitAndReplacement(string pattern, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, TimeSpan.FromSeconds(10));
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         // This helper checks every offset. Large scans have separate global
         // range and interruption cases rather than an exhaustive offset grid.
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(pattern, options), Texts.Where(text => text.Length <= 128).ToArray());
@@ -125,7 +135,7 @@ public sealed class Utf8IdentifierCursorTests
     public void FactoryOffsetsBorrowOwnedPlansAndKeepFullSubjectBoundaryContext(string pattern, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options);
+        var regex = new Utf8Regex(pattern, options: options);
         var prepared = Prepared(regex);
         var oracle = new Regex(pattern, options);
         const string text = "xgetAlpha getOmega setBeta LogError ( xLogWarning( LogInformation( class Order struct Worker";
@@ -159,7 +169,10 @@ public sealed class Utf8IdentifierCursorTests
         using var clock = Utf8DeadlineTestClock.Start();
         var pattern = method ? Patterns[2] : Patterns[0];
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout
+        });
         var text = phase == "execution" ? (method ? "LogError" + new string(' ', 160000) + "(" : "get" + new string('A', 160000))
             : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
@@ -202,7 +215,10 @@ public sealed class Utf8IdentifierCursorTests
     {
         using var clock = Utf8DeadlineTestClock.Start();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options, expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout
+        });
         var text = mixed ? "é😀 " + Texts[^1] : Texts[^1];
         var input = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
@@ -236,11 +252,14 @@ public sealed class Utf8IdentifierCursorTests
         foreach (var finite in new[] { false, true })
         foreach (var input in new[] { new byte[] { 0xff }, new byte[] { (byte)'x', 0xc0, 0xaf }, new byte[] { 0xf0, 0x9f } })
         {
-            var regex = new Utf8Regex(Patterns[0], options, finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Regex(Patterns[0], options: options, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = finite ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout
+            });
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         source.Cancel();
-        var canceled = new Utf8Regex(Patterns[0], options);
+        var canceled = new Utf8Regex(Patterns[0], options: options);
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => { var cursor = canceled.EnumerateMatches(new byte[] { 0xff }, cancellationToken: source.Token); _ = cursor.MoveNext(); }).CancellationToken);
     }
 
@@ -252,7 +271,10 @@ public sealed class Utf8IdentifierCursorTests
     public void TimeBeforeFirstMoveCountsAgainstTheOriginalEntryDeadline(bool compiled, bool mixed)
     {
         using var clock = Utf8DeadlineTestClock.Start();
-        var regex = new Utf8Regex(Patterns[0], RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), TimeSpan.FromMilliseconds(200));
+        var regex = new Utf8Regex(Patterns[0], options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        });
         var text = mixed ? "é😀 getAlpha setBeta" : "getAlpha setBeta";
         var input = Encoding.UTF8.GetBytes(text);
         var cursor = regex.EnumerateMatches(input);
@@ -272,7 +294,7 @@ public sealed class Utf8IdentifierCursorTests
     public void TerminalCursorReplayUsesConstantWorkAndChecksOriginalTokenAndDeadline(bool compiled, bool matches, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
-        var regex = new Utf8Regex(Patterns[0], RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
+        var regex = new Utf8Regex(Patterns[0], options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(matches ? "getAlpha setBeta" : new string('x', 32000));
         using var source = new CancellationTokenSource();
         var deadline = expire ? Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200)) : Utf8ExecutionDeadline.Infinite;

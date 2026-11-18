@@ -165,7 +165,7 @@ public sealed class Utf8CursorCopyWorkTests
     [MemberData(nameof(Routes))]
     public void PublicCopiesKeepIndependentPositionsAndOneCumulativeWorkCounter(string pattern, string text, bool compiled, bool rtl)
     {
-        var regex = new Utf8Regex(pattern, Options(compiled, rtl));
+        var regex = new Utf8Regex(pattern, options: Options(compiled, rtl));
         using var source = new CancellationTokenSource();
         var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(text), cancellationToken: source.Token);
         var copy = original.GetEnumerator();
@@ -209,7 +209,7 @@ public sealed class Utf8CursorCopyWorkTests
     [MemberData(nameof(Routes))]
     public void RepeatedFreshCopiesCannotRestartTheCancellationCheckpointCadence(string pattern, string text, bool compiled, bool rtl)
     {
-        var regex = new Utf8Regex(pattern, Options(compiled, rtl));
+        var regex = new Utf8Regex(pattern, options: Options(compiled, rtl));
         using var source = new CancellationTokenSource();
         var active = false;
         ulong checkpoint = 0;
@@ -251,7 +251,7 @@ public sealed class Utf8CursorCopyWorkTests
     [InlineData(true, true)]
     public void ACopyCannotSpendTheSameFiniteWorkAllowanceTwice(bool owned, bool compiled)
     {
-        var regex = new Utf8Regex(owned ? @"(ab)\1" : "target", Options(compiled, false));
+        var regex = new Utf8Regex(owned ? @"(ab)\1" : "target", options: Options(compiled, false));
         var input = owned ? "abab abab"u8.ToArray() : "target target"u8.ToArray();
         var baseline = Create(regex, input, ulong.MaxValue, owned);
         Assert.True(baseline.MoveNext());
@@ -295,7 +295,7 @@ public sealed class Utf8CursorCopyWorkTests
     public void SplitCopiesAccumulateWorkThroughTailAndEofWhileRetainingExistingViews(int count, bool compiled, bool rtl)
     {
         const string text = "é😀 abab abab tail";
-        var regex = new Utf8Regex(@"(ab)\1", Options(compiled, rtl));
+        var regex = new Utf8Regex(@"(ab)\1", options: Options(compiled, rtl));
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, source.Token);
         var original = Utf8OwnedSplitPreparation.Create(Program(regex), Encoding.UTF8.GetBytes(text), count, ref invocation);

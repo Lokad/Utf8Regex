@@ -19,7 +19,7 @@ public sealed class Utf8FinalFamilyQualificationTests
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var lane in rtl ? new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled } : new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options | lane); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+            var regex = new Utf8Regex(pattern, options: options | lane); var match = regex.Match(input); var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(regex.IsMatch(input)); Assert.Equal(1, regex.Count(input));
             Assert.Equal((index, length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes))); Assert.Equal((index, length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
         }
@@ -37,7 +37,7 @@ public sealed class Utf8FinalFamilyQualificationTests
     [Fact]
     public void EmailWholeEndpointsAgreeWithIndependentAsciiGrammar()
     {
-        var oracle = new Regex(Email, RegexOptions.CultureInvariant); var regex = new Utf8Regex(Email, RegexOptions.CultureInvariant);
+        var oracle = new Regex(Email, RegexOptions.CultureInvariant); var regex = new Utf8Regex(Email, options: RegexOptions.CultureInvariant);
         foreach (var local in new[] { "a", "1", "-", ".", "a_b", "", "é" })
         foreach (var domain in new[] { "a.ab", "a.1", "a.a", "a.abcdefghijkl", "a.abcdefghijklm", "a.ab]", "[1.2.3.4]", "[1.2.3.ab", "[1.2.3.4", "[1.2.3.4444]" })
         foreach (var suffix in new[] { "", "\n", "\n\n", "\r", " " })
@@ -58,8 +58,8 @@ public sealed class Utf8FinalFamilyQualificationTests
     [Fact]
     public void QueryMarkersRequireEqualsAndOptionalTrigramCanBacktrack()
     {
-        Assert.False(new Utf8Regex(Digits, Fold).IsMatch("~/d/1?tX"u8));
-        var hex = new Utf8Regex(Hex, Fold);
+        Assert.False(new Utf8Regex(Digits, options: Fold).IsMatch("~/d/1?tX"u8));
+        var hex = new Utf8Regex(Hex, options: Fold);
         Assert.True(hex.IsMatch(Encoding.ASCII.GetBytes("~" + HexRoute + "&name=x")));
         Assert.True(hex.IsMatch(Encoding.ASCII.GetBytes("~" + HexRoute + "?path=x\r&name=y")));
     }
@@ -67,7 +67,7 @@ public sealed class Utf8FinalFamilyQualificationTests
     [Fact]
     public void QueryValueClassesAndFinalLfOwnTheirExactByteExtent()
     {
-        var oracle = new Regex(Digits, Fold); var regex = new Utf8Regex(Digits, Fold);
+        var oracle = new Regex(Digits, Fold); var regex = new Utf8Regex(Digits, options: Fold);
         foreach (var text in new[] { "x\r~/d/1?t=x", "~/d/1?t=x\n", "~/d/1?t=x \n", "~/d/1?t=x\nz", "~/d/1?t=\n", "~/d/1?t=?", "~/d/1?t=x?tail\n" })
         {
             var expected = oracle.Match(text); var actual = regex.Match(Encoding.ASCII.GetBytes(text));
@@ -84,11 +84,11 @@ public sealed class Utf8FinalFamilyQualificationTests
         var before = new string('a', 110);
         foreach (var prefix in new[] { before, before + "a" })
         {
-            var regex = new Utf8Regex(Digits.Replace("https://go", prefix), Fold);
+            var regex = new Utf8Regex(Digits.Replace("https://go", prefix), options: Fold);
             var hit = Encoding.ASCII.GetBytes(prefix + ".testing.lokadXcom/d/1?t=x");
             Assert.Equal(hit.Length, regex.Match(hit).EndOffsetInBytes);
         }
-        Assert.Equal(19, new Utf8Regex(Digits.Replace("https://go", @"\x00"), Fold).Match("\0.lokadXcom/d/1?t=x"u8).EndOffsetInBytes);
+        Assert.Equal(19, new Utf8Regex(Digits.Replace("https://go", @"\x00"), options: Fold).Match("\0.lokadXcom/d/1?t=x"u8).EndOffsetInBytes);
     }
 
     [Fact]
@@ -103,8 +103,8 @@ public sealed class Utf8FinalFamilyQualificationTests
                 new[] { HexRoute + "&name=x", HexRoute + "ab?path=x&name=y", HexRoute + "?path=x\n&name=y", HexRoute + "&name=x\nz", HexRoute + "&name=x?path=z", HexRoute + "&name=x \n" })
             {
                 var text = prefix + trigram + tail; var expected = oracle.Match(text); var input = Encoding.ASCII.GetBytes(text);
-                var actual = new Utf8Regex(pattern, Fold).Match(input); Assert.Equal(expected.Success, actual.Success); if (actual.Success) Assert.Equal(expected.Length, actual.EndOffsetInBytes);
-                Assert.Equal(oracle.Count(text), new Utf8Regex(pattern, Fold | RegexOptions.Compiled).Count(input));
+                var actual = new Utf8Regex(pattern, options: Fold).Match(input); Assert.Equal(expected.Success, actual.Success); if (actual.Success) Assert.Equal(expected.Length, actual.EndOffsetInBytes);
+                Assert.Equal(oracle.Count(text), new Utf8Regex(pattern, options: Fold | RegexOptions.Compiled).Count(input));
             }
         }
     }
