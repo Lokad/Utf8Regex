@@ -22,11 +22,10 @@ public readonly struct Utf8RangeMatch
     private readonly Utf8CaptureRange[]? _captures;
     private readonly int[]? _offsets;
     private readonly int[]? _numbers;
-    private readonly string[]? _names;
 
     internal Utf8RangeMatch(ReadOnlyMemory<byte> input, Utf8CaptureRange[] captures,
-        int[] offsets, int[] numbers, string[] names)
-    { _input = input; _captures = captures; _offsets = offsets; _numbers = numbers; _names = names; }
+        int[] offsets, int[] numbers)
+    { _input = input; _captures = captures; _offsets = offsets; _numbers = numbers; }
 
     /// <summary>Whether group zero represents a successful match.</summary>
     public bool Success => _captures is { Length: > 0 };
@@ -34,8 +33,6 @@ public readonly struct Utf8RangeMatch
     public Utf8CaptureRange Value => Success ? _captures![0] : default;
     /// <summary>Actual capture slot numbers, including zero; numbers can be sparse.</summary>
     public ReadOnlySpan<int> GroupNumbers => _numbers;
-    /// <summary>Immutable names in the same order as GroupNumbers.</summary>
-    public ReadOnlySpan<string> GroupNames => _names;
 
     /// <summary>Gets the last capture of an existing slot; an unmatched slot returns a default range.</summary>
     public bool TryGetGroup(int number, out Utf8CaptureRange group)
@@ -44,17 +41,6 @@ public readonly struct Utf8RangeMatch
         group = ordinal >= 0 && _offsets![ordinal] < _offsets[ordinal + 1]
             ? _captures![_offsets[ordinal + 1] - 1] : default;
         return ordinal >= 0;
-    }
-
-    /// <summary>Resolves a name to its last capture, including an unmatched slot.</summary>
-    public bool TryGetGroup(string name, out Utf8CaptureRange group)
-    {
-        ArgumentNullException.ThrowIfNull(name);
-        for (var slot = 0; slot < GroupNames.Length; slot++)
-            if (string.Equals(_names![slot], name, StringComparison.Ordinal))
-                return TryGetGroup(_numbers![slot], out group);
-        group = default;
-        return false;
     }
 
     /// <summary>Gets capture history in closing order, including Core RTL order. NonBacktracking keeps only the last capture.</summary>

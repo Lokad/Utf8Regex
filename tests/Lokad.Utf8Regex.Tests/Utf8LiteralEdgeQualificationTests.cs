@@ -42,7 +42,7 @@ public sealed class Utf8LiteralEdgeQualificationTests
         {
             Range(pattern, "ab😀", RegexOptions.CultureInvariant | compiled, 0, 2);
             var match = Utf8MatchSequence.First(new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | compiled).CreateMatchCursor("ab😀"u8.ToArray()));
-            Assert.True(match.TryGetGroup("x", out var group)); Assert.Equal((0, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
+            Assert.True(match.TryGetGroup(1, out var group)); Assert.Equal((0, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
             Range("^(ab)", "ab😀", RegexOptions.CultureInvariant | compiled, 0, 2);
             Assert.True(Utf8MatchSequence.First(new Utf8Regex("^(ab)", options: RegexOptions.CultureInvariant | compiled).CreateMatchCursor("ab😀"u8.ToArray())).TryGetGroup(1, out var aliasGroup));
             Assert.Equal((0, 2), (aliasGroup.StartOffsetInBytes, (aliasGroup.EndOffsetInBytes - aliasGroup.StartOffsetInBytes)));

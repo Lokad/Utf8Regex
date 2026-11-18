@@ -1,7 +1,7 @@
 namespace Lokad.Utf8Regex;
 
 /// <summary>Owns explicit admission for one immutable Core range snapshot.</summary>
-/// <remarks>No finalizer. Dispose after retained users finish or take over admission for copies kept afterward. Already copied matches remain valid. Borrowed input is excluded; shared name/number storage is conservatively charged again.</remarks>
+/// <remarks>No finalizer. Dispose after retained users finish or take over admission for copies kept afterward. Already copied matches remain valid. The reservation includes the shared group-number array and excludes borrowed input.</remarks>
 public sealed class Utf8RetainedRangeMatch : IDisposable
 {
     private Utf8RangeMatch _match;

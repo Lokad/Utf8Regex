@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Core retained matches expose numeric groups and capture history. Resolve names
+  on the compiled regex. Retained match admission no longer includes name text.
+
 - Remove Core split `GetValueString`. Hosts can decode the bytes returned by
   `GetValueBytes`.
 

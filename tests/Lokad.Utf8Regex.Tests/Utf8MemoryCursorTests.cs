@@ -29,7 +29,6 @@ public sealed class Utf8MemoryCursorTests
         {
             Assert.True(cursor.MoveNext(out var actual));
             Assert.Equal(bcl.GetGroupNumbers(), actual.GroupNumbers.ToArray());
-            Assert.Equal(bcl.GetGroupNames(), actual.GroupNames.ToArray());
             Assert.Equal(expected.Value, Encoding.UTF8.GetString(actual.GetValueMemory().Span));
             foreach (var number in bcl.GetGroupNumbers())
             {
@@ -70,7 +69,7 @@ public sealed class Utf8MemoryCursorTests
         var bytes = "😀fooé é"u8.ToArray();
         using var cursor = new Utf8Regex("(?<=foo)(?<value>.)").CreateMatchCursor(bytes, 4);
         Assert.True(cursor.MoveNext(out var match)); Assert.Equal(7, match.Value.StartOffsetInBytes); Assert.Equal(9, match.Value.EndOffsetInBytes);
-        Assert.True(match.TryGetGroup("value", out var group)); Assert.Equal(7, group.StartOffsetInBytes);
+        Assert.True(match.TryGetGroup(1, out var group)); Assert.Equal(7, group.StartOffsetInBytes);
         Assert.Equal("é"u8.ToArray(), match.GetGroupMemory(1).ToArray()); Assert.False(cursor.MoveNext(out _));
         using var dots = new Utf8Regex(".").CreateMatchCursor("😀é"u8.ToArray());
         Assert.True(dots.MoveNext(out var first)); Assert.Equal(4, first.Value.EndOffsetInBytes);
@@ -83,12 +82,14 @@ public sealed class Utf8MemoryCursorTests
     public async Task SeparateOwnersKeepProgramAndResultFundedAcrossCloseAndAwaits()
     {
         var root = new Root(); var programs = new Account(root); var working = new Account(root); var results = new Account(root);
-        var owner = Compile("(?<x>😀)+", programs); var programCharge = programs.Used;
+        var owner = Compile("(?<12>😀)+", programs); var programCharge = programs.Used;
+        var number = owner.GroupNumberFromUtf8Name("12"u8);
+        Assert.Equal(12, number);
         var cursor = owner.CreateMatchCursor("😀😀 😀"u8.ToArray(), workingMemoryAllowance: working);
         var alias = cursor;
         Assert.True(cursor.MoveNextRetained(out var retained, resultMemoryAllowance: results));
         Assert.True(results.Used > 0); var copied = retained.Match;
-        Assert.Equal(2, copied.GetCaptures(1).Length); Assert.True(copied.TryGetGroup("x", out _));
+        Assert.Equal(2, copied.GetCaptures(number).Length);
         owner.Dispose(); Assert.Equal(programCharge, programs.Used);
         Assert.Throws<ObjectDisposedException>(() => owner.CreateMatchCursor("😀"u8.ToArray()));
         await Task.Yield();
@@ -97,7 +98,31 @@ public sealed class Utf8MemoryCursorTests
         cursor.Dispose(); Assert.Throws<ObjectDisposedException>(() => alias.MoveNext(out _));
         retained.Dispose(); retained.Dispose(); Assert.Equal(0UL, root.Used);
         Assert.Throws<ObjectDisposedException>(() => retained.Match);
-        Assert.Equal("😀😀"u8.ToArray(), copied.GetValueMemory().ToArray()); Assert.Equal(2, copied.GetCaptures(1).Length);
+        Assert.Equal("😀😀"u8.ToArray(), copied.GetValueMemory().ToArray());
+        Assert.Equal([0, 12], copied.GroupNumbers.ToArray());
+        Assert.Equal(2, copied.GetCaptures(number).Length);
+        Assert.Equal("😀"u8.ToArray(), copied.GetGroupMemory(number).ToArray());
+    }
+
+    [Fact]
+    public void RetainedAdmissionIgnoresCaptureNameLength()
+    {
+        var root = new Root();
+        var working = new Account(root);
+        var results = new Account(root);
+        foreach (var name in new[] { "x", new string('é', 100) })
+        {
+            using var regex = new Utf8Regex($"(?<{name}>a)+");
+            using var cursor = regex.CreateMatchCursor("aaa"u8.ToArray(), workingMemoryAllowance: working);
+            Assert.True(cursor.MoveNextRetained(out var retained, resultMemoryAllowance: results));
+            using (retained)
+            {
+                Assert.Equal(3, retained.Match.GetCaptures(1).Length);
+                Assert.Equal(results.Used, retained.ChargedBytes);
+                results.Maximum = retained.ChargedBytes;
+            }
+        }
+        Assert.Equal(0UL, root.Used);
     }
 
     [Fact]

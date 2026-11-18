@@ -214,7 +214,7 @@ public sealed class Utf8ScalarClassRepresentationTests
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("\U0001f600\U00010400"u8.ToArray()));
         Assert.True(match.Success);
         Assert.Equal((0, 8), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
-        Assert.True(match.TryGetGroup("x", out var group));
+        Assert.True(match.TryGetGroup(1, out var group));
         Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
         for (var index = 0; index < 2; index++)
         {
@@ -338,7 +338,7 @@ public sealed class Utf8ScalarClassRepresentationTests
             var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
             Assert.True(match.Success);
             Assert.Equal(expected[0], (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
-            Assert.Equal(expected[0], ((match.TryGetGroup("x", out var range1) ? range1.StartOffsetInBytes : default), ((match.TryGetGroup("x", out var range2) ? range2.EndOffsetInBytes : default) - (match.TryGetGroup("x", out var range3) ? range3.StartOffsetInBytes : default))));
+            Assert.Equal(expected[0], ((match.TryGetGroup(1, out var range1) ? range1.StartOffsetInBytes : default), ((match.TryGetGroup(1, out var range2) ? range2.EndOffsetInBytes : default) - (match.TryGetGroup(1, out var range3) ? range3.StartOffsetInBytes : default))));
             var replaced = singles ? "x<\U0001f600><\U00010400>y" : "x<\U0001f600\U00010400>y";
             Assert.Equal(replaced, Encoding.UTF8.GetString(regex.Replace(input, "<${x}>")));
             Assert.False(regex.IsMatch("\U0001f601\U0001f601"u8));

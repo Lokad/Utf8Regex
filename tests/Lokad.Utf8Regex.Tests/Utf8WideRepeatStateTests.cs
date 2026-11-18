@@ -111,7 +111,7 @@ public sealed class Utf8WideRepeatStateTests
         // Existing compact zero-width finite repeats still need no expansion.
         var empty = new Utf8Regex("(?<x>){0,2147483647}", options: options);
         Assert.Equal(3, empty.Count("😀a"u8));
-        Assert.True((Utf8MatchSequence.First(empty.CreateMatchCursor("😀a"u8.ToArray())).TryGetGroup("x", out var range1) ? range1.Success : default));
+        Assert.True((Utf8MatchSequence.First(empty.CreateMatchCursor("😀a"u8.ToArray())).TryGetGroup(1, out var range1) ? range1.Success : default));
     }
 
     [Theory]

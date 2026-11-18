@@ -70,16 +70,13 @@ public sealed class Utf8SharedCaptureMetadataTests
         foreach (var name in oracle.GetGroupNames())
         {
             Assert.Equal(expected.Groups[name].Value, System.Text.Encoding.UTF8.GetString(actual.GetGroupMemory(regex.GroupNumberFromUtf8Name(System.Text.Encoding.UTF8.GetBytes(name))).Span));
-            Assert.True(actual.TryGetGroup(name, out _));
         }
-        Assert.False(actual.TryGetGroup("missing", out _));
         var miss = Utf8MatchSequence.First(regex.CreateMatchCursor(ReadOnlyMemory<byte>.Empty));
         Assert.False(miss.Success);
 
         Assert.Empty(miss.GroupNumbers.ToArray());
         Assert.False(miss.TryGetGroup(0, out var groupZero));
         Assert.False(groupZero.Success);
-        Assert.False(miss.TryGetGroup("0", out _));
         Assert.Equal(Encoding.UTF8.GetBytes(oracle.Replace(subject, replacement)), regex.Replace(input, replacement));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }

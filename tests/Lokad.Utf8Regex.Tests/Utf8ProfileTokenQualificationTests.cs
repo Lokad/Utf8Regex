@@ -80,7 +80,7 @@ public sealed class Utf8ProfileTokenQualificationTests
     {
         const string pattern = @"\b(?<day>\p{Nd}{1,2})\x2f(?:[0-9]{1,2})\x2d\d{2,4}\b";
         Range(pattern, "😀 ١/2-٢٠ ", 5, 9);
-        Assert.True(Utf8MatchSequence.First(new Utf8Regex(pattern).CreateMatchCursor(Encoding.UTF8.GetBytes("😀 ١/2-٢٠ "))).TryGetGroup("day", out var captured));
+        Assert.True(Utf8MatchSequence.First(new Utf8Regex(pattern).CreateMatchCursor(Encoding.UTF8.GetBytes("😀 ١/2-٢٠ "))).TryGetGroup(1, out var captured));
         Assert.Equal((5, 2), (captured.StartOffsetInBytes, (captured.EndOffsetInBytes - captured.StartOffsetInBytes)));
         var input = Encoding.UTF8.GetBytes("𐐀1/2-20"); Assert.False(new Utf8Regex(pattern).IsMatch(input));
         Range(@"\d{0,2}/\d{1}/\d{1}", "😀 /2/3", 5, 4);

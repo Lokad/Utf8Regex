@@ -137,7 +137,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             Utf8RetainedRangeMatch? receipt = null;
             if (retain)
             {
-                ReserveNames(ref results);
+                results.ReserveSharedStorage(Utf8ConstructionBudget.ArrayBytes<int>(_catalog!.GroupNumbers.Length), ref _invocation);
                 var allowance = resultAllowance ?? _invocation.Ledger.MemoryAllowance!;
                 receipt = results.AllocateObject((Match: completed, Allowance: allowance),
                     static state => new Utf8RetainedRangeMatch(state.Match, state.Allowance), ref _invocation);
@@ -199,18 +199,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                 }
             offsets[slot + 1] = written;
         }
-        return new(_input, captures, offsets, catalog.GroupNumbers, catalog.GroupNames);
-    }
-
-    private void ReserveNames(ref Utf8InvocationResultLedger results)
-    {
-        results.ReserveSharedStorage(Utf8ConstructionBudget.ArrayBytes<int>(_catalog!.GroupNumbers.Length), ref _invocation);
-        results.ReserveSharedStorage(Utf8ConstructionBudget.ArrayBytes<string>(_catalog.GroupNames.Length), ref _invocation);
-        for (var slot = 0; slot < _catalog.GroupNames.Length; slot++)
-        {
-            if ((slot & 255) == 0) Checkpoint();
-            results.ReserveSharedStorage(Utf8ConstructionBudget.StringBytes(_catalog.GroupNames[slot].Length), ref _invocation);
-        }
+        return new(_input, captures, offsets, catalog.GroupNumbers);
     }
 
     private void Checkpoint()

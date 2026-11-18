@@ -93,9 +93,10 @@ working/result requirements follow cursor scratch and snapshot publication.
 Core `MatchDetailed`, `Utf8MatchContext`, `Utf8GroupContext` and
 `Utf8CaptureContext` are removed. The memory cursor is the capture-history API
 for whole subjects as well as byte-start searches. `Utf8RangeMatch.Value` holds
-the whole byte range; `TryGetGroup` and `GetCaptures` expose last captures and
-closing-order histories. Metadata is available from the compiled regex even on
-a miss; the cursor returns a default result on a miss, with no group catalog.
+the whole byte range. `GroupNumbers` identifies the numeric slots, and
+`TryGetGroup(number, ...)` and `GetCaptures(number)` expose last captures and
+closing-order histories. Resolve names on the compiled regex before disposal.
+It provides name metadata even on a miss, when the cursor returns a default result.
 
 No match or a failure after matching entry clears the defined output window.
 Pre-cancellation leaves it unchanged. Interrupted publication clears the whole
@@ -789,12 +790,13 @@ is rejected. EOF, failure and explicit Dispose drop exclusive scratch/program
 roots and refund their loans synchronously. Dispose early abandonment; no finalizer.
 
 `MoveNext(out Utf8RangeMatch)` publishes immutable ranges, histories and shared
-name/number metadata. Metadata survives later advances and cursor/program close;
-subject bytes and their memory manager remain borrowed. Ordinary publication ends
-working admission for the result: continued caller retention has separate scope.
+group numbers. They survive later advances and cursor or program close. Subject
+bytes and their memory manager remain borrowed. Ordinary publication ends working
+admission for the result. Continued caller retention has a separate scope.
 `MoveNextRetained` instead returns `Utf8RetainedRangeMatch`, requiring shared working
-funding. It conservatively charges shared metadata/name text again for an independent
-lifetime. By default the already admitted staging loan transfers unchanged. A
+funding. It conservatively charges the shared group-number array again for its
+independent lifetime. Capture names belong to the compiled regex. By default the
+already admitted staging loan transfers unchanged. A
 separate result allowance reserves before staging is refunded, so that handoff
 admits overlap without an accounting gap. Refusal is terminal. Closing a receipt
 refunds exactly once; previously copied range values remain usable, with continued

@@ -23,10 +23,8 @@ sealed class Utf8MemoryAdmissionException : Exception, Runtime.Serialization.ISe
 readonly struct Utf8RangeMatch
   property Boolean Success { get; }
   property ReadOnlySpan<Int32> GroupNumbers { get; }
-  property ReadOnlySpan<String> GroupNames { get; }
   property Utf8CaptureRange Value { get; }
   method Boolean TryGetGroup(Int32 number, out Utf8CaptureRange group)
-  method Boolean TryGetGroup(String name, out Utf8CaptureRange group)
   method ReadOnlyMemory<Byte> GetGroupMemory(Int32 number)
   method ReadOnlyMemory<Byte> GetValueMemory()
   method ReadOnlySpan<Utf8CaptureRange> GetCaptures(Int32 number)

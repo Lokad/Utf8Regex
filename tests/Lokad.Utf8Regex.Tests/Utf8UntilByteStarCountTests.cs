@@ -95,9 +95,9 @@ public sealed class Utf8UntilByteStarCountTests
         Assert.Equal(5, regex.Count(input));
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal(4, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
-        Assert.Equal(4, ((match.TryGetGroup("line", out var range1) ? range1.EndOffsetInBytes : default) - (match.TryGetGroup("line", out var range2) ? range2.StartOffsetInBytes : default)));
+        Assert.Equal(4, ((match.TryGetGroup(1, out var range1) ? range1.EndOffsetInBytes : default) - (match.TryGetGroup(1, out var range2) ? range2.StartOffsetInBytes : default)));
         Assert.Equal(5, regex.Count(input));
-        Assert.Equal(4, ((match.TryGetGroup("line", out var range3) ? range3.EndOffsetInBytes : default) - (match.TryGetGroup("line", out var range4) ? range4.StartOffsetInBytes : default)));
+        Assert.Equal(4, ((match.TryGetGroup(1, out var range3) ? range3.EndOffsetInBytes : default) - (match.TryGetGroup(1, out var range4) ? range4.StartOffsetInBytes : default)));
     }
 
     [Theory]

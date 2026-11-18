@@ -65,7 +65,7 @@ public sealed class Utf8ProjectedClassScalarLoopTests
                 Assert.Equal((0, input.Length), (detailed.Value.StartOffsetInBytes, (detailed.Value.EndOffsetInBytes - detailed.Value.StartOffsetInBytes)));
                 if (capture)
                 {
-                    Assert.True(detailed.TryGetGroup("x", out var group));
+                    Assert.True(detailed.TryGetGroup(1, out var group));
                     Assert.True(group.Success);
                     Assert.Equal((shape == 2 ? 1 : 0, Encoding.UTF8.GetByteCount(body)), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
                     Assert.Equal(body, System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));

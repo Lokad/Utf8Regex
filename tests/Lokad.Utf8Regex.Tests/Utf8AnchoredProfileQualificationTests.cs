@@ -107,7 +107,7 @@ public sealed class Utf8AnchoredProfileQualificationTests
         Oracle(cell, RegexOptions.CultureInvariant, Subjects("aA09:\n", 4));
         PublicRange(cell, RegexOptions.CultureInvariant, "K١٢\n", 7, true);
         var match = Utf8MatchSequence.First(new Utf8Regex(cell, options: RegexOptions.CultureInvariant).CreateMatchCursor("K١٢\n"u8.ToArray()));
-        Assert.True(match.TryGetGroup("col", out var col)); Assert.True(match.TryGetGroup("row", out var row));
+        Assert.True(match.TryGetGroup(1, out var col)); Assert.True(match.TryGetGroup(2, out var row));
         Assert.Equal((0, 3), (col.StartOffsetInBytes, (col.EndOffsetInBytes - col.StartOffsetInBytes))); Assert.Equal((3, 4), (row.StartOffsetInBytes, (row.EndOffsetInBytes - row.StartOffsetInBytes)));
     }
 

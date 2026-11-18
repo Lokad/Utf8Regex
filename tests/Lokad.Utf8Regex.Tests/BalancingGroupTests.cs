@@ -72,7 +72,7 @@ public sealed class BalancingGroupTests
                     Assert.True(cursor.MoveNext(out var actual));
                     Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index)), actual.Value.StartOffsetInBytes);
                     Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, match.Index + match.Length)), actual.Value.EndOffsetInBytes);
-                    Assert.True(actual.TryGetGroup("open", out var stack));
+                    Assert.True(actual.TryGetGroup(1, out var stack));
                     Assert.Equal(match.Groups["open"].Success, stack.Success);
                 }
                 Assert.False(cursor.MoveNext(out _));
@@ -99,7 +99,8 @@ public sealed class BalancingGroupTests
         }
         var retained = Utf8MatchSequence.First(new Utf8Regex(alias).CreateMatchCursor("BEGIN😀END"u8.ToArray()));
         Assert.True(retained.Success);
-        Assert.False((retained.TryGetGroup("stack", out var range1) ? range1.Success : default));
+        Assert.True(retained.TryGetGroup(1, out var range1));
+        Assert.False(range1.Success);
     }
 
     [Theory]
@@ -130,7 +131,8 @@ public sealed class BalancingGroupTests
         Assert.Equal("BEGIN😀BEGINéEND tail END", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.Equal(2, regex.Count(input));
         Assert.Equal("BEGIN😀BEGINéEND tail END", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
-        Assert.False((retained.TryGetGroup("open", out var range2) ? range2.Success : default));
+        Assert.True(retained.TryGetGroup(1, out var range2));
+        Assert.False(range2.Success);
     }
 
     [Fact]

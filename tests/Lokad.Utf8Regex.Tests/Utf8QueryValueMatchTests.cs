@@ -131,7 +131,7 @@ public sealed class Utf8QueryValueMatchTests
     public void DetailedCapturesAliasesAndStrictTailsRemainOwned()
     {
         var regex = new Utf8Regex(Digits, options: Fold); var input = "~/ABC/d/12?t=tab"u8.ToArray();
-        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); Assert.True(retained.TryGetGroup("tab", out var tab));
+        var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input)); Assert.True(retained.TryGetGroup(regex.GroupNumberFromUtf8Name("tab"u8), out var tab));
         var value = regex.Match(input); var cursor = regex.EnumerateMatches(input); var alias = cursor;
         Assert.True(cursor.MoveNext()); Assert.True(alias.MoveNext());
         Assert.Equal(value, cursor.Current); Assert.Equal(value, alias.Current);

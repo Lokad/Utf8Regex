@@ -73,7 +73,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
         Assert.Equal(small.Inspection.AvailableOwnedSliceProgram?.Instructions.Length,
             huge.Inspection.AvailableOwnedSliceProgram?.Instructions.Length);
         Assert.Equal(2, huge.Count("😀"u8));
-        Assert.True(Utf8MatchSequence.First(huge.CreateMatchCursor("😀"u8.ToArray())).TryGetGroup("x", out var group));
+        Assert.True(Utf8MatchSequence.First(huge.CreateMatchCursor("😀"u8.ToArray())).TryGetGroup(1, out var group));
         Assert.True(group.Success);
         Assert.Equal(1, Utf8MatchSequence.First(huge.CreateMatchCursor("😀"u8.ToArray())).GetCaptures(huge.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.Equal((0, 0), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
@@ -95,7 +95,7 @@ public sealed class Utf8NonBacktrackingConstructionTests
             var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Owned graph missing.");
             Assert.InRange(program.Instructions.Length, 1, depth + 4);
             Assert.Equal(2, regex.Count("😀"u8));
-            Assert.True((Utf8MatchSequence.First(regex.CreateMatchCursor("😀"u8.ToArray())).TryGetGroup("x", out var range1) ? range1.Success : default));
+            Assert.True((Utf8MatchSequence.First(regex.CreateMatchCursor("😀"u8.ToArray())).TryGetGroup(1, out var range1) ? range1.Success : default));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
     }

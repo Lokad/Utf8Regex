@@ -299,7 +299,7 @@ public sealed class Utf8NativeLiteralInvocationTests
         var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options).Match("ab");
         Assert.Equal(Utf8ExecutionBackend.FallbackRegex, Prepared(regex).ExecutionBackend);
-        Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).TryGetGroup("x", out var actual));
+        Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).TryGetGroup(1, out var actual));
         Assert.Equal(oracle.Groups["x"].Value, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
         Assert.Equal(oracle.Groups["x"].Captures.Count, Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
     }

@@ -13,11 +13,11 @@ public sealed class Utf8ReversibleMatchStateTests
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("😀𐐨az"u8.ToArray()));
         Assert.True(match.Success);
         Assert.Equal((0, 10), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
-        Assert.True(match.TryGetGroup("x", out var x));
+        Assert.True(match.TryGetGroup(1, out var x));
         Assert.Equal(2, match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.Equal((0, 4), (match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[0].StartOffsetInBytes, (match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[0].EndOffsetInBytes - match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[0].StartOffsetInBytes)));
         Assert.Equal((4, 4), (match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[1].StartOffsetInBytes, (match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[1].EndOffsetInBytes - match.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8))[1].StartOffsetInBytes)));
-        Assert.True(match.TryGetGroup("y", out var y));
+        Assert.True(match.TryGetGroup(2, out var y));
         Assert.Equal(1, match.GetCaptures(regex.GroupNumberFromUtf8Name("y"u8)).Length);
         Assert.Equal((8, 1), (y.StartOffsetInBytes, (y.EndOffsetInBytes - y.StartOffsetInBytes)));
     }
@@ -39,7 +39,8 @@ public sealed class Utf8ReversibleMatchStateTests
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor("bd"u8.ToArray()));
         Assert.True(match.Success);
         Assert.Equal(2, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
-        Assert.False((match.TryGetGroup(1, out var range4) ? range4.Success : default));
+        Assert.True(match.TryGetGroup(1, out var range4));
+        Assert.False(range4.Success);
         Assert.Equal(0, match.GetCaptures(1).Length);
         Assert.Equal((0, 1), ((match.TryGetGroup(2, out var range5) ? range5.StartOffsetInBytes : default), ((match.TryGetGroup(2, out var range6) ? range6.EndOffsetInBytes : default) - (match.TryGetGroup(2, out var range7) ? range7.StartOffsetInBytes : default))));
     }

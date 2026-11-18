@@ -36,8 +36,6 @@ internal static class Utf8MatchSequence
             var end = byteOffset(group.Index + group.Length);
             Assert.Equal((start, end), (range.StartOffsetInBytes, range.EndOffsetInBytes));
             Assert.Equal(input.AsSpan(start, end - start).ToArray(), actual.GetGroupMemory(number).ToArray());
-            Assert.True(actual.TryGetGroup(actual.GroupNames[ordinal], out var named));
-            Assert.Equal(range, named);
             var history = actual.GetCaptures(number);
             Assert.Equal(group.Captures.Count, history.Length);
             for (var index = 0; index < history.Length; index++)
@@ -64,7 +62,6 @@ internal static class Utf8MatchSequence
         Assert.Equal(expected.GetValueMemory().ToArray(), actual.GetValueMemory().ToArray());
         if (!expected.Success) return;
         Assert.Equal(expected.GroupNumbers.ToArray(), actual.GroupNumbers.ToArray());
-        Assert.Equal(expected.GroupNames.ToArray(), actual.GroupNames.ToArray());
         foreach (var number in expected.GroupNumbers)
         {
             Assert.True(expected.TryGetGroup(number, out var wanted));

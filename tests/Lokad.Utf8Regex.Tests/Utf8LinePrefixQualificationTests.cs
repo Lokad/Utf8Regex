@@ -48,7 +48,7 @@ public sealed class Utf8LinePrefixQualificationTests
     {
         foreach (var text in new[] { "///\n", "///\nbody", " \n[| ///\nbody" }) PublicRange(Trimmed, RegexOptions.CultureInvariant, text, 0, text.Length, false);
         PublicRange(Trimmed, RegexOptions.CultureInvariant, " /// 😀", 0, 11, false);
-        Assert.True(Utf8MatchSequence.First(new Utf8Regex(Trimmed).CreateMatchCursor("///\n😀"u8.ToArray())).TryGetGroup("doc", out var group));
+        Assert.True(Utf8MatchSequence.First(new Utf8Regex(Trimmed).CreateMatchCursor("///\n😀"u8.ToArray())).TryGetGroup(2, out var group));
         Assert.Equal((4, 8), (group.StartOffsetInBytes, group.EndOffsetInBytes));
     }    [Fact]
     public void TrimmedAliasesAndLexicalAnchorsPreserveNativeAsciiEndpoints()
@@ -73,7 +73,7 @@ public sealed class Utf8LinePrefixQualificationTests
         const string alias = @"^\s*(?:\x2f/)(?<title>/\x23[^\n]*)$";
         foreach (var options in new[] { RegexOptions.Multiline, RegexOptions.Multiline | RegexOptions.Compiled })
             Assert.Equal(2, new Utf8Regex(alias, options: options).Count(input));
-        Assert.True(Utf8MatchSequence.First(new Utf8Regex(alias, options: RegexOptions.Multiline).CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray())).TryGetGroup("title", out var capture));
+        Assert.True(Utf8MatchSequence.First(new Utf8Regex(alias, options: RegexOptions.Multiline).CreateMatchCursor(((global::System.ReadOnlySpan<byte>)input).ToArray())).TryGetGroup(1, out var capture));
         Assert.Equal((5, 6), (capture.StartOffsetInBytes, (capture.EndOffsetInBytes - capture.StartOffsetInBytes)));
         Assert.Equal(1, new Utf8Regex(@"^a\na.*$", options: RegexOptions.Multiline).Count("a\na\na\n"u8));
     }

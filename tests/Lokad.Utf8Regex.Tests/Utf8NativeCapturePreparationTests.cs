@@ -58,7 +58,8 @@ public sealed class Utf8NativeCapturePreparationTests
         Assert.Equal(2, regex.Count(input));
         var first = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.Equal("😀token000xxxxxxxx", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromUtf8Name("g0"u8)).Span));
-        Assert.False((first.TryGetGroup("g31", out var range1) ? range1.Success : default));
+        Assert.True(first.TryGetGroup(32, out var range1));
+        Assert.False(range1.Success);
         Assert.Equal("<😀token000xxxxxxxx> <>", Encoding.UTF8.GetString(regex.Replace(input, "<${g0}>")));
         Assert.Equal("😀token000xxxxxxxx", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromUtf8Name("g0"u8)).Span));
     }
@@ -103,8 +104,10 @@ public sealed class Utf8NativeCapturePreparationTests
         var input = Encoding.UTF8.GetBytes(unicode ? "😀 中" : "cat horse");
         var hit = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.True(hit.Success);
-        Assert.False((hit.TryGetGroup("gone", out var range2) ? range2.Success : default));
-        Assert.False((hit.TryGetGroup("alsoGone", out var range3) ? range3.Success : default));
+        Assert.True(hit.TryGetGroup(1, out var range2));
+        Assert.False(range2.Success);
+        Assert.True(hit.TryGetGroup(2, out var range3));
+        Assert.False(range3.Success);
         Assert.Equal(2, regex.Count(input));
     }
 
@@ -129,7 +132,8 @@ public sealed class Utf8NativeCapturePreparationTests
         Assert.Equal(2, regex.Count("cat horse"u8));
         var first = Utf8MatchSequence.First(regex.CreateMatchCursor("cat horse"u8.ToArray()));
         Assert.Equal("cat", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromUtf8Name("a"u8)).Span));
-        Assert.False((first.TryGetGroup("b", out var range4) ? range4.Success : default));
+        Assert.True(first.TryGetGroup(2, out var range4));
+        Assert.False(range4.Success);
         Assert.Equal("<cat|> <|horse>", Encoding.UTF8.GetString(regex.Replace("cat horse"u8, "<${a}|${b}>")));
         Assert.Equal("cat", System.Text.Encoding.UTF8.GetString(first.GetGroupMemory(regex.GroupNumberFromUtf8Name("a"u8)).Span));
     }

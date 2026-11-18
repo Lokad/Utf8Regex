@@ -30,7 +30,9 @@ public sealed class Utf8FinalFamilyQualificationTests
     {
         var alias = Email.Replace("^", @"\A").Replace("@", @"(?<at>\x40)").Replace("[0-9]", @"\p{Nd}").Replace("$", @"\Z");
         PublicRange(alias, RegexOptions.CultureInvariant, "a@[١.٢.٣.٤]", 0, 15, true);
-        Assert.True(Utf8MatchSequence.First(new Utf8Regex(alias).CreateMatchCursor("a@a.ab"u8.ToArray())).TryGetGroup("at", out var group));
+        using var regex = new Utf8Regex(alias);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor("a@a.ab"u8.ToArray()));
+        Assert.True(match.TryGetGroup(regex.GroupNumberFromUtf8Name("at"u8), out var group));
         Assert.Equal((1, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes)));
     }
 

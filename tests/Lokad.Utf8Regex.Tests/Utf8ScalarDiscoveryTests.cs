@@ -37,11 +37,16 @@ public sealed class Utf8ScalarDiscoveryTests
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 65536L);
         before = GC.GetAllocatedBytesForCurrentThread();
-        Assert.Equal("😀"u8.ToArray(), match.GetValueMemory().ToArray());
-        Assert.Equal("😀"u8.ToArray(), match.GetGroupMemory(0).ToArray());
-        var capture = Assert.Single(match.GetCaptures(0).ToArray());
+        var value = match.GetValueMemory().Span;
+        var group = match.GetGroupMemory(0).Span;
+        var history = match.GetCaptures(0);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.True(value.SequenceEqual("😀"u8));
+        Assert.True(group.SequenceEqual("😀"u8));
+        Assert.Equal(1, history.Length);
+        var capture = history[0];
         Assert.Equal((0, 4), (capture.StartOffsetInBytes, capture.EndOffsetInBytes));
-        Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0L, 4096L);
+        Assert.InRange(allocated, 0L, 4096L);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
@@ -80,7 +85,7 @@ public sealed class Utf8ScalarDiscoveryTests
     {
         Assert.True(match.Success);
         Assert.Equal(input, match.GetValueMemory().ToArray());
-        Assert.True(match.TryGetGroup("word", out var word));
+        Assert.True(match.TryGetGroup(1, out var word));
         Assert.Equal((0, input.Length), (word.StartOffsetInBytes, word.EndOffsetInBytes));
         var captures = match.GetCaptures(scalarNumber);
         Assert.Equal(4, captures.Length);

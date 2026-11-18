@@ -160,7 +160,7 @@ public sealed class Utf8RegexConstructionTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
         Assert.Equal(1, regex.Count("import \"😀\nx\"tail"u8));
-        Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("import \"😀\nx\"tail"u8.ToArray())).TryGetGroup("path", out var path));
+        Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("import \"😀\nx\"tail"u8.ToArray())).TryGetGroup(regex.GroupNumberFromUtf8Name("path"u8), out var path));
         Assert.Equal((8, 6), (path.StartOffsetInBytes, (path.EndOffsetInBytes - path.StartOffsetInBytes)));
     }
 
@@ -792,7 +792,8 @@ public sealed class Utf8RegexConstructionTests
         var match = Utf8MatchSequence.First(compiled.CreateMatchCursor(input));
         Assert.True(match.Success);
         Assert.Equal((0, input.Length), (match.Value.StartOffsetInBytes, (match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes)));
-        Assert.False((match.TryGetGroup("open", out var range1) ? range1.Success : default));
+        Assert.True(match.TryGetGroup(1, out var range1));
+        Assert.False(range1.Success);
         Assert.Equal(1, compiled.Count(input));
         Assert.True(compiled.Inspection.PreparedRegex.ScalarProgram is not null);
         Assert.True(ReferenceEquals(compiled.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, compiled.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));

@@ -61,7 +61,7 @@ public sealed class Utf8BoundedDotCandidateTests
             ResourcePolicy = Funded
         });
         var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-        Assert.True(match.TryGetGroup("gap", out _));
+        Assert.True(match.TryGetGroup(1, out _));
         Assert.Equal("é😀", Encoding.UTF8.GetString(match.GetGroupMemory(regex.GroupNumberFromUtf8Name("gap"u8)).Span));
         Assert.Equal(1, regex.Count(input));
     }

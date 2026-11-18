@@ -36,10 +36,12 @@ public sealed class Utf8SliceBalanceTests
             Assert.True(retained.Success);
             Assert.Equal(1, retained.Value.StartOffsetInBytes);
             Assert.Equal(6, (retained.Value.EndOffsetInBytes - retained.Value.StartOffsetInBytes));
-            Assert.False((retained.TryGetGroup("p", out var range1) ? range1.Success : default));
+            Assert.True(retained.TryGetGroup(1, out var range1));
+            Assert.False(range1.Success);
             Assert.Equal(2, regex.Count("z😀é😀é"u8, cancellation.Token));
             Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
-            Assert.False((retained.TryGetGroup("p", out var range2) ? range2.Success : default));
+            Assert.True(retained.TryGetGroup(1, out var range2));
+            Assert.False(range2.Success);
         }
     }
 
@@ -195,8 +197,10 @@ public sealed class Utf8SliceBalanceTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("xyz")));
         Assert.True(detailed.Success);
-        Assert.False((detailed.TryGetGroup(1, out var range3) ? range3.Success : default));
-        Assert.False((detailed.TryGetGroup(2, out var range4) ? range4.Success : default));
+        Assert.True(detailed.TryGetGroup(1, out var range3));
+        Assert.False(range3.Success);
+        Assert.True(detailed.TryGetGroup(2, out var range4));
+        Assert.False(range4.Success);
         Assert.Equal("y", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(3).Span));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }

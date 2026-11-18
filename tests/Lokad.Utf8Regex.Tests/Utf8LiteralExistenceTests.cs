@@ -100,7 +100,7 @@ public sealed class Utf8LiteralExistenceTests
         Assert.True(entered);
         if (expire) Assert.IsType<RegexMatchTimeoutException>(failure);
         else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
-        Assert.Equal("ss", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(retained.GroupNumbers[retained.GroupNames.IndexOf("x")]).Span));
+        Assert.Equal("ss", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
         Assert.Equal(canceled.Token,

@@ -77,10 +77,11 @@ public sealed class Utf8ComplementaryClassTests
 
             var optional = new Utf8Regex("(?<g>" + emptyClass + "){0,2147483646}", options: options);
             Assert.Equal(4, optional.Count("a😀b"u8));
-            Assert.False((Utf8MatchSequence.First(optional.CreateMatchCursor("a😀b"u8.ToArray())).TryGetGroup("g", out var range1) ? range1.Success : default));
+            Assert.True(Utf8MatchSequence.First(optional.CreateMatchCursor("a😀b"u8.ToArray())).TryGetGroup(1, out var range1));
+            Assert.False(range1.Success);
 
             var alternative = new Utf8Regex("(?<g>" + emptyClass + "){1000000000}|(?<g>😀)", options: options);
-            Assert.True(Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).TryGetGroup("g", out var group));
+            Assert.True(Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).TryGetGroup(1, out var group));
             Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).GetGroupMemory(alternative.GroupNumberFromUtf8Name("g"u8)).Span));
             Assert.Equal((1, 4, 1), (group.StartOffsetInBytes, (group.EndOffsetInBytes - group.StartOffsetInBytes), Utf8MatchSequence.First(alternative.CreateMatchCursor("a😀b"u8.ToArray())).GetCaptures(alternative.GroupNumberFromUtf8Name("g"u8)).Length));
         }

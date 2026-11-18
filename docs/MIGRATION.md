@@ -181,6 +181,13 @@ longer operations of this byte-key surface. Recompile consumers.
 Named UTF-8 lookup currently scans the stored keys linearly. Resolve names once
 before repeated matching; metadata lookup cost can grow with the number of names.
 
+Core `Utf8RangeMatch` exposes group numbers, byte ranges and capture histories.
+Replace `match.TryGetGroup(name, ...)` with `match.TryGetGroup(number, ...)` after
+resolving the number on the open regex. For the former `match.GroupNames`, copy
+the names you need from the regex before disposal. Captures and group numbers
+remain usable after the cursor or regex closes. Retained result reservations cover
+these arrays and the receipt. Capture-name storage is part of program admission.
+
 `MatchDetailed` and `MatchDetailedFromUtf16Offset` are removed, along with
 `Utf8MatchContext`, `Utf8GroupContext` and `Utf8CaptureContext`. Use the memory cursor for capture
 history, with a scalar-aligned byte start:

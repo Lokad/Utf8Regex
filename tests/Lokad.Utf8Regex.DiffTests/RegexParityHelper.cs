@@ -145,7 +145,6 @@ internal sealed class RegexParityContext
         if (!expected.Success) return;
         var numbers = oracle.GetGroupNumbers();
         Assert.Equal(numbers, actual.GroupNumbers.ToArray());
-        Assert.Equal(oracle.GetGroupNames(), actual.GroupNames.ToArray());
 
         foreach (var number in numbers)
         {
@@ -154,8 +153,6 @@ internal sealed class RegexParityContext
             Assert.Equal(expectedGroup.Success, group.Success);
             AssertRange(expectedGroup, group);
             Assert.Equal(Encoding.UTF8.GetBytes(expectedGroup.Value), actual.GetGroupMemory(number).ToArray());
-            Assert.True(actual.TryGetGroup(oracle.GroupNameFromNumber(number), out var named));
-            Assert.Equal(group, named);
             var captures = actual.GetCaptures(number);
             Assert.Equal(expectedGroup.Captures.Count, captures.Length);
             for (var index = 0; index < captures.Length; index++)
@@ -165,7 +162,6 @@ internal sealed class RegexParityContext
             }
         }
         Assert.False(actual.TryGetGroup(numbers[^1] + 1, out _));
-        Assert.False(actual.TryGetGroup("missing-group-name", out _));
         Assert.Throws<ArgumentOutOfRangeException>(() => actual.GetCaptures(numbers[^1] + 1).Length);
     }
 

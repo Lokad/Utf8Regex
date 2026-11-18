@@ -41,10 +41,7 @@ public sealed class Utf8CaptureCursorShapingTests
             Assert.Equal(1, actual.GroupNumbers.Length);
             Assert.True(actual.TryGetGroup(0, out var tryGroup));
             Assert.Equal(actual.Value, tryGroup);
-            Assert.True(actual.TryGetGroup("0", out var namedGroup));
-            Assert.Equal(tryGroup, namedGroup);
             Assert.False(actual.TryGetGroup(1, out _));
-            Assert.False(actual.TryGetGroup("missing", out _));
         }
         Assert.True(utf8.Inspection.PreparedRegex.ScalarProgram is not null);
     }
