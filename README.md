@@ -130,8 +130,8 @@ cover ordinary patterns and calls with finite limits, deadlines and cancellation
 Ordinary and compiled rows use matching .NET compilation flags. All tables rank
 `Utf8Regex / .NET predecoded` ratios from highest to lowest; lower is better.
 
-The frozen `common/ip-miss` row measures a prefix hit. The current fixture uses
-a subject that misses and awaits a selective measurement.
+The `common/ip-miss` row was refreshed separately on `edf04445` with the
+corrected miss input.
 
 [refresh-benchmarks.ps1](tools/refresh-benchmarks.ps1) runs the full cycle or selected
 phases; [bench.ps1](tools/bench.ps1) supports focused single-case iterations.
@@ -195,7 +195,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/uri-miss` | `IsMatch` | 0.831 us | 0.180 us | 0.201 us | 4.62x |
 | `industry/rust-sherlock-ing-count` | `Count` | 48,064.250 us | 11,613.886 us | 12,368.586 us | 4.14x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.304 us | 0.078 us | 0.087 us | 3.89x |
-| `common/ip-miss` | `IsMatch` | 0.695 us | 0.184 us | 0.203 us | 3.78x |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.287 us | 0.081 us | 0.095 us | 3.57x |
 | `common/date-match` | `IsMatch` | 0.363 us | 0.102 us | 0.130 us | 3.55x |
 | `common/matches-boundary` | `Count` | 533.147 us | 158.590 us | 161.561 us | 3.36x |
@@ -207,6 +206,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/date-miss` | `IsMatch` | 1.314 us | 0.548 us | 0.580 us | 2.40x |
 | `industry/mariomka-uri-count` | `Count` | 4,365.665 us | 1,840.385 us | 10,097.300 us | 2.37x |
 | `industry/rust-sherlock-nonnewline-count` | `Count` | 2,040.674 us | 942.910 us | 1,227.546 us | 2.16x |
+| `common/ip-miss` | `IsMatch` | 1.092 us | 0.718 us | 0.721 us | 1.52x |
 | `industry/mariomka-email-count` | `Count` | 672.148 us | 485.808 us | 8,740.525 us | 1.38x |
 | `common/match-word` | `Match` | 0.155 us | 0.167 us | 1.121 us | 0.93x |
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 131.375 us | 256.407 us | 490.794 us | 0.51x |
@@ -274,7 +274,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | Case | Operation | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---|---:|---:|---:|---:|
 | `common/ip-match` | `IsMatch` | 1.010 us | 0.046 us | 0.067 us | 21.83x |
-| `common/ip-miss` | `IsMatch` | 0.692 us | 0.047 us | 0.066 us | 14.63x |
 | `common/uri-miss` | `IsMatch` | 0.832 us | 0.065 us | 0.085 us | 12.72x |
 | `common/email-match` | `IsMatch` | 0.857 us | 0.078 us | 0.104 us | 11.03x |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.542 us | 0.053 us | 0.075 us | 10.32x |
@@ -286,6 +285,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/date-match` | `IsMatch` | 0.360 us | 0.043 us | 0.072 us | 8.41x |
 | `industry/boostdocs-ftp-line-match` | `IsMatch` | 0.349 us | 0.047 us | 0.084 us | 7.43x |
 | `common/date-miss` | `IsMatch` | 1.313 us | 0.195 us | 0.232 us | 6.73x |
+| `common/ip-miss` | `IsMatch` | 1.084 us | 0.171 us | 0.193 us | 6.34x |
 | `common/backtracking` | `IsMatch` | 0.247 us | 0.043 us | 0.072 us | 5.76x |
 | `common/matches-boundary` | `Count` | 532.748 us | 101.823 us | 104.027 us | 5.23x |
 | `industry/mariomka-uri-count` | `Count` | 4,395.800 us | 1,067.449 us | 8,175.600 us | 4.12x |

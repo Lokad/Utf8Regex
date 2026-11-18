@@ -3,7 +3,7 @@
   "Profile": "Core",
   "Evidence": {
     "Snapshot": "README.Benchmarks.json",
-    "SnapshotSha256": "03A4DBBAFA14E6B9161A06DEF1F09629C9F461E4DDA553BABE37A2DBCAC939CE"
+    "SnapshotSha256": "780F5035F1379C740634D4FF6A09999768CD9D0081FF11E05E4AD93C5EB0FD10"
   },
   "Sources": {
     "416375E2D2DE750D4CEE76ED72241FE5229F30EE2D04EC45F0EEF9262A0E1EF0": {
@@ -12,6 +12,19 @@
       "Pcre2Assembly": "0.5.0-dev.106\u002B654d571640f582a877df5801d08da3a5aafcfe4b sha256=9E64E15DF518A36752B0C5B854ECAE6D5D2523C0F76C7863B18D7D5ACD83DB94",
       "PythonReAssembly": "0.5.0-dev.106\u002B654d571640f582a877df5801d08da3a5aafcfe4b sha256=5D657F47F9B88C525404382ED49E8F6FEF3EED8B90B8FD5627DFAE178AAFBE69",
       "SourceCommit": "654d571640f5",
+      "TrackedDirty": false,
+      "HasUntrackedFiles": false,
+      "Runtime": ".NET 11.0.0",
+      "OperatingSystem": "Ubuntu 24.04.4 LTS",
+      "Processor": "X64",
+      "TieredPgo": "runtime-default"
+    },
+    "D6C46658879BE73F2BBE533C42F91F6874254E551CAC3FA4591CA9DDBA4D56F2": {
+      "BenchmarkAssembly": "1.0.0\u002Bedf044455e629b1384b82607415ce27258ef6b5d sha256=CD72B1DCF98282E27317820149F7F32B475C6BBED2906A5E0AD3B7C9C21F7F44",
+      "CoreAssembly": "0.5.0-dev.107\u002Bedf044455e629b1384b82607415ce27258ef6b5d sha256=4B5FB2A5680E79CD82041C1A5A2980853E122FADE699353D7B08A550CF86D7D0",
+      "Pcre2Assembly": "0.5.0-dev.107\u002Bedf044455e629b1384b82607415ce27258ef6b5d sha256=0E3C1D46288932E83DA3FF8539A6DB6F9F3FB708DF278C826E6BA0139C605858",
+      "PythonReAssembly": "0.5.0-dev.107\u002Bedf044455e629b1384b82607415ce27258ef6b5d sha256=78793AACBC2B0E197FED0A8997CC97867EF8CB92C54B72A6B0A57F8EFABEDDF7",
+      "SourceCommit": "edf044455e62",
       "TrackedDirty": false,
       "HasUntrackedFiles": false,
       "Runtime": ".NET 11.0.0",
@@ -168,13 +181,13 @@
       },
       "common/ip-miss": {
         "Operation": "IsMatch",
-        "Source": "416375E2D2DE750D4CEE76ED72241FE5229F30EE2D04EC45F0EEF9262A0E1EF0",
-        "ManagedUs": 0.6950987719249684,
-        "ReferenceUs": 0.1840619993532477,
-        "DecodeUs": 0.203127731201243,
-        "Ratio": 3.7764382347653966,
+        "Source": "D6C46658879BE73F2BBE533C42F91F6874254E551CAC3FA4591CA9DDBA4D56F2",
+        "ManagedUs": 1.0917484298573124,
+        "ReferenceUs": 0.7182684808042291,
+        "DecodeUs": 0.7205430864053959,
+        "Ratio": 1.5199726272756757,
         "Status": "Gap",
-        "ManagedBytes": 528,
+        "ManagedBytes": 0,
         "ReferenceBytes": 0,
         "DecodeBytes": 56
       },
@@ -830,13 +843,13 @@
       },
       "common/ip-miss": {
         "Operation": "IsMatch",
-        "Source": "416375E2D2DE750D4CEE76ED72241FE5229F30EE2D04EC45F0EEF9262A0E1EF0",
-        "ManagedUs": 0.6917072875351963,
-        "ReferenceUs": 0.04729342701355004,
-        "DecodeUs": 0.06611132787331224,
-        "Ratio": 14.625865182851207,
+        "Source": "D6C46658879BE73F2BBE533C42F91F6874254E551CAC3FA4591CA9DDBA4D56F2",
+        "ManagedUs": 1.0837819912046716,
+        "ReferenceUs": 0.17107527402456937,
+        "DecodeUs": 0.193364653756541,
+        "Ratio": 6.335117669015229,
         "Status": "Gap",
-        "ManagedBytes": 528,
+        "ManagedBytes": 0,
         "ReferenceBytes": 0,
         "DecodeBytes": 56
       },
