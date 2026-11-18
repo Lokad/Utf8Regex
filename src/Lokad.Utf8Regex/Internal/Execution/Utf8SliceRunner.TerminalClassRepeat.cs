@@ -351,6 +351,25 @@ internal static partial class Utf8SliceRunner
               atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 })); skipped++) tail++;
         if (tail == instructions.Length) return false;
         var suffix = instructions[tail];
+        if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy && atom.Kind == Utf8SliceInstructionKind.Dot &&
+            repeat.RepeatMinimum == 0 && repeat.RepeatMaximum == long.MaxValue && requiredEnd is null &&
+            suffix is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && (uint)suffix.A < 128 &&
+            (uint)start <= (uint)input.Length &&
+            (start == input.Length || (input[start] & 0xC0) != 0x80))
+        {
+            var afterLiteral = tail + 1;
+            for (var skipped = 0; skipped < 32 && afterLiteral < instructions.Length &&
+                instructions[afterLiteral].Kind == Utf8SliceInstructionKind.CaptureEnd; skipped++)
+                afterLiteral++;
+            if (afterLiteral == instructions.Length - 1 &&
+                instructions[afterLiteral].Kind == Utf8SliceInstructionKind.Accept)
+            {
+                // The first reachable literal is the shortest successful end
+                // of this repeat. Leave the literal and capture effects to the VM.
+                outcome = FindLazyDotLiteral(input, start, (byte)suffix.A, atom.A != 0, ref invocation);
+                return true;
+            }
+        }
         // A lazy repeat can skip shorter endpoints only when the following
         // required literal excludes every scalar consumed by its atom.
         if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy && suffix.Kind != Utf8SliceInstructionKind.Literal)
@@ -593,6 +612,30 @@ internal static partial class Utf8SliceRunner
         var finalRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
         outcome = new(finalRepeat.EndIndex >= 0, finalRepeat.EndIndex, finalRepeat.Breach, null, null);
         return true;
+    }
+
+    private static Utf8SliceMatchOutcome FindLazyDotLiteral(ReadOnlySpan<byte> input, int position,
+        byte literal, bool singleline, ref Utf8SliceInvocation invocation)
+    {
+        while (position < input.Length)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None)
+                return new(false, -1, breach, null, null);
+            var length = Math.Min(2048, input.Length - position);
+            var block = input.Slice(position, length);
+            var relative = singleline ? block.IndexOf(literal) : block.IndexOfAny(literal, (byte)'\n');
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (relative >= 0)
+            {
+                // ASCII endpoints cannot land inside a valid UTF-8 scalar.
+                // LF itself is a valid endpoint if the literal consumes it.
+                var found = block[relative] == literal;
+                return new(found, found ? position + relative : -1, Utf8ExecutionLimitKind.None, null, null);
+            }
+            position += length;
+        }
+        return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
     }
 
     private static bool TryRunBoundedDotTerminalTail(Utf8SliceProgram program, int repeatIndex, int tail,

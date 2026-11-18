@@ -16,6 +16,26 @@ public sealed class Utf8DotTailRepeatTests
     };
 
     [Theory]
+    [InlineData(@"(?<head>.*?),", 2047, "😀,é,,\nq,")]
+    [InlineData(@"(?<head>.*?),", 0, "😀é\nq,")]
+    [InlineData(@"(?s:(?<head>.*?),)", 0, "😀é\nq,")]
+    [InlineData(@"(?<head>.*?)\n", 2048, "😀é\n\n")]
+    [InlineData(@"(?<head>.*?),X", 0, "😀no,éyes,X")]
+    [InlineData(@"(?<head>.+?),", 0, ",😀,é")]
+    public void LazyDotKeepsShortestReachableEndAndCapture(string pattern, int padding, string tail)
+    {
+        var text = new string('x', padding) + tail;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy { ResourcePolicy = Policy() });
+        var expected = oracle.Match(text);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
+        Assert.Equal(oracle.Count(text), regex.Count(input, token.Token));
+    }
+
+    [Theory]
     [InlineData(RegexOptions.None)] [InlineData(RegexOptions.Compiled)]
     public void CompleteGreedySinglelineEndNeedsNoRewindDepth(RegexOptions mode)
     {
