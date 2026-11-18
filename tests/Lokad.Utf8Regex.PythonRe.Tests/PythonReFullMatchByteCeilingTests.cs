@@ -97,6 +97,7 @@ public sealed class PythonReFullMatchByteCeilingTests
     [Fact]
     public void EagerCompileUsesItsConstructionAllowanceBeforeTinyInvocation()
     {
+        const ulong workingLimit = 1024;
         var regex = Utf8PythonRegex.Compile(string.Concat(Enumerable.Repeat("(a?)", 256)), options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
@@ -104,7 +105,9 @@ public sealed class PythonReFullMatchByteCeilingTests
             {
                 MaxWorkSteps = 128,
                 MaxDepth = 16,
-                MaxWorkingBytes = 4096,
+                // The capture storage alone exceeds this limit, even if
+                // empty optional atoms need no backtracking frames.
+                MaxWorkingBytes = workingLimit,
                 MaxResultBytes = 1024
             },
             ConstructionPolicy = new()
@@ -119,7 +122,7 @@ public sealed class PythonReFullMatchByteCeilingTests
         Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match([], mode: Utf8PythonMatchMode.FullMatch));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, failure.ResourceKind);
-        Assert.Equal(4096ul, failure.Limit);
+        Assert.Equal(workingLimit, failure.Limit);
     }
 
     [Theory]
