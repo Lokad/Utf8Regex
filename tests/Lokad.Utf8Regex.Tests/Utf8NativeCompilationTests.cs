@@ -18,7 +18,29 @@ public sealed class Utf8NativeCompilationTests
         Array.Fill(source, (byte)0xff);
         Assert.Equal(pattern, native.Pattern);
         Assert.Equal(Enumerable.Range(0, text.CaptureGroupCount + 1).Select(text.GroupNumberFromCaptureSlot).ToArray(), Enumerable.Range(0, native.CaptureGroupCount + 1).Select(native.GroupNumberFromCaptureSlot).ToArray());
-        Assert.Equal(text.GetGroupNames(), native.GetGroupNames());
+        var copiedNames4 = new string[text.CaptureGroupCount + 1];
+        for (var captureSlot4 = 0; captureSlot4 < copiedNames4.Length; captureSlot4++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                text.TryCopyGroupNameUtf8(captureSlot4, [], out var nameLength4));
+            var nameBytes4 = new byte[nameLength4];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                text.TryCopyGroupNameUtf8(captureSlot4, nameBytes4, out var written4));
+            Assert.Equal(nameLength4, written4);
+            copiedNames4[captureSlot4] = System.Text.Encoding.UTF8.GetString(nameBytes4);
+        }
+        var copiedNames5 = new string[native.CaptureGroupCount + 1];
+        for (var captureSlot5 = 0; captureSlot5 < copiedNames5.Length; captureSlot5++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                native.TryCopyGroupNameUtf8(captureSlot5, [], out var nameLength5));
+            var nameBytes5 = new byte[nameLength5];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                native.TryCopyGroupNameUtf8(captureSlot5, nameBytes5, out var written5));
+            Assert.Equal(nameLength5, written5);
+            copiedNames5[captureSlot5] = System.Text.Encoding.UTF8.GetString(nameBytes5);
+        }
+        Assert.Equal(copiedNames4, copiedNames5);
         string[] subjects = ["", "a", "abc", "aaaa", "ababc", "é😀😀b", "é😀é😀", "éê😀🙏",
             "xé😀aabc", "a\0é\u0301😀", "é \v \u00a0 😀😀", "\nabc\n", "KkKéÉ", "🙏😀x"];
         foreach (var subject in subjects)
@@ -73,7 +95,9 @@ public sealed class Utf8NativeCompilationTests
     }
 
     [Theory]
-    [InlineData(2)] [InlineData(3)] [InlineData(4)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
     public void ContinuationByteStartsReject(int start)
         => Assert.Throws<ArgumentOutOfRangeException>(() => Utf8Regex.Compile("."u8).CreateMatchCursor("a😀b"u8.ToArray(), start));
 
@@ -105,7 +129,10 @@ public sealed class Utf8NativeCompilationTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
     public void NativeCompilationEnforcesEachConstructionLimit(int limit)
     {
         var policy = limit switch
@@ -115,7 +142,7 @@ public sealed class Utf8NativeCompilationTests
             2 => new Utf8ConstructionPolicy { MaxInstructionCapacity = 1 },
             _ => new Utf8ConstructionPolicy { MaxBytes = 1 },
         };
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8Regex.Compile("(?<x>😀){2,4}"u8, options:             RegexOptions.None, policy: new Utf8RegexPolicy
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8Regex.Compile("(?<x>😀){2,4}"u8, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = default,
@@ -138,7 +165,7 @@ public sealed class Utf8NativeCompilationTests
         using var construction = new CancellationTokenSource();
         var programs = new Account();
         programs.AfterGrant = construction.Cancel;
-        var error = Assert.Throws<OperationCanceledException>(() => Utf8Regex.Compile("(?<x>😀)+"u8, options:             RegexOptions.None, policy: new Utf8RegexPolicy
+        var error = Assert.Throws<OperationCanceledException>(() => Utf8Regex.Compile("(?<x>😀)+"u8, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = default,
@@ -174,7 +201,7 @@ public sealed class Utf8NativeCompilationTests
     {
         var calls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ++calls < 3 ? 0 : 100);
-        var failure = Assert.Throws<RegexMatchTimeoutException>(() => Utf8Regex.Compile("(?<x>😀)+"u8, options:             RegexOptions.None, policy: new Utf8RegexPolicy
+        var failure = Assert.Throws<RegexMatchTimeoutException>(() => Utf8Regex.Compile("(?<x>😀)+"u8, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = default,

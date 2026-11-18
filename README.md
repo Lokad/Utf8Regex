@@ -29,6 +29,8 @@ from a scalar-aligned byte position while retaining full context for assertions.
 The byte-start `Match` can fill caller-owned `Utf8CaptureRange` slots; slot zero
 is the whole match and `GroupNumberFromCaptureSlot` resolves sparse group numbers.
 Use the persistent memory cursor when capture history is required.
+Copy a slot's name into caller storage with `TryCopyGroupNameUtf8`; metadata
+collections and text decoding belong to the host.
 
 ## Choose a profile
 

@@ -67,7 +67,8 @@ public sealed class PythonReScalarCompilerContinuationTests
         }
         Assert.True(result.Success);
         Assert.Equal((0, 4), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
-        Assert.Contains("x", regex.GetGroupNames());
+        Assert.True(regex.TryGetGroupNumber("x"u8, out var groupNumber));
+        Assert.Equal(scoped ? 1 : depth + 1, groupNumber);
         Assert.Equal("\U0001f600", System.Text.Encoding.UTF8.GetString((result.Groups[scoped ? 1 : depth + 1].Success ? result.GetGroupMemory(result.Groups[scoped ? 1 : depth + 1].Number).Span : ReadOnlySpan<byte>.Empty)));
     }
 }

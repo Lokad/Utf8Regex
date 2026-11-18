@@ -34,7 +34,29 @@ public sealed class PythonReNativePatternTests
         Array.Fill(bytes, (byte)0xff);
         Assert.Equal(pattern, native.Pattern);
         Assert.Equal(text.EffectiveOptions, native.EffectiveOptions);
-        Assert.Equal(text.GetGroupNames(), native.GetGroupNames());
+        var copiedNames37 = new string[text.CaptureGroupCount + 1];
+        for (var captureSlot37 = 0; captureSlot37 < copiedNames37.Length; captureSlot37++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                text.TryCopyGroupNameUtf8(captureSlot37, [], out var nameLength37));
+            var nameBytes37 = new byte[nameLength37];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                text.TryCopyGroupNameUtf8(captureSlot37, nameBytes37, out var written37));
+            Assert.Equal(nameLength37, written37);
+            copiedNames37[captureSlot37] = System.Text.Encoding.UTF8.GetString(nameBytes37);
+        }
+        var copiedNames38 = new string[native.CaptureGroupCount + 1];
+        for (var captureSlot38 = 0; captureSlot38 < copiedNames38.Length; captureSlot38++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                native.TryCopyGroupNameUtf8(captureSlot38, [], out var nameLength38));
+            var nameBytes38 = new byte[nameLength38];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                native.TryCopyGroupNameUtf8(captureSlot38, nameBytes38, out var written38));
+            Assert.Equal(nameLength38, written38);
+            copiedNames38[captureSlot38] = System.Text.Encoding.UTF8.GetString(nameBytes38);
+        }
+        Assert.Equal(copiedNames37, copiedNames38);
         var input = Encoding.UTF8.GetBytes(subject);
         Assert.Equal(text.Count(input), native.Count(input));
         Assert.Equal(text.IsMatch(input), native.IsMatch(input));
@@ -92,7 +114,18 @@ public sealed class PythonReNativePatternTests
         {
             using var construction = Utf8ConstructionScope.Enter();
             using var regex = source is string text ? new Utf8PythonRegex(text) : new Utf8PythonRegex((byte[])source);
-            Assert.Equal(["0", "nomé"], regex.GetGroupNames());
+            var copiedNames39 = new string[regex.CaptureGroupCount + 1];
+            for (var captureSlot39 = 0; captureSlot39 < copiedNames39.Length; captureSlot39++)
+            {
+                Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                    regex.TryCopyGroupNameUtf8(captureSlot39, [], out var nameLength39));
+                var nameBytes39 = new byte[nameLength39];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    regex.TryCopyGroupNameUtf8(captureSlot39, nameBytes39, out var written39));
+                Assert.Equal(nameLength39, written39);
+                copiedNames39[captureSlot39] = System.Text.Encoding.UTF8.GetString(nameBytes39);
+            }
+            Assert.Equal(["0", "nomé"], copiedNames39);
             return construction.Budget.ReservedBytes;
         }
         var borrowed = Held(pattern);

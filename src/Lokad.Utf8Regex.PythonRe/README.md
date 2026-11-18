@@ -41,6 +41,10 @@ Split ranges and byte-template replacement include
 capture-aware output shaping and substitution counts. Primary ranges are byte
 coordinates. Results have no UTF-16 offsets or byte-alignment flags; scalar
 positions are derived by the host when needed.
+`TryCopyGroupNameUtf8` exports slot names in Python opening order, including
+numeric labels for unnamed groups. It replaces `GetGroupNames` without exposing
+program storage. Short buffers report the complete required size; funded copies
+require an open regex and observe the original optional token.
 
 `Replace`, `Subn` and funded `SubnRetained` accept UTF-8 template spans as well as
 text templates. Native preparation/cache keys and literal/capture output remain
@@ -440,7 +444,7 @@ The full snapshot retains per-row confidence intervals, exclusion reasons, exact
 ### Construction and first call
 
 Contextual uncached-construction throughput, separate from warm Status. Values include managed-thread allocations where measured; CPython uses its compiler directly to bypass the compile cache.
-These recorded construction-only rows include the former metadata-array copies. Current backend/adapter lifecycle consumers read capture counts, like CPython's groups attribute; historical figures do not qualify that revised work.
+These recorded construction-only rows include former metadata-array copies and PythonRe's duplicate name table. Current lifecycle consumers read capture counts and use canonical scalar names; historical figures do not qualify that revised work.
 
 | Family | PythonRe construction | CPython compile | PythonRe first search | CPython first search |
 | --- | ---: | ---: | ---: | ---: |

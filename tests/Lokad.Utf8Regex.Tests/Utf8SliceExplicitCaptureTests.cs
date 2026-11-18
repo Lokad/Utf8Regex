@@ -75,9 +75,31 @@ public sealed class Utf8SliceExplicitCaptureTests
         var regex = new Utf8Regex("(a)+(?<x>b)+", options: RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var oracle = new Regex("(a)+(?<x>b)+", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
+        var copiedNames19 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot19 = 0; captureSlot19 < copiedNames19.Length; captureSlot19++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot19, [], out var nameLength19));
+            var nameBytes19 = new byte[nameLength19];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot19, nameBytes19, out var written19));
+            Assert.Equal(nameLength19, written19);
+            copiedNames19[captureSlot19] = System.Text.Encoding.UTF8.GetString(nameBytes19);
+        }
+        Assert.Equal(oracle.GetGroupNames(), copiedNames19);
         Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
-        Assert.Equal(new[] { "0", "x" }, regex.GetGroupNames());
+        var copiedNames20 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot20 = 0; captureSlot20 < copiedNames20.Length; captureSlot20++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot20, [], out var nameLength20));
+            var nameBytes20 = new byte[nameLength20];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot20, nameBytes20, out var written20));
+            Assert.Equal(nameLength20, written20);
+            copiedNames20[captureSlot20] = System.Text.Encoding.UTF8.GetString(nameBytes20);
+        }
+        Assert.Equal(new[] { "0", "x" }, copiedNames20);
         Assert.Equal(new[] { 0, 1 }, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("ab")));
         Assert.True(detailed.Success);
@@ -91,9 +113,31 @@ public sealed class Utf8SliceExplicitCaptureTests
         var regex = new Utf8Regex("(\\p{L}+)(?<x>y)", options: RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         var oracle = new Regex("(\\p{L}+)(?<x>y)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
+        var copiedNames21 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot21 = 0; captureSlot21 < copiedNames21.Length; captureSlot21++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot21, [], out var nameLength21));
+            var nameBytes21 = new byte[nameLength21];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot21, nameBytes21, out var written21));
+            Assert.Equal(nameLength21, written21);
+            copiedNames21[captureSlot21] = System.Text.Encoding.UTF8.GetString(nameBytes21);
+        }
+        Assert.Equal(oracle.GetGroupNames(), copiedNames21);
         Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
-        Assert.Equal(new[] { "0", "x" }, regex.GetGroupNames());
+        var copiedNames22 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot22 = 0; captureSlot22 < copiedNames22.Length; captureSlot22++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot22, [], out var nameLength22));
+            var nameBytes22 = new byte[nameLength22];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot22, nameBytes22, out var written22));
+            Assert.Equal(nameLength22, written22);
+            copiedNames22[captureSlot22] = System.Text.Encoding.UTF8.GetString(nameBytes22);
+        }
+        Assert.Equal(new[] { "0", "x" }, copiedNames22);
         Assert.Equal(new[] { 0, 1 }, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         var detailed = Utf8MatchSequence.First(regex.CreateMatchCursor(Encoding.UTF8.GetBytes("aby")));
         Assert.True(detailed.Success);

@@ -63,7 +63,18 @@ public sealed class PythonReAtomicViabilityTests
     public void DeadSequencesKeepCaptureCatalogsAndEnclosingBranchSemantics()
     {
         var impossible = new Utf8PythonRegex("(?P<before>x)?a++a(?P<after>y)");
-        Assert.Equal(new[] { "0", "before", "after" }, impossible.GetGroupNames());
+        var copiedNames30 = new string[impossible.CaptureGroupCount + 1];
+        for (var captureSlot30 = 0; captureSlot30 < copiedNames30.Length; captureSlot30++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                impossible.TryCopyGroupNameUtf8(captureSlot30, [], out var nameLength30));
+            var nameBytes30 = new byte[nameLength30];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                impossible.TryCopyGroupNameUtf8(captureSlot30, nameBytes30, out var written30));
+            Assert.Equal(nameLength30, written30);
+            copiedNames30[captureSlot30] = System.Text.Encoding.UTF8.GetString(nameBytes30);
+        }
+        Assert.Equal(new[] { "0", "before", "after" }, copiedNames30);
         Assert.Equal(2, Program(impossible).GroupCount);
         Assert.Equal(0, impossible.Count("xaaaay"u8));
         var negative = new Utf8PythonRegex("(?!a++a)(?P<value>.)");

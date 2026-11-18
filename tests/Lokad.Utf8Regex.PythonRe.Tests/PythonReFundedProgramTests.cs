@@ -69,6 +69,10 @@ public sealed class PythonReFundedProgramTests
         var held = allowance.Used;
         var destination = new byte[encoded.Length];
         Assert.Equal(1, regex.CaptureGroupCount);
+        var nameBytes = new byte[1];
+        Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryCopyGroupNameUtf8(1, nameBytes, out var nameLength));
+        Assert.Equal(1, nameLength);
+        Assert.Equal("x"u8.ToArray(), nameBytes);
         Assert.True(regex.TryGetGroupNumber("x"u8, out var number));
         Assert.Equal(1, number);
         Assert.Equal(System.Buffers.OperationStatus.Done, regex.TryCopyPatternUtf8(destination, out var required));
@@ -79,6 +83,12 @@ public sealed class PythonReFundedProgramTests
         Assert.Equal(0UL, allowance.Used);
         Assert.Throws<ObjectDisposedException>(() => regex.TryCopyPatternUtf8(destination, out _));
         Assert.Throws<ObjectDisposedException>(() => regex.TryGetGroupNumber("x"u8, out _));
+        Assert.Throws<ObjectDisposedException>(() => regex.TryCopyGroupNameUtf8(1, nameBytes, out _));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.TryCopyGroupNameUtf8(-1, nameBytes, out _, cancellation.Token)).CancellationToken);
+        Assert.Equal("x"u8.ToArray(), nameBytes);
         Assert.Equal(encoded, destination);
     }
 

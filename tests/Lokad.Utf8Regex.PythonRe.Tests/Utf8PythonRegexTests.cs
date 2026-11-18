@@ -184,7 +184,8 @@ public sealed class Utf8PythonRegexTests
         var regex = new Utf8PythonRegex(@"(?P<word>foo)");
 
         Assert.Equal(@"(?<g1>foo)", PythonReDotNetReference.Render(regex));
-        Assert.Contains("word", regex.GetGroupNames(), StringComparer.Ordinal);
+        Assert.True(regex.TryGetGroupNumber("word"u8, out var groupNumber));
+        Assert.Equal(1, groupNumber);
         Assert.True(regex.IsMatch("foo"u8));
     }
 

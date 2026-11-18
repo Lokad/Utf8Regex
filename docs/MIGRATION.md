@@ -150,6 +150,15 @@ allowance to this one signature; funded program owners expose it too.
 `GetGroupNumbers` is removed. Visit ordinals zero through `CaptureGroupCount`
 using `GroupNumberFromCaptureSlot`; caller-owned collections are outside regex
 controls. Keep funded expressions open throughout those separate metadata calls.
+Core/PythonRe `GetGroupNames` is also removed. Visit the same ordinals with
+`TryCopyGroupNameUtf8(slot, destination, out bytesRequired, token)`. Core uses
+compact slot order; PythonRe uses opening order. Unnamed slots export decimal
+labels. A short destination reports the required UTF-8 size without writing.
+The destination belongs to the host, outside regex resource controls; decode it
+there when necessary. Original cancellation takes precedence over slot and
+program checks. Funded metadata copies require an open expression, including in
+PythonRe where the former clone API lacked that guard. Previously copied values
+and retained match results keep their lifetimes.
 `MatchDetailed` and `MatchDetailedFromUtf16Offset` are removed, along with
 `Utf8MatchContext`, `Utf8GroupContext` and `Utf8CaptureContext`. Use the memory cursor for capture
 history, with a scalar-aligned byte start:

@@ -341,7 +341,12 @@ public sealed class PythonReFiniteResultPolicyTests
             captureCursor3.MoveNext(out context);
         }
         Assert.Equal("", System.Text.Encoding.UTF8.GetString(context.GetValueMemory().Span));
-        Assert.NotEmpty(Create("(?P<x>a)", 1).GetGroupNames());
+        var metadata = Create("(?P<label>a)", 1);
+        var nameBytes = new byte[5];
+        Assert.Equal(System.Buffers.OperationStatus.Done,
+            metadata.TryCopyGroupNameUtf8(1, nameBytes, out var required));
+        Assert.Equal(5, required);
+        Assert.Equal("label"u8.ToArray(), nameBytes);
     }
 
     [Fact]

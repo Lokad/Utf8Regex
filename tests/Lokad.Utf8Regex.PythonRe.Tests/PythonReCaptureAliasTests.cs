@@ -30,7 +30,18 @@ public sealed class PythonReCaptureAliasTests
         var absent = Encoding.UTF8.GetBytes(miss);
         Assert.True(native.IsMatch(input));
         Assert.False(native.IsMatch(absent));
-        Assert.Equal(["0", "g1", "g2"], native.GetGroupNames());
+        var copiedNames31 = new string[native.CaptureGroupCount + 1];
+        for (var captureSlot31 = 0; captureSlot31 < copiedNames31.Length; captureSlot31++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                native.TryCopyGroupNameUtf8(captureSlot31, [], out var nameLength31));
+            var nameBytes31 = new byte[nameLength31];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                native.TryCopyGroupNameUtf8(captureSlot31, nameBytes31, out var written31));
+            Assert.Equal(nameLength31, written31);
+            copiedNames31[captureSlot31] = System.Text.Encoding.UTF8.GetString(nameBytes31);
+        }
+        Assert.Equal(["0", "g1", "g2"], copiedNames31);
         var comparator = new System.Text.RegularExpressions.Regex(PythonReDotNetReference.Render(parse));
         Assert.Matches(comparator, hit);
         Assert.DoesNotMatch(comparator, miss);
@@ -51,7 +62,18 @@ public sealed class PythonReCaptureAliasTests
 
                 : default
             });
-            Assert.Equal(["0", first, second], regex.GetGroupNames());
+            var copiedNames32 = new string[regex.CaptureGroupCount + 1];
+            for (var captureSlot32 = 0; captureSlot32 < copiedNames32.Length; captureSlot32++)
+            {
+                Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                    regex.TryCopyGroupNameUtf8(captureSlot32, [], out var nameLength32));
+                var nameBytes32 = new byte[nameLength32];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    regex.TryCopyGroupNameUtf8(captureSlot32, nameBytes32, out var written32));
+                Assert.Equal(nameLength32, written32);
+                copiedNames32[captureSlot32] = System.Text.Encoding.UTF8.GetString(nameBytes32);
+            }
+            Assert.Equal(["0", first, second], copiedNames32);
             Assert.True(regex.IsMatch(input));
             Assert.False(regex.IsMatch(absent));
             Assert.Equal(1, regex.Count(input));
@@ -102,7 +124,18 @@ public sealed class PythonReCaptureAliasTests
             captureCursor2.MoveNext(out match);
         }
         Assert.True(match.Success);
-        Assert.Equal(["0", "α", "2", "g1"], regex.GetGroupNames());
+        var copiedNames33 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot33 = 0; captureSlot33 < copiedNames33.Length; captureSlot33++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot33, [], out var nameLength33));
+            var nameBytes33 = new byte[nameLength33];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot33, nameBytes33, out var written33));
+            Assert.Equal(nameLength33, written33);
+            copiedNames33[captureSlot33] = System.Text.Encoding.UTF8.GetString(nameBytes33);
+        }
+        Assert.Equal(["0", "α", "2", "g1"], copiedNames33);
         Assert.Equal(3, match.LastIndex);
         Assert.Equal("g1", match.LastGroup);
         Assert.Equal(["abcab", "a", "b", "c"], PythonReCaptureAssert.Values(match).ToArray());
@@ -115,7 +148,18 @@ public sealed class PythonReCaptureAliasTests
         var core = Assert.IsType<Utf8Regex>(typeof(Utf8PythonRegex)
             .GetField("_utf8Regex", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(regex));
         Assert.True(core.CanFindNativeLiteralForResult);
-        Assert.Equal(["0", "α", "g1"], regex.GetGroupNames());
+        var copiedNames34 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot34 = 0; captureSlot34 < copiedNames34.Length; captureSlot34++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot34, [], out var nameLength34));
+            var nameBytes34 = new byte[nameLength34];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot34, nameBytes34, out var written34));
+            Assert.Equal(nameLength34, written34);
+            copiedNames34[captureSlot34] = System.Text.Encoding.UTF8.GetString(nameBytes34);
+        }
+        Assert.Equal(["0", "α", "g1"], copiedNames34);
         Assert.True(regex.IsMatch("é😀ab"u8));
         Utf8PythonRangeMatch match = default;
         using (var captureCursor3 = regex.CreateMatchCursor(("é😀ab"u8).ToArray(), mode: Utf8PythonMatchMode.Search))

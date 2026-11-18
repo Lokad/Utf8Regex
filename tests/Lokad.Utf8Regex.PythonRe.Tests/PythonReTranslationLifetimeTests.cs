@@ -193,7 +193,18 @@ public sealed class PythonReTranslationLifetimeTests
         {
             Assert.False(regex.DebugUsesUtf8RegexBackend);
             Assert.DoesNotContain(ReachableStrings(regex), text => text == rendered);
-            Assert.Equal(["0", "α"], regex.GetGroupNames());
+            var copiedNames40 = new string[regex.CaptureGroupCount + 1];
+            for (var captureSlot40 = 0; captureSlot40 < copiedNames40.Length; captureSlot40++)
+            {
+                Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                    regex.TryCopyGroupNameUtf8(captureSlot40, [], out var nameLength40));
+                var nameBytes40 = new byte[nameLength40];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    regex.TryCopyGroupNameUtf8(captureSlot40, nameBytes40, out var written40));
+                Assert.Equal(nameLength40, written40);
+                copiedNames40[captureSlot40] = System.Text.Encoding.UTF8.GetString(nameBytes40);
+            }
+            Assert.Equal(["0", "α"], copiedNames40);
             Utf8PythonRangeMatch hit = default;
             using (var captureCursor4 = regex.CreateMatchCursor(("ab"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
             {

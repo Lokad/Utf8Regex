@@ -41,7 +41,18 @@ public sealed class Utf8OwnedTreeUtf8Tests
         Assert.NotNull(program);
         var text = new Utf8Regex(pattern, options: options);
         Assert.Equal(Enumerable.Range(0, text.CaptureGroupCount + 1).Select(text.GroupNumberFromCaptureSlot).ToArray(), tree.CaptureCatalog!.GroupNumbers);
-        Assert.Equal(text.GetGroupNames(), tree.CaptureNames);
+        var copiedNames14 = new string[text.CaptureGroupCount + 1];
+        for (var captureSlot14 = 0; captureSlot14 < copiedNames14.Length; captureSlot14++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                text.TryCopyGroupNameUtf8(captureSlot14, [], out var nameLength14));
+            var nameBytes14 = new byte[nameLength14];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                text.TryCopyGroupNameUtf8(captureSlot14, nameBytes14, out var written14));
+            Assert.Equal(nameLength14, written14);
+            copiedNames14[captureSlot14] = System.Text.Encoding.UTF8.GetString(nameBytes14);
+        }
+        Assert.Equal(copiedNames14, tree.CaptureNames);
         // Parsing borrows only for this call, including names and literal runs.
         Array.Fill(bytes, (byte)0xff);
         string[] subjects = ["", "a", "abc", "aaaa", "ababc", "é😀😀b", "é😀é😀", "éê😀🙏",

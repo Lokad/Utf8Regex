@@ -3,46 +3,10 @@ using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
-// compiled name metadata escaped through result arrays, so mutating
-// one result corrupted the regex instance for subsequent operations. Results and
-// lookup APIs now hand out owned arrays (empty entry arrays stay shared: they have
-// no slots to mutate).
+// Immutable cursor name metadata stays stable across independent traversals.
 public sealed class PythonResultOwnershipRegressionTests
 {
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
-
-    [Fact]
-    public void MutatingGroupNamesDoesNotLeakIntoRegex()
-    {
-        var regex = new Utf8PythonRegex("(?P<word>foo)");
-        var names = regex.GetGroupNames();
-        Assert.Equal(["0", "word"], names);
-        names[1] = "hacked";
-        Assert.Equal(["0", "word"], regex.GetGroupNames());
-    }
-
-    [Fact]
-    public void MutatingContextNameEntriesDoesNotLeakIntoRegex()
-    {
-        var regex = new Utf8PythonRegex("(?P<word>foo)");
-        Utf8PythonRangeMatch first = default;
-        using (var captureCursor1 = regex.CreateMatchCursor(Utf8("foo"), mode: Utf8PythonMatchMode.Match))
-        {
-            captureCursor1.MoveNext(out first);
-        }
-        first.NameEntries.ToArray()[0] = new PythonReNameEntry { Name = "hacked", Number = 99 };
-
-        Utf8PythonRangeMatch second = default;
-
-        using (var captureCursor2 = regex.CreateMatchCursor(Utf8("foo"), mode: Utf8PythonMatchMode.Match))
-        {
-            captureCursor2.MoveNext(out second);
-        }
-        Assert.Equal("word", second.NameEntries.ToArray()[0].Name);
-        Assert.True(second.TryGetFirstSetGroup("word", out var named));
-        Assert.Equal("foo", System.Text.Encoding.UTF8.GetString((named.Success ? second.GetGroupMemory(named.Number).Span : ReadOnlySpan<byte>.Empty)));
-    }
-
 
     [Fact]
     public void ConcurrentReadsSeeStableMetadata()
@@ -60,7 +24,10 @@ public sealed class PythonResultOwnershipRegressionTests
             {
                 System.Threading.Interlocked.Increment(ref failures);
             }
-            if (!regex.GetGroupNames().SequenceEqual(["0", "word"])) { System.Threading.Interlocked.Increment(ref failures); }
+            Span<byte> name = stackalloc byte[4];
+            if (regex.TryCopyGroupNameUtf8(1, name, out var required) != System.Buffers.OperationStatus.Done ||
+                required != 4 || !name.SequenceEqual("word"u8))
+                System.Threading.Interlocked.Increment(ref failures);
             Utf8PythonRangeMatch snapshot4 = default;
             using (var captureCursor4 = regex.CreateMatchCursor(Utf8("foo"), mode: Utf8PythonMatchMode.Match))
             {
@@ -72,7 +39,6 @@ public sealed class PythonResultOwnershipRegressionTests
             }
         });
         Assert.Equal(0, failures);
-        Assert.Equal(["0", "word"], regex.GetGroupNames());
     }
 
     [Fact]
@@ -85,7 +51,7 @@ public sealed class PythonResultOwnershipRegressionTests
             captureCursor5.MoveNext(out first);
         }
         Assert.Empty(first.NameEntries.ToArray());
-        Assert.Equal(["0", "1", "2"], regex.GetGroupNames());
+        Assert.Equal(2, regex.CaptureGroupCount);
         Utf8PythonRangeMatch second = default;
         using (var captureCursor6 = regex.CreateMatchCursor(Utf8("ab"), mode: Utf8PythonMatchMode.Search))
         {

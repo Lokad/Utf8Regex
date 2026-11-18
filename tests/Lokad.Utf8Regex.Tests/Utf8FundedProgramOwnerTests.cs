@@ -10,7 +10,9 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8FundedProgramOwnerTests
 {
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void NullWorkingAllowanceUsesNumericPolicyAndKeepsOriginalCancellation(bool exists)
     {
         var ordinary = new Utf8Regex("a+");
@@ -38,7 +40,9 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(source.Token, canceled.CancellationToken);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void OptionalNonNullWorkingRefusalRemainsTerminal(bool exists)
     {
         var root = new SharedRoot(); var account = new Account(root) { Maximum = 0 };
@@ -53,7 +57,7 @@ public sealed class Utf8FundedProgramOwnerTests
     }
 
     private static Utf8Regex Compile(string pattern, Account account, RegexOptions options = RegexOptions.None,
-        Utf8ResourcePolicy policy = default, CancellationToken token = default) => Utf8Regex.Compile(pattern, options:             options, policy: new Utf8RegexPolicy
+        Utf8ResourcePolicy policy = default, CancellationToken token = default) => Utf8Regex.Compile(pattern, options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = policy,
@@ -132,7 +136,9 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(0UL, root.Used);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void DenialIsTerminalAndExistingProgramFundingSurvives(bool exists)
     {
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root) { Maximum = 0 };
@@ -230,7 +236,9 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(0UL, root.Used);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ActualExecutionInterruptionRefundsWorkingLoansWithoutClosingTheProgram(bool timeout)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -279,7 +287,8 @@ public sealed class Utf8FundedProgramOwnerTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void MetadataCopyUsesCallerStorageAndDoesNotOutliveProgramAdmission(bool native)
     {
         const string pattern = "(?<12>😀)";
@@ -292,10 +301,14 @@ public sealed class Utf8FundedProgramOwnerTests
             ConstructionPolicy = default,
             ConstructionTimeout = Timeout.InfiniteTimeSpan,
             ProgramMemoryAllowance = account
-        }, cancellationToken: default): Compile(pattern, account);
+        }, cancellationToken: default) : Compile(pattern, account);
         var held = account.Used; var destination = new byte[encoded.Length];
         Assert.Equal(1, owner.CaptureGroupCount);
         Assert.Equal(12, owner.GroupNumberFromUtf8Name("12"u8));
+        var nameBytes = new byte[2];
+        Assert.Equal(System.Buffers.OperationStatus.Done, owner.TryCopyGroupNameUtf8(1, nameBytes, out var nameLength));
+        Assert.Equal(2, nameLength);
+        Assert.Equal("12"u8.ToArray(), nameBytes);
         Assert.Equal(System.Buffers.OperationStatus.Done, owner.TryCopyPatternUtf8(destination, out var required));
         Assert.Equal(encoded.Length, required); Assert.Equal(encoded, destination); Assert.Equal(held, account.Used);
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
@@ -305,6 +318,10 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Throws<ObjectDisposedException>(() => owner.TryCopyPatternUtf8(destination, out _));
         Assert.Throws<ObjectDisposedException>(() => owner.CaptureGroupCount);
         Assert.Throws<ObjectDisposedException>(() => owner.GroupNumberFromUtf8Name("12"u8));
+        Assert.Throws<ObjectDisposedException>(() => owner.TryCopyGroupNameUtf8(1, nameBytes, out _));
+        Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+            owner.TryCopyGroupNameUtf8(-1, nameBytes, out _, cancellation.Token)).CancellationToken);
+        Assert.Equal("12"u8.ToArray(), nameBytes);
         Assert.Equal(encoded, destination);
     }
 
@@ -346,7 +363,9 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Throws<ObjectDisposedException>(() => owner.TryReplace(input, native, destination, out _));
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void FundedTemplateAdmissionDenialIsTerminalAndRefundsColdAndWarmLoans(bool warm)
     {
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
@@ -367,7 +386,9 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(0UL, working.Used); Assert.Equal(held, root.Used);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void FundedTemplateAliasesAndMalformedNoMatchAreQualified(bool warm)
     {
         var root = new SharedRoot(); var programs = new Account(root); using var owner = Compile("(a)", programs);
@@ -384,7 +405,9 @@ public sealed class Utf8FundedProgramOwnerTests
             owner.TryReplace([], [], bytes, out _, canceled.Token)).CancellationToken);
     }
 
-    [Theory] [InlineData(false)] [InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void FundedTemplateAdmissionInterruptionKeepsOriginalAuthority(bool timeout)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -444,17 +467,28 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal("é[a]é[a]"u8.ToArray(), destination[..written]); Assert.Equal(0UL, working.Used);
     }
 
-    [Theory] [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
     public void FundedTemplateOtherNumericControlsStillApply(int control)
     {
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
-        var policy = control switch { 0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
-            1 => new Utf8ResourcePolicy { MaxDepth = 1 }, _ => new Utf8ResourcePolicy { MaxResultBytes = 1 } };
+        var policy = control switch
+        {
+            0 => new Utf8ResourcePolicy { MaxWorkSteps = 1 },
+            1 => new Utf8ResourcePolicy { MaxDepth = 1 },
+            _ => new Utf8ResourcePolicy { MaxResultBytes = 1 }
+        };
         using var owner = Compile("(?=(?=(a)))a", programs, policy: policy); var held = programs.Used;
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => owner.TryReplace(
             "a"u8, "[$1]"u8, new byte[16], out _, workingMemoryAllowance: working));
-        Assert.Equal(control switch { 0 => Utf8ResourceLimitKind.ExecutionWorkSteps,
-            1 => Utf8ResourceLimitKind.ExecutionDepth, _ => Utf8ResourceLimitKind.ExecutionResultBytes }, failure.ResourceKind);
+        Assert.Equal(control switch
+        {
+            0 => Utf8ResourceLimitKind.ExecutionWorkSteps,
+            1 => Utf8ResourceLimitKind.ExecutionDepth,
+            _ => Utf8ResourceLimitKind.ExecutionResultBytes
+        }, failure.ResourceKind);
         Assert.Equal(0UL, working.Used); Assert.Equal(held, programs.Used);
     }
 

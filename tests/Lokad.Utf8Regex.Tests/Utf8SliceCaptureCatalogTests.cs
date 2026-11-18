@@ -19,7 +19,7 @@ public sealed class Utf8SliceCaptureCatalogTests
     [InlineData("(?<é>é)+", "éé")]
     [InlineData("(?<12>a)(b)+", "abb")]
     [InlineData("(?<12>a)(?<x>b)+", "abb")]
-    public void MetadataQueriesAndReturnedCopiesMatchOracle(string pattern, string text)
+    public void MetadataQueriesAndCaptureRangesMatchOracle(string pattern, string text)
     {
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
         {
@@ -29,12 +29,21 @@ public sealed class Utf8SliceCaptureCatalogTests
                 Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
             foreach (var number in new[] { -1, 0, 1, 2, 3, 12, int.MaxValue })
                 Assert.Equal(oracle.GroupNameFromNumber(number), regex.GroupNameFromNumber(number));
-            var names = regex.GetGroupNames();
+            var copiedNames17 = new string[regex.CaptureGroupCount + 1];
+            for (var captureSlot17 = 0; captureSlot17 < copiedNames17.Length; captureSlot17++)
+            {
+                Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                    regex.TryCopyGroupNameUtf8(captureSlot17, [], out var nameLength17));
+                var nameBytes17 = new byte[nameLength17];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    regex.TryCopyGroupNameUtf8(captureSlot17, nameBytes17, out var written17));
+                Assert.Equal(nameLength17, written17);
+                copiedNames17[captureSlot17] = System.Text.Encoding.UTF8.GetString(nameBytes17);
+            }
+            var names = copiedNames17;
             var numbers = Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray();
             Assert.Equal(oracle.GetGroupNames(), names);
             Assert.Equal(oracle.GetGroupNumbers(), numbers);
-            Array.Fill(names, "corrupted");
-            Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
             Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
             foreach (var name in oracle.GetGroupNames())
                 Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));

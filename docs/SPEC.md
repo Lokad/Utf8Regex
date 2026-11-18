@@ -286,6 +286,15 @@ metadata access retains its open-producer funding guard. Separate calls do not
 form an atomic snapshot across program close; retained match results keep their
 own lifetime contract.
 
+`TryCopyGroupNameUtf8(captureSlot, destination, out bytesRequired, token)` exports
+one slot's name without a string array or a program-storage alias. Visit the same
+compact ordinals; unnamed slots use their actual decimal group number. The former
+`GetGroupNames` clone API is removed. `Done` writes the complete name;
+`DestinationTooSmall` reports its full UTF-8 size without writing. Cancellation
+can leave a partial copy. Slot bounds are checked after original-token and funded
+access checks; names come from validated canonical metadata. This explicit copy
+uses the same ownership and interruption contract as pattern copying below.
+
 `TryCopyPatternUtf8(destination, out bytesRequired, token)` copies exact original
 source into caller storage without creating a source string/output buffer or
 exposing a program alias.

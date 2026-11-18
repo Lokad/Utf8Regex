@@ -39,8 +39,19 @@ public sealed class Utf8RegexGroupApiDiffTests
     {
         var utf8 = new Utf8Regex(pattern, options: options);
         var runtime = new Regex(pattern, options);
+        var copiedNames28 = new string[utf8.CaptureGroupCount + 1];
+        for (var captureSlot28 = 0; captureSlot28 < copiedNames28.Length; captureSlot28++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                utf8.TryCopyGroupNameUtf8(captureSlot28, [], out var nameLength28));
+            var nameBytes28 = new byte[nameLength28];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                utf8.TryCopyGroupNameUtf8(captureSlot28, nameBytes28, out var written28));
+            Assert.Equal(nameLength28, written28);
+            copiedNames28[captureSlot28] = System.Text.Encoding.UTF8.GetString(nameBytes28);
+        }
 
-        Assert.Equal(runtime.GetGroupNames(), utf8.GetGroupNames());
+        Assert.Equal(runtime.GetGroupNames(), copiedNames28);
         Assert.Equal(runtime.GetGroupNumbers(), Enumerable.Range(0, utf8.CaptureGroupCount + 1).Select(utf8.GroupNumberFromCaptureSlot).ToArray());
 
         var probes = runtime.GetGroupNames().Concat(new[] { "missing", "0", string.Empty, "999999" });

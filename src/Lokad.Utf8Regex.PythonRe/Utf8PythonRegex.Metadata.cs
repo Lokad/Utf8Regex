@@ -5,6 +5,19 @@ namespace Lokad.Utf8Regex.PythonRe;
 
 public sealed partial class Utf8PythonRegex
 {
+    /// <summary>Copies a capture slot's name as UTF-8, including slot zero.</summary>
+    /// <remarks>Slots follow Python opening order; unnamed slots use their decimal number. Capacity, cancellation, funding and ownership follow TryCopyPatternUtf8.</remarks>
+    public OperationStatus TryCopyGroupNameUtf8(int captureSlot, Span<byte> destination, out int bytesRequired,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = EnterProgramUse();
+        var names = _scalarProgram.GroupNames;
+        if ((uint)captureSlot >= (uint)names.Length) throw new ArgumentOutOfRangeException(nameof(captureSlot));
+        return Utf8PatternMetadata.TryCopy(new Utf8ConstructionPattern(names[captureSlot]), destination,
+            out bytesRequired, cancellationToken);
+    }
+
     /// <summary>Finds a named capture number from a strict UTF-8 name without allocating a key string.</summary>
     /// <param name="nameUtf8">The complete strict UTF-8 name, compared ordinally without normalization.</param>
     /// <param name="number">The validated capture number on success, or zero when undefined.</param>

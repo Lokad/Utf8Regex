@@ -294,13 +294,6 @@ public sealed partial class Utf8Regex : IDisposable
         return _program.CaptureCatalog.GroupNameFromNumber(i);
     }
 
-    /// <summary>Returns the group names defined by the expression, including group zero.</summary>
-    public string[] GetGroupNames()
-    {
-        using var programUse = _programMemory?.Enter();
-        return _program.CaptureCatalog.GroupNames.AsSpan().ToArray();
-    }
-
     // Preserve qualified native lanes; the shared owned VM traverses the original
     // UTF-8 subject. Coordinate conversion belongs to result interoperability.
     private Utf8SliceProgram? GetOwnedSliceProgram(ReadOnlySpan<byte> input, CancellationToken token)

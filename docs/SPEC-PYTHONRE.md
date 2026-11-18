@@ -251,6 +251,18 @@ UTF-8 keys are compared ordinally without normalization or temporary strings.
 The immutable vector lookup is linear, uses bounded token checkpoints and holds
 funded program use. It is explicit metadata outside matching limits.
 
+`TryCopyGroupNameUtf8(captureSlot, destination, out bytesRequired, token)` copies
+one name in Python opening order, including slot zero and decimal labels for
+unnamed slots. It follows the shared caller-buffer metadata contract: a short
+destination is unchanged, the complete UTF-8 size is reported, and cancellation
+uses the original token at bounded checkpoints. Pre-cancellation precedes bad-slot
+or closed-program work. Funded copies require an open expression, consistently
+with source copying and name lookup. Caller bytes remain valid afterward.
+`GetGroupNames` is removed, including its formerly unguarded post-close access.
+The scalar program's admitted canonical names serve this API; the duplicate
+public-name table and its numeric-string builder are removed. Modeled construction
+work/storage can decrease; major-buffer admission and useful limits remain.
+
 Captures are numbered by opening parenthesis, including named groups.
 References and conditionals use those numbers. Detailed `LastIndex` is the last
 capture to close on the successful path, not the largest participating number:

@@ -110,7 +110,18 @@ public sealed class Utf8OwnedAdmissionTests
             using (var recovery = Utf8ConstructionScope.Enter())
             {
                 var regex = new Utf8Regex(@"(?<x>😀)\k<x>", options: options);
-                Assert.Equal(new[] { "0", "x" }, regex.GetGroupNames());
+                var copiedNames6 = new string[regex.CaptureGroupCount + 1];
+                for (var captureSlot6 = 0; captureSlot6 < copiedNames6.Length; captureSlot6++)
+                {
+                    Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                        regex.TryCopyGroupNameUtf8(captureSlot6, [], out var nameLength6));
+                    var nameBytes6 = new byte[nameLength6];
+                    Assert.Equal(System.Buffers.OperationStatus.Done,
+                        regex.TryCopyGroupNameUtf8(captureSlot6, nameBytes6, out var written6));
+                    Assert.Equal(nameLength6, written6);
+                    copiedNames6[captureSlot6] = System.Text.Encoding.UTF8.GetString(nameBytes6);
+                }
+                Assert.Equal(new[] { "0", "x" }, copiedNames6);
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
                 Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
             }

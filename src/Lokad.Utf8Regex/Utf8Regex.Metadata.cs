@@ -22,6 +22,19 @@ public sealed partial class Utf8Regex
         return numbers[captureSlot];
     }
 
+    /// <summary>Copies the name of a compact capture slot as UTF-8, including slot zero.</summary>
+    /// <remarks>Slots follow GroupNumberFromCaptureSlot; unnamed slots use their actual decimal number. Capacity, cancellation, funding and ownership follow TryCopyPatternUtf8.</remarks>
+    public OperationStatus TryCopyGroupNameUtf8(int captureSlot, Span<byte> destination, out int bytesRequired,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var use = _programMemory?.Enter();
+        var names = _program.CaptureCatalog.GroupNames;
+        if ((uint)captureSlot >= (uint)names.Length) throw new ArgumentOutOfRangeException(nameof(captureSlot));
+        return Utf8PatternMetadata.TryCopy(new Utf8ConstructionPattern(names[captureSlot]), destination,
+            out bytesRequired, cancellationToken);
+    }
+
     /// <summary>Finds a defined capture number from a strict UTF-8 group name, returning -1 when undefined.</summary>
     /// <remarks>Matches the existing ordinal name/numeric lookup, without decoding or allocating a key string. Validates the complete name. This explicit metadata lookup uses the supplied token independently of matching limits.</remarks>
     public int GroupNumberFromUtf8Name(ReadOnlySpan<byte> nameUtf8, CancellationToken cancellationToken = default)

@@ -99,7 +99,6 @@ public sealed partial class Utf8PythonRegex
             // derive under their own construction scope; only one result is kept.
             _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.RequireFullMatch(_scalarProgram), LazyThreadSafetyMode.PublicationOnly);
 
-            _groupNames = GetPublicGroupNames(parseResult.CaptureGroupCount, parseResult.NamedGroups);
             _nameEntries = GetPythonNameEntries(parseResult.NamedGroups);
             _nameEntriesUtf8 = construction.Budget.AllocateArray<byte[]>(_nameEntries.Length, false);
             for (var index = 0; index < _nameEntries.Length; index++)
@@ -180,7 +179,6 @@ public sealed partial class Utf8PythonRegex
         set => s_defaultMatchTimeout = Utf8MatchTimeout.Validate(value, nameof(value));
     }
 
-    private readonly string[] _groupNames;
 
     /// <summary>Gets the original Python regular-expression pattern.</summary>
     /// <remarks>Byte compilation owns UTF-8 source. This explicit text projection allocates independently on each native request; the string is not retained by the program.</remarks>
@@ -199,10 +197,6 @@ public sealed partial class Utf8PythonRegex
 
     /// <summary>Gets the invocation resource policy. Finite work, depth, working and result-capacity limits are supported.</summary>
     public Utf8ResourcePolicy ResourcePolicy { get; }
-
-    /// <summary>Returns the group names in group-number order, including group zero.</summary>
-    // returned arrays are caller-owned; never expose the compiled backing storage. Empty entry arrays stay shared: they have no slots to mutate.
-    public string[] GetGroupNames() => (string[])_groupNames.Clone();
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
 
@@ -254,37 +248,6 @@ public sealed partial class Utf8PythonRegex
                 "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
         }
 
-    }
-
-    // Public names follow Python slot order; the optional core route has its own slot permutation.
-    private static string[] GetPublicGroupNames(int captureGroupCount, IReadOnlyDictionary<string, int> namedGroups)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        var names = budget.AllocateArray<string>(checked(captureGroupCount + 1), false);
-        foreach (var pair in namedGroups)
-        {
-            budget.ChargeWork(1);
-            names[pair.Value] = pair.Key;
-        }
-
-        names[0] = "0";
-        Span<char> digits = stackalloc char[11];
-        for (var pythonGroup = 1; pythonGroup <= captureGroupCount; pythonGroup++)
-        {
-            budget.ChargeWork(1);
-            if (names[pythonGroup] is not null) continue;
-            budget.ChargeWork((ulong)digits.Length);
-            pythonGroup.TryFormat(digits, out var written, provider: System.Globalization.CultureInfo.InvariantCulture);
-            // Admit the actual decimal text extent before ToString, retaining
-            // its existing small-number sharing instead of forcing a new copy.
-            budget.ChargeWork((ulong)written + 1);
-            budget.ReserveBytes(Utf8ConstructionBudget.StringBytes(written));
-            names[pythonGroup] = pythonGroup.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        }
-
-        construction.Complete();
-        return names;
     }
 
     // name entries carry Python slot numbers; the managed numbers they replaced were only valid when no named group preceded an unnamed one.

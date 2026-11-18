@@ -89,8 +89,8 @@ public sealed class Utf8CaptureSlotRetirementTests
             ("(?<x>é)(?<y-x>😀)", "xé😀y"),
         ];
         foreach (var (pattern, text) in cases)
-        foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
-            yield return [pattern, text, options | RegexOptions.CultureInvariant];
+            foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.RightToLeft | RegexOptions.Compiled })
+                yield return [pattern, text, options | RegexOptions.CultureInvariant];
     }
 
     [Theory]
@@ -102,7 +102,18 @@ public sealed class Utf8CaptureSlotRetirementTests
         var oracle = new Regex(pattern, options & ~RegexOptions.Compiled);
         var regex = new Utf8Regex(pattern, options: options);
         Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
-        Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
+        var copiedNames2 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot2 = 0; captureSlot2 < copiedNames2.Length; captureSlot2++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot2, [], out var nameLength2));
+            var nameBytes2 = new byte[nameLength2];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot2, nameBytes2, out var written2));
+            Assert.Equal(nameLength2, written2);
+            copiedNames2[captureSlot2] = System.Text.Encoding.UTF8.GetString(nameBytes2);
+        }
+        Assert.Equal(oracle.GetGroupNames(), copiedNames2);
         foreach (var name in oracle.GetGroupNames()) Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));
         Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, oracle, [text]);
         var input = Encoding.UTF8.GetBytes(text);

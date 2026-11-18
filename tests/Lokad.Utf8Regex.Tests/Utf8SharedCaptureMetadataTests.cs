@@ -22,8 +22,8 @@ public sealed class Utf8SharedCaptureMetadataTests
             ("(?n)(a)(?<word>😀)", "a😀", "${word}-$1"),
         ];
         foreach (var value in cases)
-        foreach (var compiled in new[] { false, true })
-            yield return [value.Pattern, value.Subject, value.Replacement, compiled];
+            foreach (var compiled in new[] { false, true })
+                yield return [value.Pattern, value.Subject, value.Replacement, compiled];
     }
 
     [Theory]
@@ -43,10 +43,19 @@ public sealed class Utf8SharedCaptureMetadataTests
         // text overlap the UTF-8 contract, including supplementary literals.
         var oracle = new Regex(pattern, options);
         var regex = new Utf8Regex(pattern, options: options);
-        var names = regex.GetGroupNames(); var numbers = Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray();
+        var copiedNames16 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot16 = 0; captureSlot16 < copiedNames16.Length; captureSlot16++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot16, [], out var nameLength16));
+            var nameBytes16 = new byte[nameLength16];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot16, nameBytes16, out var written16));
+            Assert.Equal(nameLength16, written16);
+            copiedNames16[captureSlot16] = System.Text.Encoding.UTF8.GetString(nameBytes16);
+        }
+        var names = copiedNames16; var numbers = Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray();
         Assert.Equal(oracle.GetGroupNames(), names); Assert.Equal(oracle.GetGroupNumbers(), numbers);
-        Array.Fill(names, "corrupted");
-        Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
         Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         foreach (var name in oracle.GetGroupNames().Concat(new[] { "", "00", "01", "012", "missing" }))
             Assert.Equal(oracle.GroupNumberFromName(name), regex.GroupNumberFromName(name));

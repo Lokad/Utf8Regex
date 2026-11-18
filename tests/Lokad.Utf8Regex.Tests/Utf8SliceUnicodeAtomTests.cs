@@ -66,15 +66,15 @@ public sealed class Utf8SliceUnicodeAtomTests
         // Theory string serialization replaces lone halves and merges case IDs.
         // Transport an ordinal; construct the exact UTF-16 pattern in the test.
         for (var pattern = 0; pattern < AtomPatterns.Length; pattern++)
-        foreach (var compiled in new[] { false, true })
-        foreach (var rtl in new[] { false, true })
-        foreach (var folded in pattern is 0 or 1 or 9 or 25 or 27 or 30 or 33 or 34 ? new[] { false, true } : new[] { false })
-        {
-            yield return [pattern, RegexOptions.CultureInvariant |
+            foreach (var compiled in new[] { false, true })
+                foreach (var rtl in new[] { false, true })
+                    foreach (var folded in pattern is 0 or 1 or 9 or 25 or 27 or 30 or 33 or 34 ? new[] { false, true } : new[] { false })
+                    {
+                        yield return [pattern, RegexOptions.CultureInvariant |
                 (compiled ? RegexOptions.Compiled : RegexOptions.None) |
                 (rtl ? RegexOptions.RightToLeft : RegexOptions.None) |
                 (folded ? RegexOptions.IgnoreCase : RegexOptions.None)];
-        }
+                    }
     }
 
     [Theory]
@@ -134,7 +134,18 @@ public sealed class Utf8SliceUnicodeAtomTests
         }
         Assert.Equal(metadata.GetGroupNames(), oracle.GetGroupNames());
         Assert.Equal(metadata.GetGroupNumbers(), oracle.GetGroupNumbers());
-        Assert.Equal(metadata.GetGroupNames(), regex.GetGroupNames());
+        var copiedNames25 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot25 = 0; captureSlot25 < copiedNames25.Length; captureSlot25++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot25, [], out var nameLength25));
+            var nameBytes25 = new byte[nameLength25];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot25, nameBytes25, out var written25));
+            Assert.Equal(nameLength25, written25);
+            copiedNames25[captureSlot25] = System.Text.Encoding.UTF8.GetString(nameBytes25);
+        }
+        Assert.Equal(metadata.GetGroupNames(), copiedNames25);
         Assert.Equal(metadata.GetGroupNumbers(), Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
         AssertOwned(regex);
     }
@@ -185,41 +196,41 @@ public sealed class Utf8SliceUnicodeAtomTests
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(unit, 256)));
         foreach (var compiled in new[] { false, true })
-        foreach (var rtl in new[] { false, true })
-        foreach (var operation in new[] { 0, 1, 2, 3 })
-        {
-            var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
-            var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
-            {
-                MatchTimeout = Regex.InfiniteMatchTimeout
-            });
-            using var source = new CancellationTokenSource();
-            var entered = false;
-            var session = Utf8SearchDiagnosticsSession.Start(steps =>
-            {
-                entered = true;
-                source.Cancel();
-                if (steps >= 128) throw new InvalidOperationException("Unicode matching dropped its token.");
-            });
-            try
-            {
-                var failure = Assert.Throws<OperationCanceledException>(() =>
+            foreach (var rtl in new[] { false, true })
+                foreach (var operation in new[] { 0, 1, 2, 3 })
                 {
-                    switch (operation)
+                    var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0);
+                    var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
                     {
-                        case 0: _ = regex.Count(input, source.Token); break;
-                        case 1: _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)); break;
-                        case 2: _ = regex.EnumerateMatches(input, cancellationToken: source.Token).MoveNext(); break;
-                        case 3: _ = Encoding.UTF8.GetString(regex.Replace(input, "Q", source.Token)); break;
+                        MatchTimeout = Regex.InfiniteMatchTimeout
+                    });
+                    using var source = new CancellationTokenSource();
+                    var entered = false;
+                    var session = Utf8SearchDiagnosticsSession.Start(steps =>
+                    {
+                        entered = true;
+                        source.Cancel();
+                        if (steps >= 128) throw new InvalidOperationException("Unicode matching dropped its token.");
+                    });
+                    try
+                    {
+                        var failure = Assert.Throws<OperationCanceledException>(() =>
+                        {
+                            switch (operation)
+                            {
+                                case 0: _ = regex.Count(input, source.Token); break;
+                                case 1: _ = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)); break;
+                                case 2: _ = regex.EnumerateMatches(input, cancellationToken: source.Token).MoveNext(); break;
+                                case 3: _ = Encoding.UTF8.GetString(regex.Replace(input, "Q", source.Token)); break;
+                            }
+                        });
+                        Assert.True(entered);
+                        Assert.Equal(source.Token, failure.CancellationToken);
                     }
-                });
-                Assert.True(entered);
-                Assert.Equal(source.Token, failure.CancellationToken);
-            }
-            finally { session.Complete(); }
-            Assert.Equal(recoveryCount, regex.Count("\U0001f600\u00e9"u8));
-            AssertOwned(regex);
-        }
+                    finally { session.Complete(); }
+                    Assert.Equal(recoveryCount, regex.Count("\U0001f600\u00e9"u8));
+                    AssertOwned(regex);
+                }
     }
 
     [Theory]
@@ -334,18 +345,18 @@ public sealed class Utf8SliceUnicodeAtomTests
             (118, "😀😀😀", [0, 12], []),
         ];
         foreach (var row in rows)
-        foreach (var compiled in new[] { false, true })
-        foreach (var rtl in new[] { false, true })
-        {
-            var coordinates = row.Forward;
-            if (rtl) coordinates = row.Reverse ?? ReverseRanges(row.Forward);
-            yield return [row.Pattern, row.Text, coordinates, RegexOptions.CultureInvariant |
+            foreach (var compiled in new[] { false, true })
+                foreach (var rtl in new[] { false, true })
+                {
+                    var coordinates = row.Forward;
+                    if (rtl) coordinates = row.Reverse ?? ReverseRanges(row.Forward);
+                    yield return [row.Pattern, row.Text, coordinates, RegexOptions.CultureInvariant |
                 (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0)];
-        }
+                }
         foreach (var pattern in new[] { 13, 14, 15, 16, 17, 18, 19, 32, 33, 59, 85, 113, 114, 116, 117 })
-        foreach (var compiled in new[] { false, true })
-        foreach (var rtl in new[] { false, true })
-            yield return [pattern, alphabet, Array.Empty<int>(), RegexOptions.CultureInvariant |
+            foreach (var compiled in new[] { false, true })
+                foreach (var rtl in new[] { false, true })
+                    yield return [pattern, alphabet, Array.Empty<int>(), RegexOptions.CultureInvariant |
                 (compiled ? RegexOptions.Compiled : 0) | (rtl ? RegexOptions.RightToLeft : 0)];
     }
 

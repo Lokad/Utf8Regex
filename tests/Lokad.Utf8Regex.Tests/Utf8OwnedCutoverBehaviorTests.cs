@@ -101,7 +101,18 @@ public sealed class Utf8OwnedCutoverBehaviorTests
         if (bcl is Regex b && product is Utf8Regex p)
         {
             var expectedNames = b.GetGroupNames();
-            var actualNames = p.GetGroupNames();
+            var copiedNames7 = new string[p.CaptureGroupCount + 1];
+            for (var captureSlot7 = 0; captureSlot7 < copiedNames7.Length; captureSlot7++)
+            {
+                Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                    p.TryCopyGroupNameUtf8(captureSlot7, [], out var nameLength7));
+                var nameBytes7 = new byte[nameLength7];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    p.TryCopyGroupNameUtf8(captureSlot7, nameBytes7, out var written7));
+                Assert.Equal(nameLength7, written7);
+                copiedNames7[captureSlot7] = System.Text.Encoding.UTF8.GetString(nameBytes7);
+            }
+            var actualNames = copiedNames7;
             if (!expectedNames.SequenceEqual(actualNames))
             {
                 return "metadata:names bcl=[" + string.Join(",", expectedNames) + "]/product=[" + string.Join(",", actualNames) + "]";

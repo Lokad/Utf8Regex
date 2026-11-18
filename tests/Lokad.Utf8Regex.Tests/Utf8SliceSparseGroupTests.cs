@@ -34,10 +34,10 @@ public sealed class Utf8SliceSparseGroupTests
     public static IEnumerable<object[]> Cases()
     {
         for (var pattern = 0; pattern < Patterns.Length; pattern++)
-        foreach (var compiled in new[] { false, true })
-        foreach (var rtl in new[] { false, true })
-        foreach (var extra in new[] { RegexOptions.None, RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase })
-            yield return [pattern, RegexOptions.CultureInvariant | extra |
+            foreach (var compiled in new[] { false, true })
+                foreach (var rtl in new[] { false, true })
+                    foreach (var extra in new[] { RegexOptions.None, RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase })
+                        yield return [pattern, RegexOptions.CultureInvariant | extra |
                 (compiled ? RegexOptions.Compiled : RegexOptions.None) |
                 (rtl ? RegexOptions.RightToLeft : RegexOptions.None)];
     }
@@ -93,7 +93,18 @@ public sealed class Utf8SliceSparseGroupTests
         oracle = Utf8ScalarCaptureFixture.Project(oracle);
         var numbers = oracle.GetGroupNumbers();
         Assert.Equal(numbers, Enumerable.Range(0, regex.CaptureGroupCount + 1).Select(regex.GroupNumberFromCaptureSlot).ToArray());
-        Assert.Equal(oracle.GetGroupNames(), regex.GetGroupNames());
+        var copiedNames24 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot24 = 0; captureSlot24 < copiedNames24.Length; captureSlot24++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot24, [], out var nameLength24));
+            var nameBytes24 = new byte[nameLength24];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot24, nameBytes24, out var written24));
+            Assert.Equal(nameLength24, written24);
+            copiedNames24[captureSlot24] = System.Text.Encoding.UTF8.GetString(nameBytes24);
+        }
+        Assert.Equal(oracle.GetGroupNames(), copiedNames24);
         foreach (var number in numbers.Concat(new[] { -1, 0, 1, 2, 5, 7, 12, 13, int.MaxValue }).Distinct())
             Assert.Equal(oracle.GroupNameFromNumber(number), regex.GroupNameFromNumber(number));
         foreach (var name in oracle.GetGroupNames().Concat(new[] { "00", "01", "05", "012", "1", "x", "12", "missing" }))
@@ -145,32 +156,32 @@ public sealed class Utf8SliceSparseGroupTests
             }
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Offsets");
             foreach (var count in new[] { 0, 1, 2 })
-            foreach (var liveToken in new[] { false, true })
-            {
-                var actual = liveToken ? regex.EnumerateSplits(input, count, source.Token)
-                    : regex.EnumerateSplits(input, count);
-                if (count == 1)
+                foreach (var liveToken in new[] { false, true })
                 {
-                    // .NET 10.0.12 ValueSplitEnumerator can project a negative
-                    // endpoint for count one. Regex.Split retains the stable
-                    // single whole-input result; do not copy the enumerator bug.
-                    Assert.Equal(new[] { subject.Projected }, oracle.Split(subject.Projected, count));
-                    Assert.True(actual.MoveNext());
+                    var actual = liveToken ? regex.EnumerateSplits(input, count, source.Token)
+                        : regex.EnumerateSplits(input, count);
+                    if (count == 1)
+                    {
+                        // .NET 10.0.12 ValueSplitEnumerator can project a negative
+                        // endpoint for count one. Regex.Split retains the stable
+                        // single whole-input result; do not copy the enumerator bug.
+                        Assert.Equal(new[] { subject.Projected }, oracle.Split(subject.Projected, count));
+                        Assert.True(actual.MoveNext());
                         Assert.Equal((0, input.Length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
                         Assert.Equal(text, actual.Current.GetValueString());
+                        Assert.False(actual.MoveNext());
+                        continue;
+                    }
+                    var expected = oracle.EnumerateSplits(subject.Projected, count);
+                    while (expected.MoveNext())
+                    {
+                        Assert.True(actual.MoveNext());
+                        var (index, length) = expected.Current.GetOffsetAndLength(subject.Projected.Length);
+                        Assert.Equal(subject.ByteRange(index, length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
+                        Assert.Equal(subject.Value(index, length), actual.Current.GetValueString());
+                    }
                     Assert.False(actual.MoveNext());
-                    continue;
                 }
-                var expected = oracle.EnumerateSplits(subject.Projected, count);
-                while (expected.MoveNext())
-                {
-                    Assert.True(actual.MoveNext());
-                    var (index, length) = expected.Current.GetOffsetAndLength(subject.Projected.Length);
-                    Assert.Equal(subject.ByteRange(index, length), (actual.Current.IndexInBytes, actual.Current.LengthInBytes));
-                    Assert.Equal(subject.Value(index, length), actual.Current.GetValueString());
-                }
-                Assert.False(actual.MoveNext());
-            }
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Splits");
             foreach (var template in new[] { "Q", "$&", "<$1>|$" + "{5}|$12|$" + "{12}|$" + "{x}|$2147483647",
                 "$00|$01|$" + "{012}|$+", "$" + (char)96 + "|$'|$_", "\ud83d$" + "{12}\ude00" })

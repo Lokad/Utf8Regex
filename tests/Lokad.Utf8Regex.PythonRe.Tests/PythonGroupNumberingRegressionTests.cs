@@ -128,7 +128,18 @@ public sealed class PythonGroupNumberingRegressionTests
     public void NamedLookupUsesPythonSlots()
     {
         var regex = new Utf8PythonRegex("(?P<x>a)(b)");
-        Assert.Equal(["0", "x", "2"], regex.GetGroupNames());
+        var copiedNames29 = new string[regex.CaptureGroupCount + 1];
+        for (var captureSlot29 = 0; captureSlot29 < copiedNames29.Length; captureSlot29++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                regex.TryCopyGroupNameUtf8(captureSlot29, [], out var nameLength29));
+            var nameBytes29 = new byte[nameLength29];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyGroupNameUtf8(captureSlot29, nameBytes29, out var written29));
+            Assert.Equal(nameLength29, written29);
+            copiedNames29[captureSlot29] = System.Text.Encoding.UTF8.GetString(nameBytes29);
+        }
+        Assert.Equal(["0", "x", "2"], copiedNames29);
         Utf8PythonRangeMatch context = default;
         using (var captureCursor5 = regex.CreateMatchCursor(Utf8("ab"), mode: Utf8PythonMatchMode.Match))
         {

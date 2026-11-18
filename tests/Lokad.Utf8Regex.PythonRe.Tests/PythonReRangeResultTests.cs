@@ -63,7 +63,7 @@ public sealed class PythonReRangeResultTests
         var ranges = regex.SplitRanges(input, maxSplit, start, default);
         Assert.Equal(expected, ranges.Select(range => range.Success
             ? Encoding.UTF8.GetString(input.AsSpan(range.StartOffsetInBytes, range.EndOffsetInBytes - range.StartOffsetInBytes)) : null));
-        var groupCount = regex.GetGroupNames().Length - 1;
+        var groupCount = regex.CaptureGroupCount;
         for (var i = 0; i < ranges.Length; i++) Assert.Equal(i % (groupCount + 1), ranges[i].Number);
     }
 

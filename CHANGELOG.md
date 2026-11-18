@@ -2,6 +2,11 @@
 
 ## Unreleased — 0.5.0
 
+- Replace Core/PythonRe GetGroupNames with caller-buffer TryCopyGroupNameUtf8,
+  preserving compact/Python opening order and original cancellation. PythonRe
+  reuses scalar-program names and removes a duplicate table/builder. Funded
+  metadata copies require an open regex; recompile consumers.
+
 - Remove Core GetGroupNumbers. Resolve compact ordinals through CaptureGroupCount
   and GroupNumberFromCaptureSlot, preserving sparse/shared slot identities.
   Callers own copied collections; funded metadata access requires an open regex.

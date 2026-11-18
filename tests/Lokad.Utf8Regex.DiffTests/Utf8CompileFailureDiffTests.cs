@@ -80,10 +80,32 @@ public sealed class Utf8CompileFailureDiffTests
             {
                 MatchTimeout = Regex.InfiniteMatchTimeout
             });
+            var copiedNames26 = new string[product.CaptureGroupCount + 1];
+            for (var captureSlot26 = 0; captureSlot26 < copiedNames26.Length; captureSlot26++)
+            {
+                Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                    product.TryCopyGroupNameUtf8(captureSlot26, [], out var nameLength26));
+                var nameBytes26 = new byte[nameLength26];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    product.TryCopyGroupNameUtf8(captureSlot26, nameBytes26, out var written26));
+                Assert.Equal(nameLength26, written26);
+                copiedNames26[captureSlot26] = System.Text.Encoding.UTF8.GetString(nameBytes26);
+            }
 
-            Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
+            Assert.Equal(oracle.GetGroupNames(), copiedNames26);
             Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, product.CaptureGroupCount + 1).Select(product.GroupNumberFromCaptureSlot).ToArray());
-            Assert.Equal(oracle.GetGroupNames(), productTimeout.GetGroupNames());
+            var copiedNames27 = new string[productTimeout.CaptureGroupCount + 1];
+            for (var captureSlot27 = 0; captureSlot27 < copiedNames27.Length; captureSlot27++)
+            {
+                Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                    productTimeout.TryCopyGroupNameUtf8(captureSlot27, [], out var nameLength27));
+                var nameBytes27 = new byte[nameLength27];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    productTimeout.TryCopyGroupNameUtf8(captureSlot27, nameBytes27, out var written27));
+                Assert.Equal(nameLength27, written27);
+                copiedNames27[captureSlot27] = System.Text.Encoding.UTF8.GetString(nameBytes27);
+            }
+            Assert.Equal(oracle.GetGroupNames(), copiedNames27);
         }
     }
 }

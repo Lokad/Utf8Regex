@@ -148,7 +148,18 @@ public sealed class Utf8OwnedTreeParserExplicitTests
         Assert.NotNull(actual);
         var oracle = new Regex(pattern, (RegexOptions)options);
         var product = new Utf8Regex(pattern, options: (RegexOptions)options);
-        Assert.Equal(oracle.GetGroupNames(), product.GetGroupNames());
+        var copiedNames8 = new string[product.CaptureGroupCount + 1];
+        for (var captureSlot8 = 0; captureSlot8 < copiedNames8.Length; captureSlot8++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                product.TryCopyGroupNameUtf8(captureSlot8, [], out var nameLength8));
+            var nameBytes8 = new byte[nameLength8];
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                product.TryCopyGroupNameUtf8(captureSlot8, nameBytes8, out var written8));
+            Assert.Equal(nameLength8, written8);
+            copiedNames8[captureSlot8] = System.Text.Encoding.UTF8.GetString(nameBytes8);
+        }
+        Assert.Equal(oracle.GetGroupNames(), copiedNames8);
         Assert.Equal(oracle.GetGroupNumbers(), Enumerable.Range(0, product.CaptureGroupCount + 1).Select(product.GroupNumberFromCaptureSlot).ToArray());
         foreach (var inputText in inputs)
         {

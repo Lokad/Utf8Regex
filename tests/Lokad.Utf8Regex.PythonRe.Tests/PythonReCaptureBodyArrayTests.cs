@@ -87,7 +87,30 @@ public sealed class PythonReCaptureBodyArrayTests
     },
                 ConstructionTimeout = Regex.InfiniteMatchTimeout
             }, cancellationToken: default);
-            Assert.Equal(expected.GetGroupNames(), Compile(4000000).GetGroupNames());
+            using var admitted = Compile(4000000);
+            var copiedNames35 = new string[expected.CaptureGroupCount + 1];
+            for (var captureSlot35 = 0; captureSlot35 < copiedNames35.Length; captureSlot35++)
+            {
+                Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                    expected.TryCopyGroupNameUtf8(captureSlot35, [], out var nameLength35));
+                var nameBytes35 = new byte[nameLength35];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    expected.TryCopyGroupNameUtf8(captureSlot35, nameBytes35, out var written35));
+                Assert.Equal(nameLength35, written35);
+                copiedNames35[captureSlot35] = System.Text.Encoding.UTF8.GetString(nameBytes35);
+            }
+            var copiedNames36 = new string[admitted.CaptureGroupCount + 1];
+            for (var captureSlot36 = 0; captureSlot36 < copiedNames36.Length; captureSlot36++)
+            {
+                Assert.Equal(System.Buffers.OperationStatus.DestinationTooSmall,
+                    admitted.TryCopyGroupNameUtf8(captureSlot36, [], out var nameLength36));
+                var nameBytes36 = new byte[nameLength36];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    admitted.TryCopyGroupNameUtf8(captureSlot36, nameBytes36, out var written36));
+                Assert.Equal(nameLength36, written36);
+                copiedNames36[captureSlot36] = System.Text.Encoding.UTF8.GetString(nameBytes36);
+            }
+            Assert.Equal(copiedNames35, copiedNames36);
             foreach (var cap in new[] { 1UL, 128UL, 1024UL })
             {
                 var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => Compile(cap));
