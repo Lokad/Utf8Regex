@@ -24,7 +24,7 @@ public sealed class Pcre2BranchResetCompilerTests
         string pattern, string input, bool usesBranchReset, int captureSlotCount)
     {
         var bytes = Encoding.UTF8.GetBytes(input);
-        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern)) })
+        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern))})
         {
             Assert.Equal(usesBranchReset, regex.Analyze().UsesBranchReset);
             var match = regex.MatchDetailed(bytes);
@@ -137,10 +137,8 @@ public sealed class Pcre2BranchResetCompilerTests
         Assert.Equal(Pcre2ErrorKind.InvalidAfterParensQuery, error.ErrorKind);
     }
 
-    private static Utf8Pcre2Regex CreateDuplicateNameRegex() => new(
-        "(?:(?<n>foo)|(?<n>bar))\\k<n>",
-        Pcre2CompileOptions.None,
-        new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-        default(Utf8Pcre2ExecutionLimits),
-        System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
+    private static Utf8Pcre2Regex CreateDuplicateNameRegex() => new(        "(?:(?<n>foo)|(?<n>bar))\\k<n>", options:         Pcre2CompileOptions.None, compileSettings:         new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+    {
+        MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
+    });
 }

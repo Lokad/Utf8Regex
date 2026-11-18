@@ -25,8 +25,10 @@ public sealed class Pcre2ProbeValidationAuthorityTests
     public void SearchObservesOriginalInterruption(string pattern, bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {
@@ -66,8 +68,15 @@ public sealed class Pcre2ProbeValidationAuthorityTests
         }
     }
 
-    private static Utf8Pcre2Regex Create(string pattern, uint work) => new(pattern,
-        Pcre2CompileOptions.None, default, new() { MatchLimit = work,
-            DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 },
-        Timeout.InfiniteTimeSpan);
+    private static Utf8Pcre2Regex Create(string pattern, uint work) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    {
+        ResourcePolicy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = (work) == 0 ? null : (work),
+            MaxDepth = 256,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
+        },
+        MatchTimeout = Timeout.InfiniteTimeSpan
+    });
 }

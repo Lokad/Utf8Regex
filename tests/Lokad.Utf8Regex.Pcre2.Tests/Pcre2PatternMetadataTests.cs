@@ -53,7 +53,7 @@ public sealed class Pcre2PatternMetadataTests
     {
         var source = "(?#" + new string('x', 2043) + ")é😀\0";
         var encoded = Encoding.UTF8.GetBytes(source);
-        var regex = native ? new Utf8Pcre2Regex(encoded) : new Utf8Pcre2Regex(source);
+        var regex = native ? new Utf8Pcre2Regex(encoded): new Utf8Pcre2Regex(source);
         var destination = Enumerable.Repeat((byte)0xa5, encoded.Length + 2).ToArray();
         Assert.Equal(OperationStatus.DestinationTooSmall,
             regex.TryCopyPatternUtf8(destination.AsSpan(1, encoded.Length - 1), out var required));

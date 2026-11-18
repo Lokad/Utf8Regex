@@ -6,7 +6,13 @@ public sealed class Pcre2NullPatternTests
         Utf8ConstructionPolicy construction = default, TimeSpan? constructionTimeout = null, CancellationToken token = default)
     {
         var timeout = constructionTimeout ?? Timeout.InfiniteTimeSpan;
-        return Utf8Pcre2Regex.Compile((string)null!, default, default, Timeout.InfiniteTimeSpan, policy, construction, timeout, token);
+        return Utf8Pcre2Regex.Compile((string)null!, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = policy,
+            ConstructionPolicy = construction,
+            ConstructionTimeout = timeout
+        }, cancellationToken: token);
     }
 
     [Fact]
@@ -15,7 +21,11 @@ public sealed class Pcre2NullPatternTests
         Assert.Equal("pattern", Assert.Throws<ArgumentNullException>(() => new Utf8Pcre2Regex((string)null!)).ParamName);
         Assert.Equal("pattern", Assert.Throws<ArgumentNullException>(() => Compile()).ParamName);
         Assert.Equal("pattern", Assert.Throws<ArgumentNullException>(() =>
-            Utf8Pcre2Regex.Create((string)null!, default, default, default, Timeout.InfiniteTimeSpan)).ParamName);
+            new Utf8Pcre2Regex((string)null!, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = default,
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            })).ParamName);
         Assert.Equal("pattern", Assert.Throws<ArgumentNullException>(() =>
             Compile(construction: new Utf8ConstructionPolicy { MaxBytes = 1 })).ParamName);
         Assert.True(new Utf8Pcre2Regex(string.Empty).IsMatch(""u8));
@@ -25,9 +35,19 @@ public sealed class Pcre2NullPatternTests
     [Fact]
     public void ExistingArgumentAndPreCancellationPrecedenceIsPreserved()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex((string)null!, default, default, default, TimeSpan.Zero));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex((string)null!, (Pcre2CompileOptions)(1 << 30)));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Utf8Pcre2Regex.Create((string)null!, default, default, new Utf8ResourcePolicy { MaxWorkSteps = 0 }, Timeout.InfiniteTimeSpan));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex((string)null!, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.Zero
+        }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex((string)null!, options: (Pcre2CompileOptions)(1 << 30)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Pcre2Regex((string)null!, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 0
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        }));
         Assert.Throws<ArgumentOutOfRangeException>(() => Compile(construction: new Utf8ConstructionPolicy { MaxBytes = 0 }));
         Assert.Throws<ArgumentOutOfRangeException>(() => Compile(constructionTimeout: TimeSpan.Zero));
         using var cancellation = new CancellationTokenSource();

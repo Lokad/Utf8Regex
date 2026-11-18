@@ -17,7 +17,17 @@ public sealed class Pcre2BudgetedCategoryCountTests
         var expected = text.EnumerateRunes().Count(rune => Rune.GetUnicodeCategory(rune) == UnicodeCategory.MathSymbol);
         using var token = new CancellationTokenSource();
         {
-            var regex = Utf8Pcre2Regex.Create(@"\p{Sm}", default, default, new() { MaxWorkSteps = 100000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }, Timeout.InfiniteTimeSpan);
+            var regex = new Utf8Pcre2Regex(@"\p{Sm}", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new()
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 1,
+                    MaxWorkingBytes = 1,
+                    MaxResultBytes = 1
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             var allowance = new RejectStorage();
             Assert.Equal(expected, regex.Count(input, floor, default, token.Token, allowance));
             Assert.Equal(0, allowance.Attempts);
@@ -28,7 +38,14 @@ public sealed class Pcre2BudgetedCategoryCountTests
     public void CategoryCountKeepsRealWorkDenialAndOriginalCancellation()
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("a+∑😀", 1 << 16)));
-        var limited = Utf8Pcre2Regex.Create(@"\p{Sm}", default, default, new() { MaxWorkSteps = 1 }, Timeout.InfiniteTimeSpan);
+        var limited = new Utf8Pcre2Regex(@"\p{Sm}", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
         using var token = new CancellationTokenSource(); token.Cancel();
         var unlimited = new Utf8Pcre2Regex(@"\p{Sm}");
@@ -40,7 +57,10 @@ public sealed class Pcre2BudgetedCategoryCountTests
     [InlineData(false)] [InlineData(true)]
     public void CategoryCountChecksOriginalInterruptionBetweenBlocks(bool cancel)
     {
-        var regex = new Utf8Pcre2Regex(@"\p{Sm}", matchTimeout: TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(@"\p{Sm}", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var input = Encoding.ASCII.GetBytes(new string('+', 16384));
         var reads = 0;
         using var source = new CancellationTokenSource();

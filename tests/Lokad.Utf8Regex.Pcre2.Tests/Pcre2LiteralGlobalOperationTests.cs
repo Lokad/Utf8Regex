@@ -14,8 +14,14 @@ public sealed class Pcre2LiteralGlobalOperationTests
     [Fact]
     public void ControlledByteOnlyCountDenialPrecedesUnvisitedTail()
     {
-        var regex = new Utf8Pcre2Regex("é", default, default,
-            new() { MatchLimit = 1 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("é", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var bytes = Encoding.UTF8.GetBytes(new string('x', 8192) + "é");
         var failure = Assert.Throws<Pcre2MatchException>(() => regex.Count(bytes));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
@@ -33,9 +39,17 @@ public sealed class Pcre2LiteralGlobalOperationTests
     public void ControlledByteOnlyCountKeepsScalarOffsets(string pattern)
     {
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(pattern, default, default,
-            new() { MatchLimit = 100000, DepthLimit = 1, HeapLimitInBytes = 1, ResultLimitInBytes = 1 },
-            Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         foreach (var padding in new[] { 1023, 1024, 1025, 2025, 2047, 2048 })
         {
             var input = Encoding.UTF8.GetBytes("😀" + new string('x', padding) + pattern + " " + pattern);
@@ -84,9 +98,17 @@ public sealed class Pcre2LiteralGlobalOperationTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("é", default, default,
-            new() { MatchLimit = 100000, DepthLimit = 1, HeapLimitInBytes = 1, ResultLimitInBytes = 1 },
-            TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("é", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var bytes = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + "é");
         var checkpoints = 0;
         // The matching loop reaches the existing hook every 64 charged steps.
@@ -201,12 +223,10 @@ public sealed class Pcre2LiteralGlobalOperationTests
     [Fact]
     public void EmptyLiteralTreatsConfiguredCrlfAsOneProgressionUnit()
     {
-        var regex = new Utf8Pcre2Regex(
-            string.Empty,
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Crlf },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            string.Empty, options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
         var starts = new List<int>();
         var enumerator = regex.EnumerateMatches("\r\nx"u8);

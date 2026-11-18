@@ -28,7 +28,10 @@ public sealed class Pcre2FastPathTimeoutTests
             reads++;
             return expireAtRead != 0 && reads >= expireAtRead ? 2 : 0;
         });
-        var regex = new Utf8Pcre2Regex("abc", Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex("abc", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = Encoding.UTF8.GetBytes("xxabcxx");
         Assert.True(regex.Analyze().IsFullyNative);
         armed = true;
@@ -60,8 +63,10 @@ public sealed class Pcre2FastPathTimeoutTests
             // Start, entry, then return; these shapes do not need a search block.
             return ++reads >= 3 ? 2 : 0;
         });
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = Encoding.UTF8.GetBytes(text);
         armed = true;
         var failure = Assert.Throws<Pcre2MatchException>(() => regex.Match(input, startOffsetInBytes: 0, matchOptions: options));
@@ -78,8 +83,10 @@ public sealed class Pcre2FastPathTimeoutTests
             if (!armed) return 0;
             return ++reads >= 5 ? 2 : 0;
         });
-        var regex = new Utf8Pcre2Regex("abc", Pcre2CompileOptions.None, default,
-            default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex("abc", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 100000));
         armed = true;
         var failure = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input));
@@ -98,8 +105,10 @@ public sealed class Pcre2FastPathTimeoutTests
             if (!armed) return 0;
             return ++reads >= expireAtRead ? 2 : 0;
         });
-        var regex = new Utf8Pcre2Regex("abc", Pcre2CompileOptions.None, default,
-            default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex("abc", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         armed = true;
         var failure = Assert.Throws<Pcre2MatchException>(() =>
         {

@@ -14,7 +14,17 @@ public sealed class Pcre2SingleShotLimitTests
 {
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits limits)
     {
-        return new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+        return new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+            },
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
     }
 
     [Theory]
@@ -58,10 +68,24 @@ public sealed class Pcre2SingleShotLimitTests
     {
         var options = pattern.StartsWith("^") ? Pcre2CompileOptions.Multiline : Pcre2CompileOptions.Caseless;
         var input = Encoding.UTF8.GetBytes(inputText);
-        var limited = new Utf8Pcre2Regex(pattern, options, default, new() { MatchLimit = 1 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var limited = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(input)).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.Match(input)).ErrorKind);
-        var admitted = new Utf8Pcre2Regex(pattern, options, default, new() { MatchLimit = 1000 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var admitted = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000
+            },
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         Assert.True(admitted.IsMatch(input));
         Assert.True(admitted.Match(input).Success);
     }
@@ -73,7 +97,14 @@ public sealed class Pcre2SingleShotLimitTests
     {
         // The literal-family IsMatch charges per branch exploration, so even a first-position hit exceeds one unit.
         var input = Encoding.UTF8.GetBytes(inputText);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, new Utf8Pcre2ExecutionLimits { MatchLimit = 1 }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input)).ErrorKind);
     }
 }

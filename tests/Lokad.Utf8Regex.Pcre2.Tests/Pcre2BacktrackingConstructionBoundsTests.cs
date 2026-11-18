@@ -9,10 +9,19 @@ public sealed class Pcre2BacktrackingConstructionBoundsTests
 
     private static Utf8Pcre2Regex Compile(string pattern, Utf8ConstructionPolicy policy, bool bytes)
         => bytes
-            ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), default, default,
-                Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy, Timeout.InfiniteTimeSpan, default)
-            : Utf8Pcre2Regex.Compile(pattern, default, default,
-                Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy, Timeout.InfiniteTimeSpan, default);
+            ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), options: default, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = policy,
+                ConstructionTimeout = Timeout.InfiniteTimeSpan
+            }, cancellationToken: default)            : Utf8Pcre2Regex.Compile(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = Timeout.InfiniteTimeSpan,
+    ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+    ConstructionPolicy = policy,
+    ConstructionTimeout = Timeout.InfiniteTimeSpan
+}, cancellationToken: default);
 
     [Theory]
     [InlineData(false)] [InlineData(true)]

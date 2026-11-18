@@ -33,8 +33,17 @@ public sealed class Pcre2SubroutineCaptureReturnTests
             HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20
         } })
         {
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-                limits, Timeout.InfiniteTimeSpan);
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
             Assert.Equal(1, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));
             var match = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
@@ -63,9 +72,17 @@ public sealed class Pcre2SubroutineCaptureReturnTests
     [InlineData(@"(?(DEFINE)(?<x>a))(?=(?&x))a(?(x)c|d)", "ad", true)]
     public void ReferencesAndConditionsObserveCallerCaptureState(string pattern, string text, bool expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(expected ? 1 : 0, regex.Count(input));
@@ -93,10 +110,17 @@ public sealed class Pcre2SubroutineCaptureReturnTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?(DEFINE)(?<x>😀(?&x)?é))(?<w>(?&x))\k<w>",
-            Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(@"(?(DEFINE)(?<x>😀(?&x)?é))(?<w>(?&x))\k<w>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var input = "😀é😀é 😀é😀é"u8.ToArray();
         var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
         var cursor = regex.EnumerateMatches(input, 0, Pcre2MatchOptions.None, cancellation.Token);

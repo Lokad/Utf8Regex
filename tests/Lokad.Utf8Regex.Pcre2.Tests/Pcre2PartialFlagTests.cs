@@ -97,9 +97,17 @@ public sealed class Pcre2PartialFlagTests
     [Fact]
     public void EmptyRejectionKeepsInlinePartialAndAdmittedLaterFullSnapshot()
     {
-        Utf8Pcre2Regex Create(ulong resultBytes) => Utf8Pcre2Regex.Create(@"\Z", Pcre2CompileOptions.None, default,
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = resultBytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong resultBytes) => new Utf8Pcre2Regex(@"\Z", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = resultBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("x\n"u8, Pcre2PartialMode.Soft, 1,
             Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart).Kind);
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
@@ -119,7 +127,10 @@ public sealed class Pcre2PartialFlagTests
     public void RejectedEmptyStillObservesOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"\Z", Pcre2CompileOptions.None, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(@"\Z", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {

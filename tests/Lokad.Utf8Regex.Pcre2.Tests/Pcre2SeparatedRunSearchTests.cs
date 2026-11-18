@@ -131,10 +131,12 @@ public sealed class Pcre2SeparatedRunSearchTests
     }
 
     private static Utf8Pcre2Regex CreateMetered(string pattern, uint matchLimit) =>
-        new(
-            pattern,
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = matchLimit },
-            Regex.InfiniteMatchTimeout);
+        new(            pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (matchLimit) == 0 ? null : (matchLimit)
+            },
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
 }

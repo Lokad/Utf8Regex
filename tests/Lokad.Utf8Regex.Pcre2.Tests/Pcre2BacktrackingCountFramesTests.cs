@@ -141,7 +141,79 @@ public sealed class Pcre2BacktrackingCountFramesTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null,
-        TimeSpan? timeout = null) => new(pattern, Pcre2CompileOptions.None, default,
-            limits ?? new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 },
-            timeout ?? Timeout.InfiniteTimeSpan);
+        TimeSpan? timeout = null) => new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                )).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                )).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                )).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                )).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                )).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                )).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                )).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                )).ResultLimitInBytes
+            },
+            MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan
+        });
 }

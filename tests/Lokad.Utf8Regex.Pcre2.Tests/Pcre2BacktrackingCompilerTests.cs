@@ -136,8 +136,8 @@ public sealed class Pcre2BacktrackingCompilerTests
     [Fact]
     public void UngreedyAndNoAutoCaptureOptionsApplyToComposedPatterns()
     {
-        var ungreedy = new Utf8Pcre2Regex("a+?", Pcre2CompileOptions.Ungreedy);
-        var noAutoCapture = new Utf8Pcre2Regex("(a|ab)c", Pcre2CompileOptions.NoAutoCapture);
+        var ungreedy = new Utf8Pcre2Regex("a+?", options: Pcre2CompileOptions.Ungreedy);
+        var noAutoCapture = new Utf8Pcre2Regex("(a|ab)c", options: Pcre2CompileOptions.NoAutoCapture);
 
         Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(ungreedy.Match("aaa"u8).GetValueBytes()));
         Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(noAutoCapture.Match("abc"u8).GetValueBytes()));
@@ -147,24 +147,30 @@ public sealed class Pcre2BacktrackingCompilerTests
     [Fact]
     public void BacktrackingChargesMatchDepthAndHeapLimits()
     {
-        var matchLimited = new Utf8Pcre2Regex(
-            "a*a*a*z",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 20 },
-            System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
-        var depthLimited = new Utf8Pcre2Regex(
-            "(?:a|b)(?:c|d)z",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { DepthLimit = 1 },
-            System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
-        var heapLimited = new Utf8Pcre2Regex(
-            "a|b",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 },
-            System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
+        var matchLimited = new Utf8Pcre2Regex(            "a*a*a*z", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 20
+            },
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
+        });
+        var depthLimited = new Utf8Pcre2Regex(            "(?:a|b)(?:c|d)z", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = 1
+            },
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
+        });
+        var heapLimited = new Utf8Pcre2Regex(            "a|b", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1
+            },
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
+        });
 
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => matchLimited.IsMatch("aaaaaaaa"u8)).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.DepthLimit, Assert.Throws<Pcre2MatchException>(() => depthLimited.IsMatch("acy"u8)).ErrorKind);

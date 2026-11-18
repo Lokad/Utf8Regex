@@ -12,9 +12,17 @@ public sealed class Pcre2ReplacementPreparationIdentityTests
     }
 
     private static Utf8Pcre2Regex Create(bool finite, string pattern = "(a)?b") => finite
-        ? Utf8Pcre2Regex.Create(pattern, default, default,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 128,
-                MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 }, Timeout.InfiniteTimeSpan)
+        ? new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        })
         : new Utf8Pcre2Regex(pattern);
 
     [Theory] [MemberData(nameof(Routes))]

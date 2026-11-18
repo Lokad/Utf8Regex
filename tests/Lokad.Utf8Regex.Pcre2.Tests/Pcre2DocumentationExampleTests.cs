@@ -8,9 +8,7 @@ public sealed class Pcre2DocumentationExampleTests
     [Fact]
     public void ReadmeExampleUsesThePackedValueMatchContract()
     {
-        var regex = new Utf8Pcre2Regex(
-            @"(?<scheme>https?)://(?<host>[A-Za-z0-9.-]+)",
-            Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(            @"(?<scheme>https?)://(?<host>[A-Za-z0-9.-]+)", options:             Pcre2CompileOptions.None);
 
         ReadOnlySpan<byte> input = Encoding.UTF8.GetBytes(
             "Visit https://example.com and http://localhost.");

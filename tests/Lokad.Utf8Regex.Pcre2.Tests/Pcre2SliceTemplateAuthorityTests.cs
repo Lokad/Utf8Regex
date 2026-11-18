@@ -94,7 +94,10 @@ public sealed class Pcre2SliceTemplateAuthorityTests
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Pcre2Regex("(é)(😀)", Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("(é)(😀)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         var input = Encoding.UTF8.GetBytes(match ? "é😀" : "zzz");
         var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, Utf8ValidatedInput.Create(input),
@@ -135,8 +138,17 @@ public sealed class Pcre2SliceTemplateAuthorityTests
     private static Utf8Pcre2Regex Create(Utf8Pcre2ExecutionLimits limits, TimeSpan? timeout = null,
         string pattern = "(é)(😀)")
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, limits,
-            timeout ?? Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+            },
+            MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan
+        });
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         return regex;
     }

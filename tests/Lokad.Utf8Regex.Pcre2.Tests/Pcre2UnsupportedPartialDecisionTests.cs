@@ -6,13 +6,17 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2UnsupportedPartialDecisionTests
 {
     private static Utf8Pcre2Regex Create(string pattern, int policy = 0) =>
-        Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default, new()
+        new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
-            MaxWorkSteps = policy is 1 or 5 ? 1_000_000UL : null,
-            MaxDepth = policy is 2 or 5 ? 1024U : null,
-            MaxWorkingBytes = policy is 3 or 5 ? 1_048_576UL : null,
-            MaxResultBytes = policy is 4 or 5 ? 1_048_576UL : null
-        }, Timeout.InfiniteTimeSpan);
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = policy is 1 or 5 ? 1_000_000UL : null,
+                MaxDepth = policy is 2 or 5 ? 1024U : null,
+                MaxWorkingBytes = policy is 3 or 5 ? 1_048_576UL : null,
+                MaxResultBytes = policy is 4 or 5 ? 1_048_576UL : null
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
@@ -80,8 +84,10 @@ public sealed class Pcre2UnsupportedPartialDecisionTests
     public void GenericSoftDiscoveryKeepsOriginalDeadlineAndToken(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(?<x>a+)", Pcre2CompileOptions.None, default, default,
-            TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex("(?<x>a+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         var armed = false;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {

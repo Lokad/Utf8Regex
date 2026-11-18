@@ -37,7 +37,7 @@ public sealed class Pcre2SliceEscapeTests
     public void EscapeIsMatchMatchesOracle(string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }

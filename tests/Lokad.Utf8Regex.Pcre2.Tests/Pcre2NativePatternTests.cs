@@ -29,8 +29,13 @@ public sealed class Pcre2NativePatternTests
     public void PublicByteCompilationOwnsSourceAndPreservesGrammarAndDiscovery(string pattern, string subject)
     {
         var source = Encoding.UTF8.GetBytes(pattern);
-        var native = Utf8Pcre2Regex.Compile(source, default, default, Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, default);
+        var native = Utf8Pcre2Regex.Compile(source, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default);
         source.AsSpan().Fill((byte)'!');
         var text = new Utf8Pcre2Regex(pattern);
         var input = Encoding.UTF8.GetBytes(subject);
@@ -72,9 +77,17 @@ public sealed class Pcre2NativePatternTests
     public void NativeSourceAdmissionDoesNotRequireDecodedWholePatternCapacity()
     {
         var pattern = "(?#" + new string('x', 100000) + ")😀";
-        var regex = Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), default, default,
-            Timeout.InfiniteTimeSpan, default, new() { MaxBytes = 160000, MaxWorkSteps = 16000000 },
-            Timeout.InfiniteTimeSpan, default);
+        var regex = Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = new()
+            {
+                MaxBytes = 160000,
+                MaxWorkSteps = 16000000
+            },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default);
         Assert.Equal(1, regex.Count("a😀b"u8));
         Assert.Equal(pattern, regex.Pattern);
     }

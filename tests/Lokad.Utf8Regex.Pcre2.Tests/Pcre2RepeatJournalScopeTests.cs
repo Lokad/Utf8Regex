@@ -19,8 +19,14 @@ public sealed class Pcre2RepeatJournalScopeTests
     [InlineData(@"[a-z ]{1,8}\b", "alpha beta gamma", Pcre2CompileOptions.None, 3)]
     public void BoundedWordRepeatsPreserveProfilePredicates(string pattern, string text, Pcre2CompileOptions options, int expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options, default,
-            new() { MatchLimit = 1000000 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.Count(input));
         Assert.Equal(expected != 0, regex.IsMatch(input));
@@ -125,11 +131,79 @@ public sealed class Pcre2RepeatJournalScopeTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null) =>
-        new(pattern, Pcre2CompileOptions.None, default, limits ?? new()
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
-            MatchLimit = 1000000,
-            DepthLimit = 1024,
-            HeapLimitInBytes = 1048576,
-            ResultLimitInBytes = 1
-        }, Timeout.InfiniteTimeSpan);
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1
+                }
+
+                )).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1
+                }
+
+                )).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1
+                }
+
+                )).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1
+                }
+
+                )).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1
+                }
+
+                )).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1
+                }
+
+                )).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1
+                }
+
+                )).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1
+                }
+
+                )).ResultLimitInBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 }

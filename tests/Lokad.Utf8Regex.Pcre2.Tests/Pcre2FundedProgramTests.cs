@@ -5,7 +5,7 @@ using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-public sealed class Pcre2FundedProgramOwnerTests
+public sealed class Pcre2FundedProgramTests
 {
     [Theory] [InlineData(false)] [InlineData(true)]
     public void SeparateAccountsKeepCompilationFundedAndRefundTemporaryLoans(bool bytes)
@@ -36,7 +36,7 @@ public sealed class Pcre2FundedProgramOwnerTests
         Pcre2CompileOptions options, int start, Pcre2MatchOptions matchOptions)
     {
         var root = new Root(); var programs = new Account(root); var working = new Account(root);
-        var input = Encoding.UTF8.GetBytes(text); var regex = new Utf8Pcre2Regex(pattern, options);
+        var input = Encoding.UTF8.GetBytes(text); var regex = new Utf8Pcre2Regex(pattern, options: options);
         var count = regex.Count(input, start, matchOptions); var exists = regex.IsMatch(input, start, matchOptions);
         Assert.Equal(count, regex.Count(input, start, matchOptions, default, working));
         Assert.Equal(exists, regex.IsMatch(input, start, matchOptions, default, working)); Assert.Equal(0UL, working.Used);
@@ -55,13 +55,25 @@ public sealed class Pcre2FundedProgramOwnerTests
     {
         var root = new Root(); var account = new Account(root); Assert.True(account.TryReserve(13));
         var pattern = "é+"u8.ToArray();
-        using (var owner = Utf8Pcre2Regex.Compile(pattern, Pcre2CompileOptions.None, default, Timeout.InfiniteTimeSpan,
-            default, default, Timeout.InfiniteTimeSpan, default, account))
+        using (var owner = Utf8Pcre2Regex.Compile(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = Timeout.InfiniteTimeSpan,
+    ResourcePolicy = default,
+    ConstructionPolicy = default,
+    ConstructionTimeout = Timeout.InfiniteTimeSpan,
+    ProgramMemoryAllowance = account
+}, cancellationToken: default))
         { Array.Fill(pattern, (byte)'x'); Assert.Equal(1, owner.Count("éé"u8)); }
         Assert.Equal(13UL, root.Used);
         Assert.Throws<Pcre2CompileException>(() => Compile("(?<123>a)", account)); Assert.Equal(13UL, root.Used);
-        Assert.Throws<ArgumentException>(() => Utf8Pcre2Regex.Compile(new byte[] { 0xff }, Pcre2CompileOptions.None,
-            default, Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account));
+        Assert.Throws<ArgumentException>(() => Utf8Pcre2Regex.Compile(new byte[] { 0xff }, options: Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = Timeout.InfiniteTimeSpan,
+    ResourcePolicy = default,
+    ConstructionPolicy = default,
+    ConstructionTimeout = Timeout.InfiniteTimeSpan,
+    ProgramMemoryAllowance = account
+}, cancellationToken: default));
         Assert.Equal(13UL, root.Used);
         using var canceled = new CancellationTokenSource(); account.AfterGrant = canceled.Cancel;
         Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => Compile("(a+)", account, token: canceled.Token)).CancellationToken);
@@ -112,7 +124,11 @@ public sealed class Pcre2FundedProgramOwnerTests
             _ => new Utf8ResourcePolicy { MaxDepth = 1 }
         };
         const string pattern = "(?=(?=(a+)))a+";
-        var baseline = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default, policy, Timeout.InfiniteTimeSpan);
+        var baseline = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    ResourcePolicy = policy,
+    MatchTimeout = Timeout.InfiniteTimeSpan
+});
         var expected = Assert.Throws<Pcre2MatchException>(() => baseline.Count("aaaa"u8));
         var root = new Root(); var account = new Account(root);
         using var owner = Compile(pattern, account, policy: policy); var held = account.Used;
@@ -188,13 +204,24 @@ public sealed class Pcre2FundedProgramOwnerTests
         Assert.Equal(held, root.Used);
     }
 
-    private static Utf8Pcre2RegexProgramOwner Compile(string pattern, Account account, bool bytes = false,
+    private static Utf8Pcre2Regex Compile(string pattern, Account account, bool bytes = false,
         Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8ResourcePolicy policy = default,
         CancellationToken token = default, TimeSpan? matchTimeout = null)
-        => bytes ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), options, default, matchTimeout ?? Timeout.InfiniteTimeSpan,
-            policy, default, Timeout.InfiniteTimeSpan, token, account)
-        : Utf8Pcre2Regex.Compile(pattern, options, default, matchTimeout ?? Timeout.InfiniteTimeSpan,
-            policy, default, Timeout.InfiniteTimeSpan, token, account);
+        => bytes ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), options: options, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = matchTimeout ?? Timeout.InfiniteTimeSpan,
+    ResourcePolicy = policy,
+    ConstructionPolicy = default,
+    ConstructionTimeout = Timeout.InfiniteTimeSpan,
+    ProgramMemoryAllowance = account
+}, cancellationToken: token)        : Utf8Pcre2Regex.Compile(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = matchTimeout ?? Timeout.InfiniteTimeSpan,
+    ResourcePolicy = policy,
+    ConstructionPolicy = default,
+    ConstructionTimeout = Timeout.InfiniteTimeSpan,
+    ProgramMemoryAllowance = account
+}, cancellationToken: token);
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
@@ -384,9 +411,17 @@ public sealed class Pcre2FundedProgramOwnerTests
     public void ProgramCacheAllowanceIsAdmittedAndInterruptedBeforeOwnerPublication()
     {
         var root = new Root(); var programs = new Account(root); Assert.True(programs.TryReserve(13));
-        var refusal = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8Pcre2Regex.Compile(
-            "alpha", default, default, Timeout.InfiniteTimeSpan, default, new() { MaxBytes = 1 << 20 },
-            Timeout.InfiniteTimeSpan, default, programs));
+        var refusal = Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8Pcre2Regex.Compile(            "alpha", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = Timeout.InfiniteTimeSpan,
+    ResourcePolicy = default,
+    ConstructionPolicy = new()
+    {
+        MaxBytes = 1 << 20
+    },
+    ConstructionTimeout = Timeout.InfiniteTimeSpan,
+    ProgramMemoryAllowance = programs
+}, cancellationToken: default));
         Assert.Equal(Utf8ResourceLimitKind.ConstructionBytes, refusal.ResourceKind); Assert.Equal(13UL, root.Used);
         using var canceled = new CancellationTokenSource();
         programs.AfterGrant = () => { if (programs.Used > 4UL << 20) canceled.Cancel(); };

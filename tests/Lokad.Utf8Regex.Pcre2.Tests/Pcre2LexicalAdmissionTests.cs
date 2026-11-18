@@ -30,10 +30,19 @@ public sealed class Pcre2LexicalAdmissionTests
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
             _ = bytes
-                ? Utf8Pcre2Regex.Compile(System.Text.Encoding.UTF8.GetBytes(pattern), default, default,
-                    Timeout.InfiniteTimeSpan, default, policy, Timeout.InfiniteTimeSpan, default)
-                : Utf8Pcre2Regex.Compile(pattern, default, default,
-                    Timeout.InfiniteTimeSpan, default, policy, Timeout.InfiniteTimeSpan, default);
+                ? Utf8Pcre2Regex.Compile(System.Text.Encoding.UTF8.GetBytes(pattern), options: default, compileSettings: default, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = default,
+                    ConstructionPolicy = policy,
+                    ConstructionTimeout = Timeout.InfiniteTimeSpan
+                }, cancellationToken: default)                : Utf8Pcre2Regex.Compile(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = Timeout.InfiniteTimeSpan,
+    ResourcePolicy = default,
+    ConstructionPolicy = policy,
+    ConstructionTimeout = Timeout.InfiniteTimeSpan
+}, cancellationToken: default);
         });
         Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, failure.ResourceKind);
         Assert.Equal(2ul, failure.Requested);

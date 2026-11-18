@@ -107,8 +107,10 @@ public sealed class Pcre2CrlfDotProbeTests
     public void CrlfDotPreservesNativeScalarEndpointAndRepeatPreference(string pattern, string text, int start,
         bool dotAll, Pcre2MatchOptions flags, Pcre2PartialMode mode, Utf8Pcre2ProbeKind kind, int begin, int end)
     {
-        var regex = new Utf8Pcre2Regex(pattern, dotAll ? Pcre2CompileOptions.DotAll : Pcre2CompileOptions.None,
-            new() { Newline = Pcre2NewlineConvention.Crlf }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: dotAll ? Pcre2CompileOptions.DotAll : Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         var probe = regex.Probe(input, mode, start, flags);
         Assert.Equal(kind, probe.Kind);
@@ -124,8 +126,10 @@ public sealed class Pcre2CrlfDotProbeTests
     [InlineData(false)] [InlineData(true)]
     public void InlineDotAllUsesAdmittedTokenOptions(bool dotAll)
     {
-        var regex = new Utf8Pcre2Regex(dotAll ? "(?s:.{2,3})" : "(?-s:.{2,3})", Pcre2CompileOptions.DotAll,
-            new() { Newline = Pcre2NewlineConvention.Crlf }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(dotAll ? "(?s:.{2,3})" : "(?-s:.{2,3})", options: Pcre2CompileOptions.DotAll, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var probe = regex.Probe("a\r\nb"u8, Pcre2PartialMode.Soft);
         Assert.Equal(dotAll ? Utf8Pcre2ProbeKind.FullMatch : Utf8Pcre2ProbeKind.PartialMatch, probe.Kind);
         Assert.Equal(dotAll ? (0, 3) : (3, 4), (probe.Value.StartOffsetInBytes, probe.Value.EndOffsetInBytes));
@@ -135,8 +139,10 @@ public sealed class Pcre2CrlfDotProbeTests
     [InlineData(false)] [InlineData(true)]
     public void UngreedyOptionPreservesAdmittedRepeatPreference(bool explicitLazy)
     {
-        var regex = new Utf8Pcre2Regex(explicitLazy ? ".{2,3}?" : ".{2,3}", Pcre2CompileOptions.Ungreedy,
-            new() { Newline = Pcre2NewlineConvention.Crlf }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(explicitLazy ? ".{2,3}?" : ".{2,3}", options: Pcre2CompileOptions.Ungreedy, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var probe = regex.Probe("😀éx"u8, Pcre2PartialMode.Hard);
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, probe.Kind);
         Assert.Equal((0, explicitLazy ? 7 : 6), (probe.Value.StartOffsetInBytes, probe.Value.EndOffsetInBytes));
@@ -146,10 +152,17 @@ public sealed class Pcre2CrlfDotProbeTests
     public void FiniteFullPublicationKeepsExactScalarRangeAndRetainedAlias()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
-        Utf8Pcre2Regex Create(ulong bytes) => Utf8Pcre2Regex.Create(".{2,3}?", Pcre2CompileOptions.None,
-            new() { Newline = Pcre2NewlineConvention.Crlf },
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = bytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex(".{2,3}?", options: Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = bytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("\r\n😀éx"u8, Pcre2PartialMode.Hard); }).ErrorKind);
         var regex = Create(capacity);
@@ -167,8 +180,10 @@ public sealed class Pcre2CrlfDotProbeTests
     [InlineData(false)] [InlineData(true)]
     public void CompiledAnchorRetainsOriginalCrlfCandidate(bool lazy)
     {
-        var regex = new Utf8Pcre2Regex(lazy ? ".{2,3}?" : ".{2,3}", Pcre2CompileOptions.Anchored,
-            new() { Newline = Pcre2NewlineConvention.Crlf }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(lazy ? ".{2,3}?" : ".{2,3}", options: Pcre2CompileOptions.Anchored, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("\r\n😀é"u8, Pcre2PartialMode.Hard).Kind);
         var probe = regex.Probe("\r\n😀é"u8, Pcre2PartialMode.Hard, 2);
         Assert.Equal(lazy ? Utf8Pcre2ProbeKind.FullMatch : Utf8Pcre2ProbeKind.PartialMatch, probe.Kind);
@@ -178,8 +193,14 @@ public sealed class Pcre2CrlfDotProbeTests
     [Fact]
     public void CrlfCandidateWorkCannotBypassFiniteAllowance()
     {
-        var regex = new Utf8Pcre2Regex(".{2,3}", Pcre2CompileOptions.None,
-            new() { Newline = Pcre2NewlineConvention.Crlf }, new() { MatchLimit = 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(".{2,3}", options: Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\r\n", 4096)));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = regex.Probe(input, Pcre2PartialMode.Hard); }).ErrorKind);
@@ -191,8 +212,10 @@ public sealed class Pcre2CrlfDotProbeTests
     public void CrlfCandidateSearchObservesOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(".{2,3}", Pcre2CompileOptions.None,
-            new() { Newline = Pcre2NewlineConvention.Crlf }, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(".{2,3}", options: Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {

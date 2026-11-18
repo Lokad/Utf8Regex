@@ -58,12 +58,9 @@ public sealed class Pcre2AssertionCompilerTests
     [Fact]
     public void PositiveAssertionCapturesFlowToBackreferencesAndDetailedResults()
     {
-        var lookahead = new Utf8Pcre2Regex("(?=(?<word>[a-z]+))\\k<word>")
-            .MatchDetailed("abc!"u8);
-        var lookbehind = new Utf8Pcre2Regex("(?<=(a|b))\\1")
-            .MatchDetailed("xaa"u8);
-        var outerToAssertion = new Utf8Pcre2Regex("(a)(?=\\1b)\\1b")
-            .MatchDetailed("aab"u8);
+        var lookahead = new Utf8Pcre2Regex("(?=(?<word>[a-z]+))\\k<word>")            .MatchDetailed("abc!"u8);
+        var lookbehind = new Utf8Pcre2Regex("(?<=(a|b))\\1")            .MatchDetailed("xaa"u8);
+        var outerToAssertion = new Utf8Pcre2Regex("(a)(?=\\1b)\\1b")            .MatchDetailed("aab"u8);
 
         Assert.True(lookahead.Success);
         Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(lookahead.Value.GetValueBytes()));
@@ -184,12 +181,14 @@ public sealed class Pcre2AssertionCompilerTests
     {
         // Both repeat branches remain viable; the assertion still needs a
         // pending alternative in addition to its own logical depth.
-        var limited = new Utf8Pcre2Regex(
-            "(?=(a+|a+b))a",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { DepthLimit = 1 },
-            System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
+        var limited = new Utf8Pcre2Regex(            "(?=(a+|a+b))a", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = 1
+            },
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
+        });
         Assert.Equal(
             Pcre2ErrorKind.DepthLimit,
             Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("a"u8)).ErrorKind);

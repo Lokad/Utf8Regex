@@ -468,14 +468,22 @@ internal static partial class BenchmarkInspectReporter
         { Console.WriteLine("Native JIT comparison excluded: this pattern was not JIT-compiled."); return; }
         var input = Encoding.UTF8.GetBytes(row.Input);
         var options = Utf8Pcre2BenchmarkCatalog.ToPcre2Options(row.Options);
-        var trusted = Utf8Pcre2Regex.Create(row.Pattern, options, row.CompileSettings, default, Timeout.InfiniteTimeSpan);
-        var finite = Utf8Pcre2Regex.Create(row.Pattern, options, row.CompileSettings, new()
+        var trusted = new Utf8Pcre2Regex(row.Pattern, options: options, compileSettings: row.CompileSettings, policy: new Utf8RegexPolicy
         {
-            MaxWorkSteps = 50_000_000,
-            MaxDepth = 4096,
-            MaxWorkingBytes = 16 << 20,
-            MaxResultBytes = 16 << 20
-        }, TimeSpan.FromSeconds(10));
+            ResourcePolicy = default,
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
+        var finite = new Utf8Pcre2Regex(row.Pattern, options: options, compileSettings: row.CompileSettings, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 50_000_000,
+                MaxDepth = 4096,
+                MaxWorkingBytes = 16 << 20,
+                MaxResultBytes = 16 << 20
+            },
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         using var cancellation = new CancellationTokenSource();
         Console.WriteLine($"TrustedNativeModes: native PCRE2 {PcreNetNativeBenchmarkBaseline.NativePcre2Version}; UTF + NO_UTF_CHECK; JIT size={plan.JitSizeBytes}; managed caller-valid unchanged UTF-8");
         foreach (var operation in new[] { Utf8Pcre2BenchmarkOperation.IsMatch, Utf8Pcre2BenchmarkOperation.Count })
@@ -702,7 +710,7 @@ internal static partial class BenchmarkInspectReporter
 
         // Prime shared JIT once before the samples; the first-use rows below intentionally isolate per-instance work.
         const int sharedTierPrimeCalls = 64;
-        var primeRegex = new Utf8Pcre2Regex(benchmarkCase.Pattern, Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options));
+        var primeRegex = new Utf8Pcre2Regex(benchmarkCase.Pattern, options: Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options));
         var primeSink = 0;
         for (var i = 0; i < sharedTierPrimeCalls; i++)
         {
@@ -721,19 +729,19 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"SharedTierPrimeCalls: {sharedTierPrimeCalls}");
 
         MeasureFixedConstruction("Pcre2Construct", samples, instanceCount,
-            () => new Utf8Pcre2Regex(benchmarkCase.Pattern, Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options)));
+            () => new Utf8Pcre2Regex(benchmarkCase.Pattern, options: Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options)));
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.IsMatch) != 0)
         {
             MeasureFixedFirstCall("Pcre2FirstIsMatch", samples, instanceCount,
-                () => new Utf8Pcre2Regex(benchmarkCase.Pattern, Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options)),
+                () => new Utf8Pcre2Regex(benchmarkCase.Pattern, options: Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options)),
                 regex => regex.IsMatch(context.InputBytes) ? 1 : 0);
         }
 
         if ((benchmarkCase.SupportedOperations & Utf8Pcre2BenchmarkOperation.Count) != 0)
         {
             MeasureFixedFirstCall("Pcre2FirstCount", samples, instanceCount,
-                () => new Utf8Pcre2Regex(benchmarkCase.Pattern, Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options)),
+                () => new Utf8Pcre2Regex(benchmarkCase.Pattern, options: Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options)),
                 regex => regex.Count(context.InputBytes));
         }
 
@@ -1374,12 +1382,10 @@ var rangeResult61356 = enumerator.Current;
     }
 
     private static Utf8Pcre2Regex CreatePcre2BenchmarkRegex(Utf8Pcre2BenchmarkCase benchmarkCase)
-        => new(
-            benchmarkCase.Pattern,
-            Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options),
-            benchmarkCase.CompileSettings,
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        => new(            benchmarkCase.Pattern, options:             Utf8Pcre2BenchmarkCatalog.ToPcre2Options(benchmarkCase.Options), compileSettings:             benchmarkCase.CompileSettings, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
     private static int ExecutePcre2SnapshotOperation(
         Utf8Pcre2Regex regex,

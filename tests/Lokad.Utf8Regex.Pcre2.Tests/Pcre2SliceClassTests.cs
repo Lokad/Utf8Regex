@@ -27,7 +27,7 @@ public sealed class Pcre2SliceClassTests
     [MemberData(nameof(SliceClassShapes))]
     public void CompoundClassShapesRouteThroughSlice(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(
             "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
@@ -36,7 +36,7 @@ public sealed class Pcre2SliceClassTests
     [Fact]
     public void AnchoredClassUsesSharedScalarExecution()
     {
-        var regex = new Utf8Pcre2Regex("^[a-z]+$", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("^[a-z]+$", options: Pcre2CompileOptions.None);
         Assert.Equal(
             "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
@@ -45,7 +45,7 @@ public sealed class Pcre2SliceClassTests
     [Fact]
     public void PosixClassDeclinesSliceRouting()
     {
-        var regex = new Utf8Pcre2Regex("([[:alpha:]]+)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("([[:alpha:]]+)", options: Pcre2CompileOptions.None);
         Assert.Null(regex.DebugCompiledProgram.PrimaryUtf8);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
@@ -59,7 +59,7 @@ public sealed class Pcre2SliceClassTests
     public void PosixProgramsKeepProfileResultsAcrossOperations(
         string pattern, string text, string[] expected, string replacement)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var input = Utf8(text);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(input, 0));
@@ -102,7 +102,7 @@ public sealed class Pcre2SliceClassTests
     public void OwnedIsMatchMatchesNativeSemantics(
         string pattern, string inputText, int startOffsetInBytes, bool expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText), startOffsetInBytes));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -114,7 +114,7 @@ public sealed class Pcre2SliceClassTests
     public void OwnedCountMatchesNativeSemantics(
         string pattern, string inputText, int expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -125,7 +125,7 @@ public sealed class Pcre2SliceClassTests
     public void OwnedFirstMatchProjectsScalarBytes(
         string pattern, string inputText, int expectedStart, int expectedEnd)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var found = regex.Match(Utf8(inputText), startOffsetInBytes: 0);
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
@@ -136,7 +136,7 @@ public sealed class Pcre2SliceClassTests
     [Fact]
     public void OwnedEnumerationAdvancesThroughClasses()
     {
-        var regex = new Utf8Pcre2Regex("[a-z]+|[0-9]+", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("[a-z]+|[0-9]+", options: Pcre2CompileOptions.None);
         var enumerator = regex.EnumerateMatches(Utf8("ab12"), 0);
         var ranges = new List<string>();
         while (enumerator.MoveNext())
@@ -153,7 +153,7 @@ public sealed class Pcre2SliceClassTests
     [Fact]
     public void OwnedDetailedProjectsClassGroup()
     {
-        var regex = new Utf8Pcre2Regex("([^a-z]+)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("([^a-z]+)", options: Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("xxAByy"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("AB", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
@@ -164,7 +164,7 @@ public sealed class Pcre2SliceClassTests
     [Fact]
     public void OwnedReplaceExpandsClassGroup()
     {
-        var regex = new Utf8Pcre2Regex("([a-z]+)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("([a-z]+)", options: Pcre2CompileOptions.None);
         Assert.Equal("<xxabbyy>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xxabbyy"), "<$1>")));
         Assert.True(regex.DebugCompiledProgram is not null);
     }

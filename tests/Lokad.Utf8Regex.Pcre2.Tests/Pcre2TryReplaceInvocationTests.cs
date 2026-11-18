@@ -24,8 +24,10 @@ public sealed class Pcre2TryReplaceInvocationTests
         foreach (var hit in new[] { true, false })
         {
             using var source = new CancellationTokenSource();
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-                default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(20));
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(20)
+            });
             var input = Encoding.UTF8.GetBytes(hit ? text : "zzz");
             var replacement = Encoding.UTF8.GetBytes(template);
             var destination = new byte[64]; destination.AsSpan().Fill(0xcc);
@@ -158,9 +160,17 @@ public sealed class Pcre2TryReplaceInvocationTests
     [Fact]
     public void OverlappingStagingRequiresAdmissionBeforeWriting()
     {
-        var regex = new Utf8Pcre2Regex("a", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 4096,
-                ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("a", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 4096,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes("a" + new string('x', 8191));
         var independent = new byte[input.Length];
         Assert.Equal(OperationStatus.Done, regex.TryReplace(input, "Q"u8, independent, out _));
@@ -178,9 +188,17 @@ public sealed class Pcre2TryReplaceInvocationTests
         var destination = new byte[64]; destination.AsSpan().Fill(0xcc);
         foreach (var heap in new[] { true, false })
         {
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-                new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = heap ? 1UL : 1UL << 20,
-                    ResultLimitInBytes = heap ? 1UL << 20 : 1UL }, Timeout.InfiniteTimeSpan);
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = 100000,
+                    MaxDepth = 256,
+                    MaxWorkingBytes = (heap ? 1UL : 1UL << 20) == 0 ? null : (heap ? 1UL : 1UL << 20),
+                    MaxResultBytes = (heap ? 1UL << 20 : 1UL) == 0 ? null : (heap ? 1UL << 20 : 1UL)
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             Assert.Equal(heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.ResultLimit,
                 Assert.Throws<Pcre2MatchException>(() => regex.TryReplace(input, replacement, destination, out _)).ErrorKind);
             Assert.All(destination, value => Assert.Equal((byte)0xcc, value));
@@ -195,8 +213,10 @@ public sealed class Pcre2TryReplaceInvocationTests
         var input = new byte[16384]; input.AsSpan().Fill((byte)'x');
         var destination = new byte[input.Length]; destination.AsSpan().Fill(0xcc);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("abc", Pcre2CompileOptions.None, default,
-            default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("abc", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (destination[0] == (byte)'x') source.Cancel(); return 0; });
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
@@ -206,7 +226,15 @@ public sealed class Pcre2TryReplaceInvocationTests
         Assert.All(input, value => Assert.Equal((byte)'x', value));
     }
 
-    private static Utf8Pcre2Regex Policy(string pattern, uint work) => new(pattern,
-        Pcre2CompileOptions.None, default, new() { MatchLimit = work, DepthLimit = 256,
-            HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+    private static Utf8Pcre2Regex Policy(string pattern, uint work) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    {
+        ResourcePolicy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = (work) == 0 ? null : (work),
+            MaxDepth = 256,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
+        },
+        MatchTimeout = Timeout.InfiniteTimeSpan
+    });
 }

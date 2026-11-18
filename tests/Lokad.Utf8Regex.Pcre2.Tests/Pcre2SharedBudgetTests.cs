@@ -23,8 +23,14 @@ public sealed class Pcre2SharedBudgetTests
     public void PublicCopiedCursorsCannotForkTheirFiniteWorkAllowance(string pattern, string input,
         Pcre2MatchOptions options, bool afterFirst)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 128 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 128
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(input, 64)));
         var original = regex.EnumerateMatches(bytes, 0, options);
         var alias = original;
@@ -49,8 +55,14 @@ public sealed class Pcre2SharedBudgetTests
     [InlineData("[ab]", "abab")]
     public void PublicAliasesKeepIndependentPositionsWithOneWorkAllowance(string pattern, string input)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 128 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 128
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var original = regex.EnumerateMatches(Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(input, 64))));
         Assert.True(original.MoveNext());
         var first = original.Current;

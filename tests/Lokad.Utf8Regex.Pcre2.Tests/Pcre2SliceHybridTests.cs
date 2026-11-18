@@ -29,7 +29,7 @@ public sealed class Pcre2SliceHybridTests
     [InlineData("[a\\d]+")]
     public void HybridShapesDeclineSliceRouting(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 
@@ -41,9 +41,9 @@ public sealed class Pcre2SliceHybridTests
         var arabicDigit = char.ConvertFromUtf32(0x660);
         var input = Utf8(arabicDigit);
         Assert.True(Bcl("[\\da]+").IsMatch(arabicDigit));
-        Assert.False(new Utf8Pcre2Regex("[\\da]+", Pcre2CompileOptions.None).IsMatch(input));
+        Assert.False(new Utf8Pcre2Regex("[\\da]+", options: Pcre2CompileOptions.None).IsMatch(input));
         Assert.False(Bcl("[^\\da]+").IsMatch(arabicDigit));
-        Assert.True(new Utf8Pcre2Regex("[^\\da]+", Pcre2CompileOptions.None).IsMatch(input));
+        Assert.True(new Utf8Pcre2Regex("[^\\da]+", options: Pcre2CompileOptions.None).IsMatch(input));
     }
 
     [Theory]
@@ -54,7 +54,7 @@ public sealed class Pcre2SliceHybridTests
         string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -65,7 +65,7 @@ public sealed class Pcre2SliceHybridTests
         string pattern, string inputText, int expected)
     {
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -73,7 +73,7 @@ public sealed class Pcre2SliceHybridTests
     [Fact]
     public void NativeFirstMatchProjectsBytes()
     {
-        var regex = new Utf8Pcre2Regex("([a\\d]+)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("([a\\d]+)", options: Pcre2CompileOptions.None);
         var found = regex.Match(Utf8("xxa1b"), startOffsetInBytes: 0);
         Assert.True(found.Success);
         Assert.Equal(2, found.StartOffsetInBytes);

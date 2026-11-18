@@ -388,8 +388,17 @@ neighbors remain nonword in that mode. Interior assertions, mixed/nonword
 endpoints and UCP keep their established executors. Flags, controlled calls and
 capture-returning operations retain the owned VM.
 
-`Compile(..., token, programMemoryAllowance)` returns a disposable
-`Utf8Pcre2RegexProgramOwner` for text or strict UTF-8 pattern input. Compilation
+Constructors and the two `Compile` representations accept immutable
+`Utf8RegexPolicy` and return disposable `Utf8Pcre2Regex`, funded or not. Options
+and PCRE2 compile settings remain independent inputs. Shared positive resource
+fields map to the existing PCRE2 limits; work above uint.MaxValue rejects.
+`ResourcePolicy` and `DefaultExecutionLimits` are read-only projections; zero in
+the latter denotes unlimited. Policy field errors name `policy`. Null match
+timeout uses DefaultMatchTimeout; null construction timeout is infinite.
+Compile additionally accepts an original construction token, checked before policy/
+pattern work and not retained for later matching. Default construction inherits
+an existing authority; explicit construction/funding cannot replace an active owner.
+No separate Create factory or funded facade remains. Compilation
 uses the existing shared allowance before substantial acquisition, without an
 extra private byte ceiling when construction MaxBytes is null. Fixed work/depth/
 instruction backstops remain. Byte patterns are strictly validated, copied into
@@ -408,26 +417,35 @@ allocation. It intentionally raises the modeled program admission required by
 earlier owners. Cache publication/eviction needs no additional entry lease or
 funding transfer. Ordinary expressions retain their existing cache bounds.
 
-The owner exposes Boolean matching and Count with byte starts, PCRE2 match flags
-and each call's cancellation token. Temporary storage uses program funding by
-default; an explicit working allowance selects a separate host account. Ordinary
-expressions accept `workingMemoryAllowance=null` as an optional final parameter
-on their single IsMatch/Count signatures. Null keeps numeric controls without a
-shared account; a non-null account also fences unmetered literal shortcuts.
-The funded owner's null still selects program funding. Existing numeric limits, original
+IsMatch, Match, Count, persistent cursor creation and destination replacement
+expose an optional shared working allowance. Null inherits program funding, or
+keeps numeric controls when unfunded; an explicit account overrides working only.
+A shared account fences unmetered literal shortcuts. Numeric limits, original
 cancellation and PCRE2 timeout/limit errors still apply. Shared refusal throws
 `Utf8MemoryAdmissionException` synchronously and never retries elsewhere.
 Covered temporary loans refund on success, failure and interruption. Borrowed
 input, fixed invocation metadata and caller retention are separate scopes.
 
-Program Dispose rejects new calls and drops the expression root before the final
-refund; active calls keep their local root and charge until they finish. It does
-not wait, force cancellation or reclaim through GC. The underlying expression
-cannot escape. The owner also creates persistent range cursors and supports native
-template replacement into caller-owned destinations. Existing copied span cursors
-keep their independent-position/alias contract.
+Funded Dispose rejects new program-dependent calls/metadata and refunds after the
+final active use; admitted synchronous operations finish without re-entering a
+closed public gate. It does not wait, cancel or reclaim through GC. Disposal is a
+no-op without funding. Pattern/options/settings/timeouts/resource projections
+remain readable. Closing ends participating program admission; host retention of
+closed instances and published results is outside that loan and does not force
+CLR reclamation. Existing persistent cursors retain program admission through
+EOF/failure/Dispose and preserve their aliases/retained range snapshots after close.
 
-`Utf8Pcre2RegexProgramOwner.TryReplace` retains the program's admission and accepts
+Newly funded span enumerators borrow an open producer at creation and each
+advance, release its use between advances and hold no host working loan. Copies
+keep independent positions and their original shared cumulative numeric budget
+and absolute deadline. Close rejects later advances, including ended copies;
+original entry cancellation takes precedence. Current byte endpoints, fragment
+status and borrowed values remain valid with unchanged input. Use the persistent
+cursor for traversal surviving close or shared working admission. Probe, detailed
+metadata, owned output and MatchMany retain numeric controls and admitted program
+use, without adding working-overload symmetry or changing drivers/MARK/partials.
+
+`Utf8Pcre2Regex.TryReplace` retains the program's admission and accepts
 byte starts, substitution/match options, the current token and an optional separate
 working allowance. Cold key/parser arrays and live output borrow the same working
 ledger before allocation and remain admitted through final copying. An unlimited
@@ -443,7 +461,7 @@ Scalar captures, Extended transformations, lazy errors on no match/unselected
 branches, aliases and overflow-length reporting retain their profile semantics.
 Removing an intermediate allocation can admit formerly refused tight result caps;
 numeric charges remain route/version dependent. Copied output belongs to the caller
-and survives owner disposal. No new retained-output receipt or string overload is
+and survives expression disposal. No new retained-output receipt or string overload is
 required for this funded route.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>, byteStart, matchOptions, token, workingAllowance)`
@@ -514,7 +532,9 @@ Public examples live in the [package README](../src/Lokad.Utf8Regex.Pcre2/README
 The existing safety fixture executes this denial example:
 
 ```csharp
-var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };
-var regex = new Utf8Pcre2Regex("foo", Pcre2CompileOptions.None, default, limits, Utf8Pcre2Regex.DefaultMatchTimeout);
+var regex = new Utf8Pcre2Regex("foo", policy: new Utf8RegexPolicy
+{
+    ResourcePolicy = new() { MaxWorkSteps = 1 }
+});
 Assert.Throws<Pcre2MatchException>(() => regex.Count("foo foo foo"u8));
 ```

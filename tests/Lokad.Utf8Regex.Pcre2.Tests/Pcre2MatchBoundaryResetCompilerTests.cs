@@ -75,12 +75,10 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
     [Fact]
     public void OptedInLookaroundResetPreservesRawOneShotOffsetsAndRejectsIteration()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?=(?:a|aa)+\\K)",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?=(?:a|aa)+\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         var match = regex.Match("aa"u8);
         var detailed = regex.MatchDetailed("aa"u8);
 
@@ -99,12 +97,10 @@ public sealed class Pcre2MatchBoundaryResetCompilerTests
     [Fact]
     public void AnalysisUsesGenericResetSemantics()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?=(?:a|aa)+\\K)",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?=(?:a|aa)+\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         var analysis = regex.Analyze();
 
         Assert.True(analysis.IsFullyNative);

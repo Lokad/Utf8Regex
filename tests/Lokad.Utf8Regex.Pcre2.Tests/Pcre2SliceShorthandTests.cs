@@ -29,7 +29,7 @@ public sealed class Pcre2SliceShorthandTests
     [MemberData(nameof(ShorthandShapes))]
     public void ShorthandShapesDeclineSliceRouting(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 
@@ -39,7 +39,7 @@ public sealed class Pcre2SliceShorthandTests
     [InlineData("\\s+")]
     public void ShorthandShapesDeclineSliceRoutingUnderUcp(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Ucp);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Ucp);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 
@@ -56,7 +56,7 @@ public sealed class Pcre2SliceShorthandTests
     public void NativeAsciiShorthandsKeepAsciiSemantics(
         string pattern, string inputText, bool expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText), 0));
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }

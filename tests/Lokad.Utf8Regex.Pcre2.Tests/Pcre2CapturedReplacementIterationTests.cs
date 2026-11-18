@@ -13,8 +13,15 @@ public sealed class Pcre2CapturedReplacementIterationTests
     [InlineData(@"(?:a\Kb)*", "ab xx ab", "a[1:1][2:0] [3:0]x[4:0]x[5:0] a[7:1][8:0]")]
     public void CapturedReplacementIterationPreservesGrammarMarkAndResetEmptyYields(string pattern, string input, string expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1_000_000, HeapLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxWorkingBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var compiled = regex.DebugCompiledProgram;
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(compiled.Operations.Replace).Program;
         foreach (var options in new[] { Pcre2MatchOptions.None, Pcre2MatchOptions.NotBol })

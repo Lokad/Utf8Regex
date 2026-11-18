@@ -37,12 +37,14 @@ public sealed class Pcre2SameStartLiteralCompilerTests
     {
         const string Pattern = "(?<=abc)(|def|x)";
         var direct = new Utf8Pcre2Regex(Pattern);
-        var vm = new Utf8Pcre2Regex(
-            Pattern,
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1_000_000 },
-            Regex.InfiniteMatchTimeout);
+        var vm = new Utf8Pcre2Regex(            Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000
+            },
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
         Assert.IsType<Pcre2SameStartLiteralDirectProgram>(direct.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2SameStartLiteralDirectProgram>(vm.DebugCompiledProgram.Operations.Count);
 
@@ -88,12 +90,14 @@ public sealed class Pcre2SameStartLiteralCompilerTests
         const string Pattern = "(?<=abc)(|def)";
         var input = "abcdefabc"u8.ToArray();
         var direct = new Utf8Pcre2Regex(Pattern);
-        var vm = new Utf8Pcre2Regex(
-            Pattern,
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1_000_000 },
-            Regex.InfiniteMatchTimeout);
+        var vm = new Utf8Pcre2Regex(            Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000
+            },
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
 
         Assert.Equal(
             vm.Count(input, 3, Pcre2MatchOptions.Anchored),
@@ -102,12 +106,14 @@ public sealed class Pcre2SameStartLiteralCompilerTests
             vm.Count(input, 3, Pcre2MatchOptions.NotEmpty),
             direct.Count(input, 3, Pcre2MatchOptions.NotEmpty));
 
-        var tightlyMetered = new Utf8Pcre2Regex(
-            Pattern,
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Regex.InfiniteMatchTimeout);
+        var tightlyMetered = new Utf8Pcre2Regex(            Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.Count(input)).ErrorKind);
@@ -125,7 +131,7 @@ public sealed class Pcre2SameStartLiteralCompilerTests
                      new Utf8Pcre2Regex("(?<=abc)(|déf)"),
                      new Utf8Pcre2Regex("x(?<=abc)(|def)"),
                      new Utf8Pcre2Regex("(?<=abc)(def|ghi)"),
-                     new Utf8Pcre2Regex("(?<=abc)(|def)", Pcre2CompileOptions.Caseless),
+                     new Utf8Pcre2Regex("(?<=abc)(|def)", options: Pcre2CompileOptions.Caseless),
                  })
         {
             // R03 lookaround slice: fixed-shape assertions may ride the shared slice runner for Count/Enumerate; the analyzer still rejects every row below (never SameStartLiteral), with slice behavior covered by Pcre2SliceLookaroundTests.

@@ -32,10 +32,28 @@ public sealed class Pcre2ControlVerbLabelTests
                 HeapLimitInBytes = 1_048_576,
                 ResultLimitInBytes = 1_048_576
             } : default;
-            var text = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Ucp, default,
-                limits, Timeout.InfiniteTimeSpan);
-            var bytes = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), Pcre2CompileOptions.Ucp,
-                default, limits, Timeout.InfiniteTimeSpan);
+            var text = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
+            var bytes = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: Pcre2CompileOptions.Ucp, compileSettings:                 default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             foreach (var regex in new[] { text, bytes })
             {
                 var match = regex.MatchDetailed("a"u8);
@@ -63,8 +81,17 @@ public sealed class Pcre2ControlVerbLabelTests
     [Fact]
     public void RetainedMarkAndCapturesKeepTheirScalarRangesAndOriginalAuthority()
     {
-        var regex = Utf8Pcre2Regex.Create("(*MARK:(?<100>😀)(é)(😀)", Pcre2CompileOptions.Ucp, default,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(*MARK:(?<100>😀)(é)(😀)", options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes("xé😀xé😀");
         var retained = regex.MatchDetailed(input);
         Assert.Equal("(?<100>😀", retained.Mark);

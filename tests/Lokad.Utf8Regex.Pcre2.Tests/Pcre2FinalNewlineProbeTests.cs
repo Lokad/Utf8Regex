@@ -183,7 +183,10 @@ public sealed class Pcre2FinalNewlineProbeTests
         Pcre2CompileOptions options, Pcre2NewlineConvention newline, Pcre2MatchOptions flags, Pcre2PartialMode mode,
         Utf8Pcre2ProbeKind kind, int begin, int end)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options, new() { Newline = newline }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: new() { Newline = newline }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         var probe = regex.Probe(input, mode, start, flags);
         Assert.Equal(kind, probe.Kind);
@@ -200,10 +203,17 @@ public sealed class Pcre2FinalNewlineProbeTests
     public void FinalNewlineHasExactResultAdmissionAndRetainedEmptyAliases()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
-        Utf8Pcre2Regex Create(ulong bytes) => Utf8Pcre2Regex.Create(@"\Z", Pcre2CompileOptions.FirstLine,
-            new() { Newline = Pcre2NewlineConvention.Any },
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = bytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex(@"\Z", options: Pcre2CompileOptions.FirstLine, compileSettings:             new() { Newline = Pcre2NewlineConvention.Any }, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = bytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("😀x\u2028"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         var regex = Create(capacity);
@@ -222,9 +232,15 @@ public sealed class Pcre2FinalNewlineProbeTests
     [Fact]
     public void FinalNewlineKeepsOriginalWorkAndWorkingAllowance()
     {
-        Utf8Pcre2Regex Create(uint work, ulong heap) => new(@"\Z", Pcre2CompileOptions.FirstLine,
-            new() { Newline = Pcre2NewlineConvention.Any },
-            new() { MatchLimit = work, HeapLimitInBytes = heap }, Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(uint work, ulong heap) => new(@"\Z", options: Pcre2CompileOptions.FirstLine, compileSettings:             new() { Newline = Pcre2NewlineConvention.Any }, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (work) == 0 ? null : (work),
+                MaxWorkingBytes = (heap) == 0 ? null : (heap)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(1, 1 << 20).Probe("x\u2028"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
@@ -237,8 +253,10 @@ public sealed class Pcre2FinalNewlineProbeTests
     public void FinalNewlineKeepsOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"\Z", Pcre2CompileOptions.FirstLine,
-            new() { Newline = Pcre2NewlineConvention.Any }, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(@"\Z", options: Pcre2CompileOptions.FirstLine, compileSettings:             new() { Newline = Pcre2NewlineConvention.Any }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 20000) + "\u2028");
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>

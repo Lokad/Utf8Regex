@@ -30,13 +30,13 @@ public sealed class Pcre2SliceLookaroundTests
     {
         foreach (var pattern in new[] { "(?=a)a", "a(?!b)", "(?<=a)b", "(?<!a)b", "foo(?!bar)", "(?=(?=ab))ab", "(?<=(a|b))\\1", "(?=(?<w>a))\\k<w>" })
         {
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
             Assert.Equal(
                 "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
                 regex.DebugDescribeExecutionPlan());
         }
 
-        var sameStart = new Utf8Pcre2Regex("(?<=abc)(|def)", Pcre2CompileOptions.None);
+        var sameStart = new Utf8Pcre2Regex("(?<=abc)(|def)", options: Pcre2CompileOptions.None);
         Assert.Equal(
             "IsMatch=Pcre2Slice, Count=Pcre2SameStartLiteral, Enumerate=Pcre2SameStartLiteral, Match=Pcre2Slice, Replace=Pcre2Slice",
             sameStart.DebugDescribeExecutionPlan());
@@ -49,7 +49,7 @@ public sealed class Pcre2SliceLookaroundTests
     [InlineData("(?<=(a|b)+)c")]
     public void NonSliceLookaroundShapesDeclineSliceRouting(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 
@@ -76,10 +76,10 @@ public sealed class Pcre2SliceLookaroundTests
         string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var reuse = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var reuse = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, reuse.IsMatch(Utf8(inputText)));
         Assert.True(reuse.DebugCompiledProgram is not null, "pattern=" + pattern);
-        var explicitStart = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var explicitStart = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, explicitStart.IsMatch(Utf8(inputText), 0));
     }
 
@@ -93,7 +93,7 @@ public sealed class Pcre2SliceLookaroundTests
         // Expectations are native PCRE2 global counts: the same-position
         // non-empty retry adds retried matches BCL would not count (the
         // empty-first-alternative row counts 3 natively, 2 under BCL).
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -106,7 +106,7 @@ public sealed class Pcre2SliceLookaroundTests
     {
         var expected = Bcl(pattern).Match(inputText);
         Assert.Equal(expectedSuccess, expected.Success);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var found = regex.Match(Utf8(inputText), startOffsetInBytes: startOffsetInBytes);
         Assert.Equal(expectedSuccess, found.Success);
         if (expectedSuccess)
@@ -123,7 +123,7 @@ public sealed class Pcre2SliceLookaroundTests
     [Fact]
     public void OwnedEnumerationAdvancesThroughLookarounds()
     {
-        var regex = new Utf8Pcre2Regex("(?=a)a", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?=a)a", options: Pcre2CompileOptions.None);
         var enumerator = regex.EnumerateMatches(Utf8("aaa"), 0);
         var ranges = new List<string>();
         while (enumerator.MoveNext())
@@ -140,7 +140,7 @@ public sealed class Pcre2SliceLookaroundTests
     [Fact]
     public void OwnedDetailedProjectsLookaroundGroups()
     {
-        var regex = new Utf8Pcre2Regex("(?<=(a|b))", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?<=(a|b))", options: Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("xab"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
@@ -150,7 +150,7 @@ public sealed class Pcre2SliceLookaroundTests
     [Fact]
     public void OwnedReplaceExpandsLookaroundMatch()
     {
-        var regex = new Utf8Pcre2Regex("(?<=a)b", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?<=a)b", options: Pcre2CompileOptions.None);
         Assert.Equal("aa<b> a<b>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("aab ab"), "<$0>")));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
@@ -158,7 +158,7 @@ public sealed class Pcre2SliceLookaroundTests
     [Fact]
     public void OwnedRangeCursorSeesRetriedNonEmptyMatch()
 {
-        var regex = new Utf8Pcre2Regex("(?<=abc)(|def)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?<=abc)(|def)", options: Pcre2CompileOptions.None);
         using var cursor = regex.CreateMatchCursor(Utf8("abcdefabc"));
         var observations = new List<string>();
         while (cursor.MoveNext(out var match))

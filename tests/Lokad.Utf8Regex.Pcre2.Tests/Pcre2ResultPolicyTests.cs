@@ -7,8 +7,14 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2ResultPolicyTests
 {
-    private static Utf8Pcre2Regex Create(string pattern, ulong resultBytes) => Utf8Pcre2Regex.Create(
-        pattern, Pcre2CompileOptions.None, default, new() { MaxResultBytes = resultBytes }, Timeout.InfiniteTimeSpan);
+    private static Utf8Pcre2Regex Create(string pattern, ulong resultBytes) => new Utf8Pcre2Regex(        pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    {
+        ResourcePolicy = new()
+        {
+            MaxResultBytes = resultBytes
+        },
+        MatchTimeout = Timeout.InfiniteTimeSpan
+    });
 
     [Theory]
     [InlineData("A", "A")]
@@ -116,8 +122,17 @@ public sealed class Pcre2ResultPolicyTests
         Assert.Equal("ResultLimit", Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create("A", 1).TryReplace("AzA"u8, "!"u8, destination, out _); }).ErrorKind.ToString());
         Assert.All(destination, value => Assert.Equal((byte)0xA5, value));
-        var regex = Utf8Pcre2Regex.Create("(é)(😀)", Pcre2CompileOptions.None, default,
-            new() { MaxWorkSteps = 100000, MaxDepth = 128, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(é)(😀)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 128,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal("😀é", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "$2$1")));
         Assert.Equal("é😀", System.Text.Encoding.UTF8.GetString(regex.MatchDetailed("é😀"u8).Value.GetValueBytes()));
     }

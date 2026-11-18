@@ -42,8 +42,14 @@ public sealed class Pcre2RangeBufferAdmissionTests
     public void LiteralDriverAdmitsCompleteRangeArraysAndGrowthOverlap(ulong heap, bool allow)
     {
         var count = heap < 300 ? 1 : 17;
-        var regex = new Utf8Pcre2Regex("a", Pcre2CompileOptions.None, default,
-            new() { HeapLimitInBytes = heap }, Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Pcre2Regex("a", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = (heap) == 0 ? null : (heap)
+            },
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
         var prepare = typeof(Utf8Pcre2Regex).GetMethod("GetTemplatePreparation",
             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
             .CreateDelegate<Func<Utf8ConstructionPattern, Pcre2SubstitutionOptions, Pcre2ReplacementPreparation>>(regex);

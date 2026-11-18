@@ -40,8 +40,7 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     [Fact]
     public void DefineBlocksCanHoldMultipleForwardReferencedDefinitions()
     {
-        var regex = new Utf8Pcre2Regex(
-            "^(?&left)(?&right)(?(DEFINE)(?<left>a|x)(?<right>b|y))$");
+        var regex = new Utf8Pcre2Regex(            "^(?&left)(?&right)(?(DEFINE)(?<left>a|x)(?<right>b|y))$");
 
         var match = regex.MatchDetailed("ab"u8);
 
@@ -68,8 +67,7 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     [Fact]
     public void NamedDuplicateCaptureConditionUsesTheFirstSetSlot()
     {
-        var regex = new Utf8Pcre2Regex(
-            "^(?J)(?:(?<x>a)|(?<x>b))(?(x)c|d)$");
+        var regex = new Utf8Pcre2Regex(            "^(?J)(?:(?<x>a)|(?<x>b))(?(x)c|d)$");
 
         Assert.True(regex.IsMatch("ac"u8));
         Assert.True(regex.IsMatch("bc"u8));
@@ -112,12 +110,14 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     [Fact]
     public void RecursiveCallsChargeInvocationLimitsAndRemainConcurrent()
     {
-        var limited = new Utf8Pcre2Regex(
-            "^(?<r>a(?&r)?b)$",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { DepthLimit = 2 },
-            System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
+        var limited = new Utf8Pcre2Regex(            "^(?<r>a(?&r)?b)$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = 2
+            },
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
+        });
         Assert.Equal(
             Pcre2ErrorKind.DepthLimit,
             Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("aaabbb"u8)).ErrorKind);

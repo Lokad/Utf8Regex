@@ -90,8 +90,10 @@ public sealed class Pcre2LiteralDotStarProbeTests
         bool dotAll, Pcre2NewlineConvention newline, Pcre2MatchOptions flags, Pcre2PartialMode mode,
         Utf8Pcre2ProbeKind kind, int begin, int end)
     {
-        var regex = new Utf8Pcre2Regex("f.*", dotAll ? Pcre2CompileOptions.DotAll : Pcre2CompileOptions.None,
-            new() { Newline = newline }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("f.*", options: dotAll ? Pcre2CompileOptions.DotAll : Pcre2CompileOptions.None, compileSettings:             new() { Newline = newline }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.NotEqual(Pcre2PartialProbeProgramKind.None, regex.DebugCompiledProgram.PartialProbe.Kind);
         var input = Encoding.UTF8.GetBytes(text);
         var probe = regex.Probe(input, mode, start, flags);
@@ -110,7 +112,7 @@ public sealed class Pcre2LiteralDotStarProbeTests
     public void AdmittedInlineDotOptionAndCompiledAnchorKeepOriginalSubject(bool dotAll)
     {
         var pattern = dotAll ? "(?s:f.*)" : "(?-s:f.*)";
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Anchored | Pcre2CompileOptions.DotAll);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Anchored | Pcre2CompileOptions.DotAll);
         Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe("😀f\né"u8, Pcre2PartialMode.Hard).Kind);
         var probe = regex.Probe("😀f\né"u8, Pcre2PartialMode.Hard, 4);
         Assert.Equal(dotAll ? Utf8Pcre2ProbeKind.PartialMatch : Utf8Pcre2ProbeKind.FullMatch, probe.Kind);
@@ -121,9 +123,17 @@ public sealed class Pcre2LiteralDotStarProbeTests
     public void FullPublicationHasExactResultBoundaryAndRetainedAlias()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
-        Utf8Pcre2Regex Create(ulong bytes) => Utf8Pcre2Regex.Create("f.*", Pcre2CompileOptions.None, default,
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = bytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex("f.*", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = bytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("😀f😀é"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         var regex = Create(capacity);
@@ -140,8 +150,14 @@ public sealed class Pcre2LiteralDotStarProbeTests
     [Fact]
     public void GreedyScalarWorkCannotBypassFiniteAllowance()
     {
-        var regex = new Utf8Pcre2Regex("f.*", Pcre2CompileOptions.DotAll, default,
-            new() { MatchLimit = 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("f.*", options: Pcre2CompileOptions.DotAll, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes("f" + new string('x', 32768));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = regex.Probe(input, Pcre2PartialMode.Hard); }).ErrorKind);
@@ -153,7 +169,10 @@ public sealed class Pcre2LiteralDotStarProbeTests
     public void GreedyScalarLoopObservesOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("f.*", Pcre2CompileOptions.DotAll, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("f.*", options: Pcre2CompileOptions.DotAll, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {

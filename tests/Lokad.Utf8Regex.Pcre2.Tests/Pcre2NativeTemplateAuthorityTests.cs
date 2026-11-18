@@ -10,8 +10,17 @@ public sealed class Pcre2NativeTemplateAuthorityTests
 {
     private static Utf8Pcre2Regex Create(Utf8Pcre2ExecutionLimits limits, TimeSpan? timeout = null)
     {
-        var regex = new Utf8Pcre2Regex("(*MARK:tag)(é)(😀)", Pcre2CompileOptions.None, default,
-            limits, timeout ?? Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(*MARK:tag)(é)(😀)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+            },
+            MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan
+        });
         Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         return regex;
     }
@@ -194,8 +203,15 @@ public sealed class Pcre2NativeTemplateAuthorityTests
         string template, Pcre2SubstitutionOptions options, Pcre2MatchOptions matchOptions, int start, string expected)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, HeapLimitInBytes = 1000000 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxWorkingBytes = 1000000
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         if (matchOptions == Pcre2MatchOptions.None) Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         else Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
         var input = Encoding.UTF8.GetBytes(subject);

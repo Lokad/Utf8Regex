@@ -15,7 +15,11 @@ public sealed class Pcre2FixedPolicyPreparationTests
         };
         foreach (var pattern in new[] { "abc|xyz", "(?<left>a)(b)" })
         {
-            var regex = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default, policy, Timeout.InfiniteTimeSpan);
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = policy,
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             var core = Assert.IsType<Utf8Regex>(regex.DebugCompiledProgram.PrimaryUtf8);
             Assert.Equal(policy, core.ResourcePolicy);
             Assert.Null(core.Inspection.CompiledRuntime);
@@ -46,8 +50,14 @@ public sealed class Pcre2FixedPolicyPreparationTests
     public void PolicyPropagationDoesNotChangeOperationSelection(string pattern, string text)
     {
         var unlimited = new Utf8Pcre2Regex(pattern);
-        var finite = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000 }, Timeout.InfiniteTimeSpan);
+        var finite = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var before = unlimited.DebugCompiledProgram.Operations;
         var after = finite.DebugCompiledProgram.Operations;
         Assert.Equal(before.IsMatch.GetType(), after.IsMatch.GetType());

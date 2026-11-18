@@ -12,7 +12,10 @@ public sealed class Pcre2EmptyMatchIterationTests
 {
     private static Utf8Pcre2Regex Create(string pattern)
     {
-        return new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
+        return new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
     }
 
     private static int[] EnumerateStarts(Utf8Pcre2Regex regex, byte[] input)

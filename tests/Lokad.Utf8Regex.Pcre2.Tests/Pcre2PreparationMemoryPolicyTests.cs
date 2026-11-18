@@ -16,8 +16,15 @@ public sealed class Pcre2PreparationMemoryPolicyTests
     [Theory] [MemberData(nameof(Templates))]
     public void ColdHeapDenialDoesNotPublishPreparation(string template, Pcre2SubstitutionOptions options)
     {
-        var regex = new Utf8Pcre2Regex("(?<x>a)b", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, HeapLimitInBytes = 64 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(?<x>a)b", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxWorkingBytes = 64
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() => regex.Replace("ab"u8, template, 0, options)).ErrorKind);
         Assert.Equal(0, regex.DebugReplacementCacheEntryCount);
         Assert.NotEmpty(new Utf8Pcre2Regex("(?<x>a)b").Replace("ab"u8, template, 0, options));
@@ -46,8 +53,15 @@ public sealed class Pcre2PreparationMemoryPolicyTests
     [Theory] [MemberData(nameof(Templates))]
     public void WarmPlanRemainsValidWhenOutputIsDenied(string template, Pcre2SubstitutionOptions options)
     {
-        var regex = new Utf8Pcre2Regex("(?<x>a)b", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, HeapLimitInBytes = 64 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(?<x>a)b", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxWorkingBytes = 64
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var get = Preparation(regex);
         var retained = get(template, options);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() => regex.Replace("ab"u8, template, 0, options)).ErrorKind);

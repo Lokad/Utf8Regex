@@ -26,10 +26,18 @@ public sealed class Pcre2ExtendedModeExecutionTests
         Pcre2CompileOptions options, bool letter, bool space, bool tab, bool capital)
     {
         using var cancellation = new CancellationTokenSource();
-        var finite = new Utf8Pcre2Regex(pattern, options, default,
-            new() { MatchLimit = 100000, DepthLimit = 256,
-                HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
-        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern, options), finite })
+        var finite = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
+        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern, options: options), finite })
         foreach (var (text, expected) in new[] { ("a", letter), (" ", space), ("\t", tab), ("A", capital) })
         {
             var bytes = Encoding.UTF8.GetBytes("😀" + text);
@@ -51,9 +59,81 @@ public sealed class Pcre2ExtendedModeExecutionTests
         foreach (var controlled in new[] { false, true })
         {
             using var cancellation = new CancellationTokenSource();
-            var regex = new Utf8Pcre2Regex("(?<g>(?xx:[ a]+))(?<h>(?x:[ b]+))", Pcre2CompileOptions.None, default,
-                controlled ? new() { MatchLimit = 100000, DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 } : default, Timeout.InfiniteTimeSpan);
+            var regex = new Utf8Pcre2Regex("(?<g>(?xx:[ a]+))(?<h>(?x:[ b]+))", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                    {
+                        MatchLimit = 100000,
+                        DepthLimit = 256,
+                        HeapLimitInBytes = 1 << 20,
+                        ResultLimitInBytes = 1 << 20
+                    }
+
+                    : default)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                    {
+                        MatchLimit = 100000,
+                        DepthLimit = 256,
+                        HeapLimitInBytes = 1 << 20,
+                        ResultLimitInBytes = 1 << 20
+                    }
+
+                    : default)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                    {
+                        MatchLimit = 100000,
+                        DepthLimit = 256,
+                        HeapLimitInBytes = 1 << 20,
+                        ResultLimitInBytes = 1 << 20
+                    }
+
+                    : default)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                    {
+                        MatchLimit = 100000,
+                        DepthLimit = 256,
+                        HeapLimitInBytes = 1 << 20,
+                        ResultLimitInBytes = 1 << 20
+                    }
+
+                    : default)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                    {
+                        MatchLimit = 100000,
+                        DepthLimit = 256,
+                        HeapLimitInBytes = 1 << 20,
+                        ResultLimitInBytes = 1 << 20
+                    }
+
+                    : default)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                    {
+                        MatchLimit = 100000,
+                        DepthLimit = 256,
+                        HeapLimitInBytes = 1 << 20,
+                        ResultLimitInBytes = 1 << 20
+                    }
+
+                    : default)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                    {
+                        MatchLimit = 100000,
+                        DepthLimit = 256,
+                        HeapLimitInBytes = 1 << 20,
+                        ResultLimitInBytes = 1 << 20
+                    }
+
+                    : default)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                    {
+                        MatchLimit = 100000,
+                        DepthLimit = 256,
+                        HeapLimitInBytes = 1 << 20,
+                        ResultLimitInBytes = 1 << 20
+                    }
+
+                    : default)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             var match = regex.MatchDetailed("😀 aa bb\t"u8, 0, Pcre2MatchOptions.None, cancellation.Token);
             Assert.True(match.Success);
             Assert.Equal((5, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));

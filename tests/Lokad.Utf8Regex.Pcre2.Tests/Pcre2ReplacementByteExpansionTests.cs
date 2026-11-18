@@ -51,8 +51,10 @@ public sealed class Pcre2ReplacementByteExpansionTests
     [Fact]
     public void ExplicitByteCapturesAreCopiedWithoutUtf16Projection()
     {
-        var regex = new Utf8Pcre2Regex(@"(\C)", Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { BackslashC = Pcre2BackslashCPolicy.Allow }, default, Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(@"(\C)", options: Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { BackslashC = Pcre2BackslashCPolicy.Allow }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         Assert.Equal("😀"u8.ToArray(), regex.Replace("😀"u8, "$1"));
         Assert.Equal(new byte[] {0xf0, 0xf0, 0x9f, 0x9f, 0x98, 0x98, 0x80, 0x80}, regex.Replace("😀"u8, "$1$1"));
     }

@@ -14,12 +14,10 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
     [Fact]
     public void LookaroundKMatchCanReportNonContiguousOffsets()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?=ab\\K)",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?=ab\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
         var match = regex.Match("ab"u8);
 
@@ -34,12 +32,10 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
     [Fact]
     public void LookaroundKDetailedMatchCanReportNonContiguousOffsets()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?=ab\\K)",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?=ab\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
         var match = regex.MatchDetailed("ab"u8);
 
@@ -53,12 +49,10 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
     [Fact]
     public void LookaroundKGlobalIterationRemainsRejected()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?=ab\\K)",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?=ab\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
         Assert.Throws<NotSupportedException>(() => regex.Count("ab"u8));
         Assert.Throws<NotSupportedException>(() => regex.EnumerateMatches("ab"u8));
@@ -67,12 +61,10 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
     [Fact]
     public void LookaroundKReplacementRemainsRejectedForNonMonotoneIteration()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?=ab\\K)",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?=ab\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
         Assert.Throws<NotSupportedException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace("ab"u8, "<$0>")));
     }
@@ -80,12 +72,10 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
     [Fact]
     public void LookbehindKReplacementRemainsRejectedForNonMonotoneIteration()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?<=\\Ka)",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?<=\\Ka)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
         Assert.Throws<NotSupportedException>(() => System.Text.Encoding.UTF8.GetString(regex.Replace("a"u8, "<$0>")));
     }
@@ -143,23 +133,19 @@ public sealed class Utf8Pcre2RegexLookaroundKTests
 
     private static void ThrowForNonContiguousValueMatch(ReadOnlySpan<byte> input)
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?=ab\\K)",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?=ab\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         _ = regex.Match(input).GetValueBytes();
     }
 
     private static void ThrowForNonContiguousDetailedValue(ReadOnlySpan<byte> input)
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?=ab\\K)",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?=ab\\K)", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         _ = regex.MatchDetailed(input).Value.GetValueBytes();
     }
 

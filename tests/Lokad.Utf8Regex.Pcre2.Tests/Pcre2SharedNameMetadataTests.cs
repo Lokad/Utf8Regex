@@ -13,7 +13,7 @@ public sealed class Pcre2SharedNameMetadataTests
         string pattern, string subject, int expectedNames)
     {
         var input = Encoding.UTF8.GetBytes(subject);
-        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern)) })
+        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern))})
         {
             var retained = regex.MatchDetailed(input);
             Assert.True(retained.Success);

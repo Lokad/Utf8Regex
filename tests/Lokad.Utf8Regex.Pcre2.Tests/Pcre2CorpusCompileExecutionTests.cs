@@ -16,11 +16,17 @@ public sealed class Pcre2CorpusCompileExecutionTests
             if (corpusCase.PatternBytesBase64 is { } patternBytesBase64)
             {
                 var patternBytes = Convert.FromBase64String(patternBytesBase64);
-                _ = new Utf8Pcre2Regex(patternBytes, options, settings, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
+                _ = new Utf8Pcre2Regex(patternBytes, options: options, compileSettings: settings, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+                });
                 return;
             }
 
-            _ = new Utf8Pcre2Regex(corpusCase.Pattern, options, settings, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
+            _ = new Utf8Pcre2Regex(corpusCase.Pattern, options: options, compileSettings: settings, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+            });
         }
 
         Action action = Compile;

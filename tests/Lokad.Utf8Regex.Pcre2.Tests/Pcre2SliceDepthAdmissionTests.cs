@@ -4,8 +4,14 @@ public sealed class Pcre2SliceDepthAdmissionTests
 {
     private static Utf8Pcre2Regex Create(uint depth)
         // Captures inside the repeats keep actual continuation frames live.
-        => new("(😀)+(é)+", Pcre2CompileOptions.None, default,
-            new Utf8Pcre2ExecutionLimits { DepthLimit = depth }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        => new("(😀)+(é)+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = (depth) == 0 ? null : (depth)
+            },
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)]

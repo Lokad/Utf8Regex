@@ -21,9 +21,17 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
         Pcre2CompileOptions options, string text, int end)
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options, default,
-            new() { MatchLimit = 100000, DepthLimit = 256,
-                HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: options, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var bytes = Encoding.UTF8.GetBytes(text);
         Assert.Equal(1, regex.Count(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
         var match = regex.MatchDetailed(bytes, 0, Pcre2MatchOptions.None, cancellation.Token);
@@ -44,7 +52,7 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
     [InlineData(@"(*MARK:# \C)a", "a", Pcre2CompileOptions.Extended)]
     public void ModesRestoreAndHashesStayLiteralWhereRequired(string pattern, string text, Pcre2CompileOptions options)
     {
-        Assert.True(new Utf8Pcre2Regex(pattern, options).IsMatch(Encoding.UTF8.GetBytes(text)));
+        Assert.True(new Utf8Pcre2Regex(pattern, options: options).IsMatch(Encoding.UTF8.GetBytes(text)));
     }
 
     [Fact]
@@ -52,7 +60,7 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
     {
         const string pattern = "(?^:a#b)";
         Pcre2CompileValidator.ValidatePattern(pattern, Pcre2CompileOptions.Extended, default);
-        Assert.True(new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Extended).IsMatch("a#b"u8));
+        Assert.True(new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Extended).IsMatch("a#b"u8));
     }
 
     [Theory]
@@ -71,7 +79,7 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
     public void CommentsAndClassBoundariesCannotHideRealForbiddenSyntax(string pattern, Pcre2ErrorKind kind)
     {
         var failure = Assert.Throws<Pcre2CompileException>(() =>
-            new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Extended));
+            new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Extended));
         Assert.Equal(kind, failure.ErrorKind);
     }
 
@@ -85,8 +93,10 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
     [InlineData(Pcre2NewlineConvention.Nul, "\0")]
     public void CommentsUseConfiguredNewline(Pcre2NewlineConvention newline, string separator)
     {
-        var regex = new Utf8Pcre2Regex("# [ (?C) \\C" + separator + "(😀)",
-            Pcre2CompileOptions.Extended, new() { Newline = newline }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("# [ (?C) \\C" + separator + "(😀)", options:             Pcre2CompileOptions.Extended, compileSettings: new() { Newline = newline }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var match = regex.MatchDetailed("😀"u8);
         Assert.True(match.Success);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(match.GetGroup(1).GetValueBytes()));
@@ -98,8 +108,10 @@ public sealed class Pcre2ExtendedCommentAdmissionTests
     [InlineData(@"[[:alpha:]#][\C]")]
     public void AllowingByteAtomsStillRejectsActualByteEscapesInClasses(string pattern)
     {
-        var failure = Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(pattern,
-            Pcre2CompileOptions.Extended, new() { BackslashC = Pcre2BackslashCPolicy.Allow }, default, Timeout.InfiniteTimeSpan));
+        var failure = Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(pattern, options:             Pcre2CompileOptions.Extended, compileSettings: new() { BackslashC = Pcre2BackslashCPolicy.Allow }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        }));
         Assert.Equal(Pcre2ErrorKind.EscapeInvalidInClass, failure.ErrorKind);
     }
 }

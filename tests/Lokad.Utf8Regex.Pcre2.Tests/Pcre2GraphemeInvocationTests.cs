@@ -19,9 +19,17 @@ public sealed class Pcre2GraphemeInvocationTests
         var bytes = Encoding.UTF8.GetBytes(text);
         var storage = new byte[bytes.Length + 5]; bytes.CopyTo(storage, 2);
         var direct = new Utf8Pcre2Regex(@"\X");
-        var finite = Utf8Pcre2Regex.Create(@"\X", default, default,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1024,
-                MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var finite = new Utf8Pcre2Regex(@"\X", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         for (var start = 0; start <= bytes.Length; start++)
         {
             if (start < bytes.Length && (bytes[start] & 0xc0) == 0x80) continue;
@@ -38,7 +46,7 @@ public sealed class Pcre2GraphemeInvocationTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, 2));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, input.Length + 1));
         Assert.False(regex.IsMatch("ab"u8, 0, Pcre2MatchOptions.Anchored | Pcre2MatchOptions.EndAnchored));
-        Assert.False(new Utf8Pcre2Regex(@"\X", Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored).IsMatch("ab"u8));
+        Assert.False(new Utf8Pcre2Regex(@"\X", options: Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored).IsMatch("ab"u8));
         Assert.False(new Utf8Pcre2Regex(@"\X\X").IsMatch("a"u8));
         var match = regex.Match(input);
         Assert.Equal("á", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
@@ -60,7 +68,10 @@ public sealed class Pcre2GraphemeInvocationTests
     public void CancellationInsideLongClusterKeepsOriginalToken(string pattern, string route)
     {
         var input = Encoding.UTF8.GetBytes("a" + new string('\u0301', 8192));
-        var regex = new Utf8Pcre2Regex(pattern, default, default, default, TimeSpan.FromHours(1));
+        var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromHours(1)
+        });
         using var source = new CancellationTokenSource();
         var checkpoints = 0;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => {
@@ -79,7 +90,10 @@ public sealed class Pcre2GraphemeInvocationTests
     public void DeadlineExpiresInsideLongCluster(string pattern, string route)
     {
         var input = Encoding.UTF8.GetBytes("a" + new string('\u0301', 8192));
-        var regex = new Utf8Pcre2Regex(pattern, default, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var checkpoints = 0;
         using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => InsideGrapheme() && ++checkpoints >= 3 ? 100 : 0))
         {
@@ -99,8 +113,28 @@ public sealed class Pcre2GraphemeInvocationTests
         var input = Encoding.UTF8.GetBytes("a" + new string('\u0301', 65536));
         var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 128, DepthLimit = 1024,
             HeapLimitInBytes = 16 << 20, ResultLimitInBytes = 16 << 20 };
-        Assert.True(new Utf8Pcre2Regex("a", default, default, limits, Timeout.InfiniteTimeSpan).IsMatch(input));
-        var regex = new Utf8Pcre2Regex(pattern, default, default, limits, Timeout.InfiniteTimeSpan);
+        Assert.True(new Utf8Pcre2Regex("a", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        }).IsMatch(input));
+        var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var failure = Assert.Throws<Pcre2MatchException>(() => Run(regex, input, route, default));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
         Assert.Contains(nameof(Pcre2GraphemeClusterSemantics), failure.StackTrace);
@@ -119,9 +153,81 @@ public sealed class Pcre2GraphemeInvocationTests
             List<(int, int)>? original = null;
             foreach (var finite in new[] { false, true })
             {
-                var regex = new Utf8Pcre2Regex(@"\X", default, default,
-                    finite ? new() { MatchLimit = 1_000_000, DepthLimit = 1024, HeapLimitInBytes = 16 << 20, ResultLimitInBytes = 16 << 20 } : default,
-                    Timeout.InfiniteTimeSpan);
+                var regex = new Utf8Pcre2Regex(@"\X", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+                {
+                    ResourcePolicy = new Utf8ResourcePolicy
+                    {
+                        MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
+
+                        : default)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
+
+                        : default)).MatchLimit,
+                        MaxDepth = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
+
+                        : default)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
+
+                        : default)).DepthLimit,
+                        MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
+
+                        : default)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
+
+                        : default)).HeapLimitInBytes,
+                        MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
+
+                        : default)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                        {
+                            MatchLimit = 1_000_000,
+                            DepthLimit = 1024,
+                            HeapLimitInBytes = 16 << 20,
+                            ResultLimitInBytes = 16 << 20
+                        }
+
+                        : default)).ResultLimitInBytes
+                    },
+                    MatchTimeout = Timeout.InfiniteTimeSpan
+                });
                 var ranges = new List<(int, int)>();
                 var cursor = regex.EnumerateMatches(input);
                 while (cursor.MoveNext()) ranges.Add((cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));

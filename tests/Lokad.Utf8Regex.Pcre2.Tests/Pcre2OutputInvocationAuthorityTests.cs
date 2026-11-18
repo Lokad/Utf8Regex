@@ -24,8 +24,10 @@ public sealed class Pcre2OutputInvocationAuthorityTests
         foreach (var hit in new[] { false, true })
         {
             using var source = new CancellationTokenSource();
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-                default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(20));
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(20)
+            });
             var reads = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
             { if (++reads == atRead) source.Cancel(); return 0; });
@@ -69,9 +71,17 @@ public sealed class Pcre2OutputInvocationAuthorityTests
     {
         var input = Encoding.UTF8.GetBytes(text);
         var destination = new Utf8Pcre2MatchData[4];
-        Utf8Pcre2Regex Policy(ulong heap, ulong result) => new(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = heap, ResultLimitInBytes = result },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Policy(ulong heap, ulong result) => new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = (heap) == 0 ? null : (heap),
+                MaxResultBytes = (result) == 0 ? null : (result)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         // Native MatchMany publishes value ranges into caller storage without
         // acquiring owned scratch. A tiny heap allowance must not deny that path.
         if (!helper && pattern == "(?<x>a)b")
@@ -111,8 +121,10 @@ public sealed class Pcre2OutputInvocationAuthorityTests
     {
         var input = "abc abc"u8.ToArray();
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("abc", Pcre2CompileOptions.None, default,
-            default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("abc", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var destination = new Utf8Pcre2MatchData[4];
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         { if (destination[0].Success) source.Cancel(); return 0; });
@@ -125,9 +137,17 @@ public sealed class Pcre2OutputInvocationAuthorityTests
         Assert.Equal("abc abc", Encoding.UTF8.GetString(input));
     }
 
-    private static Utf8Pcre2Regex Create(string pattern, uint work) => new(pattern,
-        Pcre2CompileOptions.None, default, new() { MatchLimit = work, DepthLimit = 256,
-            HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+    private static Utf8Pcre2Regex Create(string pattern, uint work) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    {
+        ResourcePolicy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = (work) == 0 ? null : (work),
+            MaxDepth = 256,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
+        },
+        MatchTimeout = Timeout.InfiniteTimeSpan
+    });
 
     private static int Run(Utf8Pcre2Regex regex, byte[] input, Utf8Pcre2MatchData[] destination,
         bool helper, CancellationToken token = default) => helper

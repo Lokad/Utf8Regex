@@ -46,7 +46,7 @@ public sealed class Pcre2MemoryCursorTests
     public void PublicRangesPreserveProfileProgressionAndFirstCaptureSlots(string pattern, string text,
         Pcre2CompileOptions options, int start, Pcre2MatchOptions matchOptions)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options); var input = Encoding.UTF8.GetBytes(text);
+        var regex = new Utf8Pcre2Regex(pattern, options: options); var input = Encoding.UTF8.GetBytes(text);
         using var cursor = regex.CreateMatchCursor(input, start, matchOptions);
         var expected = regex.MatchDetailed(input, start, matchOptions);
         var moved = cursor.MoveNext(out var first); Assert.Equal(expected.Success, moved);
@@ -91,7 +91,10 @@ public sealed class Pcre2MemoryCursorTests
     [Theory] [InlineData(Pcre2NewlineConvention.Lf)] [InlineData(Pcre2NewlineConvention.Crlf)]
     public void EmptyMatchesPreserveProfileCrlfAndSamePositionRetry(Pcre2NewlineConvention newline)
     {
-        var regex = new Utf8Pcre2Regex("(?:|.)", Pcre2CompileOptions.None, new() { Newline = newline }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(?:|.)", options: Pcre2CompileOptions.None, compileSettings: new() { Newline = newline }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = "😀\r\né"u8.ToArray(); using var cursor = regex.CreateMatchCursor(input);
         var expected = regex.EnumerateMatches(input);
         while (cursor.MoveNext(out var actual))
@@ -106,8 +109,10 @@ public sealed class Pcre2MemoryCursorTests
     [Fact]
     public void OptedInCodeUnitsReturnExplicitPartialByteRanges()
     {
-        var regex = new Utf8Pcre2Regex(@"(\C)", Pcre2CompileOptions.None,
-            new() { BackslashC = Pcre2BackslashCPolicy.Allow }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(@"(\C)", options: Pcre2CompileOptions.None, compileSettings:             new() { BackslashC = Pcre2BackslashCPolicy.Allow }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         using var cursor = regex.CreateMatchCursor("😀x"u8.ToArray());
         for (var index = 0; index < 5; index++)
         {
@@ -124,8 +129,10 @@ public sealed class Pcre2MemoryCursorTests
         var regex = new Utf8Pcre2Regex(".");
         foreach (var offset in new[] { -1, 1, 2, 3, 6 })
             Assert.Throws<ArgumentOutOfRangeException>(() => regex.CreateMatchCursor("😀x"u8.ToArray(), offset));
-        var nonMonotone = new Utf8Pcre2Regex(@"(?=ab\K)", Pcre2CompileOptions.None,
-            new() { AllowLookaroundBackslashK = true }, default, Timeout.InfiniteTimeSpan);
+        var nonMonotone = new Utf8Pcre2Regex(@"(?=ab\K)", options: Pcre2CompileOptions.None, compileSettings:             new() { AllowLookaroundBackslashK = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Throws<NotSupportedException>(() => nonMonotone.CreateMatchCursor("ab"u8.ToArray()));
     }
 
@@ -176,8 +183,10 @@ public sealed class Pcre2MemoryCursorTests
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var root = new Root(); var working = new Account(root); using var current = new CancellationTokenSource();
-        using var cursor = new Utf8Pcre2Regex("(?<x>a)+", Pcre2CompileOptions.None, default, default,
-            timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan).CreateMatchCursor("aaa"u8.ToArray(), workingMemoryAllowance: working);
+        using var cursor = new Utf8Pcre2Regex("(?<x>a)+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan
+        }).CreateMatchCursor("aaa"u8.ToArray(), workingMemoryAllowance: working);
         working.AfterGrant = () => { if (timeout) ticks = 100; else current.Cancel(); };
         var error = Record.Exception(() => cursor.MoveNext(out _, current.Token));
         if (timeout) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(error).ErrorKind);
@@ -204,7 +213,11 @@ public sealed class Pcre2MemoryCursorTests
             2 => new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, _ => new Utf8ResourcePolicy { MaxResultBytes = 1 }
         };
         var root = new Root(); var working = new Account(root);
-        var regex = Utf8Pcre2Regex.Create("(?=(?=(a+)))a+", default, default, policy, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(?=(?=(a+)))a+", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = policy,
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Throws<Pcre2MatchException>(() => { using var cursor = regex.CreateMatchCursor("aaaa"u8.ToArray(), workingMemoryAllowance: working); cursor.MoveNext(out _); });
         Assert.Equal(0UL, root.Used);
     }
@@ -213,7 +226,14 @@ public sealed class Pcre2MemoryCursorTests
     public void RepeatedPublicationDoesNotRefundResultTraffic()
     {
         var root = new Root(); var working = new Account(root);
-        using var cursor = Utf8Pcre2Regex.Create("x", default, default, new() { MaxResultBytes = 100 }, Timeout.InfiniteTimeSpan)
+        using var cursor = new Utf8Pcre2Regex("x", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxResultBytes = 100
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        })
             .CreateMatchCursor("xxxx"u8.ToArray(), workingMemoryAllowance: working);
         Assert.True(cursor.MoveNext(out var first)); var count = 1;
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() => { while (cursor.MoveNext(out _)) count++; }).ErrorKind);
@@ -230,7 +250,14 @@ public sealed class Pcre2MemoryCursorTests
             Assert.Equal(input.Length, count);
         }
         Assert.Equal(0UL, root.Used); Assert.True(working.Peak < 1024);
-        using var bounded = Utf8Pcre2Regex.Create("x", default, default, new() { MaxWorkSteps = 50000 }, Timeout.InfiniteTimeSpan).CreateMatchCursor(input);
+        using var bounded = new Utf8Pcre2Regex("x", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 50000
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        }).CreateMatchCursor(input);
         for (var index = 0; index < 8; index++) Assert.True(bounded.MoveNext(out _));
     }
 
@@ -273,8 +300,10 @@ public sealed class Pcre2MemoryCursorTests
     public async Task DeadlineIncludesHostWaitAndEarlierRangesRemainValid()
     {
         var root = new Root(); var working = new Account(root);
-        using var cursor = new Utf8Pcre2Regex("(a+)", default, default, default, TimeSpan.FromMilliseconds(250))
-            .CreateMatchCursor("aaa aaa"u8.ToArray(), workingMemoryAllowance: working);
+        using var cursor = new Utf8Pcre2Regex("(a+)", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(250)
+        })            .CreateMatchCursor("aaa aaa"u8.ToArray(), workingMemoryAllowance: working);
         Assert.True(cursor.MoveNext(out var first)); await Task.Delay(350);
         Assert.Equal(Pcre2ErrorKind.Timeout, Assert.Throws<Pcre2MatchException>(() => cursor.MoveNext(out _)).ErrorKind);
         Assert.Equal(0UL, root.Used); Assert.Equal("aaa"u8.ToArray(), first.GetValueMemory().ToArray());
@@ -301,10 +330,17 @@ public sealed class Pcre2MemoryCursorTests
     [InlineData(".", "😀éx", 3)]
     public void OptionalWorkingAdmissionKeepsNumericLimitsAndEquivalentNullResults(string pattern, string text, int count)
     {
-        var regex = Utf8Pcre2Regex.Create(pattern, default, default, new()
+        var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
         {
-            MaxWorkSteps = 1_000_000, MaxDepth = 512, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1
-        }, TimeSpan.FromSeconds(10));
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 512,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            },
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input));
         Assert.True(regex.IsMatch(input, workingMemoryAllowance: null));
@@ -330,8 +366,15 @@ public sealed class Pcre2MemoryCursorTests
         Assert.Equal(1, account.Attempts); Assert.Equal(0UL, root.Used);
     }
 
-    private static Utf8Pcre2RegexProgramOwner Compile(string pattern, Account account)
-        => Utf8Pcre2Regex.Compile(pattern, default, default, Timeout.InfiniteTimeSpan, default, default, Timeout.InfiniteTimeSpan, default, account);
+    private static Utf8Pcre2Regex Compile(string pattern, Account account)
+        => Utf8Pcre2Regex.Compile(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = default,
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = account
+        }, cancellationToken: default);
     private sealed class Root { internal readonly object Gate = new(); internal ulong Used; }
     private sealed class Account(Root root) : IUtf8MemoryAllowance
     {

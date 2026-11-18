@@ -174,7 +174,10 @@ public sealed class Pcre2FirstLineProbeTests
         Pcre2CompileOptions options, Pcre2NewlineConvention newline, Pcre2MatchOptions flags, Pcre2PartialMode mode,
         Utf8Pcre2ProbeKind kind, int begin, int end)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options, new() { Newline = newline }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: new() { Newline = newline }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         var probe = regex.Probe(input, mode, start, flags);
         Assert.Equal(kind, probe.Kind);
@@ -200,9 +203,17 @@ public sealed class Pcre2FirstLineProbeTests
     public void FirstLineRetainsExactResultsAndEarlierAlternativeAliases()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
-        Utf8Pcre2Regex Create(ulong bytes) => Utf8Pcre2Regex.Create("cat|horse", Pcre2CompileOptions.FirstLine, default,
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = bytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex("cat|horse", options: Pcre2CompileOptions.FirstLine, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = bytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("horse\ncat"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         var regex = Create(capacity);
@@ -219,8 +230,14 @@ public sealed class Pcre2FirstLineProbeTests
     [Fact]
     public void FirstLineCandidateWalkIsMeteredWithoutEagerEarlyHitScan()
     {
-        var regex = new Utf8Pcre2Regex("cat|horse", Pcre2CompileOptions.FirstLine, default,
-            new() { MatchLimit = 80 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("cat|horse", options: Pcre2CompileOptions.FirstLine, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 80
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var late = Encoding.UTF8.GetBytes(new string('x', 20000) + "horse\nq");
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = regex.Probe(late, Pcre2PartialMode.Soft); }).ErrorKind);
@@ -233,7 +250,10 @@ public sealed class Pcre2FirstLineProbeTests
     public void FirstLineCandidateWalkKeepsOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("cat|horse", Pcre2CompileOptions.FirstLine, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("cat|horse", options: Pcre2CompileOptions.FirstLine, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 20000) + "horse");
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>

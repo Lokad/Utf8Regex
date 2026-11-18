@@ -47,8 +47,11 @@ public sealed class Pcre2SpacePropertyTests
             {
                 var policy = finite ? new Utf8ResourcePolicy { MaxWorkSteps = 1000000,
                     MaxDepth = 256, MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 } : default;
-                var regex = Utf8Pcre2Regex.Create(@"\A(?:" + body + @")\z", ucp ? Pcre2CompileOptions.Ucp : Pcre2CompileOptions.None,
-                    default, policy, Timeout.InfiniteTimeSpan);
+                var regex = new Utf8Pcre2Regex(@"\A(?:" + body + @")\z", options: ucp ? Pcre2CompileOptions.Ucp : Pcre2CompileOptions.None, compileSettings:                     default, policy: new Utf8RegexPolicy
+                {
+                    ResourcePolicy = policy,
+                    MatchTimeout = Timeout.InfiniteTimeSpan
+                });
                 Assert.Equal(hit, regex.IsMatch(subject, 0, Pcre2MatchOptions.None, source.Token));
                 Assert.Equal(hit ? 1 : 0, regex.Count(subject, 0, Pcre2MatchOptions.None, source.Token));
                 var match = regex.MatchDetailed(subject, 0, Pcre2MatchOptions.None, source.Token);
@@ -68,12 +71,25 @@ public sealed class Pcre2SpacePropertyTests
     public void BytePatternsKeepComplementCapturesAndScalarCoordinates(Pcre2CompileOptions options)
     {
         var pattern = Encoding.UTF8.GetBytes(@"(?<space>\p{Xps}+)(?<other>\P{Xsp}+)");
-        var regex = Utf8Pcre2Regex.Compile(pattern, options, default, Timeout.InfiniteTimeSpan,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 256,
-                MaxWorkingBytes = 1048576, MaxResultBytes = 1048576 },
-            new Utf8ConstructionPolicy { MaxWorkSteps = 1000000, MaxDepth = 256,
-                MaxInstructionCapacity = 65536, MaxBytes = 1048576 },
-            Timeout.InfiniteTimeSpan, CancellationToken.None);
+        var regex = Utf8Pcre2Regex.Compile(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            },
+            ConstructionPolicy = new Utf8ConstructionPolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxInstructionCapacity = 65536,
+                MaxBytes = 1048576
+            },
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None);
         var input = Encoding.UTF8.GetBytes("z\u0085\u180E😀! \u0085a");
         var retained = regex.MatchDetailed(input, 1);
         Assert.True(retained.Success);
@@ -90,20 +106,46 @@ public sealed class Pcre2SpacePropertyTests
     {
         const string pattern = @"(?<x>\p{Xsp}+)";
         var input = Encoding.UTF8.GetBytes(new string('\u0085', 4096));
-        var work = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1 }, Timeout.InfiniteTimeSpan);
+        var work = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => work.Count(input)).ErrorKind);
-        var result = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default,
-            new Utf8ResourcePolicy { MaxResultBytes = 1 }, Timeout.InfiniteTimeSpan);
+        var result = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxResultBytes = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() => { _ = result.MatchDetailed(input); }).ErrorKind);
         // This route keeps greedy alternatives for the long run. Preserve the
         // denied smaller depth allowance as well as a funded successful call.
-        var depth = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default,
-            new Utf8ResourcePolicy { MaxDepth = 256 }, Timeout.InfiniteTimeSpan);
+        var depth = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = 256
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.DepthLimit, Assert.Throws<Pcre2MatchException>(() => depth.Count(input)).ErrorKind);
-        var funded = Utf8Pcre2Regex.Create(pattern, Pcre2CompileOptions.None, default,
-            new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 8192,
-                MaxWorkingBytes = 4 * 1048576, MaxResultBytes = 1048576 }, Timeout.InfiniteTimeSpan);
+        var funded = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 8192,
+                MaxWorkingBytes = 4 * 1048576,
+                MaxResultBytes = 1048576
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(1, funded.Count(input));
         Assert.Equal("\u0085\u180E", System.Text.Encoding.UTF8.GetString(funded.MatchDetailed("\u0085\u180E"u8).Value.GetValueBytes()));
     }

@@ -1,3 +1,4 @@
+using Lokad.Utf8Regex.Internal;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
@@ -492,9 +493,13 @@ public readonly struct Utf8Pcre2Analysis
 /// <remarks>The stack-only cursor and its current value borrow the original UTF-8 input.
 /// Copies retain independent positions. Controlled native and owned-slice copies share their original cumulative
 /// enforcement allowance and absolute deadline; copying a cursor does not create another finite budget.
-/// Previously returned values remain valid within the input's lifetime after an advance or limit failure.</remarks>
+/// Previously returned values remain valid within the input's lifetime after an advance or limit failure.
+/// Funded enumeration borrows an open expression at each advance, without host working loans between advances.
+/// Closing the expression rejects later advances on every copy; Current remains valid. Use a persistent cursor to survive program close.</remarks>
 public ref struct Utf8Pcre2ValueMatchEnumerator
 {
+    private Utf8FundedStorage? _programMemory;
+
     internal static int DebugSizeInBytes => Unsafe.SizeOf<Utf8Pcre2ValueMatchEnumerator>();
 
     internal static int DebugDirectCursorSizeInBytes => Unsafe.SizeOf<Pcre2GlobalMatchCursor>();
@@ -553,6 +558,26 @@ public ref struct Utf8Pcre2ValueMatchEnumerator
     /// <returns><see langword="true"/> when another match is available.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool MoveNext()
+    {
+        if (_programMemory is null) return MoveNextCore();
+        if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal)
+        {
+            var control = _directMatches.WorkingBufferControl;
+            control.WorkingInvocation.Budget.ThrowIfCancellationRequested();
+        }
+        else if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2Slice)
+            _sliceMatches.WorkingInvocation.Budget.ThrowIfCancellationRequested();
+        using var use = _programMemory.Enter();
+        return MoveNextCore();
+    }
+
+    internal Utf8Pcre2ValueMatchEnumerator WithProgramMemory(Utf8FundedStorage? memory)
+    {
+        _programMemory = memory;
+        return this;
+    }
+
+    private bool MoveNextCore()
     {
         if (_mode == Pcre2ValueMatchEnumeratorMode.Pcre2DirectGlobal)
         {

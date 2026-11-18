@@ -13,8 +13,8 @@ public sealed class Pcre2CommentSemanticsTests
     public void CommentDoesNotChangeCharacterSemantics(string body, string text, Pcre2CompileOptions options, bool expected)
     {
         var input = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(expected, new Utf8Pcre2Regex(body, options).IsMatch(input));
-        Assert.Equal(expected, new Utf8Pcre2Regex("(?#ignored)" + body, options).IsMatch(input));
+        Assert.Equal(expected, new Utf8Pcre2Regex(body, options: options).IsMatch(input));
+        Assert.Equal(expected, new Utf8Pcre2Regex("(?#ignored)" + body, options: options).IsMatch(input));
     }
 
     [Fact]
@@ -36,8 +36,14 @@ public sealed class Pcre2CommentSemanticsTests
     [InlineData(false)] [InlineData(true)]
     public void CommentDoesNotBypassOutputHeap(bool text)
     {
-        var regex = new Utf8Pcre2Regex("(?#ignored)(é)(😀)", Pcre2CompileOptions.None, default,
-            new() { HeapLimitInBytes = 4096 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(?#ignored)(é)(😀)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 4096
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = new byte[1 << 20]; input.AsSpan().Fill((byte)'z');
         var failure = Assert.Throws<Pcre2MatchException>(() =>
         {
@@ -50,8 +56,14 @@ public sealed class Pcre2CommentSemanticsTests
     [Fact]
     public void CommentDoesNotBypassSingleMatchWork()
     {
-        var regex = new Utf8Pcre2Regex("(?#ignored)(é)(😀)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(?#ignored)(é)(😀)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed("é😀"u8)).ErrorKind);
     }
 
@@ -108,8 +120,10 @@ public sealed class Pcre2CommentSemanticsTests
     {
         var armed = false; var reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => !armed ? 0 : ++reads >= 2 ? 2 : 0);
-        var regex = new Utf8Pcre2Regex("(?#ignored)abc", Pcre2CompileOptions.None, default,
-            default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex("(?#ignored)abc", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         armed = true;
         Assert.Equal(Pcre2ErrorKind.Timeout, Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("xxabc"u8)).ErrorKind);
     }

@@ -18,7 +18,7 @@ public sealed class Pcre2SliceIgnoreCaseTests
     [InlineData("(a)(b)")]
     public void IgnoreCaseShapesDeclineSliceRouting(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Caseless);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Caseless);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 
@@ -28,7 +28,7 @@ public sealed class Pcre2SliceIgnoreCaseTests
         // Pinned divergence that forces the decline above: native caseless
         // matches sigma against final sigma while BCL-invariant folding
         // (and the owned slice) reports a miss.
-        var regex = new Utf8Pcre2Regex("(?P<x>Σ)+", Pcre2CompileOptions.Caseless);
+        var regex = new Utf8Pcre2Regex("(?P<x>Σ)+", options: Pcre2CompileOptions.Caseless);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(Utf8("ς")));
         var bcl = new System.Text.RegularExpressions.Regex(
@@ -56,7 +56,7 @@ public sealed class Pcre2SliceIgnoreCaseTests
             System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant,
             System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
         Assert.Equal(expected, oracle.IsMatch(inputText));
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Caseless);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Caseless);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }

@@ -53,6 +53,15 @@ public sealed class Pcre2PreparationWorkPolicyTests
         Assert.Equal(1, regex.DebugReplacementCacheEntryCount);
     }
 
-    private static Utf8Pcre2Regex Create(uint work) => new("(?<x>a)b", Pcre2CompileOptions.None, default,
-        new() { MatchLimit = work, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+    private static Utf8Pcre2Regex Create(uint work) => new("(?<x>a)b", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    {
+        ResourcePolicy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = (work) == 0 ? null : (work),
+            MaxDepth = 256,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
+        },
+        MatchTimeout = Timeout.InfiniteTimeSpan
+    });
 }

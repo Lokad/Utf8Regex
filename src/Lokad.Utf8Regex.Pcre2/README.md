@@ -162,11 +162,11 @@ complete profile equivalence.
 
 ## Resource controls and ownership
 
-Use `Utf8Pcre2Regex.Create(pattern, options, settings, policy, matchTimeout)` for
-the common `Utf8ResourcePolicy`, or legacy `Utf8Pcre2ExecutionLimits` overloads.
-Common positive work/depth/working/result caps map to `MatchLimit`, `DepthLimit`,
-`HeapLimitInBytes` and `ResultLimitInBytes`. Common null maps to legacy zero
-(unlimited); a common zero cap is invalid and work above `uint.MaxValue` rejects.
+Construct or Compile text/strict UTF-8 patterns with options, PCRE2 compile
+settings and immutable `Utf8RegexPolicy`. Shared positive work/depth/working/result
+caps map to the existing PCRE2 limits. Null means unlimited; zero is invalid and
+work above `uint.MaxValue` rejects. `ResourcePolicy` and `DefaultExecutionLimits`
+are read-only projections. No separate Create factory or funded wrapper remains.
 **Defaults remain unlimited.** Numeric work/depth units depend on the route and
 are not native-PCRE2 or Core/PythonRe interchangeable units.
 
@@ -206,8 +206,9 @@ runtime/emission storage while preserving live search/scalar payloads and PCRE2
 operation selection. Construction charges can fall; invocation units and scope
 remain unchanged.
 
-Explicit `Compile` factories provide separate construction work/depth/instruction/
-byte limits, timeout and token. Construction admits backtracking
+Policy construction controls provide separate work/depth/instruction/byte limits
+and timeout on constructors and Compile. Compile additionally accepts a token,
+which is not retained for matching. Construction admits backtracking
 metadata conservatively at 256 bytes per UTF-16 pattern character, plus separate
 name-lookup admission per lowerer and instruction/auxiliary-array capacity with
 growth overlap. Its recursive compiler
@@ -234,6 +235,19 @@ Count can exhaust a 50-million-step policy even though unlimited Count succeeds.
 This is a disclosed operating-cost limitation; an experimental candidate-search
 change was reverted and is not included. Choose budgets for the required workload;
 there is no universal finite default or new release-wide performance claim.
+
+ProgramMemoryAllowance prepays compiled storage and bounded replacement-cache
+capacity; dispose funded expressions. New calls and program-dependent metadata
+reject after close. Admitted calls and existing persistent cursors finish under
+their original controls; refunds wait for the final use, without GC timing.
+IsMatch/Match/Count/cursor/TryReplace inherit program funding for null working
+admission; explicit working accounts override only temporary storage. Span
+enumerators keep numeric working controls and borrow an open producer for each
+advance; close rejects further advances on every copy, while Current remains valid.
+Use persistent cursors for shared working admission or traversal surviving close.
+Unfunded Dispose is a no-op. Pattern/options/settings/resource projections remain
+readable; other metadata, probes and owned output keep numeric limits and program
+protection without an additional overload family.
 
 Keep borrowed subjects unchanged and their owners alive. Copied value cursors
 retain independent positions but share allowance/deadline. Owned detailed results

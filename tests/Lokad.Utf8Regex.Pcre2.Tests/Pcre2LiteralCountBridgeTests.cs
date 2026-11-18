@@ -126,8 +126,16 @@ public sealed class Pcre2LiteralCountBridgeTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(a)(b)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, HeapLimitInBytes = 1048576, ResultLimitInBytes = 1048576 }, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("(a)(b)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxWorkingBytes = 1048576,
+                MaxResultBytes = 1048576
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var retained = regex.MatchDetailed("ab"u8);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes("π😀" + string.Concat(Enumerable.Repeat("ab ", 1000)));
@@ -158,8 +166,14 @@ public sealed class Pcre2LiteralCountBridgeTests
             if (armed && ++reads == 100) ticks = 25;
             return ticks;
         });
-        var regex = new Utf8Pcre2Regex("(a)(b)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000 }, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("(a)(b)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ", 1000)));
         armed = true;
         Assert.Equal(Pcre2ErrorKind.Timeout, Assert.Throws<Pcre2MatchException>(() => regex.Count(bytes)).ErrorKind);
@@ -180,11 +194,79 @@ public sealed class Pcre2LiteralCountBridgeTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null) =>
-        new(pattern, Pcre2CompileOptions.None, default, limits ?? new()
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
-            MatchLimit = 1000000,
-            DepthLimit = 1024,
-            HeapLimitInBytes = 1048576,
-            ResultLimitInBytes = 1048576
-        }, Timeout.InfiniteTimeSpan);
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1048576
+                }
+
+                )).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1048576
+                }
+
+                )).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1048576
+                }
+
+                )).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1048576
+                }
+
+                )).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1048576
+                }
+
+                )).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1048576
+                }
+
+                )).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1048576
+                }
+
+                )).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits ?? new()
+                {
+                    MatchLimit = 1000000,
+                    DepthLimit = 1024,
+                    HeapLimitInBytes = 1048576,
+                    ResultLimitInBytes = 1048576
+                }
+
+                )).ResultLimitInBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 }

@@ -135,7 +135,10 @@ public sealed class Pcre2LiteralBoundaryProbeTests
         Pcre2CompileOptions compile, Pcre2NewlineConvention newline, Pcre2MatchOptions flags,
         Pcre2PartialMode mode, Utf8Pcre2ProbeKind kind, int begin, int end)
     {
-        var regex = new Utf8Pcre2Regex(pattern, compile, new() { Newline = newline }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: compile, compileSettings: new() { Newline = newline }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         var probe = regex.Probe(input, mode, start, flags);
         Assert.Equal(kind, probe.Kind);
@@ -147,9 +150,17 @@ public sealed class Pcre2LiteralBoundaryProbeTests
     public void LaterScalarBoundaryFullPreservesFiniteAdmissionAndRetainedAlias()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
-        Utf8Pcre2Regex Create(ulong bytes) => Utf8Pcre2Regex.Create(@"abc\b", Pcre2CompileOptions.Ucp, default,
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = bytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex(@"abc\b", options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = bytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("abcé abc!"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         var regex = Create(capacity);
@@ -166,8 +177,14 @@ public sealed class Pcre2LiteralBoundaryProbeTests
     [Fact]
     public void FailedBoundaryCandidatesCannotBypassFiniteWork()
     {
-        var regex = new Utf8Pcre2Regex(@"abc\b", Pcre2CompileOptions.Ucp, default,
-            new() { MatchLimit = 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(@"abc\b", options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abcx ", 100)) + "abc!");
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = regex.Probe(input, Pcre2PartialMode.Soft); }).ErrorKind);
@@ -178,8 +195,16 @@ public sealed class Pcre2LiteralBoundaryProbeTests
     [InlineData(4094)] [InlineData(4095)] [InlineData(4096)]
     public void ControlledLiteralSearchKeepsChunkBoundaryAndPartialTail(int offset)
     {
-        var regex = new Utf8Pcre2Regex(@"abc\z", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, HeapLimitInBytes = 4096, ResultLimitInBytes = 4096 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(@"abc\z", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxWorkingBytes = 4096,
+                MaxResultBytes = 4096
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var full = regex.Probe(Encoding.UTF8.GetBytes(new string('x', offset) + "abc"), Pcre2PartialMode.Soft);
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, full.Kind);
         Assert.Equal((offset, offset + 3), (full.Value.StartOffsetInBytes, full.Value.EndOffsetInBytes));
@@ -193,7 +218,10 @@ public sealed class Pcre2LiteralBoundaryProbeTests
     public void BoundaryCandidateSearchObservesOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"abc\b", Pcre2CompileOptions.Ucp, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(@"abc\b", options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {

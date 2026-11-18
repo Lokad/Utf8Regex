@@ -65,22 +65,24 @@ public sealed class Pcre2TokenRepeatTests
             3,
             Pcre2MatchOptions.Anchored | Pcre2MatchOptions.NotEmptyAtStart));
 
-        var endAnchored = new Utf8Pcre2Regex(@"\w*?", Pcre2CompileOptions.EndAnchored);
+        var endAnchored = new Utf8Pcre2Regex(@"\w*?", options: Pcre2CompileOptions.EndAnchored);
         Assert.Equal("abc", System.Text.Encoding.UTF8.GetString(endAnchored.Match("abc"u8).GetValueBytes()));
 
-        var firstLine = new Utf8Pcre2Regex(@"\w+", Pcre2CompileOptions.FirstLine);
+        var firstLine = new Utf8Pcre2Regex(@"\w+", options: Pcre2CompileOptions.FirstLine);
         Assert.Equal(1, firstLine.Count("abc\ndef"u8));
     }
 
     [Fact]
     public void TokenRepeatObservesFiniteWork()
     {
-        var regex = new Utf8Pcre2Regex(
-            @"\w+",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            @"\w+", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
+        });
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("abc"u8)).ErrorKind);
@@ -91,12 +93,10 @@ public sealed class Pcre2TokenRepeatTests
     {
         var graphemes = new Utf8Pcre2Regex(@"\X+");
         var newlineSequences = new Utf8Pcre2Regex(@"\R+");
-        var codeUnits = new Utf8Pcre2Regex(
-            @"\C+",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { BackslashC = Pcre2BackslashCPolicy.Allow },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var codeUnits = new Utf8Pcre2Regex(            @"\C+", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { BackslashC = Pcre2BackslashCPolicy.Allow }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         Assert.Equal("a\u0301🇫🇷", System.Text.Encoding.UTF8.GetString(graphemes.Match(Encoding.UTF8.GetBytes("a\u0301🇫🇷")).GetValueBytes()));
         Assert.Equal("\r\n\n", System.Text.Encoding.UTF8.GetString(newlineSequences.Match("\r\n\nx"u8).GetValueBytes()));
         Assert.Equal("é", System.Text.Encoding.UTF8.GetString(codeUnits.Match("é"u8).GetValueBytes()));

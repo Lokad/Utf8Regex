@@ -38,10 +38,28 @@ public sealed class Pcre2ScalarRangeAdmissionTests
                 HeapLimitInBytes = 1_048_576,
                 ResultLimitInBytes = 1_048_576
             } : default;
-            var fromText = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Ucp, default,
-                limits, Timeout.InfiniteTimeSpan);
-            var fromBytes = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), Pcre2CompileOptions.Ucp,
-                default, limits, Timeout.InfiniteTimeSpan);
+            var fromText = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
+            var fromBytes = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: Pcre2CompileOptions.Ucp, compileSettings:                 default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             Assert.Equal(expected, fromText.IsMatch(input));
             Assert.Equal(expected, fromBytes.IsMatch(input));
             Assert.Equal(expected ? 1 : 0, fromText.Count(input));
@@ -70,8 +88,17 @@ public sealed class Pcre2ScalarRangeAdmissionTests
     [Fact]
     public void CapturedRangeKeepsScalarCoordinatesAndFiniteAuthority()
     {
-        var regex = Utf8Pcre2Regex.Create("([😀-😃]+)", Pcre2CompileOptions.Ucp, default,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("([😀-😃]+)", options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes("é😁😃x😀");
         var first = regex.MatchDetailed(input);
         var group = first.GetGroup(1);
@@ -86,8 +113,14 @@ public sealed class Pcre2ScalarRangeAdmissionTests
         Assert.Equal(canceled.Token,
             Assert.Throws<OperationCanceledException>(() =>
                 regex.Count(input, 0, Pcre2MatchOptions.None, canceled.Token)).CancellationToken);
-        var denied = Utf8Pcre2Regex.Create("([😀-😃]+)", Pcre2CompileOptions.Ucp, default,
-            new() { MaxWorkSteps = 1 }, Timeout.InfiniteTimeSpan);
+        var denied = new Utf8Pcre2Regex("([😀-😃]+)", options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => denied.Count(input)).ErrorKind);
     }

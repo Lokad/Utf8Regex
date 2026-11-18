@@ -9,7 +9,10 @@ public sealed class Pcre2CoreOwnershipTests
     public void ProfileOnlyOperationsDoNotRetainUnusedCorePreparation(string pattern, string subject,
         Pcre2CompileOptions options, Pcre2NewlineConvention newline)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options, new() { Newline = newline }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: new() { Newline = newline }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Null(regex.DebugCompiledProgram.PrimaryUtf8);
         var bytes = System.Text.Encoding.UTF8.GetBytes(subject);
         Assert.True(regex.IsMatch(bytes));

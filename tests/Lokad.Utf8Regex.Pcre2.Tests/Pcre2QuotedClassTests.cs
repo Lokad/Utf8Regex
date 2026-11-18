@@ -55,10 +55,28 @@ public sealed class Pcre2QuotedClassTests
                 HeapLimitInBytes = 1_048_576,
                 ResultLimitInBytes = 1_048_576
             } : default;
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Ucp, default,
-                limits, Timeout.InfiniteTimeSpan);
-            var bytes = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), Pcre2CompileOptions.Ucp,
-                default, limits, Timeout.InfiniteTimeSpan);
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
+            var bytes = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: Pcre2CompileOptions.Ucp, compileSettings:                 default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             Assert.Equal(expected, regex.IsMatch(input));
             Assert.Equal(expected, bytes.IsMatch(input));
         }
@@ -85,8 +103,17 @@ public sealed class Pcre2QuotedClassTests
     [Fact]
     public void CapturedQuotedClassKeepsScalarRangesAndFiniteAuthority()
     {
-        var regex = Utf8Pcre2Regex.Create(@"([\Q😀-😃\E]+)", Pcre2CompileOptions.Ucp, default,
-            new() { MaxWorkSteps = 1_000_000, MaxDepth = 256, MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(@"([\Q😀-😃\E]+)", options: Pcre2CompileOptions.Ucp, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1_048_576,
+                MaxResultBytes = 1_048_576
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes("é😀-😃x😀");
         var first = regex.MatchDetailed(input);
         var group = first.GetGroup(1);

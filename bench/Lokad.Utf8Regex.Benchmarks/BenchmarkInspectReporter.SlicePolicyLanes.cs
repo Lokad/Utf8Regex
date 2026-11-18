@@ -214,13 +214,15 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine("  Finite preparation: core=" + coreFinite.Inspection.ExecutionKind +
             " pythonCore=" + (pythonFinite.DebugUtf8ExecutionKind ?? "None"));
 
-        var pcre2 = new Utf8Pcre2Regex(sliceCase.Pattern, Pcre2CompileOptions.None);
-        var pcre2Finite = new Utf8Pcre2Regex(
-            sliceCase.Pattern,
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = SlicePolicyLaneMatchLimit },
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var pcre2 = new Utf8Pcre2Regex(sliceCase.Pattern, options: Pcre2CompileOptions.None);
+        var pcre2Finite = new Utf8Pcre2Regex(            sliceCase.Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = SlicePolicyLaneMatchLimit
+            },
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         Console.WriteLine("  Pcre2 plan: " + pcre2.DebugDescribeExecutionPlan());
         Console.WriteLine(
             "  Pcre2 finite plan: " + pcre2Finite.DebugDescribeExecutionPlan());

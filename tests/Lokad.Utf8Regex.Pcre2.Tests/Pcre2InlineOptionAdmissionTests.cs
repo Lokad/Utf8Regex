@@ -35,9 +35,17 @@ public sealed class Pcre2InlineOptionAdmissionTests
     public void ValidEmptyAndSingleHyphenDirectivesKeepTheirSemantics(string pattern, string text, bool expected)
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal(expected, regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token).Success);
@@ -66,9 +74,17 @@ public sealed class Pcre2InlineOptionAdmissionTests
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));
         Assert.Equal("é<😀>", System.Text.Encoding.UTF8.GetString(regex.Replace("é😀"u8, "<$x>")));
         using var cancellation = new CancellationTokenSource();
-        var empty = new Utf8Pcre2Regex(directive, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var empty = new Utf8Pcre2Regex(directive, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(2, empty.Count("😀"u8, 0, Pcre2MatchOptions.None, cancellation.Token));
         var cursor = empty.EnumerateMatches("😀"u8, 0, Pcre2MatchOptions.None, cancellation.Token);
         Assert.True(cursor.MoveNext());
@@ -94,9 +110,17 @@ public sealed class Pcre2InlineOptionAdmissionTests
         string pattern, string text, string first, string second)
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes("q" + text);
         Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);

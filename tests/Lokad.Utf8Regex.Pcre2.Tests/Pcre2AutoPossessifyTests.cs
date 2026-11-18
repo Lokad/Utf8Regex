@@ -13,14 +13,20 @@ public sealed class Pcre2AutoPossessifyTests
 {
     private static void AssertAutoPossessCount(string pattern, int expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         Assert.Equal(expected, program.Program.AutoPossessiveRepeatCount);
     }
 
     private static void AssertAutoPossessCount(string pattern, Pcre2CompileOptions options, int expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         Assert.Equal(expected, program.Program.AutoPossessiveRepeatCount);
     }
@@ -29,7 +35,10 @@ public sealed class Pcre2AutoPossessifyTests
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         var expected = oracle.Match(inputText);
         var actual = regex.Match(input);
@@ -84,8 +93,15 @@ public sealed class Pcre2AutoPossessifyTests
         var uncontrolled = new Utf8Pcre2Regex(pattern);
         Assert.Equal(3, Assert.IsType<Pcre2BacktrackingDirectProgram>(
             uncontrolled.DebugCompiledProgram.Operations.Count).Program.AutoPossessiveRepeatCount);
-        var controlled = Utf8Pcre2Regex.Create(pattern, default, default,
-            new Utf8ResourcePolicy { MaxWorkSteps = 100_000, MaxDepth = 512 }, Timeout.InfiniteTimeSpan);
+        var controlled = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100_000,
+                MaxDepth = 512
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(controlled.DebugCompiledProgram.Operations.Count);
         Assert.Equal(0, program.Program.AutoPossessiveRepeatCount);
     }
@@ -111,7 +127,7 @@ public sealed class Pcre2AutoPossessifyTests
     [InlineData(Pcre2CompileOptions.None, "١٢ ", "")]
     public void BoundaryWordProofUsesTheSameUnicodeMode(Pcre2CompileOptions options, string input, string expected)
     {
-        var regex = new Utf8Pcre2Regex(@"\b\d+\b", options);
+        var regex = new Utf8Pcre2Regex(@"\b\d+\b", options: options);
         var match = regex.Match(Encoding.UTF8.GetBytes(input));
         Assert.Equal(expected.Length != 0, match.Success);
         if (match.Success) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));

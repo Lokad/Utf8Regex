@@ -113,9 +113,17 @@ public sealed class Pcre2CompoundCandidateProbeTests
     public void LaterSubroutineFullPreservesFiniteCapturesAndNamedAlias()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(2);
-        Utf8Pcre2Regex Create(ulong bytes) => Utf8Pcre2Regex.Create("(?<unit>abc)(?1)", Pcre2CompileOptions.None, default,
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = bytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex("(?<unit>abc)(?1)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = bytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("😀xabcabc"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         var regex = Create(capacity);
@@ -135,8 +143,14 @@ public sealed class Pcre2CompoundCandidateProbeTests
     [InlineData("(abc)++x")] [InlineData("(?(?=abc).*|Z)")]
     public void CompoundCandidateWorkCannotBypassFiniteAllowance(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(new string('q', 1000));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = regex.Probe(input, Pcre2PartialMode.Soft); }).ErrorKind);
@@ -148,7 +162,10 @@ public sealed class Pcre2CompoundCandidateProbeTests
     public void CompoundCandidatesObserveOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(?>a+b)", Pcre2CompileOptions.None, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("(?>a+b)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {

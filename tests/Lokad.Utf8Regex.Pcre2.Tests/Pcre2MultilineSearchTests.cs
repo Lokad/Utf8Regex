@@ -8,7 +8,7 @@ public sealed class Pcre2MultilineSearchTests
     [Fact]
     public void ExactLinePrefixKeepsPublicValueAndOutputSemantics()
     {
-        var regex = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline);
+        var regex = new Utf8Pcre2Regex("^ERROR: .+$", options: Pcre2CompileOptions.Multiline);
         var input = Encoding.UTF8.GetBytes(
             "INFO: boot\nERROR: first\nERROR: \nERROR: \r\nERROR: café\n");
         Assert.True(regex.IsMatch(input));
@@ -34,12 +34,10 @@ public sealed class Pcre2MultilineSearchTests
     [Fact]
     public void ExactLinePrefixHonorsLfBoundariesAndStartOffsets()
     {
-        var regex = new Utf8Pcre2Regex(
-            "^ERROR: .+$",
-            Pcre2CompileOptions.Multiline,
-            new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Lf },
-            default(Utf8Pcre2ExecutionLimits),
-            Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "^ERROR: .+$", options:             Pcre2CompileOptions.Multiline, compileSettings:             new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Lf }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
         var input = "ERROR: zero\nINFO: one\nERROR: two\r\nERROR: three"u8;
         var secondMatchStart = "ERROR: zero\nINFO: one\n"u8.Length;
         Assert.Equal(2, regex.Count(input, 1));
@@ -52,12 +50,14 @@ public sealed class Pcre2MultilineSearchTests
     [Fact]
     public void ExactLinePrefixSupportsFiniteLimits()
     {
-        var regex = new Utf8Pcre2Regex(
-            "^ERROR: .+$",
-            Pcre2CompileOptions.Multiline,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "^ERROR: .+$", options:             Pcre2CompileOptions.Multiline, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("INFO: ok\nERROR: boom"u8)).ErrorKind);
@@ -66,7 +66,7 @@ public sealed class Pcre2MultilineSearchTests
     [Fact]
     public void ExactLinePrefixMatchesBclAcrossAsciiOffsets()
     {
-        var direct = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline);
+        var direct = new Utf8Pcre2Regex("^ERROR: .+$", options: Pcre2CompileOptions.Multiline);
         var oracle = new Regex("^ERROR: .+$", RegexOptions.Multiline | RegexOptions.CultureInvariant);
 
         foreach (var inputText in new[]
@@ -103,9 +103,10 @@ public sealed class Pcre2MultilineSearchTests
     [Fact]
     public void ExplicitCrLineConventionPreservesItsOwnBoundaries()
     {
-        var regex = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline,
-            new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr },
-            default(Utf8Pcre2ExecutionLimits), Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Pcre2Regex("^ERROR: .+$", options: Pcre2CompileOptions.Multiline, compileSettings:             new Utf8Pcre2CompileSettings { Newline = Pcre2NewlineConvention.Cr }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
         Assert.Equal(2, regex.Count("ERROR: first\rERROR: second"u8));
         Assert.True(regex.IsMatch("ERROR: \n"u8));
         Assert.False(regex.IsMatch("ERROR: \r"u8));
@@ -114,7 +115,7 @@ public sealed class Pcre2MultilineSearchTests
     [Fact]
     public void ExplicitLfLineShapeMatchesOracleOnSlice()
     {
-        var regex = new Utf8Pcre2Regex("^ERROR\\n.+$", Pcre2CompileOptions.Multiline);
+        var regex = new Utf8Pcre2Regex("^ERROR\\n.+$", options: Pcre2CompileOptions.Multiline);
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         var oracle = new Regex(
             "^ERROR\\n.+$",

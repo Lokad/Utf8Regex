@@ -24,7 +24,7 @@ public sealed class Pcre2SliceAtomicTests
     [InlineData("(?>(a+))b")]
     public void AtomicShapesRouteThroughSlice(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(
             "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
@@ -51,7 +51,7 @@ public sealed class Pcre2SliceAtomicTests
     public void OwnedIsMatchMatchesOracle(string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -63,7 +63,7 @@ public sealed class Pcre2SliceAtomicTests
         string pattern, string inputText, int startOffsetInBytes, int expected)
     {
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -71,7 +71,7 @@ public sealed class Pcre2SliceAtomicTests
     [Fact]
     public void OwnedDetailedProjectsAtomicCaptures()
     {
-        var regex = new Utf8Pcre2Regex("(?>(a+))b", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?>(a+))b", options: Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("aaab"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("aaa", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
@@ -81,7 +81,7 @@ public sealed class Pcre2SliceAtomicTests
     [Fact]
     public void OwnedReplaceMatchesOracle()
     {
-        var regex = new Utf8Pcre2Regex("(?>a+)b", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?>a+)b", options: Pcre2CompileOptions.None);
         Assert.Equal(Bcl("(?>a+)b").Replace("aaab", "<$0>"), System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("aaab"), "<$0>")));
         Assert.True(regex.DebugCompiledProgram is not null);
     }

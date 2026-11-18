@@ -92,9 +92,17 @@ public sealed class Pcre2SliceScanWorkspaceTests
     [Fact]
     public void EmptyRetryKeepsWholeScalarAdvancementWithFiniteControls()
     {
-        var regex = new Utf8Pcre2Regex("x*|😀+", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256,
-                HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("x*|😀+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
         var bytes = "é😀😀"u8.ToArray();
         Assert.Equal(4, regex.Count(bytes));
@@ -106,6 +114,15 @@ public sealed class Pcre2SliceScanWorkspaceTests
     }
 
     private static Utf8Pcre2Regex Create(Utf8Pcre2ExecutionLimits limits, TimeSpan? timeout = null)
-        => new("(a+)(b+)", Pcre2CompileOptions.None, default, limits,
-            timeout ?? Timeout.InfiniteTimeSpan);
+        => new("(a+)(b+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+            },
+            MatchTimeout = timeout ?? Timeout.InfiniteTimeSpan
+        });
 }

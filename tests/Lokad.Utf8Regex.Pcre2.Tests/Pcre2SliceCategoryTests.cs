@@ -27,7 +27,7 @@ public sealed class Pcre2SliceCategoryTests
     [InlineData(@"[^\p{L}]+")]
     public void GeneralCategoriesDeclineSliceRouting(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 
@@ -39,7 +39,7 @@ public sealed class Pcre2SliceCategoryTests
     [InlineData(@"[\p{L}\D]+")]
     public void MixedCategoryShapesDeclineSliceRouting(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 
@@ -49,7 +49,7 @@ public sealed class Pcre2SliceCategoryTests
         // Pre-existing native divergence (verified at HEAD): PCRE2 rejects
         // a dash after \P in a class while BCL reads it literally; the
         // adapter surfaces the native construction throw.
-        Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(@"[\P{L}-x]+", Pcre2CompileOptions.None));
+        Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(@"[\P{L}-x]+", options: Pcre2CompileOptions.None));
     }
 
     [Theory]
@@ -57,7 +57,7 @@ public sealed class Pcre2SliceCategoryTests
     [InlineData(@"\p{xx}")]
     public void UnservedCategoryNamesFailDuringConstruction(string pattern)
     {
-        Assert.Throws<NotSupportedException>(() => new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None));
+        Assert.Throws<NotSupportedException>(() => new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None));
     }
 
     public static IEnumerable<object?[]> IsMatchCases()
@@ -84,7 +84,7 @@ public sealed class Pcre2SliceCategoryTests
     public void InlineIsMatchMatchesOracle(string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -121,7 +121,7 @@ public sealed class Pcre2SliceCategoryTests
     public void AstralCategoriesFollowNativeScalarSemantics(string pattern, string inputText, bool bclExpected, bool nativeExpected)
     {
         Assert.Equal(bclExpected, Bcl(pattern).IsMatch(inputText));
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(nativeExpected, regex.IsMatch(Utf8(inputText)));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -131,7 +131,7 @@ public sealed class Pcre2SliceCategoryTests
     public void InlineCountMatchesOracle(string pattern, string inputText, int expected)
     {
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -145,7 +145,7 @@ public sealed class Pcre2SliceCategoryTests
         var expected = Bcl(pattern).Match(inputText);
         Assert.True(expected.Success);
         Assert.Equal(expectedStart, expected.Index);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var found = regex.Match(Utf8(inputText), startOffsetInBytes: 0);
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
@@ -159,7 +159,7 @@ public sealed class Pcre2SliceCategoryTests
         const string pattern = @"([α-ω]+)";
         var expected = Bcl(pattern).Match("x\u03B1");
         Assert.True(expected.Success);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("x\u03B1"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("\u03B1", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
@@ -178,7 +178,7 @@ public sealed class Pcre2SliceCategoryTests
     public void InlineReplaceMatchesOracle(string pattern, string inputText, string expected)
     {
         Assert.Equal(expected, Bcl(pattern).Replace(inputText, "<$0>"));
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8(inputText), "<$0>")));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }

@@ -162,7 +162,7 @@ public sealed class Pcre2InspectedEofProbeTests
         Pcre2CompileOptions options, Pcre2MatchOptions flags, Pcre2PartialMode mode,
         Utf8Pcre2ProbeKind kind, int begin, int end)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options);
+        var regex = new Utf8Pcre2Regex(pattern, options: options);
         var input = Encoding.UTF8.GetBytes(text);
         var probe = regex.Probe(input, mode, start, flags);
         Assert.Equal(kind, probe.Kind);
@@ -179,9 +179,17 @@ public sealed class Pcre2InspectedEofProbeTests
     public void InspectedEofHasExactResultAdmissionAndRetainedWholeContext()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
-        Utf8Pcre2Regex Create(ulong bytes) => Utf8Pcre2Regex.Create(@"(?<=pqr)abc(?=xyz)", Pcre2CompileOptions.None, default,
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = bytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex(@"(?<=pqr)abc(?=xyz)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = bytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("😀pqrabcxyz"u8, Pcre2PartialMode.Soft, 7); }).ErrorKind);
         var regex = Create(capacity);
@@ -199,8 +207,15 @@ public sealed class Pcre2InspectedEofProbeTests
     [Fact]
     public void InspectedEofKeepsOriginalWorkAndWorkingAllowance()
     {
-        Utf8Pcre2Regex Create(uint work, ulong heap) => new(@"(?<=pqr)abc(?=xyz)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = work, HeapLimitInBytes = heap }, Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(uint work, ulong heap) => new(@"(?<=pqr)abc(?=xyz)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (work) == 0 ? null : (work),
+                MaxWorkingBytes = (heap) == 0 ? null : (heap)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(1, 1 << 20).Probe("pqrab"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
@@ -213,7 +228,10 @@ public sealed class Pcre2InspectedEofProbeTests
     public void InspectedEofKeepsOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?<=pqr)abc(?=xyz)", Pcre2CompileOptions.None, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(@"(?<=pqr)abc(?=xyz)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 20000) + "pqrab");
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>

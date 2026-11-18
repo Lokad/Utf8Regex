@@ -28,7 +28,7 @@ public sealed class Pcre2SliceVerboseTests
     {
         foreach (var options in new[] { Pcre2CompileOptions.Extended, Pcre2CompileOptions.ExtendedMore })
         {
-            var regex = new Utf8Pcre2Regex(pattern, options);
+            var regex = new Utf8Pcre2Regex(pattern, options: options);
             Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         }
     }
@@ -40,7 +40,7 @@ public sealed class Pcre2SliceVerboseTests
         // skips vertical tab while Core keeps it significant. .NET 11's BCL
         // now strips it too, so it cannot stand in for the owned Core contract.
         var pattern = "a" + char.ConvertFromUtf32(0x0B) + "b";
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Extended);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Extended);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(Utf8("ab")));
         Assert.False(regex.IsMatch(Utf8("a\vb")));
@@ -62,7 +62,7 @@ public sealed class Pcre2SliceVerboseTests
     public void ExtendedIsMatchMatchesOracle(string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Extended);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Extended);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }

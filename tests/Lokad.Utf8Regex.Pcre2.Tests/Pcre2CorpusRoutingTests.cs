@@ -23,12 +23,10 @@ public sealed class Pcre2CorpusRoutingTests
             Utf8Pcre2Regex regex;
             try
             {
-                regex = new Utf8Pcre2Regex(
-                    corpusCase.Pattern,
-                    Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions),
-                    Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings),
-                    default(Utf8Pcre2ExecutionLimits),
-                    Utf8Pcre2Regex.DefaultMatchTimeout);
+                regex = new Utf8Pcre2Regex(                    corpusCase.Pattern, options:                     Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions), compileSettings:                     Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings), policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+                });
             }
             catch (Exception ex) when (ex is Pcre2CompileException or ArgumentException or NotSupportedException)
             {

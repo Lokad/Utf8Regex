@@ -73,7 +73,7 @@ public sealed class Pcre2CallerCaptureTests
     public void CompileAndMatchOptionsKeepTheirByteStarts(string pattern, string text, Pcre2CompileOptions options,
         int start, Pcre2MatchOptions flags, int expectedStart, int expectedEnd)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options);
+        var regex = new Utf8Pcre2Regex(pattern, options: options);
         var output = new Utf8Pcre2CaptureRange[2];
         var match = regex.Match(Encoding.UTF8.GetBytes(text), start, output, flags);
         Assert.True(match.Success);
@@ -85,10 +85,17 @@ public sealed class Pcre2CallerCaptureTests
     [Fact]
     public void CallerSlotsNeedNoResultPayloadAndRefusalClearsOnlyTheirPrefix()
     {
-        var regex = Utf8Pcre2Regex.Create("(?<x>a)+", default, default, new()
+        var regex = new Utf8Pcre2Regex("(?<x>a)+", options: default, compileSettings: default, policy: new Utf8RegexPolicy
         {
-            MaxWorkSteps = 100000, MaxDepth = 1024, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1
-        }, TimeSpan.FromSeconds(10));
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1
+            },
+            MatchTimeout = TimeSpan.FromSeconds(10)
+        });
         var account = new Account(); var output = Enumerable.Repeat(Sentinel, 3).ToArray();
         var match = regex.Match("aaa"u8, captures: output, workingMemoryAllowance: account);
         Assert.True(match.Success); Assert.Equal(2, output[1].StartOffsetInBytes);
@@ -107,7 +114,10 @@ public sealed class Pcre2CallerCaptureTests
     {
         long now = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => now);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(?<x>a)+", matchTimeout: deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(?<x>a)+", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan
+        });
         var account = new Account { AfterGrant = () => { if (deadline) now = 101; else source.Cancel(); } };
         var output = Enumerable.Repeat(Sentinel, 3).ToArray();
         if (deadline) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.Throws<Pcre2MatchException>(() =>
@@ -122,8 +132,17 @@ public sealed class Pcre2CallerCaptureTests
     public void FundedMatchSurvivesCloseDuringUseAndPreCancellationWinsAfterClose()
     {
         var program = new Account(); var working = new Account();
-        using var owner = Utf8Pcre2Regex.Compile("(?<x>a)+", default, default, TimeSpan.FromSeconds(10),
-            new() { MaxResultBytes = 1 }, default, Timeout.InfiniteTimeSpan, default, program);
+        using var owner = Utf8Pcre2Regex.Compile("(?<x>a)+", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10),
+            ResourcePolicy = new()
+            {
+                MaxResultBytes = 1
+            },
+            ConstructionPolicy = default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan,
+            ProgramMemoryAllowance = program
+        }, cancellationToken: default);
         var held = program.Used; Assert.True(held > 0);
         working.AfterGrant = () => { owner.Dispose(); Assert.Equal(held, program.Used); };
         var output = new Utf8Pcre2CaptureRange[2];
@@ -154,7 +173,10 @@ public sealed class Pcre2CallerCaptureTests
             if (!deadline) source.Cancel();
             return deadline ? 101 : 0;
         });
-        var regex = new Utf8Pcre2Regex(string.Concat(Enumerable.Repeat("(a)", 70)), matchTimeout: TimeSpan.FromMilliseconds(100));
+        var regex = new Utf8Pcre2Regex(string.Concat(Enumerable.Repeat("(a)", 70)), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(100)
+        });
         var input = Encoding.UTF8.GetBytes(new string('a', 70));
         var working = new Account();
         if (deadline) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.Throws<Pcre2MatchException>(() =>

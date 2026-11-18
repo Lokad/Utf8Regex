@@ -348,8 +348,14 @@ public sealed class Pcre2InvocationWorkspaceTests
     [InlineData("(*MARK:tag)(a+)\\1", "aa", 512)]
     public void PublicVmHeapLimitIncludesPhysicalHeadersAndAllFixedVectors(string pattern, string subject, ulong limit)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None,
-            default, new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = limit }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = (limit) == 0 ? null : (limit)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(subject)));
         Assert.Equal(Pcre2ErrorKind.HeapLimit, exception.ErrorKind);
     }

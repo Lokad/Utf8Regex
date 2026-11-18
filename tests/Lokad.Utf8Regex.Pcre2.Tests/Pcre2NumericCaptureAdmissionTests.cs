@@ -25,10 +25,24 @@ public sealed class Pcre2NumericCaptureAdmissionTests
         foreach (var options in new[] { Pcre2CompileOptions.None, Pcre2CompileOptions.NoAutoCapture | Pcre2CompileOptions.Ucp })
         {
             Action[] constructors = [
-                () => _ = new Utf8Pcre2Regex(pattern, options, settings, default, TimeSpan.FromSeconds(5)),
-                () => _ = new Utf8Pcre2Regex(bytes, options, settings, default, TimeSpan.FromSeconds(5)),
-                () => _ = Utf8Pcre2Regex.Create(pattern, options, settings, default, TimeSpan.FromSeconds(5)),
-                () => _ = Utf8Pcre2Regex.Create(bytes, options, settings, default, TimeSpan.FromSeconds(5)) ];
+                () => _ = new Utf8Pcre2Regex(pattern, options: options, compileSettings: settings, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = TimeSpan.FromSeconds(5)
+                }),
+                () => _ = new Utf8Pcre2Regex(bytes, options: options, compileSettings: settings, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = TimeSpan.FromSeconds(5)
+                }),
+                () => _ = new Utf8Pcre2Regex(pattern, options: options, compileSettings: settings, policy: new Utf8RegexPolicy
+                {
+                    ResourcePolicy = default,
+                    MatchTimeout = TimeSpan.FromSeconds(5)
+                }),
+                () => _ = new Utf8Pcre2Regex(bytes, options: options, compileSettings: settings, policy: new Utf8RegexPolicy
+                {
+                    ResourcePolicy = default,
+                    MatchTimeout = TimeSpan.FromSeconds(5)
+                }) ];
             foreach (var construct in constructors)
             {
                 var exception = Assert.Throws<Pcre2CompileException>(construct);
@@ -53,7 +67,7 @@ public sealed class Pcre2NumericCaptureAdmissionTests
     [InlineData("(?x:# (?<100>a)\na)b", "ab", Pcre2CompileOptions.None)]
     public void NumericLookingLiteralAndCommentTextKeepsItsMeaning(string pattern, string text, Pcre2CompileOptions options)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options);
+        var regex = new Utf8Pcre2Regex(pattern, options: options);
         var match = regex.MatchDetailed(Encoding.UTF8.GetBytes(text));
         Assert.True(match.Success);
         Assert.Equal(text, System.Text.Encoding.UTF8.GetString(match.Value.GetValueBytes()));

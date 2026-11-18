@@ -8,7 +8,7 @@ public sealed class Utf8Pcre2GlobalIterationTests
     [Fact]
     public void Count_and_enumerate_repeated_kreset_ab()
     {
-        var regex = new Utf8Pcre2Regex(@"(?:a\Kb)*", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(@"(?:a\Kb)*", options: Pcre2CompileOptions.None);
         var input = Encoding.UTF8.GetBytes("ab xx ab yy ab");
 
         Assert.Equal(3, regex.Count(input));
@@ -26,7 +26,7 @@ public sealed class Utf8Pcre2GlobalIterationTests
     [Fact]
     public void Count_and_enumerate_captured_repeated_kreset_ab()
     {
-        var regex = new Utf8Pcre2Regex(@"(a\Kb)*", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(@"(a\Kb)*", options: Pcre2CompileOptions.None);
         var input = Encoding.UTF8.GetBytes("ab xx ab yy ab");
 
         Assert.Equal(3, regex.Count(input));
@@ -44,7 +44,7 @@ public sealed class Utf8Pcre2GlobalIterationTests
     [Fact]
     public void Replace_repeated_kreset_ab_uses_match_spans()
     {
-        var regex = new Utf8Pcre2Regex(@"(?:a\Kb)*", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(@"(?:a\Kb)*", options: Pcre2CompileOptions.None);
         var input = Encoding.UTF8.GetBytes("ab xx ab yy ab");
 
         var replaced = regex.Replace(input, "R");
@@ -55,7 +55,7 @@ public sealed class Utf8Pcre2GlobalIterationTests
     [Fact]
     public void Count_and_enumerate_atomic_kreset_alternation()
     {
-        var regex = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)", options: Pcre2CompileOptions.None);
         var input = Encoding.UTF8.GetBytes("abz ab xx abz");
 
         Assert.Equal(3, regex.Count(input));
@@ -76,7 +76,7 @@ public sealed class Utf8Pcre2GlobalIterationTests
     [Fact]
     public void Replace_atomic_kreset_alternation_uses_selected_spans()
     {
-        var regex = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)", options: Pcre2CompileOptions.None);
         var input = Encoding.UTF8.GetBytes("abz ab xx abz");
 
         var replaced = regex.Replace(input, "R");

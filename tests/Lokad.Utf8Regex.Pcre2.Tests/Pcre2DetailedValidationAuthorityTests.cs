@@ -37,8 +37,10 @@ public sealed class Pcre2DetailedValidationAuthorityTests
         {
             using var source = new CancellationTokenSource();
             Assert.NotEmpty(capture);
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-                default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(20));
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(20)
+            });
             Assert.Equal(route, regex.DebugCompiledProgram.Operations.Match.GetType().Name);
             var reads = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
@@ -100,9 +102,17 @@ public sealed class Pcre2DetailedValidationAuthorityTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern, uint work, ulong heap = 1 << 20, ulong result = 1 << 20)
-        => new(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = work, DepthLimit = 256, HeapLimitInBytes = heap, ResultLimitInBytes = result },
-            Timeout.InfiniteTimeSpan);
+        => new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (work) == 0 ? null : (work),
+                MaxDepth = 256,
+                MaxWorkingBytes = (heap) == 0 ? null : (heap),
+                MaxResultBytes = (result) == 0 ? null : (result)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 
     private static Utf8Pcre2MatchContext Match(Utf8Pcre2Regex regex, byte[] input, bool probe,
         int start = 0, Pcre2MatchOptions flags = Pcre2MatchOptions.None, CancellationToken token = default)

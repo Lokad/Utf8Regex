@@ -23,9 +23,17 @@ public sealed class Pcre2DefineOptionScopeTests
     public void DefinitionFlagsStayLocalAndInheritTheOuterSettings(string pattern, string text, bool expected)
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         Assert.Equal(expected, regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token).Success);
@@ -45,8 +53,7 @@ public sealed class Pcre2DefineOptionScopeTests
     public void CapturePolicyRestoresWithoutRemovingDefinitionSlots(bool outerNoAutoCapture)
     {
         var regex = new Utf8Pcre2Regex(outerNoAutoCapture
-            ? "(?(DEFINE)(?-n)(a))(b)" : "(?(DEFINE)(?n)(?<x>a))(b)",
-            outerNoAutoCapture ? Pcre2CompileOptions.NoAutoCapture : Pcre2CompileOptions.None);
+            ? "(?(DEFINE)(?-n)(a))(b)" : "(?(DEFINE)(?n)(?<x>a))(b)", options:             outerNoAutoCapture ? Pcre2CompileOptions.NoAutoCapture : Pcre2CompileOptions.None);
         var match = regex.MatchDetailed("b"u8);
         Assert.True(match.Success);
         Assert.Equal(outerNoAutoCapture ? 2 : 3, match.CaptureSlotCount);
@@ -60,10 +67,81 @@ public sealed class Pcre2DefineOptionScopeTests
     public void DefinitionLocalFoldsAndOuterScalarCapturesKeepTheirCoordinates(bool controlled)
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?(DEFINE)(?i)(?<x>é😀))(?<whole>(?&x))\k<whole>",
-            Pcre2CompileOptions.None, default, controlled ?
-                new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20 } : default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(@"(?(DEFINE)(?i)(?<x>é😀))(?<whole>(?&x))\k<whole>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).ResultLimitInBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = "qÉ😀É😀 É😀É😀"u8.ToArray();
         var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
         Assert.True(retained.Success);
@@ -88,10 +166,17 @@ public sealed class Pcre2DefineOptionScopeTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(?(DEFINE)(?i)(?<x>é😀))(?&x)",
-            Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("(?(DEFINE)(?i)(?<x>é😀))(?&x)", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var cursor = regex.EnumerateMatches("É😀É😀"u8, 0, Pcre2MatchOptions.None, cancellation.Token);
         Assert.True(cursor.MoveNext());
         var retained = cursor.Current;

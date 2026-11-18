@@ -15,7 +15,10 @@ public sealed class Pcre2CasePairClassTests
     [InlineData("[Aa][Bb][Cc]", "abx")]
     public void CasePairClassesMatchBothVariants(string pattern, string inputText)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         var input = Encoding.UTF8.GetBytes(inputText);
         var expected = inputText != "abx";
         Assert.Equal(expected, regex.IsMatch(input));

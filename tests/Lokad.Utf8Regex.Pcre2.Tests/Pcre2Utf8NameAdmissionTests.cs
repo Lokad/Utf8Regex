@@ -17,7 +17,7 @@ public sealed class Pcre2Utf8NameAdmissionTests
     public void NamesAt128Utf8BytesKeepCapturesNamesAndReferences(string name, string pattern)
     {
         Assert.Equal(128, Encoding.UTF8.GetByteCount(name));
-        var regex = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), Pcre2CompileOptions.Ucp);
+        var regex = new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: Pcre2CompileOptions.Ucp);
         var match = regex.MatchDetailed("é😀😀"u8);
         Assert.True(match.Success);
         Assert.Equal((2, 10), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
@@ -46,8 +46,8 @@ public sealed class Pcre2Utf8NameAdmissionTests
     {
         foreach (var options in new[] { Pcre2CompileOptions.None, Pcre2CompileOptions.Ucp })
         {
-            AssertCaptureFailure(() => new Utf8Pcre2Regex(pattern, options));
-            AssertCaptureFailure(() => new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options));
+            AssertCaptureFailure(() => new Utf8Pcre2Regex(pattern, options: options));
+            AssertCaptureFailure(() => new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern), options: options));
         }
     }
 
@@ -99,7 +99,7 @@ public sealed class Pcre2Utf8NameAdmissionTests
         Assert.True(quoted.IsMatch(Encoding.UTF8.GetBytes(literal)));
         Assert.Equal(1, quoted.MatchDetailed(Encoding.UTF8.GetBytes(literal)).CaptureSlotCount);
         Assert.True(new Utf8Pcre2Regex(@"[\Q" + literal + @"\E]").IsMatch("é"u8));
-        Assert.True(new Utf8Pcre2Regex("# " + literal + "\na", Pcre2CompileOptions.Extended).IsMatch("a"u8));
+        Assert.True(new Utf8Pcre2Regex("# " + literal + "\na", options: Pcre2CompileOptions.Extended).IsMatch("a"u8));
         Assert.True(new Utf8Pcre2Regex("(?#(?<" + name + ">a)a").IsMatch("a"u8));
         var prefix = new string('a', 130) + ">";
         Assert.True(new Utf8Pcre2Regex("(?<=" + prefix + ")b").IsMatch(Encoding.UTF8.GetBytes(prefix + "b")));

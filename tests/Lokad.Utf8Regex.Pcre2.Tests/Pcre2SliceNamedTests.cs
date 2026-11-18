@@ -27,13 +27,13 @@ public sealed class Pcre2SliceNamedTests
     {
         foreach (var pattern in new[] { "(?<word>a)+", "(?<x>a|b)+" })
         {
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
             Assert.Equal(
                 "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
                 regex.DebugDescribeExecutionPlan());
         }
 
-        var prefixed = new Utf8Pcre2Regex("(?<a>x)(?<b>y)+", Pcre2CompileOptions.None);
+        var prefixed = new Utf8Pcre2Regex("(?<a>x)(?<b>y)+", options: Pcre2CompileOptions.None);
     }
 
     [Theory]
@@ -42,22 +42,23 @@ public sealed class Pcre2SliceNamedTests
     [InlineData("(?P<x>a)")]
     public void NonSliceNamedShapesDeclineSliceRouting(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 
     [Fact]
     public void DuplicateNamesFailConstruction()
     {
-        Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex("(?<x>a)(?<x>b)", Pcre2CompileOptions.None));
+        Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex("(?<x>a)(?<x>b)", options: Pcre2CompileOptions.None));
     }
 
     [Fact]
     public void EnabledDuplicateNamesKeepDistinctProfileCaptureSlots()
     {
-        var regex = new Utf8Pcre2Regex("(?<x>a)(?<x>b)",
-            Pcre2CompileOptions.None, new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default(Utf8Pcre2ExecutionLimits), System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
+        var regex = new Utf8Pcre2Regex("(?<x>a)(?<x>b)", options:             Pcre2CompileOptions.None, compileSettings: new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
+        });
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
         var context = regex.MatchDetailed("ab"u8);
         Assert.True(context.Success);
@@ -75,7 +76,7 @@ public sealed class Pcre2SliceNamedTests
         // Native PCRE2 numbers left-to-right: group 1 is (b) here, while
         // BCL would number the unnamed (c) first. The slice decline above
         // keeps this shape on native numbering.
-        var regex = new Utf8Pcre2Regex("(?<b>a)(c)+", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?<b>a)(c)+", options: Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("acc"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
@@ -98,10 +99,10 @@ public sealed class Pcre2SliceNamedTests
         string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var reuse = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var reuse = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, reuse.IsMatch(Utf8(inputText)));
         Assert.True(reuse.DebugCompiledProgram is not null, "pattern=" + pattern);
-        var explicitStart = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var explicitStart = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, explicitStart.IsMatch(Utf8(inputText), 0));
     }
 
@@ -111,7 +112,7 @@ public sealed class Pcre2SliceNamedTests
     public void OwnedCountMatchesNativeSemantics(
         string pattern, string inputText, int startOffsetInBytes, int expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -124,7 +125,7 @@ public sealed class Pcre2SliceNamedTests
     {
         var expected = Bcl(pattern).Match(inputText);
         Assert.Equal(expectedSuccess, expected.Success);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var found = regex.Match(Utf8(inputText), startOffsetInBytes: startOffsetInBytes);
         Assert.Equal(expectedSuccess, found.Success);
         if (expectedSuccess)
@@ -141,7 +142,7 @@ public sealed class Pcre2SliceNamedTests
     [Fact]
     public void OwnedEnumerationAdvancesThroughNamedGroups()
     {
-        var regex = new Utf8Pcre2Regex("(?<word>a)+", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?<word>a)+", options: Pcre2CompileOptions.None);
         var enumerator = regex.EnumerateMatches(Utf8("aa aa"), 0);
         var ranges = new List<string>();
         while (enumerator.MoveNext())
@@ -158,7 +159,7 @@ public sealed class Pcre2SliceNamedTests
     [Fact]
     public void OwnedDetailedProjectsNamedGroups()
     {
-        var regex = new Utf8Pcre2Regex("(?<word>a)+", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?<word>a)+", options: Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("xaa"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
@@ -170,7 +171,7 @@ public sealed class Pcre2SliceNamedTests
     [Fact]
     public void OwnedReplaceExpandsNamedGroup()
     {
-        var regex = new Utf8Pcre2Regex("(?<word>a)+", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(?<word>a)+", options: Pcre2CompileOptions.None);
         Assert.Equal("x<a>", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xaa"), "<$1>")));
         Assert.True(regex.DebugCompiledProgram is not null);
     }

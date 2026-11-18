@@ -40,10 +40,17 @@ public sealed class Pcre2FullProbeCaptureTests
     public void CapturedFullProbeHasExactResultAdmissionAndIndependentSnapshots()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(2);
-        Utf8Pcre2Regex Create(ulong resultBytes) => Utf8Pcre2Regex.Create(
-            "dog(?<tail>sbody)?", Pcre2CompileOptions.None, default,
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = resultBytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong resultBytes) => new Utf8Pcre2Regex(            "dog(?<tail>sbody)?", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = resultBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("xdogsbody dog"u8, Pcre2PartialMode.Soft, 1); }).ErrorKind);
 
@@ -62,8 +69,15 @@ public sealed class Pcre2FullProbeCaptureTests
     [Fact]
     public void CapturedFullProbeKeepsOriginalWorkAndWorkingLimits()
     {
-        Utf8Pcre2Regex Create(uint work, ulong heap) => new("dog(?<tail>sbody)?",
-            Pcre2CompileOptions.None, default, new() { MatchLimit = work, HeapLimitInBytes = heap }, Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(uint work, ulong heap) => new("dog(?<tail>sbody)?", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (work) == 0 ? null : (work),
+                MaxWorkingBytes = (heap) == 0 ? null : (heap)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(1, 1 << 20).Probe("dogsbody"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>

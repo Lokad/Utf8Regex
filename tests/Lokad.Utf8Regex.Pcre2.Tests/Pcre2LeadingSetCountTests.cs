@@ -59,7 +59,7 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.True(regex.IsMatch("xxab"u8));
         Assert.False(regex.IsMatch("xxab"u8, 0, Pcre2MatchOptions.Anchored));
         Assert.False(regex.IsMatch("ab😀"u8, 2));
-        var anchored = new Utf8Pcre2Regex("(a+)(b)", Pcre2CompileOptions.Anchored);
+        var anchored = new Utf8Pcre2Regex("(a+)(b)", options: Pcre2CompileOptions.Anchored);
         Assert.Equal(Pcre2CandidateSearchKind.None, anchored.DebugCompiledProgram.CandidateSearch.Kind);
         Assert.Equal(0, anchored.Count("xxab"u8));
     }
@@ -141,8 +141,17 @@ public sealed class Pcre2LeadingSetCountTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var retained = regex.MatchDetailed(Encoding.UTF8.GetBytes(hit));
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(new string('x', 262144));
@@ -189,6 +198,15 @@ public sealed class Pcre2LeadingSetCountTests
 
     private static Utf8Pcre2Regex Create(string pattern, ulong working = 1 << 20,
         ulong result = 1 << 20, uint work = 1000000) =>
-        new(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = work, DepthLimit = 256, HeapLimitInBytes = working, ResultLimitInBytes = result }, Timeout.InfiniteTimeSpan);
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (work) == 0 ? null : (work),
+                MaxDepth = 256,
+                MaxWorkingBytes = (working) == 0 ? null : (working),
+                MaxResultBytes = (result) == 0 ? null : (result)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 }

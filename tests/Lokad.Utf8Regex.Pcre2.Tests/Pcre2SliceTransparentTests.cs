@@ -26,7 +26,7 @@ public sealed class Pcre2SliceTransparentTests
     {
         // Formerly backtracking-VM shapes: the core slice owns anchors plus
         // transparent groups, so the overlay claims every operation.
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(
             "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
@@ -53,7 +53,7 @@ public sealed class Pcre2SliceTransparentTests
     public void TransparentIsMatchMatchesOracle(string pattern, string inputText, bool expected, bool expectOwned)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         if (expectOwned)
         {
@@ -68,7 +68,7 @@ public sealed class Pcre2SliceTransparentTests
         string pattern, string inputText, int startOffsetInBytes, int expected)
     {
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -76,7 +76,7 @@ public sealed class Pcre2SliceTransparentTests
     [Fact]
     public void TransparentDetailedSkipsNonCapturingGroups()
     {
-        var regex = new Utf8Pcre2Regex("(a)(?:b)(c)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(a)(?:b)(c)", options: Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("abc"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(1).GetValueBytes()));
@@ -87,7 +87,7 @@ public sealed class Pcre2SliceTransparentTests
     [Fact]
     public void TransparentReplaceMatchesOracle()
     {
-        var regex = new Utf8Pcre2Regex("(a)(?:b)(c)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(a)(?:b)(c)", options: Pcre2CompileOptions.None);
         Assert.Equal(Bcl("(a)(?:b)(c)").Replace("abc", "<$1$2>"), System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("abc"), "<$1$2>")));
         Assert.True(regex.DebugCompiledProgram is not null);
     }

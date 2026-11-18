@@ -34,8 +34,10 @@ public sealed class Pcre2ReplacementEntryInvocationTests
         foreach (var hit in new[] { true, false })
         {
             using var source = new CancellationTokenSource();
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-                default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(20));
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = TimeSpan.FromMilliseconds(20)
+            });
             var reads = 0;
             using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
             { if (++reads == cancelAt) source.Cancel(); return 0; });
@@ -62,15 +64,30 @@ public sealed class Pcre2ReplacementEntryInvocationTests
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
             Policy(pattern, 3).Replace("xabc"u8, malformed)).ErrorKind);
         var template = new byte[16384]; template.AsSpan().Fill((byte)'Z');
-        var limited = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, HeapLimitInBytes = 64 }, Timeout.InfiniteTimeSpan);
+        var limited = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxWorkingBytes = 64
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
             limited.Replace("zzz"u8, template)).ErrorKind);
     }
 
-    private static Utf8Pcre2Regex Policy(string pattern, uint work) => new(pattern,
-        Pcre2CompileOptions.None, default, new() { MatchLimit = work, DepthLimit = 256,
-            HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+    private static Utf8Pcre2Regex Policy(string pattern, uint work) => new(pattern, options:         Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    {
+        ResourcePolicy = new Utf8ResourcePolicy
+        {
+            MaxWorkSteps = (work) == 0 ? null : (work),
+            MaxDepth = 256,
+            MaxWorkingBytes = 1 << 20,
+            MaxResultBytes = 1 << 20
+        },
+        MatchTimeout = Timeout.InfiniteTimeSpan
+    });
 
     private static string Run(Utf8Pcre2Regex regex, byte[] input, string mode, CancellationToken token = default, int start = 0)
 =>mode switch { "Bytes" => Encoding.UTF8.GetString(regex.Replace(input, "Z", start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)), "Utf8Template" => Encoding.UTF8.GetString(regex.Replace(input, "Z"u8, start, Pcre2SubstitutionOptions.None, Pcre2MatchOptions.None, token)), _ => throw new ArgumentOutOfRangeException(nameof(mode)) };

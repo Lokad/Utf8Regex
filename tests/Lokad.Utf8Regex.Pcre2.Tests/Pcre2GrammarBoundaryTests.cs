@@ -16,12 +16,20 @@ public sealed class Pcre2GrammarBoundaryTests
     {
         Assert.Throws<NotSupportedException>(() => new Utf8Pcre2Regex(pattern));
         Assert.Throws<NotSupportedException>(() => new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern)));
-        Assert.Throws<NotSupportedException>(() => Utf8Pcre2Regex.Compile(pattern, default, default,
-            Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-            Timeout.InfiniteTimeSpan, default));
-        Assert.Throws<NotSupportedException>(() => Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), default, default,
-            Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-            Timeout.InfiniteTimeSpan, default));
+        Assert.Throws<NotSupportedException>(() => Utf8Pcre2Regex.Compile(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default));
+        Assert.Throws<NotSupportedException>(() => Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: default));
     }
 
     [Theory]

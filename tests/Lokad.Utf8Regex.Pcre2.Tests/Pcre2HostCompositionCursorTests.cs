@@ -17,9 +17,16 @@ public sealed class Pcre2HostCompositionCursorTests
     public void HostCompositionUsesScalarRangesAndRetainsPublishedAliases(string pattern, string text, string expected)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1_000_000, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 },
-            Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         using var cursor = regex.CreateMatchCursor(input, cancellationToken: source.Token);
         var output = new StringBuilder();
@@ -53,8 +60,15 @@ public sealed class Pcre2HostCompositionCursorTests
     [MemberData(nameof(AllOptions))]
     public void OptionCombinationsPreserveActualCapturedYields(Pcre2MatchOptions options)
     {
-        var regex = new Utf8Pcre2Regex("(é)(😀)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1_000_000, HeapLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(é)(😀)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxWorkingBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = "qé😀é😀"u8.ToArray();
         using var cursor = regex.CreateMatchCursor(input, 1, options);
         var output = new StringBuilder();
@@ -101,9 +115,16 @@ public sealed class Pcre2HostCompositionCursorTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(é)(😀)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1_000_000, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 },
-            TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("(é)(😀)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         using var cursor = regex.CreateMatchCursor("é😀é😀"u8.ToArray(), matchOptions: Pcre2MatchOptions.Anchored,
             cancellationToken: source.Token);
         Assert.True(cursor.MoveNext(out var retained));

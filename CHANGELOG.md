@@ -2,18 +2,23 @@
 
 ## Unreleased — 0.5.0
 
+- Unify PCRE2 construction/funding on Utf8RegexPolicy and disposable Utf8Pcre2Regex;
+  remove Create, long Compile families and the program-owner facade. Preserve
+  admitted calls/persistent cursors; funded span enumeration borrows an open
+  producer. Shared working defaults inherit program funding. Recompile consumers.
+
 - Fold Core program funding into disposable Utf8Regex and immutable Utf8RegexPolicy;
   remove the separate program-owner type. Preserve admitted calls/persistent
   cursors after close. Funded span enumerators borrow an open regex. Prepay bounded
   replacement-cache capacity before publication; recompile and migrate controls.
 
 - Add optional caller-owned PCRE2 capture slots to the primary Match signature
-  and funded owners. Share existing capture publication without a result array;
+  and funded expressions. Share existing capture publication without a result array;
   preserve byte-fragment status, limits and lifetimes. Name former positional
   match flags/tokens and recompile consumers.
 
 - Consolidate PCRE2 IsMatch/Count onto one optional shared working allowance.
-  Null keeps numeric controls without a shared account; supplied admission remains
+  Null inherits program funding, or keeps numeric controls when unfunded; admission remains
   terminal on refusal and cannot bypass through an unmetered literal shortcut.
 
 - Unify POSIX creation on Utf8RegexPolicy, including construction controls and

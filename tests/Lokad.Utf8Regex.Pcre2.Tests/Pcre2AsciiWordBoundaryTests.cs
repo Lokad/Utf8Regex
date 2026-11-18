@@ -9,8 +9,8 @@ public sealed class Pcre2AsciiWordBoundaryTests
     [InlineData(Pcre2CompileOptions.Ucp)]
     public void PublicAnchoredBoundaryAgreesWithAsciiWordAlphabet(Pcre2CompileOptions options)
     {
-        var boundary = new Utf8Pcre2Regex(@"\b", options);
-        var nonBoundary = new Utf8Pcre2Regex(@"\B", options);
+        var boundary = new Utf8Pcre2Regex(@"\b", options: options);
+        var nonBoundary = new Utf8Pcre2Regex(@"\B", options: options);
         const string alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
         byte[] pair = new byte[2];
         for (var left = 0; left < 128; left++)
@@ -40,7 +40,7 @@ public sealed class Pcre2AsciiWordBoundaryTests
         var bytes = Encoding.UTF8.GetBytes(text);
         foreach (var options in new[] { Pcre2CompileOptions.None, Pcre2CompileOptions.Ucp })
         {
-            var regex = new Utf8Pcre2Regex(@"\b(?<word>abc)\b", options);
+            var regex = new Utf8Pcre2Regex(@"\b(?<word>abc)\b", options: options);
             var expected = options == Pcre2CompileOptions.None ? asciiExpected : ucpExpected;
             var startOfWord = bytes.AsSpan().IndexOf("abc"u8);
             var retained = regex.MatchDetailed(bytes);
@@ -62,8 +62,8 @@ public sealed class Pcre2AsciiWordBoundaryTests
     [InlineData(Pcre2CompileOptions.Ucp, 6)]
     public void EmptyProgressionUsesScalarPositions(Pcre2CompileOptions options, int expected)
     {
-        var boundary = new Utf8Pcre2Regex(@"\b", options);
-        var nonBoundary = new Utf8Pcre2Regex(@"\B", options);
+        var boundary = new Utf8Pcre2Regex(@"\b", options: options);
+        var nonBoundary = new Utf8Pcre2Regex(@"\B", options: options);
         var input = "a é _\0😀"u8.ToArray();
         Assert.Equal(expected, boundary.Count(input));
         Assert.Equal(8 - expected, nonBoundary.Count(input));
@@ -88,8 +88,14 @@ public sealed class Pcre2AsciiWordBoundaryTests
         var failure = Assert.Throws<OperationCanceledException>(() =>
             regex.IsMatch(invalid, 0, Pcre2MatchOptions.None, canceled.Token));
         Assert.Equal(canceled.Token, failure.CancellationToken);
-        var limited = new Utf8Pcre2Regex(@"\babc\b", Pcre2CompileOptions.None, default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 }, Timeout.InfiniteTimeSpan);
+        var limited = new Utf8Pcre2Regex(@"\babc\b", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("abc!"u8)).ErrorKind);
     }

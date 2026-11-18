@@ -140,7 +140,7 @@ public sealed class Pcre2CaptureBackreferenceTests
     {
         Assert.False(new Utf8Pcre2Regex("(a)?b\\1").IsMatch("b"u8));
 
-        var regex = new Utf8Pcre2Regex("(é)\\1", Pcre2CompileOptions.Caseless);
+        var regex = new Utf8Pcre2Regex("(é)\\1", options: Pcre2CompileOptions.Caseless);
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("Éé")));
     }
 

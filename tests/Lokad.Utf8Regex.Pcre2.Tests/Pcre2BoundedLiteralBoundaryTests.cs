@@ -48,7 +48,7 @@ public sealed class Pcre2BoundedLiteralBoundaryTests
     [InlineData(Date, Pcre2CompileOptions.Caseless)]
     public void ExistingWindowEligibilityLimitsRemain(string pattern, Pcre2CompileOptions options)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options);
+        var regex = new Utf8Pcre2Regex(pattern, options: options);
         Assert.Equal(Pcre2CandidateSearchKind.None, regex.DebugCompiledProgram.CandidateSearch.Kind);
     }
 

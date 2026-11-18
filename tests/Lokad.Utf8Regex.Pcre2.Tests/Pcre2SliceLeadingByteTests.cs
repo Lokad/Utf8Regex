@@ -97,7 +97,7 @@ public sealed class Pcre2SliceLeadingByteTests
     [InlineData(false)] [InlineData(true)]
     public void AnchoredAndCaselessRequestsDoNotUseAnInvalidLiteralProof(bool anchored)
     {
-        var regex = new Utf8Pcre2Regex(Pattern, anchored ? Pcre2CompileOptions.Anchored : Pcre2CompileOptions.Caseless);
+        var regex = new Utf8Pcre2Regex(Pattern, options: anchored ? Pcre2CompileOptions.Anchored : Pcre2CompileOptions.Caseless);
         var input = anchored ? "xxxxabc123"u8.ToArray() : "xxxxABC123"u8.ToArray();
         Assert.Equal(!anchored, regex.IsMatch(input));
         Assert.Equal(!anchored, regex.IsMatch(input, 0));
@@ -107,9 +107,16 @@ public sealed class Pcre2SliceLeadingByteTests
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4096)]
     public void BoundedPublicSearchKeepsStrictValidationAndUsefulLimits(int prefix)
     {
-        var regex = new Utf8Pcre2Regex(Pattern, Pcre2CompileOptions.None, default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 512, DepthLimit = 64, HeapLimitInBytes = 1 << 20 },
-            Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 512,
+                MaxDepth = 64,
+                MaxWorkingBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
         Assert.Equal((byte)'a', direct.Fallback.LeadingAsciiByte);
         var input = Encoding.UTF8.GetBytes(new string('x', prefix) + "abc123");

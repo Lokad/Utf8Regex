@@ -14,81 +14,102 @@ namespace Lokad.Utf8Regex.Pcre2;
 
 /// <summary>Implements a strictly managed, UTF-8-native subset of PCRE2 semantics.</summary>
 /// <remarks>Unsupported constructs or operation combinations fail explicitly; no native PCRE2 binary or interop layer is used.</remarks>
-public sealed partial class Utf8Pcre2Regex
+public sealed partial class Utf8Pcre2Regex : IDisposable
 {
 
     /// <summary>Compiles an expression for caller-valid, unchanged UTF-8 subjects.</summary>
-    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Use Compile for separate construction/funding controls.</remarks>
-    public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8Pcre2CompileSettings compileSettings = default, Utf8Pcre2ExecutionLimits defaultExecutionLimits = default, TimeSpan? matchTimeout = null)
-        : this(new Utf8ConstructionPattern(pattern), options, compileSettings, defaultExecutionLimits, matchTimeout ?? DefaultMatchTimeout) { }
+    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Policy construction limits/deadline and optional program funding are independent of matching; Compile additionally accepts a construction token.</remarks>
+    public Utf8Pcre2Regex(string pattern, Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8Pcre2CompileSettings compileSettings = default, Utf8RegexPolicy? policy = null)
+        : this(new Utf8ConstructionPattern(pattern), options, compileSettings, policy, default, explicitCompile: false) { }
 
     /// <summary>Compiles a strict UTF-8 pattern for caller-valid, unchanged UTF-8 subjects.</summary>
-    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Use Compile for separate construction/funding controls.</remarks>
-    public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8Pcre2CompileSettings compileSettings = default, Utf8Pcre2ExecutionLimits defaultExecutionLimits = default, TimeSpan? matchTimeout = null)
-        : this(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout ?? DefaultMatchTimeout) { }
+    /// <remarks>A null timeout uses DefaultMatchTimeout. Subject bytes remain caller-valid/unchanged; host text/collections are outside regex controls. Policy construction limits/deadline and optional program funding are independent of matching; Compile additionally accepts a construction token.</remarks>
+    public Utf8Pcre2Regex(ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options = Pcre2CompileOptions.None, Utf8Pcre2CompileSettings compileSettings = default, Utf8RegexPolicy? policy = null)
+        : this(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, policy, default, explicitCompile: false) { }
+
+    private readonly Utf8FundedStorage? _programMemory;
+
+    /// <summary>Closes caller-funded program admission after admitted calls and persistent cursors finish.</summary>
+    /// <remarks>No-op without funding. Funded span enumerators require an open expression at each advance; previously returned values remain valid. No finalizer is used.</remarks>
+    public void Dispose() => _programMemory?.Close();
 
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Pcre2CompiledProgram _program;
     private readonly Pcre2FiniteLiteralLanguageDirectProgram? _unmeteredLiteralLanguage;
     private readonly Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation> _replacementCache;
 
-    /// <summary>Compiles a PCRE2 pattern with explicit options, settings, invocation resource policy, and timeout.</summary>
-    /// <remarks>Policy-based construction is a named factory rather than a constructor overload so
-    /// that legacy <c>new</c> calls with bare <c>default</c> settings or limits keep binding the
-    /// <see cref="Utf8Pcre2ExecutionLimits"/> constructor overload unambiguously.</remarks>
-    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
-    public static Utf8Pcre2Regex Create(
-        string pattern, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8ResourcePolicy resourcePolicy, TimeSpan matchTimeout)
+    // One owner for default inherited construction or explicit policy/funding.
+    private Utf8Pcre2Regex(Utf8ConstructionPattern patternSource, Pcre2CompileOptions options,
+        Utf8Pcre2CompileSettings compileSettings, Utf8RegexPolicy? policy, CancellationToken token, bool explicitCompile)
     {
-        return new Utf8Pcre2Regex(new Utf8ConstructionPattern(pattern), options, compileSettings, ToExecutionLimits(resourcePolicy), matchTimeout);
-    }
-
-    /// <summary>Owns admitted source storage; native compilation borrows it without decoding.</summary>
-    private Utf8Pcre2Regex(
-        Utf8ConstructionPattern patternSource, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8Pcre2ExecutionLimits defaultExecutionLimits, TimeSpan matchTimeout)
-    {
-        // Preserve timeout-before-flags/settings ordering from string entries,
-        // and reject invalid arguments before any byte-pattern conversion.
-        var validatedTimeout = Utf8MatchTimeout.Validate(matchTimeout, nameof(matchTimeout));
+        token.ThrowIfCancellationRequested();
+        policy ??= Utf8RegexPolicy.Default;
+        var defaultExecutionLimits = ToExecutionLimits(policy.ResourcePolicy);
+        var validatedTimeout = Utf8MatchTimeout.Validate(policy.MatchTimeout ?? DefaultMatchTimeout, nameof(policy));
+        var constructionPolicy = policy.ConstructionPolicy;
+        constructionPolicy.Validate(nameof(policy));
+        var constructionTimeout = Utf8MatchTimeout.Validate(policy.ConstructionTimeout ?? Timeout.InfiniteTimeSpan, nameof(policy));
         Pcre2CompileValidator.ValidateArguments(options, compileSettings);
         ArgumentNullException.ThrowIfNull(patternSource.Text, "pattern");
-        using var construction = Utf8ConstructionScope.Enter();
-        object pattern = patternSource.Text;
-        if (patternSource.IsUtf8)
+        var account = policy.ProgramMemoryAllowance;
+        var ownsConstruction = explicitCompile || account is not null || constructionPolicy != default ||
+            constructionTimeout != Timeout.InfiniteTimeSpan;
+        using var construction = !ownsConstruction ? Utf8ConstructionScope.Enter() : account is null
+            ? Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token)
+            : Utf8ConstructionScope.Enter(constructionPolicy, constructionTimeout, token, account);
+        try
         {
-            construction.Budget.ChargeWork((ulong)patternSource.Utf8.Length);
-            ValidatePatternUtf8(patternSource.Utf8, construction.Budget);
-            var bytes = construction.Budget.AllocateArray<byte>(patternSource.Length, false);
-            construction.Budget.ChargeWork((ulong)bytes.Length);
-            patternSource.Utf8.CopyTo(bytes);
-            pattern = bytes;
+            object pattern = patternSource.Text;
+            if (patternSource.IsUtf8)
+            {
+                construction.Budget.ChargeWork((ulong)patternSource.Utf8.Length);
+                ValidatePatternUtf8(patternSource.Utf8, construction.Budget);
+                var bytes = construction.Budget.AllocateArray<byte>(patternSource.Length, false);
+                construction.Budget.ChargeWork((ulong)bytes.Length);
+                patternSource.Utf8.CopyTo(bytes);
+                pattern = bytes;
+            }
+            var request = new Pcre2CompileRequest(
+                pattern,
+                options,
+                compileSettings,
+                defaultExecutionLimits,
+                validatedTimeout);
+            _program = Pcre2Compiler.Compile(request);
+            if (Pcre2GlobalOperationDriver.HasUnmeteredExecution(request) &&
+                _program.Operations.IsMatch is Pcre2FiniteLiteralLanguageDirectProgram literalLanguage)
+            {
+                _unmeteredLiteralLanguage = literalLanguage;
+            }
+            _replacementCache = Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>.CreateRetained(
+                16, EqualityComparer<Pcre2ReplacementCacheKey>.Default);
+            if (account is not null)
+            {
+                // Cover bounded retained cache capacity before publication, with
+                // no eager buffers, per-entry leases or later funding handoff.
+                construction.Budget.ReserveBytes(_replacementCache.MaximumMetadataBytes + _replacementCache.MaximumPayloadBytes);
+                var storage = construction.Budget.AllocateObject(account,
+                    static allowance => new Utf8FundedStorage(allowance, nameof(Utf8Pcre2Regex)));
+                construction.Budget.ChargeWork(0);
+                storage.Retain(construction.Budget.TransferFundedBytes());
+                _programMemory = storage;
+            }
+            else if (ownsConstruction) construction.Budget.ChargeWork(0);
+            construction.Complete();
         }
-        var request = new Pcre2CompileRequest(
-            pattern,
-            options,
-            compileSettings,
-            defaultExecutionLimits,
-            validatedTimeout);
-        _program = Pcre2Compiler.Compile(request);
-        if (Pcre2GlobalOperationDriver.HasUnmeteredExecution(request) &&
-            _program.Operations.IsMatch is Pcre2FiniteLiteralLanguageDirectProgram literalLanguage)
-        {
-            _unmeteredLiteralLanguage = literalLanguage;
-        }
-        _replacementCache = Utf8BoundedPreparationCache<Pcre2ReplacementCacheKey, Pcre2ReplacementPreparation>.CreateRetained(
-            16, EqualityComparer<Pcre2ReplacementCacheKey>.Default);
-        construction.Complete();
+        catch (Utf8ExecutionDeadlineExpiredException) when (ownsConstruction)
+        { throw new RegexMatchTimeoutException(string.Empty, patternSource.IsUtf8 ? string.Empty : patternSource.Text, constructionTimeout); }
     }
 
     /// <summary>Maps a shared resource policy onto PCRE2 execution limits.</summary>
     /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
     private static Utf8Pcre2ExecutionLimits ToExecutionLimits(Utf8ResourcePolicy resourcePolicy)
     {
-        resourcePolicy.Validate(nameof(resourcePolicy));
+        resourcePolicy.Validate("policy");
         uint workSteps = 0;
         if (resourcePolicy.MaxWorkSteps.HasValue && resourcePolicy.MaxWorkSteps.Value > uint.MaxValue)
         {
-            throw new ArgumentOutOfRangeException(nameof(resourcePolicy), "The work-steps budget exceeds the 32-bit PCRE2 range.");
+            throw new ArgumentOutOfRangeException("policy", "The work-steps budget exceeds the 32-bit PCRE2 range.");
         }
 
         if (resourcePolicy.MaxWorkSteps.HasValue)
@@ -105,20 +126,7 @@ public sealed partial class Utf8Pcre2Regex
         };
     }
 
-    /// <summary>Compiles a well-formed UTF-8 PCRE2 pattern with explicit options, settings, invocation resource policy, and timeout.</summary>
-    /// <remarks>The policy is validated before the UTF-8 source is acquired and parsed. Policy-based
-    /// construction is a named factory rather than a constructor overload; see
-    /// <see cref="Create(string, Pcre2CompileOptions, Utf8Pcre2CompileSettings, Utf8ResourcePolicy, TimeSpan)"/>.</remarks>
-    /// <exception cref="ArgumentOutOfRangeException">A policy budget is zero or exceeds the 32-bit work/depth range.</exception>
-    /// <exception cref="ArgumentException">The pattern bytes are not valid UTF-8.</exception>
-    public static Utf8Pcre2Regex Create(
-        ReadOnlySpan<byte> patternUtf8, Pcre2CompileOptions options, Utf8Pcre2CompileSettings compileSettings, Utf8ResourcePolicy resourcePolicy, TimeSpan matchTimeout)
-    {
-        var defaultExecutionLimits = ToExecutionLimits(resourcePolicy);
-        return new Utf8Pcre2Regex(new Utf8ConstructionPattern(patternUtf8), options, compileSettings, defaultExecutionLimits, matchTimeout);
-    }
-
-    /// <summary>Gets or sets the timeout used by constructors and static operations that do not specify one.</summary>
+    /// <summary>Gets or sets the timeout used by constructors and Compile policies that do not specify one.</summary>
     /// <remarks>The initial value is an infinite timeout.</remarks>
     public static TimeSpan DefaultMatchTimeout
     {
@@ -135,7 +143,10 @@ public sealed partial class Utf8Pcre2Regex
     /// <summary>Gets the compile-time newline, group-name, and byte-oriented settings.</summary>
     public Utf8Pcre2CompileSettings CompileSettings => _program.Request.Settings;
 
-    /// <summary>Gets the default execution budgets applied to matching operations.</summary>
+    /// <summary>Gets the shared invocation work, depth, working and result policy copied at construction.</summary>
+    public Utf8ResourcePolicy ResourcePolicy => _program.Request.CoreResourcePolicy;
+
+    /// <summary>Gets the read-only PCRE2-unit projection of the shared invocation policy; zero denotes unlimited.</summary>
     public Utf8Pcre2ExecutionLimits DefaultExecutionLimits => _program.Request.DefaultLimits;
 
     /// <summary>Gets the maximum duration of an individual matching operation.</summary>
@@ -181,12 +192,14 @@ public sealed partial class Utf8Pcre2Regex
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
     /// <param name="cancellationToken">The token to observe before entry and during bounded matching.</param>
-    /// <param name="workingMemoryAllowance">Optional shared working admission; null keeps numeric limits without a shared account. Refusal is terminal.</param>
+    /// <param name="workingMemoryAllowance">Optional shared working admission; null inherits program funding, or keeps numeric limits without funding. Refusal is terminal.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     public bool IsMatch(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None,
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
+        workingMemoryAllowance ??= _programMemory?.Allowance;
         if (workingMemoryAllowance is null && startOffsetInBytes == 0 && matchOptions == Pcre2MatchOptions.None &&
             !cancellationToken.CanBeCanceled && _unmeteredLiteralLanguage is { } literalLanguage)
             return literalLanguage.BooleanSearch.IsMatch(input, 0);
@@ -245,12 +258,14 @@ public sealed partial class Utf8Pcre2Regex
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
     /// <param name="cancellationToken">The token retained through all matching work.</param>
-    /// <param name="workingMemoryAllowance">Optional shared working admission; null keeps numeric limits without a shared account. Covered temporary loans refund synchronously.</param>
+    /// <param name="workingMemoryAllowance">Optional shared working admission; null inherits program funding, or keeps numeric limits without funding. Covered temporary loans refund synchronously.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     public int Count(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None,
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
+        workingMemoryAllowance ??= _programMemory?.Allowance;
         return CountCore(input, startOffsetInBytes, matchOptions, cancellationToken, workingMemoryAllowance);
     }
 
@@ -288,13 +303,15 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     /// <summary>Finds the first match and optionally writes caller-owned byte capture slots zero onward.</summary>
-    /// <remarks>Short output cannot change selection; excess slots stay untouched. No match or failure clears the supplied prefix, except entry cancellation leaves it unchanged. Caller-owned slots do not consume result-byte capacity. Byte fragments and noncontiguous ranges keep their explicit validity status.</remarks>
+    /// <remarks>Short output cannot change selection; excess slots stay untouched. No match or failure clears the supplied prefix, except entry cancellation leaves it unchanged. Caller-owned slots do not consume result-byte capacity. Null working admission inherits program funding; explicit admission overrides only working storage. Byte fragments and noncontiguous ranges keep their explicit validity status.</remarks>
     public Utf8Pcre2ValueMatch Match(ReadOnlySpan<byte> input, int startOffsetInBytes = 0,
         scoped Span<Utf8Pcre2CaptureRange> captures = default, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None,
         CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var output = captures[..Math.Min(captures.Length, CaptureGroupCount + 1)];
+        using var programUse = _programMemory?.Enter();
+        workingMemoryAllowance ??= _programMemory?.Allowance;
+        var output = captures[..Math.Min(captures.Length, _program.CaptureGroupCount + 1)];
         try
         {
             return output.Length <= 1
@@ -388,6 +405,7 @@ public sealed partial class Utf8Pcre2Regex
     public Utf8Pcre2MatchContext MatchDetailed(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         return MatchDetailedCore(input, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
@@ -463,13 +481,15 @@ public sealed partial class Utf8Pcre2Regex
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
+    /// <remarks>Funded span enumeration borrows an open expression at creation and each advance. Copied positions and cumulative numeric limits remain independent/shared respectively; no host working loan remains between advances. Use a persistent cursor to survive program disposal.</remarks>
     /// <param name="cancellationToken">The token retained during cursor advances, including copies.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Utf8Pcre2ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<byte> input, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return EnumerateMatchesCore(input, startOffsetInBytes, matchOptions, cancellationToken);
+        using var programUse = _programMemory?.Enter();
+        return EnumerateMatchesCore(input, startOffsetInBytes, matchOptions, cancellationToken).WithProgramMemory(_programMemory);
     }
 
     private Utf8Pcre2ProbeResult ProbeCore(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode,
@@ -537,6 +557,7 @@ public sealed partial class Utf8Pcre2Regex
     public Utf8Pcre2ProbeResult Probe(ReadOnlySpan<byte> input, Pcre2PartialMode partialMode, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         return ProbeCore(input, partialMode, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
@@ -551,6 +572,7 @@ public sealed partial class Utf8Pcre2Regex
     public byte[] Replace(ReadOnlySpan<byte> input, string replacement, int startOffsetInBytes = 0, Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         return ReplaceCore(input, replacement, substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken).Bytes;
     }
 
@@ -565,6 +587,7 @@ public sealed partial class Utf8Pcre2Regex
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes = 0, Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         return ReplaceUtf8TemplateCore(input, replacementPatternUtf8, substitutionOptions, startOffsetInBytes, matchOptions, cancellationToken).Bytes;
     }
 
@@ -612,7 +635,7 @@ public sealed partial class Utf8Pcre2Regex
     }
 
     /// <summary>Attempts to write a replacement result, observing cancellation during preparation, discovery and copying.</summary>
-    /// <remarks>Input and replacement may overlap the destination. Matched overlapping input uses admitted temporary output; a short destination is unchanged.</remarks>
+    /// <remarks>Input and replacement may overlap the destination. Matched overlapping input uses admitted temporary output; a short destination is unchanged. Null working admission inherits program funding, or retains numeric controls without a shared account.</remarks>
     /// <param name="input">The well-formed UTF-8 subject to match against.</param>
     /// <param name="replacementPatternUtf8">The PCRE2 replacement template encoded as well-formed UTF-8.</param>
     /// <param name="destination">The destination buffer for the UTF-8 replacement result.</param>
@@ -621,20 +644,27 @@ public sealed partial class Utf8Pcre2Regex
     /// <param name="substitutionOptions">The substitution options.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
     /// <param name="cancellationToken">The original token retained through the operation.</param>
+    /// <param name="workingMemoryAllowance">Optional shared working admission; null inherits program funding.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested; destination bytes copied before interruption may remain.</exception>
-    public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, int startOffsetInBytes = 0, Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
+    public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, int startOffsetInBytes = 0, Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return TryReplaceCore(input, replacementPatternUtf8, destination, out bytesWritten, startOffsetInBytes, substitutionOptions, matchOptions, cancellationToken);
+        using var programUse = _programMemory?.Enter();
+        workingMemoryAllowance ??= _programMemory?.Allowance;
+        return TryReplaceCore(input, replacementPatternUtf8, destination, out bytesWritten, startOffsetInBytes, substitutionOptions, matchOptions, cancellationToken, workingMemoryAllowance);
     }
 
     /// <summary>Gets the number of name-to-slot entries, including duplicate names.</summary>
-    public int NameEntryCount => NameEntries.Length;
+    public int NameEntryCount
+    {
+        get { using var use = _programMemory?.Enter(); return NameEntries.Length; }
+    }
 
     /// <summary>Copies name-to-slot entries into a caller-provided destination.</summary>
     /// <returns>The number of entries copied; <paramref name="isMore"/> reports whether additional entries did not fit.</returns>
     public int CopyNameEntries(Span<Pcre2NameEntry> destination, out bool isMore)
     {
+        using var programUse = _programMemory?.Enter();
         var written = Math.Min(destination.Length, NameEntries.Length);
         NameEntries.AsSpan(0, written).CopyTo(destination);
         isMore = written < NameEntries.Length;
@@ -645,6 +675,7 @@ public sealed partial class Utf8Pcre2Regex
     /// <returns>The number of slot numbers copied; <paramref name="isMore"/> reports whether additional numbers did not fit.</returns>
     public int CopyNumbersForName(string name, Span<int> destination, out bool isMore)
     {
+        using var programUse = _programMemory?.Enter();
         var count = 0;
         foreach (var entry in NameEntries)
         {
@@ -676,6 +707,7 @@ public sealed partial class Utf8Pcre2Regex
     public bool TryGetFirstSetGroup(ReadOnlySpan<byte> input, string name, out Utf8Pcre2GroupContext group, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         var context = MatchDetailedCore(input, startOffsetInBytes, matchOptions, cancellationToken);
         var found = context.TryGetFirstSetGroup(name, out group);
         cancellationToken.ThrowIfCancellationRequested();
@@ -784,12 +816,14 @@ public sealed partial class Utf8Pcre2Regex
     public int MatchMany(ReadOnlySpan<byte> input, Span<Utf8Pcre2MatchData> destination, out bool isMore, int startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var programUse = _programMemory?.Enter();
         return MatchManyCore(input, destination, out isMore, startOffsetInBytes, matchOptions, cancellationToken);
     }
 
     /// <summary>Returns the compiled expression's execution and result-shaping characteristics.</summary>
     public Utf8Pcre2Analysis Analyze()
     {
+        using var programUse = _programMemory?.Enter();
         var backtracking = (_program.Operations.Match as Pcre2BacktrackingDirectProgram)?.Program;
         var literal = (_program.Operations.Match as Pcre2LiteralDirectProgram)?.Program;
         return new Utf8Pcre2Analysis

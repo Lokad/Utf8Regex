@@ -15,7 +15,7 @@ public sealed class Pcre2EscapeOperandBoundaryTests
     {
         var input = Encoding.UTF8.GetBytes(subject);
         var expected = new Utf8Pcre2Regex(equivalent);
-        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern)) })
+        foreach (var regex in new[] { new Utf8Pcre2Regex(pattern), new Utf8Pcre2Regex(Encoding.UTF8.GetBytes(pattern))})
         {
             Assert.Equal(expected.Count(input), regex.Count(input));
             Assert.True(regex.IsMatch(input));

@@ -48,8 +48,14 @@ public sealed class Pcre2OutputExtentAdmissionTests
         var replacement = new string('b', count == 17 ? 100 : 1);
         foreach (var allow in new[] { false, true })
         {
-            var regex = new Utf8Pcre2Regex("a", Pcre2CompileOptions.None, default,
-                new() { HeapLimitInBytes = peak - (allow ? 0UL : 1UL) }, Regex.InfiniteMatchTimeout);
+            var regex = new Utf8Pcre2Regex("a", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkingBytes = (peak - (allow ? 0UL : 1UL)) == 0 ? null : (peak - (allow ? 0UL : 1UL))
+                },
+                MatchTimeout = Regex.InfiniteMatchTimeout
+            });
             Pcre2PreparationMemoryPolicyTests.Warm(regex, replacement);
             if (allow)
             {

@@ -70,9 +70,14 @@ public sealed class Pcre2ReplacementPreparationIsolationTests
         RunContended(string route, string failure, bool live)
     {
         var finiteDeadline = failure is "TimeoutOwner" or "TimeoutFollower";
-        var regex = new Utf8Pcre2Regex("(a)", default, default,
-            new() { MatchLimit = failure == "WorkOwner" ? 100_000u : 0 },
-            finiteDeadline ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(a)", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (failure == "WorkOwner" ? 100_000u : 0) == 0 ? null : (failure == "WorkOwner" ? 100_000u : 0)
+            },
+            MatchTimeout = finiteDeadline ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan
+        });
         var template = string.Concat(Enumerable.Repeat("$1", 128));
         var input = "a"u8.ToArray();
         using var ownerCancellation = new CancellationTokenSource();

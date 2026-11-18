@@ -10,12 +10,10 @@ public sealed class Pcre2CorpusReplaceExecutionTests
     [MemberData(nameof(Pcre2CorpusExecutionData.ReplaceSubsetCases), MemberType = typeof(Pcre2CorpusExecutionData))]
     public void ReplaceSubsetCorpusCasesProduceExpectedResults(Pcre2CorpusCase corpusCase)
     {
-        var regex = new Utf8Pcre2Regex(
-            corpusCase.Pattern,
-            Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions),
-            Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings),
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            corpusCase.Pattern, options:             Pcre2CorpusOptions.ParseCompileOptions(corpusCase.CompileOptions), compileSettings:             Pcre2CorpusOptions.CreateCompileSettings(corpusCase.CompileSettings), policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
         var input = Encoding.UTF8.GetBytes(corpusCase.InputText);
         var replacementOptions = ParseSubstitutionOptions(corpusCase.SubstitutionOptions);

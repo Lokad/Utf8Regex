@@ -59,7 +59,7 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
     [Fact]
     public void IgnoreCaseLiteralUsesUtf8RegexDirectBackend()
     {
-        var regex = new Utf8Pcre2Regex("httpclient", Pcre2CompileOptions.Caseless);
+        var regex = new Utf8Pcre2Regex("httpclient", options: Pcre2CompileOptions.Caseless);
 
         Assert.Equal(4, regex.Count("HttpClient httpclient x HTTPCLIENT httpClient"u8));
         var enumerator = regex.EnumerateMatches("HttpClient httpclient x HTTPCLIENT httpClient"u8);
@@ -78,7 +78,7 @@ public sealed class Utf8Pcre2RegexCompatibleBackendTests
     [Fact]
     public void IgnoreCaseLiteralReplacementHonorsStartOffsetThroughCompatibleBackend()
     {
-        var regex = new Utf8Pcre2Regex("httpclient", Pcre2CompileOptions.Caseless);
+        var regex = new Utf8Pcre2Regex("httpclient", options: Pcre2CompileOptions.Caseless);
 
         Assert.Equal(
             "HttpClient httpclient x client client",

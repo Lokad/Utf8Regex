@@ -14,7 +14,14 @@ public sealed class Pcre2DepthBoundaryTests
 {
     private static Utf8Pcre2Regex Create(string pattern, uint depthLimit)
     {
-        return new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default, new Utf8Pcre2ExecutionLimits { DepthLimit = depthLimit }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        return new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = (depthLimit) == 0 ? null : (depthLimit)
+            },
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
     }
 
     [Theory]

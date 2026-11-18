@@ -219,10 +219,14 @@ slice/projection flags before decoding or extracting text.
 using System.Text.RegularExpressions;
 
 var limited = new Utf8Regex(@"(?<word>\w+)", RegexOptions.CultureInvariant,
-    TimeSpan.FromMilliseconds(100), new Utf8ResourcePolicy
+    new Utf8RegexPolicy
     {
-        MaxWorkSteps = 1_000_000, MaxDepth = 256,
-        MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576
+        MatchTimeout = TimeSpan.FromMilliseconds(100),
+        ResourcePolicy = new()
+        {
+            MaxWorkSteps = 1_000_000, MaxDepth = 256,
+            MaxWorkingBytes = 1_048_576, MaxResultBytes = 1_048_576
+        }
     });
 using var cancellation = new CancellationTokenSource();
 int words = limited.Count("café tea"u8, cancellation.Token);
@@ -246,13 +250,28 @@ profiles expose cursors for host computation. The regex controls each advance;
 host computation and final output checks are the host's responsibility.
 Byte-capped Core/PythonRe timeout diagnostics omit subject text.
 
-Use Compile for separate construction caps/timeout/token. Ordinary constructors
-retain fixed backstops. Compilation tokens are not retained for later matching.
+Use policy properties for separate construction caps/timeout on all profiles;
+Compile additionally accepts a construction token. Fixed backstops remain.
+Compilation tokens are not retained for later matching.
 Program/cache retention, cold preparation, standalone getters, caller callbacks
 and host storage have separate scopes. See [resource controls](SPEC.md#cancellation-deadlines-and-resource-limits)
 and [host admission](SPEC.md#host-admission).
 
 ## Program owners, cursors and retained results
+
+PCRE2 also uses `Utf8RegexPolicy` on its two constructors and Compile factories,
+returning disposable `Utf8Pcre2Regex` for funded/unfunded creation. Remove
+`Utf8Pcre2RegexProgramOwner` references and the named Create factory. Keep PCRE2
+options/settings separate; move match timeout, shared invocation policy,
+construction limits/timeout and program allowance into the policy. Replace native
+zero limit inputs with unset shared fields (unlimited); shared zero is invalid.
+Work remains bounded by uint.MaxValue. DefaultExecutionLimits is a read-only
+PCRE2-unit projection. Null working admission inherits program funding on
+IsMatch/Match/Count/cursor/TryReplace. Span/owned-output/metadata/probe calls retain
+numeric controls and program protection. Funded span advances require an open
+producer, with original cancellation first; Current survives close with unchanged
+input. Persistent cursors retain their use after expression disposal. No finalizer
+or copied-value lease is introduced. Invalid policy fields name `policy`.
 
 Core constructors and Compile now take options and immutable `Utf8RegexPolicy`.
 Both funded and unfunded creation return disposable `Utf8Regex`; remove references
@@ -408,7 +427,7 @@ deadlines and meaningful byte/work/depth limits remain on the retained APIs.
 
 ### Constructor signatures
 
-Core, PythonRe and POSIX constructors use Utf8RegexPolicy as described in their
+All four profiles' constructors use Utf8RegexPolicy as described in their
 sections. PCRE2 retains its optional nullable-timeout signature per supported
 pattern representation. Recompile callers and selected adapters. Core UTF-8
 compilation remains on Compile; no public span constructor is added.

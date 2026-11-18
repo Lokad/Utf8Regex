@@ -15,7 +15,14 @@ public sealed class Pcre2BudgetAccumulationTests
 
     private static Utf8Pcre2Regex Create(uint matchLimit)
     {
-        return new Utf8Pcre2Regex(Pattern, Pcre2CompileOptions.None, default, new Utf8Pcre2ExecutionLimits { MatchLimit = matchLimit }, Utf8Pcre2Regex.DefaultMatchTimeout);
+        return new Utf8Pcre2Regex(Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (matchLimit) == 0 ? null : (matchLimit)
+            },
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
     }
 
     [Fact]

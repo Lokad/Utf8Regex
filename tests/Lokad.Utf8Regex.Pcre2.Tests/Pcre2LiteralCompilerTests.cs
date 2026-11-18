@@ -41,12 +41,20 @@ public sealed class Pcre2LiteralCompilerTests
         };
         var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
         {
-            if (bytes) _ = Utf8Pcre2Regex.Compile("a😀b"u8, Pcre2CompileOptions.None, default,
-                Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy,
-                Timeout.InfiniteTimeSpan, CancellationToken.None);
-            else _ = Utf8Pcre2Regex.Compile("a😀b", Pcre2CompileOptions.None, default,
-                Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy,
-                Timeout.InfiniteTimeSpan, CancellationToken.None);
+            if (bytes) _ = Utf8Pcre2Regex.Compile("a😀b"u8, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = policy,
+                ConstructionTimeout = Timeout.InfiniteTimeSpan
+            }, cancellationToken: CancellationToken.None);
+            else _ = Utf8Pcre2Regex.Compile("a😀b", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = policy,
+                ConstructionTimeout = Timeout.InfiniteTimeSpan
+            }, cancellationToken: CancellationToken.None);
         });
         Assert.Equal(kind switch
         {
@@ -139,7 +147,7 @@ public sealed class Pcre2LiteralCompilerTests
     [Fact]
     public void CompileAndMatchAnchoringOptionsAreAppliedByLiteralProgram()
     {
-        var compileAnchored = new Utf8Pcre2Regex("abc", Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored);
+        var compileAnchored = new Utf8Pcre2Regex("abc", options: Pcre2CompileOptions.Anchored | Pcre2CompileOptions.EndAnchored);
         Assert.True(compileAnchored.IsMatch("xabc"u8, 1));
         Assert.False(compileAnchored.IsMatch("xxabc"u8, 1));
 
@@ -182,12 +190,14 @@ public sealed class Pcre2LiteralCompilerTests
     [Fact]
     public void LiteralSearchHonorsConfiguredMatchWorkLimit()
     {
-        var regex = new Utf8Pcre2Regex(
-            "needle",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(            "needle", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(new string('x', 16_384));
 
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input));

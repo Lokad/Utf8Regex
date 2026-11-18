@@ -28,9 +28,17 @@ public sealed class Pcre2ReplacementPreparationReuseTests
         }
         foreach (var finite in new[] { false, true })
         {
-            var regex = finite ? Utf8Pcre2Regex.Create("(a)", default, default,
-                new Utf8ResourcePolicy { MaxWorkSteps = 50_000_000, MaxDepth = 1024,
-                    MaxWorkingBytes = 64 << 20, MaxResultBytes = 64 << 20 }, Timeout.InfiniteTimeSpan)
+            var regex = finite ? new Utf8Pcre2Regex("(a)", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = 50_000_000,
+                    MaxDepth = 1024,
+                    MaxWorkingBytes = 64 << 20,
+                    MaxResultBytes = 64 << 20
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            })
                 : new Utf8Pcre2Regex("(a)");
             var destination = new byte[(2 << 20) + 1];
             // Leave room for cache admission work, but not a second compilation.

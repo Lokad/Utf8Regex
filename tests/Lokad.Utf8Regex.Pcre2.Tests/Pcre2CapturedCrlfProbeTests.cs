@@ -93,7 +93,10 @@ public sealed class Pcre2CapturedCrlfProbeTests
         Pcre2CompileOptions options, Pcre2MatchOptions flags, Pcre2PartialMode mode,
         Utf8Pcre2ProbeKind kind, int begin, int end)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options, new() { Newline = Pcre2NewlineConvention.Crlf }, default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         var probe = regex.Probe(input, mode, start, flags);
         Assert.Equal(kind, probe.Kind);
@@ -120,10 +123,17 @@ public sealed class Pcre2CapturedCrlfProbeTests
     public void CapturedAlternativeHasExactResultAdmissionAndIndependentAliases()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(2);
-        Utf8Pcre2Regex Create(ulong bytes) => Utf8Pcre2Regex.Create(@"^(?<part>a$|a\r)", Pcre2CompileOptions.None,
-            new() { Newline = Pcre2NewlineConvention.Crlf },
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = bytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong bytes) => new Utf8Pcre2Regex(@"^(?<part>a$|a\r)", options: Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = bytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("a\r\n"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         var regex = Create(capacity);
@@ -141,9 +151,15 @@ public sealed class Pcre2CapturedCrlfProbeTests
     [Fact]
     public void CapturedAlternativeKeepsOriginalWorkAndWorkingAllowance()
     {
-        Utf8Pcre2Regex Create(uint work, ulong heap) => new(@"^(a$|a\r)", Pcre2CompileOptions.None,
-            new() { Newline = Pcre2NewlineConvention.Crlf },
-            new() { MatchLimit = work, HeapLimitInBytes = heap }, Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(uint work, ulong heap) => new(@"^(a$|a\r)", options: Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (work) == 0 ? null : (work),
+                MaxWorkingBytes = (heap) == 0 ? null : (heap)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(1, 1 << 20).Probe("a\r\n"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
@@ -156,8 +172,10 @@ public sealed class Pcre2CapturedCrlfProbeTests
     public void CapturedAlternativeObservesOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"^(a$|a\r)", Pcre2CompileOptions.None,
-            new() { Newline = Pcre2NewlineConvention.Crlf }, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(@"^(a$|a\r)", options: Pcre2CompileOptions.None, compileSettings:             new() { Newline = Pcre2NewlineConvention.Crlf }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {

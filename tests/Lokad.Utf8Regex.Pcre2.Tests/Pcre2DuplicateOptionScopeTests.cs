@@ -25,9 +25,17 @@ public sealed class Pcre2DuplicateOptionScopeTests
         string pattern, string text, string expected)
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var bytes = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(bytes, 0, Pcre2MatchOptions.None, cancellation.Token));
         var match = regex.MatchDetailed(bytes, 0, Pcre2MatchOptions.None, cancellation.Token);
@@ -64,10 +72,81 @@ public sealed class Pcre2DuplicateOptionScopeTests
     public void ScalarSlotsReferencesIterationAndRetainedResultsKeepTheirAuthority(bool controlled)
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)|(?<x>é))\k<x>",
-            Pcre2CompileOptions.None, default, controlled ?
-                new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20 } : default, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)|(?<x>é))\k<x>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
+                {
+                    MatchLimit = 100000,
+                    DepthLimit = 256,
+                    HeapLimitInBytes = 1 << 20,
+                    ResultLimitInBytes = 1 << 20
+                }
+
+                : default)).ResultLimitInBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = "q😀😀 éé"u8.ToArray();
         var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
         Assert.Equal(3, retained.CaptureSlotCount);
@@ -101,13 +180,17 @@ public sealed class Pcre2DuplicateOptionScopeTests
     [InlineData(3, Pcre2ErrorKind.ResultLimit)]
     public void ExistingFiniteControlsStillDenyTheOwnedRoute(int limit, Pcre2ErrorKind expected)
     {
-        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)(?:aa|bb)|(?<x>é))\k<x>",
-            Pcre2CompileOptions.None, default, new() {
-                MatchLimit = limit == 0 ? 1U : 100000U,
-                DepthLimit = limit == 1 ? 1U : 256U,
-                HeapLimitInBytes = limit == 2 ? 1UL : 1UL << 20,
-                ResultLimitInBytes = limit == 3 ? 1UL : 1UL << 20
-            }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)(?:aa|bb)|(?<x>é))\k<x>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (limit == 0 ? 1U : 100000U) == 0 ? null : (limit == 0 ? 1U : 100000U),
+                MaxDepth = (limit == 1 ? 1U : 256U) == 0 ? null : (limit == 1 ? 1U : 256U),
+                MaxWorkingBytes = (limit == 2 ? 1UL : 1UL << 20) == 0 ? null : (limit == 2 ? 1UL : 1UL << 20),
+                MaxResultBytes = (limit == 3 ? 1UL : 1UL << 20) == 0 ? null : (limit == 3 ? 1UL : 1UL << 20)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var error = Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed("😀aa😀"u8));
         Assert.Equal(expected, error.ErrorKind);
     }
@@ -120,10 +203,17 @@ public sealed class Pcre2DuplicateOptionScopeTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)|(?<x>é))\k<x>",
-            Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)|(?<x>é))\k<x>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var cursor = regex.EnumerateMatches("😀😀éé"u8, 0, Pcre2MatchOptions.None, cancellation.Token);
         Assert.True(cursor.MoveNext());
         var retained = cursor.Current;

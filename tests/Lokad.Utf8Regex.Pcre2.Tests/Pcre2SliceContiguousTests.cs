@@ -26,7 +26,7 @@ public sealed class Pcre2SliceContiguousTests
     [InlineData("\\G(a+)+b$")]
     public void ContiguousShapesRouteThroughSlice(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(
             "IsMatch=Pcre2Slice, Count=Pcre2Slice, Enumerate=Pcre2Slice, Match=Pcre2Slice, Replace=Pcre2Slice",
             regex.DebugDescribeExecutionPlan());
@@ -44,7 +44,7 @@ public sealed class Pcre2SliceContiguousTests
     public void OwnedIsMatchMatchesOracle(string pattern, string inputText, bool expected)
     {
         Assert.Equal(expected, Bcl(pattern).IsMatch(inputText));
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -57,7 +57,7 @@ public sealed class Pcre2SliceContiguousTests
         string pattern, string inputText, int startOffsetInBytes, int expected)
     {
         Assert.Equal(expected, Bcl(pattern).Matches(inputText).Count);
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), startOffsetInBytes));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -65,7 +65,7 @@ public sealed class Pcre2SliceContiguousTests
     [Fact]
     public void OwnedEnumerationStopsAtFirstMiss()
     {
-        var regex = new Utf8Pcre2Regex("\\Ga+", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("\\Ga+", options: Pcre2CompileOptions.None);
         var enumerator = regex.EnumerateMatches(Utf8("aabaa"), 0);
         var ranges = new List<string>();
         while (enumerator.MoveNext())
@@ -82,7 +82,7 @@ public sealed class Pcre2SliceContiguousTests
     [Fact]
     public void OwnedDetailedPinsToSearchStart()
     {
-        var regex = new Utf8Pcre2Regex("\\Ga+", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("\\Ga+", options: Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("aab"), 1);
         Assert.True(detailed.Success);
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(detailed.GetGroup(0).GetValueBytes()));

@@ -83,12 +83,14 @@ public sealed class Pcre2AlternationRepeatTests
         Assert.Equal(0, regex.Count("xababaz"u8, 0, Pcre2MatchOptions.Anchored));
         Assert.Equal(1, regex.Count("xababaz"u8, 1, Pcre2MatchOptions.Anchored));
 
-        var metered = new Utf8Pcre2Regex(
-            "(?:ab|a)+z",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Regex.InfiniteMatchTimeout);
+        var metered = new Utf8Pcre2Regex(            "(?:ab|a)+z", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => metered.Count("ababaz"u8)).ErrorKind);
@@ -107,7 +109,7 @@ public sealed class Pcre2AlternationRepeatTests
         // finite-literal program, so bare ranged rows enumerate ordered
         // first-success spans identical to the oracle, like exact counts and
         // trailing-context ranged counts.
-        var direct = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var direct = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.Equal(oracle.Match(inputText).Value, System.Text.Encoding.UTF8.GetString(direct.Match(input).GetValueBytes()));

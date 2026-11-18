@@ -148,5 +148,8 @@ public sealed class Pcre2BackslashCCompilerTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern) =>
-        new(pattern, Pcre2CompileOptions.None, s_allowBackslashC, default(Utf8Pcre2ExecutionLimits), Utf8Pcre2Regex.DefaultMatchTimeout);
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: s_allowBackslashC, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 }

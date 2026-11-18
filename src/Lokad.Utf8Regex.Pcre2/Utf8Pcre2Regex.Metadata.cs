@@ -7,7 +7,10 @@ public sealed partial class Utf8Pcre2Regex
 {
     /// <summary>Gets the number of defined capture slots, excluding whole-match group zero.</summary>
     /// <remarks>Branch-reset groups reuse numbers; duplicate names can denote multiple slots. The count is independent of selected execution and match participation.</remarks>
-    public int CaptureGroupCount => _program.CaptureGroupCount;
+    public int CaptureGroupCount
+    {
+        get { using var use = _programMemory?.Enter(); return _program.CaptureGroupCount; }
+    }
 
     /// <summary>Copies every capture number assigned to a strict UTF-8 name, preserving duplicate entries.</summary>
     /// <returns>The number copied; isMore reports additional numbers that did not fit.</returns>
@@ -15,6 +18,8 @@ public sealed partial class Utf8Pcre2Regex
     public int CopyNumbersForUtf8Name(ReadOnlySpan<byte> nameUtf8, Span<int> destination, out bool isMore,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var use = _programMemory?.Enter();
         Utf8PatternMetadata.ValidateName(nameUtf8, cancellationToken);
         var count = 0;
         for (var index = 0; index < NameEntries.Length; index++)
@@ -37,5 +42,9 @@ public sealed partial class Utf8Pcre2Regex
     /// <remarks>No storage is allocated or retained. InvalidData and DestinationTooSmall leave the destination unchanged; cancellation may leave a partial copy. This explicit metadata operation uses the supplied token, independently of matching timeouts and numeric invocation budgets.</remarks>
     public OperationStatus TryCopyPatternUtf8(Span<byte> destination, out int bytesRequired,
         CancellationToken cancellationToken = default)
-        => Utf8PatternMetadata.TryCopy(_program.Request.ConstructionPattern, destination, out bytesRequired, cancellationToken);
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var use = _programMemory?.Enter();
+        return Utf8PatternMetadata.TryCopy(_program.Request.ConstructionPattern, destination, out bytesRequired, cancellationToken);
+    }
 }

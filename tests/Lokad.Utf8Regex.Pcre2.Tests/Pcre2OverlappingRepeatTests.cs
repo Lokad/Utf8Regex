@@ -21,8 +21,14 @@ public sealed class Pcre2OverlappingRepeatTests
     public void PublicBooleanExecutionRetainsEveryOverlappingPath(string pattern, string text, bool expected)
     {
         var direct = new Utf8Pcre2Regex(pattern);
-        var finite = new Utf8Pcre2Regex(pattern, default, default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1_000_000 }, Timeout.InfiniteTimeSpan);
+        var finite = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var bytes = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, Regex.IsMatch(text, pattern)); // Deliberately overlapping ASCII semantics.
         Assert.Equal(expected, direct.IsMatch(bytes));
@@ -40,8 +46,14 @@ public sealed class Pcre2OverlappingRepeatTests
         cancellation.Cancel();
         var failure = Assert.ThrowsAny<OperationCanceledException>(() => expression.IsMatch("11"u8, 0, default, cancellation.Token));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
-        var limited = new Utf8Pcre2Regex(@"^\d*1$", default, default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 }, Timeout.InfiniteTimeSpan);
+        var limited = new Utf8Pcre2Regex(@"^\d*1$", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("11"u8)).ErrorKind);
     }
 }

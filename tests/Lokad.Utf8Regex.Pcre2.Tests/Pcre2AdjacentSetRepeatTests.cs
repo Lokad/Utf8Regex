@@ -15,8 +15,17 @@ public sealed class Pcre2AdjacentSetRepeatTests
     [InlineData(@"\A(\p{L}+)[0-9]+\z", "é中12", Pcre2CompileOptions.Ucp, "é中")]
     public void ProfilePredicatesCapturesAndOriginalTokensRemain(string pattern, string text, Pcre2CompileOptions options, string group)
     {
-        var owner = new Utf8Pcre2Regex(pattern, options, default,
-            new() { MatchLimit = 1_000_000, DepthLimit = 1024, HeapLimitInBytes = 1 << 24, ResultLimitInBytes = 1 << 24 }, Timeout.InfiniteTimeSpan);
+        var owner = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000,
+                MaxDepth = 1024,
+                MaxWorkingBytes = 1 << 24,
+                MaxResultBytes = 1 << 24
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
         Assert.True(owner.IsMatch(input, 0, Pcre2MatchOptions.None, token.Token));

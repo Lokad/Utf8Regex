@@ -39,12 +39,14 @@ public sealed class Pcre2PrefixRepeatTests
     public void PrefixRepeatsMatchAnIndependentOracleAtValidStarts(string pattern, string inputText)
     {
         var direct = new Utf8Pcre2Regex(pattern);
-        var vm = new Utf8Pcre2Regex(
-            pattern,
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1_000_000 },
-            Regex.InfiniteMatchTimeout);
+        var vm = new Utf8Pcre2Regex(            pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000
+            },
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
 
         var oracle = new Regex(pattern.Replace("c++", "(?>c+)", StringComparison.Ordinal), RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes(inputText);
@@ -85,12 +87,14 @@ public sealed class Pcre2PrefixRepeatTests
         const string Pattern = "(a)b+";
         var input = "ab abb abbb x ab"u8.ToArray();
         var direct = new Utf8Pcre2Regex(Pattern);
-        var vm = new Utf8Pcre2Regex(
-            Pattern,
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1_000_000 },
-            Regex.InfiniteMatchTimeout);
+        var vm = new Utf8Pcre2Regex(            Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1_000_000
+            },
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
 
         foreach (var options in new[]
                  {
@@ -103,12 +107,14 @@ public sealed class Pcre2PrefixRepeatTests
             Assert.Equal(vm.Count(input, 3, options), direct.Count(input, 3, options));
         }
 
-        var tightlyMetered = new Utf8Pcre2Regex(
-            Pattern,
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Regex.InfiniteMatchTimeout);
+        var tightlyMetered = new Utf8Pcre2Regex(            Pattern, options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Regex.InfiniteMatchTimeout
+        });
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.Count(input)).ErrorKind);

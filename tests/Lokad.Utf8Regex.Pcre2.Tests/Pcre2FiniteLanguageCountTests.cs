@@ -121,8 +121,17 @@ public sealed class Pcre2FiniteLanguageCountTests
     public void CountKeepsOriginalInterruptionAndRetainedDetailedCaptures(bool cancel)
     {
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(a)(b)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("(a)(b)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var retained = regex.MatchDetailed("ab"u8);
         int reads = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
@@ -170,9 +179,15 @@ public sealed class Pcre2FiniteLanguageCountTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(a)(b)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, HeapLimitInBytes = 1 << 20 },
-            TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("(a)(b)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxWorkingBytes = 1 << 20
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(new string('x', 192 * 1024));
         var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
@@ -200,5 +215,15 @@ public sealed class Pcre2FiniteLanguageCountTests
     }
 
     private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits limits) =>
-        new(pattern, Pcre2CompileOptions.None, default, limits, Timeout.InfiniteTimeSpan);
+        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 }

@@ -40,10 +40,17 @@ public sealed class Pcre2SpecializedProbeOptionTests
     public void ExplicitOptionCapturePublicationKeepsFiniteAdmissionAndSnapshots()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(2);
-        Utf8Pcre2Regex Create(ulong resultBytes) => Utf8Pcre2Regex.Create("(?<head>a)b+",
-            Pcre2CompileOptions.None, default,
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = resultBytes },
-            Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong resultBytes) => new Utf8Pcre2Regex("(?<head>a)b+", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = resultBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("😀abbb"u8, Pcre2PartialMode.None, 4, Pcre2MatchOptions.Anchored); }).ErrorKind);
         var regex = Create(capacity);
@@ -62,7 +69,10 @@ public sealed class Pcre2SpecializedProbeOptionTests
     public void ExplicitOptionsObserveOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(a)b+", Pcre2CompileOptions.None, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("(a)b+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {

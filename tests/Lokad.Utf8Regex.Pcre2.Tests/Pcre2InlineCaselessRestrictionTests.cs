@@ -53,7 +53,17 @@ public sealed class Pcre2InlineCaselessRestrictionTests
             HeapLimitInBytes = 1 << 20, ResultLimitInBytes = 1 << 20
         } })
         {
-            var regex = new Utf8Pcre2Regex(pattern, options, default, limits, Timeout.InfiniteTimeSpan);
+            var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             Assert.Equal(expected, regex.IsMatch(input, 0, Pcre2MatchOptions.None, token.Token));
             Assert.Equal(expected ? 1 : 0, regex.Count(input, 0, Pcre2MatchOptions.None, token.Token));
             var match = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, token.Token);
@@ -74,7 +84,7 @@ public sealed class Pcre2InlineCaselessRestrictionTests
         string pattern, string text, bool unicodeExpected, bool asciiExpected)
     {
         var bytes = Encoding.UTF8.GetBytes(text);
-        Assert.Equal(unicodeExpected, new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Ucp).IsMatch(bytes));
+        Assert.Equal(unicodeExpected, new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.Ucp).IsMatch(bytes));
         Assert.Equal(asciiExpected, new Utf8Pcre2Regex(pattern).IsMatch(bytes));
     }
 
@@ -103,8 +113,17 @@ public sealed class Pcre2InlineCaselessRestrictionTests
                 2 => new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 },
                 _ => new Utf8Pcre2ExecutionLimits { ResultLimitInBytes = 1 },
             };
-            var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-                limits, Timeout.InfiniteTimeSpan);
+            var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             var error = Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed("ksKS"u8));
             Assert.Equal(kind switch { 0 => Pcre2ErrorKind.MatchLimit, 1 => Pcre2ErrorKind.DepthLimit,
                 2 => Pcre2ErrorKind.HeapLimit, _ => Pcre2ErrorKind.ResultLimit }, error.ErrorKind);
@@ -118,9 +137,17 @@ public sealed class Pcre2InlineCaselessRestrictionTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?ir)(?<x>[ks]+)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(@"(?ir)(?<x>[ks]+)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var input = "😀kS Ks"u8.ToArray();
         var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
         var cursor = regex.EnumerateMatches(input, 0, Pcre2MatchOptions.None, cancellation.Token);

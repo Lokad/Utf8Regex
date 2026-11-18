@@ -12,12 +12,19 @@ public sealed class Pcre2PublicConstructionTests
 
     private static Utf8Pcre2Regex Compile(Utf8ConstructionPolicy policy, bool bytes,
         CancellationToken cancellationToken = default)
-        => bytes ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(Pattern), Pcre2CompileOptions.None,
-            default, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy,
-            Timeout.InfiniteTimeSpan, cancellationToken)
-        : Utf8Pcre2Regex.Compile(Pattern, Pcre2CompileOptions.None, default,
-            Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, policy,
-            Timeout.InfiniteTimeSpan, cancellationToken);
+        => bytes ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(Pattern), options: Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = policy,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: cancellationToken)        : Utf8Pcre2Regex.Compile(Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = Timeout.InfiniteTimeSpan,
+    ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+    ConstructionPolicy = policy,
+    ConstructionTimeout = Timeout.InfiniteTimeSpan
+}, cancellationToken: cancellationToken);
 
     [Theory]
     [InlineData(0, false)] [InlineData(1, false)] [InlineData(2, false)] [InlineData(3, false)]
@@ -56,10 +63,19 @@ public sealed class Pcre2PublicConstructionTests
             MaxInstructionCapacity = 10000, MaxBytes = 1000000 };
         var execution = new Utf8ResourcePolicy { MaxWorkSteps = 100000, MaxDepth = 128,
             MaxWorkingBytes = 1000000, MaxResultBytes = 1000000 };
-        var regex = bytes ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(Pattern), Pcre2CompileOptions.None,
-            default, Timeout.InfiniteTimeSpan, execution, policy, TimeSpan.FromSeconds(30), cancellation.Token)
-            : Utf8Pcre2Regex.Compile(Pattern, Pcre2CompileOptions.None, default,
-                Timeout.InfiniteTimeSpan, execution, policy, TimeSpan.FromSeconds(30), cancellation.Token);
+        var regex = bytes ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(Pattern), options: Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = execution,
+            ConstructionPolicy = policy,
+            ConstructionTimeout = TimeSpan.FromSeconds(30)
+        }, cancellationToken: cancellation.Token)            : Utf8Pcre2Regex.Compile(Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = Timeout.InfiniteTimeSpan,
+    ResourcePolicy = execution,
+    ConstructionPolicy = policy,
+    ConstructionTimeout = TimeSpan.FromSeconds(30)
+}, cancellationToken: cancellation.Token);
         cancellation.Cancel();
         Assert.False(Utf8ConstructionScope.IsActive);
         Assert.Equal(100000u, regex.DefaultExecutionLimits.MatchLimit);
@@ -72,9 +88,16 @@ public sealed class Pcre2PublicConstructionTests
     [Fact]
     public void ExecutionPolicyStillEnforcesItsOwnLimitAfterCompilation()
     {
-        var regex = Utf8Pcre2Regex.Compile("foo", Pcre2CompileOptions.None, default,
-            Timeout.InfiniteTimeSpan, new() { MaxWorkSteps = 1 }, Utf8ConstructionPolicy.Default,
-            Timeout.InfiniteTimeSpan, CancellationToken.None);
+        var regex = Utf8Pcre2Regex.Compile("foo", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 1
+            },
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None);
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => regex.Count("foo foo foo"u8)).ErrorKind);
     }
@@ -83,26 +106,46 @@ public sealed class Pcre2PublicConstructionTests
     public void PreCancellationPrecedesMalformedPatternAndInvalidArguments()
     {
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
-        var failure = Assert.Throws<OperationCanceledException>(() => Utf8Pcre2Regex.Compile(new byte[] { 0xff },
-            (Pcre2CompileOptions)(1 << 29), default, TimeSpan.Zero, new() { MaxWorkSteps = 0 },
-            new() { MaxBytes = 0 }, TimeSpan.Zero, cancellation.Token));
+        var failure = Assert.Throws<OperationCanceledException>(() => Utf8Pcre2Regex.Compile(new byte[] { 0xff }, options:             (Pcre2CompileOptions)(1 << 29), compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.Zero,
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 0
+            },
+            ConstructionPolicy = new()
+            {
+                MaxBytes = 0
+            },
+            ConstructionTimeout = TimeSpan.Zero
+        }, cancellationToken: cancellation.Token));
         Assert.Equal(cancellation.Token, failure.CancellationToken);
         Assert.False(Utf8ConstructionScope.IsActive);
     }
 
     [Theory]
-    [InlineData(0, "constructionPolicy")] [InlineData(1, "resourcePolicy")]
-    [InlineData(2, "constructionTimeout")] [InlineData(3, "matchTimeout")]
+    [InlineData(0, "policy")] [InlineData(1, "policy")]
+    [InlineData(2, "policy")] [InlineData(3, "policy")]
     [InlineData(4, "options")] [InlineData(5, "compileSettings")]
     public void InvalidArgumentsPrecedeByteWorkAndRestoreOwner(int invalid, string parameter)
     {
-        var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Utf8Pcre2Regex.Compile(new byte[] { 0xff },
-            invalid >= 4 && invalid != 5 ? (Pcre2CompileOptions)(1 << 29) : Pcre2CompileOptions.None,
-            invalid == 5 ? new() { Bsr = (Pcre2BsrConvention)999 } : default,
-            invalid <= 3 ? TimeSpan.Zero : Timeout.InfiniteTimeSpan,
-            invalid <= 1 ? new() { MaxWorkSteps = 0 } : Utf8ResourcePolicy.Unlimited,
-            invalid == 0 ? new() { MaxBytes = 0 } : Utf8ConstructionPolicy.Default,
-            invalid <= 2 ? TimeSpan.Zero : Timeout.InfiniteTimeSpan, CancellationToken.None));
+        var failure = Assert.Throws<ArgumentOutOfRangeException>(() => Utf8Pcre2Regex.Compile(new byte[] { 0xff }, options:             invalid >= 4 && invalid != 5 ? (Pcre2CompileOptions)(1 << 29) : Pcre2CompileOptions.None, compileSettings:             invalid == 5 ? new() { Bsr = (Pcre2BsrConvention)999 } : default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = invalid <= 3 ? TimeSpan.Zero : Timeout.InfiniteTimeSpan,
+            ResourcePolicy = invalid <= 1 ? new()
+            {
+                MaxWorkSteps = 0
+            }
+
+            : Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = invalid == 0 ? new()
+            {
+                MaxBytes = 0
+            }
+
+            : Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = invalid <= 2 ? TimeSpan.Zero : Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None));
         Assert.Equal(parameter, failure.ParamName);
         Assert.False(Utf8ConstructionScope.IsActive);
     }
@@ -113,11 +156,19 @@ public sealed class Pcre2PublicConstructionTests
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++);
-        var regex = bytes ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(Pattern), Pcre2CompileOptions.None,
-            default, TimeSpan.FromMilliseconds(1), Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-            TimeSpan.FromSeconds(30), CancellationToken.None)
-            : Utf8Pcre2Regex.Compile(Pattern, Pcre2CompileOptions.None, default, TimeSpan.FromMilliseconds(1),
-                Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default, TimeSpan.FromSeconds(30), CancellationToken.None);
+        var regex = bytes ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(Pattern), options: Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1),
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = TimeSpan.FromSeconds(30)
+        }, cancellationToken: CancellationToken.None)            : Utf8Pcre2Regex.Compile(Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = TimeSpan.FromMilliseconds(1),
+    ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+    ConstructionPolicy = Utf8ConstructionPolicy.Default,
+    ConstructionTimeout = TimeSpan.FromSeconds(30)
+}, cancellationToken: CancellationToken.None);
         Assert.True(ticks > 1);
         Assert.Equal(TimeSpan.FromMilliseconds(1), regex.MatchTimeout);
         Assert.False(Utf8ConstructionScope.IsActive);
@@ -137,11 +188,20 @@ public sealed class Pcre2PublicConstructionTests
         {
             var failure = Assert.Throws<OperationCanceledException>(() =>
             {
-                if (bytes) _ = Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(Pattern), Pcre2CompileOptions.None,
-                    default, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-                    TimeSpan.FromSeconds(30), cancellation.Token);
-                else _ = Utf8Pcre2Regex.Compile(Pattern, Pcre2CompileOptions.None, default, Timeout.InfiniteTimeSpan,
-                    Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default, TimeSpan.FromSeconds(30), cancellation.Token);
+                if (bytes) _ = Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(Pattern), options: Pcre2CompileOptions.None, compileSettings:                     default, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                    ConstructionPolicy = Utf8ConstructionPolicy.Default,
+                    ConstructionTimeout = TimeSpan.FromSeconds(30)
+                }, cancellationToken: cancellation.Token);
+                else _ = Utf8Pcre2Regex.Compile(Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                    ConstructionPolicy = Utf8ConstructionPolicy.Default,
+                    ConstructionTimeout = TimeSpan.FromSeconds(30)
+                }, cancellationToken: cancellation.Token);
             });
             Assert.Equal(cancellation.Token, failure.CancellationToken);
             Assert.Equal(8, reads);
@@ -158,11 +218,20 @@ public sealed class Pcre2PublicConstructionTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++ * 1000);
         var failure = Assert.Throws<RegexMatchTimeoutException>(() =>
         {
-            if (bytes) _ = Utf8Pcre2Regex.Compile("😀+"u8, Pcre2CompileOptions.None, default,
-                Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-                TimeSpan.FromMilliseconds(1), CancellationToken.None);
-            else _ = Utf8Pcre2Regex.Compile("😀+", Pcre2CompileOptions.None, default, Timeout.InfiniteTimeSpan,
-                Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default, TimeSpan.FromMilliseconds(1), CancellationToken.None);
+            if (bytes) _ = Utf8Pcre2Regex.Compile("😀+"u8, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = Utf8ConstructionPolicy.Default,
+                ConstructionTimeout = TimeSpan.FromMilliseconds(1)
+            }, cancellationToken: CancellationToken.None);
+            else _ = Utf8Pcre2Regex.Compile("😀+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = Utf8ConstructionPolicy.Default,
+                ConstructionTimeout = TimeSpan.FromMilliseconds(1)
+            }, cancellationToken: CancellationToken.None);
         });
         Assert.Equal(TimeSpan.FromMilliseconds(1), failure.MatchTimeout);
         Assert.Equal(bytes ? string.Empty : "😀+", failure.Pattern);
@@ -176,9 +245,13 @@ public sealed class Pcre2PublicConstructionTests
     {
         var pattern = new string('a', prefix) + "😀é";
         var bytes = Encoding.UTF8.GetBytes(pattern);
-        var regex = Utf8Pcre2Regex.Compile(bytes, Pcre2CompileOptions.None, default,
-            Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-            Timeout.InfiniteTimeSpan, CancellationToken.None);
+        var regex = Utf8Pcre2Regex.Compile(bytes, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None);
         Assert.Equal(pattern, regex.Pattern);
         Assert.True(regex.IsMatch(bytes));
         Assert.False(Utf8ConstructionScope.IsActive);
@@ -194,9 +267,13 @@ public sealed class Pcre2PublicConstructionTests
         {
             var input = Enumerable.Repeat((byte)'a', prefix).Concat(tail).Concat("😀"u8.ToArray()).ToArray();
             var expected = Assert.Throws<ArgumentException>(() => Utf8Validation.Validate(input));
-            var failure = Assert.Throws<ArgumentException>(() => Utf8Pcre2Regex.Compile(input,
-                Pcre2CompileOptions.None, default, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited,
-                Utf8ConstructionPolicy.Default, Timeout.InfiniteTimeSpan, CancellationToken.None));
+            var failure = Assert.Throws<ArgumentException>(() => Utf8Pcre2Regex.Compile(input, options:                 Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                MatchTimeout = Timeout.InfiniteTimeSpan,
+                ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+                ConstructionPolicy = Utf8ConstructionPolicy.Default,
+                ConstructionTimeout = Timeout.InfiniteTimeSpan
+            }, cancellationToken: CancellationToken.None));
             Assert.Equal(expected.ParamName, failure.ParamName);
             Assert.Equal(expected.Message, failure.Message);
             Assert.False(Utf8ConstructionScope.IsActive);
@@ -225,9 +302,13 @@ public sealed class Pcre2PublicConstructionTests
             }
             return ticks;
         });
-        var failure = Record.Exception(() => Utf8Pcre2Regex.Compile(input, Pcre2CompileOptions.None, default,
-            Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-            TimeSpan.FromMilliseconds(20), cancellation.Token));
+        var failure = Record.Exception(() => Utf8Pcre2Regex.Compile(input, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = TimeSpan.FromMilliseconds(20)
+        }, cancellationToken: cancellation.Token));
         if (timeout) Assert.IsType<RegexMatchTimeoutException>(failure);
         else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.NotNull(budget);
@@ -250,9 +331,13 @@ public sealed class Pcre2PublicConstructionTests
     [Fact]
     public void GrammarErrorsKeepPcre2IdentityAndLeaveNoOwner()
     {
-        Assert.Throws<Pcre2CompileException>(() => Utf8Pcre2Regex.Compile("(?<123>a)", Pcre2CompileOptions.None,
-            default, Timeout.InfiniteTimeSpan, Utf8ResourcePolicy.Unlimited, Utf8ConstructionPolicy.Default,
-            Timeout.InfiniteTimeSpan, CancellationToken.None));
+        Assert.Throws<Pcre2CompileException>(() => Utf8Pcre2Regex.Compile("(?<123>a)", options: Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Utf8ResourcePolicy.Unlimited,
+            ConstructionPolicy = Utf8ConstructionPolicy.Default,
+            ConstructionTimeout = Timeout.InfiniteTimeSpan
+        }, cancellationToken: CancellationToken.None));
         Assert.False(Utf8ConstructionScope.IsActive);
     }
 }

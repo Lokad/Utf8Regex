@@ -67,9 +67,81 @@ public sealed class Pcre2AdvancedUnicodeCompilerTests
         foreach (var finite in new[] { false, true })
         foreach (var pattern in new[] { @"\X", @"(?=\X)\X", @"(?<g>\X)" })
         {
-            var regex = new Utf8Pcre2Regex(pattern, default, default,
-                finite ? new() { MatchLimit = 1_000_000, DepthLimit = 1024, HeapLimitInBytes = 16 << 20, ResultLimitInBytes = 16 << 20 } : default,
-                Timeout.InfiniteTimeSpan);
+            var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new Utf8ResourcePolicy
+                {
+                    MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                    {
+                        MatchLimit = 1_000_000,
+                        DepthLimit = 1024,
+                        HeapLimitInBytes = 16 << 20,
+                        ResultLimitInBytes = 16 << 20
+                    }
+
+                    : default)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                    {
+                        MatchLimit = 1_000_000,
+                        DepthLimit = 1024,
+                        HeapLimitInBytes = 16 << 20,
+                        ResultLimitInBytes = 16 << 20
+                    }
+
+                    : default)).MatchLimit,
+                    MaxDepth = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                    {
+                        MatchLimit = 1_000_000,
+                        DepthLimit = 1024,
+                        HeapLimitInBytes = 16 << 20,
+                        ResultLimitInBytes = 16 << 20
+                    }
+
+                    : default)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                    {
+                        MatchLimit = 1_000_000,
+                        DepthLimit = 1024,
+                        HeapLimitInBytes = 16 << 20,
+                        ResultLimitInBytes = 16 << 20
+                    }
+
+                    : default)).DepthLimit,
+                    MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                    {
+                        MatchLimit = 1_000_000,
+                        DepthLimit = 1024,
+                        HeapLimitInBytes = 16 << 20,
+                        ResultLimitInBytes = 16 << 20
+                    }
+
+                    : default)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                    {
+                        MatchLimit = 1_000_000,
+                        DepthLimit = 1024,
+                        HeapLimitInBytes = 16 << 20,
+                        ResultLimitInBytes = 16 << 20
+                    }
+
+                    : default)).HeapLimitInBytes,
+                    MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                    {
+                        MatchLimit = 1_000_000,
+                        DepthLimit = 1024,
+                        HeapLimitInBytes = 16 << 20,
+                        ResultLimitInBytes = 16 << 20
+                    }
+
+                    : default)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
+                    {
+                        MatchLimit = 1_000_000,
+                        DepthLimit = 1024,
+                        HeapLimitInBytes = 16 << 20,
+                        ResultLimitInBytes = 16 << 20
+                    }
+
+                    : default)).ResultLimitInBytes
+                },
+                MatchTimeout = Timeout.InfiniteTimeSpan
+            });
             Assert.True(regex.IsMatch(input));
             Assert.Equal(segments.Length, regex.Count(input));
             Assert.Equal(segments[0], System.Text.Encoding.UTF8.GetString(regex.Match(input).GetValueBytes()));

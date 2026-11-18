@@ -66,8 +66,7 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     public void AcceptSucceedsImmediatelyAtTheCurrentInvocationBoundary()
     {
         var topLevel = new Utf8Pcre2Regex("a(*ACCEPT)b").Match("ac"u8);
-        var subroutine = new Utf8Pcre2Regex(
-            "^(?&g)c(?(DEFINE)(?<g>a(*ACCEPT)b))$").MatchDetailed("ac"u8);
+        var subroutine = new Utf8Pcre2Regex(            "^(?&g)c(?(DEFINE)(?<g>a(*ACCEPT)b))$").MatchDetailed("ac"u8);
 
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString(topLevel.GetValueBytes()));
         Assert.True(subroutine.Success);
@@ -192,18 +191,22 @@ public sealed class Pcre2BacktrackingControlCompilerTests
     [Fact]
     public void ControlInstructionsChargeDepthAndHeapLimits()
     {
-        var depthLimited = new Utf8Pcre2Regex(
-            "(?>(?>a|b)|c)",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { DepthLimit = 1 },
-            System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
-        var heapLimited = new Utf8Pcre2Regex(
-            "(*MARK:A)a",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 },
-            System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
+        var depthLimited = new Utf8Pcre2Regex(            "(?>(?>a|b)|c)", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = 1
+            },
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
+        });
+        var heapLimited = new Utf8Pcre2Regex(            "(*MARK:A)a", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1
+            },
+            MatchTimeout = System.Text.RegularExpressions.Regex.InfiniteMatchTimeout
+        });
 
         Assert.Equal(
             Pcre2ErrorKind.DepthLimit,

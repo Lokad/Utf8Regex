@@ -82,10 +82,19 @@ public sealed class Pcre2OptimizerAdmissionTests
                 MaxWorkingBytes = 16 * 1024 * 1024, MaxResultBytes = 16 * 1024 * 1024 };
             var construction = new Utf8ConstructionPolicy { MaxBytes = 16 * 1024 * 1024 };
             var regex = bytes
-                ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), default, default,
-                    Timeout.InfiniteTimeSpan, policy, construction, Timeout.InfiniteTimeSpan, default)
-                : Utf8Pcre2Regex.Compile(pattern, default, default, Timeout.InfiniteTimeSpan,
-                    policy, construction, Timeout.InfiniteTimeSpan, default);
+                ? Utf8Pcre2Regex.Compile(Encoding.UTF8.GetBytes(pattern), options: default, compileSettings: default, policy: new Utf8RegexPolicy
+                {
+                    MatchTimeout = Timeout.InfiniteTimeSpan,
+                    ResourcePolicy = policy,
+                    ConstructionPolicy = construction,
+                    ConstructionTimeout = Timeout.InfiniteTimeSpan
+                }, cancellationToken: default)                : Utf8Pcre2Regex.Compile(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+{
+    MatchTimeout = Timeout.InfiniteTimeSpan,
+    ResourcePolicy = policy,
+    ConstructionPolicy = construction,
+    ConstructionTimeout = Timeout.InfiniteTimeSpan
+}, cancellationToken: default);
             var input = Encoding.UTF8.GetBytes(subject);
             Assert.True(regex.IsMatch(input));
             Assert.Equal(2, regex.Count(input));

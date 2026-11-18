@@ -30,7 +30,7 @@ public sealed class Pcre2SliceConditionalTests
     [MemberData(nameof(SharedCases))]
     public void CaptureSetConditionsPreservePositionalCaptures(string pattern, string inputText, bool expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
         var oracle = Bcl(pattern).Match(inputText);
         var actual = regex.MatchDetailed(Utf8(inputText));
@@ -54,7 +54,7 @@ public sealed class Pcre2SliceConditionalTests
     [MemberData(nameof(AssertionCases))]
     public void AssertionConditionsPreserveBranchResults(string pattern, string inputText, bool expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText)));
     }
 
@@ -77,6 +77,6 @@ public sealed class Pcre2SliceConditionalTests
     [MemberData(nameof(ParityCases))]
     public void ConditionalCountMatchesOracle(string pattern, string inputText)
     {
-        Assert.Equal(Bcl(pattern).Matches(inputText).Count, new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None).Count(Utf8(inputText)));
+        Assert.Equal(Bcl(pattern).Matches(inputText).Count, new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None).Count(Utf8(inputText)));
     }
 }

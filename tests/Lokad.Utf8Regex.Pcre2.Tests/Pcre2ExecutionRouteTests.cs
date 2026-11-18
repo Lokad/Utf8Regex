@@ -38,7 +38,7 @@ public sealed class Pcre2ExecutionRouteTests
     [Fact]
     public void IgnoreCaseLiteralPreservesItsCounts()
     {
-        var regex = new Utf8Pcre2Regex("httpclient", Pcre2CompileOptions.Caseless);
+        var regex = new Utf8Pcre2Regex("httpclient", options: Pcre2CompileOptions.Caseless);
 
         Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.Equal(3, regex.Count("HttpClient x httpclient HTTPCLIENT"u8));
@@ -251,12 +251,14 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
     [Fact]
     public void MeteredLiteralFamilyCountRetainsPcre2ResourceSemantics()
     {
-        var regex = new Utf8Pcre2Regex(
-            "foo|bar",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(            "foo|bar", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count("xxfoo"u8));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
@@ -266,7 +268,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
     public void LiteralFamilyCountLeavesEmptyAlternativesOnSliceAndCompileAnchorsOnBacktracking()
     {
         var empty = new Utf8Pcre2Regex("foo|");
-        var anchored = new Utf8Pcre2Regex("foo|bar", Pcre2CompileOptions.Anchored);
+        var anchored = new Utf8Pcre2Regex("foo|bar", options: Pcre2CompileOptions.Anchored);
 
         Assert.IsType<Pcre2SliceDirectProgram>(empty.DebugCompiledProgram.Operations.Count);
         Assert.IsType<Pcre2BacktrackingDirectProgram>(anchored.DebugCompiledProgram.Operations.Count);
@@ -374,7 +376,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         string pattern,
         Pcre2CompileOptions options)
     {
-        var regex = new Utf8Pcre2Regex(pattern, options);
+        var regex = new Utf8Pcre2Regex(pattern, options: options);
 
         Assert.NotEqual(Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun, regex.DebugCompiledProgram.CandidateSearch.Kind);
     }
@@ -389,12 +391,14 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.Anchored));
         Assert.False(regex.IsMatch(input, 2, Pcre2MatchOptions.Anchored));
 
-        var limited = new Utf8Pcre2Regex(
-            @"\b\w{10,}\b",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Timeout.InfiniteTimeSpan);
+        var limited = new Utf8Pcre2Regex(            @"\b\w{10,}\b", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
@@ -429,7 +433,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         foreach (var pattern in patterns)
         {
             var candidate = new Utf8Pcre2Regex(pattern);
-            var vmOnly = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.NoAutoCapture);
+            var vmOnly = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.NoAutoCapture);
             Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun, candidate.DebugCompiledProgram.CandidateSearch.Kind);
             Assert.Equal(Pcre2CandidateSearchKind.None, vmOnly.DebugCompiledProgram.CandidateSearch.Kind);
 
@@ -548,12 +552,14 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
         Assert.True(match.Success);
         Assert.Equal("c.de", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
 
-        var metered = new Utf8Pcre2Regex(
-            @"[^a]+\.[^z]+",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Timeout.InfiniteTimeSpan);
+        var metered = new Utf8Pcre2Regex(            @"[^a]+\.[^z]+", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Throws<Pcre2MatchException>(() => metered.IsMatch("no delimiter"u8));
     }
 
@@ -586,12 +592,14 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
     [Fact]
     public void ConfiguredLimitsBypassCandidateSearchAndRetainPcre2Accounting()
     {
-        var regex = new Utf8Pcre2Regex(
-            @"[a-z]+@[a-z]+",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(            @"[a-z]+@[a-z]+", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count("xx foo@bar"u8));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
@@ -787,7 +795,7 @@ substitutionOptions:                 Pcre2SubstitutionOptions.SubstituteOverflow
     [Fact]
     public void MultilineAnchoredPatternUsesOwnedOperationPrograms()
     {
-        var regex = new Utf8Pcre2Regex("^ERROR: .+$", Pcre2CompileOptions.Multiline);
+        var regex = new Utf8Pcre2Regex("^ERROR: .+$", options: Pcre2CompileOptions.Multiline);
 
         Assert.False(regex.DebugUsesUtf8RegexTranslation);
         Assert.DoesNotContain("ManagedRegex", regex.DebugDescribeExecutionPlan(), StringComparison.Ordinal);

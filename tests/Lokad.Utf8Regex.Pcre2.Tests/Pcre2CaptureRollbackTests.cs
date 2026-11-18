@@ -23,9 +23,17 @@ public sealed class Pcre2CaptureRollbackTests
         string pattern, string text, int slot, string? expectedCapture)
     {
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var input = Encoding.UTF8.GetBytes(text);
         Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.None, cancellation.Token));
         var match = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
@@ -41,33 +49,71 @@ public sealed class Pcre2CaptureRollbackTests
     public void LinearReferencesUseOnlyRequiredStateAndStillEnforceLimits()
     {
         const string pattern = @"(?-)(?<n>a)(b)\1";
-        var small = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 256,
-                ResultLimitInBytes = 1 << 20 }, Timeout.InfiniteTimeSpan);
+        var small = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 256,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(1, small.Count("aba"u8));
 
-        var insufficient = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { HeapLimitInBytes = 1 }, Timeout.InfiniteTimeSpan);
+        var insufficient = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(1, insufficient.Count("aba"u8)); // The proved count needs no capture vectors.
         Assert.Equal(Pcre2ErrorKind.HeapLimit,
             Assert.Throws<Pcre2MatchException>(() => insufficient.MatchDetailed("aba"u8)).ErrorKind);
-        var work = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1 }, Timeout.InfiniteTimeSpan);
+        var work = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => work.Count("aba"u8)).ErrorKind);
-        var result = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { ResultLimitInBytes = 1 }, Timeout.InfiniteTimeSpan);
+        var result = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxResultBytes = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit,
             Assert.Throws<Pcre2MatchException>(() => result.MatchDetailed("aba"u8)).ErrorKind);
-        var depth = new Utf8Pcre2Regex(@"(?:(?<x>a|ab)c|d)\k<x>",
-            Pcre2CompileOptions.None, default, new() { DepthLimit = 1 }, Timeout.InfiniteTimeSpan);
+        var depth = new Utf8Pcre2Regex(@"(?:(?<x>a|ab)c|d)\k<x>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(1, depth.Count("abcab"u8));
         // Disproved alternatives no longer require pending frames here.
         Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(depth.MatchDetailed("abcab"u8).GetGroup(1).GetValueBytes()));
         const string ambiguous = @"(?:(?<x>a+|a+b)c|a)\k<x>";
         Assert.True(new Utf8Pcre2Regex(ambiguous).MatchDetailed("aabcaab"u8).Success);
-        var pending = new Utf8Pcre2Regex(ambiguous, Pcre2CompileOptions.None, default,
-            new() { DepthLimit = 1 }, Timeout.InfiniteTimeSpan);
+        var pending = new Utf8Pcre2Regex(ambiguous, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxDepth = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.DepthLimit,
             Assert.Throws<Pcre2MatchException>(() => pending.MatchDetailed("aabcaab"u8)).ErrorKind);
     }
@@ -80,10 +126,17 @@ public sealed class Pcre2CaptureRollbackTests
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex(@"(?<x>😀)(?:é|éé)\k<x>",
-            Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 100000, DepthLimit = 256, HeapLimitInBytes = 1 << 20,
-                ResultLimitInBytes = 1 << 20 }, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex(@"(?<x>😀)(?:é|éé)\k<x>", options:             Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20
+            },
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var input = "😀éé😀 😀éé😀"u8.ToArray();
         var retained = regex.MatchDetailed(input, 0, Pcre2MatchOptions.None, cancellation.Token);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroup(1).GetValueBytes()));

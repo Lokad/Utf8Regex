@@ -252,8 +252,7 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
     [Fact]
     public void ReplaceNativeIterationCanUseLastCapturedReference()
     {
-        var regex = new Utf8Pcre2Regex(
-            "55|a(..)d");
+        var regex = new Utf8Pcre2Regex(            "55|a(..)d");
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "xyz55abcdxyzabcdxyz"u8,
@@ -266,12 +265,10 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
     [Fact]
     public void ReplaceNativeIterationCanUseDuplicateNamedReference()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?:(?<n>foo)|(?<n>bar))\\k<n>",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?:(?<n>foo)|(?<n>bar))\\k<n>", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "foofoo barbar"u8,
@@ -296,12 +293,10 @@ public sealed class Utf8Pcre2RegexReplaceApiTests
     [Fact]
     public void ReplaceNativeIterationCanCombineDuplicateNameAndLastCapturedReference()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\\k'a'", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
 
         var actual = System.Text.Encoding.UTF8.GetString(regex.Replace(
             "aaaccccaaa bccccb"u8,

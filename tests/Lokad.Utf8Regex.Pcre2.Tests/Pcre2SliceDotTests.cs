@@ -25,7 +25,7 @@ public sealed class Pcre2SliceDotTests
     [MemberData(nameof(SliceDotShapes))]
     public void DotShapesRouteThroughSlice(string pattern)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(
             "IsMatch=Pcre2Slice, " +
             "Count=Pcre2Slice, " +
@@ -38,7 +38,7 @@ public sealed class Pcre2SliceDotTests
     [Fact]
     public void DotAllStaysSliced()
     {
-        var regex = new Utf8Pcre2Regex("a.*b", Pcre2CompileOptions.DotAll);
+        var regex = new Utf8Pcre2Regex("a.*b", options: Pcre2CompileOptions.DotAll);
         Assert.Contains("IsMatch=Pcre2Slice", regex.DebugDescribeExecutionPlan());
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes("xxa\nbzz"), 0));
     }
@@ -56,12 +56,11 @@ public sealed class Pcre2SliceDotTests
     [MemberData(nameof(DeclinedNewlines))]
     public void NonLfNewlineConventionsDeclineSliceRouting(Pcre2NewlineConvention newline)
     {
-        var regex = Utf8Pcre2Regex.Create(
-            "a.*b",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { Newline = newline },
-            default,
-            Utf8Pcre2Regex.DefaultMatchTimeout);
+        var regex = new Utf8Pcre2Regex(            "a.*b", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { Newline = newline }, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = default,
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+        });
         Assert.DoesNotContain("Pcre2Slice", regex.DebugDescribeExecutionPlan());
     }
 
@@ -82,7 +81,7 @@ public sealed class Pcre2SliceDotTests
     [MemberData(nameof(IsMatchCases))]
     public void OwnedIsMatchMatchesNativeSemantics(string pattern, string inputText, bool expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.IsMatch(Utf8(inputText), 0));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -98,7 +97,7 @@ public sealed class Pcre2SliceDotTests
                 "(a.c)+",
                 System.Text.RegularExpressions.RegexOptions.CultureInvariant,
                 System.Text.RegularExpressions.Regex.InfiniteMatchTimeout).IsMatch(inputText));
-        var regex = new Utf8Pcre2Regex("(a.c)+", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(a.c)+", options: Pcre2CompileOptions.None);
         Assert.True(regex.IsMatch(Utf8(inputText), 0));
         Assert.True(regex.DebugCompiledProgram is not null);
     }
@@ -111,7 +110,7 @@ public sealed class Pcre2SliceDotTests
     [InlineData("(a.c)+", "abc ayc", 2)]
     public void OwnedCountMatchesNativeSemantics(string pattern, string inputText, int expected)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         Assert.Equal(expected, regex.Count(Utf8(inputText), 0));
         Assert.True(regex.DebugCompiledProgram is not null, "pattern=" + pattern);
     }
@@ -124,7 +123,7 @@ public sealed class Pcre2SliceDotTests
     public void OwnedFirstMatchProjectsScalarBytes(
         string pattern, string inputText, int expectedStart, int expectedEnd)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None);
         var found = regex.Match(Utf8(inputText), startOffsetInBytes: 0);
         Assert.True(found.Success);
         Assert.Equal(expectedStart, found.StartOffsetInBytes);
@@ -135,7 +134,7 @@ public sealed class Pcre2SliceDotTests
     [Fact]
     public void OwnedEnumerationAdvancesByScalarsOnAstralInput()
     {
-        var regex = new Utf8Pcre2Regex("a.c", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("a.c", options: Pcre2CompileOptions.None);
         var enumerator = regex.EnumerateMatches(Utf8("xa\U0001F600cxaXc"), 0);
         var ranges = new List<string>();
         while (enumerator.MoveNext())
@@ -152,7 +151,7 @@ public sealed class Pcre2SliceDotTests
     [Fact]
     public void OwnedDetailedProjectsDotGroupOnAstralInput()
     {
-        var regex = new Utf8Pcre2Regex("(.+)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(.+)", options: Pcre2CompileOptions.None);
         var detailed = regex.MatchDetailed(Utf8("x\U0001F600y"), 0);
         Assert.True(detailed.Success);
         Assert.Equal("x\U0001F600y", System.Text.Encoding.UTF8.GetString(detailed.Value.GetValueBytes()));
@@ -163,7 +162,7 @@ public sealed class Pcre2SliceDotTests
     [Fact]
     public void OwnedReplaceExpandsDotGroup()
     {
-        var regex = new Utf8Pcre2Regex("(a.*b)", Pcre2CompileOptions.None);
+        var regex = new Utf8Pcre2Regex("(a.*b)", options: Pcre2CompileOptions.None);
         Assert.Equal("xx<aabb>YY", System.Text.Encoding.UTF8.GetString(regex.Replace(Utf8("xxaabbYY"), "<$1>")));
         Assert.True(regex.DebugCompiledProgram is not null);
     }

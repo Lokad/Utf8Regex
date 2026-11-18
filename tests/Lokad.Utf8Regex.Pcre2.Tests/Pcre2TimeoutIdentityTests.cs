@@ -15,8 +15,10 @@ public sealed class Pcre2TimeoutIdentityTests
         var acquiring = false;
         using var clock = Lokad.Utf8Regex.Internal.Execution.Utf8ExecutionDeadline.UseClockForDiagnostics(
             () => acquiring ? ticks++ : 0);
-        var regex = new Utf8Pcre2Regex("(a+)+$", Pcre2CompileOptions.None, default,
-            default(Utf8Pcre2ExecutionLimits), TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex("(a+)+$", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         acquiring = true;
         var error = Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed("a"u8));
@@ -34,12 +36,10 @@ public sealed class Pcre2TimeoutIdentityTests
     [Fact]
     public void CatastrophicIsMatchReportsRouteAndTimeoutIdentity()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(a+)+$",
-            Pcre2CompileOptions.None,
-            default,
-            default(Utf8Pcre2ExecutionLimits),
-            TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex(            "(a+)+$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.True(regex.Analyze().IsFullyNative);
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(CreateCatastrophicInput()));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
@@ -48,12 +48,10 @@ public sealed class Pcre2TimeoutIdentityTests
     [Fact]
     public void CatastrophicCountReportsRouteAndTimeoutIdentity()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(a+)+$",
-            Pcre2CompileOptions.None,
-            default,
-            default(Utf8Pcre2ExecutionLimits),
-            TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex(            "(a+)+$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.True(regex.Analyze().IsFullyNative);
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count(CreateCatastrophicInput()));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
@@ -61,12 +59,10 @@ public sealed class Pcre2TimeoutIdentityTests
     [Fact]
     public void CatastrophicMatchManyReportsTimeoutIdentity()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(a+)+$",
-            Pcre2CompileOptions.None,
-            default,
-            default(Utf8Pcre2ExecutionLimits),
-            TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex(            "(a+)+$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.True(regex.Analyze().IsFullyNative);
         var destination = new Utf8Pcre2MatchData[8];
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.MatchMany(CreateCatastrophicInput(), destination, out _));
@@ -76,12 +72,10 @@ public sealed class Pcre2TimeoutIdentityTests
     [Fact]
     public void CatastrophicReplaceReportsTimeoutIdentity()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(a+)+$",
-            Pcre2CompileOptions.None,
-            default,
-            default(Utf8Pcre2ExecutionLimits),
-            TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex(            "(a+)+$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.True(regex.Analyze().IsFullyNative);
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.Replace(CreateCatastrophicInput(), "Z"));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);
@@ -90,12 +84,10 @@ public sealed class Pcre2TimeoutIdentityTests
     [Fact]
     public void CatastrophicEnumerateReportsTimeoutIdentity()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(a+)+$",
-            Pcre2CompileOptions.None,
-            default,
-            default(Utf8Pcre2ExecutionLimits),
-            TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex(            "(a+)+$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.True(regex.Analyze().IsFullyNative);
         Pcre2MatchException? caught = null;
         try
@@ -118,12 +110,10 @@ public sealed class Pcre2TimeoutIdentityTests
     [Fact]
     public void CatastrophicMatchDetailedReportsTimeoutIdentity()
     {
-        var regex = new Utf8Pcre2Regex(
-            "(a+)+$",
-            Pcre2CompileOptions.None,
-            default,
-            default(Utf8Pcre2ExecutionLimits),
-            TimeSpan.FromMilliseconds(1));
+        var regex = new Utf8Pcre2Regex(            "(a+)+$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(1)
+        });
         Assert.True(regex.Analyze().IsFullyNative);
         var exception = Assert.Throws<Pcre2MatchException>(() => regex.MatchDetailed(CreateCatastrophicInput()));
         Assert.Equal(Pcre2ErrorKind.Timeout, exception.ErrorKind);

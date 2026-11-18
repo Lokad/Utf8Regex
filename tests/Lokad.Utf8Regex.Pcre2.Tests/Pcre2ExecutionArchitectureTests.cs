@@ -112,12 +112,14 @@ public sealed class Pcre2ExecutionArchitectureTests
     {
         var ordinary = new Utf8Pcre2Regex("^a+$");
         var captured = new Utf8Pcre2Regex("(a)");
-        var limited = new Utf8Pcre2Regex(
-            "^(a+)+b$",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Timeout.InfiniteTimeSpan);
+        var limited = new Utf8Pcre2Regex(            "^(a+)+b$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 
         Assert.False(ordinary.IsMatch("a"u8, 0, Pcre2MatchOptions.NotBol));
         Assert.False(ordinary.IsMatch("xa"u8, 1));
@@ -150,8 +152,15 @@ public sealed class Pcre2ExecutionArchitectureTests
         first.ReleaseWorking(64);
         Assert.Equal(0UL, first.ReservedWorkingBytes);
 
-        var regex = new Utf8Pcre2Regex("(é)(😀)", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000000, HeapLimitInBytes = 1000000 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(é)(😀)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000000,
+                MaxWorkingBytes = 1000000
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         var input = Utf8ValidatedInput.Create("é😀é😀"u8);
         var left = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, input, new(0), regex.DebugCompiledProgram.Request, CancellationToken.None);
@@ -244,12 +253,10 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Fact]
     public void BacktrackingCaptureStateUsesOneFixedRentPerCandidate()
     {
-        var regex = new Utf8Pcre2Regex(
-            @"(?:(?<n>f.o)|(?<n>b.r))\k<n>",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(            @"(?:(?<n>f.o)|(?<n>b.r))\k<n>", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 
         var input = "foofoo barbar xx foofoo"u8;
         var compiled = regex.DebugCompiledProgram;
@@ -276,36 +283,36 @@ public sealed class Pcre2ExecutionArchitectureTests
     {
         var branchResetBasic = new Utf8Pcre2Regex(@"(?|(abc)|(xyz))");
         var branchReset = new Utf8Pcre2Regex(@"(?|(abc)|(xyz))\1");
-        var duplicateNames = new Utf8Pcre2Regex(
-            @"(?:(?<n>foo)|(?<n>bar))\k<n>",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Timeout.InfiniteTimeSpan);
-        var branchResetFollowup = new Utf8Pcre2Regex(
-            @"(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\k'a'",
-            Pcre2CompileOptions.None,
-            new Utf8Pcre2CompileSettings { AllowDuplicateNames = true },
-            default(Utf8Pcre2ExecutionLimits),
-            Timeout.InfiniteTimeSpan);
+        var duplicateNames = new Utf8Pcre2Regex(            @"(?:(?<n>foo)|(?<n>bar))\k<n>", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
+        var branchResetFollowup = new Utf8Pcre2Regex(            @"(?|(?'a'aaa)|(?'a'b))(?'a'cccc)\k'a'", options:             Pcre2CompileOptions.None, compileSettings:             new Utf8Pcre2CompileSettings { AllowDuplicateNames = true }, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var ambiguousPrefixes = new Utf8Pcre2Regex(@"(?|(a|ab))(c|bcd)");
         var relativeBackreference = new Utf8Pcre2Regex(@"(?|(ab))\g{-1}");
         var unicodeBackreference = new Utf8Pcre2Regex(@"(?|(é)|(λ))\1");
         var optionalCapture = new Utf8Pcre2Regex(@"foo(?<Bar>BAR)?");
         var greedyRepeat = new Utf8Pcre2Regex(@"(?:a){1,3}a");
         var lazyRepeat = new Utf8Pcre2Regex(@"(?:a){1,3}?a");
-        var metered = new Utf8Pcre2Regex(
-            @"(?|(abc)|(xyz))",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 100 },
-            Timeout.InfiniteTimeSpan);
-        var tightlyMetered = new Utf8Pcre2Regex(
-            @"(?|(abc)|(xyz))\1",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 1 },
-            Timeout.InfiniteTimeSpan);
+        var metered = new Utf8Pcre2Regex(            @"(?|(abc)|(xyz))", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
+        var tightlyMetered = new Utf8Pcre2Regex(            @"(?|(abc)|(xyz))\1", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 
         AssertFiniteLiteralLanguagePlan(branchResetBasic);
         AssertFiniteLiteralLanguagePlan(branchReset);
@@ -403,8 +410,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var nonExact = new Utf8Pcre2Regex(@"([a-z]+)\1");
         var caseless = new Utf8Pcre2Regex(@"(?i:(abc))\1");
         var nonRootAtomic = new Utf8Pcre2Regex(@"(?>a\Kbz|ab)c");
-        var tooManyAlternatives = new Utf8Pcre2Regex(
-            "(?|" + string.Join('|', Enumerable.Range(0, 65).Select(static i => $"(v{i:D2})")) + ")");
+        var tooManyAlternatives = new Utf8Pcre2Regex(            "(?|" + string.Join('|', Enumerable.Range(0, 65).Select(static i => $"(v{i:D2})")) + ")");
         var tooLong = new Utf8Pcre2Regex($"(?|({new string('a', 4097)}))");
         var unboundedRepeat = new Utf8Pcre2Regex(@"(?:ab|cd)+z");
         var possessiveRepeat = new Utf8Pcre2Regex(@"(?:a|b){1,2}+a");
@@ -429,12 +435,14 @@ public sealed class Pcre2ExecutionArchitectureTests
         var duplicateLanguage = new Utf8Pcre2Regex(@"(?:a\Kb|ab)");
         var resetAtEnd = new Utf8Pcre2Regex(@"ab\K");
         var unicode = new Utf8Pcre2Regex(@"é\Kλ");
-        var metered = new Utf8Pcre2Regex(
-            @"abc\K123",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 100 },
-            Timeout.InfiniteTimeSpan);
+        var metered = new Utf8Pcre2Regex(            @"abc\K123", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 
         AssertFiniteLiteralBoundaryResetPlan(global);
         AssertFiniteLiteralBoundaryResetPlan(alternative);
@@ -553,7 +561,7 @@ public sealed class Pcre2ExecutionArchitectureTests
     {
         var subjectAnchored = new Utf8Pcre2Regex("^(a+)+b$");
         var firstMatchingPosition = new Utf8Pcre2Regex(@"\G(a+)+b$");
-        var multiline = new Utf8Pcre2Regex("^(a+)+b$", Pcre2CompileOptions.Multiline);
+        var multiline = new Utf8Pcre2Regex("^(a+)+b$", options: Pcre2CompileOptions.Multiline);
 
         Assert.False(subjectAnchored.IsMatch("zaab"u8, 1));
         Assert.False(subjectAnchored.IsMatch("aab"u8, 0, Pcre2MatchOptions.NotBol));
@@ -605,12 +613,14 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Fact]
     public void MeteredAnchorIsMatchServesSliceUnderVisitBudget()
     {
-        var regex = new Utf8Pcre2Regex(
-            "^a+b$",
-            Pcre2CompileOptions.None,
-            default,
-            new Utf8Pcre2ExecutionLimits { MatchLimit = 100 },
-            Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(            "^a+b$", options:             Pcre2CompileOptions.None, compileSettings:             default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 100
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
 
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
 

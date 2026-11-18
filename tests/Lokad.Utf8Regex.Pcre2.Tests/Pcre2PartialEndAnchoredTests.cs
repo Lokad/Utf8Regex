@@ -23,7 +23,7 @@ public sealed class Pcre2PartialEndAnchoredTests
     [InlineData(Pcre2PartialMode.Soft)] [InlineData(Pcre2PartialMode.Hard)]
     public void CompiledEndAnchoredAlsoRejectsPartial(Pcre2PartialMode mode)
     {
-        var regex = new Utf8Pcre2Regex("(a)b+", Pcre2CompileOptions.EndAnchored);
+        var regex = new Utf8Pcre2Regex("(a)b+", options: Pcre2CompileOptions.EndAnchored);
         var error = Assert.Throws<Pcre2MatchException>(() => { _ = regex.Probe("abbb"u8, mode); });
         Assert.Equal("BadOption", error.ErrorKind.ToString());
     }
@@ -34,7 +34,7 @@ public sealed class Pcre2PartialEndAnchoredTests
     public void ValidNonPartialCompiledEndAnchoredFindsLaterCandidatesAndAlternatives(
         string pattern, string text, int start, int end)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.EndAnchored);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.EndAnchored);
         var input = System.Text.Encoding.UTF8.GetBytes(text);
         var expected = regex.MatchDetailed(input);
         Assert.Equal((start, end), (expected.GetGroup(0).StartOffsetInBytes, expected.GetGroup(0).EndOffsetInBytes));
@@ -47,8 +47,17 @@ public sealed class Pcre2PartialEndAnchoredTests
     public void ValidEndAnchoredCapturePublicationRetainsFiniteAuthorityAndSnapshots()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(2);
-        Utf8Pcre2Regex Create(ulong resultBytes) => Utf8Pcre2Regex.Create("(?<head>a)b+", Pcre2CompileOptions.EndAnchored, default,
-            new() { MaxWorkSteps = 100000, MaxDepth = 256, MaxWorkingBytes = 1 << 20, MaxResultBytes = resultBytes }, Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong resultBytes) => new Utf8Pcre2Regex("(?<head>a)b+", options: Pcre2CompileOptions.EndAnchored, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new()
+            {
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = resultBytes
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.ResultLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("😀abxabbb"u8, Pcre2PartialMode.None); }).ErrorKind);
         var regex = Create(capacity);
@@ -64,8 +73,16 @@ public sealed class Pcre2PartialEndAnchoredTests
     [Fact]
     public void InvalidCombinationIsStructuredAndPreCancellationKeepsItsToken()
     {
-        var regex = new Utf8Pcre2Regex("(a)b+", Pcre2CompileOptions.EndAnchored, default,
-            new() { MatchLimit = 1, HeapLimitInBytes = 1, ResultLimitInBytes = 1 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(a)b+", options: Pcre2CompileOptions.EndAnchored, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1,
+                MaxWorkingBytes = 1,
+                MaxResultBytes = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal("BadOption", Assert.Throws<Pcre2MatchException>(() =>
         { _ = regex.Probe("abbb"u8, Pcre2PartialMode.Soft); }).ErrorKind.ToString());
         using var source = new CancellationTokenSource();

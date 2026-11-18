@@ -11,8 +11,15 @@ public sealed class Pcre2ProbePublicationAuthorityTests
     [InlineData(false)] [InlineData(true)]
     public void LiteralFullProbeFundsProjectionAndItsResultArray(bool heap)
     {
-        var regex = new Utf8Pcre2Regex("A", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = heap ? 0u : 1u, HeapLimitInBytes = heap ? 1UL : 0UL }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("A", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = (heap ? 0u : 1u) == 0 ? null : (heap ? 0u : 1u),
+                MaxWorkingBytes = (heap ? 1UL : 0UL) == 0 ? null : (heap ? 1UL : 0UL)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.Equal(heap ? Pcre2ErrorKind.HeapLimit : Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => { _ = regex.Probe("A"u8, Pcre2PartialMode.None); }).ErrorKind);
@@ -22,7 +29,10 @@ public sealed class Pcre2ProbePublicationAuthorityTests
     public void LiteralProbeObservesTheOriginalLiveTokenDuringExecution()
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("A", Pcre2CompileOptions.None, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("A", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {
@@ -67,8 +77,15 @@ public sealed class Pcre2ProbePublicationAuthorityTests
     [InlineData(Pcre2PartialMode.Hard, Utf8Pcre2ProbeKind.PartialMatch)]
     public void FiniteLiteralEndAssertionKeepsScalarRanges(Pcre2PartialMode mode, Utf8Pcre2ProbeKind kind)
     {
-        var regex = new Utf8Pcre2Regex(@"é😀\z", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1000, HeapLimitInBytes = 4096 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(@"é😀\z", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1000,
+                MaxWorkingBytes = 4096
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         var result = regex.Probe("xé😀"u8, mode, 1, Pcre2MatchOptions.None);
         Assert.Equal(kind, result.Kind);
         Assert.Equal((1, 7), (result.Value.StartOffsetInBytes, result.Value.EndOffsetInBytes));
@@ -90,14 +107,26 @@ public sealed class Pcre2ProbePublicationAuthorityTests
     public void LiteralFullArrayHasAnExactMajorCapacityCutoffWhilePartialStaysInline()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(1);
-        Utf8Pcre2Regex Create(ulong bytes) => new(@"é😀\z", Pcre2CompileOptions.None, default,
-            new() { HeapLimitInBytes = bytes }, Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong bytes) => new(@"é😀\z", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = (bytes) == 0 ? null : (bytes)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, Create(capacity).Probe("é😀"u8, Pcre2PartialMode.Soft).Kind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("é😀"u8, Pcre2PartialMode.Soft); }).ErrorKind);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, Create(1).Probe("é😀"u8, Pcre2PartialMode.Hard).Kind);
-        var suffix = new Utf8Pcre2Regex("é😀a", Pcre2CompileOptions.None, default,
-            new() { HeapLimitInBytes = 1 }, Timeout.InfiniteTimeSpan).Probe("xé😀"u8, Pcre2PartialMode.Soft, 1);
+        var suffix = new Utf8Pcre2Regex("é😀a", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        }).Probe("xé😀"u8, Pcre2PartialMode.Soft, 1);
         Assert.Equal(Utf8Pcre2ProbeKind.PartialMatch, suffix.Kind);
         Assert.Equal((1, 7), (suffix.Value.StartOffsetInBytes, suffix.Value.EndOffsetInBytes));
     }
@@ -105,7 +134,10 @@ public sealed class Pcre2ProbePublicationAuthorityTests
     [Fact]
     public void LiteralProjectionKeepsTheDeadlineThatStartedWithItsKernel()
     {
-        var regex = new Utf8Pcre2Regex("é😀", Pcre2CompileOptions.None, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("é😀", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var compiled = regex.DebugCompiledProgram;
         var literal = Assert.IsType<Pcre2LiteralDirectProgram>(compiled.Operations.Match);
         var nativePolls = -1;

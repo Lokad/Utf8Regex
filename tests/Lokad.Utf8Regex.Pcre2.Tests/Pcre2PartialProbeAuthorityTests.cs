@@ -12,8 +12,14 @@ public sealed class Pcre2PartialProbeAuthorityTests
     [InlineData("(a)b+", "zzzz")]
     public void SpecializedProbeDiscoveryCannotBypassWork(string pattern, string text)
     {
-        var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 1 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.NotEqual(Pcre2PartialProbeProgramKind.None, regex.DebugCompiledProgram.PartialProbe.Kind);
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() =>
@@ -23,8 +29,14 @@ public sealed class Pcre2PartialProbeAuthorityTests
     [Fact]
     public void SpecializedFullProbeAdmitsItsOwnedArray()
     {
-        var regex = new Utf8Pcre2Regex("(a)b+", Pcre2CompileOptions.None, default,
-            new() { HeapLimitInBytes = 1 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("(a)b+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = 1
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = regex.Probe("abbb"u8, Pcre2PartialMode.Soft); }).ErrorKind);
     }
@@ -34,7 +46,10 @@ public sealed class Pcre2PartialProbeAuthorityTests
     public void SpecializedLoopObservesOriginalInterruption(bool cancel)
     {
         using var source = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("(a)b+", Pcre2CompileOptions.None, default, default, TimeSpan.FromMilliseconds(20));
+        var regex = new Utf8Pcre2Regex("(a)b+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
         var polls = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {
@@ -70,8 +85,15 @@ public sealed class Pcre2PartialProbeAuthorityTests
     [InlineData(8190)] [InlineData(8191)] [InlineData(8192)]
     public void ControlledLiteralAlternationKeepsChunkBoundaryHitsAndPartialTails(int start)
     {
-        var regex = new Utf8Pcre2Regex("cat|horse", Pcre2CompileOptions.None, default,
-            new() { MatchLimit = 10000, HeapLimitInBytes = 4096 }, Timeout.InfiniteTimeSpan);
+        var regex = new Utf8Pcre2Regex("cat|horse", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkSteps = 10000,
+                MaxWorkingBytes = 4096
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Pcre2PartialProbeProgramKind.LiteralAlternation, regex.DebugCompiledProgram.PartialProbe.Kind);
         var hit = Encoding.UTF8.GetBytes(new string('x', start) + "horse");
         var full = regex.Probe(hit, Pcre2PartialMode.Soft);
@@ -87,8 +109,14 @@ public sealed class Pcre2PartialProbeAuthorityTests
     public void SpecializedFullArrayHasExactCapacityAndPartialRangeStaysInline()
     {
         var capacity = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(2);
-        Utf8Pcre2Regex Create(ulong heap) => new("(a)b+", Pcre2CompileOptions.None, default,
-            new() { HeapLimitInBytes = heap }, Timeout.InfiniteTimeSpan);
+        Utf8Pcre2Regex Create(ulong heap) => new("(a)b+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy
+            {
+                MaxWorkingBytes = (heap) == 0 ? null : (heap)
+            },
+            MatchTimeout = Timeout.InfiniteTimeSpan
+        });
         Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, Create(capacity).Probe("abbb"u8, Pcre2PartialMode.Soft).Kind);
         Assert.Equal(Pcre2ErrorKind.HeapLimit, Assert.Throws<Pcre2MatchException>(() =>
         { _ = Create(capacity - 1).Probe("abbb"u8, Pcre2PartialMode.Soft); }).ErrorKind);
