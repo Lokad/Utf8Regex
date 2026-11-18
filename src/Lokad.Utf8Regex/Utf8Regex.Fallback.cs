@@ -111,32 +111,6 @@ public sealed partial class Utf8Regex
     private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
         => _requiresKelvinSignFallback && ContainsKelvinSign(input);
 
-    // Native replacement splicers require complete scalar endpoints. Mixed
-    // subjects outside these qualified shapes use the cached scalar program.
-    private bool CanUseScalarAlignedNativeReplacement(ReadOnlySpan<byte> input)
-    {
-        if (input.IndexOfAnyInRange((byte)0xF0, byte.MaxValue) < 0)
-        {
-            return true;
-        }
-
-        if (_groupedLiteralSpanTable is not null)
-        {
-            return true;
-        }
-
-        if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or
-            NativeExecutionKind.ExactUtf8Literal or
-            NativeExecutionKind.ExactUtf8Literals or
-            NativeExecutionKind.AsciiLiteralIgnoreCase or
-            NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
     private static bool ContainsKelvinSign(ReadOnlySpan<byte> input)
         => input.IndexOf("K"u8) >= 0;
 

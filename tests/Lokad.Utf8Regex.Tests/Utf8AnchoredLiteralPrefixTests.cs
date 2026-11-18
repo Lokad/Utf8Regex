@@ -88,6 +88,8 @@ public sealed class Utf8AnchoredLiteralPrefixTests
         yield return new object?[] { "^Test_123", "xTest_123" };
         yield return new object?[] { "^a-b", "a-bx" };
         yield return new object?[] { "^a-b", "xa-b" };
+        yield return new object?[] { "^((ab)c)", "abc😀abc" };
+        yield return new object?[] { @"\A((ab)c)", "x😀abc" };
     }
 
     [Theory]

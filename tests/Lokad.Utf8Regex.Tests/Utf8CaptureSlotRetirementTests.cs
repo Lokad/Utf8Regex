@@ -1,7 +1,5 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -11,55 +9,6 @@ public sealed class Utf8CaptureSlotRetirementTests
     public void ShippedCoreRetainsNoSecondCaptureNumberingTranslator()
     {
         Assert.Null(typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8BclSlotTranslator"));
-    }
-
-    [Theory]
-    [InlineData("(?<outer>a(?<inner>😀)b)")]
-    [InlineData("(a)(?<outer>(?<inner>😀))")]
-    [InlineData("(?<outer>a(?<inner>😀)?b)")]
-    public void CaptureMapsPreserveAlreadyFinalizedCatalogNumbers(string pattern)
-    {
-        var analyzed = Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant);
-        var prepared = Lokad.Utf8Regex.Internal.Planning.Utf8RegexPreparer.Prepare(analyzed);
-        var root = analyzed.SemanticRegex.RuntimeTree!.Root;
-        var catalog = prepared.SemanticRegex.CaptureCatalog!;
-        Assert.Same(catalog, prepared.ScalarProgram!.CaptureCatalog);
-        Assert.False(catalog.HasSharedCaptureDeclarations);
-        Assert.False(catalog.HasExplicitCaptureNumbers);
-        IEnumerable<int> mapped;
-        {
-            var table = Assert.IsType<Utf8GroupedLiteralSpanTable>(Utf8GroupedLiteralSpanTable.TryCreate(root, prepared.ScalarProgram!));
-            mapped = table.Groups;
-        }
-        Assert.Equal(catalog.GroupNumbers.Skip(1), mapped.Distinct().Order());
-
-    }
-
-    [Theory]
-    [InlineData("(?<2>é)(?<5>😀)")]
-    [InlineData("(?<x>é)(?<x>😀)")]
-    [InlineData("(?<x>a)|(?<x>😀)")]
-    [InlineData("(?<x>é)(?<y-x>😀)")]
-    public void StatefulCaptureCatalogsDeclineBeforeScratchAndPreserveParentLoans(string pattern)
-    {
-        var analyzed = Utf8FrontEnd.Analyze(pattern, RegexOptions.CultureInvariant);
-        var prepared = Lokad.Utf8Regex.Internal.Planning.Utf8RegexPreparer.Prepare(analyzed);
-        var root = analyzed.SemanticRegex.RuntimeTree!.Root;
-        var program = prepared.ScalarProgram!;
-        Assert.True(program.HasBalancing || program.HasSharedCaptureDeclarations || program.HasExplicitCaptureNumbers);
-        // One work step belongs to acquiring the parent array; no work or
-        // storage remains available to the map producers after that setup.
-        using var owner = new Utf8ConstructionScope(ulong.MaxValue, 48, 1, 0);
-        var parent = owner.Budget.AllocateArray<byte>(1, false);
-        parent[0] = 0xa5;
-        Assert.Null(Utf8GroupedLiteralSpanTable.TryCreate(root, program));
-        Assert.Equal(48ul, owner.Budget.ReservedBytes);
-        Assert.Equal(48ul, owner.Budget.PeakBytes);
-        Assert.Equal(1ul, owner.Budget.WorkSteps);
-        Assert.Equal(0ul, owner.Budget.Depth);
-
-        Assert.Equal((byte)0xa5, parent[0]);
-        owner.Budget.ReleaseArray(parent, false);
     }
 
     public static IEnumerable<object[]> PublicCases()

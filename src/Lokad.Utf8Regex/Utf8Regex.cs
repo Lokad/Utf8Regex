@@ -43,9 +43,7 @@ public sealed partial class Utf8Regex : IDisposable
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
     internal readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
     private readonly bool _hasCaptures;
-    private readonly Utf8GroupedLiteralSpanTable? _groupedLiteralSpanTable;
     private readonly int _wholeLiteralCaptureNumber;
-    private readonly byte[]? _caretAnchoredGroupedLiteralUtf8;
     private readonly Utf8SliceProgram _ownedSliceProgram;
     private readonly Utf8ReplacementPlanCache _replacementCache;
 
@@ -138,25 +136,6 @@ public sealed partial class Utf8Regex : IDisposable
             {
                 _wholeLiteralCaptureNumber = GetWholeLiteralCaptureNumber(captureRoot);
             }
-            // Grouped literal metadata still proves replacement eligibility and an
-            // anchored value-cursor shortcut. Full capture snapshots use the byte
-            // cursor, independently of this remaining native preparation.
-            var scalarCaptureProjection = pattern.IsUtf8 || HasFiniteExecutionLimits || matchTimeout != Regex.InfiniteMatchTimeout ||
-                _hasCaptures && ownedSliceProgram.HasUnicodePatternAtoms;
-            // The anchored prefix table also supplies a value-cursor proof before
-            // scalar selection. Preserve that dependency and its existing fences.
-            _groupedLiteralSpanTable = _hasCaptures && captureRoot is not null && !UsesRightToLeft() &&
-                (!scalarCaptureProjection || _anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix)
-                    ? Utf8GroupedLiteralSpanTable.TryCreate(captureRoot, ownedSliceProgram) : null;
-            // The existing literal proof respects each anchor's scoped options. Borrow
-            // its admitted bytes instead of collecting/copying the execution tree again.
-            _caretAnchoredGroupedLiteralUtf8 =
-                _groupedLiteralSpanTable is { } spanTable &&
-                (options & (RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.NonBacktracking)) == 0 &&
-                _anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
-                _anchoredLiteral.LiteralUtf8 is { Length: > 0 } prefix &&
-                prefix.Length == spanTable.TotalLengthInUtf16
-                    ? prefix : null;
             static bool CanPrioritizePlainAsciiLiteralCount(
                 Utf8ConstructionPattern pattern, Utf8PreparedRegex preparedRegex, RegexOptions options)
             {
@@ -376,18 +355,6 @@ public sealed partial class Utf8Regex : IDisposable
             return directMatch.Success;
         }
 
-        // R05: caret-anchored grouped literals decide every group-agnostic lane
-        // by byte-prefix compare: the absolute start anchor pins the only candidate
-        // at offset 0, so a miss there rules out every substring match and both
-        // directions answer with no BCL verification (group shaping reuses the span
-        // table). Kelvin stays fenced like the direct arms above.
-        if (_caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretIsMatchPrefix &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            return input.Length >= caretIsMatchPrefix.Length &&
-                input.Slice(0, caretIsMatchPrefix.Length).SequenceEqual(caretIsMatchPrefix);
-        }
-
         if (RequiresScalarValueExecution())
         {
             return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
@@ -553,14 +520,6 @@ public sealed partial class Utf8Regex : IDisposable
         if (ShouldUseRightToLeftScalarFallback())
         {
             return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
-        }
-
-        // R05: caret-anchored grouped literals count owned by prefix compare (at
-        // most one match at offset 0); folding and RTL use the routes above.
-        if (_caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretCountPrefix)
-        {
-            return input.Length >= caretCountPrefix.Length &&
-                input.Slice(0, caretCountPrefix.Length).SequenceEqual(caretCountPrefix) ? 1 : 0;
         }
 
         if (RequiresScalarValueExecution())
@@ -767,19 +726,6 @@ public sealed partial class Utf8Regex : IDisposable
             return directMatch;
         }
 
-        // R05: caret-anchored grouped literals match owned by prefix compare (the
-        // absolute start anchor pins the only candidate at offset 0; ASCII bytes
-        // and units coincide, so the value hit needs no BCL verification and
-        // Detailed shapes from it through the span table). Kelvin stays fenced.
-        if (_caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretMatchPrefix &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            return input.Length >= caretMatchPrefix.Length &&
-                input.Slice(0, caretMatchPrefix.Length).SequenceEqual(caretMatchPrefix)
-                ? new Utf8CaptureRange(0, 0 + (caretMatchPrefix.Length))
-                : default(Utf8CaptureRange);
-        }
-
         var canUseAsciiWellFormedOnlyMatch =
             _compiledEngineRuntime.SupportsAsciiWellFormedOnlyMatch &&
             CanUseAsciiDirectInput(input);
@@ -948,17 +894,6 @@ public sealed partial class Utf8Regex : IDisposable
                     new Utf8OperationMatchCursor(input, foldedSuffixLiteral, CreateExecutionBudget(), _anchoredLiteral.Kind))
                     .WithTimeoutMapping(input, this);
             }
-        }
-
-        // R05: caret-anchored grouped literals enumerate the single anchored hit
-        // through the anchor-enforcing prefix cursor (group-agnostic value spans;
-        // shaping reuses the span table). Kelvin stays fenced like the direct arms.
-        if (_caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretEnumeratePrefix &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            return new Utf8ValueMatchEnumerator(
-                new Utf8OperationMatchCursor(input, caretEnumeratePrefix, CreateExecutionBudget()))
-                .WithTimeoutMapping(input, this);
         }
 
         if (GetOwnedSliceProgram(input) is { } ownedProgram)
@@ -1130,20 +1065,6 @@ public sealed partial class Utf8Regex : IDisposable
             (CanUseNativeSplit(validation) || isAnchoredDirectSplitFamily))
         {
             return CreateSplitEnumeratorViaCompiledEngine(input, validation, count, budget)
-                .WithTimeoutMapping(this);
-        }
-
-        // R05: caret-anchored grouped literals split the single anchored hit through
-        // the anchor-enforcing prefix cursor (group-agnostic segments). Counts below 2
-        // return the scalar tail through the general owned split preparation.
-        if (count > 1 &&
-            _caretAnchoredGroupedLiteralUtf8 is { Length: > 0 } caretSplitPrefix &&
-            !ShouldUseKelvinSignFallback(input))
-        {
-            return new Utf8ValueSplitEnumerator(
-                input,
-                new Utf8OperationMatchCursor(input, caretSplitPrefix, CreateExecutionBudget()),
-                count)
                 .WithTimeoutMapping(this);
         }
 
