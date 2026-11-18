@@ -351,6 +351,52 @@ internal static partial class Utf8SliceRunner
         return new(found, found ? outcome.EndIndex : -1, outcome.Breach, null, null);
     }
 
+    internal static int FindTerminalRepeatWithoutRewind(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    {
+        var code = program.Instructions.AsSpan();
+        if (code.Length < 14 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return -1;
+        var end = Utf8SliceProgram.FindTerminalEnd(code[..^1]);
+        if (end < 12) return -1;
+        var afterRepeats = end;
+        for (var skipped = 0; skipped < 32 && code[afterRepeats - 1].Kind == Utf8SliceInstructionKind.CaptureEnd; skipped++)
+        {
+            budget.ChargeWork(1);
+            if (--afterRepeats < 12) return -1;
+        }
+
+        // Three adjacent single-atom repeats, each with an instruction for
+        // entering, consuming, looping and leaving.
+        var last = afterRepeats - 4;
+        var optional = last - 4;
+        var first = optional - 4;
+        budget.ChargeWork(3);
+        if (code[first] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMaximum: long.MaxValue } ||
+            code[optional] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
+                RepeatMinimum: 0, RepeatMaximum: 1 } ||
+            code[last] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
+                RepeatMinimum: 0, RepeatMaximum: long.MaxValue } ||
+            !IsSingleAtomRepeat(code, first, code[first]) || !IsSingleAtomRepeat(code, optional, code[optional]) ||
+            !IsSingleAtomRepeat(code, last, code[last]) ||
+            code[optional + 1] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 and not '\n' } separator)
+            return -1;
+
+        var atom = code[first + 1];
+        var repeated = code[last + 1];
+        if (atom.Kind != repeated.Kind || atom.B != 0 || repeated.B != 0 || atom.C != 0 || repeated.C != 0) return -1;
+        // Giving back part of the first run cannot expose the separator.
+        // The second repeat can reach the same end and no capture separates them.
+        if (atom.Kind == Utf8SliceInstructionKind.Literal)
+            return atom.A == repeated.A && atom.A != separator.A && atom.A != '\n' ? first : -1;
+        if (atom.Kind != Utf8SliceInstructionKind.Set)
+        {
+            var categories = program.GetCompleteAsciiCategoryMask(atom);
+            if (categories == 0 || program.GetCompleteAsciiCategoryMask(repeated) != categories) return -1;
+        }
+        var mask = program.SetMasks[atom.A];
+        return (mask[separator.A >> 3] & (1 << (separator.A & 7))) == 0 && (mask['\n' >> 3] & (1 << ('\n' & 7))) == 0 &&
+            mask.AsSpan().SequenceEqual(program.SetMasks[repeated.A]) ? first : -1;
+    }
+
     private static bool TryRunClassRepeatWithoutRewind(Utf8SliceProgram program, int repeatIndex,
         ReadOnlySpan<byte> input, int start, int? requiredEnd, ref Utf8SliceInvocation invocation,
         out Utf8SliceMatchOutcome outcome, out int continuation, bool existenceOnly)
@@ -381,9 +427,9 @@ internal static partial class Utf8SliceRunner
             continuation = instructions.Length - 1;
             return true;
         }
-        // A pure atom repeated an exact number of times has one endpoint,
-        // independently of its tail or an enclosing assertion's required end.
-        if (repeat.RepeatMinimum == repeat.RepeatMaximum)
+        // A fixed count or a proved terminal continuation needs one endpoint.
+        if (repeat.RepeatMinimum == repeat.RepeatMaximum ||
+            requiredEnd is null && repeatIndex == program.TerminalRepeatWithoutRewind)
         {
             var fixedRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             outcome = new(fixedRepeat.EndIndex >= 0, fixedRepeat.EndIndex, fixedRepeat.Breach, null, null);

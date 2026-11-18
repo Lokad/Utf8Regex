@@ -61,6 +61,23 @@ public sealed class Utf8AnchoredLiteralSuffixTests
         Assert.Equal(0, regex.Count(nearMiss, token.Token));
     }
 
+    [Fact]
+    public void EquivalentTerminalRepeatsKeepPlausibleMissesWithinLinearWork()
+    {
+        using var regex = Utf8Regex.Compile(@"\A(?<number>\d*\.?\d*)$", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2048 }
+        });
+        using var token = new CancellationTokenSource();
+        var nearMiss = Encoding.UTF8.GetBytes(new string('7', 1024) + "x1");
+        Assert.False(regex.IsMatch(nearMiss, token.Token));
+        Assert.Equal(0, regex.Count(nearMiss, token.Token));
+        using var cursor = regex.CreateMatchCursor("١٢.٣\n"u8.ToArray(), cancellationToken: token.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal("١٢.٣", Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        Assert.Equal(7, match.Value.EndOffsetInBytes);
+    }
+
     [Theory]
     [InlineData(@"\n$", "😀\n\n")]
     [InlineData(@"abc\n\Z", "😀abc\n")]

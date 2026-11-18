@@ -895,6 +895,7 @@ internal static class Pcre2BacktrackingRunner
 
                     case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
                         var possessiveCount = 0;
+                        var meterPossessive = !budget.IsUnmetered;
                         var asciiByteSet =
                             instruction.Token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
                             (instruction.Token.Options & Pcre2CharacterOptions.Caseless) == 0
@@ -902,10 +903,12 @@ internal static class Pcre2BacktrackingRunner
                                 : null;
                         while (possessiveCount < instruction.Maximum)
                         {
+                            if (meterPossessive) budget.ChargeWorkspaceStep();
                             if (asciiByteSet is not null && inputIndex < input.Length)
                             {
                                 var remainingMaximum = instruction.Maximum - possessiveCount;
                                 var remainingLength = Math.Min(remainingMaximum, input.Length - inputIndex);
+                                if (meterPossessive) remainingLength = Math.Min(remainingLength, 2048);
                                 var stop = asciiByteSet.IndexOfAnyExcept(input.Slice(inputIndex, remainingLength));
                                 var asciiCount = stop < 0 ? remainingLength : stop;
                                 inputIndex += asciiCount;
@@ -914,6 +917,7 @@ internal static class Pcre2BacktrackingRunner
                                 {
                                     break;
                                 }
+                                if (stop < 0) continue;
                             }
 
                             if (!Pcre2CharacterRunner.TryMatchToken(

@@ -101,11 +101,7 @@ internal sealed class Pcre2BacktrackingLowerer
               start.Kind == Pcre2CharacterTokenKind.BeginningOfLine && (start.Options & Pcre2CharacterOptions.Multiline) == 0) ||
             children[^1] is not Pcre2TokenBacktrackingNode { Token: var end }) return default;
 
-        var strict = end.Kind == Pcre2CharacterTokenKind.EndOfSubject ||
-            end.Kind == Pcre2CharacterTokenKind.EndOfLine && (_request.Options & Pcre2CompileOptions.DollarEndOnly) != 0;
-        if ((end.Kind == Pcre2CharacterTokenKind.EndOfLine && (end.Options & Pcre2CharacterOptions.Multiline) != 0) ||
-            !strict && (end.Kind is not (Pcre2CharacterTokenKind.EndOfLine or Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline) ||
-                _request.Settings.Newline is not (Pcre2NewlineConvention.Default or Pcre2NewlineConvention.Lf))) return default;
+        if (!TryGetTerminalEnd(end, out var allowTrailingLf)) return default;
 
         var allowed = default(Utf8SearchAsciiSet);
         var canMatchEmpty = true;
@@ -135,7 +131,59 @@ internal sealed class Pcre2BacktrackingLowerer
                 allowed = allowed.With((byte)atom.Literal.Value);
             canMatchEmpty = minimum == 0;
         }
-        return (allowed, !strict, canMatchEmpty);
+        return (allowed, allowTrailingLf, canMatchEmpty);
+    }
+
+    private bool TryGetTerminalEnd(Pcre2CharacterToken token, out bool allowTrailingLf)
+    {
+        allowTrailingLf = false;
+        if (token.Kind == Pcre2CharacterTokenKind.EndOfSubject) return true;
+        if (token.Kind == Pcre2CharacterTokenKind.EndOfLine)
+        {
+            if ((token.Options & Pcre2CharacterOptions.Multiline) != 0) return false;
+            if ((_request.Options & Pcre2CompileOptions.DollarEndOnly) != 0) return true;
+        }
+        else if (token.Kind != Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline) return false;
+        allowTrailingLf = true;
+        return _request.Settings.Newline is Pcre2NewlineConvention.Default or Pcre2NewlineConvention.Lf;
+    }
+
+    private int FindTerminalRepeatWithoutRewind(IPcre2BacktrackingNode[] children, Utf8ConstructionBudget budget)
+    {
+        if (children.Length < 4 || children[^1] is not Pcre2TokenBacktrackingNode { Token: var end } ||
+            !TryGetTerminalEnd(end, out _)) return -1;
+        budget.ChargeWork(3);
+        if (children[^4] is not Pcre2RepeatBacktrackingNode { Maximum: int.MaxValue, Preference: Pcre2RepeatPreference.Greedy,
+                Body: Pcre2TokenBacktrackingNode { Token: var first } } ||
+            children[^3] is not Pcre2RepeatBacktrackingNode { Minimum: 0, Maximum: 1,
+                Body: Pcre2TokenBacktrackingNode { Token: { Kind: Pcre2CharacterTokenKind.Literal } separator } } ||
+            children[^2] is not Pcre2RepeatBacktrackingNode { Minimum: 0, Maximum: int.MaxValue,
+                Body: Pcre2TokenBacktrackingNode { Token: var last } } ||
+            first.Kind != last.Kind || ((first.Options | last.Options | separator.Options) & Pcre2CharacterOptions.Caseless) != 0 ||
+            !separator.Literal.IsAscii || separator.Literal.Value == '\n') return -1;
+
+        // The pure second repeat covers the same run on a retry. The optional
+        // separator cannot participate until the first run's maximal endpoint.
+        var separatorByte = (byte)separator.Literal.Value;
+        if (first.Kind == Pcre2CharacterTokenKind.Literal)
+            return first.Literal == last.Literal && first.Literal.Value != separatorByte && first.Literal.Value != '\n'
+                ? children.Length - 4 : -1;
+        if (first.Kind != Pcre2CharacterTokenKind.CharacterClass) return -1;
+        var own = first.CharacterClass;
+        var other = last.CharacterClass;
+        if (own.Negated != other.Negated || own.Terms.Length > 16 || own.Terms.Length != other.Terms.Length ||
+            own.AsciiSet.Contains(separatorByte) || own.AsciiSet.Contains((byte)'\n')) return -1;
+        budget.ChargeWork((ulong)own.Terms.Length);
+        return own.Terms.AsSpan().SequenceEqual(other.Terms) ? children.Length - 4 : -1;
+    }
+
+    private void EmitPossessiveTokenRepeat(Pcre2RepeatBacktrackingNode repeat)
+    {
+        _autoPossessiveRepeatCount++;
+        var token = ((Pcre2TokenBacktrackingNode)repeat.Body).Token;
+        if (token.Kind == Pcre2CharacterTokenKind.CharacterClass && (token.Options & Pcre2CharacterOptions.Caseless) == 0)
+            token.CharacterClass.PrepareAsciiByteSet();
+        _instructions.Add(Pcre2BacktrackingInstruction.CreatePossessiveTokenRepeat(token, repeat.Minimum, repeat.Maximum));
     }
 
     private void EmitNode(
@@ -259,8 +307,14 @@ internal sealed class Pcre2BacktrackingLowerer
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateToken(token.Token));
                     return;
                 case Pcre2SequenceBacktrackingNode sequence:
+                    var terminalRepeat = FindTerminalRepeatWithoutRewind(sequence.Children, budget);
                     for (var index = 0; index < sequence.Children.Length; index++)
                     {
+                        if (index == terminalRepeat)
+                        {
+                            EmitPossessiveTokenRepeat((Pcre2RepeatBacktrackingNode)sequence.Children[index]);
+                            continue;
+                        }
                         Pcre2CharacterToken? childFollowingToken = null;
                         if (index + 1 < sequence.Children.Length)
                         {
@@ -285,20 +339,7 @@ internal sealed class Pcre2BacktrackingLowerer
                         requiredFollowingToken is { } followingToken &&
                         CanAutoPossess(repeat, followingToken);
                     if (autoPossessive)
-                    {
-                        _autoPossessiveRepeatCount++;
-                        var repeatedToken = ((Pcre2TokenBacktrackingNode)repeat.Body).Token;
-                        if (repeatedToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
-                            (repeatedToken.Options & Pcre2CharacterOptions.Caseless) == 0)
-                        {
-                            repeatedToken.CharacterClass.PrepareAsciiByteSet();
-                        }
-
-                        _instructions.Add(Pcre2BacktrackingInstruction.CreatePossessiveTokenRepeat(
-                            repeatedToken,
-                            repeat.Minimum,
-                            repeat.Maximum));
-                    }
+                        EmitPossessiveTokenRepeat(repeat);
                     else if (repeat.Preference == Pcre2RepeatPreference.Greedy &&
                         repeat.Body is Pcre2TokenBacktrackingNode { Token: var collapsibleToken } &&
                         collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass)

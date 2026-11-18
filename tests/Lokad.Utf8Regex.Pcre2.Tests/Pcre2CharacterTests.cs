@@ -22,6 +22,24 @@ public sealed class Pcre2CharacterTests
         Assert.False(regex.Match(nearMiss, cancellationToken: token.Token).Success);
     }
 
+    [Fact]
+    public void EquivalentTerminalRepeatsMeterTheRetainedScan()
+    {
+        const string pattern = @"^[-+]?\d*\.?\d*$";
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128 }
+        });
+        using var token = new CancellationTokenSource();
+        var nearMiss = Encoding.UTF8.GetBytes(new string('7', 1024) + "x1");
+        Assert.False(regex.IsMatch(nearMiss, cancellationToken: token.Token));
+        Assert.Equal(0, regex.Count(nearMiss, cancellationToken: token.Token));
+
+        var longerMiss = Encoding.UTF8.GetBytes(new string('7', 300_000) + "x1");
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(
+            () => regex.IsMatch(longerMiss, cancellationToken: token.Token)).ErrorKind);
+    }
+
     [Theory]
     [InlineData(@"^[-+]?\d*\.?\d*$", "", Pcre2CompileOptions.None, true)]
     [InlineData(@"^[-+]?\d*\.?\d*$", "\n", Pcre2CompileOptions.None, true)]

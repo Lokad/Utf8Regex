@@ -333,6 +333,8 @@ internal sealed class Utf8SliceProgram
         // Instructions and flags are complete before publishing the program.
         // Keep this bounded, allocation-free proof off repeated match attempts.
         HasTerminalCaptureRoot = Utf8SliceRunner.CanRunTerminalCaptureRoot(this);
+        TerminalRepeatWithoutRewind = !rightToLeft && !isNonBacktracking && repeatCount >= 3
+            ? Utf8SliceRunner.FindTerminalRepeatWithoutRewind(this, Utf8ConstructionScope.CurrentBudget) : -1;
         // An absolute start confines an empty match to byte zero. A terminal
         // anchor can then still exclude the last scalar on nonempty extents.
         if (!rightToLeft && !isNonBacktracking && (!canMatchEmpty || instructions is
@@ -494,6 +496,7 @@ internal sealed class Utf8SliceProgram
     internal bool CanMatchEmpty { get; }
     internal bool HasUnicodePatternAtoms { get; }
     internal bool HasTerminalCaptureRoot { get; }
+    internal int TerminalRepeatWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
 
     internal bool RejectsByFinalAscii(ReadOnlySpan<byte> input)
