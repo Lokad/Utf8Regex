@@ -119,7 +119,7 @@ public sealed class Pcre2BranchResetCompilerTests
         Assert.Equal("bar", System.Text.Encoding.UTF8.GetString((bar.Groups[2].Success ? bar7Input.Span.Slice(bar.Groups[2].StartOffsetInBytes, bar.Groups[2].EndOffsetInBytes - bar.Groups[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.True(bar.TryGetFirstSetGroup("n", out var selected));
         Assert.Equal("bar", System.Text.Encoding.UTF8.GetString((selected.Success ? bar7Input.Span.Slice(selected.StartOffsetInBytes, selected.EndOffsetInBytes - selected.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.Equal(2, regex.CopyNumbersForName("n", numbers, out var isMore));
+        Assert.Equal(2, regex.CopyNumbersForUtf8Name("n"u8, numbers, out var isMore));
         Assert.False(isMore);
         Assert.Equal([1, 2], numbers.ToArray());
     }

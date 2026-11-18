@@ -643,31 +643,6 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         return written;
     }
 
-    /// <summary>Copies every capture slot assigned to a possibly duplicated group name.</summary>
-    /// <returns>The number of slot numbers copied; <paramref name="isMore"/> reports whether additional numbers did not fit.</returns>
-    public int CopyNumbersForName(string name, Span<int> destination, out bool isMore)
-    {
-        using var programUse = _programMemory?.Enter();
-        var count = 0;
-        foreach (var entry in NameEntries)
-        {
-            if (string.IsNullOrEmpty(entry.Name) || !string.Equals(entry.Name, name, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            if (count < destination.Length)
-            {
-                destination[count] = entry.Number;
-            }
-
-            count++;
-        }
-
-        isMore = count > destination.Length;
-        return Math.Min(count, destination.Length);
-    }
-
     /// <summary>Returns the compiled expression's execution and result-shaping characteristics.</summary>
     public Utf8Pcre2Analysis Analyze()
     {

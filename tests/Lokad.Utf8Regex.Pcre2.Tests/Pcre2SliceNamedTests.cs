@@ -67,7 +67,7 @@ public sealed class Pcre2SliceNamedTests
         Assert.Equal("a", System.Text.Encoding.UTF8.GetString((context1Captures[1].Success ? context1Input.Slice(context1Captures[1].StartOffsetInBytes, context1Captures[1].EndOffsetInBytes - context1Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal("b", System.Text.Encoding.UTF8.GetString((context1Captures[2].Success ? context1Input.Slice(context1Captures[2].StartOffsetInBytes, context1Captures[2].EndOffsetInBytes - context1Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Span<int> numbers = stackalloc int[2];
-        Assert.Equal(2, regex.CopyNumbersForName("x", numbers, out var isMore));
+        Assert.Equal(2, regex.CopyNumbersForUtf8Name("x"u8, numbers, out var isMore));
         Assert.False(isMore);
         Assert.Equal(new[] { 1, 2 }, numbers.ToArray());
     }

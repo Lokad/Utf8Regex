@@ -191,7 +191,7 @@ public sealed class Utf8Pcre2RegexConstructionTests
         Assert.Equal(2, entries[1].Number);
 
         Span<int> numbers = stackalloc int[2];
-        written = regex.CopyNumbersForName("n", numbers, out isMore);
+        written = regex.CopyNumbersForUtf8Name("n"u8, numbers, out isMore);
         Assert.False(isMore);
         Assert.Equal(2, written);
         Assert.Equal(1, numbers[0]);

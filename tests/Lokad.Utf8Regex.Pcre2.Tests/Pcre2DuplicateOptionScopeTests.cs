@@ -161,7 +161,7 @@ public sealed class Pcre2DuplicateOptionScopeTests
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.False(retained2Captures[2].Success);
         Span<int> numbers = stackalloc int[2];
-        Assert.Equal(2, regex.CopyNumbersForName("x", numbers, out var isMore));
+        Assert.Equal(2, regex.CopyNumbersForUtf8Name("x"u8, numbers, out var isMore));
         Assert.False(isMore);
         Assert.Equal(new[] { 1, 2 }, numbers.ToArray());
         Assert.Equal(2, regex.Count(input, 0, Pcre2MatchOptions.None, cancellation.Token));

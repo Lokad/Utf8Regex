@@ -109,7 +109,6 @@ sealed class Utf8Pcre2Regex : IDisposable
   method Byte[] Replace(ReadOnlySpan<Byte> input, ReadOnlySpan<Byte> replacementPatternUtf8, Int32 startOffsetInBytes = 0, Pcre2SubstitutionOptions substitutionOptions = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
   method Byte[] Replace(ReadOnlySpan<Byte> input, String replacement, Int32 startOffsetInBytes = 0, Pcre2SubstitutionOptions substitutionOptions = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default)
   method Int32 CopyNameEntries(Span<Pcre2NameEntry> destination, out Boolean isMore)
-  method Int32 CopyNumbersForName(String name, Span<Int32> destination, out Boolean isMore)
   method Int32 CopyNumbersForUtf8Name(ReadOnlySpan<Byte> nameUtf8, Span<Int32> destination, out Boolean isMore, Threading.CancellationToken cancellationToken = default)
   method Int32 Count(ReadOnlySpan<Byte> input, Int32 startOffsetInBytes = 0, Pcre2MatchOptions matchOptions = 0, Threading.CancellationToken cancellationToken = default, IUtf8MemoryAllowance workingMemoryAllowance = null)
   method Utf8Pcre2Analysis Analyze()

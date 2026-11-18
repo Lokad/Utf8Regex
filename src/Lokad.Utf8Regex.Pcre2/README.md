@@ -120,6 +120,9 @@ token and deadline. Capture cursors retain named metadata; span enumeration only
 publishes ranges. Borrowed subjects must remain unchanged. The regex-level
 TryGetFirstSetGroup matcher is removed; resolve names on cursor results or copy
 UTF-8 name-to-number metadata for caller-owned capture slots.
+Use `CopyNumbersForUtf8Name` for regex-level number copies; the redundant string
+variant is removed. Host key encoding is outside the call. Complete key validation
+precedes destination writes, and the optional token remains synchronous.
 
 ```csharp
 using System.Text;

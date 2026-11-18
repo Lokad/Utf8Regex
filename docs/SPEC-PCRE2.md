@@ -162,6 +162,9 @@ with a byte offset. Keys are admitted/encoded once and compared ordinally withou
 normalization or key strings. Vector lookup is linear with bounded token checks;
 matching timeout/numeric limits do not govern this explicit metadata operation.
 The funded owner retains its existing use during access. No key alias escapes.
+The redundant regex-level string `CopyNumbersForName` is removed. Hosts encode
+string keys before lookup. Match-context name copies remain available on
+partial-probe results without another regex execution.
 
 Capture slots follow declaration order, including named groups. Names start with
 a Unicode letter or underscore, then letters/digits/underscores; numeric names
@@ -169,8 +172,8 @@ such as `(?<100>a)` fail with InvalidAfterParensQuery before backend selection.
 Capture names are limited to **128 UTF-8 bytes**, verb labels to **255 UTF-8 bytes**.
 
 Cursor snapshots and full probe contexts expose the last value per slot, not Core capture history.
-`CopyNameEntries` and `CopyNumbersForName` expose the name table;
-Context/range-result `TryGetFirstSetGroup` returns the first set slot for a name.
+`CopyNameEntries` and `CopyNumbersForUtf8Name` expose the regex name table;
+context/range-result `TryGetFirstSetGroup` returns the first set slot for a name.
 The regex-level one-shot named matcher is removed: match into caller-owned slots
 and use UTF-8 name-to-number metadata, or resolve names on an existing persistent
 cursor result. Neither form invents Core numeric-name aliases or sparse numeric

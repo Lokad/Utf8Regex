@@ -2,6 +2,10 @@
 
 ## Unreleased — 0.5.0
 
+- Remove PCRE2's redundant regex-level string CopyNumbersForName. Use the existing
+  UTF-8 key method with ordered duplicate copies, complete key validation and an
+  optional token. Match-context name copies remain available. Recompile callers.
+
 - Remove PythonRe FindAllToUtf8, its shaped result carriers and duplicate
   collector. Use capture cursors over stable subject memory; hosts own output
   collections/copies, outside regex resource controls. Cursor snapshots preserve

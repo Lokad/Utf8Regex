@@ -64,7 +64,6 @@ public sealed class Pcre2PolicyOwnershipTests
         Assert.Throws<ObjectDisposedException>(() => regex.CaptureGroupCount);
         Assert.Throws<ObjectDisposedException>(() => regex.NameEntryCount);
         Assert.Throws<ObjectDisposedException>(() => regex.CopyNameEntries(new Pcre2NameEntry[1], out _));
-        Assert.Throws<ObjectDisposedException>(() => regex.CopyNumbersForName("x", new int[1], out _));
         Assert.Throws<ObjectDisposedException>(() => regex.CopyNumbersForUtf8Name("x"u8, new int[1], out _));
         Assert.Throws<ObjectDisposedException>(() => regex.TryCopyPatternUtf8(new byte[20], out _));
         Assert.Throws<ObjectDisposedException>(() => regex.Analyze());

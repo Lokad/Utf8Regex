@@ -469,6 +469,16 @@ program use and input/offset work. The separate explicit cursor allowance entry
 continues to reject null, preserve original-token precedence and refuse storage
 without an uncapped retry. No public validation policy or new execution mode.
 
+### PCRE2 name-number copies
+
+Replace regex-level `CopyNumbersForName(string, ...)` with
+`CopyNumbersForUtf8Name(nameUtf8, ...)`. Encode dynamic string keys in the host;
+UTF-8 literals need no conversion. The existing byte-key entry preserves table
+order, duplicate numbers, truncation and untouched unused destination slots.
+It validates the complete name before writing and accepts a cancellation token.
+Unknown/empty names copy zero. The match-context string method remains available
+on partial-probe results; funded regex metadata still requires an open producer.
+
 ### PCRE2 operation signatures
 
 Short value/context/count, span enumeration, probe, substitution, destination and
