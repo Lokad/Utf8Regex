@@ -11,6 +11,28 @@ public sealed class Utf8BoundedDotCandidateTests
     private static Utf8ResourcePolicy Funded => new() { MaxWorkSteps = 20000000, MaxDepth = 4096, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 << 20 };
 
     [Theory]
+    [InlineData("A Tail xTail", RegexOptions.None, " ")]
+    [InlineData("A Tail Tailx", RegexOptions.Compiled, " ")]
+    [InlineData("A\nTail", RegexOptions.None, null)]
+    [InlineData("A\nTail", RegexOptions.Singleline, "\n")]
+    [InlineData("A😀😀😀😀😀😀😀 Tail", RegexOptions.None, "😀😀😀😀😀😀😀 ")]
+    [InlineData("A😀😀😀😀😀😀😀😀 Tail", RegexOptions.None, null)]
+    public void TerminalWordLiteralKeepsTheLastBoundaryMatch(string text, RegexOptions options, string? gap)
+    {
+        using var regex = Utf8Regex.Compile(@"\AA(?<gap>.{0,8})\bTail\b", options, new Utf8RegexPolicy
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 64, MaxDepth = 1 },
+        });
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        Assert.Equal(gap is not null, regex.IsMatch(input, token.Token));
+        Assert.Equal(gap is not null ? 1 : 0, regex.Count(input, token.Token));
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
+        Assert.Equal(gap is not null, match.Success);
+        if (gap is not null) Assert.Equal(gap, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+    }
+
+    [Theory]
     [InlineData("Watson")]
     [InlineData("W\nend")]
     [InlineData("Wé")]

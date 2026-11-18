@@ -699,6 +699,15 @@ internal static partial class Utf8SliceRunner
             outcome = new(classRepeat.EndIndex >= 0, classRepeat.EndIndex, classRepeat.Breach, null, null);
             return true;
         }
+        var leadingBoundary = -1;
+        if (suffix.Kind == Utf8SliceInstructionKind.Boundary && tail + 1 < instructions.Length &&
+            instructions[tail + 1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 })
+        {
+            // A boundary consumes nothing. Its following literal is still
+            // necessary at the repeat endpoint, including for absence checks.
+            leadingBoundary = tail;
+            suffix = instructions[++tail];
+        }
         // End anchors can succeed only at the subject end or before LF. If the
         // atom excludes LF, no shorter endpoint can satisfy either kind of $.
         var alternateScalar = -1;
@@ -763,7 +772,7 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None || !possible)
                 { outcome = new(false, -1, breach, null, null); return true; }
             }
-            return TryRunGreedyRepeatTerminalLiteral(program, repeatIndex, tail, input, start,
+            return TryRunGreedyRepeatTerminalLiteral(program, repeatIndex, tail, leadingBoundary, input, start,
                 requiredEnd, ref invocation, out outcome);
         }
         if (alternateScalar >= 0)
@@ -831,7 +840,7 @@ internal static partial class Utf8SliceRunner
         return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
     }
 
-    private static bool TryRunGreedyRepeatTerminalLiteral(Utf8SliceProgram program, int repeatIndex, int tail,
+    private static bool TryRunGreedyRepeatTerminalLiteral(Utf8SliceProgram program, int repeatIndex, int tail, int leadingBoundary,
         ReadOnlySpan<byte> input, int start, int? requiredEnd, ref Utf8SliceInvocation invocation,
         out Utf8SliceMatchOutcome outcome)
     {
@@ -856,8 +865,13 @@ internal static partial class Utf8SliceRunner
                 length += written;
             }
         }
-        for (var skipped = 0; skipped < 32 && cursor < instructions.Length &&
-            instructions[cursor].Kind == Utf8SliceInstructionKind.CaptureEnd; skipped++) cursor++;
+        var trailingBoundary = -1;
+        for (var skipped = 0; skipped < 32 && cursor < instructions.Length; skipped++, cursor++)
+        {
+            if (instructions[cursor].Kind == Utf8SliceInstructionKind.CaptureEnd) continue;
+            if (trailingBoundary >= 0 || instructions[cursor].Kind != Utf8SliceInstructionKind.Boundary) break;
+            trailingBoundary = cursor;
+        }
         if (cursor < instructions.Length && instructions[cursor].Kind == Utf8SliceInstructionKind.Jump)
             cursor = instructions[cursor].A;
         if (length == 0 || (uint)cursor >= (uint)instructions.Length ||
@@ -893,8 +907,21 @@ internal static partial class Utf8SliceRunner
             var first = Math.Max(minimumEnd, last - (2048 - length));
             var block = input.Slice(first, last - first + length);
             var hit = length == 1 ? block.LastIndexOf(literal[0]) : block.LastIndexOf(literal[..length]);
-            if (hit >= 0) { selected = first + hit; break; }
-            last = first - 1;
+            if (hit < 0)
+            {
+                last = first - 1;
+                continue;
+            }
+            var candidate = first + hit;
+            if ((leadingBoundary < 0 || MatchesBoundary(program, instructions[leadingBoundary], input, candidate)) &&
+                (trailingBoundary < 0 || MatchesBoundary(program, instructions[trailingBoundary], input, candidate + length)))
+            {
+                selected = candidate;
+                break;
+            }
+            // A byte-identical literal can fail either boundary. Try the next
+            // earlier occurrence, including overlapping literals, in order.
+            last = candidate - 1;
         }
         invocation.Budget.ThrowIfCancellationRequested();
         invocation.Budget.CheckDeadline();
