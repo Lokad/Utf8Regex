@@ -14,7 +14,7 @@ public sealed class Utf8AnchoredOffsetAuthorityTests
     {
         var literal = "abc"u8.ToArray();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromSeconds(20), default);
-        var validation = Utf8InputAnalyzer.Describe(literal, ref invocation);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         var warm = new Utf8OperationMatchCursor(literal, literal, Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix, invocation);
         Assert.True(warm.MoveNext());
         var before = GC.GetAllocatedBytesForCurrentThread();

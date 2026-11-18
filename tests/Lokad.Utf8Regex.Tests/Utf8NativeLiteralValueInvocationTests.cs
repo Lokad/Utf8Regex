@@ -52,15 +52,14 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         foreach (var pattern in new[] { "target", "café", @"\btarget\b", "TARGET" })
         foreach (var compiled in new[] { false, true })
         foreach (var operation in new[] { "ismatch", "count", "match" })
-        foreach (var validationPhase in new[] { false, true })
         foreach (var expire in new[] { false, true })
-            yield return [pattern, compiled, operation, validationPhase, expire];
+            yield return [pattern, compiled, operation, expire];
     }
 
     [Theory]
     [MemberData(nameof(InterruptedOperations))]
-    public void PublicValuesPollDuringValidationAndSearchAndMapOriginalFailure(
-        string pattern, bool compiled, string operation, bool validationPhase, bool expire)
+    public void PublicValueSearchMapsOriginalInterruption(
+        string pattern, bool compiled, string operation, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None) |
@@ -72,13 +71,10 @@ public sealed class Utf8NativeLiteralValueInvocationTests
         Assert.Contains(Prepared(regex).ExecutionKind, new[] {
             NativeExecutionKind.ExactAsciiLiteral, NativeExecutionKind.ExactUtf8Literal, NativeExecutionKind.AsciiLiteralIgnoreCase });
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
         using var source = new CancellationTokenSource();
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps => {
-            if (entered || !validationPhase && steps <= validationSteps) return;
+        var session = Utf8SearchDiagnosticsSession.Start(_ => {
+            if (entered) return;
             entered = true;
             if (expire) clock.Advance(250);
             else source.Cancel();
@@ -150,22 +146,22 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     [InlineData(true, false)]
     [InlineData(false, true)]
     [InlineData(true, true)]
-    public void CountCutoffsIncludeValidationAndEveryMatchWithoutPublishingPartialTotal(bool reverse, bool folded)
+    public void CountCutoffsLeaveNoPartialTotal(bool reverse, bool folded)
     {
         var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant | (folded ? RegexOptions.IgnoreCase : RegexOptions.None));
         var plan = Prepared(regex).SearchPlan;
         var input = Encoding.UTF8.GetBytes("é target 中 TARGET 😀 target " + new string('x', 10000));
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref baseline);
-        var validationSteps = baseline.Budget.Steps;
+        Utf8SliceBufferWork.Checkpoint(ref baseline);
+        var entrySteps = baseline.Budget.Steps;
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan,
             input, reverse, ref baseline, out var count));
         Assert.Equal(folded ? 3 : 2, count);
-        for (var cap = validationSteps; cap < baseline.Budget.Steps; cap++)
+        for (var cap = entrySteps; cap < baseline.Budget.Steps; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            _ = Utf8InputAnalyzer.Describe(input, ref invocation);
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(plan,
                 input, reverse, ref invocation, out var denied));
             Assert.Equal(0, denied);
@@ -207,13 +203,10 @@ public sealed class Utf8NativeLiteralValueInvocationTests
     {
         var regex = new Utf8Regex("target", options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None));
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("target ", 1000)) + new string('x', 320000));
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
         using var source = new CancellationTokenSource();
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps => {
-            if (!entered && steps > validationSteps && Utf8SearchDiagnosticsSession.Current!.SearchCandidates >= 100)
+        var session = Utf8SearchDiagnosticsSession.Start(_ => {
+            if (!entered && Utf8SearchDiagnosticsSession.Current!.SearchCandidates >= 100)
             { entered = true; source.Cancel(); }
         });
         try

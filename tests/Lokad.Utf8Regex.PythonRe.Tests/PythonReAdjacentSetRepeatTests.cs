@@ -130,9 +130,7 @@ public sealed class PythonReAdjacentSetRepeatTests
     {
         const string pattern = @"item\s+[0-9]+";
         var input = Encoding.UTF8.GetBytes("item" + new string(' ', 8192) + "12345");
-        var validation = new Utf8SliceInvocation(new(1_000_000, 1024, 1 << 24, 1 << 24), Timeout.InfiniteTimeSpan, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var cutoff = validation.Budget.Steps + 128;
+        const ulong cutoff = 128;
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

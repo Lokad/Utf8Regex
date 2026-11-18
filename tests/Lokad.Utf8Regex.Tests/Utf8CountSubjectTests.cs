@@ -7,18 +7,17 @@ using Lokad.Utf8Regex.Internal.Input;
 namespace Lokad.Utf8Regex.Tests;
 
 [Collection(Utf8RuntimeAllocationCollection.Name)]
-public sealed class Utf8CountValidationMetadataTests
+public sealed class Utf8CountSubjectTests
 {
     [Theory]
     [InlineData("é")] [InlineData("😀")] [InlineData("夏洛克·福尔摩斯")]
     [InlineData("abcé")] [InlineData("needle")] [InlineData("é|a")]
-    public void LiteralCountsPreserveBothTextPoliciesAtBorrowedAsciiAndUnicodeTails(string pattern)
+    public void LiteralCountsUseBorrowedAsciiAndUnicodeTails(string pattern)
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
         {
             var reference = new Regex(pattern, options);
-            var strict = new Utf8Regex(pattern, options: options);
-            var trusted = new Utf8Regex(pattern, options: options);
+            using var regex = new Utf8Regex(pattern, options: options);
             foreach (var length in new[] { 0, 1, 15, 16, 31, 32, 63, 64, 127, 128, 4095, 4096 })
             foreach (var tail in new[] { "", "é😀 夏洛克·福尔摩斯 abcé needle" })
             {
@@ -28,8 +27,7 @@ public sealed class Utf8CountValidationMetadataTests
                 Array.Fill(storage, (byte)0xff);
                 bytes.CopyTo(storage.AsSpan(5));
                 var expected = reference.Count(text);
-                Assert.Equal(expected, strict.Count(storage.AsSpan(5, bytes.Length)));
-                Assert.Equal(expected, trusted.Count(storage.AsSpan(5, bytes.Length)));
+                Assert.Equal(expected, regex.Count(storage.AsSpan(5, bytes.Length)));
             }
         }
     }
@@ -76,7 +74,7 @@ public sealed class Utf8CountValidationMetadataTests
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2045)] [InlineData(2046)]
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4095)]
-    public void BorrowedAsciiProofKeepsByteLengthAndBoundedWork(int prefix)
+    public void BorrowedAsciiProofUsesTheSelectedSpan(int prefix)
     {
         foreach (var suffix in new[] { "", "é", "中", "😀", "é😀中" })
         {
@@ -85,19 +83,15 @@ public sealed class Utf8CountValidationMetadataTests
             var backing = new byte[bytes.Length + 13];
             bytes.CopyTo(backing.AsSpan(5));
             var input = backing.AsSpan(5, bytes.Length);
-            var full = new Utf8SliceInvocation(new(1_000_000, 0, 0), Timeout.InfiniteTimeSpan, default);
             var flags = new Utf8SliceInvocation(new(1_000_000, 0, 0), Timeout.InfiniteTimeSpan, default);
-            var metadata = Utf8InputAnalyzer.Describe(input, ref full);
             Assert.Equal(suffix.Length == 0, Utf8InputAnalyzer.IsAscii(input, ref flags));
-            Assert.Equal(bytes.Length, metadata.ByteLength);
-            Assert.Equal(suffix.Length == 0, metadata.IsAscii);
             Assert.Equal(0UL, flags.Ledger.ReservedBytes);
         }
     }
 
     [Theory]
     [InlineData("")] [InlineData("ascii")] [InlineData("é")] [InlineData("😀")]
-    public void UnmeteredValidationAlsoReturnsAnExactAsciiProof(string text)
+    public void UnmeteredAsciiProofAgreesWithTheRuntime(string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
@@ -109,7 +103,7 @@ public sealed class Utf8CountValidationMetadataTests
     [InlineData("abc[0-9]{2}", "é😀abc12中abc34")]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "class Alpha record Beta")]
     [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "é😀 class Alpha 中record Wrong record Good")]
-    public void FinitePublicCountUsesTheSameScalarSemanticsAndValidatesTheWholeTail(string pattern, string text)
+    public void FinitePublicCountUsesTheSameScalarSemantics(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })
@@ -185,16 +179,14 @@ public sealed class Utf8CountValidationMetadataTests
     {
         var bytes = Encoding.UTF8.GetBytes(new string('a', prefix) + "é😀" + new string('x', 1 << 20));
         var invocation = new Utf8SliceInvocation(new(8, 0, 0), Timeout.InfiniteTimeSpan, default);
-        var description = Utf8InputAnalyzer.Describe(bytes, ref invocation);
-        Assert.False(description.IsAscii);
-        Assert.Equal(bytes.Length, description.ByteLength);
+        Assert.False(Utf8InputAnalyzer.IsAscii(bytes, ref invocation));
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
 
         // A true ASCII proof still has to inspect every byte under its allowance.
         bytes.AsSpan().Fill((byte)'a');
         invocation = new(new(8, 0, 0), Timeout.InfiniteTimeSpan, default);
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
-            Utf8InputAnalyzer.TryDescribe(bytes, ref invocation, out _));
+        Assert.Throws<InvalidOperationException>(() => Utf8InputAnalyzer.IsAscii(bytes, ref invocation));
+        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
     }
 
 }

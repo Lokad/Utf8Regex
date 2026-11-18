@@ -116,21 +116,16 @@ public sealed class Utf8HexColorValueMatchTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void OriginalInterruptionIsObservedAfterValidation(bool expire)
+    public void OriginalInterruptionIsObservedDuringSearch(bool expire)
     {
         var input = "#ABC123"u8.ToArray();
-        var timeout = TimeSpan.FromMilliseconds(20); var validationReads = 0;
-        using (Utf8ExecutionDeadline.UseClockForDiagnostics(() => { validationReads++; return 0; }))
-        {
-            var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, default);
-            Utf8InputAnalyzer.Describe(input, ref validation);
-        }
+        var timeout = TimeSpan.FromMilliseconds(20);
         using var token = new CancellationTokenSource(); var reads = 0; var entered = false;
         // This constant-width operation never reaches the 64-step diagnostic
-        // hook. Inject through the captured clock after validation's checks.
+        // hook. Let deadline creation succeed, then interrupt its first check.
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {
-            if (++reads <= validationReads) return 0;
+            if (++reads == 1) return 0;
             entered = true;
             if (expire) return 50;
             token.Cancel(); return 0;

@@ -109,9 +109,6 @@ public sealed class Utf8ScalarCountPrefixTests
     {
         const string pattern = "a\\G|b";
         var input = Encoding.UTF8.GetBytes("b" + new string('x', 32768) + "b");
-        var validation = new Utf8SliceInvocation(new(10000000, 0, 0), Timeout.InfiniteTimeSpan, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
         var regex = new Utf8Regex(pattern, options: RegexOptions.RightToLeft, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(20),
@@ -129,7 +126,7 @@ public sealed class Utf8ScalarCountPrefixTests
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps <= validationSteps + 64) return;
+            if (steps <= 64) return;
             entered = true;
             if (expire) ticks = 50;
             else source.Cancel();

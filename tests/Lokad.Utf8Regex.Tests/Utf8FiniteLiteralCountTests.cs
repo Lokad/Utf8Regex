@@ -244,17 +244,13 @@ public sealed class Utf8FiniteLiteralCountTests
     }
 
     [Theory]
-    [InlineData("(a)(b)", false, false)]
-    [InlineData("(a)(b)", false, true)]
-    [InlineData("(a)(b)", true, false)]
-    [InlineData("(a)(b)", true, true)]
-    [InlineData("夏洛克·福尔摩斯", false, false)]
-    [InlineData("夏洛克·福尔摩斯", false, true)]
-    [InlineData("ab|cd|ef", false, false)]
-    [InlineData("ab|cd|ef", false, true)]
-    [InlineData("ab|cd|ef", true, false)]
-    [InlineData("ab|cd|ef", true, true)]
-    public void OriginalInterruptionCoversValidationAndNativeSearch(string pattern, bool validationPhase, bool expire)
+    [InlineData("(a)(b)", false)]
+    [InlineData("(a)(b)", true)]
+    [InlineData("夏洛克·福尔摩斯", false)]
+    [InlineData("夏洛克·福尔摩斯", true)]
+    [InlineData("ab|cd|ef", false)]
+    [InlineData("ab|cd|ef", true)]
+    public void NativeSearchKeepsTheOriginalInterruption(string pattern, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
@@ -265,13 +261,10 @@ public sealed class Utf8FiniteLiteralCountTests
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
             ResourcePolicy = policy
         });
-        var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref probe);
-        var validationSteps = probe.Budget.Steps;
         var triggered = false;
-        var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (triggered || !validationPhase && steps <= validationSteps) return;
+            if (triggered) return;
             triggered = true;
             if (expire) clock.Advance(250); else source.Cancel();
         });

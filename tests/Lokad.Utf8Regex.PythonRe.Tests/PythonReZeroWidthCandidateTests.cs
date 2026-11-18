@@ -14,7 +14,6 @@ public sealed class PythonReZeroWidthCandidateTests
     private static List<(int Start, int End)> Unguided(Utf8SliceProgram program, byte[] input, int start)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref invocation);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         var ranges = new List<(int, int)>();

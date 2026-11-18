@@ -144,8 +144,6 @@ public sealed class PythonReAsciiBoundaryTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(new string(' ', 320000) + "a");
-        var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-        Utf8InputAnalyzer.Describe(input, ref validation);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         var regex = new Utf8PythonRegex(@"\b", options: PythonReCompileOptions.Ascii, policy: new Utf8RegexPolicy()
         {
@@ -153,9 +151,9 @@ public sealed class PythonReAsciiBoundaryTests
             ResourcePolicy = Funded
         });
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (entered || steps <= validation.Budget.Steps) return;
+            if (entered) return;
             entered = true;
             if (expire) ticks += 50; else token.Cancel();
         });

@@ -3,7 +3,6 @@ using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Search;
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Benchmarks;
@@ -14,7 +13,6 @@ internal static class Utf8FallbackReplay
         Utf8StructuralSearchPlan[] candidatePlans,
         Utf8PreparedRegex prepared,
         ReadOnlySpan<byte> input,
-        Utf8ValidationResult validation,
         int startIndex,
         ref Utf8SliceInvocation invocation,
         out int verifierInvocations,
@@ -36,7 +34,7 @@ internal static class Utf8FallbackReplay
             verifierInvocations++;
             Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
             Utf8SearchDiagnosticsSession.Current?.CountVerifierInvocation();
-            var breach = Utf8CandidateVerificationReplay.TryVerifyCandidate(prepared,input, candidate, validation, ref invocation, out verification);
+            var breach = Utf8CandidateVerificationReplay.TryVerifyCandidate(prepared, input, candidate, ref invocation, out verification);
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException($"Scalar candidate verification exceeded {breach}.");
             if (verification.Success)
@@ -74,21 +72,19 @@ internal static class Utf8FallbackReplay
     {
         if (!regex.Inspection.DebugCanGuideFallbackVerification || Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)) return false;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, regex.MatchTimeout, default);
-        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
         invocation.AnchorOriginByte = 0;
         return TryFindNextVerifiedMatch(regex.Inspection.SearchPlan.FallbackCandidatePlans ?? [], regex.Inspection.PreparedRegex,
-            input, validation, 0, ref invocation, out _, out _);
+            input, 0, ref invocation, out _, out _);
     }
 
     internal static int Count(Utf8Regex regex, ReadOnlySpan<byte> input)
     {
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, regex.MatchTimeout, default);
-        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
         invocation.AnchorOriginByte = 0;
         var count = 0;
         var position = 0;
         while ((uint)position <= (uint)input.Length && TryFindNextVerifiedMatch(regex.Inspection.SearchPlan.FallbackCandidatePlans ?? [],
-            regex.Inspection.PreparedRegex, input, validation, position, ref invocation, out _, out var match))
+            regex.Inspection.PreparedRegex, input, position, ref invocation, out _, out var match))
         {
             count++;
             invocation.AnchorOriginByte = match.IndexInBytes + match.LengthInBytes;

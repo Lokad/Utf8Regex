@@ -179,7 +179,7 @@ public sealed class Utf8CoreWorkingPolicyTests
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         var program = new Utf8Regex(pattern, options: options).Inspection.AvailableOwnedSliceProgram!;
         var invocation = new Utf8SliceInvocation(new(0, 0, ulong.MaxValue), Regex.InfiniteMatchTimeout, default);
-        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         invocation.ShareStorageForCursor();
         var probe = new Utf8OperationMatchCursor(program, input, invocation);
         Assert.True(probe.MoveNext());
@@ -200,7 +200,7 @@ public sealed class Utf8CoreWorkingPolicyTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void FiniteWorkingPolicyStillValidatesMalformedTailsAndScalarOffsets(bool compiled)
+    public void FiniteWorkingPolicyStillChecksScalarOffsets(bool compiled)
     {
         var regex = Create("ab", 1_048_576, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8, 1, []));

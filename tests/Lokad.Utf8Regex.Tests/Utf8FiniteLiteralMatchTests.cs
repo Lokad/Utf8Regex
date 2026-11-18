@@ -253,18 +253,14 @@ public sealed class Utf8FiniteLiteralMatchTests
     }
 
     [Theory]
-    [InlineData("validation", false, "needle")]
-    [InlineData("validation", true, "needle")]
-    [InlineData("search", false, "needle")]
-    [InlineData("search", true, "needle")]
+    [InlineData(false, "needle")]
+    [InlineData(true, "needle")]
 
-    [InlineData("validation", false, "needle|other|third|fourth|fifth")]
-    [InlineData("validation", true, "needle|other|third|fourth|fifth")]
-    [InlineData("search", false, "needle|other|third|fourth|fifth")]
-    [InlineData("search", true, "needle|other|third|fourth|fifth")]
+    [InlineData(false, "needle|other|third|fourth|fifth")]
+    [InlineData(true, "needle|other|third|fourth|fifth")]
 
 
-    public void EveryPhaseKeepsTheOriginalCancellationAndAbsoluteDeadline(string phase, bool expire, string pattern)
+    public void SearchKeepsTheOriginalCancellationAndAbsoluteDeadline(bool expire, string pattern)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
@@ -282,18 +278,15 @@ public sealed class Utf8FiniteLiteralMatchTests
         var input = Encoding.UTF8.GetBytes(new string('é', 160000) + "needle");
         var prepared = (Utf8PreparedRegex)typeof(Utf8Regex)
             .GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
-        var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref probe);
-        var validationSteps = probe.Budget.Steps;
+        var discovery = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindNativeLiteralMatch(prepared.SearchPlan,
-            input, 0, input.Length, false, ref probe, out var selected, out var found));
+            input, 0, input.Length, false, ref discovery, out var selected, out var found));
         Assert.True(found);
         Assert.Equal(input.Length - 6, selected.Index);
-        var discoverySteps = probe.Budget.Steps;
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (entered || phase == "search" && steps <= validationSteps) return;
+            if (entered) return;
             entered = true;
             if (expire) clock.Advance(250); else source.Cancel();
         });
@@ -313,7 +306,7 @@ public sealed class Utf8FiniteLiteralMatchTests
     }
 
     [Fact]
-    public void EarlyHitsStillValidateTheWholeSubjectAndObserveCanceledTokensFirst()
+    public void PreCancellationTakesPriorityAtValueEntry()
     {
         var regex = Create("needle");
         byte[] invalid = [.. "needle"u8, 0x80];
@@ -393,11 +386,9 @@ public sealed class Utf8FiniteLiteralMatchTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void BooleanValidationAndSearchKeepOriginalInterruption(bool searchPhase, bool expire)
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BooleanSearchKeepsOriginalInterruption(bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
@@ -413,13 +404,10 @@ public sealed class Utf8FiniteLiteralMatchTests
             }
         });
         var input = Encoding.UTF8.GetBytes(new string('é', 160000) + "needle");
-        var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref probe);
-        var validationSteps = probe.Budget.Steps;
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (entered || searchPhase && steps <= validationSteps) return;
+            if (entered) return;
             entered = true;
             if (expire) clock.Advance(250); else source.Cancel();
         });

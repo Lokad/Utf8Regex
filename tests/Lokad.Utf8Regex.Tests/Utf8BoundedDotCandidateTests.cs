@@ -302,11 +302,9 @@ public sealed class Utf8BoundedDotCandidateTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void OriginalInterruptionIsObservedAfterValidation(bool expire)
+    public void OriginalInterruptionIsObservedDuringSearch(bool expire)
     {
         var input = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("A" + new string('x', 110), 64)));
-        var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8InputAnalyzer.Describe(input, ref validation);
         long ticks = 0; using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var regex = new Utf8Regex("A.{8,25}Z", options: RegexOptions.None, policy: new Utf8RegexPolicy
@@ -315,9 +313,9 @@ public sealed class Utf8BoundedDotCandidateTests
             ResourcePolicy = Funded
         });
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (entered || steps <= validation.Budget.Steps) return;
+            if (entered) return;
             entered = true; if (expire) ticks = 50; else token.Cancel();
         });
         try

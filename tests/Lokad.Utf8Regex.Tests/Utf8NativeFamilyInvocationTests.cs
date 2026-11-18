@@ -423,13 +423,10 @@ public sealed class Utf8NativeFamilyInvocationTests
             MatchTimeout = TimeSpan.FromMilliseconds(200)
         });
         var input = Encoding.UTF8.GetBytes(new string('x', 320000));
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (!entered && steps > validationSteps) { entered = true; clock.Advance(250); }
+            if (!entered) { entered = true; clock.Advance(250); }
         });
         try
         {

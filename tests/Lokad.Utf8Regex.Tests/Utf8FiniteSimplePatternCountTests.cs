@@ -142,12 +142,8 @@ public sealed class Utf8FiniteSimplePatternCountTests
         });
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("b12 ab34 ", 256)));
         var retained = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-        var measured = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1 << 20), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref measured);
-        var validation = measured.Budget.Steps;
         var entered = false;
-        var diagnostics = Utf8SearchDiagnosticsSession.Start(step => {
-            if (step <= validation) return;
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => {
             entered = true; if (expire) ticks = 50; else token.Cancel();
         });
         int? published = null;

@@ -37,7 +37,7 @@ public sealed class Utf8CursorInvocationReservationTests
         // Accounting never roots abandoned arrays or refunds published credits.
         Assert.True(invocation.Ledger.TryReserve(4096 - held));
         var before = invocation.Ledger.ReservedBytes;
-        var validation = Utf8InputAnalyzer.Describe("😀é😀"u8, ref invocation);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         try
         {
             invocation.ShareStorageForCursor();
@@ -56,7 +56,7 @@ public sealed class Utf8CursorInvocationReservationTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static WeakReference[] ExerciseLinearCopies(Utf8SliceProgram program, ref Utf8SliceInvocation invocation, out ulong held)
     {
-        var validation = Utf8InputAnalyzer.Describe("😀é😀"u8, ref invocation);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         invocation.ShareStorageForCursor();
         var cursor = new Utf8OperationMatchCursor(program, "😀é😀"u8, invocation);
         var table = Table(ref cursor)!;

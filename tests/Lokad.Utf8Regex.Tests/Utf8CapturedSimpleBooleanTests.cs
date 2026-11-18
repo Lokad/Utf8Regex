@@ -145,8 +145,6 @@ public sealed class Utf8CapturedSimpleBooleanTests
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(new string('x', 320000) + "1234-5678-1234-456");
-        var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8InputAnalyzer.Describe(input, ref validation);
         var entered = false;
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
         var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
@@ -154,9 +152,9 @@ public sealed class Utf8CapturedSimpleBooleanTests
             MatchTimeout = timeout,
             ResourcePolicy = Funded
         });
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (entered || steps <= validation.Budget.Steps) return;
+            if (entered) return;
             entered = true;
             if (expire) ticks += 50; else token.Cancel();
         });

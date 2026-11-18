@@ -115,13 +115,10 @@ public sealed class Utf8BeginningSearchTests
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
             ResourcePolicy = Policy(1_000_000)
         });
-        var probe = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref probe);
-        var validationSteps = probe.Budget.Steps;
         var triggered = false;
-        var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (triggered || steps <= validationSteps) return;
+            if (triggered) return;
             triggered = true;
             if (expire) clock.Advance(250); else source.Cancel();
         });

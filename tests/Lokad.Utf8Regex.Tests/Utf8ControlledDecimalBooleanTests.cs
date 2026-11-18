@@ -42,13 +42,11 @@ public sealed class Utf8ControlledDecimalBooleanTests
     public void DigitDiscoverySpendsTheOriginalWorkAllowance()
     {
         var input = Encoding.ASCII.GetBytes(new string('1', 4096));
-        var invocation = new Utf8SliceInvocation(default, Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref invocation);
-        var validationWork = invocation.Budget.Steps;
-        var regex = Create(false, validationWork, 65536, 8 << 20, 1);
+        const ulong workLimit = 1;
+        var regex = Create(false, workLimit, 65536, 8 << 20, 1);
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
-        Assert.Equal(validationWork, error.Limit);
+        Assert.Equal(workLimit, error.Limit);
         Assert.True(error.Requested > error.Limit);
         Assert.True(Create(false, 1000000, 65536, 8 << 20, 1).IsMatch(input));
     }
@@ -60,19 +58,14 @@ public sealed class Utf8ControlledDecimalBooleanTests
     [InlineData(true, 4)]
     public void ScalarDiscoveryKeepsOriginalCancellationAndDeadline(bool deadline, int blocks)
     {
-        // 62 full blocks place a diagnostic checkpoint at final publication;
-        // 512 place it while more digit blocks remain.
         var input = Encoding.ASCII.GetBytes(new string('1', blocks * 2048));
-        var probe = new Utf8SliceInvocation(default, Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref probe);
-        var validationWork = probe.Budget.Steps;
         var regex = Create(false, 100000000, 65536, 8 << 20, 1);
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
         var triggered = false;
-        var diagnostics = Utf8SearchDiagnosticsSession.Start(work =>
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (work <= validationWork || triggered) return;
+            if (triggered) return;
             triggered = true;
             if (deadline) clock.Advance(2000); else source.Cancel();
         });

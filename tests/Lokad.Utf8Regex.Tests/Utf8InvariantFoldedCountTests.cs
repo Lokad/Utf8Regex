@@ -237,9 +237,6 @@ public sealed class Utf8InvariantFoldedCountTests
     {
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é Kit k ", 512)));
         using var tokens = new CancellationTokenSource();
-        var validation = new Utf8SliceInvocation(new(1000000, 1, 1, 1), Regex.InfiniteMatchTimeout, tokens.Token);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1000000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
         var regex = new Utf8Regex("kit|k", options: Invariant | (compiled ? RegexOptions.Compiled : 0), policy: new Utf8RegexPolicy
         {
@@ -249,13 +246,13 @@ public sealed class Utf8InvariantFoldedCountTests
         ulong stoppedAt = 0;
         var session = Utf8SearchDiagnosticsSession.Start(step =>
         {
-            if (step > validationSteps) { stoppedAt = step; tokens.Cancel(); }
+            stoppedAt = step; tokens.Cancel();
         });
         try
         {
             var failure = Assert.Throws<OperationCanceledException>(() => regex.Count(input, tokens.Token));
             Assert.Equal(tokens.Token, failure.CancellationToken);
-            Assert.True(stoppedAt > validationSteps);
+            Assert.True(stoppedAt > 0);
         }
         finally { session.Complete(); }
     }

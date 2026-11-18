@@ -175,16 +175,13 @@ public sealed class Utf8CountCaptureElisionTests
                 MaxResultBytes = 1
             }
         });
-        var validation = new Utf8SliceInvocation(new(10000000, 0, 0), Regex.InfiniteMatchTimeout, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var cancellation = new CancellationTokenSource();
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps <= validationSteps + 64) return;
+            if (steps <= 64) return;
             entered = true;
             if (expire) ticks = 50;
             else cancellation.Cancel();

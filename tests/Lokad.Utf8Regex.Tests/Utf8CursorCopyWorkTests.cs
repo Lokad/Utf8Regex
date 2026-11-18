@@ -273,7 +273,7 @@ public sealed class Utf8CursorCopyWorkTests
     private static Utf8OperationMatchCursor Create(Utf8Regex regex, byte[] input, ulong cap, bool owned)
     {
         var invocation = new Utf8SliceInvocation(new(cap, 0, 0), Regex.InfiniteMatchTimeout, default);
-        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         invocation.ShareStorageForCursor();
         return owned ? new Utf8OperationMatchCursor(Program(regex), input, invocation)
             : new Utf8OperationMatchCursor(input, Prepared(regex), false, invocation);

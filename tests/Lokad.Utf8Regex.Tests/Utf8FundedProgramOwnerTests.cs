@@ -255,12 +255,9 @@ public sealed class Utf8FundedProgramOwnerTests
         }, cancellationToken: default);
         var held = programs.Used;
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("alpha-123 ", 1024)));
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation); var validatedSteps = validation.Budget.Steps;
         var reached = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (steps <= validatedSteps) return;
             reached = true; if (timeout) ticks = 100; else token.Cancel();
         });
         try

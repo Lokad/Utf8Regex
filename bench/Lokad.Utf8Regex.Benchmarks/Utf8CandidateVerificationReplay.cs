@@ -1,18 +1,17 @@
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static class Utf8CandidateVerificationReplay
 {
-    // The subject is already strictly validated. Candidate ends can be conservative
+    // The subject is caller-valid UTF-8. Candidate ends can be conservative
     // byte bounds inside a scalar; they never shorten the assertion/matching context.
     // Scratch belongs to the caller's invocation and is released on every exit.
     internal static Utf8ExecutionLimitKind TryVerifyCandidate(
-        Utf8PreparedRegex prepared,ReadOnlySpan<byte> input,
-        Utf8StructuralCandidate candidate, Utf8ValidationResult validation,
+        Utf8PreparedRegex prepared, ReadOnlySpan<byte> input,
+        Utf8StructuralCandidate candidate,
         ref Utf8SliceInvocation invocation, out Utf8ScalarVerificationResult result)
     {
         result = default;

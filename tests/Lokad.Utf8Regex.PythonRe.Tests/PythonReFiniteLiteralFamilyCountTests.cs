@@ -312,18 +312,10 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(string.Join(' ', Literals.Take(width)) + " ", 512)));
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var validation = new Utf8SliceInvocation(new Utf8ExecutionLimits(1_000_000, 128, 1 << 20, 1 << 20),
-            TimeSpan.FromMilliseconds(20), default);
-        _ = Utf8InputAnalyzer.Describe(input, ref validation);
-        var validationSteps = validation.Budget.Steps;
         using var cancellation = new CancellationTokenSource();
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (steps <= validationSteps)
-            {
-                return;
-            }
             entered = true;
             if (expire)
             {

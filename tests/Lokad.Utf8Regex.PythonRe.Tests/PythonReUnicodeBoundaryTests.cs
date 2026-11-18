@@ -139,9 +139,6 @@ public sealed class PythonReUnicodeBoundaryTests
         var input = Encoding.UTF8.GetBytes(new string('a', 200000) + "é");
         // Measure the controlled validation lane used below, so the diagnostic
         // cannot inject during validation instead of the subsequent word scan.
-        var validation = new Utf8SliceInvocation(new(1000000, 1024, 1 << 20, 1 << 20),
-            Regex.InfiniteMatchTimeout, token.Token);
-        Utf8InputAnalyzer.Describe(input, ref validation);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
         var regex = new Utf8PythonRegex(@"\b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
@@ -149,9 +146,9 @@ public sealed class PythonReUnicodeBoundaryTests
             ResourcePolicy = Funded
         });
         var entered = false;
-        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
-            if (entered || steps <= validation.Budget.Steps) return;
+            if (entered) return;
             entered = true; if (expire) ticks = 50; else token.Cancel();
         });
         try

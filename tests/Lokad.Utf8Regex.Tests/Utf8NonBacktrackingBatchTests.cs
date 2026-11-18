@@ -417,7 +417,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static ulong ExerciseCopiesAndAbandon(Utf8SliceProgram program, byte[] input, ref Utf8SliceInvocation invocation)
     {
-        var validation = Utf8InputAnalyzer.Describe(input, ref invocation);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
         invocation.ShareStorageForCursor();
         var original = new Utf8OperationMatchCursor(program, input, invocation);
         var held = invocation.Ledger.ReservedBytes;
