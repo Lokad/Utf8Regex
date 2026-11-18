@@ -10,6 +10,20 @@ public sealed class Pcre2SliceAnchorTests
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 
     [Fact]
+    public void ImpossibleFinalScalarSkipsSliceWorkingAdmission()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[0-9])\]?$", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkingBytes = 1 }
+        });
+        Assert.Contains("IsMatch=Pcre2Slice", regex.DebugDescribeExecutionPlan());
+        Assert.False(regex.IsMatch("abc.A#\n"u8));
+        Assert.Equal(0, regex.Count("abc.A#"u8));
+        Assert.Equal(Pcre2ErrorKind.HeapLimit,
+            Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("abc.AB\n"u8)).ErrorKind);
+    }
+
+    [Fact]
     public void CompoundAnchorShapesRouteCountAndMatchThroughSlice()
     {
         foreach (var pattern in new[] { "^a.*b$", "^(a.c)+$" })

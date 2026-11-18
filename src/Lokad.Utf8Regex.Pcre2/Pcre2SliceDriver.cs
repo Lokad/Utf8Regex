@@ -278,6 +278,11 @@ internal static class Pcre2SliceDriver
         int start,
         scoped ref Utf8SliceInvocation invocation)
     {
+        if (program.RejectsByFinalAscii(input))
+        {
+            ThrowIfSliceBreached(invocation.TryChargeInputStep());
+            return true;
+        }
         if (program.CanMatchEmpty || program.RightToLeft ||
             candidates.Kind is not (Pcre2CandidateSearchKind.LeadingAsciiSet or
                 Pcre2CandidateSearchKind.LeadingRunThenLiteral)) return false;

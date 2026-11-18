@@ -11,7 +11,8 @@ public sealed class PythonReTimeoutTests
 {
     private static byte[] CreateCatastrophicInput()
     {
-        return Encoding.UTF8.GetBytes(new string((char)97, 100000) + "!");
+        // Keep a possible final scalar so the engine must verify the run.
+        return Encoding.UTF8.GetBytes(new string('a', 100000) + "!a");
     }
 
     [Fact]

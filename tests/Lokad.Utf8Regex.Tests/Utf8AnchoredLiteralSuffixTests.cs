@@ -9,6 +9,39 @@ namespace Lokad.Utf8Regex.Tests;
 // when the pattern proves only one end position can match.
 public sealed class Utf8AnchoredLiteralSuffixTests
 {
+    [Fact]
+    public void FinalScalarScreenRejectsBeforeWorkingAdmission()
+    {
+        const string pattern = @"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[0-9])\]?$";
+        using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkingBytes = 1 }
+        });
+        using var token = new CancellationTokenSource();
+        Assert.False(regex.IsMatch("abc.A#\n"u8, token.Token));
+        Assert.Equal(0, regex.Count("abc.A#"u8, token.Token));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch("abc.AB\n"u8, token.Token)).ResourceKind);
+    }
+
+    [Theory]
+    [InlineData(@"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[0-9])\]?$", "abc.AB]\n", true)]
+    [InlineData(@"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[0-9])\]?\z", "abc.AB]\n", false)]
+    [InlineData(@"\A(?:[a-z]+\.)+(?:AB|é)\]?$", "abc.é\n", true)]
+    [InlineData(@"\A(?:[a-z]+\.)+(?:AB|é)\]?$", "abc.AB\n", true)]
+    [InlineData(@"(?:cd|ab$)", "cd#", true)]
+    [InlineData(@"(?m:(?:ab)+$)", "abab\n#", true)]
+    [InlineData(@"(?i:(?:ab)+Z)$", "ababz", true)]
+    [InlineData(@"\A(?:ab)?$", "", true)]
+    public void FinalScalarScreenKeepsAllPossibleEndpoints(string pattern, string text, bool expected)
+    {
+        using var regex = new Utf8Regex(pattern);
+        using var token = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.IsMatch(input, token.Token));
+        Assert.Equal(expected ? 1 : 0, regex.Count(input, token.Token));
+    }
+
     [Theory]
     [InlineData(@"\n$", "😀\n\n")]
     [InlineData(@"abc\n\Z", "😀abc\n")]

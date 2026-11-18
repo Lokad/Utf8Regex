@@ -462,6 +462,11 @@ can discard a saved repeat exit that is too far from the end. Its rollback
 and interruption checks still run. A lax anchor allows a final LF, and a
 multiline anchor can still succeed earlier in the subject.
 
+A scalar program that cannot match empty and has a mandatory terminal anchor
+can rule out an impossible final ASCII scalar before acquiring match scratch.
+A lax anchor considers both the input end and the position before a final LF.
+The matcher verifies possible endpoints, including those with a non-ASCII final scalar.
+
 The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result
 storage. A shared or temporary allocation may count more than once.

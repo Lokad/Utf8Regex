@@ -13,9 +13,7 @@ public sealed class Utf8RegexTimeoutTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
-        var input = new byte[50_000];
-        Array.Fill(input, (byte)'a');
-        input[^1] = (byte)'!';
+        var input = CreateCatastrophicInput();
 
         var exception = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
         Assert.Equal(input.Length, exception.Input.Length);
@@ -49,7 +47,7 @@ public sealed class Utf8RegexTimeoutTests
         });
         var input = new byte[50_000];
         Array.Fill(input, (byte)9);
-        input[^1] = (byte)33;
+        input[^2] = (byte)'!';
 
         var exception = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
         Assert.Equal(input.Length, exception.Input.Length);
@@ -170,7 +168,8 @@ public sealed class Utf8RegexTimeoutTests
     {
         var input = new byte[50_000];
         Array.Fill(input, (byte)'a');
-        input[^1] = (byte)'!';
+        // Keep a possible final scalar so the engine must verify the run.
+        input[^2] = (byte)'!';
         return input;
     }
     [Fact]
@@ -225,7 +224,7 @@ public sealed class Utf8RegexTimeoutTests
         // on every lane with the same timeout identity as the oracle, on ASCII
         // and astral-tailed inputs alike, without constructing fallback engines.
         var timeout = TimeSpan.FromMilliseconds(500);
-        var text = new string('a', 20000) + (astralTail ? "\U0001F600!" : "!");
+        var text = new string('a', 20000) + (astralTail ? "\U0001F600!a" : "!a");
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
         Assert.Throws<RegexMatchTimeoutException>(() => oracle.IsMatch(text));
@@ -313,7 +312,7 @@ public sealed class Utf8RegexTimeoutTests
         // FromOffset enumeration), and ordinary-only lanes (without compiled).
         var options = (compiled ? RegexOptions.Compiled : RegexOptions.None) | RegexOptions.CultureInvariant;
         var timeout = TimeSpan.FromMilliseconds(1);
-        var text = new string('a', 49999) + "!";
+        var text = new string('a', 49998) + "!a";
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex("(a+)+$", options, timeout);
         Assert.Throws<RegexMatchTimeoutException>(() => oracle.IsMatch(text));

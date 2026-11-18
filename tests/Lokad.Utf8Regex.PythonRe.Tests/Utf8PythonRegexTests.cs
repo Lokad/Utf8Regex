@@ -505,7 +505,7 @@ public sealed class Utf8PythonRegexTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
-        var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
+        var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!a");
 
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() => regex.Match(input, mode: Utf8PythonMatchMode.FullMatch));
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() =>
@@ -782,7 +782,7 @@ public sealed class Utf8PythonRegexTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(1)
         });
-        var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!");
+        var input = System.Text.Encoding.UTF8.GetBytes(new string('a', 100_000) + "!a");
 
         Assert.Throws<System.Text.RegularExpressions.RegexMatchTimeoutException>(() =>
         {

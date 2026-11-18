@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Numerics;
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -332,6 +333,8 @@ internal sealed class Utf8SliceProgram
         // Instructions and flags are complete before publishing the program.
         // Keep this bounded, allocation-free proof off repeated match attempts.
         HasTerminalCaptureRoot = Utf8SliceRunner.CanRunTerminalCaptureRoot(this);
+        if (!rightToLeft && !isNonBacktracking && !canMatchEmpty)
+            RequiredFinalAscii = FindRequiredFinalAscii(instructions, setMasks, Utf8ConstructionScope.CurrentBudget);
     }
 
     internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings)
@@ -488,6 +491,108 @@ internal sealed class Utf8SliceProgram
     internal bool CanMatchEmpty { get; }
     internal bool HasUnicodePatternAtoms { get; }
     internal bool HasTerminalCaptureRoot { get; }
+    private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
+
+    internal bool RejectsByFinalAscii(ReadOnlySpan<byte> input)
+    {
+        var (end, ascii) = RequiredFinalAscii;
+        if (end == Utf8SliceAnchorKind.Beginning) return false;
+        if (input.IsEmpty) return true;
+        var last = input[^1];
+        if (last >= 128 || ascii.Contains(last)) return false;
+        // A nonempty match may also end just before the final LF at a lax end.
+        return end == Utf8SliceAnchorKind.VeryEnd || last != (byte)'\n' || input.Length == 1 ||
+            input[^2] < 128 && !ascii.Contains(input[^2]);
+    }
+
+    private static (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) FindRequiredFinalAscii(
+        ReadOnlySpan<Utf8SliceInstruction> code, byte[][] masks, Utf8ConstructionBudget budget)
+    {
+        if (code.Length is < 2 or > 128 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return default;
+        var end = FindTerminalEnd(code[..^1]);
+        if (end < 0) return default;
+
+        // An atom can provide the final scalar if its continuation can reach
+        // the anchor without consuming. Ignore repeat minima for this proof:
+        // admitting an extra possible last atom only widens the set.
+        Span<bool> empty = stackalloc bool[end + 1];
+        empty[end] = true;
+        var ascii = default(Utf8SearchAsciiSet);
+        for (var pc = end - 1; pc >= 0; pc--)
+        {
+            budget.ChargeWork(1);
+            var instruction = code[pc];
+            var next = empty[pc + 1];
+            empty[pc] = false;
+            switch (instruction.Kind)
+            {
+                case Utf8SliceInstructionKind.Jump:
+                case Utf8SliceInstructionKind.Fork:
+                case Utf8SliceInstructionKind.RepeatGreedy:
+                case Utf8SliceInstructionKind.RepeatLazy:
+                case Utf8SliceInstructionKind.RepeatGreedyAfterMinimum:
+                case Utf8SliceInstructionKind.RepeatLazyAfterMinimum:
+                    // In particular, a jump around the anchor makes it optional.
+                    if (instruction.A <= pc || instruction.A > end) return default;
+                    empty[pc] = empty[instruction.A] || instruction.Kind == Utf8SliceInstructionKind.Fork && next;
+                    break;
+                case Utf8SliceInstructionKind.RepeatEnd:
+                    // Its next instruction is the repeat's exit. Any path
+                    // that uses only empty further iterations can exit there.
+                    if (code[pc + 1].Kind != Utf8SliceInstructionKind.RepeatExit) return default;
+                    empty[pc] = next;
+                    break;
+                case Utf8SliceInstructionKind.RepeatExit:
+                case Utf8SliceInstructionKind.CaptureStart:
+                case Utf8SliceInstructionKind.CaptureEnd:
+                case Utf8SliceInstructionKind.Anchor:
+                case Utf8SliceInstructionKind.Boundary:
+                case Utf8SliceInstructionKind.Lookahead:
+                case Utf8SliceInstructionKind.Lookbehind:
+                case Utf8SliceInstructionKind.AtomicCommit:
+                    empty[pc] = next;
+                    break;
+                case Utf8SliceInstructionKind.Fail:
+                    break;
+                case Utf8SliceInstructionKind.Literal when instruction.B == 0:
+                    if (next && (uint)instruction.A < 128) ascii = ascii.With((byte)instruction.A);
+                    break;
+                case Utf8SliceInstructionKind.Set when instruction.C == 0:
+                    if (next)
+                    {
+                        var mask = masks[instruction.A].AsSpan();
+                        var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
+                        var high = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
+                        if (instruction.B != 0) { low = ~low; high = ~high; }
+                        ascii = Utf8SearchAsciiSet.FromMasks(ascii.Low | low, ascii.High | high);
+                    }
+                    break;
+                case Utf8SliceInstructionKind.Literal:
+                case Utf8SliceInstructionKind.Set:
+                case Utf8SliceInstructionKind.Dot:
+                case Utf8SliceInstructionKind.CategorySet:
+                case Utf8SliceInstructionKind.Shorthand:
+                case Utf8SliceInstructionKind.Hybrid:
+                case Utf8SliceInstructionKind.Backref:
+                    if (next) return default;
+                    break;
+                default:
+                    return default;
+            }
+        }
+        return ascii.Low == ulong.MaxValue && ascii.High == ulong.MaxValue
+            ? default : ((Utf8SliceAnchorKind)code[end].A, ascii);
+    }
+
+    internal static int FindTerminalEnd(ReadOnlySpan<Utf8SliceInstruction> code)
+    {
+        var index = code.Length - 1;
+        while (index >= 0 && code.Length - index < 32 && code[index].Kind == Utf8SliceInstructionKind.CaptureEnd)
+            index--;
+        return index >= 0 && code[index] is { Kind: Utf8SliceInstructionKind.Anchor } anchor &&
+            (anchor.A == (int)Utf8SliceAnchorKind.VeryEnd || anchor.A == (int)Utf8SliceAnchorKind.End && anchor.B == 0)
+            ? index : -1;
+    }
 
     // The compiled .NET 10 lazy-loop defect is excluded from our semantics.
     // Route these programs through the owned VM even when a native plan exists.
@@ -942,14 +1047,14 @@ internal static class Utf8SliceLowerer
         bool appendedEndAnchor = false)
     {
         if (code.Length < 2 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return;
-        var end = FindTerminalEnd(code[..^1]);
+        var end = Utf8SliceProgram.FindTerminalEnd(code[..^1]);
         if (end < 0) return;
 
         // Walk a bounded suffix once. Zero means that reaching the anchor
         // cannot be proved. The lax end can leave an unconsumed final LF.
         const int precedingInstructions = 127;
         var start = Math.Max(0, end - precedingInstructions);
-        if (appendedEndAnchor && FindTerminalEnd(code[..^2]) is >= 0 and var oldEnd)
+        if (appendedEndAnchor && Utf8SliceProgram.FindTerminalEnd(code[..^2]) is >= 0 and var oldEnd)
         {
             // FullMatch owns a copy with one new terminal anchor. A few copied
             // hints may now be outside the window we are about to recompute.
@@ -1002,16 +1107,6 @@ internal static class Utf8SliceLowerer
                     break;
             }
             limits[index - start] = limit <= int.MaxValue ? (int)limit : 0;
-        }
-
-        static int FindTerminalEnd(ReadOnlySpan<Utf8SliceInstruction> code)
-        {
-            var index = code.Length - 1;
-            while (index >= 0 && code.Length - index < 32 && code[index].Kind == Utf8SliceInstructionKind.CaptureEnd)
-                index--;
-            return index >= 0 && code[index] is { Kind: Utf8SliceInstructionKind.Anchor } anchor &&
-                (anchor.A == (int)Utf8SliceAnchorKind.VeryEnd || anchor.A == (int)Utf8SliceAnchorKind.End && anchor.B == 0)
-                ? index : -1;
         }
 
         static int ScalarMaximumBytes(Utf8SliceInstruction instruction) => instruction switch

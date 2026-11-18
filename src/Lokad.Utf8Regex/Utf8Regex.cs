@@ -393,7 +393,7 @@ public sealed partial class Utf8Regex : IDisposable
                 throw new InvalidOperationException("Native literal existence search breached the invocation budget.");
             return found;
         }
-        if (RejectMissingRequiredLiteral(input, program, ref invocation)) return false;
+        if (RejectMissingRequiredInput(input, program, ref invocation)) return false;
         var slots = new Utf8SliceSlots([], []);
         try
         {
@@ -421,8 +421,14 @@ public sealed partial class Utf8Regex : IDisposable
         return !found;
     }
 
-    private bool RejectMissingRequiredLiteral(ReadOnlySpan<byte> input, Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
+    private bool RejectMissingRequiredInput(ReadOnlySpan<byte> input, Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
     {
+        if (program.RejectsByFinalAscii(input))
+        {
+            if (invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Final scalar screening breached the invocation budget.");
+            return true;
+        }
         if (!ReferenceEquals(program, _ownedSliceProgram) ||
             program.RightToLeft || program.HasContiguousAnchor ||
             // Includes internal multiline ^ assertions, whose origin must be
@@ -616,7 +622,7 @@ public sealed partial class Utf8Regex : IDisposable
                 return count;
             }
         }
-        if (RejectMissingRequiredLiteral(input, program, ref invocation)) return 0;
+        if (RejectMissingRequiredInput(input, program, ref invocation)) return 0;
         var slots = new Utf8SliceSlots([], []);
         try
         {

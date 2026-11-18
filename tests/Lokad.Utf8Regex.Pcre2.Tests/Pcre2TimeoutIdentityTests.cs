@@ -36,7 +36,8 @@ public sealed class Pcre2TimeoutIdentityTests
     {
         var input = new byte[50_000];
         Array.Fill(input, (byte)'a');
-        input[^1] = (byte)'!';
+        // Keep a possible final scalar so the engine must verify the run.
+        input[^2] = (byte)'!';
         return input;
     }
 

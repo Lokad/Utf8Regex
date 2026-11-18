@@ -57,6 +57,12 @@ internal struct PythonReScalarMatchState
             // Python re consumes text. The caller supplies valid unchanged UTF-8;
             // admission/interruption still precede preparation and early results.
             Checkpoint();
+            if (program.RejectsByFinalAscii(input))
+            {
+                if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                _finished = true;
+                return;
+            }
             // Anchored calls cannot skip a rejected starting byte. Reuse the
             // bounded necessary-start proof before scanning for a required
             // literal elsewhere; possible starts keep that useful screen.
