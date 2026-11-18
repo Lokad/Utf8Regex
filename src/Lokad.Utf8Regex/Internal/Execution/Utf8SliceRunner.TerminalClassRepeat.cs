@@ -915,6 +915,41 @@ internal static partial class Utf8SliceRunner
         return terminal == Utf8ExecutionLimitKind.None ? (position, terminal) : (-1, terminal);
     }
 
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunUnboundedDecimalDigits(
+        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation, bool checkExitDeadline)
+    {
+        var position = start;
+        while (position < input.Length)
+        {
+            var value = input[position];
+            var isAsciiDigit = (uint)(value - '0') <= 9;
+            if (isAsciiDigit && input.Length - position >= 16 &&
+                (uint)(input[position + 1] - '0') <= 9 && (uint)(input[position + 2] - '0') <= 9 &&
+                (uint)(input[position + 3] - '0') <= 9)
+            {
+                // Leave interleaved scalars to the scalar loop. A longer ASCII
+                // run shares the existing checked, interruptible block scan.
+                var ascii = RunUnboundedAsciiRange(input, position, (byte)'0', (byte)'9', ref invocation,
+                    checkExitDeadline: false);
+                if (ascii.Breach != Utf8ExecutionLimitKind.None) return ascii;
+                position = ascii.EndIndex;
+                continue;
+            }
+
+            var breach = invocation.TryChargeStep();
+            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+            if (isAsciiDigit)
+            {
+                position++;
+                continue;
+            }
+            if (value < 128 || !TryReadScalar(input, position, false, out var scalar, out var width) || !Rune.IsDigit(scalar)) break;
+            position += width;
+        }
+        var terminal = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
+        return terminal == Utf8ExecutionLimitKind.None ? (position, terminal) : (-1, terminal);
+    }
+
     // A side-effect-free atom repeat has only an endpoint and resource status.
     // Capture/history owners stay at the caller; a negative endpoint is a miss.
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunClassRepeat(Utf8SliceProgram program, int repeatIndex,
@@ -943,6 +978,12 @@ internal static partial class Utf8SliceRunner
             var ascii = RunUnboundedAsciiRange(input, start, (byte)asciiFirst, asciiLast, ref invocation, checkExitDeadline);
             if (minimum != 0 && ascii.EndIndex > start) minimumEnd = start + 1;
             return ascii.EndIndex == start && minimum != 0 ? (-1, ascii.Breach) : ascii;
+        }
+        if (unbounded && input.Length - start >= 64 && IsDecimalDigitSet(program, atom))
+        {
+            var digits = RunUnboundedDecimalDigits(input, start, ref invocation, checkExitDeadline);
+            if (minimum != 0 && digits.EndIndex > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);
+            return digits.EndIndex == start && minimum != 0 ? (-1, digits.Breach) : digits;
         }
         byte first = (byte)'\n', second = (byte)'\n';
         if (unbounded &&

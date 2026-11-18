@@ -106,10 +106,13 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool IsLeadingDecimalSet(Utf8SliceProgram program, int index)
-        => index >= 0 && program.Instructions[index].Kind == Utf8SliceInstructionKind.CategorySet &&
-            TryGetPositiveCategorySet(program, program.Instructions[index], out var categories, out var low, out var high) &&
+        => index >= 0 && IsDecimalDigitSet(program, program.Instructions[index]);
+
+    private static bool IsDecimalDigitSet(Utf8SliceProgram program, in Utf8SliceInstruction atom)
+        => atom.Kind == Utf8SliceInstructionKind.CategorySet &&
+            TryGetPositiveCategorySet(program, atom, out var categories, out var low, out var high) &&
             categories == 1u << (int)UnicodeCategory.DecimalDigitNumber &&
-            (low & ~Utf8AsciiBytePredicates.DecimalMask) == 0 && high == 0;
+            low == Utf8AsciiBytePredicates.DecimalMask && high == 0;
 
     private static bool CanSkipShortRepeatChain(Utf8SliceProgram program)
     {

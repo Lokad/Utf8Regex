@@ -79,6 +79,41 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     }
 
     [Theory]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    public void DecimalBlocksKeepScalarRewindEndpoints(int asciiLength)
+    {
+        using var regex = Utf8Regex.Compile(@"\A(?<digits>\d+)\dX*!\z", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128 }
+        });
+        using var token = new CancellationTokenSource();
+        var digits = "𝟘" + new string('7', asciiLength) + "١";
+        var input = Encoding.UTF8.GetBytes(digits + "𝟚!");
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(digits, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        Assert.Equal(input.Length, match.Value.EndOffsetInBytes);
+
+        var oneDigit = Encoding.UTF8.GetBytes("𝟘" + new string('X', 64) + "!");
+        Assert.False(regex.IsMatch(oneDigit, token.Token));
+    }
+
+    [Fact]
+    public void LongDecimalBlockScanObservesWorkLimit()
+    {
+        using var regex = Utf8Regex.Compile(@"\A\d+!\z", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128 }
+        });
+        using var token = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(new string('7', 300_000) + "!");
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input, token.Token)).ResourceKind);
+    }
+
+    [Theory]
     [InlineData(@"\n$", "😀\n\n")]
     [InlineData(@"abc\n\Z", "😀abc\n")]
     [InlineData(@"(?i:ABC\n)$", "😀abc\n")]

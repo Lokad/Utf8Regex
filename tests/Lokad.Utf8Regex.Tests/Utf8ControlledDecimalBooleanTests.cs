@@ -52,12 +52,14 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Theory]
-    [InlineData(false, 8)]
-    [InlineData(true, 8)]
-    [InlineData(false, 4)]
-    [InlineData(true, 4)]
+    [InlineData(false, 128)]
+    [InlineData(true, 128)]
+    [InlineData(false, 80)]
+    [InlineData(true, 80)]
     public void ScalarDiscoveryKeepsOriginalCancellationAndDeadline(bool deadline, int blocks)
     {
+        // The diagnostic hook fires every 64 modeled steps. A long ASCII
+        // digit run now charges one step per checked block.
         var input = Encoding.ASCII.GetBytes(new string('1', blocks * 2048));
         var regex = Create(false, 100000000, 65536, 8 << 20, 1);
         using var clock = Utf8DeadlineTestClock.Start();
