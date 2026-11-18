@@ -34,9 +34,8 @@ public sealed class Pcre2FullProbeCaptureTests
             Assert.Equal(System.Text.Encoding.UTF8.GetString((left.Success ? expected1Input.Span.Slice(left.StartOffsetInBytes, left.EndOffsetInBytes - left.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)), System.Text.Encoding.UTF8.GetString(right.GetValueBytes()));
             Assert.Equal((left.StartOffsetInBytes, left.EndOffsetInBytes), (right.StartOffsetInBytes, right.EndOffsetInBytes));
         }
-        var entries = new Pcre2NameEntry[regex.NameEntryCount];
-        regex.CopyNameEntries(entries, out _);
-        foreach (var entry in entries)
+        Assert.Equal(regex.NameEntryCount, expected.NameEntries.Length);
+        foreach (var entry in expected.NameEntries)
             Assert.Equal(expected.TryGetFirstSetGroup(entry.Name, out _), actual.TryGetFirstSetGroup(entry.Name, out _));
     }
 

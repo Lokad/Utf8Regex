@@ -12,6 +12,20 @@ public sealed partial class Utf8Pcre2Regex
         get { using var use = _programMemory?.Enter(); return _program.CaptureGroupCount; }
     }
 
+    /// <summary>Copies one name-table entry as UTF-8 and returns its capture number.</summary>
+    /// <remarks>Entry indices preserve declaration order, including duplicate names for distinct numbers. They are not capture slots. Short destinations remain unchanged; bytesRequired and groupNumber describe the selected entry. Original cancellation precedes funding and index checks. Caller-owned bytes remain valid after disposal; matching limits do not govern this explicit metadata operation.</remarks>
+    public OperationStatus TryCopyNameEntryUtf8(int nameEntryIndex, Span<byte> destination,
+        out int bytesRequired, out int groupNumber, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        using var use = _programMemory?.Enter();
+        if ((uint)nameEntryIndex >= (uint)NameEntries.Length)
+            throw new ArgumentOutOfRangeException(nameof(nameEntryIndex));
+        groupNumber = NameEntries[nameEntryIndex].Number;
+        return Utf8PatternMetadata.TryCopy(new Utf8ConstructionPattern(_program.NameEntriesUtf8[nameEntryIndex]),
+            destination, out bytesRequired, cancellationToken);
+    }
+
     /// <summary>Copies every capture number assigned to a strict UTF-8 name, preserving duplicate entries.</summary>
     /// <returns>The number copied; isMore reports additional numbers that did not fit.</returns>
     /// <remarks>Validates the complete name before writing, compares ordinal bytes without normalization, and allocates no key string. The destination belongs to the caller. This explicit metadata lookup observes the supplied token independently of matching limits; cancellation can leave a partial copy.</remarks>

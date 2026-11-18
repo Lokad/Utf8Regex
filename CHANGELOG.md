@@ -2,6 +2,9 @@
 
 ## Unreleased — 0.5.0
 
+- Replace PCRE2 regex CopyNameEntries with caller-buffer TryCopyNameEntryUtf8,
+  preserving ordered name/number pairs, duplicate names and branch-reset reuse.
+
 - Remove Core string metadata queries GroupNumberFromName/GroupNameFromNumber.
   Use UTF-8 keys and compact caller-buffer name export; preserve numeric/sparse/
   shared identities and retained-result lifetimes. Recompile consumers.

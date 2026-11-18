@@ -24,13 +24,18 @@ public sealed class Pcre2SharedNameMetadataTests
             Assert.Equal(expectedNames, retained.NameEntries.Length);
             Assert.True(retained.TryGetFirstSetGroup("x", out var first));
             Assert.Equal("a", System.Text.Encoding.UTF8.GetString((first.Success ? retained1Input.Span.Slice(first.StartOffsetInBytes, first.EndOffsetInBytes - first.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-            var names = new Pcre2NameEntry[expectedNames];
-            Assert.Equal(expectedNames, regex.CopyNameEntries(names, out var more));
-            Assert.False(more);
-            names.AsSpan().Fill(new Pcre2NameEntry { Name = "changed", Number = 999 });
-            retained.NameEntries.CopyTo(names);
-            Assert.Equal(expectedNames, retained.NameEntries.Length);
-            Assert.All(names, name => Assert.NotEqual("changed", name.Name));
+            Assert.Equal(expectedNames, regex.NameEntryCount);
+            for (var index = 0; index < expectedNames; index++)
+            {
+                var expectedName = Encoding.UTF8.GetBytes(retained.NameEntries[index].Name);
+                var nameBytes = new byte[expectedName.Length];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    regex.TryCopyNameEntryUtf8(index, nameBytes, out var bytesRequired, out var groupNumber));
+                Assert.Equal(expectedName, nameBytes);
+                Assert.Equal(expectedName.Length, bytesRequired);
+                Assert.Equal(retained.NameEntries[index].Number, groupNumber);
+                nameBytes.AsSpan().Fill(0xff);
+            }
             Assert.Equal(1, regex.Count(input));
             Assert.Equal("<a>", Encoding.UTF8.GetString(regex.Replace(input, "<$x>")));
             Assert.True(retained.TryGetFirstSetGroup("x", out first));

@@ -165,15 +165,16 @@ public sealed class Pcre2CaptureBackreferenceTests
         match6Cursor.MoveNext(out var match6Result);
         match6Cursor.Dispose();
         var match = match6Result;
-        var entries = new Pcre2NameEntry[1];
+        var nameBytes = new byte[4];
         Span<int> numbers = stackalloc int[1];
 
         Assert.True(match.Success);
         Assert.Equal(1, regex.NameEntryCount);
-        Assert.Equal(1, regex.CopyNameEntries(entries, out var hasMoreEntries));
-        Assert.False(hasMoreEntries);
-        Assert.Equal("word", entries[0].Name);
-        Assert.Equal(1, entries[0].Number);
+        Assert.Equal(System.Buffers.OperationStatus.Done,
+            regex.TryCopyNameEntryUtf8(0, nameBytes, out var bytesRequired, out var groupNumber));
+        Assert.Equal("word"u8.ToArray(), nameBytes);
+        Assert.Equal(4, bytesRequired);
+        Assert.Equal(1, groupNumber);
         Assert.Equal(1, regex.CopyNumbersForUtf8Name("word"u8, numbers, out var hasMoreNumbers));
         Assert.False(hasMoreNumbers);
         Assert.Equal(1, numbers[0]);

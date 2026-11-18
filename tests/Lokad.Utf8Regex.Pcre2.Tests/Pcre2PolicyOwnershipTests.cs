@@ -63,7 +63,7 @@ public sealed class Pcre2PolicyOwnershipTests
         Assert.Throws<ObjectDisposedException>(() => regex.TryReplace("a"u8, "x"u8, new byte[1], out _));
         Assert.Throws<ObjectDisposedException>(() => regex.CaptureGroupCount);
         Assert.Throws<ObjectDisposedException>(() => regex.NameEntryCount);
-        Assert.Throws<ObjectDisposedException>(() => regex.CopyNameEntries(new Pcre2NameEntry[1], out _));
+        Assert.Throws<ObjectDisposedException>(() => regex.TryCopyNameEntryUtf8(0, new byte[1], out _, out _));
         Assert.Throws<ObjectDisposedException>(() => regex.CopyNumbersForUtf8Name("x"u8, new int[1], out _));
         Assert.Throws<ObjectDisposedException>(() => regex.TryCopyPatternUtf8(new byte[20], out _));
         Assert.Throws<ObjectDisposedException>(() => regex.Analyze());
@@ -202,6 +202,28 @@ public sealed class Pcre2PolicyOwnershipTests
         var regex = new Utf8Pcre2Regex("a"); var cursor = regex.EnumerateMatches("a a"u8); var alias = cursor;
         regex.Dispose(); Assert.True(cursor.MoveNext()); Assert.True(cursor.MoveNext());
         Assert.True(alias.MoveNext()); Assert.Equal(0, alias.Current.StartOffsetInBytes); Assert.Equal(2, regex.Count("a a"u8));
+    }
+
+    [Fact]
+    public void NameEntryCopyRetainsCallerBytesAndOriginalTokenAfterFundedClose()
+    {
+        var account = new Account();
+        using var regex = new Utf8Pcre2Regex("(?<名>a)", policy: new()
+        {
+            ProgramMemoryAllowance = account,
+            ResourcePolicy = new() { MaxWorkSteps = 1, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+        });
+        var destination = new byte[3]; var attempts = account.Attempts;
+        Assert.Equal(System.Buffers.OperationStatus.Done,
+            regex.TryCopyNameEntryUtf8(0, destination, out var required, out var number));
+        Assert.Equal(3, required); Assert.Equal(1, number); Assert.Equal(attempts, account.Attempts);
+        regex.Dispose(); Assert.Equal(0UL, account.Used);
+        Assert.Equal("名"u8.ToArray(), destination);
+        Assert.Throws<ObjectDisposedException>(() => regex.TryCopyNameEntryUtf8(0, destination, out _, out _));
+        using var canceled = new CancellationTokenSource(); canceled.Cancel();
+        Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() =>
+            regex.TryCopyNameEntryUtf8(-1, destination, out _, out _, canceled.Token)).CancellationToken);
+        Assert.Equal("名"u8.ToArray(), destination);
     }
 
     private sealed class Account : IUtf8MemoryAllowance

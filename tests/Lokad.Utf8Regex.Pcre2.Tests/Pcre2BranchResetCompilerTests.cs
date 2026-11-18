@@ -86,13 +86,14 @@ public sealed class Pcre2BranchResetCompilerTests
         ReadOnlySpan<byte> match5Input = "bb"u8;
         var match5Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
         var match = regex.Match(match5Input, captures: match5Captures);
-        var entries = new Pcre2NameEntry[1];
+        var nameBytes = new byte[1];
 
         Assert.True(match.Success);
-        Assert.Equal(1, regex.CopyNameEntries(entries, out var isMore));
-        Assert.False(isMore);
-        Assert.Equal("x", entries[0].Name);
-        Assert.Equal(1, entries[0].Number);
+        Assert.Equal(System.Buffers.OperationStatus.Done,
+            regex.TryCopyNameEntryUtf8(0, nameBytes, out var bytesRequired, out var groupNumber));
+        Assert.Equal("x"u8.ToArray(), nameBytes);
+        Assert.Equal(1, bytesRequired);
+        Assert.Equal(1, groupNumber);
         Assert.Equal("b", System.Text.Encoding.UTF8.GetString((match5Captures[1].Success ? match5Input.Slice(match5Captures[1].StartOffsetInBytes, match5Captures[1].EndOffsetInBytes - match5Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 

@@ -61,8 +61,17 @@ public sealed class Pcre2MemoryCursorTests
                 Assert.Equal(old.EndOffsetInBytes, group.EndOffsetInBytes); Assert.Equal(old.IsUtf8SliceWellFormed, group.IsUtf8SliceWellFormed);
                 Assert.Equal((old.Success ? input.AsSpan(old.StartOffsetInBytes, old.EndOffsetInBytes - old.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty).ToArray(), first.GetGroupMemory(slot).ToArray());
             }
-            var names = new Pcre2NameEntry[regex.NameEntryCount]; regex.CopyNameEntries(names, out var more);
-            Assert.False(more); Assert.Equal(names, first.NameEntries.ToArray());
+            Assert.Equal(regex.NameEntryCount, first.NameEntries.Length);
+            for (var index = 0; index < regex.NameEntryCount; index++)
+            {
+                var expectedName = Encoding.UTF8.GetBytes(first.NameEntries[index].Name);
+                var nameBytes = new byte[expectedName.Length];
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    regex.TryCopyNameEntryUtf8(index, nameBytes, out var bytesRequired, out var groupNumber));
+                Assert.Equal(expectedName, nameBytes);
+                Assert.Equal(expectedName.Length, bytesRequired);
+                Assert.Equal(first.NameEntries[index].Number, groupNumber);
+            }
         }
         var enumerator = regex.EnumerateMatches(input, start, matchOptions);
         if (moved) { Assert.True(enumerator.MoveNext()); Assert.Equal(enumerator.Current.StartOffsetInBytes, first.Value.StartOffsetInBytes); }

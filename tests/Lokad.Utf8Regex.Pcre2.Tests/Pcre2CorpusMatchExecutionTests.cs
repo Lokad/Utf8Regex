@@ -87,14 +87,16 @@ public sealed class Pcre2CorpusMatchExecutionTests
 
                 if (corpusCase.Expected.NameEntries.Length > 0)
                 {
-                    var entries = new Pcre2NameEntry[8];
-                    var written = regex.CopyNameEntries(entries, out var isMore);
-                    Assert.False(isMore);
-                    Assert.Equal(corpusCase.Expected.NameEntries.Length, written);
-                    for (var i = 0; i < written; i++)
+                    Assert.Equal(corpusCase.Expected.NameEntries.Length, regex.NameEntryCount);
+                    for (var i = 0; i < regex.NameEntryCount; i++)
                     {
-                        Assert.Equal(corpusCase.Expected.NameEntries[i].Name, entries[i].Name);
-                        Assert.Equal(corpusCase.Expected.NameEntries[i].Number, entries[i].Number);
+                        var expectedName = Encoding.UTF8.GetBytes(corpusCase.Expected.NameEntries[i].Name);
+                        var nameBytes = new byte[expectedName.Length];
+                        Assert.Equal(System.Buffers.OperationStatus.Done,
+                            regex.TryCopyNameEntryUtf8(i, nameBytes, out var bytesRequired, out var groupNumber));
+                        Assert.Equal(expectedName, nameBytes);
+                        Assert.Equal(expectedName.Length, bytesRequired);
+                        Assert.Equal(corpusCase.Expected.NameEntries[i].Number, groupNumber);
                     }
                 }
             }

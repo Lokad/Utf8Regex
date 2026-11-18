@@ -172,7 +172,16 @@ such as `(?<100>a)` fail with InvalidAfterParensQuery before backend selection.
 Capture names are limited to **128 UTF-8 bytes**, verb labels to **255 UTF-8 bytes**.
 
 Cursor snapshots and full probe contexts expose the last value per slot, not Core capture history.
-`CopyNameEntries` and `CopyNumbersForUtf8Name` expose the regex name table;
+`NameEntryCount` and `TryCopyNameEntryUtf8(index, destination, out bytesRequired,
+out groupNumber, token)` export the regex name table as caller-owned bytes.
+Indices follow first-declaration order, including duplicate names for distinct
+numbers; branch-reset declarations with the same name and number share an entry.
+The index is not a capture slot. A short destination is unchanged and reports the
+required length and capture number. Original cancellation precedes funded-open
+and index checks. Metadata copying is independent of matching limits; exported
+bytes remain valid after disposal. The regex-level string-bearing
+`CopyNameEntries` is removed; internal and result/probe tables remain live.
+`CopyNumbersForUtf8Name` resolves all numbers for a UTF-8 name;
 context/range-result `TryGetFirstSetGroup` returns the first set slot for a name.
 The regex-level one-shot named matcher is removed: match into caller-owned slots
 and use UTF-8 name-to-number metadata, or resolve names on an existing persistent

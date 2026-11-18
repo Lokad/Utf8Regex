@@ -29,11 +29,12 @@ public sealed class Pcre2Utf8NameAdmissionTests
         Assert.True(match.TryGetFirstSetGroup(name, out var group));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString((group.Success ? match1Input.Span.Slice(group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         Assert.Equal((2, 6), (group.StartOffsetInBytes, group.EndOffsetInBytes));
-        var names = new Pcre2NameEntry[1];
-        Assert.Equal(1, regex.CopyNameEntries(names, out var more));
-        Assert.False(more);
-        Assert.Equal(name, names[0].Name);
-        Assert.Equal(1, names[0].Number);
+        var nameBytes = new byte[128];
+        Assert.Equal(System.Buffers.OperationStatus.Done,
+            regex.TryCopyNameEntryUtf8(0, nameBytes, out var bytesRequired, out var groupNumber));
+        Assert.Equal(Encoding.UTF8.GetBytes(name), nameBytes);
+        Assert.Equal(128, bytesRequired);
+        Assert.Equal(1, groupNumber);
     }
 
     public static IEnumerable<object[]> OverlongCaptures()

@@ -135,11 +135,12 @@ public sealed class Pcre2NumericCaptureAdmissionTests
         AssertGroup(match.Groups[0], match3Input.Span, text, text);
         AssertGroup(match.Groups[1], match3Input.Span, left, text);
         AssertGroup(match.Groups[2], match3Input.Span, right, text);
-        var names = new Pcre2NameEntry[1];
-        Assert.Equal(1, regex.CopyNameEntries(names, out var more));
-        Assert.False(more);
-        Assert.Equal("x", names[0].Name);
-        Assert.Equal(nameSlot, names[0].Number);
+        var nameBytes = new byte[1];
+        Assert.Equal(System.Buffers.OperationStatus.Done,
+            regex.TryCopyNameEntryUtf8(0, nameBytes, out var bytesRequired, out var groupNumber));
+        Assert.Equal("x"u8.ToArray(), nameBytes);
+        Assert.Equal(1, bytesRequired);
+        Assert.Equal(nameSlot, groupNumber);
         Assert.True(match.TryGetFirstSetGroup("x", out var named));
         Assert.Equal(nameSlot == 1 ? left : right, System.Text.Encoding.UTF8.GetString((named.Success ? match3Input.Span.Slice(named.StartOffsetInBytes, named.EndOffsetInBytes - named.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
         {

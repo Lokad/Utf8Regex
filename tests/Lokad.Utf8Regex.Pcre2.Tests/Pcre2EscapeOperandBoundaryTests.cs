@@ -35,13 +35,19 @@ public sealed class Pcre2EscapeOperandBoundaryTests
                 if (expectedGroup.Success)
                     Assert.Equal(System.Text.Encoding.UTF8.GetString((expectedGroup.Success ? expectedMatch1Input.Slice(expectedGroup.StartOffsetInBytes, expectedGroup.EndOffsetInBytes - expectedGroup.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)), System.Text.Encoding.UTF8.GetString((actualGroup.Success ? actualMatch2Input.Slice(actualGroup.StartOffsetInBytes, actualGroup.EndOffsetInBytes - actualGroup.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
             }
-            var expectedNames = new Pcre2NameEntry[expected.NameEntryCount];
-            var actualNames = new Pcre2NameEntry[regex.NameEntryCount];
-            Assert.Equal(expected.CopyNameEntries(expectedNames, out var expectedMore),
-                regex.CopyNameEntries(actualNames, out var actualMore));
-            Assert.False(expectedMore);
-            Assert.False(actualMore);
-            Assert.Equal(expectedNames, actualNames);
+            Assert.Equal(expected.NameEntryCount, regex.NameEntryCount);
+            var expectedName = new byte[128];
+            var actualName = new byte[128];
+            for (var index = 0; index < regex.NameEntryCount; index++)
+            {
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    expected.TryCopyNameEntryUtf8(index, expectedName, out var expectedLength, out var expectedNumber));
+                Assert.Equal(System.Buffers.OperationStatus.Done,
+                    regex.TryCopyNameEntryUtf8(index, actualName, out var actualLength, out var actualNumber));
+                Assert.Equal(expectedNumber, actualNumber);
+                Assert.Equal(expectedLength, actualLength);
+                Assert.Equal(expectedName.AsSpan(0, expectedLength).ToArray(), actualName.AsSpan(0, actualLength).ToArray());
+            }
             Assert.False(regex.IsMatch("😀"u8));
         }
     }

@@ -632,17 +632,6 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         get { using var use = _programMemory?.Enter(); return NameEntries.Length; }
     }
 
-    /// <summary>Copies name-to-slot entries into a caller-provided destination.</summary>
-    /// <returns>The number of entries copied; <paramref name="isMore"/> reports whether additional entries did not fit.</returns>
-    public int CopyNameEntries(Span<Pcre2NameEntry> destination, out bool isMore)
-    {
-        using var programUse = _programMemory?.Enter();
-        var written = Math.Min(destination.Length, NameEntries.Length);
-        NameEntries.AsSpan(0, written).CopyTo(destination);
-        isMore = written < NameEntries.Length;
-        return written;
-    }
-
     /// <summary>Returns the compiled expression's execution and result-shaping characteristics.</summary>
     public Utf8Pcre2Analysis Analyze()
     {

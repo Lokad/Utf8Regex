@@ -181,17 +181,18 @@ public sealed class Utf8Pcre2RegexConstructionTests
 
         Assert.Equal(2, regex.NameEntryCount);
 
-        var entries = new Pcre2NameEntry[2];
-        var written = regex.CopyNameEntries(entries, out var isMore);
-        Assert.False(isMore);
-        Assert.Equal(2, written);
-        Assert.Equal("n", entries[0].Name);
-        Assert.Equal(1, entries[0].Number);
-        Assert.Equal("n", entries[1].Name);
-        Assert.Equal(2, entries[1].Number);
+        Span<byte> nameBytes = stackalloc byte[1];
+        for (var index = 0; index < 2; index++)
+        {
+            Assert.Equal(System.Buffers.OperationStatus.Done,
+                regex.TryCopyNameEntryUtf8(index, nameBytes, out var bytesRequired, out var groupNumber));
+            Assert.Equal("n"u8.ToArray(), nameBytes.ToArray());
+            Assert.Equal(1, bytesRequired);
+            Assert.Equal(index + 1, groupNumber);
+        }
 
         Span<int> numbers = stackalloc int[2];
-        written = regex.CopyNumbersForUtf8Name("n"u8, numbers, out isMore);
+        var written = regex.CopyNumbersForUtf8Name("n"u8, numbers, out var isMore);
         Assert.False(isMore);
         Assert.Equal(2, written);
         Assert.Equal(1, numbers[0]);
@@ -205,12 +206,12 @@ public sealed class Utf8Pcre2RegexConstructionTests
 
         Assert.Equal(1, regex.NameEntryCount);
 
-        var entries = new Pcre2NameEntry[1];
-        var written = regex.CopyNameEntries(entries, out var isMore);
-        Assert.False(isMore);
-        Assert.Equal(1, written);
-        Assert.Equal("word", entries[0].Name);
-        Assert.Equal(1, entries[0].Number);
+        var nameBytes = new byte[4];
+        Assert.Equal(System.Buffers.OperationStatus.Done,
+            regex.TryCopyNameEntryUtf8(0, nameBytes, out var bytesRequired, out var groupNumber));
+        Assert.Equal("word"u8.ToArray(), nameBytes);
+        Assert.Equal(4, bytesRequired);
+        Assert.Equal(1, groupNumber);
     }
 
     [Fact]

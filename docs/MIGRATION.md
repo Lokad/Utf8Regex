@@ -50,6 +50,17 @@ capacity or copies source into caller-owned storage. Native name lookup is
 profile-specific: Core `GroupNumberFromUtf8Name`, PythonRe `TryGetGroupNumber`,
 PCRE2 `CopyNumbersForUtf8Name` (retaining duplicate numbers). These operations
 validate their own bytes and use ordinal names without normalization.
+PCRE2 regex `CopyNameEntries` is replaced by `TryCopyNameEntryUtf8(index,
+destination, out bytesRequired, out groupNumber, token)`. Iterate `NameEntryCount`
+to export caller-owned UTF-8 names and numbers in declaration order. Duplicate
+names for distinct numbers remain separate entries; branch-reset reuse of the
+same name and number remains one entry. Entry indices are not capture slots.
+Probe/result name tables retain their existing lifetimes. A short destination is
+unchanged and reports both length and number; original cancellation precedes
+funded-open and index checks. No host text or collection is allocated by copying.
+Each probe/copy checks program access independently; exporting multiple entries
+is not an atomic snapshot across concurrent funded disposal. Resolve metadata
+before repeated matching.
 
 ### Byte-start enumeration
 
