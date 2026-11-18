@@ -497,6 +497,77 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
+    private static (int Min, int Max, byte Literal) FindBranchedAsciiLiteralWindow(
+        ReadOnlySpan<Utf8SliceInstruction> code, int start)
+    {
+        Span<(int Min, int Max)> widths = stackalloc (int, int)[32];
+        widths = widths[..Math.Min(widths.Length, code.Length - start)];
+        widths.Fill((-1, 0));
+        widths[0] = (0, 0);
+        var furthest = 0;
+        for (var offset = 0; offset <= furthest; offset++)
+        {
+            var (min, max) = widths[offset];
+            if (min < 0) continue;
+            var index = start + offset;
+            var entry = code[index];
+            // Every live path joins here when the furthest edge is reached.
+            // Keep at most two adjacent byte offsets for the hot check.
+            if (offset == furthest && min >= 2 && max - min <= 1 &&
+                entry is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
+                return (min, max, (byte)entry.A);
+
+            var next = offset + 1;
+            if (entry is { Kind: Utf8SliceInstructionKind.Jump } && entry.A > index)
+                next = entry.A - start;
+            else if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index + 1)
+            {
+                var other = entry.A - start;
+                if (other >= widths.Length) return default;
+                JoinAsciiPrefixWidths(widths, other, min, max);
+                furthest = Math.Max(furthest, other);
+            }
+            else if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
+            {
+                if (entry.RepeatMaximum != 1 || !IsSingleAtomRepeat(code, index, entry) ||
+                    GetUnfoldedAsciiRange(code[index + 1], out _) < 0) return default;
+                min += (int)entry.RepeatMinimum;
+                max++;
+                next = entry.A + 1 - start;
+            }
+            else if (GetUnfoldedAsciiRange(entry, out _) >= 0)
+            {
+                min++;
+                max++;
+            }
+            else if (entry.Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd))
+                return default;
+
+            if (next >= widths.Length || max > 16) return default;
+            JoinAsciiPrefixWidths(widths, next, min, max);
+            furthest = Math.Max(furthest, next);
+        }
+        return default;
+    }
+
+    private static void JoinAsciiPrefixWidths(Span<(int Min, int Max)> widths, int offset, int min, int max)
+    {
+        ref var destination = ref widths[offset];
+        destination = destination.Min < 0 ? (min, max) : (Math.Min(destination.Min, min), Math.Max(destination.Max, max));
+    }
+
+    private static bool HasAsciiLiteralInWindow(ReadOnlySpan<byte> input, int start, (int Min, int Max, byte Literal) window)
+    {
+        var remaining = input.Length - start;
+        return (window.Min < remaining && input[start + window.Min] == window.Literal) ||
+            (window.Max != window.Min && window.Max < remaining && input[start + window.Max] == window.Literal);
+    }
+
+    private static bool IsSingleAtomRepeat(ReadOnlySpan<Utf8SliceInstruction> code, int index, Utf8SliceInstruction entry)
+        => entry.A == index + 3 && entry.A < code.Length &&
+            code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == index &&
+            code[entry.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == entry.B;
+
     // This check only eliminates impossible starts. The VM owns branch order,
     // captures and every effect beyond the bounded prefix.
     private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
@@ -524,9 +595,7 @@ internal static partial class Utf8SliceRunner
             if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
             {
                 var minimum = entry.RepeatMinimum;
-                var singleAtom = entry.A == index + 2 && entry.A < code.Length &&
-                    code[index + 1] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == index - 1 &&
-                    code[entry.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == entry.B;
+                var singleAtom = IsSingleAtomRepeat(code, index - 1, entry);
                 if (minimum == 0)
                 {
                     if (!singleAtom || entry.RepeatMaximum != 1) return true;

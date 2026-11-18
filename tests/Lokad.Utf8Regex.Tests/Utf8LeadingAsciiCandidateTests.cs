@@ -417,11 +417,12 @@ public sealed class Utf8LeadingAsciiCandidateTests
     [InlineData(@"(?<part>25[0-5]|2[0-4][0-9]|[01]??[0-9][0-9])\.[0-9]{2}")]
     [InlineData(@"(?<part>25[0-5]|É[A-Z]|[01]?[0-9][0-9])\.[0-9]{2}")]
     [InlineData(@"(?<part>[01]?[0-9][0-9]|)\.[0-9]{2}")]
+    [InlineData(@"(?<part>25[0-5]\.|[01]?[0-9][0-9]X)[0-9]{2}")]
     public void BranchStartsKeepAlternationPriorityAndByteCaptures(string pattern)
     {
-        const string text = "00.99 é😀 256.78 234.34 ÉB.12 125.56 .72 17.92";
+        var prefix = new string('!', 256) + "00.99 é😀 ";
+        var text = prefix + "256.78 234.34 ÉB.12 125.56 .72 17X92 17.92";
         var input = Encoding.UTF8.GetBytes(text);
-        const string prefix = "00.99 é😀 ";
         var oracle = new Regex(pattern).Matches(text, prefix.Length);
         using var regex = Utf8Regex.Compile(pattern, policy: new() { ResourcePolicy = Funded });
         var from = Encoding.UTF8.GetByteCount(prefix);

@@ -801,6 +801,8 @@ internal static partial class Utf8SliceRunner
             !program.CanMatchEmpty && !program.HasContiguousAnchor
             ? GetLeadingAsciiCandidate(program, candidatePlan, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast, out leadingScalarIndex) : -1;
         var checkBranchedPrefix = leadingAsciiFirst >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
+        var branchWindow = checkBranchedPrefix && input.Length - fromByte >= 256
+            ? FindBranchedAsciiLiteralWindow(program.Instructions, leadingScalarIndex) : default;
         var checkRepeatChain = leadingAsciiFirst >= 0 && leadingScalarIndex == 1 && CanSkipShortRepeatChain(program);
         var leadingClass = -1;
         var whitespaceLiteralIndex = -1;
@@ -839,6 +841,7 @@ internal static partial class Utf8SliceRunner
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                     if ((leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond))) ||
+                        (branchWindow.Min != 0 && !HasAsciiLiteralInWindow(input, position, branchWindow)) ||
                         !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex) :
                             MatchesStraightAsciiPrefix(program, input, position, 0)))
                     {
