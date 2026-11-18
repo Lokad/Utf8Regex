@@ -251,6 +251,58 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(2045)]
+    [InlineData(2046)]
+    [InlineData(2047)]
+    public void PreparedDelimiterKeepsByteFloorsAndLaterDependentCaptures(int delimiterOffset)
+    {
+        const string before = "ab://b 😀 ";
+        var floor = Encoding.UTF8.GetByteCount(before);
+        var delimiterStart = floor + delimiterOffset;
+        var prefix = before + new string(':', delimiterOffset - "éab"u8.Length) + "éab";
+        var input = Encoding.UTF8.GetBytes(prefix + "://b ! ok://ok :/");
+        using var regex = Utf8Regex.Compile(@"(?<scheme>\w+)://\k<scheme>", policy: new()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded
+        });
+        using var live = new CancellationTokenSource();
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        var result = regex.Match(input, floor, captures, live.Token);
+        Assert.True(result.Success);
+        Assert.Equal((delimiterStart - 1, delimiterStart + 4), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+        Assert.Equal((delimiterStart - 1, delimiterStart), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal(3, regex.Count(input, live.Token));
+
+        using var cursor = regex.CreateMatchCursor(input, floor, live.Token);
+        Assert.True(cursor.MoveNext(out var retained));
+        Assert.True(cursor.MoveNext(out var next));
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal("b", Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
+        Assert.Equal("ok://ok", Encoding.UTF8.GetString(next.GetValueMemory().Span));
+    }
+
+    [Theory]
+    [InlineData(96)]
+    [InlineData(512)]
+    public void DisjointRunNeedsOnlyOneTailAttemptPerDelimiter(int runLength)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('w', runLength) + "://x ! é://ab");
+        var hit = input.Length - "é://ab"u8.Length;
+        using var regex = Utf8Regex.Compile(@"\w+://[a-z][a-z]", policy: new()
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with { MaxWorkSteps = (ulong)(4 * runLength) }
+        });
+        using var live = new CancellationTokenSource();
+        Assert.True(regex.IsMatch(input, live.Token));
+        var found = regex.Match(input, 0, [], live.Token);
+        Assert.Equal((hit, input.Length), (found.StartOffsetInBytes, found.EndOffsetInBytes));
+        if (input.Length >= 256) Assert.Equal(1, regex.Count(input, live.Token));
+        Assert.False(regex.IsMatch(input.AsSpan(0, hit), live.Token));
+    }
+
+    [Theory]
     [InlineData(@"(?<w>\w+)\s+Holmes\k<w>", "ab Holmesb")]
     [InlineData(@"\w+@", "é@")]
     [InlineData(@"(?<w>\w+)@\k<w>", "ab@b")]

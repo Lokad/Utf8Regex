@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -509,12 +510,26 @@ internal static partial class Utf8SliceRunner
         var seekLiteral = leading < 0 && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
         var leadingClass = -1;
         var classLiteral = -1;
+        var classSearch = default(PreparedSubstringSearch?);
+        var singleWindowAttempt = false;
+        var wideInput = input.Length - fromByte >= 256;
         if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
-            !program.IgnoreCase && !program.HasContiguousAnchor && input.Length - fromByte >= 256)
+            !program.IgnoreCase && !program.HasContiguousAnchor &&
+            (wideInput || candidatePlan.LiteralSearch is { Length: > 1, IgnoreCase: false }))
         {
-            var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out _, out _, out var directClassLiteral);
+            var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out var literalIndex, out _, out var directClassLiteral);
             if (directClassLiteral)
-                classLiteral = literal;
+            {
+                classSearch = GetAlignedDelimiterSearch(program, literalIndex, candidatePlan);
+                if (classSearch is { Length: > 1 })
+                {
+                    var proofBreach = TryProveSingleWindowAttempt(program, leadingClass, (byte)literal,
+                        ref invocation, out singleWindowAttempt);
+                    if (proofBreach != Utf8ExecutionLimitKind.None)
+                        return new(false, -1, -1, null, null, proofBreach);
+                }
+                if (wideInput || singleWindowAttempt) classLiteral = literal;
+            }
         }
         // Keep existing literal guidance when available. A decimal set can
         // reject unrelated ASCII, but any wider scalar may need verification.
@@ -541,7 +556,7 @@ internal static partial class Utf8SliceRunner
             while (classLiteral >= 0 && position > classWindowEnd)
             {
                 var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
-                    (byte)classLiteral, ref position, ref invocation, out classWindowEnd);
+                    (byte)classLiteral, classSearch, 0, true, ref position, ref invocation, out classWindowEnd);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
@@ -590,6 +605,7 @@ internal static partial class Utf8SliceRunner
             if (outcome.IsMatch)
                 return new(true, Math.Min(position, outcome.EndIndex), Math.Max(position, outcome.EndIndex),
                     outcome.CaptureStarts, outcome.CaptureLengths, Utf8ExecutionLimitKind.None);
+            if (singleWindowAttempt) position = classWindowEnd;
         }
         return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
     }
@@ -783,10 +799,19 @@ internal static partial class Utf8SliceRunner
         // Count keeps its prepared literal search when capture markers or
         // consuming instructions separate the repeat from its delimiter.
         var literalImmediatelyAfterRepeat = whitespaceLiteralIndex == leadingClass + 3;
-        if (whitespaceLiteral >= 0 && leadingClass >= 0 && !literalImmediatelyAfterRepeat &&
-            (candidatePlan.LiteralSearch is not { IgnoreCase: false } classSearch ||
-                !LiteralStartsAtInstruction(program, whitespaceLiteralIndex, classSearch.Needle)))
-            whitespaceLiteral = -1;
+        var classSearch = default(PreparedSubstringSearch?);
+        var singleWindowAttempt = false;
+        if (whitespaceLiteral >= 0 && leadingClass >= 0)
+        {
+            classSearch = GetAlignedDelimiterSearch(program, whitespaceLiteralIndex, candidatePlan);
+            if (!literalImmediatelyAfterRepeat && classSearch is null) whitespaceLiteral = -1;
+            if (literalImmediatelyAfterRepeat && classSearch is { Length: > 1 })
+            {
+                var proofBreach = TryProveSingleWindowAttempt(program, leadingClass, (byte)whitespaceLiteral,
+                    ref invocation, out singleWindowAttempt);
+                if (proofBreach != Utf8ExecutionLimitKind.None) return new(count, proofBreach);
+            }
+        }
         var whitespaceWindowEnd = -1;
         var workspace = new AttemptWorkspace();
         try
@@ -814,26 +839,9 @@ internal static partial class Utf8SliceRunner
                 {
                     if (leadingClass >= 0)
                     {
-                        Utf8ExecutionLimitKind seekBreach;
-                        if (literalImmediatelyAfterRepeat)
-                        {
-                            seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
-                                (byte)whitespaceLiteral, ref position, ref invocation, out whitespaceWindowEnd);
-                        }
-                        else
-                        {
-                            var search = candidatePlan.LiteralSearch.GetValueOrDefault();
-                            seekBreach = Utf8SearchExecutor.TryFindLiteralCandidate(search, input, position,
-                                input.Length - search.Length, false, ref invocation, out whitespaceWindowEnd);
-                            if (seekBreach == Utf8ExecutionLimitKind.None)
-                            {
-                                var floor = position;
-                                position = whitespaceWindowEnd;
-                                if (position >= 0)
-                                    seekBreach = TryRewindClassWhitespace(program, input, floor, leadingClass,
-                                        whitespaceGapMaximum, false, ref position, ref invocation);
-                            }
-                        }
+                        var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
+                            (byte)whitespaceLiteral, classSearch, whitespaceGapMaximum, literalImmediatelyAfterRepeat,
+                            ref position, ref invocation, out whitespaceWindowEnd);
                         if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     }
                     else
@@ -890,6 +898,7 @@ internal static partial class Utf8SliceRunner
                 else if (program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
                     first.A == (int)Utf8SliceAnchorKind.Contiguous)
                     break;
+                if (!outcome.IsMatch && singleWindowAttempt) position = whitespaceWindowEnd;
                 position = AdvancePastScalar(input, position, program.RightToLeft);
                 if (position < 0) break;
             }

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Planning;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -228,6 +229,30 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
+    private static PreparedSubstringSearch? GetAlignedDelimiterSearch(Utf8SliceProgram program, int index,
+        in Utf8SearchPlan candidatePlan)
+        => candidatePlan.LiteralSearch is { IgnoreCase: false } search &&
+            LiteralStartsAtInstruction(program, index, search.Needle) ? search : null;
+
+    private static Utf8ExecutionLimitKind TryProveSingleWindowAttempt(Utf8SliceProgram program, int leadingClass,
+        byte delimiter, ref Utf8SliceInvocation invocation, out bool singleAttempt)
+    {
+        singleAttempt = false;
+        if (program.GroupCount != 0 || program.Assertions.Length != 0 ||
+            program.Instructions[leadingClass - 1].RepeatMaximum != long.MaxValue)
+            return Utf8ExecutionLimitKind.None;
+
+        // An excluded delimiter fixes the suffix entry for every start in the
+        // run. With no captures or assertion continuations, later starts have
+        // the same suffix state and fewer scalars available for the minimum.
+        var breach = invocation.TryChargeStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        breach = TryMatchScalarClass(program, program.Instructions[leadingClass], new Rune(delimiter),
+            ref invocation, out var includesDelimiter);
+        singleAttempt = breach == Utf8ExecutionLimitKind.None && !includesDelimiter;
+        return breach;
+    }
+
     private static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int floor, int leadingClass, long gapMaximum, bool directClassLiteral,
         ref int position, ref Utf8SliceInvocation invocation)
@@ -342,15 +367,18 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
-    internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int leadingClass, byte literal, ref int position,
-        ref Utf8SliceInvocation invocation, out int windowEnd)
+    private static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
+        long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd)
     {
         var floor = position;
-        var breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
+        var breach = search is { } prepared && (prepared.Length > 1 || !direct)
+            ? Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, input.Length - prepared.Length,
+                false, ref invocation, out position)
+            : TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
         windowEnd = position;
         if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
-        return TryRewindClassWhitespace(program, input, floor, leadingClass, 0, true, ref position, ref invocation);
+        return TryRewindClassWhitespace(program, input, floor, leadingClass, gapMaximum, direct, ref position, ref invocation);
     }
 
     private static bool MatchesStraightAsciiPrefix(Utf8SliceProgram program,
