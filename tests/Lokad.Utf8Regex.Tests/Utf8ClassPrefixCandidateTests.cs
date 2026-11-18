@@ -157,17 +157,20 @@ public sealed class Utf8ClassPrefixCandidateTests
             }
         });
         Assert.Equal(1, efficient.Count(input));
+        var tight = new Utf8RegexPolicy
+        {
+            MatchTimeout = Regex.InfiniteMatchTimeout,
+            ResourcePolicy = Funded with { MaxWorkingBytes = 1 }
+        };
+        // The disjoint word and whitespace runs can complete without rewind
+        // storage. A dependent capture still needs the admitted VM workspace.
+        Assert.Equal(1, new Utf8Regex(@"\w+\s+Holmes", options: RegexOptions.None, policy: tight).Count(input));
+        var dependentInput = Encoding.UTF8.GetBytes(new string('!', 100000) + "é Holmesé");
+        const string dependent = @"(?<word>\w+)\s+Holmes\k<word>";
+        Assert.Equal(1, new Utf8Regex(dependent).Count(dependentInput));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-                new Utf8Regex(@"\w+\s+Holmes", options: RegexOptions.None, policy: new Utf8RegexPolicy
-                {
-                    MatchTimeout = Regex.InfiniteMatchTimeout,
-                    ResourcePolicy = Funded with
-                    {
-                        MaxWorkingBytes = 1
-                    }
-                }).Count(input)).ResourceKind);
-        var invalid = input.Append((byte)255).ToArray();
+                new Utf8Regex(dependent, options: RegexOptions.None, policy: tight).Count(dependentInput)).ResourceKind);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() =>
                 new Utf8Regex(@"\w+\s+Holmes", options: RegexOptions.None, policy: new Utf8RegexPolicy
@@ -177,7 +180,7 @@ public sealed class Utf8ClassPrefixCandidateTests
                     {
                         MaxWorkSteps = 1
                     }
-                }).Count(invalid)).ResourceKind);
+                }).Count(input)).ResourceKind);
     }
 
     [Theory]
