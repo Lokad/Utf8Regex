@@ -78,7 +78,7 @@ public sealed class PosixWorkspaceTests
         Assert.False(PosixProgram.Compile("a?(ab*)?", default).FirstAcceptanceIsLongest);
         Assert.True(PosixProgram.Compile("(a?){2,4}", default).FirstAcceptanceIsLongest);
         Assert.False(PosixProgram.Compile("(a|aa)*", default).FirstAcceptanceIsLongest);
-        Assert.True(PosixProgram.Compile("(a*)(b*)", default).GreedyAsciiRuns);
+        Assert.True(PosixProgram.Compile("(a*)(b*)", default).DirectGreedyRuns);
     }
     [Fact]
     public void FixedAlternativeProofKeepsUnequalNestedAndConsumingTailsGeneral()

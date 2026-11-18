@@ -8,11 +8,11 @@ namespace Lokad.Utf8Regex.Posix;
 // parts. Final public capture slots alone cannot order repeated POSIX parses.
 internal sealed partial class PosixProgram
 {
-    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool greedyAsciiRuns, int firstRequiredRunAtom,
+    private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool directGreedyRuns, int firstRequiredRunAtom,
         ChartNode[] chart, Utf8SliceNode.CategorySetNode[] chartClasses)
     {
         Scalar = scalar; Parents = parents; CaptureTags = captureTags;
-        FirstAcceptanceIsLongest = firstAcceptanceIsLongest; GreedyAsciiRuns = greedyAsciiRuns;
+        FirstAcceptanceIsLongest = firstAcceptanceIsLongest; DirectGreedyRuns = directGreedyRuns;
         FirstRequiredRunAtom = firstRequiredRunAtom;
         Chart = chart; ChartClasses = chartClasses;
     }
@@ -21,7 +21,7 @@ internal sealed partial class PosixProgram
     internal int[] Parents { get; }
     internal int[] CaptureTags { get; }
     internal bool FirstAcceptanceIsLongest { get; }
-    internal bool GreedyAsciiRuns { get; }
+    internal bool DirectGreedyRuns { get; }
     internal int FirstRequiredRunAtom { get; }
     internal ChartNode[] Chart { get; }
     internal Utf8SliceNode.CategorySetNode[] ChartClasses { get; }
@@ -121,19 +121,19 @@ internal sealed partial class PosixProgram
             (options & PosixCompileOptions.IgnoreCase) != 0, false)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
         var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
-        var asciiOnly = true;
+        var canReplayDirectly = true;
         var firstRunAtom = -1;
-        var greedyRuns = scalar.RepeatCount > 0 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget, out asciiOnly, out firstRunAtom);
-        var greedyAsciiRuns = greedyRuns && asciiOnly;
-        var firstRequiredRunAtom = greedyRuns && !greedyAsciiRuns ? firstRunAtom : -1;
+        var greedyRuns = scalar.RepeatCount > 0 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget, out canReplayDirectly, out firstRunAtom);
+        var directGreedyRuns = greedyRuns && canReplayDirectly;
+        var firstRequiredRunAtom = greedyRuns && (!directGreedyRuns || scalar.IgnoreCase) ? firstRunAtom : -1;
         if (!firstAcceptanceIsLongest)
             firstAcceptanceIsLongest = greedyRuns || CanSelectRepeatedLiteralCapture(scalar, budget);
         if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
         var chart = !firstAcceptanceIsLongest && groups != 0 ? CreateChart(root, budget)
             : (Nodes: Array.Empty<ChartNode>(), Classes: Array.Empty<Utf8SliceNode.CategorySetNode>());
-        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest, greedyAsciiRuns, firstRequiredRunAtom,
+        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest, directGreedyRuns, firstRequiredRunAtom,
                 chart.Nodes, chart.Classes),
-            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest, x.greedyAsciiRuns, x.firstRequiredRunAtom, x.Nodes, x.Classes));
+            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest, x.directGreedyRuns, x.firstRequiredRunAtom, x.Nodes, x.Classes));
         construction.Complete();
         return result;
     }
@@ -289,7 +289,7 @@ internal sealed partial class PosixProgram
     }
 
     private static bool CanSelectGreedyRuns(Utf8SliceProgram program, ReadOnlySpan<int> publicTags, Utf8ConstructionBudget budget,
-        out bool asciiOnly, out int firstRequiredRunAtom)
+        out bool canReplayDirectly, out int firstRequiredRunAtom)
     {
         // Greedy runs maximize each earlier concatenation part. An overlapping
         // successor must be nullable: it can still consume the suffix of any
@@ -297,7 +297,7 @@ internal sealed partial class PosixProgram
         // Fixed scalar pieces introduce no choice; compare them with earlier
         // variable runs, but do not make them sources of possible rewind.
         // Public tags outside bodies occur once; no history can change the split.
-        asciiOnly = true;
+        canReplayDirectly = true;
         firstRequiredRunAtom = -1;
         Span<byte> seen = stackalloc byte[16];
         seen.Clear();
@@ -322,7 +322,7 @@ internal sealed partial class PosixProgram
                 // A mixed run can consume past its last LF. Only the ordinary
                 // scalar loop can return to the earlier beginning-of-line boundary.
                 if (instruction.A == (int)Utf8SliceAnchorKind.Beginning && instruction.B != 0 && canRewindAtLineStart)
-                    asciiOnly = false;
+                    canReplayDirectly = false;
                 continue;
             }
             if (instruction.Kind == Utf8SliceInstructionKind.Accept)
@@ -332,8 +332,8 @@ internal sealed partial class PosixProgram
                 // Positive disjoint runs have unique intervening boundaries.
                 // Ordinary greedy rewind tries the longest valid final endpoint
                 // first, including an earlier LF before a line-end anchor. The
-                // direct byte loop cannot rewind, so only that shortcut declines.
-                if (hasLineEndAnchor && (seen[lineFeedOctet] & lineFeedBit) != 0) asciiOnly = false;
+                // direct loop cannot rewind, so only that shortcut declines.
+                if (hasLineEndAnchor && (seen[lineFeedOctet] & lineFeedBit) != 0) canReplayDirectly = false;
                 return pieces > 0 && index == code.Length - 1 && !(hasAnchor && hasNullableRun);
             }
             var repeated = instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy;
@@ -383,7 +383,6 @@ internal sealed partial class PosixProgram
                 // For ASCII-origin members, invariant lowercase-fiber closures
                 // intersect exactly when these ASCII case keys intersect. Their
                 // Unicode partners still require ordinary scalar consumption.
-                asciiOnly = false;
                 mask.CopyTo(literalMask);
                 budget.ChargeWork(26);
                 for (var upper = (int)'A'; upper <= 'Z'; upper++)

@@ -168,7 +168,7 @@ public sealed class PosixPublicContractTests
             ResourcePolicy = new()
             {
                 MaxWorkSteps = 10000,
-                MaxDepth = 1024,
+                MaxDepth = 1,
                 MaxWorkingBytes = 1 << 20,
                 MaxResultBytes = 1
             }

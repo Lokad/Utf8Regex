@@ -30,13 +30,13 @@ public sealed class PosixGreedyAsciiRunTests
             "[a-z]+[0-9]+", "(([a-z]+))[0-9]{2,4}", "(a*)(a*)",
             "([a-z]*)([0-9]+)", "([a-z]+)([a-z0-9]*)", "a*([a-b]*)",
             "(a+)()", "Z(a+)()", "ZZ(a+)ZZ()", "[Z](a{1,3})[Z]()", "(a+)Z()" })
-            Assert.True(PosixProgram.Compile(pattern, default).GreedyAsciiRuns);
+            Assert.True(PosixProgram.Compile(pattern, default).DirectGreedyRuns);
         // The older homogeneous-literal proof can still accept (a*)(a+),
         // but its required overlapping tail cannot use the direct run loop.
-        Assert.False(PosixProgram.Compile("(a*)(a+)", default).GreedyAsciiRuns);
+        Assert.False(PosixProgram.Compile("(a*)(a+)", default).DirectGreedyRuns);
         foreach (var pattern in new[] { "Z(a+)a()", "Z([a-b]*)a()", "Z(a)+()", "^Z(a*)$" })
-            Assert.False(PosixProgram.Compile(pattern, default).GreedyAsciiRuns);
-        Assert.False(PosixProgram.Compile("Z(k+)K()", PosixCompileOptions.IgnoreCase).GreedyAsciiRuns);
+            Assert.False(PosixProgram.Compile(pattern, default).DirectGreedyRuns);
+        Assert.False(PosixProgram.Compile("Z(k+)K()", PosixCompileOptions.IgnoreCase).DirectGreedyRuns);
         foreach (var pattern in new[] { "([a-z]+)([a-z0-9]+)",
             "(a*)^(a*)", "(a*)^(b*)", "^([a-z]*)([0-9]+)$",
             "([a-zé]+)([0-9]+)", "([^0-9]+)([0-9]+)", "([a-z])+([0-9]+)", "([a-z]+)|([0-9]+)",
@@ -51,14 +51,14 @@ public sealed class PosixGreedyAsciiRunTests
         {
             var program = PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase);
             Assert.True(program.FirstAcceptanceIsLongest);
-            Assert.False(program.GreedyAsciiRuns); // Kelvin is not an ASCII byte run.
+            Assert.True(program.DirectGreedyRuns);
         }
         foreach (var pattern in new[] { "([k]+)([K]+)", "([k]*)^([0-9]+)", "([k])+([0-9]+)",
             "([K]+)([0-9]+)", "([^k]+)([0-9]+)", "(k|kk)(k*)" })
             Assert.False(PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase).FirstAcceptanceIsLongest);
         var rewind = PosixProgram.Compile("^([a-z]+)([[:space:]]+)$", PosixCompileOptions.Newline);
         Assert.True(rewind.FirstAcceptanceIsLongest);
-        Assert.False(rewind.GreedyAsciiRuns);
+        Assert.False(rewind.DirectGreedyRuns);
     }
 
     [Theory]
@@ -109,7 +109,7 @@ public sealed class PosixGreedyAsciiRunTests
         var contrast = pattern + "|$.";
         var program = PosixProgram.Compile(pattern, options);
         Assert.True(program.FirstAcceptanceIsLongest);
-        Assert.Equal(!pattern.Contains('$') && (options & PosixCompileOptions.IgnoreCase) == 0, program.GreedyAsciiRuns);
+        Assert.Equal(!pattern.Contains('$'), program.DirectGreedyRuns);
         Assert.False(PosixProgram.Compile(contrast, options).FirstAcceptanceIsLongest);
         var regex = new Utf8PosixRegex(pattern, options: options);
         var general = new Utf8PosixRegex(contrast, options: options);

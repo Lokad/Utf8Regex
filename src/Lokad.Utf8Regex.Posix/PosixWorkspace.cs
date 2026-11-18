@@ -36,7 +36,7 @@ internal partial struct PosixWorkspace
     internal PosixWorkspace(PosixProgram program, ref Utf8SliceInvocation invocation, bool captureHistory = true)
     {
         _program = program;
-        _openOffset = program.GreedyAsciiRuns ? 0 : checked(program.Scalar.RepeatCount * 2);
+        _openOffset = program.DirectGreedyRuns ? 0 : checked(program.Scalar.RepeatCount * 2);
         var tags = captureHistory ? program.FirstAcceptanceIsLongest ? program.Parents.Length : program.CaptureTags.Length - 1 : 0;
         _lastOffset = checked(_openOffset + tags);
         var count = checked(_lastOffset + tags);
@@ -79,7 +79,7 @@ internal partial struct PosixWorkspace
                     _frames.Release(ref invocation); _undo.Release(ref invocation);
                     SelectChart(input, state, candidate, end, ref invocation);
                 }
-                else if (captureHistory && !_program.GreedyAsciiRuns)
+                else if (captureHistory && !_program.DirectGreedyRuns)
                 {
                     var trace = _trace.WrittenItems;
                     for (var index = 0; index < trace.Length; index++)
@@ -143,9 +143,9 @@ internal partial struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.Jump: pc = instruction.A; break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
-                    if (_program.GreedyAsciiRuns)
+                    if (_program.DirectGreedyRuns)
                     {
-                        // The compiler proves greedy endpoints for ASCII runs:
+                        // The compiler proves greedy endpoints for these runs:
                         // required successors are disjoint, overlapping ones are
                         // nullable, and nullable programs have no anchors. No
                         // alternative exit/counter undo can improve selection.
@@ -154,18 +154,36 @@ internal partial struct PosixWorkspace
                         var atomIndex = pc + (code[pc + 1].Kind == Utf8SliceInstructionKind.CaptureStart ? 2 : 1);
                         var atom = code[atomIndex];
                         var literal = atom.Kind == Utf8SliceInstructionKind.Literal ? atom.A : -1;
-                        ReadOnlySpan<byte> mask = literal < 0 ? _program.Scalar.SetMasks[atom.A] : [];
-                        var limit = at + (int)Math.Min(input.Length - (long)at, instruction.RepeatMaximum);
-                        var runStart = at;
-                        while (at < limit)
+                        var mask = literal < 0 ? _program.Scalar.SetMasks[atom.A] : Array.Empty<byte>();
+                        var limit = (int)Math.Min(input.Length - (long)at, instruction.RepeatMaximum);
+                        var consumed = 0;
+                        if (atom.B == 0)
                         {
-                            Charge(ref invocation);
-                            var value = input[at];
-                            if (value >= 128 || (literal >= 0 ? value != literal :
-                                (mask[value >> 3] & (1 << (value & 7))) == 0)) break;
-                            at++;
+                            var runStart = at;
+                            var endLimit = at + limit;
+                            while (at < endLimit)
+                            {
+                                Charge(ref invocation);
+                                var value = input[at];
+                                if (value >= 128 || (literal >= 0 ? value != literal :
+                                    (mask[value >> 3] & (1 << (value & 7))) == 0)) break;
+                                at++;
+                            }
+                            consumed = at - runStart;
                         }
-                        if (at - runStart < instruction.RepeatMinimum) { failed = true; break; }
+                        else
+                        {
+                            while (consumed < limit && at < input.Length)
+                            {
+                                Charge(ref invocation);
+                                if (Rune.DecodeFromUtf8(input[at..], out var rune, out var size) != OperationStatus.Done ||
+                                    !(literal >= 0 ? MatchesLiteral(rune, literal) :
+                                        Utf8SliceScalarClasses.MatchesMask(rune, mask, true, _program.Scalar.CaseBehavior))) break;
+                                at += size;
+                                consumed++;
+                            }
+                        }
+                        if (consumed < instruction.RepeatMinimum) { failed = true; break; }
                         pc = instruction.A + 1; // Skip the unused counter reset.
                         break;
                     }
@@ -212,7 +230,7 @@ internal partial struct PosixWorkspace
                 case Utf8SliceInstructionKind.CaptureStart:
                     if (captureHistory)
                     {
-                        if (_program.GreedyAsciiRuns)
+                        if (_program.DirectGreedyRuns)
                             state[_openOffset + instruction.A] = at;
                         else
                         {
@@ -225,7 +243,7 @@ internal partial struct PosixWorkspace
                 case Utf8SliceInstructionKind.CaptureEnd:
                     if (captureHistory)
                     {
-                        if (_program.GreedyAsciiRuns)
+                        if (_program.DirectGreedyRuns)
                             state[_lastOffset + instruction.A] = at;
                         else
                             Check(_trace.TryPush(new(instruction.A, at, state[_openOffset + instruction.A]), ref invocation), ref invocation);
@@ -445,7 +463,7 @@ internal partial struct PosixWorkspace
         // The existing flat-run proof excludes forks and public captures inside
         // repeat bodies. Each public tag opens/closes once on the successful parse; no
         // occurrence history or parent reconciliation can change these edges.
-        if (_program.GreedyAsciiRuns)
+        if (_program.DirectGreedyRuns)
         {
             start = state[_openOffset + tag]; end = state[_lastOffset + tag];
             return start >= 0 && end >= 0;
