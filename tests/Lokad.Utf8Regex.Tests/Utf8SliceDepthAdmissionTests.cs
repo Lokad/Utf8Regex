@@ -9,9 +9,10 @@ public sealed class Utf8SliceDepthAdmissionTests
     private static Utf8SliceProgram Frames(int count, bool repeats, bool rtl)
     {
         Utf8SliceNode root = repeats
-            // The overlapping suffix keeps the repeat's alternatives live.
+            // The folded literal keeps per-iteration frames on both directions.
+            // The overlapping suffix keeps those alternatives live.
             ? new Utf8SliceNode.ConcatNode([
-                new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(0x1f600, false), 0, count, false),
+                new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(0x1f600, true), 0, count, false),
                 new Utf8SliceNode.LiteralNode(0x1f600, false)])
             : new Utf8SliceNode.ConcatNode(Enumerable.Range(0, count).Select(_ => (Utf8SliceNode)
                 new Utf8SliceNode.AlternationNode([[new Utf8SliceNode.LiteralNode(0x1f600, false)], [new Utf8SliceNode.LiteralNode(0xe9, false)]])).ToArray());

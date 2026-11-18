@@ -865,11 +865,17 @@ internal static partial class Utf8SliceRunner
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunClassRepeat(Utf8SliceProgram program, int repeatIndex,
         ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation, bool minimumOnly = false,
         bool checkExitDeadline = true)
+        => RunClassRepeat(program, repeatIndex, input, start, ref invocation, out _, minimumOnly, checkExitDeadline);
+
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunClassRepeat(Utf8SliceProgram program, int repeatIndex,
+        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation, out int minimumEnd,
+        bool minimumOnly = false, bool checkExitDeadline = true)
     {
         var repeat = program.Instructions[repeatIndex];
         var atom = program.Instructions[repeatIndex + 1];
         var minimum = repeat.RepeatMinimum;
         var maximum = minimumOnly ? minimum : repeat.RepeatMaximum;
+        minimumEnd = start;
         var position = start;
         var count = 0;
         var dot = atom.Kind == Utf8SliceInstructionKind.Dot;
@@ -880,6 +886,7 @@ internal static partial class Utf8SliceRunner
         if (asciiFirst >= 0)
         {
             var ascii = RunUnboundedAsciiRange(input, start, (byte)asciiFirst, asciiLast, ref invocation, checkExitDeadline);
+            if (minimum != 0 && ascii.EndIndex > start) minimumEnd = start + 1;
             return ascii.EndIndex == start && minimum != 0 ? (-1, ascii.Breach) : ascii;
         }
         byte first = (byte)'\n', second = (byte)'\n';
@@ -904,6 +911,7 @@ internal static partial class Utf8SliceRunner
             if (terminalBreach != Utf8ExecutionLimitKind.None) return (-1, terminalBreach);
             // With no maximum and minimum at most one, nonempty byte extent
             // suffices; bounded/scalar-counted repeats keep the normal loop.
+            if (minimum != 0 && position > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);
             return position != start || minimum == 0
                 ? (position, Utf8ExecutionLimitKind.None)
                 : (-1, Utf8ExecutionLimitKind.None);
@@ -923,7 +931,7 @@ internal static partial class Utf8SliceRunner
                 if ((asciiMask[value >> 3] & (1 << (value & 7))) != 0)
                 {
                     position++;
-                    count++;
+                    if (++count == minimum) minimumEnd = position;
                     continue;
                 }
                 if (atom.Kind == Utf8SliceInstructionKind.Set || GetCompleteAsciiCategoryMask(program, atom) != 0)
@@ -934,7 +942,7 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
             if (!hit) break;
             position += width;
-            count++;
+            if (++count == minimum) minimumEnd = position;
         }
         var terminal = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
         if (terminal != Utf8ExecutionLimitKind.None) return (-1, terminal);

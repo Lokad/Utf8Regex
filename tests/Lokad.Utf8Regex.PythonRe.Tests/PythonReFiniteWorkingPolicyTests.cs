@@ -103,7 +103,7 @@ public sealed class PythonReFiniteWorkingPolicyTests
             MaxWorkingBytes = kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1 : ulong.MaxValue,
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue
         };
-        var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>😀ab)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        var regex = new Utf8PythonRegex("(?P<x>😀)+(?P<y>😀ab)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = policy

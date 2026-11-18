@@ -15,6 +15,7 @@ internal enum Utf8SliceResumeKind : byte
     RepeatContinue = 2,
     Assertion = 3,
     Atomic = 4,
+    ScalarRepeatRewind = 5,
 }
 
 internal struct Utf8SliceFrame
@@ -1176,6 +1177,29 @@ internal static partial class Utf8SliceRunner
                                 programIndex = continuation;
                                 break;
                             }
+                            if (continuation > programIndex && instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy)
+                            {
+                                // A pure scalar run has no intermediate state to restore.
+                                // One frame can revisit its earlier endpoints in greedy order.
+                                var run = RunClassRepeat(program, programIndex, input, inputIndex, ref invocation,
+                                    out var minimumEnd);
+                                if (run.Breach != Utf8ExecutionLimitKind.None)
+                                { failure = run.Breach; goto Failure; }
+                                if (run.EndIndex < 0) { failed = true; break; }
+                                if (run.EndIndex > minimumEnd && !stacks.PushFrame(new Utf8SliceFrame
+                                {
+                                    ResumeKind = Utf8SliceResumeKind.ScalarRepeatRewind,
+                                    Target = continuation,
+                                    InputIndex = run.EndIndex,
+                                    TrailCount = stacks.TrailCount,
+                                    Aux = minimumEnd,
+                                    JournalCount = stacks.JournalCount,
+                                }, ref invocation))
+                                { failure = stacks.Breach; goto Failure; }
+                                inputIndex = run.EndIndex;
+                                programIndex = continuation;
+                                break;
+                            }
                             if (counts.Length == 0)
                             {
                                 var breach = stacks.TryRentRepeatTables(program.RepeatCount, ref invocation,
@@ -1728,6 +1752,18 @@ internal static partial class Utf8SliceRunner
                     case Utf8SliceResumeKind.Atomic:
                         inputIndex = popped.InputIndex;
                         programIndex = popped.Target;
+                        break;
+                    case Utf8SliceResumeKind.ScalarRepeatRewind:
+                        var breach = invocation.TryChargeStep();
+                        if (breach != Utf8ExecutionLimitKind.None) { failure = breach; goto Failure; }
+                        if (!TryGetScalarWidthEndingAt(input, popped.InputIndex, out var width)) goto Backtrack;
+                        inputIndex = popped.InputIndex - width;
+                        programIndex = popped.Target;
+                        if (inputIndex > popped.Aux)
+                        {
+                            popped.InputIndex = inputIndex;
+                            if (!stacks.PushFrame(popped, ref invocation)) { failure = stacks.Breach; goto Failure; }
+                        }
                         break;
                     case Utf8SliceResumeKind.RepeatUnwind:
                         if (!SetRepeat(counts, positions, popped.Aux, popped.Count, popped.InputIndex, ref stacks, ref invocation))

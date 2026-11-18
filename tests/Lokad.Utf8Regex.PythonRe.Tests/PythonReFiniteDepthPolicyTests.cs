@@ -33,7 +33,7 @@ public sealed class PythonReFiniteDepthPolicyTests
     [MemberData(nameof(Operations))]
     public void EveryPublicOperationHasFiniteDepthAndExactCutoff(int operation, bool bytes)
     {
-        const string pattern = "(?P<x>😀+)(?P<y>😀ab)"; var input = "😀😀😀ab"u8.ToArray();
+        const string pattern = "(?P<x>😀)+(?P<y>😀ab)"; var input = "😀😀😀ab"u8.ToArray();
         var expected = PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation);
         Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, uint.MaxValue, bytes), input, operation));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFiniteWorkPolicyTests.Run(Create(pattern, 1, bytes), input, operation)), 1);
@@ -63,8 +63,8 @@ public sealed class PythonReFiniteDepthPolicyTests
     public void ExplicitCursorOwnerPreservesSnapshotsOnDepthFailureAndDisposal()
     {
         Utf8PythonRangeMatch cursorRange = default;
-        // The overlapping emoji tail requires rewinding the greedy run.
-        var regex = Create("(?P<x>ab)|😀+😀ab", 1, false); using var cursor = regex.CreateMatchCursor("ab 😀😀ab"u8.ToArray());
+        // Each repeated capture has its own rollback state.
+        var regex = Create("(?P<x>ab)|(?P<unit>😀)+😀ab", 1, false); using var cursor = regex.CreateMatchCursor("ab 😀😀ab"u8.ToArray());
         Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _)), 1);
         cursor.Dispose(); cursor.Dispose(); Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
@@ -83,7 +83,7 @@ public sealed class PythonReFiniteDepthPolicyTests
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
             MaxDepth = kind == Utf8ResourceLimitKind.ExecutionDepth ? 1 : uint.MaxValue
         };
-        var regex = new Utf8PythonRegex("(?P<x>😀+)(?P<y>😀ab)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        var regex = new Utf8PythonRegex("(?P<x>😀)+(?P<y>😀ab)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = policy
@@ -140,7 +140,7 @@ public sealed class PythonReFiniteDepthPolicyTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void DepthPolicyStillValidatesTheEntireSubjectAndScalarOffsets(bool bytes)
+    public void DepthPolicyPreservesScalarStartOffsets(bool bytes)
     {
         var regex = Create("ab", 1, bytes);
 

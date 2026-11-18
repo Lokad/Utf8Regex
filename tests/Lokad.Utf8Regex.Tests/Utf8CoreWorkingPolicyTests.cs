@@ -96,7 +96,7 @@ public sealed class Utf8CoreWorkingPolicyTests
             MaxWorkingBytes = kind == Utf8ResourceLimitKind.ExecutionWorkingBytes ? 1 : ulong.MaxValue,
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue
         };
-        var regex = new Utf8Regex("(?<x>😀+)(?<y>😀ab)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        var regex = new Utf8Regex("(?<x>😀)+(?<y>😀ab)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = policy

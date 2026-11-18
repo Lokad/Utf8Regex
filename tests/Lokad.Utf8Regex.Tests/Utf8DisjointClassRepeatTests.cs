@@ -339,25 +339,17 @@ public sealed class Utf8DisjointClassRepeatTests
 
     [Theory]
     [InlineData(1)] [InlineData(2)] [InlineData(31)] [InlineData(32)] [InlineData(33)]
-    public void OnlyProvedUselessAlternativesLoseTheirDepthRequirement(int nesting)
+    public void DisjointRepeatOmitsItsFrameWithinTheProofLimit(int nesting)
     {
-        var policy = new Utf8ResourcePolicy { MaxDepth = 1, MaxWorkSteps = 100000, MaxWorkingBytes = 1 << 20, MaxResultBytes = 1 };
         var text = Encoding.UTF8.GetBytes(new string('a', 2048) + "-");
-        var disjoint = new Utf8Regex(new string('(', nesting) + "[a-z]+" + new string(')', nesting) + "-", options:             RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = policy
-        });
-        if (nesting <= 32) Assert.Equal(1, disjoint.Count(text));
-        else Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => disjoint.Count(text)).ResourceKind);
-        var overlapping = new Utf8Regex("([a-z]+)a", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = Timeout.InfiniteTimeSpan,
-            ResourcePolicy = policy
-        });
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => overlapping.Count(text));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, error.ResourceKind);
+        using var regex = new Utf8Regex(new string('(', nesting) + "[a-z]+" + new string(')', nesting) + "-");
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var invocation = new Utf8SliceInvocation(new(100000, 1, 1 << 20), Timeout.InfiniteTimeSpan, default);
+        var result = Utf8SliceRunner.CountFromBytes(program, text, 0,
+            new int[program.GroupCount], new int[program.GroupCount], ref invocation);
+        Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
+        Assert.Equal(1, result.Count);
+        Assert.Equal(nesting <= 32 ? 0u : 1u, invocation.Budget.PeakDepth);
     }
 
     [Theory]

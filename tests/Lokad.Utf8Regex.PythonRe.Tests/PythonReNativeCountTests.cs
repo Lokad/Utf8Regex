@@ -93,7 +93,7 @@ public sealed class PythonReNativeCountTests
         var tuples = snapshots1.Select(captureSnapshot1 => Enumerable.Range(1, captureSnapshot1.Groups.Length - 1).Select(captureNumber1 => captureSnapshot1.GetGroupMemory(captureNumber1).ToArray()).ToArray()).ToArray();
         Assert.Equal("a"u8.ToArray(), tuples[0][0]);
         Assert.Equal("b"u8.ToArray(), tuples[0][1]);
-        var generic = new Utf8PythonRegex("(a+)(b+)", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        var generic = new Utf8PythonRegex("(a|aa)+b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()

@@ -43,7 +43,7 @@ public sealed class Pcre2ReplaceLimitTests
     public void TinyDepthLimitBreachesTemplateReplace()
     {
         var input = Encoding.UTF8.GetBytes("aaabbb aaabbb");
-        var exception = Assert.Throws<Pcre2MatchException>(() => Create("(a+)(b+)", new Utf8Pcre2ExecutionLimits { DepthLimit = 1 }).Replace(input, "Z"u8));
+        var exception = Assert.Throws<Pcre2MatchException>(() => Create("(a)+(b)+", new Utf8Pcre2ExecutionLimits { DepthLimit = 1 }).Replace(input, "Z"u8));
         Assert.Equal(Pcre2ErrorKind.DepthLimit, exception.ErrorKind);
     }
 

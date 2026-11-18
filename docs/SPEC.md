@@ -450,6 +450,11 @@ successful result. Charges depend on the route and version. For example,
 a proved repeat endpoint can avoid acquiring backtracking frames, and a
 proved candidate filter can avoid VM work before verification.
 
+A forward greedy repeat of one side-effect-free scalar atom can keep its
+remaining endpoints in a single live frame. The run scan and each retry are
+metered. Depth and working admission cover the frame, while capture and
+assertion state retain their own admission.
+
 The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result
 storage. A shared or temporary allocation may count more than once.

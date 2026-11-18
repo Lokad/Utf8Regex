@@ -26,7 +26,7 @@ public sealed class Utf8CoreDepthPolicyTests
     [MemberData(nameof(OperationModes), MemberType = typeof(Utf8CoreWorkPolicyTests))]
     public void AllPublicOperationsHaveExactDepthSuccessAndOneUnderDenial(string operation, bool compiled, bool live)
     {
-        const string pattern = "(?<x>😀+)(?<y>😀ab)";
+        const string pattern = "(?<x>😀)+(?<y>😀ab)";
         var input = "😀😀😀ab"u8.ToArray();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         using var source = new CancellationTokenSource(); var token = live ? source.Token : default;
@@ -61,7 +61,7 @@ public sealed class Utf8CoreDepthPolicyTests
     [Fact]
     public void CopiedCursorDenialIsStickyAndRetainedRangesStayValid()
     {
-        var input = "ab 😀😀ab"u8.ToArray(); var regex = Create("(?<x>ab)|😀+😀ab", 1, RegexOptions.CultureInvariant);
+        var input = "ab 😀😀ab"u8.ToArray(); var regex = Create("(?<x>ab)|(?<unit>😀)+😀ab", 1, RegexOptions.CultureInvariant);
         var cursor = regex.EnumerateMatches(input); Assert.True(cursor.MoveNext()); var retained = cursor.Current; var alias = cursor;
         try { alias.MoveNext(); Assert.Fail("Depth denial must remain an exception."); } catch (Utf8ResourceLimitExceededException error) { Denied(error, 1); }
         try { cursor.MoveNext(); Assert.Fail("Aliases must share the first denial."); } catch (Utf8ResourceLimitExceededException error) { Denied(error, 1); }
@@ -166,7 +166,7 @@ public sealed class Utf8CoreDepthPolicyTests
             MaxResultBytes = kind == Utf8ResourceLimitKind.ExecutionResultBytes ? 1 : ulong.MaxValue,
             MaxDepth = kind == Utf8ResourceLimitKind.ExecutionDepth ? 1 : uint.MaxValue
         };
-        var regex = new Utf8Regex("(?<x>😀+)(?<y>😀ab)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        var regex = new Utf8Regex("(?<x>😀)+(?<y>😀ab)", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = policy
@@ -180,7 +180,7 @@ public sealed class Utf8CoreDepthPolicyTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void DepthPolicyStillValidatesTheEntireSubjectAndScalarOffsets(bool compiled)
+    public void DepthPolicyPreservesScalarStartOffsets(bool compiled)
     {
         var regex = Create("ab", 1, RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀ab"u8, 1, []));

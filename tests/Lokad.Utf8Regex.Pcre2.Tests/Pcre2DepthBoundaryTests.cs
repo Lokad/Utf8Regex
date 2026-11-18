@@ -27,7 +27,7 @@ public sealed class Pcre2DepthBoundaryTests
     [Theory]
     [InlineData("(a)+(b)+", "aaabbb aaabbb", 5, 2)]
     [InlineData("((a)+)b", "aaab aaab", 3, 2)]
-    [InlineData("(a+)+b", "aaab", 3, 1)]
+    [InlineData("(a+)+b", "aaab", 2, 1)]
     public void CountSucceedsWhenDepthLimitEqualsPeak(string pattern, string inputText, uint peakDepth, int expected)
     {
         Assert.Equal(expected, Create(pattern, peakDepth).Count(Encoding.UTF8.GetBytes(inputText)));
@@ -36,7 +36,7 @@ public sealed class Pcre2DepthBoundaryTests
     [Theory]
     [InlineData("(a)+(b)+", "aaabbb aaabbb", 4)]
     [InlineData("((a)+)b", "aaab aaab", 2)]
-    [InlineData("(a+)+b", "aaab", 2)]
+    [InlineData("(a+)+b", "aaab", 1)]
     public void CountBreachesWhenDepthLimitIsOneBelowPeak(string pattern, string inputText, uint depthLimit)
     {
         var exception = Assert.Throws<Pcre2MatchException>(() => Create(pattern, depthLimit).Count(Encoding.UTF8.GetBytes(inputText)));

@@ -7,11 +7,11 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8DotTailRepeatTests
 {
-    private static Utf8ResourcePolicy Policy(uint depth = 128, ulong result = 1 << 20) => new()
+    private static Utf8ResourcePolicy Policy(uint depth = 128, ulong result = 1 << 20, ulong working = 1 << 20) => new()
     {
         MaxWorkSteps = 1_000_000,
         MaxDepth = depth,
-        MaxWorkingBytes = 1 << 20,
+        MaxWorkingBytes = working,
         MaxResultBytes = result
     };
 
@@ -184,10 +184,10 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Fact]
-    public void UselessDotAlternativesLoseDepthButOverlappingTailsStillNeedIt()
+    public void OverlappingDotTailAdmitsOneRewindFrame()
     {
         var input = Encoding.UTF8.GetBytes(new string('a', 2048) + "\n");
-        var policy = Policy(1, 1);
+        var policy = Policy(depth: 1, working: 1);
         Assert.Equal(1, new Utf8Regex("(?m:^(.+)$)", options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
@@ -199,7 +199,36 @@ public sealed class Utf8DotTailRepeatTests
             ResourcePolicy = policy
         });
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => overlapping.Count(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionDepth, error.ResourceKind);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, error.ResourceKind);
+        using var admitted = new Utf8Regex(@"\Aa*a\z", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = Policy(depth: 1, working: 768)
+        });
+        using var token = new CancellationTokenSource();
+        Array.Fill(input, (byte)'a');
+        Assert.True(admitted.IsMatch(input, token.Token));
+        input[^1] = (byte)'b';
+        Assert.False(admitted.IsMatch(input, token.Token));
+    }
+
+    [Theory]
+    [InlineData(@"\A(?<head>[aé😀]{2,4})😀éa\z", 10, "aé")]
+    [InlineData(@"\A(?=(?<head>[aé😀]{2,4})😀éa\z)a", 1, "aé")]
+    [InlineData(@"\A(?<head>[aé😀]{3,4})😀éa\z", -1, "")]
+    [InlineData(@"\A(?>(?<head>[aé😀]{2,4}))😀éa\z", -1, "")]
+    public void GreedyRewindPreservesScalarMinimaAndCaptureRestoration(string pattern, int end, string head)
+    {
+        using var regex = new Utf8Regex(pattern);
+        using var token = new CancellationTokenSource();
+        var input = "aé😀éa"u8.ToArray();
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
+        Assert.Equal(end >= 0, match.Success);
+        Assert.Equal(end >= 0 ? 1 : 0, regex.Count(input, token.Token));
+        if (!match.Success) return;
+        Assert.Equal((0, end), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+        Assert.Equal(head, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        Assert.Single(match.GetCaptures(1).ToArray());
     }
 
     [Theory]
@@ -242,15 +271,19 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(true, true)]
-    public void DotScanObservesOriginalInterruptionAndReleasesScratch(bool timeout, bool singleline)
+    [InlineData("(?m:^(.+)$)", "😀", "", 0u, false)]
+    [InlineData("(?m:^(.+)$)", "😀", "", 0u, true)]
+    [InlineData("(?sm:^(.+)$)", "😀", "", 0u, false)]
+    [InlineData("(?sm:^(.+)$)", "😀", "", 0u, true)]
+    [InlineData(@"\A[ab]*a\z", "a", "b", 1u, false)]
+    [InlineData(@"\A[ab]*a\z", "a", "b", 1u, true)]
+    public void ScalarRepeatObservesOriginalInterruptionAndReleasesScratch(
+        string pattern, string atom, string suffix, uint expectedDepth, bool timeout)
     {
-        var program = new Utf8Regex(singleline ? "(?sm:^(.+)$)" : "(?m:^(.+)$)").Inspection.AvailableOwnedSliceProgram!;
-        // Reach the diagnostic interruption quantum even with bounded byte scans.
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", 65536)));
+        using var regex = new Utf8Regex(pattern);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        // The ASCII run ends before the first diagnostic checkpoint, during rewind.
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(atom, 65536)) + suffix);
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -266,6 +299,7 @@ public sealed class Utf8DotTailRepeatTests
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
             Assert.True(invocation.Budget.Steps >= 64);
+            Assert.Equal(expectedDepth, invocation.Budget.PeakDepth);
         }
         finally { session.Complete(); }
     }

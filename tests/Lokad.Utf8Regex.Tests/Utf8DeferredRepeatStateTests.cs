@@ -26,7 +26,7 @@ public sealed class Utf8DeferredRepeatStateTests
     [Fact]
     public void UnfusedRepeatTablesAreReusedBetweenAttempts()
     {
-        var program = Program("a{1,3}a");
+        var program = Program(@"a{1,3}?a\z");
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         try
@@ -55,7 +55,7 @@ public sealed class Utf8DeferredRepeatStateTests
     [Fact]
     public void AssertionRootsRetainTheirTablesAcrossChildResumeAndHistoryPublication()
     {
-        var program = Program(@"(?<x>a{1,3})(?=b{1,2}c)b+c");
+        var program = Program(@"(?<x>a{1,3}?)(?=b{1,2}c)b+c");
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);

@@ -25,7 +25,6 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
 
     [Theory]
     [InlineData("^((.)(?1)\\2|.?)$", Pcre2CompileOptions.None, "abccba")]
-    [InlineData(".*(ss)", Pcre2CompileOptions.None, "xxss")]
     [InlineData("^[-+]?\\d*\\.?\\d*$", Pcre2CompileOptions.None, "12.5")]
     [InlineData("^([0-9]+)(\\-| |$)(.*)$", Pcre2CompileOptions.None, "200 ok")]
     public void GrowingSearchBreachesDepth(string pattern, Pcre2CompileOptions options, string inputText)
@@ -36,11 +35,12 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
         Assert.Equal(Pcre2ErrorKind.DepthLimit, exception.ErrorKind);
     }
 
-    [Fact]
-    public void FramelessBoundedScanSucceedsUnderDepthLimit()
+    [Theory]
+    [InlineData("(\\d{4}[- ]){3}\\d{3,4}", "4111-1111-1111-1111")]
+    [InlineData(".*(ss)", "xxss")]
+    public void BoundedSearchSucceedsUnderDepthLimit(string pattern, string inputText)
     {
-        const string pattern = "(\\d{4}[- ]){3}\\d{3,4}";
-        var input = Encoding.UTF8.GetBytes("4111-1111-1111-1111");
+        var input = Encoding.UTF8.GetBytes(inputText);
         Assert.True(Create(pattern, Pcre2CompileOptions.None, default).IsMatch(input));
         Assert.True(Create(pattern, Pcre2CompileOptions.None, new Utf8Pcre2ExecutionLimits { DepthLimit = 1 }).IsMatch(input));
     }

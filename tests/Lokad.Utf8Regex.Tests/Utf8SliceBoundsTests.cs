@@ -51,7 +51,8 @@ public sealed class Utf8SliceBoundsTests
     [Fact]
     public void DepthBudgetBreachesDeterministically()
     {
-        var program = PlusProgram();
+        using var regex = new Utf8Regex("(?<part>a)+b");
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.ASCII.GetBytes("aaabbb");
         var invocation = Invoke(0, 1, 0, CancellationToken.None);
         var (starts, ends) = Slots(program);
