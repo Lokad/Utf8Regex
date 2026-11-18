@@ -374,11 +374,9 @@ internal static class Utf8OwnedTreeParser
                             continue;
                         }
 
-                        if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
-                            Utf8OwnedCaseFold.TryGetFold((char)escaped, state.CaseBehavior, out var escapeLower, out var escapeUpper))
+                        if (FoldedSet(state.Options, (char)escaped, state.CaseBehavior) is { } escapedAtom)
                         {
                             FlushRun(state, children, run);
-                            var escapedAtom = FoldedSet(state.Options, escapeLower, escapeUpper);
                             if (!ParseQuantifier(ref state, ref escapedAtom, out var decayedEscaped))
                             {
                                 context.Fail(state);
@@ -428,12 +426,10 @@ internal static class Utf8OwnedTreeParser
                             continue;
                         }
 
-                        if ((state.Options & RegexOptions.IgnoreCase) != 0 &&
-                            Utf8OwnedCaseFold.TryGetFold(character, state.CaseBehavior, out var foldLower, out var foldUpper))
+                        if (FoldedSet(state.Options, character, state.CaseBehavior) is { } foldedAtom)
                         {
                             FlushRun(state, children, run);
                             state.Position = nextPosition;
-                            var foldedAtom = FoldedSet(state.Options, foldLower, foldUpper);
                             if (!ParseQuantifier(ref state, ref foldedAtom, out var decayedFolded))
                             {
                                 context.Fail(state);
@@ -1039,19 +1035,12 @@ internal static class Utf8OwnedTreeParser
                         Utf8ConstructionScope.ChargeWork(1);
                         if (value < 0x10000)
                         {
-                            if (behavior != Utf8ScalarCaseBehavior.Invariant &&
-                                ((value | 0x20) == 'i' || (value | 0x01) == '\u0131'))
+                            foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value, behavior))
                             {
-                                foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value, behavior))
-                                    {
-                                    Utf8ConstructionScope.ChargeWork(1);
+                                Utf8ConstructionScope.ChargeWork(1);
+                                if (equivalent < range.Low || equivalent >= range.High)
                                     ranges.Add((equivalent, equivalent + 1));
-                                }
-                                continue;
                             }
-                            if (!Utf8OwnedCaseFold.TryGetFold((char)value, behavior, out var lower, out var upper)) continue;
-                            ranges.Add((lower, lower + 1));
-                            ranges.Add((upper, upper + 1));
                         }
                         else
                         {
@@ -2127,10 +2116,9 @@ internal static class Utf8OwnedTreeParser
             morphed = true;
             if (fixup.Wrapper is null)
             {
-                if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0 &&
-                    Utf8OwnedCaseFold.TryGetFold((char)value, behavior, out var octalLower, out var octalUpper))
+                if (FoldedSet(fixup.Node.Options, (char)value, behavior) is { } octal)
                 {
-                    ReplaceNodeInParent(ref root, fixup.Node, FoldedSet(fixup.Node.Options, octalLower, octalUpper));
+                    ReplaceNodeInParent(ref root, fixup.Node, octal);
                     return true;
                 }
 
@@ -2157,10 +2145,8 @@ internal static class Utf8OwnedTreeParser
                 return false;
             }
 
-            if ((wrapper.Options & RegexOptions.IgnoreCase) != 0 &&
-                Utf8OwnedCaseFold.TryGetFold((char)value, behavior, out var wrapperLower, out var wrapperUpper))
+            if (FoldedSet(wrapper.Options, (char)value, behavior) is { } foldedLoop)
             {
-                var foldedLoop = FoldedSet(wrapper.Options, wrapperLower, wrapperUpper);
                 foldedLoop.Kind = wrapper.Kind == Utf8TreeNodeKind.Lazyloop
                     ? Utf8TreeNodeKind.Setlazy
                     : Utf8TreeNodeKind.Setloop;
@@ -2195,10 +2181,9 @@ internal static class Utf8OwnedTreeParser
         static bool ResolveOctalRest(Utf8ConstructionSession storage, OwnedBackrefFixup fixup, ref Utf8TreeNode root, ref bool morphed, int prefixLength, int value, Utf8ScalarCaseBehavior behavior)
         {
             Utf8TreeNode morphedLeaf;
-            if ((fixup.Node.Options & RegexOptions.IgnoreCase) != 0 &&
-                Utf8OwnedCaseFold.TryGetFold((char)value, behavior, out var restLower, out var restUpper))
+            if (FoldedSet(fixup.Node.Options, (char)value, behavior) is { } folded)
             {
-                morphedLeaf = FoldedSet(fixup.Node.Options, restLower, restUpper);
+                morphedLeaf = folded;
             }
             else
             {
@@ -2791,13 +2776,24 @@ internal static class Utf8OwnedTreeParser
                 children: null, parent: null, matchCaseInsensitive: (state.Options & RegexOptions.IgnoreCase) != 0);
         }
 
-        static Utf8TreeNode FoldedSet(RegexOptions options, char lower, char upper)
+        static Utf8TreeNode? FoldedSet(RegexOptions options, char value, Utf8ScalarCaseBehavior behavior)
         {
+            if ((options & RegexOptions.IgnoreCase) == 0) return null;
+            var equivalents = Utf8SliceCaseEquivalences.GetEquivalents(value, behavior);
+            if (equivalents.Length < 2) return null;
+            Span<int> ranges = stackalloc int[3 + equivalents.Length * 2];
+            ranges[0] = 0;
+            ranges[1] = equivalents.Length * 2;
+            ranges[2] = 0;
+            for (var index = 0; index < equivalents.Length; index++)
+            {
+                ranges[3 + index * 2] = equivalents[index];
+                ranges[4 + index * 2] = equivalents[index] + 1;
+            }
             using var data = Utf8ConstructionBuffer<int>.Create(Utf8ConstructionScope.CurrentBudget);
-            Span<int> ranges = stackalloc int[7] { 0, 4, 0, lower, (int)lower + 1, upper, (int)upper + 1 };
             data.AddRange(ranges);
             var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, options & ~RegexOptions.IgnoreCase, Utf8ScalarClass.Create(data));
-            node.MatchCaseInsensitive = (options & RegexOptions.IgnoreCase) != 0;
+            node.MatchCaseInsensitive = true;
             return node;
         }
 

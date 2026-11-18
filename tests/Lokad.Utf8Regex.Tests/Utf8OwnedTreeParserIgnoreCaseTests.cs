@@ -4,14 +4,9 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Owned parser IgnoreCase stage: the BCL-oracled battery pins case folding
-// with BCL metadata (single letters fold to two-pair sets from
-// the owned fold table, classes append per-unit expansions, shorthands and
-// categories pass through, groups and backreferences thread options, tree
-// contributions come from leading constructs only), scoped shapes verified by
-// metadata plus detailed behavior instead of tree equality, decline agreement on
-// reversed ranges and astral escapes, and folding-compound behavior through
-// the owned engine on inputs where the BCL comparator agrees.
+// Check parser metadata, scope, and folded compound behavior on syntax and
+// subjects shared with the BCL comparator. Scalar equivalence tests pin the
+// owned Unicode data independently of the comparator.
 public sealed class Utf8OwnedTreeParserIgnoreCaseTests
 {
     public static IEnumerable<object?[]> IgnoreCaseAcceptCases()

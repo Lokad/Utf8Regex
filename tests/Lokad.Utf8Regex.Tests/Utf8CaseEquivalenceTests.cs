@@ -1,40 +1,32 @@
-using System.Text.RegularExpressions;
 using System.Text;
-using Lokad.Utf8Regex.Internal.FrontEnd;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
-// Parser hints are conservative; a missing hint keeps the owned scalar route.
-// Validate the hint subset against overlapping regex semantics and validate
-// public Unicode 16 behavior independently of host NLS/ICU char conversion.
-public sealed class Utf8OwnedCaseFoldTests
+public sealed class Utf8CaseEquivalenceTests
 {
     [Fact]
-    public void FoldTableMatchesBclCaseFolding()
+    public void FoldedAsciiFamilyKeepsItsBytePlanAndVerifiesKelvinSubjects()
     {
+        const string pattern = "kat|abc";
         var options = RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
-        var failures = new System.Collections.Generic.List<string>();
-        for (var n = 0; n <= 0xFFFF; n++)
-        {
-            var c = (char)n;
-            if (!Utf8OwnedCaseFold.TryGetFold(c, out var lower, out var upper))
-            {
-                continue;
-            }
+        using var regex = Utf8Regex.Compile(pattern, options);
+        Assert.Equal(NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals, regex.Inspection.ExecutionKind);
+        Assert.Equal(2, regex.Count("KAT abc"u8));
+        Assert.Equal(2, regex.Count("Kat ABC"u8));
+        Assert.Equal(5, regex.Match("Kat"u8).EndOffsetInBytes);
+    }
 
-            var oracle = new Regex(Regex.Escape(c.ToString()), options);
-            if (!oracle.IsMatch(lower.ToString()))
-            {
-                failures.Add(n.ToString("X4") + ": BCL misses table lower partner");
-            }
-
-            if (!oracle.IsMatch(upper.ToString()))
-            {
-                failures.Add(n.ToString("X4") + ": BCL misses table upper partner");
-            }
-        }
-
-        Assert.True(failures.Count == 0, "Fold table mismatches:" + System.Environment.NewLine + string.Join(System.Environment.NewLine, failures.Take(20)));
+    [Theory]
+    [InlineData(@"[k]at")]
+    [InlineData(@"\x6Bat")]
+    [InlineData(@"\153at")]
+    public void FoldedBracketAndEscapedLiteralsIncludeKelvin(string pattern)
+    {
+        using var regex = Utf8Regex.Compile(pattern, RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        Assert.Equal(2, regex.Count("Kat KAT"u8));
+        Assert.Equal(5, regex.Match("Kat"u8).EndOffsetInBytes);
     }
 
     [Theory]
@@ -43,6 +35,9 @@ public sealed class Utf8OwnedCaseFoldTests
     [InlineData("\uA7CC", "\uA7CD")]
     [InlineData("\u019B", "\uA7DC")]
     [InlineData("\uA7DA", "\uA7DB")]
+    [InlineData("\u00DF", "\u1E9E")]
+    [InlineData("\u01C5", "\u01C6")]
+    [InlineData("\u00C5", "\u212B")]
     public void Unicode16MatchingUsesCompleteScalarPairs(string left, string right)
     {
         foreach (var (pattern, subject) in new[] { (left, right), (right, left) })
@@ -53,8 +48,8 @@ public sealed class Utf8OwnedCaseFoldTests
             var input = Encoding.UTF8.GetBytes(subject);
             var match = regex.Match(input);
             Assert.True(match.Success);
-                Assert.Equal(input.Length, (match.EndOffsetInBytes - match.StartOffsetInBytes));
-                Assert.Equal(1, regex.Count(input));
+            Assert.Equal(input.Length, match.EndOffsetInBytes - match.StartOffsetInBytes);
+            Assert.Equal(1, regex.Count(input));
         }
     }
 
