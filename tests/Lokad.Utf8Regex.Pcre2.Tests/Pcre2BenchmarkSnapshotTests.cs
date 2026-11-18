@@ -22,8 +22,13 @@ public sealed class Pcre2BenchmarkSnapshotTests
         Assert.StartsWith("10.47", comparator.GetProperty("Engine").GetString(), StringComparison.Ordinal);
         Assert.Matches("^[0-9A-F]{64}$", comparator.GetProperty("BuildFingerprintSha256").GetString());
         var sections = root.GetProperty("Sections");
-        Assert.Equal(10, sections.EnumerateObject().Count());
-        Assert.Equal(126, sections.EnumerateObject().Sum(static section => section.Value.EnumerateObject().Count()));
+        Assert.Equal(new[]
+        {
+            "pcre2-managed-compatible-count", "pcre2-managed-compatible-enumerate",
+            "pcre2-managed-compatible-ismatch", "pcre2-managed-compatible-replace",
+            "pcre2-special-count", "pcre2-special-enumerate", "pcre2-special-ismatch", "pcre2-special-replace",
+        }, sections.EnumerateObject().Select(static section => section.Name).Order(StringComparer.Ordinal));
+        Assert.Equal(108, sections.EnumerateObject().Sum(static section => section.Value.EnumerateObject().Count()));
         var page = File.ReadAllText(FindRepositoryFile("src/Lokad.Utf8Regex.Pcre2/README.md")).ReplaceLineEndings("\n");
         Assert.Contains($"Snapshot SHA-256: `{hash}`", page, StringComparison.Ordinal);
         Assert.Contains("<!-- BEGIN GENERATED PCRE2 BENCHMARKS -->", page, StringComparison.Ordinal);
@@ -34,7 +39,7 @@ public sealed class Pcre2BenchmarkSnapshotTests
             var operation = section.Name.Split('-')[^1] switch
             {
                 "ismatch" => "IsMatch", "count" => "Count", "enumerate" => "EnumerateMatches",
-                "matchmany" => "MatchMany", "replace" => "Replace", _ => throw new InvalidOperationException(),
+                "replace" => "Replace", _ => throw new InvalidOperationException(),
             };
             var title = section.Name.StartsWith("pcre2-managed-compatible-", StringComparison.Ordinal) ? "Compatible" : "PCRE2-only";
             var start = page.IndexOf($"### {title} {operation}\n", StringComparison.Ordinal);
