@@ -433,16 +433,21 @@ internal static partial class Utf8SliceRunner
                 return true;
             }
         }
-        // A lazy repeat can skip shorter endpoints only when the following
-        // required literal excludes every scalar consumed by its atom.
-        if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy && suffix.Kind != Utf8SliceInstructionKind.Literal)
+        var endAnchor = suffix is
+            { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd };
+        // A lazy repeat needs a unique viable boundary to take its maximal
+        // run. An end anchor can provide that proof as well as an excluded literal.
+        if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy &&
+            suffix.Kind != Utf8SliceInstructionKind.Literal && !endAnchor)
             return false;
         // RunFrom can retry a child after Accept to satisfy its required end.
         // Without that constraint, no shorter successful endpoint is requested.
         // An atomic commit discards shorter greedy endpoints even if its tail
-        // later fails. Capture endings and the commit still execute normally.
+        // later fails. Absolute end rejects every shorter endpoint, even when
+        // the atom can consume LF. Capture endings and the tail still execute.
         if (suffix.Kind == Utf8SliceInstructionKind.Accept && requiredEnd is null ||
-            suffix.Kind == Utf8SliceInstructionKind.AtomicCommit)
+            suffix.Kind == Utf8SliceInstructionKind.AtomicCommit ||
+            suffix is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd })
         {
             var terminalRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             outcome = new(terminalRepeat.EndIndex >= 0, terminalRepeat.EndIndex, terminalRepeat.Breach, null, null);
@@ -451,8 +456,7 @@ internal static partial class Utf8SliceRunner
         if (requiredEnd is null && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
             repeat.RepeatMinimum <= 1 && repeat.RepeatMaximum == long.MaxValue &&
             atom.Kind == Utf8SliceInstructionKind.Dot && atom.A != 0 &&
-            suffix.Kind == Utf8SliceInstructionKind.Anchor &&
-            suffix.A is (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd)
+            endAnchor)
         {
             var afterEnd = tail + 1;
             for (var skipped = 0; skipped < 32 && afterEnd < instructions.Length &&
@@ -591,8 +595,7 @@ internal static partial class Utf8SliceRunner
             return true;
         }
         // End anchors can succeed only at the subject end or before LF. If the
-        // atom excludes LF, no shorter endpoint can satisfy either kind of end.
-        // Keep this conservative proof for absolute ends as well as multiline $.
+        // atom excludes LF, no shorter endpoint can satisfy either kind of $.
         var alternateScalar = -1;
         int excludedScalar;
         if (suffix is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && suffix.A > tail)
@@ -608,8 +611,7 @@ internal static partial class Utf8SliceRunner
         {
             excludedScalar = suffix.Kind == Utf8SliceInstructionKind.Literal && suffix.B == 0 && Rune.IsValid(suffix.A)
                 ? suffix.A
-                : suffix.Kind == Utf8SliceInstructionKind.Anchor &&
-                    suffix.A is (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd ? '\n' : -1;
+                : endAnchor ? '\n' : -1;
         }
         if (excludedScalar < 0) return false;
 
@@ -690,17 +692,11 @@ internal static partial class Utf8SliceRunner
         in Utf8SliceInstruction atom, out uint unicodeCategories, out ulong asciiLow, out ulong asciiHigh)
     {
         asciiLow = asciiHigh = 0;
-        unicodeCategories = 0;
-        if (atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
-            program.CategorySetMembers[atom.D] is [{ Negated: false, Table: { Mask: not 0,
-                Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }])
+        unicodeCategories = GetCompleteAsciiCategoryMask(program, atom);
+        if (unicodeCategories == 0)
         {
-            // The lowerer includes every ASCII member of this category table.
-            unicodeCategories = table.Mask;
-        }
-        else if (atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } &&
-            atom.C == 1 << (int)Utf8SliceShorthand.Space)
-        {
+            if (atom is not { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
+                atom.C != 1 << (int)Utf8SliceShorthand.Space) return false;
             // The separator categories plus controls bound Unicode whitespace.
             // Add the exact ASCII shorthand members to the explicit mask.
             unicodeCategories = (1u << (int)UnicodeCategory.SpaceSeparator) |
@@ -709,13 +705,18 @@ internal static partial class Utf8SliceRunner
                 (1u << (int)UnicodeCategory.Control);
             asciiLow = (1UL << ' ') | 0x3e00UL; // U+0009..U+000D and U+0020
         }
-        else return false;
 
         ReadOnlySpan<byte> mask = program.SetMasks[atom.A];
         asciiLow |= BinaryPrimitives.ReadUInt64LittleEndian(mask);
         asciiHigh = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
         return true;
     }
+
+    // The lowerer includes every ASCII member for this single positive table.
+    private static uint GetCompleteAsciiCategoryMask(Utf8SliceProgram program, in Utf8SliceInstruction atom)
+        => atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
+            program.CategorySetMembers[atom.D] is [{ Negated: false, Table: {
+                Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
 
     private static Utf8SliceMatchOutcome FindLazyDotLiteral(ReadOnlySpan<byte> input, int position,
         byte literal, bool singleline, ref Utf8SliceInvocation invocation)
@@ -914,8 +915,8 @@ internal static partial class Utf8SliceRunner
             var breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
             // A positive, unfolded mask proves its ASCII hits without decoding
-            // or class dispatch. Category masks can omit members supplied by
-            // their tables; only a plain Set can reject a mask miss here.
+            // or class dispatch. A plain set or complete category mask can
+            // also reject an ASCII miss without decoding.
             if (!asciiMask.IsEmpty && (uint)position < (uint)input.Length && input[position] < 128)
             {
                 var value = input[position];
@@ -925,7 +926,8 @@ internal static partial class Utf8SliceRunner
                     count++;
                     continue;
                 }
-                if (atom.Kind == Utf8SliceInstructionKind.Set) break;
+                if (atom.Kind == Utf8SliceInstructionKind.Set || GetCompleteAsciiCategoryMask(program, atom) != 0)
+                    break;
             }
             if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
             breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);

@@ -66,6 +66,44 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Theory]
+    [InlineData(@"(?s:\A(?<body>.*?)\z)", "😀\na\n", "😀\na\n")]
+    [InlineData(@"(?s:\A(?<body>.*?)\Z)", "😀\na\n", "😀\na")]
+    [InlineData(@"(?sm:\A(?<body>.*?)$)", "😀\na\n", "😀")]
+    [InlineData(@"\A(?<body>\d*?)$", "𝟠٣7\n", "𝟠٣7")]
+    [InlineData(@"(?m:\A(?<body>\d*?)$)", "𝟠٣7\n9", "𝟠٣7")]
+    [InlineData(@"\A(?<body>\d*?)\z", "𝟠٣7\n", null)]
+    public void LazyEndAnchorsKeepTheirFirstViableByteBoundary(string pattern, string text, string? body)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
+        {
+            using var regex = new Utf8Regex(pattern, mode | RegexOptions.CultureInvariant,
+                new Utf8RegexPolicy { ResourcePolicy = Policy() });
+            var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
+            Assert.Equal(body is not null, match.Success);
+            Assert.Equal(match.Success, regex.IsMatch(input, token.Token));
+            if (match.Success) Assert.Equal(body, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        }
+    }
+
+    [Fact]
+    public void LazyAbsoluteEndCanConsumeLineFeedsWithinTheWorkLimit()
+    {
+        var text = string.Concat(Enumerable.Repeat("😀a\n", 2048));
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"(?s:\A(?<body>.*?)\z)", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = Policy() with { MaxWorkSteps = 1024 }
+        });
+        Assert.True(regex.IsMatch(input, token.Token));
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
+        Assert.True(match.Success);
+        Assert.Equal(text, Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+    }
+
+    [Theory]
     [InlineData(2047)] [InlineData(2048)] [InlineData(2049)]
     public void LongLineScanKeepsScalarCapturesAcrossBlocksAndOffsetStorage(int prefixLength)
     {
