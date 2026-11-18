@@ -355,7 +355,7 @@ internal static partial class Utf8SliceRunner
         bool requireNonEmpty,
         bool startIsScalarBoundary,
         ref AttemptWorkspace workspace,
-        ref Utf8SliceInvocation invocation)
+        ref Utf8SliceInvocation invocation, bool existenceOnly = false)
     {
         // Profile cursors can reuse this admitted workspace across candidate
         // attempts while preserving their own empty-match and anchor progress.
@@ -385,8 +385,9 @@ internal static partial class Utf8SliceRunner
         try
         {
             Utf8SliceMatchOutcome attempt;
+            var canStopEarly = existenceOnly && !collectHistory && !requireNonEmpty;
             if (!collectHistory && TryRunTerminalCaptureRoot(program, input, start,
-                captureStarts, captureEnds, ref workspace.Stacks, ref invocation, out attempt))
+                captureStarts, captureEnds, ref workspace.Stacks, ref invocation, out attempt, canStopEarly))
             {
                 // A proved complete root has no continuation or capture rollback.
             }
@@ -411,7 +412,7 @@ internal static partial class Utf8SliceRunner
             else if (!collectHistory && CanRunTerminalClassRepeat(program))
             {
                 // This complete repeat has no assertion continuation to drive.
-                attempt = RunTerminalClassRepeat(program, input, start, requireNonEmpty, ref invocation);
+                attempt = RunTerminalClassRepeat(program, input, start, requireNonEmpty, ref invocation, canStopEarly);
             }
             else if (!collectHistory && program.Assertions.Length == 0)
             {
@@ -422,7 +423,7 @@ internal static partial class Utf8SliceRunner
                 try
                 {
                     attempt = RunSegment(input, captureStarts, captureEnds, heads, ref current,
-                        false, preserveCaptureTrail: false, ref workspace.Stacks, ref invocation, out _);
+                        false, preserveCaptureTrail: false, ref workspace.Stacks, ref invocation, out _, canStopEarly);
                 }
                 finally
                 {
@@ -469,13 +470,13 @@ internal static partial class Utf8SliceRunner
     internal static Utf8SliceSearchOutcome TryFindFirst(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         int[] captureStarts, int[] captureEnds, bool collectHistory,
-        ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default)
+        ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default, bool existenceOnly = false)
     {
         var workspace = new AttemptWorkspace();
         try
         {
             return TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
-                collectHistory, ref workspace, ref invocation, candidatePlan);
+                collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly);
         }
         finally { workspace.Release(ref invocation); }
     }
@@ -485,7 +486,8 @@ internal static partial class Utf8SliceRunner
     internal static Utf8SliceSearchOutcome TryFindFirst(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         int[] captureStarts, int[] captureEnds, bool collectHistory,
-        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default)
+        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
+        bool existenceOnly = false)
     {
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)fromByte > (uint)input.Length ||
@@ -602,7 +604,8 @@ internal static partial class Utf8SliceRunner
                 continue;
             if (checkBranchedPrefix && !MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex))
                 continue;
-            var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, collectHistory, false, true, ref workspace, ref invocation);
+            var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds,
+                collectHistory, false, true, ref workspace, ref invocation, existenceOnly);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, null, null, outcome.Breach);
             if (outcome.IsMatch)
@@ -937,7 +940,7 @@ internal static partial class Utf8SliceRunner
     private static Utf8SliceMatchOutcome RunSegment(
         ReadOnlySpan<byte> input, int[] captureStarts, int[] captureEnds, int[] balanceHeads,
         ref AssertionCursor cursor, bool resumeFailure, bool preserveCaptureTrail,
-        ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation, out bool suspended)
+        ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation, out bool suspended, bool existenceOnly = false)
     {
         suspended = false;
         var program = cursor.Program;
@@ -1113,7 +1116,7 @@ internal static partial class Utf8SliceRunner
                         {
                             count = 0;
                             if (TryRunClassRepeatWithoutRewind(program, programIndex, input, inputIndex, cursor.RequiredEnd,
-                                ref invocation, out var repeated))
+                                ref invocation, out var repeated, out var continuation, existenceOnly))
                             {
                                 if (repeated.Breach != Utf8ExecutionLimitKind.None) return repeated;
                                 if (repeated.IsMatch)
@@ -1122,7 +1125,7 @@ internal static partial class Utf8SliceRunner
                                     // Fusion never activates the repeat counters.
                                     // Its proof validates RepeatExit, whose reset
                                     // would only journal their unchanged values.
-                                    programIndex = instruction.A + 1;
+                                    programIndex = continuation;
                                 }
                                 else failed = true;
                                 break;

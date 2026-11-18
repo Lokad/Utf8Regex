@@ -40,6 +40,43 @@ public sealed class Utf8TerminalClassRepeatTests
     public void GeneralRewindCaptureLazyEmptyAndAssertionPathsRemainValid(string pattern, string text, int expected)
         => Assert.Equal(expected, Create(pattern, 256).Count(Encoding.UTF8.GetBytes(text)));
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Compiled)]
+    public void BooleanAcceptsBeforeAProvedOptionalTailWhileMatchKeepsItsFullExtent(RegexOptions options)
+    {
+        const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
+        var input = Encoding.UTF8.GetBytes("https://ab/" + new string('x', 65_536) + "?key=😀#fragment");
+        using var limited = Utf8Regex.Compile(pattern, options, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128 }
+        });
+        using var full = Utf8Regex.Compile(pattern, options);
+        using var token = new CancellationTokenSource();
+        Assert.True(limited.IsMatch(input, token.Token));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input.AsSpan(), cancellationToken: token.Token)).ResourceKind);
+        Assert.Equal(input.Length, full.Match(input.AsSpan(), cancellationToken: token.Token).EndOffsetInBytes);
+        token.Cancel();
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => limited.IsMatch(input, token.Token)).CancellationToken);
+    }
+
+    [Theory]
+    [InlineData(@"X[^\s]{2,}(?:\sZ)?", "X😀", false)]
+    [InlineData(@"X[^\s]{2,}(?:\sZ)?", "X😀é", true)]
+    [InlineData(@"^X[^\s]+(?:\sZ)?$", "Xa x", false)]
+    [InlineData(@"^(?>a+)a$", "aaa", false)]
+    [InlineData(@"X(?<word>[a-z]+)(?:-)?\k<word>", "Xabc", false)]
+    [InlineData(@"X(?<word>[a-z]+)(?:-)?\k<word>", "Xabab", true)]
+    [InlineData(@"X[abc]+(?=Z)", "Xabc", false)]
+    public void BooleanRepeatMinimumKeepsScalarBoundsAndRequiredContinuation(string pattern, string text, bool expected)
+    {
+        using var regex = Create(pattern, 256);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.IsMatch(input));
+        Assert.Equal(expected, regex.Match(input.AsSpan()).Success);
+    }
+
     [Fact]
     public void TerminalCountsElideDepthWhileObservedCapturesAndReferencesKeepTheirLimit()
     {

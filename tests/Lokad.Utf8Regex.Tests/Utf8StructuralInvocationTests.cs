@@ -281,7 +281,11 @@ public sealed class Utf8StructuralInvocationTests
     public void PublicStructuralPhasesRetainEntryTokenDeadlineAndMappedFailure(bool method, bool compiled, string operation, string phase, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
-        var pattern = method ? @"\b(?:LogError|LogWarning|LogInformation)\s*\(" : @"(?:get|set)[A-Z][A-Za-z0-9_]*";
+        // A Boolean call can finish before scanning an optional suffix. Give
+        // its identifier branch enough required work to reach the checkpoint.
+        const int requiredIdentifierTail = 128;
+        var pattern = method ? @"\b(?:LogError|LogWarning|LogInformation)\s*\(" :
+            "(?:get|set)[A-Z][A-Za-z0-9_]" + (operation == "ismatch" ? $"{{{requiredIdentifierTail},}}" : "*");
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
         {
@@ -318,7 +322,8 @@ public sealed class Utf8StructuralInvocationTests
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
-        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(method ? "LogError(" : "getAlpha")));
+        var positive = method ? "LogError(" : "getA" + new string('a', requiredIdentifierTail);
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(positive)));
     }
 
     [Theory]

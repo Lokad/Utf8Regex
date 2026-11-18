@@ -59,7 +59,7 @@ internal static partial class Utf8SliceRunner
 
     private static bool TryRunTerminalCaptureRoot(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int start, int[] captureStarts, int[] captureEnds, ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation,
-        out Utf8SliceMatchOutcome outcome)
+        out Utf8SliceMatchOutcome outcome, bool minimumOnly)
     {
         outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
         if (!program.HasTerminalCaptureRoot) return false;
@@ -124,7 +124,8 @@ internal static partial class Utf8SliceRunner
             if (input[firstEnd + index] != code[literalStart + index].A) return true;
         var captureStart = firstEnd + literalLength;
         var lastLow = GetUnfoldedAsciiRange(code[repeatIndex + 1], out var lastHigh);
-        var last = RunUnboundedAsciiRange(input, captureStart, (byte)lastLow, lastHigh, ref invocation);
+        var last = minimumOnly ? RunClassRepeat(program, repeatIndex, input, captureStart, ref invocation, minimumOnly: true)
+            : RunUnboundedAsciiRange(input, captureStart, (byte)lastLow, lastHigh, ref invocation);
         if (last.EndIndex <= captureStart || last.Breach != Utf8ExecutionLimitKind.None)
         { outcome = new(false, -1, last.Breach, null, null); return true; }
         if (slot != 0 && captureStarts.Length != 0 &&
@@ -341,9 +342,9 @@ internal static partial class Utf8SliceRunner
     }
 
     private static Utf8SliceMatchOutcome RunTerminalClassRepeat(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int start, bool requireNonEmpty, ref Utf8SliceInvocation invocation)
+        ReadOnlySpan<byte> input, int start, bool requireNonEmpty, ref Utf8SliceInvocation invocation, bool minimumOnly = false)
     {
-        var outcome = RunClassRepeat(program, 0, input, start, ref invocation);
+        var outcome = RunClassRepeat(program, 0, input, start, ref invocation, minimumOnly);
         // A complete greedy atom has no other positive endpoint when its
         // longest match is empty. The profile caller owns scalar advancement.
         var found = outcome.EndIndex >= 0 && (!requireNonEmpty || outcome.EndIndex != start);
@@ -352,9 +353,10 @@ internal static partial class Utf8SliceRunner
 
     private static bool TryRunClassRepeatWithoutRewind(Utf8SliceProgram program, int repeatIndex,
         ReadOnlySpan<byte> input, int start, int? requiredEnd, ref Utf8SliceInvocation invocation,
-        out Utf8SliceMatchOutcome outcome)
+        out Utf8SliceMatchOutcome outcome, out int continuation, bool existenceOnly)
     {
         outcome = default;
+        continuation = 0;
         var instructions = program.Instructions;
         if (program.RightToLeft || instructions.Length - repeatIndex < 5) return false;
         var repeat = instructions[repeatIndex];
@@ -368,6 +370,17 @@ internal static partial class Utf8SliceRunner
                 Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
             return false;
         if (atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0) return false;
+        continuation = repeat.A + 1;
+        if (existenceOnly && requiredEnd is null && CanAcceptEmptyTail(instructions, continuation))
+        {
+            // An endpoint at the minimum proves existence. There is no
+            // observable range or capture, and the terminal path needs no
+            // additional input. Retain the normal metered Accept.
+            var shortest = RunClassRepeat(program, repeatIndex, input, start, ref invocation, minimumOnly: true);
+            outcome = new(shortest.EndIndex >= 0, shortest.EndIndex, shortest.Breach, null, null);
+            continuation = instructions.Length - 1;
+            return true;
+        }
         // A pure atom repeated an exact number of times has one endpoint,
         // independently of its tail or an enclosing assertion's required end.
         if (repeat.RepeatMinimum == repeat.RepeatMaximum)
@@ -848,12 +861,12 @@ internal static partial class Utf8SliceRunner
     // A side-effect-free atom repeat has only an endpoint and resource status.
     // Capture/history owners stay at the caller; a negative endpoint is a miss.
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunClassRepeat(Utf8SliceProgram program, int repeatIndex,
-        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
+        ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation, bool minimumOnly = false)
     {
         var repeat = program.Instructions[repeatIndex];
         var atom = program.Instructions[repeatIndex + 1];
         var minimum = repeat.RepeatMinimum;
-        var maximum = repeat.RepeatMaximum;
+        var maximum = minimumOnly ? minimum : repeat.RepeatMaximum;
         var position = start;
         var count = 0;
         var dot = atom.Kind == Utf8SliceInstructionKind.Dot;
@@ -923,6 +936,28 @@ internal static partial class Utf8SliceRunner
         if (terminal != Utf8ExecutionLimitKind.None) return (-1, terminal);
         return count >= minimum ? (position, Utf8ExecutionLimitKind.None)
             : (-1, Utf8ExecutionLimitKind.None);
+    }
+
+    private static bool CanAcceptEmptyTail(ReadOnlySpan<Utf8SliceInstruction> code, int index)
+    {
+        for (var remaining = 32; remaining > 0 && (uint)index < (uint)code.Length; remaining--)
+        {
+            var entry = code[index];
+            if (entry.Kind == Utf8SliceInstructionKind.Accept) return index == code.Length - 1;
+            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                index++;
+            // A normal forward alternative needs only one empty path. The
+            // target is the skip edge of a lowered greedy optional group.
+            else if (entry.A > index && entry is { Kind: Utf8SliceInstructionKind.Jump } or
+                         { Kind: Utf8SliceInstructionKind.Fork, B: 0 })
+                index = entry.A;
+            else if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy &&
+                entry.RepeatMinimum == 0 && entry.A > index && entry.A < code.Length &&
+                code[entry.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == entry.B)
+                index = entry.A + 1;
+            else return false;
+        }
+        return false;
     }
 
     private static bool TryGetAsciiMaskPair(ReadOnlySpan<byte> mask, out byte first, out byte second)
