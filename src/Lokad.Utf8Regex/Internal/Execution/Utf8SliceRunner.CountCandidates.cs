@@ -367,7 +367,7 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
-    private static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
+    internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd)
     {

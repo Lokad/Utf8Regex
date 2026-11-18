@@ -424,7 +424,8 @@ internal struct PythonReScalarMatchState
                     if (delimiter >= 0 && _position > windowEnd && !bypassWindow)
                     {
                         var breach = Utf8SliceRunner.TrySeekLeadingClassLiteralWindow(_program, input,
-                            leadingClass, (byte)delimiter, ref _position, ref _invocation, out windowEnd);
+                            leadingClass, (byte)delimiter, search: default, gapMaximum: 0, direct: true,
+                            ref _position, ref _invocation, out windowEnd);
                         if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
                         if (_position < 0) { Checkpoint(); _finished = true; return false; }
                     }
