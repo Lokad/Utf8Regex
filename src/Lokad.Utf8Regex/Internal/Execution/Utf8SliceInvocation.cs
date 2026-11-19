@@ -6,10 +6,9 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>Invocation-owned state bundle for one owned-slice run: step/depth
 /// budget with deadline and token, aggregate storage admission ledger, and an
 /// optional deterministic checkpoint hook (test-only cancellation injection).
-/// Metered work counters have one shared owner, including after transfer into
-/// a copied value cursor. Positions and anchor origins stay cursor-local.
-/// Controlled scopes also share one storage ledger. Forkable cursors promote
-/// even unlimited scopes before publishing invocation-long payload reservations.</summary>
+/// Synchronous calls that pass this state by reference can keep it inline.
+/// Calls that pass it by value or lend the ledger use a shared owner.
+/// Cursors also promote unlimited scopes before publishing reservations.</summary>
 internal struct Utf8SliceInvocation
 {
     private Utf8ExecutionBudget _inlineBudget;
@@ -32,20 +31,22 @@ internal struct Utf8SliceInvocation
     {
     }
 
+    // The caller owns both counters and passes the invocation by reference for
+    // the whole operation, including assertion evaluation and workspace cleanup.
+    internal static Utf8SliceInvocation CreateSynchronous(Utf8ExecutionLimits limits, TimeSpan timeout,
+        CancellationToken token, IUtf8MemoryAllowance? memoryAllowance = null)
+        => new(limits, Utf8ExecutionDeadline.Start(timeout), token, memoryAllowance, share: false);
+
     private Utf8SliceInvocation(Utf8ExecutionLimits limits, Utf8ExecutionDeadline deadline, CancellationToken token,
-        IUtf8MemoryAllowance? memoryAllowance)
+        IUtf8MemoryAllowance? memoryAllowance, bool share = true)
     {
         _inlineBudget = new Utf8ExecutionBudget(limits, deadline, token);
         _inlineLedger = new Utf8StorageLedger(memoryAllowance);
         CheckpointHook = Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook;
         AnchorOriginByte = -1;
-        // Create the owner at invocation entry, before validation/preparation.
-        // Sharing only when the cursor is constructed would lose later entry
-        // checks and would fork a scope passed by value to a nested operation.
-        // Infinite, None-token calls with no hook keep their allocation-free
-        // inline path. The fixed accounting metadata is not storage payload;
-        // complete object-overhead admission remains a separate policy gate.
-        _sharedWork = !_inlineBudget.IsUnmetered || memoryAllowance is not null || CheckpointHook is not null
+        // Share from entry when a later value copy can make charges. Unlimited
+        // scopes without funding or a hook can defer sharing until they fork.
+        _sharedWork = share && (!_inlineBudget.IsUnmetered || memoryAllowance is not null || CheckpointHook is not null)
             ? new SharedInvocationState(_inlineBudget, _inlineLedger)
             : null;
     }
