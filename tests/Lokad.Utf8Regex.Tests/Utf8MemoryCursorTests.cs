@@ -304,8 +304,10 @@ public sealed class Utf8MemoryCursorTests
     {
         var root = new Root(); var working = new Account(root) { Maximum = 2048 }; var results = new Account(root);
         using var regex = new Utf8Regex("(?<x>😀ab|a){1,2}", RegexOptions.NonBacktracking);
-        // The second result spans the nominal window edge. A later refill skips a sparse gap.
-        var input = Encoding.UTF8.GetBytes("aa" + "ab" + new string('z', 61) + "😀aba" + new string('z', 8192) + "a");
+        // The crossing result needs lookahead. Later windows must keep the
+        // trailing 'b' and reject a different scalar with the same lead byte.
+        var input = Encoding.UTF8.GetBytes("aa" + "ab" + new string('z', 61) + "😀aba" + new string('z', 8192)
+            + "😀ab" + new string('z', 96) + "😁" + new string('z', 96) + "a");
         using var cursor = regex.CreateMatchCursor(input, workingMemoryAllowance: working);
         var alias = cursor;
 
@@ -318,6 +320,9 @@ public sealed class Utf8MemoryCursorTests
             Assert.True(cursor.MoveNext(out var crossing));
             Assert.Equal(new Utf8CaptureRange(65, 72), crossing.Value);
             Assert.Equal(new Utf8CaptureRange(71, 72), crossing.GetCaptures(1)[0]);
+            Assert.True(alias.MoveNext(out var late));
+            Assert.Equal(new Utf8CaptureRange(72 + 8192, 78 + 8192), late.Value);
+            Assert.Equal(late.Value, late.GetCaptures(1)[0]);
             Assert.True(alias.MoveNext(out var last));
             Assert.Equal(new Utf8CaptureRange(input.Length - 1, input.Length), last.Value);
             Assert.False(cursor.MoveNext(out _));

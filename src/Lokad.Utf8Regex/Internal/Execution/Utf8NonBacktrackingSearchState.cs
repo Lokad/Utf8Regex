@@ -366,6 +366,17 @@ internal sealed class Utf8NonBacktrackingSearchState
                         return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
                     }
                 }
+                var commit = AlignedEnd(input, position, windowBytes);
+                var startEnd = commit;
+                if (starts.Present)
+                {
+                    var scan = invocation.TryChargeInputStep();
+                    if (scan != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, scan);
+                    // The first byte at position is a candidate. Stop admitting
+                    // starts after the last candidate, but skip the whole window.
+                    var last = input[position..commit].LastIndexOfAny(starts.First, starts.Second, starts.Third);
+                    startEnd = AlignedEnd(input, position + last, 1);
+                }
                 // A forward-only path can visit each consuming instruction at most once.
                 // The commit boundary limits starts, while the remaining rows settle their ends.
                 var lookahead = BitOperations.PopCount(program.NonBacktrackingConsumerMask) * 4;
@@ -386,14 +397,13 @@ internal sealed class Utf8NonBacktrackingSearchState
                     }
                     finally { if (window is null) invocation.Ledger.Release(bytes); }
                 }
-                var commit = AlignedEnd(input, position, windowBytes);
-                var end = AlignedEnd(input, commit, lookahead);
+                var end = AlignedEnd(input, startEnd, lookahead);
                 var build = BuildUnconditionalPackedRows(program, input, position, end, window._boundaries,
                     window._viability, ref invocation, out boundary);
                 if (build != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, build);
                 window._windowEnd = commit;
-                window._startLimit = commit == input.Length ? window._boundaries.Length :
-                    Array.BinarySearch(window._boundaries, boundary, window._boundaries.Length - boundary, commit);
+                window._startLimit = startEnd == input.Length ? window._boundaries.Length :
+                    Array.BinarySearch(window._boundaries, boundary, window._boundaries.Length - boundary, startEnd);
             }
             var found = window.FindFirst(program, ref boundary, slots.Starts, slots.Ends, ref invocation);
             if (found.Found || found.Breach != Utf8ExecutionLimitKind.None || window._windowEnd == input.Length) return found;
