@@ -7,8 +7,8 @@ using Lokad.Utf8Regex.Internal.Execution;
 namespace Lokad.Utf8Regex.Posix;
 
 // One exclusive call/cursor owns these admitted buffers. Scalar execution finds
-// the earliest longest whole extent; proven first-acceptance programs also keep
-// their capture trace, except flat ASCII runs with proved greedy capture boundaries.
+// the earliest longest whole extent. Proven first-acceptance programs keep
+// final offsets or a trace when capture parents need reconciliation.
 // General captures select closed syntax intervals.
 // State belongs to the synchronous stack/heap vector or the cursor's array.
 // Pass this owner by reference; no borrowed span or result aliases its buffers.
@@ -79,7 +79,7 @@ internal partial struct PosixWorkspace
                     _frames.Release(ref invocation); _undo.Release(ref invocation);
                     SelectChart(input, state, candidate, end, ref invocation);
                 }
-                else if (captureHistory && !_program.DirectGreedyRuns)
+                else if (captureHistory && !_program.UseCaptureOffsets)
                 {
                     var trace = _trace.WrittenItems;
                     for (var index = 0; index < trace.Length; index++)
@@ -240,8 +240,8 @@ internal partial struct PosixWorkspace
                 case Utf8SliceInstructionKind.CaptureStart:
                     if (captureHistory)
                     {
-                        if (_program.DirectGreedyRuns)
-                            state[_openOffset + instruction.A] = at;
+                        if (_program.UseCaptureOffsets)
+                            SetState(state, _openOffset + instruction.A, at, ref invocation);
                         else
                         {
                             SetState(state, _openOffset + instruction.A, _trace.Count, ref invocation);
@@ -253,8 +253,8 @@ internal partial struct PosixWorkspace
                 case Utf8SliceInstructionKind.CaptureEnd:
                     if (captureHistory)
                     {
-                        if (_program.DirectGreedyRuns)
-                            state[_lastOffset + instruction.A] = at;
+                        if (_program.UseCaptureOffsets)
+                            SetState(state, _lastOffset + instruction.A, at, ref invocation);
                         else
                             Check(_trace.TryPush(new(instruction.A, at, state[_openOffset + instruction.A]), ref invocation), ref invocation);
                     }
@@ -470,10 +470,7 @@ internal partial struct PosixWorkspace
             return start >= 0;
         }
         var tag = _program.CaptureTags[slot];
-        // The existing flat-run proof excludes forks and public captures inside
-        // repeat bodies. Each public tag opens/closes once on the successful parse; no
-        // occurrence history or parent reconciliation can change these edges.
-        if (_program.DirectGreedyRuns)
+        if (_program.UseCaptureOffsets)
         {
             start = state[_openOffset + tag]; end = state[_lastOffset + tag];
             return start >= 0 && end >= 0;

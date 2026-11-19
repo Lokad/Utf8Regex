@@ -9,11 +9,13 @@ namespace Lokad.Utf8Regex.Posix;
 internal sealed partial class PosixProgram
 {
     private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool directGreedyRuns,
+        bool useCaptureOffsets,
         int firstRequiredRunAtom, int terminalLineEndRepeat,
         ChartNode[] chart, Utf8SliceNode.CategorySetNode[] chartClasses)
     {
         Scalar = scalar; Parents = parents; CaptureTags = captureTags;
         FirstAcceptanceIsLongest = firstAcceptanceIsLongest; DirectGreedyRuns = directGreedyRuns;
+        UseCaptureOffsets = useCaptureOffsets;
         FirstRequiredRunAtom = firstRequiredRunAtom;
         TerminalLineEndRepeat = terminalLineEndRepeat;
         Chart = chart; ChartClasses = chartClasses;
@@ -24,6 +26,7 @@ internal sealed partial class PosixProgram
     internal int[] CaptureTags { get; }
     internal bool FirstAcceptanceIsLongest { get; }
     internal bool DirectGreedyRuns { get; }
+    internal bool UseCaptureOffsets { get; }
     internal int FirstRequiredRunAtom { get; }
     internal int TerminalLineEndRepeat { get; }
     internal ChartNode[] Chart { get; }
@@ -136,9 +139,23 @@ internal sealed partial class PosixProgram
         if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
         var chart = !firstAcceptanceIsLongest && groups != 0 ? CreateChart(root, budget)
             : (Nodes: Array.Empty<ChartNode>(), Classes: Array.Empty<Utf8SliceNode.CategorySetNode>());
-        var result = budget.AllocateObject((scalar, Parents: parents.Take(), captureTags, firstAcceptanceIsLongest, directGreedyRuns, firstRequiredRunAtom,
+        var parentTags = parents.Take();
+        var useCaptureOffsets = firstAcceptanceIsLongest;
+        if (useCaptureOffsets && !directGreedyRuns)
+        {
+            // The root has one occurrence. A public tag below another
+            // parent may need its last capture reconciled with that parent.
+            foreach (var tag in captureTags.AsSpan(1))
+            {
+                budget.ChargeWork(1);
+                if (parentTags[tag] <= 0) continue;
+                useCaptureOffsets = false;
+                break;
+            }
+        }
+        var result = budget.AllocateObject((scalar, parentTags, captureTags, firstAcceptanceIsLongest, directGreedyRuns, useCaptureOffsets, firstRequiredRunAtom,
                 terminalLineEndRepeat, chart.Nodes, chart.Classes),
-            static x => new PosixProgram(x.scalar, x.Parents, x.captureTags, x.firstAcceptanceIsLongest, x.directGreedyRuns,
+            static x => new PosixProgram(x.scalar, x.parentTags, x.captureTags, x.firstAcceptanceIsLongest, x.directGreedyRuns, x.useCaptureOffsets,
                 x.firstRequiredRunAtom, x.terminalLineEndRepeat, x.Nodes, x.Classes));
         construction.Complete();
         return result;
