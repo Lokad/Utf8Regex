@@ -1,5 +1,6 @@
 using System.Text;
 
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -117,6 +118,58 @@ public sealed class Pcre2BackslashCCompilerTests
         Assert.True(cursor.MoveNext());
         Assert.Equal((11, 14), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
         Assert.False(cursor.MoveNext());
+    }
+
+    [Fact]
+    public void FundedLiteralPrefixResumesAtOverlappingStartsAcrossSearchWindows()
+    {
+        var input = Encoding.UTF8.GetBytes("😀" + new string('x', 2046) + "aaabz");
+        using var regex = new Utf8Pcre2Regex(@"aa\Cz", compileSettings: s_allowBackslashC, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 32 },
+        });
+
+        var match = regex.Match(input, startOffsetInBytes: 4);
+        Assert.True(match.Success);
+        Assert.Equal((2051, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LiteralPrefixWindowsObserveWorkLimitsAndOriginalInterruption(bool cancel)
+    {
+        var input = Encoding.ASCII.GetBytes(new string('a', 256 * 1024));
+        using var limited = new Utf8Pcre2Regex(@"ab\Cde", compileSettings: s_allowBackslashC, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 16 },
+        });
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(input)).ErrorKind);
+
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Pcre2Regex(@"ab\Cde", compileSettings: s_allowBackslashC, policy: new()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+        });
+        var reads = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (++reads < 10) return 0;
+            if (!cancel) return 25;
+            source.Cancel();
+            return 0;
+        });
+        if (cancel)
+        {
+            var failure = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, cancellationToken: source.Token));
+            Assert.Equal(source.Token, failure.CancellationToken);
+        }
+        else
+        {
+            var failure = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(input));
+            Assert.Equal(Pcre2ErrorKind.Timeout, failure.ErrorKind);
+        }
     }
 
     [Fact]

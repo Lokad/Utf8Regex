@@ -274,11 +274,14 @@ internal static class Pcre2BacktrackingRunner
         var maximumCandidate = program.MinimumByteLength > bytes.Length
             ? -1
             : bytes.Length - program.MinimumByteLength;
+        var meterLiteralPrefix = candidateSearch.Kind == Pcre2CandidateSearchKind.BranchLeadingLiterals &&
+            !budget.WorkingInvocation.IsUnmetered &&
+            candidateSearch.Searcher.Kind == PreparedSearcherKind.ExactLiteral;
         var useCandidateSearch = !anchored &&
             candidateSearch.HasValue &&
             matchOptions == Pcre2MatchOptions.None &&
             (candidate < maximumCandidate || candidateSearch.Kind != Pcre2CandidateSearchKind.BranchLeadingLiterals) &&
-            (budget.IsUnmetered || candidateSearch.MinimumWordRunLength > 0);
+            (budget.IsUnmetered || meterLiteralPrefix || candidateSearch.MinimumWordRunLength > 0);
         var candidateState = new PreparedSearchScanState(
             candidate,
             new PreparedMultiLiteralScanState(candidate, candidate, 0));
@@ -291,7 +294,10 @@ internal static class Pcre2BacktrackingRunner
         {
             if (useCandidateSearch)
             {
-                if (!TryFindNextCandidate(
+                var found = meterLiteralPrefix
+                    ? TryFindMeteredLiteralPrefix(candidateSearch.Searcher.LiteralSearch, bytes,
+                        maximumCandidate, ref candidateState, ref budget, out candidate)
+                    : TryFindNextCandidate(
                         candidateSearch,
                         program.Request,
                         bytes,
@@ -301,8 +307,8 @@ internal static class Pcre2BacktrackingRunner
                         ref lastWindowCandidate,
                         ref windowCandidateEnd,
                         ref budget,
-                        out candidate) ||
-                    candidate > maximumCandidate)
+                        out candidate);
+                if (!found || candidate > maximumCandidate)
                 {
                     break;
                 }
@@ -378,6 +384,31 @@ internal static class Pcre2BacktrackingRunner
         }
 
         return new Pcre2BacktrackingMatch(false, 0, 0, 0, 0, false, default, lastMark);
+    }
+
+    private static bool TryFindMeteredLiteralPrefix(
+        in PreparedSubstringSearch search,
+        ReadOnlySpan<byte> input,
+        int maximumCandidate,
+        ref PreparedSearchScanState state,
+        ref Pcre2ResourceBudget budget,
+        out int candidate)
+    {
+        try
+        {
+            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8SearchExecutor.TryFindLiteralCandidate(search,
+                input, state.NextStart, Math.Min(maximumCandidate, input.Length - search.Length),
+                false, ref budget.WorkingInvocation, out candidate));
+        }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
+
+        if (candidate < 0) return false;
+        // A failed verification may have consumed an overlapping prefix.
+        state = new PreparedSearchScanState(candidate + 1, default);
+        return true;
     }
 
     private static bool TryFindNextCandidate(

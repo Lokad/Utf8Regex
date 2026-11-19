@@ -367,6 +367,10 @@ capture checks. Nullable, contiguous-origin and compile-anchored programs retain
 their existing search. Other public operations and non-None match options keep
 their existing paths. Skipped attempts reduce route-dependent work costs; these
 scans retain their own admission and normal publication checks.
+Unanchored backtracking with a proved single literal prefix can use the
+same bounded search windows under finite limits and live cancellation.
+The matcher verifies each candidate on the original subject and resumes
+at overlapping starts after a failed attempt.
 Depth admits live frames/assertion state
 before growth. Working admission includes major workspace/output growth overlap;
 result admission cumulatively covers owned capture/probe roots, staging and
