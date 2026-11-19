@@ -22,6 +22,7 @@ public sealed class Utf8MemoryCursorTests
     [InlineData("(?<x>é)+", "éé é", RegexOptions.None)]
     [InlineData("ab|a", "xxab a", RegexOptions.Compiled)]
     [InlineData(@"[\w.+-]+@[\w-]+\.[\w.-]+", "é@x.y 😀a-b@z.com", RegexOptions.None)]
+    [InlineData(@"[\w@]+@[\w-]+\.[\w.-]+", "😀a@b@c.de é@x.y", RegexOptions.None)]
     [InlineData(@"\p{L}+", "éa-β C", RegexOptions.NonBacktracking)]
     [InlineData(@"\p{L}+", "éa-β C", RegexOptions.RightToLeft)]
     [InlineData(@"\b", "éa-β C", RegexOptions.None)]
@@ -98,6 +99,24 @@ public sealed class Utf8MemoryCursorTests
         Assert.Equal(0UL, root.Used);
         Assert.Equal("for"u8.ToArray(), first.GetValueMemory().ToArray());
         Assert.Equal("and"u8.ToArray(), second.GetValueMemory().ToArray());
+    }
+
+    [Fact]
+    public void ShortCursorTailUsesTheRequiredDelimiterWithinTheWorkBudget()
+    {
+        var subject = "earlier@x.y 😀é Ω 中 Sherlock Holmes and Watson, key: value 12.5 a@b.cd end"u8.ToArray();
+        var working = new Account(new Root());
+        using var regex = new Utf8Regex(@"[\w.+-]+@[\w-]+\.[\w.-]+", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64 }
+        });
+        using var cursor = regex.CreateMatchCursor(subject, startOffsetInBytes: "earlier@x.y 😀"u8.Length,
+            workingMemoryAllowance: working);
+
+        Assert.True(cursor.MoveNext(out var result));
+        Assert.Equal("a@b.cd"u8.ToArray(), result.GetValueMemory().ToArray());
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(0UL, working.Used);
     }
 
     [Theory]

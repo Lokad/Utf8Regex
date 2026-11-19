@@ -525,7 +525,7 @@ internal static partial class Utf8SliceRunner
         var wideInput = input.Length - fromByte >= 256;
         if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
-            (wideInput || candidatePlan.LiteralSearch is { Length: > 1, IgnoreCase: false }))
+            (wideInput || candidatePlan.LiteralSearch is { Length: > 0, IgnoreCase: false }))
         {
             var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out var literalIndex,
                 out classGapMaximum, out directClassLiteral);
@@ -539,7 +539,10 @@ internal static partial class Utf8SliceRunner
                     if (proofBreach != Utf8ExecutionLimitKind.None)
                         return new(false, -1, -1, null, null, proofBreach);
                 }
-                if (singleWindowAttempt || wideInput && (directClassLiteral || classSearch is not null))
+                // An aligned direct byte is already prepared at short starts,
+                // including the final advances of a cursor over a large input.
+                if (singleWindowAttempt || directClassLiteral && classSearch is { Length: 1 } ||
+                    wideInput && (directClassLiteral || classSearch is not null))
                     classLiteral = literal;
             }
             if (classLiteral < 0 && wideInput &&
