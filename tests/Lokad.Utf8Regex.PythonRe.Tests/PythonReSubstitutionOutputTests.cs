@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
@@ -180,5 +181,54 @@ public sealed class PythonReSubstitutionOutputTests
         Assert.Equal(replacements, bytes.ReplacementCount);
         input.AsSpan().Fill((byte)'x');
         Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes.ResultBytes);
+    }
+
+    [Theory]
+    [InlineData(2045)]
+    [InlineData(2046)]
+    public void FundedLiteralOutputReplaysPastEightOffsetsAcrossSearchBlocks(int gapLength)
+    {
+        using var regex = new Utf8PythonRegex("cat", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096, MaxResultBytes = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        var gap = new string('x', gapLength);
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("cat", 8)) + gap + "cat😀cat");
+        var expected = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("tiger", 8)) + gap + "tiger😀cat");
+
+        var result = regex.Subn(input, "tiger"u8, 9, cancellationToken: source.Token);
+        Assert.Equal(9, result.ReplacementCount);
+        Assert.Equal(expected, result.ResultBytes);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LiteralMissChecksInterruptionBeforeAdmittingTheOutput(bool expires)
+    {
+        var input = Encoding.ASCII.GetBytes(new string('x', 192 * 2048));
+        using var source = new CancellationTokenSource();
+        var ticks = 0L;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var regex = new Utf8PythonRegex("cat", policy: new()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new() { MaxResultBytes = 1 }
+        });
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (expires) ticks = 25;
+            else source.Cancel();
+        });
+        try
+        {
+            if (expires)
+                Assert.Throws<RegexMatchTimeoutException>(() => regex.Subn(input, "tiger"u8, 1, cancellationToken: source.Token));
+            else
+                Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
+                    regex.Subn(input, "tiger"u8, 1, cancellationToken: source.Token)).CancellationToken);
+        }
+        finally { diagnostics.Complete(); }
     }
 }

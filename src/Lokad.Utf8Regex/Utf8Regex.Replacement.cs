@@ -161,13 +161,13 @@ public sealed partial class Utf8Regex
     {
         ArgumentOutOfRangeException.ThrowIfNegative(maximumReplacementCount);
         if (UsesRightToLeft() || _preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
-            _preparedRegex.LiteralUtf8 is not { Length: > 0 } literal)
+            _preparedRegex.SearchPlan.LiteralSearch is not { Length: > 0, IgnoreCase: false } search)
             throw new InvalidOperationException("The exact replacement requires a nonempty ASCII literal plan.");
         Utf8SliceBufferWork.Checkpoint(ref invocation);
         Utf8Validation.ThrowIfInvalidOnly(literalReplacementUtf8, ref invocation);
         // ASCII needles select complete scalar ranges. The caller's result
         // ledger sizes text only when requested; bytes need no UTF-16 metadata.
-        return Utf8ExactLiteralReplacement.Replace(input, literal, literalReplacementUtf8,
+        return Utf8ExactLiteralReplacement.Replace(input, search, literalReplacementUtf8,
             maximumReplacementCount, ref invocation, ref results, out replacementCount);
     }
 

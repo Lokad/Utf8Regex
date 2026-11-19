@@ -1,4 +1,5 @@
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
@@ -8,47 +9,37 @@ internal static class Utf8ExactLiteralReplacement
     // output admission and lifetime.
     internal static byte[]? Replace(
         ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> literal,
+        in PreparedSubstringSearch search,
         ReadOnlySpan<byte> replacement,
         int maximumReplacementCount,
         ref Utf8SliceInvocation invocation,
         ref Utf8InvocationResultLedger results,
         out int replacementCount)
     {
-        if (literal.IsEmpty)
-        {
-            throw new ArgumentException("The exact replacement literal must not be empty.", nameof(literal));
-        }
-
-        if (maximumReplacementCount < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maximumReplacementCount));
-        }
-
         var control = new Utf8InvocationBufferControl(ref invocation);
         replacementCount = 0;
         // Short substitutions already find these positions while sizing
         // the output. Keep them on the stack for the copy pass.
         Span<int> matchStarts = stackalloc int[8];
-        var remaining = input;
+        var nextStart = 0;
+        var lastStart = input.Length - search.Length;
         while (replacementCount < maximumReplacementCount)
         {
-            Utf8InvocationOutput.Checkpoint(control);
-            var index = remaining.IndexOf(literal);
+            var index = FindNext(input, search, nextStart, lastStart, ref invocation);
             if (index < 0)
             {
                 break;
             }
 
             if (replacementCount < matchStarts.Length)
-                matchStarts[replacementCount] = input.Length - remaining.Length + index;
+                matchStarts[replacementCount] = index;
             replacementCount++;
-            remaining = remaining[(index + literal.Length)..];
+            nextStart = index + search.Length;
         }
 
         if (replacementCount == 0) return null;
 
-        var outputLength = checked(input.Length + replacementCount * (replacement.Length - literal.Length));
+        var outputLength = checked(input.Length + replacementCount * (replacement.Length - search.Length));
         var output = results.AllocateArray<byte>(outputLength, ref invocation);
         var sourcePosition = 0;
         var destinationPosition = 0;
@@ -56,24 +47,34 @@ internal static class Utf8ExactLiteralReplacement
         while (copied < replacementCount)
         {
             Utf8InvocationOutput.Checkpoint(control);
-            var relativeIndex = copied < matchStarts.Length
-                ? matchStarts[copied] - sourcePosition
-                : input[sourcePosition..].IndexOf(literal);
-            if (relativeIndex < 0)
+            var matchStart = copied < matchStarts.Length
+                ? matchStarts[copied]
+                : FindNext(input, search, sourcePosition, lastStart, ref invocation);
+            if (matchStart < sourcePosition)
             {
                 throw new InvalidOperationException(
                     "The exact replacement copy pass lost a preflighted match.");
             }
 
-            Utf8InvocationOutput.Copy(input.Slice(sourcePosition, relativeIndex), output.AsSpan(destinationPosition), control);
-            destinationPosition += relativeIndex;
+            Utf8InvocationOutput.Copy(input[sourcePosition..matchStart], output.AsSpan(destinationPosition), control);
+            destinationPosition += matchStart - sourcePosition;
             Utf8InvocationOutput.Copy(replacement, output.AsSpan(destinationPosition), control);
             destinationPosition += replacement.Length;
-            sourcePosition += relativeIndex + literal.Length;
+            sourcePosition = matchStart + search.Length;
             copied++;
         }
 
         Utf8InvocationOutput.Copy(input[sourcePosition..], output.AsSpan(destinationPosition), control);
         return output;
+    }
+
+    private static int FindNext(ReadOnlySpan<byte> input, in PreparedSubstringSearch search, int start, int last,
+        ref Utf8SliceInvocation invocation)
+    {
+        if (start > last) return -1;
+        var breach = Utf8SearchExecutor.TryFindLiteralCandidate(search, input, start, last, false, ref invocation, out var candidate);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Exact replacement search exceeded {breach}.");
+        return candidate;
     }
 }

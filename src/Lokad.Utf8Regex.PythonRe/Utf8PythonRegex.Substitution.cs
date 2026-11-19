@@ -212,8 +212,8 @@ public sealed partial class Utf8PythonRegex
         var invocation = CreateInvocation(cancellationToken);
         var scalarPlan = GetReplacementPlan(input, replacement, ref invocation, cancellationToken, out var memoryUse);
         using var planUse = memoryUse;
-        if (!HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
-            TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, ref invocation, out var literalBytes, out var literalCount, out retained, retain))
+        if (TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, ref invocation,
+            out var literalBytes, out var literalCount, out retained, retain))
             return new Utf8PythonSubnUtf8Result { ResultBytes = literalBytes, ReplacementCount = literalCount };
         SubstituteScalar(input, scalarPlan, count, startOffsetInBytes, invocation,
             out var scalarResult, out retained, retain);
