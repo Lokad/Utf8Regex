@@ -48,6 +48,8 @@ internal readonly partial struct PreparedSearcher
     }
 
     internal PreparedSubstringSearch LiteralSearch { get; }
+    internal byte[][]? ExactMultiLiterals => Kind == PreparedSearcherKind.MultiLiteral &&
+        MultiLiteralSearch.Kind != PreparedMultiLiteralKind.AsciiIgnoreCase ? MultiLiteralSearch.Literals : null;
 
     private PreparedByteSearch ByteSearch { get; }
 

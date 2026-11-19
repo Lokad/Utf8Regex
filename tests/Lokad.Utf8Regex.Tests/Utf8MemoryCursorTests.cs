@@ -26,6 +26,8 @@ public sealed class Utf8MemoryCursorTests
     [InlineData(@"\p{L}+", "éa-β C", RegexOptions.NonBacktracking)]
     [InlineData(@"\p{L}+", "éa-β C", RegexOptions.RightToLeft)]
     [InlineData(@"\b", "éa-β C", RegexOptions.None)]
+    [InlineData(@"(\w+)\s+(ab|bc|longer)", "😀é abc beta bc X longer", RegexOptions.None)]
+    [InlineData(@"(\w+)\s+(X?Holmes|Watson)", "é XHolmes beta Watson", RegexOptions.None)]
     public void PublicRangesPreserveGroupsAndHistories(string pattern, string subject, RegexOptions options)
     {
         var bcl = new Regex(pattern, options);
@@ -116,6 +118,28 @@ public sealed class Utf8MemoryCursorTests
         Assert.True(cursor.MoveNext(out var result));
         Assert.Equal("a@b.cd"u8.ToArray(), result.GetValueMemory().ToArray());
         Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(0UL, working.Used);
+    }
+
+    [Fact]
+    public void CapturedDelimiterAlternativesUseTheExistingWindowWithinTheWorkBudget()
+    {
+        var input = "😀é Ω 中 Sherlock Holmes and Watson were quietly walking, key: value 12.5"u8.ToArray();
+        var working = new Account(new Root());
+        using var regex = new Utf8Regex(@"(\w+)\s+(Holmes|Watson)", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256 }
+        });
+        using var cursor = regex.CreateMatchCursor(input, startOffsetInBytes: "😀"u8.Length,
+            workingMemoryAllowance: working);
+
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal("Sherlock"u8.ToArray(), first.GetGroupMemory(1).ToArray());
+        Assert.Equal("Holmes"u8.ToArray(), first.GetGroupMemory(2).ToArray());
+        Assert.Equal("and"u8.ToArray(), second.GetGroupMemory(1).ToArray());
+        Assert.Equal("Watson"u8.ToArray(), second.GetGroupMemory(2).ToArray());
         Assert.Equal(0UL, working.Used);
     }
 

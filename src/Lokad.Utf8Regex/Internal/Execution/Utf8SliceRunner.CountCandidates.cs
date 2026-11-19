@@ -252,9 +252,8 @@ internal static partial class Utf8SliceRunner
         => decimalSet ? Utf8AsciiBytePredicates.DecimalOrScalarLead.IndexOf(input)
             : first == last ? input.IndexOf(first) : input.IndexOfAnyInRange(first, last);
 
-    // A whitespace repeat followed by an exact non-whitespace ASCII scalar
-    // admits a window before that scalar; one scalar-class run can precede it,
-    // with a finite scalar gap between whitespace and the literal.
+    // Locate the tail after a proved whitespace repeat, optional initial class
+    // run and bounded gap. Return the direct ASCII delimiter when present.
     // Verify every start in that window with the unchanged VM: captures,
     // references and assertions may make a later start win after an earlier
     // one fails. No candidate is itself accepted by this necessary condition.
@@ -321,10 +320,11 @@ internal static partial class Utf8SliceRunner
             while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
                 index++;
         }
-        if (index >= code.Length || index >= 64 || code[index].Kind != Utf8SliceInstructionKind.Literal || code[index].B != 0 ||
+        if (index >= code.Length || index >= 64) return -1;
+        literalIndex = index;
+        if (code[index].Kind != Utf8SliceInstructionKind.Literal || code[index].B != 0 ||
             (uint)code[index].A >= 128 || Rune.IsWhiteSpace(new Rune(code[index].A)))
             return -1;
-        literalIndex = index;
         return code[index].A;
     }
 
@@ -359,6 +359,40 @@ internal static partial class Utf8SliceRunner
         in Utf8SearchPlan candidatePlan)
         => candidatePlan.LiteralSearch is { IgnoreCase: false } search &&
             LiteralStartsAtInstruction(program, index, search.Needle) ? search : null;
+
+    private static byte[][]? GetAlignedDelimiterAlternatives(Utf8SliceProgram program, int index,
+        in PreparedSearcher search)
+    {
+        if (program.Instructions[index].Kind != Utf8SliceInstructionKind.Fork ||
+            search.ExactMultiLiterals is not { Length: >= 2 and <= 8 } literals) return null;
+        foreach (var literal in literals)
+            if (literal.Length is 0 or > 64) return null;
+
+        // Each arm must begin with a prepared needle. Required literals farther
+        // into a branch do not identify the end of the leading class window.
+        var remaining = 16;
+        return CoversAllStarts(index) ? literals : null;
+
+        bool CoversAllStarts(int start)
+        {
+            var code = program.Instructions;
+            while (remaining-- > 0 && (uint)start < (uint)code.Length)
+            {
+                var instruction = code[start];
+                if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                {
+                    start++;
+                    continue;
+                }
+                if (instruction is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && instruction.A > start + 1)
+                    return CoversAllStarts(start + 1) && CoversAllStarts(instruction.A);
+                foreach (var literal in literals)
+                    if (LiteralStartsAtInstruction(program, start, literal)) return true;
+                return false;
+            }
+            return false;
+        }
+    }
 
     private static PreparedSubstringSearch? GetRepeatPrefixSearch(Utf8SliceProgram program,
         in Utf8SearchPlan candidatePlan, out Utf8SearchAsciiSet prefixAscii)
@@ -534,9 +568,9 @@ internal static partial class Utf8SliceRunner
     internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
-        Utf8SearchAsciiSet prefixAscii = default)
+        Utf8SearchAsciiSet prefixAscii = default, byte[][]? delimiterAlternatives = null)
     {
-        if (leadingClass >= 2 && !prefixAscii.HasValue)
+        if (leadingClass >= 2 && !prefixAscii.HasValue && delimiterAlternatives is null)
         {
             var code = program.Instructions;
             var preceding = leadingClass - 2;
@@ -546,10 +580,18 @@ internal static partial class Utf8SliceRunner
                 return TrySeekWhitespaceClassStart(program, input, leadingClass, literal, search, ref position, ref invocation, out windowEnd);
         }
         var floor = position;
-        var breach = search is { } prepared && (prepared.Length > 1 || !direct)
-            ? Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, input.Length - prepared.Length,
-                false, ref invocation, out position)
-            : TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
+        Utf8ExecutionLimitKind breach;
+        if (delimiterAlternatives is not null)
+        {
+            breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(delimiterAlternatives, false,
+                input, position, input.Length, false, ref invocation, out var candidate, out var found);
+            position = found ? candidate.Index : -1;
+        }
+        else
+            breach = search is { } prepared && (prepared.Length > 1 || !direct)
+                ? Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, input.Length - prepared.Length,
+                    false, ref invocation, out position)
+                : TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
         windowEnd = position;
         if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
         if (prefixAscii.HasValue)

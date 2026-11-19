@@ -518,6 +518,7 @@ internal static partial class Utf8SliceRunner
         var leadingClass = -1;
         var classLiteral = -1;
         var classSearch = default(PreparedSubstringSearch?);
+        byte[][]? classAlternatives = null;
         var repeatPrefixAscii = default(Utf8SearchAsciiSet);
         long classGapMaximum = 0;
         var directClassLiteral = false;
@@ -525,7 +526,8 @@ internal static partial class Utf8SliceRunner
         var wideInput = input.Length - fromByte >= 256;
         if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
-            (wideInput || candidatePlan.LiteralSearch is { Length: > 0, IgnoreCase: false }))
+            (wideInput || candidatePlan.LiteralSearch is { Length: > 0, IgnoreCase: false } ||
+                candidatePlan.PrefilterPlan.PrimarySearcher.Kind == PreparedSearcherKind.MultiLiteral))
         {
             var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out var literalIndex,
                 out classGapMaximum, out directClassLiteral);
@@ -545,7 +547,16 @@ internal static partial class Utf8SliceRunner
                     wideInput && (directClassLiteral || classSearch is not null))
                     classLiteral = literal;
             }
+            else if (leadingClass >= 0 && literalIndex >= 0 &&
+                candidatePlan.PrefilterPlan.PrimarySearcher.Kind == PreparedSearcherKind.MultiLiteral)
+            {
+                var proofBreach = invocation.TryChargeInputStep();
+                if (proofBreach != Utf8ExecutionLimitKind.None)
+                    return new(false, -1, -1, null, null, proofBreach);
+                classAlternatives = GetAlignedDelimiterAlternatives(program, literalIndex, candidatePlan.PrefilterPlan.PrimarySearcher);
+            }
             if (classLiteral < 0 && wideInput &&
+                classAlternatives is null &&
                 GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefixAscii) is { } prefixSearch)
             {
                 classSearch = prefixSearch;
@@ -554,7 +565,8 @@ internal static partial class Utf8SliceRunner
         }
         // Keep existing literal guidance when available. A decimal set can
         // reject unrelated ASCII, but any wider scalar may need verification.
-        var seekDecimal = leading < 0 && !seekLiteral && classLiteral < 0 &&
+        var hasClassWindow = classLiteral >= 0 || classAlternatives is not null;
+        var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
             IsLeadingDecimalSet(program, leadingScalarIndex);
         if (seekDecimal)
         {
@@ -566,7 +578,7 @@ internal static partial class Utf8SliceRunner
         Span<byte> prefixStorage = stackalloc byte[16];
         var leadingPrefix = wideInput && second >= 0 && !candidatePlan.CanGuideFallbackStarts
             ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage) : default;
-        if (leading >= 0 || seekLiteral || classLiteral >= 0)
+        if (leading >= 0 || seekLiteral || hasClassWindow)
         {
             // A miss can avoid local scratch, but not an enclosing storage loan.
             var admission = invocation.TryReserveWorking(0);
@@ -579,11 +591,11 @@ internal static partial class Utf8SliceRunner
             // The required delimiter proves a window of possible starts.
             // Verify every survivor against the complete subject so later
             // matches, captures and assertion context keep their usual order.
-            while (classLiteral >= 0 && position > classWindowEnd)
+            while (hasClassWindow && position > classWindowEnd)
             {
                 var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                     (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
-                    ref position, ref invocation, out classWindowEnd, repeatPrefixAscii);
+                    ref position, ref invocation, out classWindowEnd, repeatPrefixAscii, classAlternatives);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
@@ -839,7 +851,7 @@ internal static partial class Utf8SliceRunner
                 out whitespaceGapMaximum, out _) : -1;
         // Count keeps its prepared literal search when capture markers or
         // consuming instructions separate the repeat from its delimiter.
-        var literalImmediatelyAfterRepeat = whitespaceLiteralIndex == leadingClass + 3;
+        var literalImmediatelyAfterRepeat = whitespaceLiteral >= 0 && whitespaceLiteralIndex == leadingClass + 3;
         var classSearch = default(PreparedSubstringSearch?);
         var repeatPrefixAscii = default(Utf8SearchAsciiSet);
         var singleWindowAttempt = false;
