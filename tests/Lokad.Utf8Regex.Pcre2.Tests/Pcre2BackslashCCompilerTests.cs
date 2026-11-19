@@ -134,13 +134,47 @@ public sealed class Pcre2BackslashCCompilerTests
         Assert.Equal((2051, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
     }
 
+    [Fact]
+    public void FundedBranchPrefixesResumeAtOverlappingStartsAcrossSearchWindows()
+    {
+        var input = Encoding.UTF8.GetBytes("😀" + new string('x', 2044) + "aaaabxz");
+        using var regex = new Utf8Pcre2Regex(@"aa\Cq|ab\Cz", compileSettings: s_allowBackslashC, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 96 },
+        });
+
+        var match = regex.Match(input, startOffsetInBytes: 4);
+        Assert.True(match.Success);
+        Assert.Equal((2051, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+    }
+
+    [Fact]
+    public void FundedBranchPrefixesKeepPatternOrderAtTheSameStart()
+    {
+        var input = Encoding.UTF8.GetBytes(new string('x', 4096) + "abczx");
+        using var regex = new Utf8Pcre2Regex(@"ab(\C)z|abcz(\C)", compileSettings: s_allowBackslashC, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64 },
+        });
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+
+        var match = regex.Match(input, captures: captures);
+        Assert.True(match.Success);
+        Assert.Equal((4096, 4100), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.True(captures[1].Success);
+        Assert.Equal((4098, 4099), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.False(captures[2].Success);
+    }
+
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LiteralPrefixWindowsObserveWorkLimitsAndOriginalInterruption(bool cancel)
+    [InlineData(@"ab\Cde", false)]
+    [InlineData(@"ab\Cde", true)]
+    [InlineData(@"ab\Cde|cd\Cef", false)]
+    [InlineData(@"ab\Cde|cd\Cef", true)]
+    public void LiteralPrefixWindowsObserveWorkLimitsAndOriginalInterruption(string pattern, bool cancel)
     {
         var input = Encoding.ASCII.GetBytes(new string('a', 256 * 1024));
-        using var limited = new Utf8Pcre2Regex(@"ab\Cde", compileSettings: s_allowBackslashC, policy: new()
+        using var limited = new Utf8Pcre2Regex(pattern, compileSettings: s_allowBackslashC, policy: new()
         {
             ResourcePolicy = new() { MaxWorkSteps = 16 },
         });
@@ -148,7 +182,7 @@ public sealed class Pcre2BackslashCCompilerTests
             Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(input)).ErrorKind);
 
         using var source = new CancellationTokenSource();
-        using var regex = new Utf8Pcre2Regex(@"ab\Cde", compileSettings: s_allowBackslashC, policy: new()
+        using var regex = new Utf8Pcre2Regex(pattern, compileSettings: s_allowBackslashC, policy: new()
         {
             MatchTimeout = TimeSpan.FromMilliseconds(20),
         });

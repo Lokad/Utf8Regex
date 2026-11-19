@@ -368,13 +368,15 @@ internal readonly struct Pcre2CandidateSearchProgram
         PreparedSearcher searcher,
         Pcre2CharacterToken[] leadingRunTokens,
         Pcre2CandidateWindowConstraint windowConstraint,
-        int minimumWordRunLength)
+        int minimumWordRunLength,
+        int maximumBranchPrefixLength = 0)
     {
         Kind = kind;
         Searcher = searcher;
         LeadingRunTokens = leadingRunTokens;
         WindowConstraint = windowConstraint;
         MinimumWordRunLength = minimumWordRunLength;
+        MaximumBranchPrefixLength = maximumBranchPrefixLength;
     }
 
     internal Pcre2CandidateSearchKind Kind { get; }
@@ -386,10 +388,11 @@ internal readonly struct Pcre2CandidateSearchProgram
     internal Pcre2CandidateWindowConstraint WindowConstraint { get; }
 
     internal int MinimumWordRunLength { get; }
+    internal int MaximumBranchPrefixLength { get; }
 
     internal bool HasValue => Kind != Pcre2CandidateSearchKind.None;
 
-    internal static Pcre2CandidateSearchProgram FromBranchLeadingLiterals(byte[][] literals) =>
+    internal static Pcre2CandidateSearchProgram FromBranchLeadingLiterals(byte[][] literals, int maximumPrefixLength) =>
         new(
             Pcre2CandidateSearchKind.BranchLeadingLiterals,
             literals.Length == 1
@@ -397,7 +400,8 @@ internal readonly struct Pcre2CandidateSearchProgram
                 : new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false)),
             [],
             default,
-            0);
+            0,
+            maximumPrefixLength);
 
     internal static Pcre2CandidateSearchProgram FromLeadingRunThenLiteral(
         Pcre2CharacterToken[] leadingRunTokens,
@@ -975,6 +979,7 @@ internal static class Pcre2CandidateSearchAnalyzer
             ? alternation.Alternatives
             : [root];
         var literals = new byte[branches.Length][];
+        var maximumPrefixLength = 0;
         for (var i = 0; i < branches.Length; i++)
         {
             if (!TryGetBranchLeadingLiteral(branches[i], out literals[i]))
@@ -982,9 +987,10 @@ internal static class Pcre2CandidateSearchAnalyzer
                 plan = default;
                 return false;
             }
+            maximumPrefixLength = Math.Max(maximumPrefixLength, literals[i].Length);
         }
 
-        plan = Pcre2CandidateSearchProgram.FromBranchLeadingLiterals(literals);
+        plan = Pcre2CandidateSearchProgram.FromBranchLeadingLiterals(literals, maximumPrefixLength);
         return true;
     }
 

@@ -275,8 +275,7 @@ internal static class Pcre2BacktrackingRunner
             ? -1
             : bytes.Length - program.MinimumByteLength;
         var meterLiteralPrefix = candidateSearch.Kind == Pcre2CandidateSearchKind.BranchLeadingLiterals &&
-            !budget.WorkingInvocation.IsUnmetered &&
-            candidateSearch.Searcher.Kind == PreparedSearcherKind.ExactLiteral;
+            !budget.WorkingInvocation.IsUnmetered;
         var useCandidateSearch = !anchored &&
             candidateSearch.HasValue &&
             matchOptions == Pcre2MatchOptions.None &&
@@ -295,7 +294,7 @@ internal static class Pcre2BacktrackingRunner
             if (useCandidateSearch)
             {
                 var found = meterLiteralPrefix
-                    ? TryFindMeteredLiteralPrefix(candidateSearch.Searcher.LiteralSearch, bytes,
+                    ? TryFindMeteredLiteralPrefix(candidateSearch, bytes,
                         maximumCandidate, ref candidateState, ref budget, out candidate)
                     : TryFindNextCandidate(
                         candidateSearch,
@@ -387,7 +386,7 @@ internal static class Pcre2BacktrackingRunner
     }
 
     private static bool TryFindMeteredLiteralPrefix(
-        in PreparedSubstringSearch search,
+        in Pcre2CandidateSearchProgram search,
         ReadOnlySpan<byte> input,
         int maximumCandidate,
         ref PreparedSearchScanState state,
@@ -396,9 +395,20 @@ internal static class Pcre2BacktrackingRunner
     {
         try
         {
-            Pcre2SliceDriver.ThrowIfSliceBreached(Utf8SearchExecutor.TryFindLiteralCandidate(search,
-                input, state.NextStart, Math.Min(maximumCandidate, input.Length - search.Length),
-                false, ref budget.WorkingInvocation, out candidate));
+            if (search.Searcher.ExactMultiLiterals is { } prefixes)
+            {
+                var end = maximumCandidate + Math.Min(search.MaximumBranchPrefixLength, input.Length - maximumCandidate);
+                Pcre2SliceDriver.ThrowIfSliceBreached(Utf8SearchExecutor.TryFindLiteralFamilyCandidate(prefixes, false,
+                    input, state.NextStart, end, false, ref budget.WorkingInvocation, out var match, out var found));
+                candidate = found ? match.Index : -1;
+            }
+            else
+            {
+                var literal = search.Searcher.LiteralSearch;
+                Pcre2SliceDriver.ThrowIfSliceBreached(Utf8SearchExecutor.TryFindLiteralCandidate(literal,
+                    input, state.NextStart, Math.Min(maximumCandidate, input.Length - literal.Length),
+                    false, ref budget.WorkingInvocation, out candidate));
+            }
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
