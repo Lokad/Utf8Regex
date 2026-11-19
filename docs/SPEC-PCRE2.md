@@ -369,6 +369,11 @@ their existing paths. Skipped attempts reduce route-dependent work costs; these
 scans retain their own admission and normal publication checks.
 Unanchored backtracking with proved literal prefixes can use the same
 bounded search windows under finite limits and live cancellation.
+The same scanner can look for a required delimiter after positive unbounded
+scalar runs. Finding the delimiter triggers a bounded scalar retreat to the
+earliest eligible start at or after the requested offset. A finite upper bound
+on a leading run keeps ordinary start discovery, since an interior start can
+be the first valid match.
 The matcher verifies each candidate on the original subject and resumes
 at overlapping starts after a failed attempt.
 Depth admits live frames/assertion state

@@ -275,11 +275,13 @@ internal static class Pcre2BacktrackingRunner
             : bytes.Length - program.MinimumByteLength;
         var meterLiteralPrefix = candidateSearch.Kind == Pcre2CandidateSearchKind.BranchLeadingLiterals &&
             !budget.WorkingInvocation.IsUnmetered;
+        var meterRunDelimiter = candidateSearch.Kind == Pcre2CandidateSearchKind.LeadingRunThenLiteral &&
+            !budget.WorkingInvocation.IsUnmetered;
         var useCandidateSearch = !anchored &&
             candidateSearch.HasValue &&
             matchOptions == Pcre2MatchOptions.None &&
             (candidate < maximumCandidate || candidateSearch.Kind != Pcre2CandidateSearchKind.BranchLeadingLiterals) &&
-            (budget.IsUnmetered || meterLiteralPrefix || candidateSearch.MinimumWordRunLength > 0);
+            (budget.IsUnmetered || meterLiteralPrefix || meterRunDelimiter || candidateSearch.MinimumWordRunLength > 0);
         var candidateState = new PreparedSearchScanState(
             candidate,
             new PreparedMultiLiteralScanState(candidate, candidate, 0));
@@ -293,13 +295,14 @@ internal static class Pcre2BacktrackingRunner
             if (useCandidateSearch)
             {
                 var found = meterLiteralPrefix
-                    ? TryFindMeteredLiteralPrefix(candidateSearch, bytes,
+                    ? TryFindMeteredLiteral(candidateSearch, bytes,
                         maximumCandidate, ref candidateState, ref budget, out candidate)
                     : TryFindNextCandidate(
                         candidateSearch,
                         program.Request,
                         bytes,
                         start.Value,
+                        meterRunDelimiter,
                         ref candidateState,
                         ref nextWindowCandidate,
                         ref lastWindowCandidate,
@@ -384,10 +387,10 @@ internal static class Pcre2BacktrackingRunner
         return new Pcre2BacktrackingMatch(false, 0, 0, 0, 0, false, default, lastMark);
     }
 
-    private static bool TryFindMeteredLiteralPrefix(
+    private static bool TryFindMeteredLiteral(
         in Pcre2CandidateSearchProgram search,
         ReadOnlySpan<byte> input,
-        int maximumCandidate,
+        int maximumStart,
         ref PreparedSearchScanState state,
         ref Pcre2ResourceBudget budget,
         out int candidate)
@@ -396,7 +399,7 @@ internal static class Pcre2BacktrackingRunner
         {
             if (search.Searcher.ExactMultiLiterals is { } prefixes)
             {
-                var end = maximumCandidate + Math.Min(search.MaximumBranchPrefixLength, input.Length - maximumCandidate);
+                var end = maximumStart + Math.Min(search.MaximumBranchPrefixLength, input.Length - maximumStart);
                 Pcre2SliceDriver.ThrowIfSliceBreached(Utf8SearchExecutor.TryFindLiteralFamilyCandidate(prefixes, false,
                     input, state.NextStart, end, false, ref budget.WorkingInvocation, out var match, out var found));
                 candidate = found ? match.Index : -1;
@@ -405,7 +408,7 @@ internal static class Pcre2BacktrackingRunner
             {
                 var literal = search.Searcher.LiteralSearch;
                 Pcre2SliceDriver.ThrowIfSliceBreached(Utf8SearchExecutor.TryFindLiteralCandidate(literal,
-                    input, state.NextStart, Math.Min(maximumCandidate, input.Length - literal.Length),
+                    input, state.NextStart, Math.Min(maximumStart, input.Length - literal.Length),
                     false, ref budget.WorkingInvocation, out candidate));
             }
         }
@@ -425,6 +428,7 @@ internal static class Pcre2BacktrackingRunner
         Pcre2CompileRequest request,
         ReadOnlySpan<byte> input,
         int lowerBound,
+        bool meterRunDelimiter,
         ref PreparedSearchScanState state,
         ref int nextWindowCandidate,
         ref int lastWindowCandidate,
@@ -459,19 +463,30 @@ internal static class Pcre2BacktrackingRunner
                 out candidate);
         }
 
-        while (candidateSearch.Searcher.TryFindNextOverlappingMatch(input, ref state, out var preparedCandidate))
+        while (true)
         {
+            int literalStart;
+            if (meterRunDelimiter)
+            {
+                // A delimiter can occur beyond the last possible match start.
+                if (!TryFindMeteredLiteral(candidateSearch, input, input.Length, ref state, ref budget, out literalStart)) break;
+            }
+            else
+            {
+                if (!candidateSearch.Searcher.TryFindNextOverlappingMatch(input, ref state, out var preparedCandidate)) break;
+                literalStart = preparedCandidate.Index;
+            }
             if (candidateSearch.Kind is Pcre2CandidateSearchKind.BranchLeadingLiterals or
                 Pcre2CandidateSearchKind.LeadingAsciiSet or
                 Pcre2CandidateSearchKind.LeadingAsciiSetWithWindow)
             {
                 if (candidateSearch.Kind == Pcre2CandidateSearchKind.LeadingAsciiSetWithWindow &&
-                    !MatchesCandidateWindow(input, preparedCandidate.Index, candidateSearch.WindowConstraint))
+                    !MatchesCandidateWindow(input, literalStart, candidateSearch.WindowConstraint))
                 {
                     continue;
                 }
 
-                candidate = preparedCandidate.Index;
+                candidate = literalStart;
                 return true;
             }
 
@@ -480,23 +495,17 @@ internal static class Pcre2BacktrackingRunner
                 break;
             }
 
-            var runStart = preparedCandidate.Index;
+            var runStart = literalStart;
             var valid = true;
+            var rewindSteps = 0;
             for (var i = candidateSearch.LeadingRunTokens.Length - 1; i >= 0; i--)
             {
                 var consumed = false;
-                while (TryRetreatScalarToBoundary(input, lowerBound, runStart, out var previous) &&
-                       Pcre2CharacterRunner.TryMatchToken(
-                           candidateSearch.LeadingRunTokens[i],
-                           request,
-                           input,
-                           previous,
-                           lowerBound,
-                           Pcre2MatchOptions.None,
-                           ref budget,
-                           out var next) &&
-                       next == runStart)
+                while (TryRetreatScalarToBoundary(input, lowerBound, runStart, out var previous))
                 {
+                    if (meterRunDelimiter && (rewindSteps++ & 63) == 0) budget.ChargeWorkspaceStep();
+                    if (!Pcre2CharacterRunner.TryMatchToken(candidateSearch.LeadingRunTokens[i], request, input,
+                            previous, lowerBound, Pcre2MatchOptions.None, ref budget, out var next) || next != runStart) break;
                     runStart = previous;
                     consumed = true;
                 }

@@ -951,7 +951,7 @@ internal static class Pcre2CandidateSearchAnalyzer
         // require a pattern without byte atoms.
         if (containsCodeUnit) return default;
 
-        if (TryCompileLeadingRunThenLiteral(root, request, out var runPlan))
+        if (TryCompileLeadingRunThenLiteral(root, out var runPlan))
         {
             return runPlan;
         }
@@ -996,7 +996,6 @@ internal static class Pcre2CandidateSearchAnalyzer
 
     private static bool TryCompileLeadingRunThenLiteral(
         IPcre2BacktrackingNode root,
-        Pcre2CompileRequest request,
         out Pcre2CandidateSearchProgram plan)
     {
         plan = default;
@@ -1006,13 +1005,14 @@ internal static class Pcre2CandidateSearchAnalyzer
         }
 
         var runTokens = new List<Pcre2CharacterToken>();
-        var lastRunIsUnbounded = false;
         var childIndex = 0;
+        // Discovery retreats to the first scalar in each run. A finite
+        // maximum can make that start fail while a later start succeeds.
         while (childIndex < sequence.Children.Length &&
                sequence.Children[childIndex] is Pcre2RepeatBacktrackingNode
                {
                    Minimum: >= 1,
-                   Maximum: var runMaximum,
+                   Maximum: int.MaxValue,
                    Body: Pcre2TokenBacktrackingNode { Token: var runToken },
                } &&
                IsRetreatableRunToken(runToken))
@@ -1023,7 +1023,6 @@ internal static class Pcre2CandidateSearchAnalyzer
             }
 
             runTokens.Add(runToken);
-            lastRunIsUnbounded = runMaximum == int.MaxValue;
             childIndex++;
         }
 
@@ -1047,12 +1046,6 @@ internal static class Pcre2CandidateSearchAnalyzer
         }
 
         var literal = Encoding.UTF8.GetBytes(builder.ToString());
-        if (Rune.DecodeFromUtf8(literal, out var firstLiteral, out _) != System.Buffers.OperationStatus.Done ||
-            (TokenMatchesRune(runTokens[^1], firstLiteral, request) && !lastRunIsUnbounded))
-        {
-            return false;
-        }
-
         plan = Pcre2CandidateSearchProgram.FromLeadingRunThenLiteral([.. runTokens], literal);
         return true;
     }
@@ -1333,19 +1326,6 @@ internal static class Pcre2CandidateSearchAnalyzer
         space is Pcre2CharacterClassTermKind.Space or
             Pcre2CharacterClassTermKind.HorizontalSpace or
             Pcre2CharacterClassTermKind.VerticalSpace;
-
-    private static bool TokenMatchesRune(
-        Pcre2CharacterToken token,
-        Rune value,
-        Pcre2CompileRequest request) => token.Kind switch
-    {
-        Pcre2CharacterTokenKind.Literal => token.Literal == value,
-        Pcre2CharacterTokenKind.CharacterClass => token.CharacterClass.Matches(
-            value,
-            (request.Options & Pcre2CompileOptions.Ucp) != 0,
-            Pcre2CharacterOptions.None),
-        _ => false,
-    };
 
     private static bool TryGetBranchLeadingLiteral(IPcre2BacktrackingNode branch, out byte[] literal)
     {

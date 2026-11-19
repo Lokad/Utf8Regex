@@ -624,19 +624,26 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        Assert.Throws<Pcre2MatchException>(() => metered.IsMatch("no delimiter"u8));
+        var longMiss = Encoding.UTF8.GetBytes(new string('x', 8192));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => metered.IsMatch(longMiss)).ErrorKind);
     }
 
-    [Fact]
-    public void LeadingRunCandidateSearchRespectsAStartInsideTheRun()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LeadingRunCandidateSearchRespectsAStartInsideTheRun(bool funded)
     {
-        var regex = new Utf8Pcre2Regex(@"[a-z]+@[a-z]+");
-        var input = "foo@bar"u8;
+        using var regex = new Utf8Pcre2Regex(@"[a-z]+@[a-z]+", policy: funded ? new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 4096 }
+        } : null);
+        using var source = new CancellationTokenSource();
+        var input = "😀 foo@bar"u8;
 
-        var match = regex.Match(input, startOffsetInBytes: 1);
+        var match = regex.Match(input, startOffsetInBytes: 6, cancellationToken: funded ? source.Token : default);
 
         Assert.True(match.Success);
-        Assert.Equal(1, match.StartOffsetInBytes);
+        Assert.Equal(6, match.StartOffsetInBytes);
         Assert.Equal("oo@bar", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
@@ -651,6 +658,40 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         var regex = new Utf8Pcre2Regex(pattern);
 
         Assert.NotEqual(Pcre2CandidateSearchKind.None, regex.DebugCompiledProgram.CandidateSearch.Kind);
+    }
+
+    [Fact]
+    public void FundedRunDelimiterMissNeedsNoAttemptWorkspace()
+    {
+        using var regex = new Utf8Pcre2Regex(@"[\w]+://[^/\s?#]+[^\s?#]+", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 32, MaxWorkingBytes = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingRunThenLiteral, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.False(regex.IsMatch("😀 word with no scheme delimiter"u8, cancellationToken: source.Token));
+    }
+
+    [Theory]
+    [InlineData(@"[a-z]{1,3}@(?P<tail>[a-z]+)", "abcdef@z")]
+    [InlineData(@"\w{1,3}\s+Holmes", "abcdef Holmes")]
+    public void BoundedLeadingRunCanMatchFromInsideALongerRun(string pattern, string text)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        using var source = new CancellationTokenSource();
+        foreach (var funded in new[] { false, true })
+        {
+            using var regex = new Utf8Pcre2Regex(pattern, policy: funded ? new Utf8RegexPolicy
+            {
+                ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 4096 }
+            } : null);
+            var token = funded ? source.Token : default;
+            Assert.NotEqual(Pcre2CandidateSearchKind.LeadingRunThenLiteral, regex.DebugCompiledProgram.CandidateSearch.Kind);
+            var match = regex.Match(input, cancellationToken: token);
+            Assert.True(match.Success);
+            Assert.Equal((3, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+            Assert.Equal(1, regex.Count(input, cancellationToken: token));
+        }
     }
 
     [Fact]
