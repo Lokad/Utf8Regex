@@ -193,7 +193,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 |---|---|---:|---:|---:|---:|
 | `common/ip-match` | `IsMatch` | 1.009 us | 0.168 us | 0.187 us | 6.00x |
 | `common/uri-miss` | `IsMatch` | 0.831 us | 0.180 us | 0.201 us | 4.62x |
-| `industry/rust-sherlock-ing-count` | `Count` | 48,064.250 us | 11,613.886 us | 12,368.586 us | 4.14x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.304 us | 0.078 us | 0.087 us | 3.89x |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.287 us | 0.081 us | 0.095 us | 3.57x |
 | `common/date-match` | `IsMatch` | 0.363 us | 0.102 us | 0.130 us | 3.55x |
@@ -221,6 +220,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/email-miss` | `IsMatch` | 0.037 us | 0.333 us | 0.360 us | 0.11x |
 | `industry/leipzig-name-family-count` | `Count` | 1,027.929 us | 9,668.362 us | 16,369.700 us | 0.11x |
 | `industry/rust-sherlock-letter-count` | `Count` | 1,822.264 us | 19,013.475 us | 19,584.300 us | 0.10x |
+| `industry/rust-sherlock-ing-count` | `Count` | 1,083.977 us | 11,405.171 us | 12,007.914 us | 0.10x |
 | `common/one-node-backtracking` | `IsMatch` | 0.047 us | 0.594 us | 0.634 us | 0.08x |
 | `industry/leipzig-river-window-count` | `Count` | 1,729.951 us | 31,521.767 us | 38,691.550 us | 0.05x |
 | `industry/leipzig-symbol-count` | `Count` | 1,018.546 us | 23,997.400 us | 31,659.250 us | 0.04x |
@@ -277,7 +277,6 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/uri-miss` | `IsMatch` | 0.832 us | 0.065 us | 0.085 us | 12.72x |
 | `common/email-match` | `IsMatch` | 0.857 us | 0.078 us | 0.104 us | 11.03x |
 | `industry/boostdocs-credit-card-match` | `IsMatch` | 0.542 us | 0.053 us | 0.075 us | 10.32x |
-| `industry/rust-sherlock-ing-count` | `Count` | 47,477.700 us | 4,653.765 us | 5,079.712 us | 10.20x |
 | `industry/boostdocs-postcode-match` | `IsMatch` | 0.286 us | 0.029 us | 0.047 us | 9.71x |
 | `industry/boostdocs-date-match` | `IsMatch` | 0.273 us | 0.031 us | 0.049 us | 8.88x |
 | `industry/boostdocs-float-match` | `IsMatch` | 0.302 us | 0.035 us | 0.051 us | 8.70x |
@@ -305,6 +304,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/leipzig-twain-count` | `Count` | 621.721 us | 1,256.733 us | 6,898.511 us | 0.49x |
 | `common/email-miss` | `IsMatch` | 0.037 us | 0.089 us | 0.113 us | 0.42x |
 | `industry/leipzig-name-family-count` | `Count` | 1,038.715 us | 2,945.727 us | 7,861.850 us | 0.35x |
+| `industry/rust-sherlock-ing-count` | `Count` | 1,090.447 us | 4,542.488 us | 4,945.756 us | 0.24x |
 | `industry/rust-sherlock-letter-count` | `Count` | 1,817.351 us | 8,490.433 us | 8,925.678 us | 0.21x |
 | `industry/rust-sherlock-word-holmes-count` | `Count` | 295.218 us | 3,839.210 us | 4,209.268 us | 0.08x |
 <!-- END GENERATED DOTNET_PERFORMANCE_COMPILED BENCHMARKS -->
@@ -343,7 +343,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `structural/method-family-call` | 15.001 us | 8.037 us | 20.511 us | 1.87x |
 | `structural/ordered-keyword-pair` | 9.027 us | 5.316 us | 18.902 us | 1.70x |
 | `lokad/langserv/url-dashboard` | 40.068 us | 23.987 us | 24.247 us | 1.67x |
-| `balancing/begin-end-blocks` | 6,713.558 us | 4,028.132 us | 4,053.728 us | 1.67x |
 | `lokad/imports/module-imports` | 8.857 us | 6.219 us | 30.586 us | 1.42x |
 | `structural/keyword-to-generic-type` | 5.264 us | 3.956 us | 17.656 us | 1.33x |
 | `lokad/langserv/url-download` | 65.814 us | 51.330 us | 51.109 us | 1.28x |
@@ -355,6 +354,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `literal/call-token` | 1.916 us | 4.098 us | 17.113 us | 0.47x |
 | `literal-family/type-token-family` | 9.639 us | 22.952 us | 36.858 us | 0.42x |
 | `literal-family/method-token-family` | 3.697 us | 8.986 us | 22.108 us | 0.41x |
+| `balancing/begin-end-blocks` | 1,352.765 us | 3,973.274 us | 3,963.068 us | 0.34x |
 | `structural/keyword-family-to-capitalized-identifier` | 66.687 us | 210.163 us | 225.391 us | 0.32x |
 | `literal/identifier-token-casei` | 3.964 us | 15.075 us | 29.306 us | 0.26x |
 | `lokad/folding/region-marker` | 4.691 us | 34.362 us | 60.982 us | 0.14x |
@@ -375,7 +375,6 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `balancing/begin-end-blocks` | 6,665.875 us | 451.748 us | 481.545 us | 14.76x |
 | `structural/keyword-family-to-capitalized-identifier` | 65.972 us | 7.561 us | 20.609 us | 8.73x |
 | `structural/modifier-family-to-type-pair` | 91.263 us | 10.489 us | 22.894 us | 8.70x |
 | `lokad/style/hex-color` | 3.811 us | 0.489 us | 0.573 us | 7.79x |
@@ -394,6 +393,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 | `lokad/lexer/string` | 210.407 us | 43.929 us | 47.074 us | 4.79x |
 | `lokad/lexer/identifier` | 78.299 us | 16.355 us | 19.836 us | 4.79x |
 | `lokad/langserv/color-rgb-hex` | 7.534 us | 1.740 us | 1.928 us | 4.33x |
+| `balancing/begin-end-blocks` | 1,355.078 us | 441.119 us | 468.242 us | 3.07x |
 | `structural/method-family-call` | 15.070 us | 4.948 us | 17.033 us | 3.05x |
 | `fallback/lookahead` | 11.695 us | 4.089 us | 16.198 us | 2.86x |
 | `structural/method-family-generic-call` | 12.187 us | 4.456 us | 16.460 us | 2.74x |

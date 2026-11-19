@@ -3,9 +3,22 @@
   "Profile": "Core",
   "Evidence": {
     "Snapshot": "README.Benchmarks.json",
-    "SnapshotSha256": "780F5035F1379C740634D4FF6A09999768CD9D0081FF11E05E4AD93C5EB0FD10"
+    "SnapshotSha256": "B2F8CF9D9CB7856CC106C12B2C7A44E5C9013F4977428B42F9A20C43ED507C00"
   },
   "Sources": {
+    "0C7D10A93FEFBCC27BF8B66AECF8C9069D10DEDB5E14F70BBC8EBFF75AB344EF": {
+      "BenchmarkAssembly": "1.0.0\u002B9b1c9de342439f2b429d5f29c743bcee3cba3527 sha256=E3DC0C4FAA7AEA61F1B8887031A62A16C8D74B80F90584DC3BE71B12A1F4CB9F",
+      "CoreAssembly": "0.5.0-dev.107\u002B9b1c9de342439f2b429d5f29c743bcee3cba3527 sha256=A19C523F0B78494B7FA7FDED5BDD2ACA5587E65E482362C66079FAA762838833",
+      "Pcre2Assembly": "0.5.0-dev.107\u002B9b1c9de342439f2b429d5f29c743bcee3cba3527 sha256=568D4F0F9D9322411A16A90F718D98E927A8889277BC475E9BA6CFC1E506EBCC",
+      "PythonReAssembly": "0.5.0-dev.107\u002B9b1c9de342439f2b429d5f29c743bcee3cba3527 sha256=7133C21056F3E4BE3B0F81F0A9B902EBA98B6EE42EB3392BCD3F75BED1DFD831",
+      "SourceCommit": "9b1c9de34243",
+      "TrackedDirty": false,
+      "HasUntrackedFiles": false,
+      "Runtime": ".NET 11.0.0",
+      "OperatingSystem": "Ubuntu 24.04.4 LTS",
+      "Processor": "X64",
+      "TieredPgo": "runtime-default"
+    },
     "416375E2D2DE750D4CEE76ED72241FE5229F30EE2D04EC45F0EEF9262A0E1EF0": {
       "BenchmarkAssembly": "1.0.0\u002B654d571640f582a877df5801d08da3a5aafcfe4b sha256=D362E9FA241CE9E8187A7D2FE7FD0397E66D9307F9D136E7420EF33B664FA1E6",
       "CoreAssembly": "0.5.0-dev.106\u002B654d571640f582a877df5801d08da3a5aafcfe4b sha256=786E33B26BB506BE2E851B4D688F0FFAA6203183C2F7A2D07C1CE5DB15C67C4C",
@@ -481,12 +494,12 @@
       },
       "industry/rust-sherlock-ing-count": {
         "Operation": "Count",
-        "Source": "416375E2D2DE750D4CEE76ED72241FE5229F30EE2D04EC45F0EEF9262A0E1EF0",
-        "ManagedUs": 48064.25,
-        "ReferenceUs": 11613.885714285714,
-        "DecodeUs": 12368.585714285715,
-        "Ratio": 4.138515840643958,
-        "Status": "Gap",
+        "Source": "0C7D10A93FEFBCC27BF8B66AECF8C9069D10DEDB5E14F70BBC8EBFF75AB344EF",
+        "ManagedUs": 1083.976811594203,
+        "ReferenceUs": 11405.171428571428,
+        "DecodeUs": 12007.914285714285,
+        "Ratio": 0.09504257067795588,
+        "Status": "Win",
         "ManagedBytes": 528,
         "ReferenceBytes": 0,
         "DecodeBytes": 1189856
@@ -1143,12 +1156,12 @@
       },
       "industry/rust-sherlock-ing-count": {
         "Operation": "Count",
-        "Source": "416375E2D2DE750D4CEE76ED72241FE5229F30EE2D04EC45F0EEF9262A0E1EF0",
-        "ManagedUs": 47477.7,
-        "ReferenceUs": 4653.764705882353,
-        "DecodeUs": 5079.7125,
-        "Ratio": 10.201998382081552,
-        "Status": "Gap",
+        "Source": "0C7D10A93FEFBCC27BF8B66AECF8C9069D10DEDB5E14F70BBC8EBFF75AB344EF",
+        "ManagedUs": 1090.4469696969697,
+        "ReferenceUs": 4542.488235294118,
+        "DecodeUs": 4945.75625,
+        "Ratio": 0.24005499039588934,
+        "Status": "Win",
         "ManagedBytes": 528,
         "ReferenceBytes": 0,
         "DecodeBytes": 1189856
@@ -1361,13 +1374,13 @@
     "lokad": {
       "balancing/begin-end-blocks": {
         "Operation": "Count",
-        "Source": "416375E2D2DE750D4CEE76ED72241FE5229F30EE2D04EC45F0EEF9262A0E1EF0",
-        "ManagedUs": 6713.558333333333,
-        "ReferenceUs": 4028.1315789473683,
-        "DecodeUs": 4053.727777777778,
-        "Ratio": 1.6666680821503157,
-        "Status": "Gap",
-        "ManagedBytes": 2055248,
+        "Source": "0C7D10A93FEFBCC27BF8B66AECF8C9069D10DEDB5E14F70BBC8EBFF75AB344EF",
+        "ManagedUs": 1352.7654545454548,
+        "ReferenceUs": 3973.273684210526,
+        "DecodeUs": 3963.068421052632,
+        "Ratio": 0.34046621553436834,
+        "Status": "Win",
+        "ManagedBytes": 7592,
         "ReferenceBytes": 0,
         "DecodeBytes": 106728
       },
@@ -1771,13 +1784,13 @@
     "lokad-compiled": {
       "balancing/begin-end-blocks": {
         "Operation": "Count",
-        "Source": "416375E2D2DE750D4CEE76ED72241FE5229F30EE2D04EC45F0EEF9262A0E1EF0",
-        "ManagedUs": 6665.875,
-        "ReferenceUs": 451.74819277108435,
-        "DecodeUs": 481.5447368421053,
-        "Ratio": 14.755731415571635,
+        "Source": "0C7D10A93FEFBCC27BF8B66AECF8C9069D10DEDB5E14F70BBC8EBFF75AB344EF",
+        "ManagedUs": 1355.078181818182,
+        "ReferenceUs": 441.11882352941177,
+        "DecodeUs": 468.2423076923077,
+        "Ratio": 3.0719119419482936,
         "Status": "Gap",
-        "ManagedBytes": 2055248,
+        "ManagedBytes": 7592,
         "ReferenceBytes": 0,
         "DecodeBytes": 106728
       },
