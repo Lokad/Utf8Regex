@@ -36,6 +36,30 @@ public sealed class Utf8DotTailRepeatTests
     }
 
     [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.Singleline)]
+    public void LazyDotSkipsDelimiterFreeLinesAndTailWithinTheWorkLimit(RegexOptions options)
+    {
+        var prefix = string.Concat(Enumerable.Repeat("😀 misses\r\n", 512));
+        var input = Encoding.UTF8.GetBytes(prefix + "é😀hit,tail");
+        const int floor = 4; // After the first supplementary scalar.
+        using var regex = new Utf8Regex("(.*?),", options, new Utf8RegexPolicy
+        {
+            ResourcePolicy = Policy() with { MaxWorkSteps = 128 }
+        });
+        using var token = new CancellationTokenSource();
+        using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
+
+        Assert.True(cursor.MoveNext(out var match));
+        var start = options == RegexOptions.Singleline ? floor : Encoding.UTF8.GetByteCount(prefix);
+        Assert.Equal(start, match.Value.StartOffsetInBytes);
+        Assert.Equal(start, Assert.Single(match.GetCaptures(1).ToArray()).StartOffsetInBytes);
+        Assert.Equal(input.Length - "tail"u8.Length, match.Value.EndOffsetInBytes);
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(1, regex.Count(input, token.Token));
+    }
+
+    [Theory]
     [InlineData(RegexOptions.None)] [InlineData(RegexOptions.Compiled)]
     public void CompleteGreedySinglelineEndNeedsNoRewindDepth(RegexOptions mode)
     {

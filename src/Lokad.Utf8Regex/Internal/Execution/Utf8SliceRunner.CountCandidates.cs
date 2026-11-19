@@ -285,7 +285,11 @@ internal static partial class Utf8SliceRunner
         // One leading scalar-class run may precede the whitespace run. Reuse
         // the actual VM predicate when rewinding: ASCII intersections are not
         // a proof of Unicode word/category membership.
-        if (IsSingleClassRepeat(code, index) && (singleLeadingSpace || code[index].RepeatMinimum > 0))
+        var lazyDot = !singleLeadingSpace && index < 64 && index < code.Length &&
+            code[index] is { Kind: Utf8SliceInstructionKind.RepeatLazy, RepeatMinimum: 0,
+                RepeatMaximum: long.MaxValue } lazy && IsSingleAtomRepeat(code, index, lazy) &&
+            code[index + 1].Kind == Utf8SliceInstructionKind.Dot;
+        if (lazyDot || IsSingleClassRepeat(code, index) && (singleLeadingSpace || code[index].RepeatMinimum > 0))
         {
             leadingClass = index + 1;
             index += 4;
@@ -302,7 +306,7 @@ internal static partial class Utf8SliceRunner
             directClassLiteral = true;
             return direct.A;
         }
-        if (singleLeadingSpace) return -1;
+        if (singleLeadingSpace || lazyDot) return -1;
         if (index >= 64 || !IsSingleClassRepeat(code, index)) return -1;
         var repeat = code[index];
         if (repeat.RepeatMaximum != long.MaxValue ||
@@ -459,9 +463,15 @@ internal static partial class Utf8SliceRunner
         var windowEnd = position;
         var code = program.Instructions;
         if (directClassLiteral &&
-            code[leadingClass - 1].RepeatMinimum == 1 && code[leadingClass - 1].RepeatMaximum == long.MaxValue &&
-            code[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } atom &&
-            TryGetOneOrTwoAsciiBytes(program.SetMasks[atom.A], out var first, out var second))
+            code[leadingClass] is { Kind: Utf8SliceInstructionKind.Dot, A: not 0 } &&
+            code[leadingClass - 1].RepeatMaximum == long.MaxValue)
+        {
+            position = floor;
+            return invocation.TryChargeInputStep();
+        }
+        if (directClassLiteral && code[leadingClass - 1].RepeatMaximum == long.MaxValue &&
+            (code[leadingClass - 1].RepeatMinimum == 1 || code[leadingClass].Kind == Utf8SliceInstructionKind.Dot) &&
+            TryGetAsciiRepeatStops(program, code[leadingClass], out var first, out var second))
         {
             // Direct unbounded class runs start after the last excluded byte.
             // ASCII cannot occur inside a wider scalar in caller-valid UTF-8.

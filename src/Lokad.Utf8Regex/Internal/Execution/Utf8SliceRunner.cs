@@ -844,10 +844,11 @@ internal static partial class Utf8SliceRunner
         var leadingClass = -1;
         var whitespaceLiteralIndex = -1;
         long whitespaceGapMaximum = 0;
+        var directClassLiteral = false;
         var whitespaceLiteral = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
             !program.HasContiguousAnchor && input.Length - fromByte >= 256
             ? GetLeadingWhitespaceLiteral(program, out leadingClass, out whitespaceLiteralIndex,
-                out whitespaceGapMaximum, out _) : -1;
+                out whitespaceGapMaximum, out directClassLiteral) : -1;
         // Count keeps its prepared literal search when capture markers or
         // consuming instructions separate the repeat from its delimiter.
         var literalImmediatelyAfterRepeat = whitespaceLiteral >= 0 && whitespaceLiteralIndex == leadingClass + 3;
@@ -942,7 +943,7 @@ internal static partial class Utf8SliceRunner
                     if (leadingClass >= 0 || repeatPrefixAscii.HasValue)
                     {
                         var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
-                            (byte)whitespaceLiteral, classSearch, whitespaceGapMaximum, literalImmediatelyAfterRepeat,
+                            (byte)whitespaceLiteral, classSearch, whitespaceGapMaximum, directClassLiteral,
                             ref position, ref invocation, out whitespaceWindowEnd, repeatPrefixAscii);
                         if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     }
