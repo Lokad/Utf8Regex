@@ -18,7 +18,7 @@ public sealed class Utf8UriExistenceTests
     {
         var regex = new Utf8Regex(Pattern, options: options);
         var captured = new Utf8Regex("(?<uri>" + Pattern + ")", options: options);
-        foreach (var text in new[] { "", "x://a?query", "x://😀", "𐐀://😀😀", "é://ab", "١://ab",
+        foreach (var text in new[] { "", "x://a?query", "x://host?query", "x://😀", "𐐀://😀😀", "é://ab", "١://ab",
             "x://😀/", "x:///😀😀", "😀://ab", "x://a x://ab", "x://ab?#tail x://cd" })
         {
             var input = Encoding.UTF8.GetBytes(text);
@@ -39,6 +39,11 @@ public sealed class Utf8UriExistenceTests
     [Fact]
     public void FiniteExistenceRetainsFundedAdmissionAndScalarSemantics()
     {
+        using var cancellation = new CancellationTokenSource();
+        using var tightWorking = Limited(128, working: 1);
+        Assert.True(tightWorking.IsMatch("https://atlas.example.org/reports/export?id=42"u8, cancellation.Token));
+        Assert.True(tightWorking.IsMatch("é://hôte/résumé#section"u8, cancellation.Token));
+        Assert.False(tightWorking.IsMatch("x://😀"u8, cancellation.Token));
         Assert.True(Limited(100000).IsMatch("𐐀://😀😀"u8));
         Assert.False(Limited(100000).IsMatch("x://😀"u8));
         ulong firstSuccess = 0;
@@ -130,7 +135,8 @@ public sealed class Utf8UriExistenceTests
         Assert.Equal(cancelAt, reads);
     }
 
-    private static Utf8Regex Limited(ulong work, RegexOptions options = RegexOptions.None, TimeSpan? timeout = null)
+    private static Utf8Regex Limited(ulong work, RegexOptions options = RegexOptions.None, TimeSpan? timeout = null,
+        ulong working = 8 << 20)
         => new(Pattern, options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = timeout ?? Regex.InfiniteMatchTimeout,
@@ -138,7 +144,7 @@ public sealed class Utf8UriExistenceTests
             {
                 MaxWorkSteps = work,
                 MaxDepth = 8192,
-                MaxWorkingBytes = 8 << 20,
+                MaxWorkingBytes = working,
                 MaxResultBytes = 1
             }
         });

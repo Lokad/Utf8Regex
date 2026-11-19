@@ -1366,6 +1366,19 @@ internal static partial class Utf8SliceRunner
                                 if (run.Breach != Utf8ExecutionLimitKind.None)
                                 { failure = run.Breach; goto Failure; }
                                 if (run.EndIndex < 0) { failed = true; break; }
+                                if (run.EndIndex > minimumEnd && existenceOnly && cursor.RequiredEnd is null &&
+                                    TryRunTerminalHybridMinimum(program, input, continuation, run.EndIndex, ref invocation, out var terminal))
+                                {
+                                    if (terminal.Breach != Utf8ExecutionLimitKind.None)
+                                    { failure = terminal.Breach; goto Failure; }
+                                    if (terminal.EndIndex >= 0)
+                                    {
+                                        inputIndex = terminal.EndIndex;
+                                        programIndex = instructions.Length - 1;
+                                        break;
+                                    }
+                                    failed = true;
+                                }
                                 if (run.EndIndex > minimumEnd && !stacks.PushFrame(new Utf8SliceFrame
                                 {
                                     ResumeKind = Utf8SliceResumeKind.ScalarRepeatRewind,

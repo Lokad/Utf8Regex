@@ -1333,6 +1333,29 @@ internal static partial class Utf8SliceRunner
         return firstMember == (first.B != 0) && secondMember == (second.B != 0);
     }
 
+    private static bool TryRunTerminalHybridMinimum(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int index, int position, ref Utf8SliceInvocation invocation, out (int EndIndex, Utf8ExecutionLimitKind Breach) result)
+    {
+        result = default;
+        var instructions = program.Instructions.AsSpan();
+        if (position == input.Length || (uint)index >= (uint)instructions.Length) return false;
+        var repeat = instructions[index];
+        if (repeat is not { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy, RepeatMinimum: 1 } ||
+            !IsSingleAtomRepeat(instructions, index, repeat) ||
+            instructions[index + 1] is not { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } ||
+            !CanAcceptEmptyTail(instructions, repeat.A + 1)) return false;
+
+        // At the preferred endpoint one more scalar can prove existence.
+        // Keep the normal repeat entry, scalar and boundary charges, and leave
+        // Accept to the caller. A failed probe enters the original rewind path
+        // directly because the next repeat cannot meet its minimum here.
+        var breach = invocation.TryChargeStep();
+        result = breach == Utf8ExecutionLimitKind.None
+            ? RunClassRepeat(program, index, input, position, ref invocation, minimumOnly: true)
+            : (-1, breach);
+        return true;
+    }
+
     private static bool CanAcceptEmptyTail(ReadOnlySpan<Utf8SliceInstruction> code, int index)
     {
         for (var remaining = 32; remaining > 0 && (uint)index < (uint)code.Length; remaining--)
