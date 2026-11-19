@@ -72,6 +72,7 @@ public sealed class PythonReCountPublicationTests
         var matches = 0;
         using (var measured = regex.CreateMatchCursor(input))
         {
+            measured.WorkingInvocation.ShareStorageForCursor();
             var observer = measured.WorkingInvocation;
             while (measured.MoveNext(out _)) matches++;
             work = observer.Budget.Steps;
@@ -84,9 +85,9 @@ public sealed class PythonReCountPublicationTests
                 MaxWorkSteps = work - 1
             }
         });
-        using var cursor = bounded.CreateMatchCursor(input);
-        var invocation = cursor.WorkingInvocation;
-        Assert.True(invocation.Ledger.TryReserve(13));
+        var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
+        Assert.True(account.TryReserve(13));
+        using var cursor = bounded.CreateMatchCursor(input, workingMemoryAllowance: account);
         Assert.True(cursor.MoveNext(out cursorRange));
         var retained = cursorRange;
         for (var index = 1; index < matches; index++) Assert.True(cursor.MoveNext(out cursorRange));
@@ -94,7 +95,8 @@ public sealed class PythonReCountPublicationTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
         Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
         cursor.Dispose();
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(13UL, account.Used);
+        account.Release(13);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
@@ -131,6 +133,7 @@ public sealed class PythonReCountPublicationTests
             {
                 input = Encoding.UTF8.GetBytes(new string('a', length) + new string('x', tail));
                 using var measured = regex.CreateMatchCursor(input, 0, token.Token);
+                measured.WorkingInvocation.ShareStorageForCursor();
                 var observer = measured.WorkingInvocation;
                 var count = 0;
                 while (measured.MoveNext(out _)) count++;
@@ -139,9 +142,9 @@ public sealed class PythonReCountPublicationTests
             }
         Assert.True(expected > 0, "No bounded terminal cursor checkpoint witness found.");
 
-        using var cursor = regex.CreateMatchCursor(input, 0, token.Token);
-        var invocation = cursor.WorkingInvocation;
-        Assert.True(invocation.Ledger.TryReserve(13));
+        var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
+        Assert.True(account.TryReserve(13));
+        using var cursor = regex.CreateMatchCursor(input, 0, token.Token, account);
         var entered = false;
         cursor.WorkingInvocation.CheckpointHook = steps =>
         {
@@ -174,7 +177,8 @@ public sealed class PythonReCountPublicationTests
             Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
         }
         finally { cursor.Dispose(); }
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(13UL, account.Used);
+        account.Release(13);
         Assert.True(retained.Success);
         Assert.Equal(string.Empty, System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.Equal(string.Empty, System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));

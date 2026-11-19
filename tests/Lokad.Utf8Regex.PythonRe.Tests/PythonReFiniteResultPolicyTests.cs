@@ -50,16 +50,16 @@ public sealed class PythonReFiniteResultPolicyTests
         });
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        using var cursor = regex.CreateMatchCursor("😀a"u8.ToArray());
+        var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
+        using var cursor = regex.CreateMatchCursor("😀a"u8.ToArray(), workingMemoryAllowance: account);
         Assert.True(cursor.MoveNext(out cursorRange));
         var retained = cursorRange;
-        var invocation = cursor.WorkingInvocation;
         ticks = 250;
         var error = Assert.Throws<RegexMatchTimeoutException>(() => cursor.MoveNext(out _));
         Assert.Empty(error.Input);
         Assert.Equal(regex.Pattern, error.Pattern);
         Assert.Equal(TimeSpan.FromMilliseconds(200), error.MatchTimeout);
-        Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
+        Assert.Equal(0UL, account.Used);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         cursor.Dispose();
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
@@ -281,15 +281,14 @@ public sealed class PythonReFiniteResultPolicyTests
             Assert.True(probe.WorkingInvocation.Budget.ResultBytes > firstBytes);
         }
         var regex = Create("(?P<x>.)", firstBytes);
-        using var cursor = regex.CreateMatchCursor(input);
+        var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
+        using var cursor = regex.CreateMatchCursor(input, workingMemoryAllowance: account);
         var alias = cursor;
-        var authority = cursor.WorkingInvocation;
         Assert.True(alias.MoveNext(out cursorRange));
         var retained = cursorRange;
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Denied(() => cursor.MoveNext(out cursorRange), firstBytes);
-        Assert.Equal(0UL, authority.Ledger.ReservedBytes);
-        Assert.True(authority.Budget.ResultBytes > firstBytes);
+        Assert.Equal(0UL, account.Used);
         Assert.Throws<InvalidOperationException>(() => alias.MoveNext(out _));
         alias.Dispose();
         cursor.Dispose();

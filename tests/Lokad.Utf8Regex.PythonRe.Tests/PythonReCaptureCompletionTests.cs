@@ -290,8 +290,8 @@ public sealed class PythonReCaptureCompletionTests
         {
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });
-        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), 0, source.Token);
-        var invocation = cursor.WorkingInvocation;
+        var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
+        using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes(text), 0, source.Token, account);
         ticks = 15;
         Assert.True(cursor.MoveNext(out cursorRange));
         var retained = cursorRange;
@@ -307,7 +307,7 @@ public sealed class PythonReCaptureCompletionTests
             var error = Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _));
             Assert.Equal(source.Token, error.CancellationToken);
         }
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        Assert.Equal(0UL, account.Used);
         Assert.Equal("😀", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
     }
     [Fact]

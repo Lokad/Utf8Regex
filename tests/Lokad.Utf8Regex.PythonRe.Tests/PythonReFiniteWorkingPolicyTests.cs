@@ -134,14 +134,14 @@ public sealed class PythonReFiniteWorkingPolicyTests
             cap = Discovery(probe).WorkingInvocation.Budget.PeakWorkingBytes;
         }
         var regex = Create(pattern, cap, false);
-        using var cursor = regex.CreateMatchCursor(input);
+        var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
+        using var cursor = regex.CreateMatchCursor(input, workingMemoryAllowance: account);
         Assert.True(cursor.MoveNext(out cursorRange));
         var retained = cursorRange;
-        var authority = Discovery(cursor).WorkingInvocation;
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _)), cap);
         Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
         cursor.Dispose(); cursor.Dispose();
-        Assert.Equal(0UL, authority.Ledger.ReservedBytes);
+        Assert.Equal(0UL, account.Used);
         Assert.Equal("ab", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
         Assert.True(regex.IsMatch("ab"u8));
     }

@@ -48,20 +48,20 @@ public sealed class PythonReAdvanceTokenTests
                 MaxResultBytes = 8 << 20
             }
         });
+        var account = new PythonReSharedWorkingAllowanceTests.Allowance(4 << 20);
+        Assert.True(account.TryReserve(13));
         using var cursor = regex.CreateMatchCursor(Encoding.UTF8.GetBytes("z" + new string('a', 262144)), 0,
-            withCreationToken ? creation.Token : default);
+            withCreationToken ? creation.Token : default, account);
         Assert.True(cursor.MoveNext(out cursorRange)); var retained = cursorRange;
-        var invocation = cursor.WorkingInvocation;
-        Assert.True(invocation.Ledger.TryReserve(13));
-        var seed = invocation.Budget.Steps; var entered = false;
+        var seed = cursor.WorkingInvocation.Budget.Steps; var entered = false;
         cursor.WorkingInvocation.CheckpointHook = steps =>
         {
             if (steps > seed + 64) { entered = true; operation.Cancel(); }
         };
         var failure = Assert.Throws<OperationCanceledException>(() => cursor.MoveNext(out _, operation.Token));
         Assert.Equal(operation.Token, failure.CancellationToken);
-        Assert.True(entered); Assert.True(invocation.Budget.Steps > seed);
-        Assert.Equal(13UL, invocation.Ledger.ReservedBytes); invocation.Ledger.Release(13);
+        Assert.True(entered);
+        Assert.Equal(13UL, account.Used); account.Release(13);
         Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
         Assert.Equal("z", System.Text.Encoding.UTF8.GetString(retained.GetValueMemory().Span));
     }

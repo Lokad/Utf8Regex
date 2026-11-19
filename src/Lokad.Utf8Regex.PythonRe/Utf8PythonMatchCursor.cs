@@ -82,18 +82,14 @@ public sealed class Utf8PythonMatchCursor : IDisposable
             if (retain && !_discovery.WorkingInvocation.Ledger.HasMemoryAllowance)
                 throw new InvalidOperationException("Retained ranges require a cursor with a caller-owned working allowance.");
             if (!cancellationToken.CanBeCanceled) return Advance(out match, out retained, retain);
-            // Hold one shared invocation even if Close resets the discovery
-            // state. Counters, original deadline and outstanding loans stay put.
-            _discovery.WorkingInvocation.ShareStorageForCursor();
-            var invocation = _discovery.WorkingInvocation;
-            var original = invocation.Budget.ExchangeCancellationToken(cancellationToken);
+            var original = _discovery.WorkingInvocation.Budget.ExchangeCancellationToken(cancellationToken);
             CancellationTokenSource? linked = null;
             try
             {
                 if (original.CanBeCanceled && original != cancellationToken)
                 {
                     linked = CancellationTokenSource.CreateLinkedTokenSource(original, cancellationToken);
-                    invocation.Budget.ExchangeCancellationToken(linked.Token);
+                    _discovery.WorkingInvocation.Budget.ExchangeCancellationToken(linked.Token);
                 }
                 return Advance(out match, out retained, retain);
             }
@@ -107,7 +103,9 @@ public sealed class Utf8PythonMatchCursor : IDisposable
             }
             finally
             {
-                invocation.Budget.ExchangeCancellationToken(original);
+                // Terminal advances have already released the invocation.
+                if (_status is Status.Open or Status.Matched)
+                    _discovery.WorkingInvocation.Budget.ExchangeCancellationToken(original);
                 linked?.Dispose();
             }
         }

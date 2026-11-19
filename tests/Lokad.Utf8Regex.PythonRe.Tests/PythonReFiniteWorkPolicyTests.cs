@@ -144,14 +144,14 @@ public sealed class PythonReFiniteWorkPolicyTests
             Assert.True(probe.MoveNext(out _));
             Assert.True(probe.WorkingInvocation.Budget.Steps > firstSteps);
         }
-        using var cursor = RegexWith(".", firstSteps).CreateMatchCursor(input);
+        var account = new PythonReSharedWorkingAllowanceTests.Allowance(1 << 20);
+        using var cursor = RegexWith(".", firstSteps).CreateMatchCursor(input, workingMemoryAllowance: account);
         var alias = cursor;
-        var authority = cursor.WorkingInvocation;
         Assert.True(cursor.MoveNext(out cursorRange));
         var retained = cursorRange;
         Assert.Equal(4, retained.Value.EndOffsetInBytes);
         Exhausted(() => alias.MoveNext(out cursorRange), firstSteps);
-        Assert.Equal(0UL, authority.Ledger.ReservedBytes);
+        Assert.Equal(0UL, account.Used);
         Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
         alias.Dispose();
         cursor.Dispose();
