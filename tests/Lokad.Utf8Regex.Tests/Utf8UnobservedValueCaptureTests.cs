@@ -31,7 +31,7 @@ public sealed class Utf8UnobservedValueCaptureTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void ValuesFitSmallWorkingBudgetWhileDetailedAndCursorCapturesKeepAdmission(bool rtl)
+    public void ValuesFitSmallWorkingBudgetWhileCursorCapturesRequireAdmission(bool rtl)
     {
         var regex = new Utf8Regex("abcdef([0-9]+)", options: rtl ? RegexOptions.RightToLeft : RegexOptions.None, policy: new Utf8RegexPolicy
         {
@@ -39,7 +39,7 @@ public sealed class Utf8UnobservedValueCaptureTests
             ResourcePolicy = new Utf8ResourcePolicy
             {
                 // Elided capture storage must not determine the value allowance.
-                MaxWorkingBytes = rtl ? 1280UL : 256UL,
+                MaxWorkingBytes = rtl ? 1280UL : 128UL,
                 MaxWorkSteps = 100000
             }
         });
@@ -51,8 +51,6 @@ public sealed class Utf8UnobservedValueCaptureTests
         Assert.True(value.Success);
         Assert.Equal(2, value.StartOffsetInBytes);
         Assert.Equal(9, (value.EndOffsetInBytes - value.StartOffsetInBytes));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input))).ResourceKind);
         using var cursor = regex.CreateMatchCursor(input);
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _)).ResourceKind);
@@ -84,7 +82,7 @@ public sealed class Utf8UnobservedValueCaptureTests
     }
 
     [Fact]
-    public void OneSparseSlotNeedsStorageButNoRollbackTrailForValues()
+    public void OneSparseSlotNeedsStorageAndPublishesWithoutStagingHistory()
     {
         const string pattern = "abcdef(?<12>[0-9]+)";
         var input = "abcdef123"u8.ToArray();
@@ -99,8 +97,9 @@ public sealed class Utf8UnobservedValueCaptureTests
         });
         Assert.True(admitted.IsMatch(input));
         Assert.Equal(9, (admitted.Match(input).EndOffsetInBytes - admitted.Match(input).StartOffsetInBytes));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(admitted.CreateMatchCursor(input))).ResourceKind);
+        var captured = Utf8MatchSequence.First(admitted.CreateMatchCursor(input));
+        Assert.Single(captured.GetCaptures(12).ToArray());
+        Assert.True(captured.GetGroupMemory(12).Span.SequenceEqual("123"u8));
         var denied = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,

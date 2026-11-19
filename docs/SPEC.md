@@ -527,6 +527,9 @@ Dispose an abandoned cursor.
 `MoveNext` returns immutable byte ranges and group metadata that survive cursor
 advance, failure and closure. The subject and its memory manager stay borrowed.
 A group-zero-only snapshot uses one stored capture for `Value` and `GetCaptures(0)`.
+When the program proves each group can capture at most once on the successful
+path, the cursor can copy completed slots directly. This can reduce modeled
+result traffic by avoiding temporary history arrays.
 Ordinary publication ends working admission for the range result.
 `MoveNextRetained` requires shared working funding and returns a
 `Utf8RetainedRangeMatch`. Captures, group numbers and the receipt are admitted.

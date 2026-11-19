@@ -120,9 +120,10 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         try
         {
             var program = _program!;
-            var collectHistory = program.GroupCount != 0;
+            var useCaptureSlots = program.HasSingleCapturePerGroup;
+            var collectHistory = program.GroupCount != 0 && !useCaptureSlots;
             _invocation.AnchorOriginByte = _origin;
-            if (!collectHistory && _regex!.TryFindNativeLiteralForResult(_input.Span, _position,
+            if (program.GroupCount == 0 && _regex!.TryFindNativeLiteralForResult(_input.Span, _position,
                     ref _invocation, out var found, out var start, out var end, forCoreCursor: true))
                 outcome = new(found, start, end, null, null, Utf8ExecutionLimitKind.None);
             else outcome = _nonBacktracking is { } batch
@@ -133,7 +134,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             Checkpoint();
             if (!outcome.Found) { exhausted = true; return false; }
 
-            var completed = Snapshot(outcome, ref results);
+            var completed = Snapshot(outcome, useCaptureSlots, ref results);
             Utf8RetainedRangeMatch? receipt = null;
             if (retain)
             {
@@ -175,11 +176,17 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         }
     }
 
-    private Utf8RangeMatch Snapshot(Utf8SliceSearchOutcome outcome, ref Utf8InvocationResultLedger results)
+    private Utf8RangeMatch Snapshot(Utf8SliceSearchOutcome outcome, bool useCaptureSlots, ref Utf8InvocationResultLedger results)
     {
         var numbers = _catalog!.GroupNumbers;
         var count = 1;
-        if (outcome.CaptureStarts is { } history)
+        if (useCaptureSlots)
+            for (var slot = 0; slot < _slots.Ends.Length; slot++)
+            {
+                if ((slot & 255) == 0) Checkpoint();
+                if (_slots.Ends[slot] >= 0) count++;
+            }
+        else if (outcome.CaptureStarts is { } history)
             for (var slot = 0; slot < history.Length; slot++)
             { if ((slot & 255) == 0) Checkpoint(); count = checked(count + history[slot].Length); }
         var offsets = numbers.Length == 1 ? null
@@ -192,7 +199,12 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         for (var slot = 1; slot < numbers.Length; slot++)
         {
             if ((slot & 255) == 0) Checkpoint();
-            if (outcome.CaptureStarts is { } starts && outcome.CaptureLengths is { } lengths)
+            if (useCaptureSlots)
+            {
+                var end = _slots.Ends[slot - 1];
+                if (end >= 0) captures[written++] = new(_slots.Starts[slot - 1], end);
+            }
+            else if (outcome.CaptureStarts is { } starts && outcome.CaptureLengths is { } lengths)
                 for (var capture = 0; capture < starts[slot - 1].Length; capture++)
                 {
                     if ((written & 255) == 0) Checkpoint();

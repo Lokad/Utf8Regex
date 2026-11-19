@@ -30,6 +30,9 @@ public sealed class Utf8MemoryCursorTests
     [InlineData(@"(\w+)\s+(X?Holmes|Watson)", "é XHolmes beta Watson", RegexOptions.None)]
     [InlineData(@"\B[a-zA-Z]{0,12}ing\B", "éwalkingish a starting point", RegexOptions.None)]
     [InlineData(@"\b([a-zA-Z]{0,12})ing\b", "β walking abcdefghijklmnopqring éworking", RegexOptions.None)]
+    [InlineData("(?<10>é)(?<2>a)?()", "éa é", RegexOptions.None)]
+    [InlineData("(?:(?<first>ab)c|(?<second>a)b)d", "abd abcd", RegexOptions.None)]
+    [InlineData("(é){2}", "éé éé", RegexOptions.None)]
     public void PublicRangesPreserveGroupsAndHistories(string pattern, string subject, RegexOptions options)
     {
         var bcl = new Regex(pattern, options);
@@ -233,17 +236,20 @@ public sealed class Utf8MemoryCursorTests
         Assert.Equal(0UL, root.Used);
     }
 
-    [Fact]
-    public void ResultTransferAdmitsOverlapAndRefusalIsTerminal()
+    [Theory]
+    [InlineData("(?<x>a)+", 3)]
+    [InlineData("(?<x>a+)", 1)]
+    public void ResultTransferAdmitsOverlapAndRefusalIsTerminal(string pattern, int captureCount)
     {
         var root = new Root(); var working = new Account(root); var results = new Account(root);
-        using var cursor = new Utf8Regex("(?<x>a)+").CreateMatchCursor("aaa aaa"u8.ToArray(), workingMemoryAllowance: working);
+        using var cursor = new Utf8Regex(pattern).CreateMatchCursor("aaa aaa"u8.ToArray(), workingMemoryAllowance: working);
         var overlap = false; results.AfterGrant = () => overlap = working.Used > 0;
         Assert.True(cursor.MoveNextRetained(out var first, resultMemoryAllowance: results)); Assert.True(overlap);
         var held = results.Used; var attempts = results.Attempts; results.Maximum = held;
         Assert.Throws<Utf8MemoryAdmissionException>(() => cursor.MoveNextRetained(out _, resultMemoryAllowance: results));
         Assert.Equal(attempts + 1, results.Attempts); Assert.Equal(held, results.Used); Assert.Equal(0UL, working.Used);
         Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
+        Assert.Equal(captureCount, first.Match.GetCaptures(1).Length);
         Assert.Equal("aaa"u8.ToArray(), first.Match.GetValueMemory().ToArray()); first.Dispose(); Assert.Equal(0UL, root.Used);
     }
 
@@ -384,16 +390,21 @@ public sealed class Utf8MemoryCursorTests
         Assert.True(rejected); Assert.Equal(0UL, root.Used);
     }
 
-    [Fact]
-    public void ResultTrafficIsCumulativeEvenWhenEachPublishedLoanRefunds()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ResultTrafficIsCumulativeEvenWhenEachPublishedLoanRefunds(bool withCapture)
     {
         var root = new Root(); var working = new Account(root);
-        using var cursor = new Utf8Regex("x", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        var resultBytes = withCapture
+            ? Utf8ConstructionBudget.ArrayBytes<int>(3) + Utf8ConstructionBudget.ArrayBytes<Utf8CaptureRange>(2)
+            : Utf8ConstructionBudget.ArrayBytes<Utf8CaptureRange>(1);
+        using var cursor = new Utf8Regex(withCapture ? "(x)" : "x", options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxResultBytes = 2 * Utf8ConstructionBudget.ArrayBytes<Utf8CaptureRange>(1)
+                MaxResultBytes = 2 * resultBytes
             }
         }).CreateMatchCursor("xxxxx"u8.ToArray(), workingMemoryAllowance: working);
         Assert.True(cursor.MoveNext(out var first));
@@ -402,6 +413,11 @@ public sealed class Utf8MemoryCursorTests
         Assert.Equal(0UL, root.Used);
         Assert.Equal(0, first.GetCaptures(0)[0].StartOffsetInBytes);
         Assert.Equal(1, second.GetCaptures(0)[0].StartOffsetInBytes);
+        if (withCapture)
+        {
+            Assert.Equal(first.Value, first.GetCaptures(1)[0]);
+            Assert.Equal(second.Value, second.GetCaptures(1)[0]);
+        }
     }
 
     [Theory]

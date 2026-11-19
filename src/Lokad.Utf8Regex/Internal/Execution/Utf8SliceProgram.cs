@@ -395,6 +395,7 @@ internal sealed class Utf8SliceProgram
         // Instructions and flags are complete before publishing the program.
         // Keep this bounded, allocation-free proof off repeated match attempts.
         HasTerminalCaptureRoot = Utf8SliceRunner.CanRunTerminalCaptureRoot(this);
+        HasSingleCapturePerGroup = CanReadCapturesFromSlots();
         if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
             TerminalRepeatsWithoutRewind = Utf8SliceRunner.FindTerminalRepeatsWithoutRewind(this, Utf8ConstructionScope.CurrentBudget);
         // An absolute start confines an empty match to byte zero. A terminal
@@ -558,8 +559,51 @@ internal sealed class Utf8SliceProgram
     internal bool CanMatchEmpty { get; }
     internal bool HasUnicodePatternAtoms { get; }
     internal bool HasTerminalCaptureRoot { get; }
+    internal bool HasSingleCapturePerGroup { get; }
     private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
+
+    private bool CanReadCapturesFromSlots()
+    {
+        if (GroupCount is < 1 or > 64 || Instructions.Length > 64 || IsNonBacktracking || RightToLeft ||
+            UsesCaptureOpeningJournal || HasBalancing || SawLookaround || Assertions.Length != 0)
+            return false;
+
+        // Forward forks retry with their captured slots restored. A repeat can
+        // revisit its body without unwinding, so its back edge must cross no
+        // capture marker. Count emitted closes to also reject duplicated bodies.
+        ulong closes = 0;
+        var lastCapture = -1;
+        for (var index = 0; index < Instructions.Length; index++)
+        {
+            var instruction = Instructions[index];
+            switch (instruction.Kind)
+            {
+                case Utf8SliceInstructionKind.CaptureStart:
+                    lastCapture = index;
+                    break;
+                case Utf8SliceInstructionKind.CaptureEnd:
+                    var bit = 1UL << instruction.A;
+                    if ((closes & bit) != 0) return false;
+                    closes |= bit;
+                    lastCapture = index;
+                    break;
+                case Utf8SliceInstructionKind.Fork when instruction.B == 0 && instruction.A > index:
+                case Utf8SliceInstructionKind.Jump or Utf8SliceInstructionKind.RepeatGreedy or
+                    Utf8SliceInstructionKind.RepeatLazy or Utf8SliceInstructionKind.RepeatGreedyAfterMinimum or
+                    Utf8SliceInstructionKind.RepeatLazyAfterMinimum when instruction.A > index:
+                case Utf8SliceInstructionKind.RepeatEnd when instruction.A > lastCapture:
+                case Utf8SliceInstructionKind.RepeatExit or Utf8SliceInstructionKind.Accept or Utf8SliceInstructionKind.Fail or
+                    Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or
+                    Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.CategorySet or
+                    Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary:
+                    break;
+                default:
+                    return false;
+            }
+        }
+        return true;
+    }
 
     internal bool SkipsTerminalRewind(int repeatIndex)
     {
