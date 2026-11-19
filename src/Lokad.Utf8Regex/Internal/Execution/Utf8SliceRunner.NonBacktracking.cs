@@ -49,12 +49,24 @@ internal static partial class Utf8SliceRunner
                 var width = 1;
                 var ascii = value < 0x80;
                 var canCache = ascii && cache;
-                var slot = (int)((states ^ (states >> 32) ^ (uint)(value * 13)) & (capacity - 1));
-                if (canCache && transitions[slot].States == states && transitions[slot].Value == value)
+                var slot = 0;
+                if (canCache)
                 {
-                    states = transitions[slot].Next;
-                    position++;
-                    continue;
+                    slot = (int)((states ^ (states >> 32) ^ (uint)(value * 13)) & (capacity - 1));
+                    ref readonly var transition = ref transitions[slot];
+                    if (transition.States != 0 && (transition.States != states || transition.Value != value))
+                    {
+                        // Keep a resident primary key across collisions. The
+                        // paired slot is inside the same admitted capacity.
+                        slot ^= capacity / 2;
+                        transition = ref transitions[slot];
+                    }
+                    if (transition.States == states && transition.Value == value)
+                    {
+                        states = transition.Next;
+                        position++;
+                        continue;
+                    }
                 }
 
                 Rune scalar;
