@@ -464,7 +464,7 @@ internal ref partial struct Utf8OperationMatchCursor
         _input = input;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _program = searchPlan.EnumerationOperation;
+        _program = searchPlan.SearchOperation;
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;
@@ -501,7 +501,7 @@ internal ref partial struct Utf8OperationMatchCursor
         _input = input;
         _budget = budget;
         _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
-        _program = searchPlan.EnumerationOperation;
+        _program = searchPlan.SearchOperation;
         _remaining = input;
         _consumed = 0;
         _multiLiteralScanState = default;

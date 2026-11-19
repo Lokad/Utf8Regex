@@ -2931,14 +2931,14 @@ internal static partial class BenchmarkInspectReporter
             Measure("PreparedFamilyIsMatch", iterations, () =>
                 Utf8BackendInstructionExecutor.IsMatchLiteralFamily(
                     regex.Inspection.SearchPlan,
-                    regex.Inspection.SearchPlan.FirstMatchOperation,
+                    regex.Inspection.SearchPlan.SearchOperation,
                     benchmarkCase.InputBytes,
                     Utf8ExecutionDeadline.Infinite,
                     rightToLeft) ? 1 : 0);
             Measure("CompiledPreparedFamilyIsMatch", iterations, () =>
                 Utf8BackendInstructionExecutor.IsMatchLiteralFamily(
                     compiledUtf8Regex.Inspection.SearchPlan,
-                    compiledUtf8Regex.Inspection.SearchPlan.FirstMatchOperation,
+                    compiledUtf8Regex.Inspection.SearchPlan.SearchOperation,
                     benchmarkCase.InputBytes,
                     Utf8ExecutionDeadline.Infinite,
                     rightToLeft) ? 1 : 0);
@@ -4760,7 +4760,7 @@ internal static partial class BenchmarkInspectReporter
         var plan = regex.Inspection.SearchPlan;
         return Utf8BackendInstructionExecutor.MatchLiteralFamily(
             plan,
-            plan.EnumerationOperation,
+            plan.SearchOperation,
             input,
             Utf8ExecutionDeadline.Infinite,
             (regex.Options & RegexOptions.RightToLeft) != 0);
@@ -4769,7 +4769,7 @@ internal static partial class BenchmarkInspectReporter
     private static PreparedSearchMatch ExecuteConfirmedLiteralFamilySearch(Utf8Regex regex, ReadOnlySpan<byte> input)
     {
         var plan = regex.Inspection.SearchPlan;
-        var program = plan.EnumerationOperation;
+        var program = plan.SearchOperation;
         var state = new PreparedMultiLiteralScanState(0, 0, 0);
         return Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(
             in plan,
@@ -6022,7 +6022,7 @@ internal static partial class BenchmarkInspectReporter
 
             if (Utf8ConfirmationExecutor.IsMatch(
                     in plan,
-                    plan.EnumerationOperation.Confirmation,
+                    plan.SearchOperation.Confirmation,
                     span,
                     match.Index,
                     match.Length))
@@ -6053,7 +6053,7 @@ internal static partial class BenchmarkInspectReporter
 
             if (!Utf8ConfirmationExecutor.IsMatch(
                     in plan,
-                    plan.EnumerationOperation.Confirmation,
+                    plan.SearchOperation.Confirmation,
                     span,
                     match.Index,
                     match.Length))

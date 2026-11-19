@@ -18,7 +18,7 @@ public sealed class Utf8SearchDispositionQualificationTests
         var fields = typeof(Utf8SearchPlan).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.InRange(Unsafe.SizeOf<Utf8SearchPlan>(), 1, 4096);
         var retired = new[] { "NativeCandidateSource", "FallbackCandidateSource", "ConfirmationPlan",
-            "CountOperation", "FirstMatchOperation", "EnumerationOperation" };
+            "SearchOperation" };
         Assert.DoesNotContain(fields, f => retired.Any(name => f.Name == $"<{name}>k__BackingField"));
         Assert.Single(fields.Where(f => f.Name == "_fallbackCandidatePlans"));
         Assert.True(typeof(Utf8SearchStrategySelector).GetMethod("Create")!.GetParameters()[0].ParameterType.IsByRef);
@@ -59,7 +59,7 @@ public sealed class Utf8SearchDispositionQualificationTests
             var plan = Utf8FrontEnd.Compile(pattern, RegexOptions.CultureInvariant).SearchPlan;
             using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
             {
-                var operation = Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan);
+                var operation = plan.SearchOperation;
                 var native = plan.NativeCandidateSource; var fallback = plan.FallbackCandidateSource;
                 var confirm = native.HasValue ? plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement : fallback.HasValue;
                 var expected = !native.HasValue && !fallback.HasValue ? Utf8SearchOperationKind.None :
@@ -80,9 +80,6 @@ public sealed class Utf8SearchDispositionQualificationTests
                     Assert.Same(preferred.StructuralSearchPlans, operation.PrefilterSource.StructuralSearchPlans);
                 }
             }
-            Assert.Equal(plan.CountOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan).Kind);
-            Assert.Equal(plan.FirstMatchOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan).Kind);
-            Assert.Equal(plan.EnumerationOperation.Kind, Utf8SearchStrategySelector.Create(plan, plan.ConfirmationPlan).Kind);
             Assert.Equal(0ul, zero.Budget.WorkSteps); Assert.Equal(0ul, zero.Budget.Depth); Assert.Equal(0ul, zero.Budget.ReservedBytes);
         }
     }
@@ -95,8 +92,7 @@ public sealed class Utf8SearchDispositionQualificationTests
         var empty = default(Utf8SearchPlan);
         foreach (var plan in new[] { empty, prepared })
         {
-            Assert.False(plan.CountOperation.HasValue); Assert.False(plan.FirstMatchOperation.HasValue);
-            Assert.False(plan.EnumerationOperation.HasValue); Assert.False(plan.ConfirmationPlan.HasValue);
+            Assert.False(plan.SearchOperation.HasValue); Assert.False(plan.ConfirmationPlan.HasValue);
             Assert.False(plan.HasFallbackCandidates); Assert.False(plan.NativeCandidateSource.HasValue);
         }
         Assert.Equal(0ul, zero.Budget.WorkSteps);

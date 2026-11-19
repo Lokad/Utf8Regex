@@ -17,8 +17,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     private readonly Utf8CompiledEngine _compiledEngine;
     private readonly Utf8PreparedRegex _regexPlan;
     internal readonly bool _usesRightToLeft;
-    private readonly Utf8SearchOperationPlan _countProgram;
-    private readonly Utf8SearchOperationPlan _firstMatchProgram;
+    private readonly Utf8SearchOperationPlan _search;
     internal readonly Utf8EmittedLiteralFamilyCounter? _emittedLiteralFamilyCounter;
     internal readonly byte[][]? _smallAsciiLiteralFamily;
     internal readonly PreparedByteSearch _smallAsciiLiteralFamilyFirstBytes;
@@ -36,8 +35,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         _compiledEngine = state.CompiledEngine;
         _regexPlan = state.RegexPlan;
         _usesRightToLeft = state.UsesRightToLeft;
-        _countProgram = state.CountProgram;
-        _firstMatchProgram = state.FirstMatchProgram;
+        _search = state.Search;
         _emittedLiteralFamilyCounter = state.EmittedCounter;
         _smallAsciiLiteralFamily = state.SmallFamily;
         _smallAsciiLiteralFamilyFirstBytes = state.FirstBytes;
@@ -825,7 +823,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     private int CountExactUtf8Literals(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
-            return Utf8BackendInstructionExecutor.CountLiteralFamily(_regexPlan.SearchPlan, _countProgram, input, budget);
+            return Utf8BackendInstructionExecutor.CountLiteralFamily(_regexPlan.SearchPlan, _search, input, budget);
         if (budget.IsInfinite &&
             _shortAsciiLiteralFamilyCounter.HasValue)
         {
@@ -910,7 +908,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
                 return _emittedLiteralFamilyCounter.Count(input);
             }
 
-            return Utf8BackendInstructionExecutor.CountLiteralFamily(_regexPlan.SearchPlan, _countProgram, input, budget);
+            return Utf8BackendInstructionExecutor.CountLiteralFamily(_regexPlan.SearchPlan, _search, input, budget);
         }
 
         var count = 0;
@@ -1066,7 +1064,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     private int CountAsciiLiteralIgnoreCaseLiterals(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
         if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
-            return Utf8BackendInstructionExecutor.CountLiteralFamily(_regexPlan.SearchPlan, _countProgram, input, budget);
+            return Utf8BackendInstructionExecutor.CountLiteralFamily(_regexPlan.SearchPlan, _search, input, budget);
         if (_regexPlan.SearchPlan.HasPreparedSearcher &&
             !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
         {
@@ -1083,7 +1081,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
                 return _emittedLiteralFamilyCounter.Count(input);
             }
 
-            return Utf8BackendInstructionExecutor.CountLiteralFamily(_regexPlan.SearchPlan, _countProgram, input, budget);
+            return Utf8BackendInstructionExecutor.CountLiteralFamily(_regexPlan.SearchPlan, _search, input, budget);
         }
 
         var count = 0;
@@ -1106,7 +1104,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     internal bool IsMatchLiteralFamily(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
         if (!budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
-            return Utf8BackendInstructionExecutor.IsMatchLiteralFamily(_regexPlan.SearchPlan, _firstMatchProgram, input, budget, rightToLeft);
+            return Utf8BackendInstructionExecutor.IsMatchLiteralFamily(_regexPlan.SearchPlan, _search, input, budget, rightToLeft);
         if (!rightToLeft &&
             budget.IsInfinite &&
             _smallAsciiLiteralFamilyPrimitive is { } primitive)
@@ -1132,13 +1130,13 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             return exactSearch.TryFindFirstMatchWithLength(input, out _, out _);
         }
 
-        return Utf8BackendInstructionExecutor.IsMatchLiteralFamily(_regexPlan.SearchPlan, _firstMatchProgram, input, budget, rightToLeft);
+        return Utf8BackendInstructionExecutor.IsMatchLiteralFamily(_regexPlan.SearchPlan, _search, input, budget, rightToLeft);
     }
 
     private Utf8CaptureRange MatchLiteralFamily(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft)
     {
         if (rightToLeft || !budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
-            return Utf8BackendInstructionExecutor.MatchLiteralFamily(_regexPlan.SearchPlan, _firstMatchProgram, input, budget, rightToLeft);
+            return Utf8BackendInstructionExecutor.MatchLiteralFamily(_regexPlan.SearchPlan, _search, input, budget, rightToLeft);
         if (!rightToLeft &&
             budget.IsInfinite &&
             _smallAsciiLiteralFamilyPrimitive is { } primitive)
@@ -1189,7 +1187,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             return default(Utf8CaptureRange);
         }
 
-        return Utf8BackendInstructionExecutor.MatchLiteralFamily(_regexPlan.SearchPlan, _firstMatchProgram, input, budget, rightToLeft);
+        return Utf8BackendInstructionExecutor.MatchLiteralFamily(_regexPlan.SearchPlan, _search, input, budget, rightToLeft);
     }
 
     private bool TryGetExactAutomatonDirectSearch(out PreparedLiteralSetSearch search)

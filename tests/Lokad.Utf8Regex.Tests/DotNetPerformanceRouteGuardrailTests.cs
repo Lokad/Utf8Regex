@@ -15,8 +15,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8SearchPortfolioKind.ExactAutomatonFamily, regex.Inspection.SearchPortfolioKind);
-        Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.CountOperation.Kind);
-        Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.FirstMatchOperation.Kind);
+        Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.SearchOperation.Kind);
     }
 
     [Fact]
@@ -27,7 +26,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8SearchPortfolioKind.ExactAutomatonFamily, regex.Inspection.SearchPortfolioKind);
-        Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.CountOperation.Kind);
+        Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.SearchOperation.Kind);
     }
 
     [Fact]
@@ -38,7 +37,7 @@ public sealed class DotNetPerformanceRouteGuardrailTests
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
         Assert.Equal(Utf8SearchPortfolioKind.ExactAutomatonFamily, regex.Inspection.SearchPortfolioKind);
-        Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.CountOperation.Kind);
+        Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.SearchOperation.Kind);
     }
 
     [Fact]

@@ -93,8 +93,7 @@ public sealed partial class Utf8Regex : IDisposable
                 preparedRegex.SearchPlan.HasBoundaryRequirements &&
                 Utf8EmittedLiteralFamilyCounter.CanCreate(
                     preparedRegex.SearchPlan,
-                    preparedRegex.SearchPlan.CountOperation,
-                    preparedRegex.SearchPlan.FirstMatchOperation);
+                    preparedRegex.SearchPlan.SearchOperation);
             if (matchTimeout == Regex.InfiniteMatchTimeout &&
                 (options & RegexOptions.RightToLeft) == 0 &&
                 _program.CompiledEngineRuntime is { } literalRuntime &&

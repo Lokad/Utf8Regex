@@ -269,7 +269,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var deadline = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(50));
         Thread.Sleep(75);
         var failed = false;
-        try { _ = Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(plan, plan.EnumerationOperation,
+        try { _ = Utf8BackendInstructionExecutor.TryFindNextLiteralFamilyMatch(plan, plan.SearchOperation,
             input, ref state, deadline, out _); }
         catch (Utf8ExecutionDeadlineExpiredException) { failed = true; }
         Assert.True(failed);

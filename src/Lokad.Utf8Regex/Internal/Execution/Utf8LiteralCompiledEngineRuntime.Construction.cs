@@ -10,8 +10,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     // their parent's admission; the wrapper has its own conservative charge.
     private readonly record struct ConstructionState(
         Utf8CompiledEngine CompiledEngine, Utf8PreparedRegex RegexPlan, bool UsesRightToLeft,
-        Utf8SearchOperationPlan CountProgram,
-        Utf8SearchOperationPlan FirstMatchProgram, Utf8EmittedLiteralFamilyCounter? EmittedCounter,
+        Utf8SearchOperationPlan Search, Utf8EmittedLiteralFamilyCounter? EmittedCounter,
         byte[][]? SmallFamily, PreparedByteSearch FirstBytes,
         PreparedMultiLiteralCandidatePrefilter LeadingPrefilter,
         PreparedMultiLiteralAutomatonSearch LeadingAutomaton, PreparedSmallAsciiLiteralFamilySearch? Primitive,
@@ -28,12 +27,11 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         {
             if (compiledEngine.Kind is not (Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily))
                 throw new ArgumentOutOfRangeException(nameof(compiledEngine), "Only literal engines have a separate runtime.");
-            var count = regexPlan.SearchPlan.CountOperation;
-            var firstMatch = regexPlan.SearchPlan.FirstMatchOperation;
+            var search = regexPlan.SearchPlan.SearchOperation;
             // Emitted buffers and final managed copies retain their independent
             // construction admission; opaque CLR/JIT metadata stays excluded.
             var emitted = compiledEngine.Backend == Utf8CompiledExecutionBackend.EmittedInstruction &&
-                Utf8EmittedLiteralFamilyCounter.TryCreate(regexPlan.SearchPlan, count, firstMatch, out var counter)
+                Utf8EmittedLiteralFamilyCounter.TryCreate(regexPlan.SearchPlan, search, out var counter)
                 ? counter : null;
             _ = TryCreateSmallAsciiLiteralFamily(regexPlan, usesRightToLeft, out var small, out var firstBytes);
             _ = TryCreateLeadingUtf8SegmentLiteralFamily(regexPlan, usesRightToLeft, out var prefilter, out var automaton);
@@ -43,7 +41,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             _ = TryCreateShortAsciiLiteralFamilyCounter(regexPlan, usesRightToLeft, out var shortCounter);
             var composite = CreateCompositeTrailingLiteralSearch(regexPlan, usesRightToLeft);
             var result = budget.AllocateObject(new ConstructionState(compiledEngine, regexPlan, usesRightToLeft,
-                count, firstMatch, emitted, small, firstBytes, prefilter, automaton,
+                search, emitted, small, firstBytes, prefilter, automaton,
                 primitive, shortCounter, bmp, composite), static state => new Utf8LiteralCompiledEngineRuntime(state));
             budget.ChargeWork(0); // Check the original interruption authority before publication.
             scope.Complete();

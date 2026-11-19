@@ -231,7 +231,7 @@ public sealed class Utf8SearchPlanTests
 
         Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, regex.Inspection.SearchPlan.NativeCandidateSource.Kind);
         Assert.Equal(regex.Inspection.SearchPlan.PreparedSearcher.Kind, regex.Inspection.SearchPlan.NativeCandidateSource.PreparedSearcher.Kind);
-        Assert.Equal(Utf8SearchOperationKind.DirectSearch, regex.Inspection.SearchPlan.CountOperation.Kind);
+        Assert.Equal(Utf8SearchOperationKind.DirectSearch, regex.Inspection.SearchPlan.SearchOperation.Kind);
     }
 
     [Fact]
@@ -239,10 +239,9 @@ public sealed class Utf8SearchPlanTests
     {
         var regex = new Utf8Regex("Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", options: RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.CountOperation.Kind);
-        Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.FirstMatchOperation.Kind);
-        Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, regex.Inspection.SearchPlan.CountOperation.CandidateSource.Kind);
-        Assert.Equal(Utf8SearchObservabilityKind.Effectiveness, regex.Inspection.SearchPlan.CountOperation.ObservabilityKind);
+        Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.SearchOperation.Kind);
+        Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, regex.Inspection.SearchPlan.SearchOperation.CandidateSource.Kind);
+        Assert.Equal(Utf8SearchObservabilityKind.Effectiveness, regex.Inspection.SearchPlan.SearchOperation.ObservabilityKind);
     }
 
     [Fact]
@@ -261,12 +260,11 @@ public sealed class Utf8SearchPlanTests
         var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
         var fallbackRegex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8SearchOperationKind.SearchThenConfirm, regex.Inspection.SearchPlan.EnumerationOperation.Kind);
-        Assert.Equal(Utf8ConfirmationKind.BoundaryRequirements, regex.Inspection.SearchPlan.EnumerationOperation.Confirmation.Kind);
+        Assert.Equal(Utf8SearchOperationKind.SearchThenConfirm, regex.Inspection.SearchPlan.SearchOperation.Kind);
+        Assert.Equal(Utf8ConfirmationKind.BoundaryRequirements, regex.Inspection.SearchPlan.SearchOperation.Confirmation.Kind);
 
-        Assert.Equal(Utf8SearchOperationKind.PrefilterThenSearch, fallbackRegex.Inspection.SearchPlan.FirstMatchOperation.Kind);
-        Assert.Equal(Utf8SearchOperationKind.PrefilterThenSearch, fallbackRegex.Inspection.SearchPlan.CountOperation.Kind);
-        Assert.Equal(Utf8ConfirmationKind.None, fallbackRegex.Inspection.SearchPlan.FirstMatchOperation.Confirmation.Kind);
+        Assert.Equal(Utf8SearchOperationKind.PrefilterThenSearch, fallbackRegex.Inspection.SearchPlan.SearchOperation.Kind);
+        Assert.Equal(Utf8ConfirmationKind.None, fallbackRegex.Inspection.SearchPlan.SearchOperation.Confirmation.Kind);
     }
 
     [Fact]
@@ -275,11 +273,11 @@ public sealed class Utf8SearchPlanTests
         var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
         var fallbackRegex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
 
-        Assert.True(regex.Inspection.SearchPlan.EnumerationOperation.CandidateSource.HasValue);
-        Assert.True(regex.Inspection.SearchPlan.EnumerationOperation.Confirmation.HasValue);
+        Assert.True(regex.Inspection.SearchPlan.SearchOperation.CandidateSource.HasValue);
+        Assert.True(regex.Inspection.SearchPlan.SearchOperation.Confirmation.HasValue);
 
-        Assert.True(fallbackRegex.Inspection.SearchPlan.FirstMatchOperation.CandidateSource.HasValue);
-        Assert.False(fallbackRegex.Inspection.SearchPlan.FirstMatchOperation.Confirmation.HasValue);
+        Assert.True(fallbackRegex.Inspection.SearchPlan.SearchOperation.CandidateSource.HasValue);
+        Assert.False(fallbackRegex.Inspection.SearchPlan.SearchOperation.Confirmation.HasValue);
     }
 
     [Fact]
@@ -319,10 +317,10 @@ public sealed class Utf8SearchPlanTests
         var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
         var input = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
 
-        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.CountOperation, regex.Inspection.SearchPlan.FirstMatchOperation, out var counter));
+        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.SearchOperation, out var counter));
         Assert.NotNull(counter);
         Assert.Equal(
-            Utf8BackendInstructionExecutor.CountLiteralFamily(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.CountOperation, input, budget: Utf8ExecutionDeadline.Infinite),
+            Utf8BackendInstructionExecutor.CountLiteralFamily(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.SearchOperation, input, budget: Utf8ExecutionDeadline.Infinite),
             counter!.Count(input));
     }
 
@@ -334,8 +332,8 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("LogTrace xLogError LogWarning_ LogDebug");
 
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, plan.Kind);
-        Assert.True(Utf8EmittedLiteralFamilyCounter.CanCreate(plan, plan.CountOperation, plan.FirstMatchOperation));
-        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(plan, plan.CountOperation, plan.FirstMatchOperation, out var counter));
+        Assert.True(Utf8EmittedLiteralFamilyCounter.CanCreate(plan, plan.SearchOperation));
+        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(plan, plan.SearchOperation, out var counter));
         Assert.NotNull(counter);
         Assert.Equal(2, counter!.Count(input));
     }
@@ -347,13 +345,13 @@ public sealed class Utf8SearchPlanTests
         var hit = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
         var miss = Encoding.UTF8.GetBytes("task IAsyncEnumerableX stream");
 
-        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.CountOperation, regex.Inspection.SearchPlan.FirstMatchOperation, out var counter));
+        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.SearchOperation, out var counter));
         Assert.NotNull(counter);
         Assert.Equal(
-            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.FirstMatchOperation, hit, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
+            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.SearchOperation, hit, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
             counter!.IsMatch(hit));
         Assert.Equal(
-            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.FirstMatchOperation, miss, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
+            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.SearchOperation, miss, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
             counter.IsMatch(miss));
     }
 
@@ -364,11 +362,11 @@ public sealed class Utf8SearchPlanTests
         var hit = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
         var miss = Encoding.UTF8.GetBytes("task IAsyncEnumerableX stream");
 
-        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.CountOperation, regex.Inspection.SearchPlan.FirstMatchOperation, out var counter));
+        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.SearchOperation, out var counter));
         Assert.NotNull(counter);
 
         Assert.True(counter!.TryMatch(hit, out var emittedIndex, out var emittedLength));
-        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.FirstMatchOperation, hit, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false);
+        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(regex.Inspection.SearchPlan, regex.Inspection.SearchPlan.SearchOperation, hit, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false);
         Assert.True(interpreted.Success);
         Assert.Equal(interpreted.StartOffsetInBytes, emittedIndex);
         Assert.Equal((interpreted.EndOffsetInBytes - interpreted.StartOffsetInBytes), emittedLength);
@@ -385,19 +383,18 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("\u00e9 ALPHA alpha bravo CHARLIE delta echo \ud83d\ude00");
         var plan = regex.Inspection.SearchPlan;
 
-        Assert.Equal(Utf8ConfirmationKind.None, plan.CountOperation.Confirmation.Kind);
-        Assert.Equal(Utf8ConfirmationKind.None, plan.FirstMatchOperation.Confirmation.Kind);
-        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(plan, plan.CountOperation, plan.FirstMatchOperation, out var counter));
+        Assert.Equal(Utf8ConfirmationKind.None, plan.SearchOperation.Confirmation.Kind);
+        Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(plan, plan.SearchOperation, out var counter));
         Assert.NotNull(counter);
         Assert.Equal(
-            Utf8BackendInstructionExecutor.CountLiteralFamily(plan, plan.CountOperation, input, budget: Utf8ExecutionDeadline.Infinite),
+            Utf8BackendInstructionExecutor.CountLiteralFamily(plan, plan.SearchOperation, input, budget: Utf8ExecutionDeadline.Infinite),
             counter!.Count(input));
         Assert.Equal(
-            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(plan, plan.FirstMatchOperation, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
+            Utf8BackendInstructionExecutor.IsMatchLiteralFamily(plan, plan.SearchOperation, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false),
             counter.IsMatch(input));
 
         Assert.True(counter.TryMatch(input, out var emittedIndex, out var emittedLength));
-        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(plan, plan.FirstMatchOperation, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false);
+        var interpreted = Utf8BackendInstructionExecutor.MatchLiteralFamily(plan, plan.SearchOperation, input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false);
         Assert.True(interpreted.Success);
         Assert.Equal(interpreted.StartOffsetInBytes, emittedIndex);
         Assert.Equal((interpreted.EndOffsetInBytes - interpreted.StartOffsetInBytes), emittedLength);
@@ -409,10 +406,9 @@ public sealed class Utf8SearchPlanTests
         var regex = new Utf8Regex(            "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", options:             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var plan = regex.Inspection.SearchPlan;
 
-        Assert.Equal(Utf8ConfirmationKind.None, plan.CountOperation.Confirmation.Kind);
-        Assert.Equal(Utf8ConfirmationKind.None, plan.FirstMatchOperation.Confirmation.Kind);
+        Assert.Equal(Utf8ConfirmationKind.None, plan.SearchOperation.Confirmation.Kind);
         Assert.Equal(Utf8CompiledExecutionBackend.InterpretedInstruction, regex.Inspection.CompiledExecutionBackend);
-        Assert.False(Utf8EmittedLiteralFamilyCounter.TryCreate(plan, plan.CountOperation, plan.FirstMatchOperation, out _));
+        Assert.False(Utf8EmittedLiteralFamilyCounter.TryCreate(plan, plan.SearchOperation, out _));
     }
 
     [Fact]
@@ -435,9 +431,9 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("Task task ValueTask IAsyncEnumerableX IAsyncEnumerable");
 
         var plan = regex.Inspection.SearchPlan;
-        Assert.Equal(3, Utf8BackendInstructionExecutor.CountLiteralFamily(plan, plan.CountOperation,
+        Assert.Equal(3, Utf8BackendInstructionExecutor.CountLiteralFamily(plan, plan.SearchOperation,
             input, budget: Utf8ExecutionDeadline.Infinite));
-        Assert.True(Utf8BackendInstructionExecutor.IsMatchLiteralFamily(plan, plan.FirstMatchOperation,
+        Assert.True(Utf8BackendInstructionExecutor.IsMatchLiteralFamily(plan, plan.SearchOperation,
             input, budget: Utf8ExecutionDeadline.Infinite, rightToLeft: false));
     }
 

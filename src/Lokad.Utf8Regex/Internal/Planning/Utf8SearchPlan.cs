@@ -162,13 +162,7 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8ConfirmationPlan ConfirmationPlan => CreateConfirmationPlan();
 
-    public Utf8SearchOperationPlan CountOperation =>
-        Utf8SearchStrategySelector.Create(this, ConfirmationPlan);
-
-    public Utf8SearchOperationPlan FirstMatchOperation =>
-        Utf8SearchStrategySelector.Create(this, ConfirmationPlan);
-
-    public Utf8SearchOperationPlan EnumerationOperation =>
+    public Utf8SearchOperationPlan SearchOperation =>
         Utf8SearchStrategySelector.Create(this, ConfirmationPlan);
 
     public PreparedSearcher RequiredPrefilterSearcher => PrefilterPlan.PrimarySearcher;

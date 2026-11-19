@@ -31,10 +31,6 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(Confirm), BindingFlags.Static | BindingFlags.NonPublic)
         ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(Confirm));
 
-    private static readonly MethodInfo s_confirmFirstMatchMethod =
-        typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(ConfirmFirstMatch), BindingFlags.Static | BindingFlags.NonPublic)
-        ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(ConfirmFirstMatch));
-
     private static readonly MethodInfo s_confirmAsciiBoundaryOnlyMethod =
         typeof(Utf8EmittedLiteralFamilyCounter).GetMethod(nameof(ConfirmAsciiBoundaryOnly), BindingFlags.Static | BindingFlags.NonPublic)
         ?? throw new MissingMethodException(typeof(Utf8EmittedLiteralFamilyCounter).FullName, nameof(ConfirmAsciiBoundaryOnly));
@@ -72,46 +68,41 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
     private readonly Utf8EmittedDelegate<IsMatchDelegate> _isMatch;
     private readonly Utf8EmittedDelegate<TryMatchDelegate> _tryMatch;
     private readonly Utf8SearchPlan _plan;
-    private readonly Utf8SearchOperationPlan _countProgram;
-    private readonly Utf8SearchOperationPlan _firstMatchProgram;
+    private readonly Utf8ConfirmationPlan _confirmation;
     private readonly Utf8BoundaryRequirement _leadingBoundary;
     private readonly Utf8BoundaryRequirement _trailingBoundary;
 
     private readonly record struct ConstructionState(Utf8SearchPlan Plan,
-        Utf8SearchOperationPlan CountProgram, Utf8SearchOperationPlan FirstMatchProgram,
+        Utf8ConfirmationPlan Confirmation,
         Utf8BoundaryRequirement LeadingBoundary, Utf8BoundaryRequirement TrailingBoundary,
         Utf8EmittedDelegate<CountDelegate> Count, Utf8EmittedDelegate<CountDelegate>? AsciiValidatedCount, Utf8EmittedDelegate<IsMatchDelegate> IsMatch, Utf8EmittedDelegate<TryMatchDelegate> TryMatch);
 
     private Utf8EmittedLiteralFamilyCounter(ConstructionState state)
     {
-        _plan = state.Plan; _countProgram = state.CountProgram; _firstMatchProgram = state.FirstMatchProgram;
+        _plan = state.Plan; _confirmation = state.Confirmation;
         _leadingBoundary = state.LeadingBoundary; _trailingBoundary = state.TrailingBoundary;
         _count = state.Count; _asciiValidatedCount = state.AsciiValidatedCount;
         _isMatch = state.IsMatch; _tryMatch = state.TryMatch;
     }
 
-    internal static bool CanCreate(Utf8SearchPlan plan, Utf8SearchOperationPlan countProgram, Utf8SearchOperationPlan firstMatchProgram)
+    internal static bool CanCreate(in Utf8SearchPlan plan, in Utf8SearchOperationPlan search)
     {
         // The generic emitted loop crosses a DynamicMethod helper for every accepted
         // candidate. With no confirmation to fuse, the prepared loop is cheaper.
         var isUnconstrainedIgnoreCaseFamily =
             plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals &&
-            !countProgram.Confirmation.HasValue &&
-            !firstMatchProgram.Confirmation.HasValue;
+            !search.Confirmation.HasValue;
         return RuntimeFeature.IsDynamicCodeSupported && plan.HasPreparedSearcher &&
             plan.PreparedSearcher.Kind == PreparedSearcherKind.MultiLiteral &&
             !plan.HasTrailingLiteralRequirement &&
             !isUnconstrainedIgnoreCaseFamily &&
-            (!plan.HasAlternateLiteralPrefixOverlap ||
-             (!countProgram.Confirmation.HasValue && !firstMatchProgram.Confirmation.HasValue)) &&
-            countProgram.HasValue &&
-            firstMatchProgram.HasValue;
+            (!plan.HasAlternateLiteralPrefixOverlap || !search.Confirmation.HasValue) &&
+            search.HasValue;
     }
 
     internal static bool TryCreate(
         Utf8SearchPlan plan,
-        Utf8SearchOperationPlan countProgram,
-        Utf8SearchOperationPlan firstMatchProgram,
+        in Utf8SearchOperationPlan search,
         out Utf8EmittedLiteralFamilyCounter? counter)
     {
         using var scope = Utf8ConstructionScope.Enter();
@@ -121,24 +112,23 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         try
         {
             counter = null;
-            if (!CanCreate(plan, countProgram, firstMatchProgram))
+            if (!CanCreate(plan, search))
             {
                 return false;
             }
 
-            var canUseFastConfirmation = CanUseAsciiBoundaryOnlyFastConfirmation(plan, countProgram, firstMatchProgram);
+            var canUseFastConfirmation = CanUseAsciiBoundaryOnlyFastConfirmation(plan, search.Confirmation);
             singleLiteralBuckets = TryGetSmallSingleLiteralBuckets(plan, out var loweredLiterals) ? loweredLiterals : null;
             var singleBucketPrefixFamily = TryGetSmallSingleBucketPrefixFamily(plan, out var commonPrefix, out var prefixLiterals)
                 ? (CommonPrefix: commonPrefix, Literals: prefixLiterals)
                 : ((byte[] CommonPrefix, byte[][] Literals)?)null;
             counter = budget.AllocateObject(new ConstructionState(
                 plan,
-                countProgram,
-                firstMatchProgram,
+                search.Confirmation,
                 plan.LeadingBoundary,
                 plan.TrailingBoundary,
                 CompileCount(
-                    countProgram.Confirmation.HasValue,
+                    search.Confirmation.HasValue,
                     canUseFastConfirmation,
                     plan.HasAlternateLiteralProperStartOverlap,
                     singleLiteralBuckets,
@@ -151,13 +141,13 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
                         fusedPrefixFamily.Literals)
                     : null,
                 CompileIsMatch(
-                    firstMatchProgram.Confirmation.HasValue,
+                    search.Confirmation.HasValue,
                     canUseFastConfirmation,
                     plan.HasAlternateLiteralProperStartOverlap,
                     singleLiteralBuckets,
                     singleBucketPrefixFamily),
                 CompileTryMatch(
-                    firstMatchProgram.Confirmation.HasValue,
+                    search.Confirmation.HasValue,
                     canUseFastConfirmation,
                     plan.HasAlternateLiteralProperStartOverlap,
                     singleLiteralBuckets,
@@ -205,12 +195,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     private static bool Confirm(Utf8EmittedLiteralFamilyCounter counter, ReadOnlySpan<byte> input, int index, int matchedLength)
     {
-        return Utf8ConfirmationExecutor.IsMatch(counter._plan, counter._countProgram.Confirmation, input, index, matchedLength);
-    }
-
-    private static bool ConfirmFirstMatch(Utf8EmittedLiteralFamilyCounter counter, ReadOnlySpan<byte> input, int index, int matchedLength)
-    {
-        return Utf8ConfirmationExecutor.IsMatch(counter._plan, counter._firstMatchProgram.Confirmation, input, index, matchedLength);
+        return Utf8ConfirmationExecutor.IsMatch(counter._plan, counter._confirmation, input, index, matchedLength);
     }
 
     private static bool ConfirmAsciiBoundaryOnly(Utf8EmittedLiteralFamilyCounter counter, ReadOnlySpan<byte> input, int index, int matchedLength) =>
@@ -315,14 +300,11 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
     }
 
     private static bool CanUseAsciiBoundaryOnlyFastConfirmation(
-        Utf8SearchPlan plan,
-        Utf8SearchOperationPlan countProgram,
-        Utf8SearchOperationPlan firstMatchProgram)
+        in Utf8SearchPlan plan, Utf8ConfirmationPlan confirmation)
     {
         return plan.HasBoundaryRequirements &&
             !plan.HasTrailingLiteralRequirement &&
-            countProgram.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements &&
-            firstMatchProgram.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements;
+            confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements;
     }
 
     private static bool TryGetSmallSingleLiteralBuckets(Utf8SearchPlan plan, out byte[][] literals)
@@ -509,7 +491,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Ldloc, indexLocal);
             il.Emit(OpCodes.Ldloc, matchedLengthLocal);
-            il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod);
+            il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmMethod);
             il.Emit(OpCodes.Brtrue, incrementLabel);
             if (retryOverlappingAfterRejection)
             {
@@ -630,7 +612,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Ldloc, indexLocal);
             il.Emit(OpCodes.Ldloc, matchedLengthLocal);
-            il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod);
+            il.Emit(OpCodes.Call, useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmMethod);
             il.Emit(OpCodes.Brtrue, successLabel);
             if (retryOverlappingAfterRejection)
             {
@@ -673,7 +655,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         EmitSingleLiteralBucketBody(
             e,
             literals,
-            useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod,
+            useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmMethod,
             returnOnFirstMatch: false,
             countMatches: true,
             storeMatchResult: false);
@@ -705,7 +687,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         EmitSingleLiteralBucketBody(
             e,
             literals,
-            useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod,
+            useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmMethod,
             returnOnFirstMatch: true,
             countMatches: false,
             storeMatchResult: true);
@@ -721,7 +703,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             e,
             commonPrefix,
             literals,
-            useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod,
+            useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmMethod,
             returnOnFirstMatch: false,
             countMatches: true,
             storeMatchResult: false,
@@ -772,7 +754,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
             e,
             commonPrefix,
             literals,
-            useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmFirstMatchMethod,
+            useAsciiBoundaryOnlyFastConfirmation ? s_confirmAsciiBoundaryOnlyMethod : s_confirmMethod,
             returnOnFirstMatch: true,
             countMatches: false,
             storeMatchResult: true,
