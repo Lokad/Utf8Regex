@@ -334,33 +334,23 @@ internal struct PythonReScalarMatchState
             return false;
         var mask = program.SetMasks[atom.A];
         if (mask.Length != 16) return false;
+        if (atom.Kind == Utf8SliceInstructionKind.CategorySet)
+        {
+            // Python lowering puts each predefined predicate's complete ASCII
+            // projection in this mask, including when it combines positive
+            // bracket operands. A range wholly above ASCII adds no bits.
+            // Bound this proof and leave other table kinds to the verifier.
+            var members = program.CategorySetMembers[atom.D];
+            if (members.Length > 4) return false;
+            foreach (var member in members)
+            {
+                if (member.Negated || member.Table is not ({ ScalarPredicate: not null } or
+                    { Mask: 0, ClassProgram: null, Ranges: [>= 128, _] })) return false;
+            }
+        }
         // ASCII masks store bit n at byte n/8, bit n%8, independently of host endian.
         var lower = BinaryPrimitives.ReadUInt64LittleEndian(mask);
         var upper = BinaryPrimitives.ReadUInt64LittleEndian(mask.AsSpan(8));
-        if (atom.Kind == Utf8SliceInstructionKind.CategorySet)
-        {
-            // The mask is one term in a category union. Fixed profile predicates
-            // have known ASCII projections. A positive single non-ASCII range
-            // adds nothing on an ASCII prefix (e.g. S/s plus long s). The seeker
-            // returns non-ASCII candidates to the original Unicode verifier.
-            // General tables/subtraction retain the scalar candidate loop.
-            var members = program.CategorySetMembers[atom.D];
-            if (members.Length != 1 || members[0].Negated) return false;
-            var predicate = members[0].Table.ScalarPredicate;
-            var ascii = predicate == PythonReScalarClassData.IsDigit ? PythonReScalarClassData.DigitAscii
-                : predicate == PythonReScalarClassData.IsWord ? PythonReScalarClassData.WordAscii
-                : predicate == PythonReScalarClassData.IsSpace ? PythonReScalarClassData.SpaceAscii : null;
-            if (ascii is null)
-            {
-                if (members[0].Table is not { Mask: 0, ClassProgram: null,
-                    ScalarPredicate: null, Ranges: [>= 128, _] }) return false;
-            }
-            else
-            {
-                lower |= BinaryPrimitives.ReadUInt64LittleEndian(ascii);
-                upper |= BinaryPrimitives.ReadUInt64LittleEndian(ascii.AsSpan(8));
-            }
-        }
         if ((lower | upper) == 0) return false;
         var first = lower != 0 ? BitOperations.TrailingZeroCount(lower) : 64 + BitOperations.TrailingZeroCount(upper);
         var last = upper != 0 ? 127 - BitOperations.LeadingZeroCount(upper) : 63 - BitOperations.LeadingZeroCount(lower);

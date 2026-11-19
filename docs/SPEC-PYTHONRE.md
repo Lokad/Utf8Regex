@@ -138,11 +138,13 @@ A failed verification resumes the existing window search and scalar progression.
 from the VM; no result is inferred from the prefix. Actual discovery work changes
 and rejection-heavy subjects can cost more, under the same original authority.
 
-On an ASCII subject, a leading positive class's ASCII mask can also
-guide starts when its only additional term is a positive non-ASCII range. Other
-unproved class shapes and non-ASCII subjects retain their existing routes. This
-necessary hint preserves full scalar verification and can reduce numerical work
-and VM scratch requirements under the same invocation.
+A leading positive class can also guide starts using its complete ASCII mask.
+This includes bounded unions of predefined Unicode classes and masks with a
+positive range entirely above ASCII. The seeker skips only the ASCII bytes the
+mask's interval excludes and returns wider candidates to the full scalar
+verifier. Unproved class shapes retain their existing routes. Skipping impossible
+starts can reduce numerical work and VM scratch requirements under the same
+invocation.
 
 Value `Search` from byte zero can borrow the existing complete literal search
 under finite limits, a live token and an absolute deadline. The caller supplies

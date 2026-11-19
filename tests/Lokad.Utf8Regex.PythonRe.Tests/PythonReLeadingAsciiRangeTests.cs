@@ -107,6 +107,9 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData(@"(?<!:)\s+", 9, 32)]
     [InlineData(@"(?:\d+|[a-z]+)", 48, 122)]
     [InlineData(@"(?P<x>[a-z]+)?\d+", 48, 122)]
+    [InlineData(@"[\d\s]+", 9, 57)]
+    [InlineData(@"[\d\sQ]+", 9, 81)]
+    [InlineData(@"[\w\d\s]+", 9, 122)]
     public void ProfileCategoryProjectionRetainsWiderStarts(string pattern, int minimum, int maximum)
     {
         var program = Compile(pattern);
@@ -118,7 +121,8 @@ public sealed class PythonReLeadingAsciiRangeTests
 
     [Theory]
     [InlineData(@"(?i:[a-z]+)")]
-    [InlineData(@"[\d\s]+")]
+    [InlineData(@"[^\d\s]+")]
+    [InlineData(@"[\d\S]+")]
     public void UnprovedCategoryDefinitionsDecline(string pattern)
         => Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), out _, out _, out _));
 
@@ -136,6 +140,24 @@ public sealed class PythonReLeadingAsciiRangeTests
         Assert.Equal(minimum, low);
         Assert.Equal(maximum, high);
         Assert.True(widerStart);
+    }
+
+    [Fact]
+    public void CategoryUnionSkipsAnAsciiPrefixAndKeepsWideCaptureOffsets()
+    {
+        using var regex = new Utf8PythonRegex(@"(?P<part>[\d\s]+)!", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 160, MaxWorkingBytes = 16 << 10 }
+        });
+        const int prefixLength = 8192;
+        var input = Encoding.UTF8.GetBytes(new string('x', prefixLength) + "😀\u001c١2!");
+        using var source = new CancellationTokenSource();
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var match, source.Token));
+        Assert.Equal(prefixLength + 4, match.Value.StartOffsetInBytes);
+        Assert.Equal(prefixLength + 9, match.Value.EndOffsetInBytes);
+        Assert.True(match.GetGroupMemory(1).Span.SequenceEqual("\u001c١2"u8));
+        Assert.Equal(1, regex.Count(input, cancellationToken: source.Token));
     }
 
     [Theory]
