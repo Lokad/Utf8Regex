@@ -35,6 +35,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Iterations        : {iterations}");
         Console.WriteLine($"Samples           : {samples}");
         Console.WriteLine($"CPU set           : {processorSet.Description}");
+        Console.WriteLine($"Native match opts : {PcreNetNativeBenchmarkBaseline.MatchOptions}");
         Console.WriteLine("Protocol          : same-size hit/miss subjects; same-trip paired lanes; alternating order");
         Console.WriteLine();
         Console.WriteLine("| Bytes | Outcome | Candidates | VM steps | Tokens | Direct scans | Scan chars | Pool rents | Managed us | Native us | M/N |");

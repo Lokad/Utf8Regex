@@ -18,19 +18,17 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
     internal const string PackageVersion = "1.5.0";
     internal const string PackageSha512 = "Zu3NJGiU1S7tHHaW4UdEK1WZ9LFYqPI+6Y0eiL6YPHVOHSoWjbq0x5j3uN9895DoIgO5XI/50S6dj2ZmRHirNA==";
     internal const string SourceRevision = "e5e5deaa30d50dd3a7ac68ec7fd9e9556551a84f";
+    internal const PcreMatchOptions MatchOptions = PcreMatchOptions.NoUtfCheck;
 
     private readonly byte[] _input;
     private readonly PcreRegexUtf8 _regex;
     private readonly PcreMatchBuffer8Bit _matchBuffer;
-    private readonly PcreMatchOptions _matchOptions;
 
     internal PcreNetNativeBenchmarkBaseline(
         Utf8Pcre2BenchmarkCase benchmarkCase,
-        PcreOptions additionalOptions = PcreOptions.None,
-        PcreMatchOptions matchOptions = PcreMatchOptions.None)
+        PcreOptions additionalOptions = PcreOptions.None)
     {
         _input = System.Text.Encoding.UTF8.GetBytes(benchmarkCase.Input);
-        _matchOptions = matchOptions;
         var settings = new PcreRegexSettings
         {
             Options = ToPcreNetOptions(benchmarkCase) | additionalOptions,
@@ -133,6 +131,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
             (uint)info.ArgOptions,
             (uint)info.AllOptions,
             (uint)info.ExtraOptions,
+            (uint)MatchOptions,
             patternMatchLimit?.ToString(CultureInfo.InvariantCulture) ?? "unset",
             patternDepthLimit?.ToString(CultureInfo.InvariantCulture) ?? "unset",
             patternHeapLimit?.ToString(CultureInfo.InvariantCulture) ?? "unset");
@@ -156,6 +155,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
             ArgumentOptions = info.ArgOptions.ToString(),
             EffectiveOptions = info.AllOptions.ToString(),
             ExtraOptions = info.ExtraOptions.ToString(),
+            MatchOptions = MatchOptions.ToString(),
             PatternMatchLimit = patternMatchLimit,
             PatternDepthLimit = patternDepthLimit,
             PatternHeapLimitKibibytes = patternHeapLimit
@@ -214,7 +214,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
     {
         var checksum = new Pcre2BenchmarkChecksumBuilder(Utf8Pcre2BenchmarkOperation.EnumerateMatches);
         var enumeratedCount = 0;
-        foreach (var match in _matchBuffer.Matches(_input, 0, _matchOptions, null))
+        foreach (var match in _matchBuffer.Matches(_input, 0, MatchOptions, null))
         {
             checksum.AddRange(match.Index, match.Length);
             enumeratedCount++;
@@ -237,13 +237,12 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         GC.KeepAlive(_regex);
     }
 
-    private bool IsMatch(PcreMatchBuffer8Bit buffer) => _matchOptions == PcreMatchOptions.None
-        ? buffer.IsMatch(_input) : buffer.Match(_input, _matchOptions).Success;
+    private bool IsMatch(PcreMatchBuffer8Bit buffer) => buffer.Match(_input, MatchOptions).Success;
 
     private int CountMatches(PcreMatchBuffer8Bit matchBuffer)
     {
         var count = 0;
-        foreach (var _ in matchBuffer.Matches(_input, 0, _matchOptions, null))
+        foreach (var _ in matchBuffer.Matches(_input, 0, MatchOptions, null))
         {
             count++;
         }
@@ -255,7 +254,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
     {
         var written = 0;
         var sink = 0;
-        foreach (var match in matchBuffer.Matches(_input, 0, _matchOptions, null))
+        foreach (var match in matchBuffer.Matches(_input, 0, MatchOptions, null))
         {
             sink = Pcre2BenchmarkRangeSink.Add(sink, match.Index, match.Length);
             written++;
@@ -269,7 +268,7 @@ internal sealed class PcreNetNativeBenchmarkBaseline : IDisposable
         ref Pcre2BenchmarkChecksumBuilder checksum)
     {
         var written = 0;
-        foreach (var match in matchBuffer.Matches(_input, 0, _matchOptions, null))
+        foreach (var match in matchBuffer.Matches(_input, 0, MatchOptions, null))
         {
             checksum.AddRange(match.Index, match.Length);
             written++;
@@ -427,6 +426,8 @@ internal sealed class PcreNetNativePlanFingerprint
     public required string EffectiveOptions { get; init; }
 
     public required string ExtraOptions { get; init; }
+
+    public string? MatchOptions { get; init; }
 
     public uint? PatternMatchLimit { get; init; }
 

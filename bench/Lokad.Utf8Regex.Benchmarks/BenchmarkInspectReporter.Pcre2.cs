@@ -457,8 +457,8 @@ internal static partial class BenchmarkInspectReporter
         { Console.WriteLine("Native JIT comparison excluded: this native build has no JIT support."); return; }
         // Same caller-valid UTF-8 contract in all lanes; compilation is excluded.
         // Keep the existing historical interpreted snapshots unchanged.
-        using var native = new PcreNetNativeBenchmarkBaseline(row, matchOptions: PCRE.PcreMatchOptions.NoUtfCheck);
-        using var jit = new PcreNetNativeBenchmarkBaseline(row, PCRE.PcreOptions.Compiled, PCRE.PcreMatchOptions.NoUtfCheck);
+        using var native = new PcreNetNativeBenchmarkBaseline(row);
+        using var jit = new PcreNetNativeBenchmarkBaseline(row, PCRE.PcreOptions.Compiled);
         var plan = jit.CapturePlanFingerprint();
         if (!plan.IsJitCompiled)
         { Console.WriteLine("Native JIT comparison excluded: this pattern was not JIT-compiled."); return; }
@@ -1786,6 +1786,8 @@ var rangeResult61356 = enumerator.Current;
         public BenchmarkEnvironmentJson? PcreNetNativeEnvironment { get; set; }
 
         public int? PcreNetNativeEffectiveIterations { get; set; }
+
+        public string? PcreNetNativeMatchOptions { get; set; }
 
         public double? PcreNetNative { get; set; }
 

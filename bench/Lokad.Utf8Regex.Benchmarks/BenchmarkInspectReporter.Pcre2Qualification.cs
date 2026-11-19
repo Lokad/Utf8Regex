@@ -124,7 +124,9 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Qualification CPU set: {processorSet.Description}");
         Console.WriteLine(
             $"Initial paired lane: {(comparatorFirst ? "PCRE.NET / PCRE2 NFA" : "Utf8Pcre2")}");
-        Console.WriteLine("Input contract: PCRE2 UTF mode; subject checking enabled in both lanes; equal requested outputs.");
+        Console.WriteLine(
+            "Input contract: both lanes consume caller-valid, unchanged UTF-8. " +
+            $"The native UTF-mode matcher uses {PcreNetNativeBenchmarkBaseline.MatchOptions}.");
         var environment = CaptureBenchmarkEnvironment();
         var snapshot = LoadPcre2BenchmarkSnapshot();
         snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
@@ -190,6 +192,7 @@ internal static partial class BenchmarkInspectReporter
                 measurement.PcreNetNativeMeasuredAtUtc = pair.MeasuredAtUtc;
                 measurement.PcreNetNativeEnvironment = environment;
                 measurement.PcreNetNativeEffectiveIterations = comparatorBatchCount;
+                measurement.PcreNetNativeMatchOptions = PcreNetNativeBenchmarkBaseline.MatchOptions.ToString();
                 measurement.PcreNetNative = pair.ComparatorMedianMicroseconds;
                 measurement.PcreNetNativeUnavailableReason = null;
                 measurement.PcreNetNativePair = pair;

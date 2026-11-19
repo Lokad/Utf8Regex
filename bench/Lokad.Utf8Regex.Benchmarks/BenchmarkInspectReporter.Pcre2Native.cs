@@ -221,7 +221,7 @@ internal static partial class BenchmarkInspectReporter
                 var equal = managed == comparator;
                 Console.WriteLine(
                     $"{GetPcre2SectionToken(section)}: {(equal ? "Equal" : "Mismatch")}; " +
-                    $"managed={managed}; comparator={comparator}");
+                    $"managed={managed}; comparator={comparator}; match options={PcreNetNativeBenchmarkBaseline.MatchOptions}");
                 if (!equal)
                 {
                     exitCode = 1;
@@ -380,6 +380,7 @@ internal static partial class BenchmarkInspectReporter
         int samples)
     {
         measurement.PcreNetNativePair = null;
+        measurement.PcreNetNativeMatchOptions = null;
         measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Unqualified;
         measurement.PcreNetNativeStatusReason =
             "The managed and comparator lanes were not collected by the paired qualification protocol.";
@@ -427,6 +428,7 @@ internal static partial class BenchmarkInspectReporter
                 samples,
                 effectiveIterations,
                 () => baseline.Execute(operation));
+            measurement.PcreNetNativeMatchOptions = PcreNetNativeBenchmarkBaseline.MatchOptions.ToString();
             measurement.PcreNetNativeUnavailableReason = null;
             measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Unqualified;
         }
@@ -509,7 +511,7 @@ internal static partial class BenchmarkInspectReporter
         SourceRepository = "https://github.com/ltrzesniewski/pcre-net",
         SourceRevision = PcreNetNativeBenchmarkBaseline.SourceRevision,
         License = "BSD-3-Clause WITH PCRE2-exception",
-        Profile = "UTF-8 standard NFA matcher, validation enabled, managed-profile LF newline and Unicode \\R, reusable match buffer, JIT disabled",
+        Profile = "UTF-8 standard NFA matcher, managed-profile LF newline and Unicode \\R, reusable match buffer, JIT disabled",
         BuildFingerprint = PcreNetNativeBenchmarkBaseline.CaptureBuildFingerprint(),
         WorkspaceContract = PcreNetNativeBenchmarkBaseline.CaptureWorkspaceContract()
     };
