@@ -424,14 +424,10 @@ internal sealed class Pcre2BacktrackingLowerer
                         return;
                     else if (repeat is { Minimum: 0, Maximum: 1 } &&
                         repeat.Preference != Pcre2RepeatPreference.Possessive &&
-                        repeat.Body is Pcre2SubroutineCallBacktrackingNode or Pcre2TokenBacktrackingNode
-                        {
-                            Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass
-                                or Pcre2CharacterTokenKind.Any,
-                        })
+                        CanLowerOptionalAsFork(repeat.Body, budget))
                     {
-                        // One attempt or a skip needs no counter, even if the call
-                        // returns empty. The call keeps its own restoration checkpoints.
+                        // The fork preserves the order of the one attempt and skip.
+                        // The body keeps its own restoration checkpoints.
                         var fork = _instructions.Count;
                         _instructions.Add(default);
                         EmitNode(repeat.Body, null);
@@ -627,6 +623,24 @@ internal sealed class Pcre2BacktrackingLowerer
                 Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass
             }
         } && repeat.Minimum == repeat.Maximum;
+
+    private static bool CanLowerOptionalAsFork(IPcre2BacktrackingNode body, Utf8ConstructionBudget budget)
+    {
+        if (body is Pcre2SubroutineCallBacktrackingNode || IsConsumingToken(body)) return true;
+        if (body is not Pcre2SequenceBacktrackingNode { Children: { Length: >= 2 and <= 16 } children }) return false;
+        budget.ChargeWork((ulong)children.Length);
+        foreach (var child in children)
+        {
+            var atom = child is Pcre2RepeatBacktrackingNode repeat ? repeat.Body : child;
+            if (!IsConsumingToken(atom)) return false;
+        }
+        return true;
+
+        static bool IsConsumingToken(IPcre2BacktrackingNode node) => node is Pcre2TokenBacktrackingNode
+        {
+            Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass or Pcre2CharacterTokenKind.Any,
+        };
+    }
 
     private bool TryEmitSmallFixedSequence(Pcre2RepeatBacktrackingNode repeat, Utf8ConstructionBudget budget)
     {

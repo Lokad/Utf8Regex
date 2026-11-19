@@ -217,6 +217,41 @@ public sealed class Pcre2AutoPossessifyTests
     }
 
     [Fact]
+    public void OptionalUriSuffixesNeedNoRepeatCounters()
+    {
+        const string pattern = @"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?";
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 8, MaxWorkingBytes = 768 }
+        });
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch).Program;
+        Assert.Equal(0, program.RepeatCount);
+
+        using var source = new CancellationTokenSource();
+        var input = "😀 https://atlas.example.org/reports/export?key=é#😀"u8;
+        Assert.True(regex.IsMatch(input, cancellationToken: source.Token));
+        Assert.Equal(1, regex.Count(input, cancellationToken: source.Token));
+        var match = regex.Match(input, startOffsetInBytes: 5,
+            matchOptions: Pcre2MatchOptions.EndAnchored | Pcre2MatchOptions.NotEmptyAtStart, cancellationToken: source.Token);
+        Assert.True(match.Success);
+        Assert.Equal((5, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+    }
+
+    [Theory]
+    [InlineData(@"\A(?P<head>z(?:x[ab]+)?)[abx]+\z", 4)]
+    [InlineData(@"\A(?P<head>z(?:x[ab]+)??)[abx]+\z", 1)]
+    public void OptionalSequenceForkPreservesRetryOrderAndCaptures(string pattern, int headEnd)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern);
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
+        var match = regex.Match("zxaba"u8, captures: captures, matchOptions: Pcre2MatchOptions.Anchored);
+        Assert.True(match.Success);
+        Assert.Equal(5, match.EndOffsetInBytes);
+        Assert.True(captures[1].Success);
+        Assert.Equal((0, headEnd), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+    }
+
+    [Fact]
     public void FundedDateOmitsImpossibleDelimiterAndBoundaryRetries()
     {
         const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";
