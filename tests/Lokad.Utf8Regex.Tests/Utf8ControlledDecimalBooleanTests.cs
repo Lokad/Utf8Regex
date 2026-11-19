@@ -51,6 +51,34 @@ public sealed class Utf8ControlledDecimalBooleanTests
         Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
     }
 
+    [Theory]
+    [InlineData("12/12/2001")]
+    [InlineData("١٢/12/٢٠٠١\n")]
+    [InlineData("𝟙/٢/٢٠٠١")]
+    public void TerminalAsciiDelimitersProveUnicodeDigitRepeats(string text)
+    {
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"^\d{1,2}/\d{1,2}/\d{4}$", options: RegexOptions.Compiled,
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 1, MaxWorkingBytes = 1 } });
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        Assert.Equal(3, Enumerable.Range(0, program.Instructions.Length).Count(program.SkipsTerminalRewind));
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
+    }
+
+    [Theory]
+    [InlineData(@"\A(?<run>\d{1,3})٢\z", "١٢")]
+    [InlineData(@"\A(?<run>\d{1,3})2\z", "١2")]
+    public void TerminalDigitSuffixCanStillRewindAnOverlappingRepeat(string pattern, string text)
+    {
+        using var regex = new Utf8Regex(pattern);
+        var bytes = Encoding.UTF8.GetBytes(text);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        var match = regex.Match(bytes, 0, captures);
+        Assert.Equal((0, bytes.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.True(captures[1].Success);
+        Assert.Equal((0, 2), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+    }
+
     [Fact]
     public void DigitDiscoverySpendsTheOriginalWorkAllowance()
     {

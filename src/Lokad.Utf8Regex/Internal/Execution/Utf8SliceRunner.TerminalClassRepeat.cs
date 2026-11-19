@@ -428,8 +428,10 @@ internal static partial class Utf8SliceRunner
         // ends the walk, so every inspected skip still reaches this anchor.
         var first = default(Utf8SearchAsciiSet);
         if (code[end].A == (int)Utf8SliceAnchorKind.End) first = first.With((byte)'\n');
+        var firstAsciiOnly = true;
         var repeatContinuation = -1;
         var firstAtRepeatContinuation = default(Utf8SearchAsciiSet);
+        var asciiOnlyAtRepeatContinuation = false;
         var floor = Math.Max(0, end - 63);
         for (var pc = end - 1; pc >= floor; pc--)
         {
@@ -445,22 +447,32 @@ internal static partial class Utf8SliceRunner
                     !IsSingleAtomRepeat(code, repeatIndex, repeat) ||
                     !program.TryGetUnfoldedAsciiSet(code[repeatIndex + 1], out var atom, out var asciiOnly)) break;
                 budget.ChargeWork(3);
-                // Each shorter endpoint leaves one of the consumed bytes at
-                // the suffix start. A disjoint suffix can only use the longest.
-                if (asciiOnly && (first.Low & atom.Low) == 0 && (first.High & atom.High) == 0)
+                // A shorter endpoint leaves an accepted scalar at the suffix
+                // start. If either side is ASCII-only, the ASCII intersection
+                // decides whether any such endpoint can work.
+                if ((asciiOnly || firstAsciiOnly) && (first.Low & atom.Low) == 0 && (first.High & atom.High) == 0)
                     rewindFree |= 1UL << (end - repeatIndex);
 
                 // An adjacent alternative may jump over this repeat to the
                 // same continuation. Save that already proved first-byte set.
                 repeatContinuation = pc + 1;
                 firstAtRepeatContinuation = first;
+                asciiOnlyAtRepeatContinuation = firstAsciiOnly;
+                firstAsciiOnly = asciiOnly && (repeat.RepeatMinimum != 0 || firstAsciiOnly);
                 first = repeat.RepeatMinimum == 0
                     ? Utf8SearchAsciiSet.FromMasks(first.Low | atom.Low, first.High | atom.High) : atom;
                 pc = repeatIndex;
             }
             else if (entry.Kind == Utf8SliceInstructionKind.Jump && entry.A == repeatContinuation)
+            {
                 first = firstAtRepeatContinuation;
-            else if (program.TryGetUnfoldedAsciiSet(entry, out var atom, out _)) first = atom;
+                firstAsciiOnly = asciiOnlyAtRepeatContinuation;
+            }
+            else if (program.TryGetUnfoldedAsciiSet(entry, out var atom, out var asciiOnly))
+            {
+                first = atom;
+                firstAsciiOnly = asciiOnly;
+            }
             else break;
         }
         return (rewindFree, end);
