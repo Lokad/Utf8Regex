@@ -981,9 +981,9 @@ internal static class Pcre2BacktrackingRunner
                         }
 
                         if (runCount < instruction.Minimum) break;
-                        // A failed continuation can replay the ordinary repeat
-                        // from the original byte start with its own metering.
-                        if (canRetryRun && runCount > 0)
+                        // Only a shorter legal endpoint warrants replay of
+                        // the ordinary repeat from the original byte start.
+                        if (canRetryRun && runCount > instruction.Minimum)
                         {
                             PushFrame(
                                 ref frames,

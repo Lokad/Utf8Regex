@@ -181,6 +181,21 @@ public sealed class Pcre2AutoPossessifyTests
     }
 
     [Fact]
+    public void GreedyClassRunAtMinimumNeedsNoReplayOnSuffixFailure()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z😀]+)[a-z]!\z", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 128 }
+        });
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch).Program;
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat);
+
+        using var source = new CancellationTokenSource();
+        Assert.False(regex.IsMatch("a!!"u8, cancellationToken: source.Token));
+        Assert.False(regex.IsMatch("😀!!"u8, cancellationToken: source.Token));
+    }
+
+    [Fact]
     public void DateWordBoundaryCommitsOnlyUncontrolledPlans()
     {
         const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";
