@@ -92,6 +92,14 @@ public sealed class Utf8CoreWorkingPolicyTests
         Assert.True(regex.IsMatch("012.200.033.199"u8));
     }
 
+    [Fact]
+    public void SmallFixedCapturedRepeatNeedsNoStorageForBooleanMatch()
+    {
+        using var regex = Create(@"(?<part>\d{4}[- ]){3}\d{3,4}", 1, RegexOptions.Compiled);
+        Assert.True(regex.IsMatch("1234-5678-1234-456"u8));
+        Assert.False(regex.IsMatch("1234-5678-1234-45X"u8));
+    }
+
     [Theory]
     [InlineData(Utf8ResourceLimitKind.ExecutionWorkSteps)]
     [InlineData(Utf8ResourceLimitKind.ExecutionDepth)]

@@ -1555,15 +1555,21 @@ internal static class Utf8SliceLowerer
                             foreach (var exit in remainingExits) { Budget.ChargeWork(1); Patch(exit, Instructions.Count); }
                         break;
                     }
-                    if (frame.Stage == 0 && !MirrorExecute && repeat.Minimum is 2 or 3 && repeat.Minimum == repeat.Maximum &&
-                        repeat.Body is Utf8SliceNode.ConcatNode or Utf8SliceNode.AlternationNode &&
-                        !Facts[repeat.Body].CanMatchEmpty)
+                    if (frame.Stage == 0 && !MirrorExecute && repeat.Minimum is 2 or 3 && repeat.Minimum == repeat.Maximum)
                     {
                         // Re-emit small consuming bodies without the repeat journal.
                         // Bound both the proof and emitted copies. Each copy still
                         // uses the ordinary work and instruction-buffer admission.
                         var remaining = 32;
-                        if (IsSmallPureBody(repeat.Body, ref remaining)) frame.Stage = 2;
+                        var candidateBody = repeat.Body;
+                        if (candidateBody is Utf8SliceNode.CaptureNode capture)
+                        {
+                            // Each copy opens and closes the same capture slot.
+                            remaining -= 2;
+                            candidateBody = capture.Body;
+                        }
+                        if (candidateBody is Utf8SliceNode.ConcatNode or Utf8SliceNode.AlternationNode &&
+                            !Facts[candidateBody].CanMatchEmpty && IsSmallPureBody(candidateBody, ref remaining)) frame.Stage = 2;
                     }
                     if (frame.Stage == 2)
                     {
@@ -1858,9 +1864,10 @@ internal static class Utf8SliceLowerer
                             if (!IsSmallPureBody(child, ref remaining)) return false;
                     }
                     return true;
-                case Utf8SliceNode.RepeatNode { Minimum: 0, Maximum: 1, Body:
+                case Utf8SliceNode.RepeatNode { Maximum: <= 8, Body:
                     Utf8SliceNode.LiteralNode or Utf8SliceNode.SetNode or Utf8SliceNode.ShorthandNode or
-                    Utf8SliceNode.CategorySetNode or Utf8SliceNode.DotNode }:
+                    Utf8SliceNode.CategorySetNode or Utf8SliceNode.DotNode } repeat
+                    when repeat.Minimum == repeat.Maximum || repeat is { Minimum: 0, Maximum: 1 }:
                     remaining -= 3;
                     return remaining >= 0;
                 default:

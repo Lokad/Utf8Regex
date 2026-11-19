@@ -27,6 +27,27 @@ public sealed class Utf8RepeatedSegmentProofTests
         Assert.False(regex.IsMatch("northwind.control.net#"u8));
     }
 
+    [Fact]
+    public void FixedCapturedRunsPreserveEveryCaptureAndTheFinalBackreference()
+    {
+        const string pattern = @"(?<part>\d{4}[- ]){3}\d{3,4}\k<part>";
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options,
+            ["1234-5678-9876-4569876-", "١٢٣٤ 5678-9876-4569876-", "1234-5678-9876-4561234-"], options);
+    }
+
+    [Fact]
+    public void FixedCapturedRunsKeepSupplementaryDigitByteCoordinates()
+    {
+        using var regex = Utf8Regex.Compile(@"(?<part>\d{4}[- ]){3}\d{3,4}");
+        var bytes = "é𝟙𝟚𝟛𝟜-𝟝𝟞𝟟𝟠 𝟡𝟘𝟙𝟚-𝟛𝟜𝟝"u8.ToArray();
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes, startOffsetInBytes: 2));
+        Assert.True(match.Success);
+        Assert.Equal((2, 65), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+        Assert.Equal([(2, 19), (19, 36), (36, 53)], match.GetCaptures(1).ToArray()
+            .Select(range => (range.StartOffsetInBytes, range.EndOffsetInBytes)).ToArray());
+    }
+
     [Theory]
     [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}?", "Aa Bb Cc Dd Ee Ff Gg Hh")]
     [InlineData(@"(?:[A-Z][a-z]+?\s*){2,4}", "Aaaaa Bbbbb")]
