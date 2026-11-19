@@ -313,7 +313,14 @@ public sealed class LokadPublicRouteGuardrailTests
     public void BoostdocsPostcodeMatchPreservesOptionalShapeSemantics(RegexOptions options)
     {
         const string pattern = "^[a-zA-Z]{1,2}[0-9][0-9A-Za-z]{0,1} {0,1}[0-9][A-Za-z]{2}$";
-        var regex = new Utf8Regex(pattern, options: options);
+        using var regex = new Utf8Regex(pattern, options: options);
+        using var cancellation = new CancellationTokenSource();
+        using var limited = new Utf8Regex(pattern, options: options, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64, MaxWorkingBytes = 1 }
+        });
+        Assert.True(limited.IsMatch("A01ZZ"u8, cancellation.Token));
+        Assert.Equal(new Utf8CaptureRange(0, 5), limited.Match("A01ZZ"u8, cancellationToken: cancellation.Token));
 
         string[] inputs =
         [

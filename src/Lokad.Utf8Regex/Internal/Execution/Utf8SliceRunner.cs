@@ -1326,8 +1326,8 @@ internal static partial class Utf8SliceRunner
                                         var lazy = instruction.Kind == Utf8SliceInstructionKind.RepeatLazy;
                                         var preferred = lazy ? inputIndex : end;
                                         var retry = lazy ? end : inputIndex;
-                                        // The optional's input step covers a bounded prefix probe.
-                                        // A terminal suffix may need both arms of a branch checked.
+                                        // The optional's input step covers bounded prefix probes.
+                                        // The straight prefix can stop before another optional.
                                         const int suffixProbeLimit = 4;
                                         var endLimit = instructions[instruction.A].B;
                                         if (!MatchesStraightAsciiPrefix(program, input, preferred, continuation,
@@ -1336,8 +1336,17 @@ internal static partial class Utf8SliceRunner
                                         else if ((!completes || cursor.RequiredEnd.HasValue) &&
                                             (endLimit > 0 ? input.Length - retry < endLimit &&
                                                 MayMatchBranchedAsciiPrefix(program, input, retry, continuation, out _, instructionLimit: suffixProbeLimit * 2)
-                                                : MatchesStraightAsciiPrefix(program, input, retry, continuation, suffixProbeLimit)) &&
-                                            !stacks.PushFrame(new Utf8SliceFrame
+                                                : MatchesStraightAsciiPrefix(program, input, retry, continuation, suffixProbeLimit)))
+                                        {
+                                            // Only extend the preferred check when a retry would be useful.
+                                            if (endLimit > 0 && !completes &&
+                                                !MayMatchBranchedAsciiPrefix(program, input, preferred + suffixLength, continuation + suffixLength,
+                                                    out _, instructionLimit: suffixProbeLimit * 2))
+                                            {
+                                                preferred = retry;
+                                                suffixLength = 0;
+                                            }
+                                            else if (!stacks.PushFrame(new Utf8SliceFrame
                                             {
                                                 ResumeKind = Utf8SliceResumeKind.Alternation,
                                                 Target = continuation,
@@ -1345,7 +1354,8 @@ internal static partial class Utf8SliceRunner
                                                 TrailCount = stacks.TrailCount,
                                                 JournalCount = stacks.JournalCount,
                                             }, ref invocation))
-                                        { failure = stacks.Breach; goto Failure; }
+                                            { failure = stacks.Breach; goto Failure; }
+                                        }
                                         inputIndex = preferred + suffixLength;
                                     }
                                 }
