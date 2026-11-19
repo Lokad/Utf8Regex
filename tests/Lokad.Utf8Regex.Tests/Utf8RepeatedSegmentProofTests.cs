@@ -58,6 +58,11 @@ public sealed class Utf8RepeatedSegmentProofTests
     [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}", "Aa BbC Dd Ee")]
     [InlineData(@"(?:[A-Z][a-z]+\s+){2,4}", "Aa Bb Cc")]
     [InlineData(@"(?<all>(?:[A-Z][a-z]+\s*){2,4}?)", "Aa Bb Cc Dd Ee Ff Gg Hh")]
+    [InlineData(@"(?<all>(?:ab|a|bc)+)z", "abcz ababaz aaax")]
+    [InlineData(@"(?:😀é|😀|é)+z", "😀é😀z 😀x éz")]
+    [InlineData(@"(?:ab|a?)+z", "z abz xz")]
+    [InlineData(@"(?:ab|a){1,3}z", "abababaz az aaaz")]
+    [InlineData(@"(?:ab|a)+?b", "aab ab abab")]
     public void GreedinessRewindAndFailedSegmentEndpointsRemainScalar(string pattern, string subject)
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft, RegexOptions.NonBacktracking })

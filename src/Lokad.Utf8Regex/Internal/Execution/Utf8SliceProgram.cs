@@ -702,7 +702,7 @@ internal sealed class Utf8SliceProgram
         var unanchored = end < 0;
         if (unanchored)
         {
-            if (RepeatCount == 0 || CanMatchEmpty || LeadingAsciiCandidate is not { FromBranch: true, First: >= 0 } ||
+            if (CanMatchEmpty || LeadingAsciiCandidate is not { FromBranch: true, First: >= 0 } ||
                 code[^2] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) return default;
             end = code.Length - 1;
         }
@@ -713,6 +713,7 @@ internal sealed class Utf8SliceProgram
         Span<bool> empty = stackalloc bool[end + 1];
         empty[end] = true;
         var ascii = default(Utf8SearchAsciiSet);
+        var hasRepeat = RepeatCount != 0;
         for (var pc = end - 1; pc >= 0; pc--)
         {
             budget.ChargeWork(1);
@@ -723,8 +724,9 @@ internal sealed class Utf8SliceProgram
             {
                 case Utf8SliceInstructionKind.Jump when pc > 0 && instruction.A < pc - 1 &&
                     code[pc - 1] is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } loop && loop.A == pc + 1:
-                    // A lowered delimited loop consumes before it can revisit
+                    // A counterless loop consumes before it can revisit
                     // this fork. The forward exit accounts for the empty tail.
+                    hasRepeat = true;
                     break;
                 case Utf8SliceInstructionKind.Jump:
                 case Utf8SliceInstructionKind.Fork:
@@ -778,7 +780,7 @@ internal sealed class Utf8SliceProgram
             // that jump past the last literal in storage.
             var last = (byte)code[^2].A;
             var required = default(Utf8SearchAsciiSet).With(last);
-            if (ascii.Low == required.Low && ascii.High == required.High) unanchoredByte = last;
+            if (hasRepeat && ascii.Low == required.Low && ascii.High == required.High) unanchoredByte = last;
             return default;
         }
         return ascii.Low == ulong.MaxValue && ascii.High == ulong.MaxValue
@@ -1617,17 +1619,22 @@ internal static class Utf8SliceLowerer
                         request = new(repeat.Body, false, false, 0);
                         return true;
                     }
-                    if (frame.Stage == 0 && !MirrorExecute && repeat is { Minimum: 1, Maximum: long.MaxValue, Lazy: false } &&
-                        IsDelimitedAsciiRun(repeat.Body))
+                    if (frame.Stage == 0 && !MirrorExecute && repeat is { Minimum: 1, Maximum: long.MaxValue, Lazy: false })
                     {
-                        frame.Mark = Instructions.Count;
-                        frame.Stage = 3;
-                        request = new(repeat.Body, false, false, 0);
-                        return true;
+                        var remaining = 32;
+                        if (IsDelimitedAsciiRun(repeat.Body) ||
+                            repeat.Body is Utf8SliceNode.AlternationNode && Facts[repeat.Body].Minimum > 0 &&
+                            IsSmallPureBody(repeat.Body, ref remaining))
+                        {
+                            frame.Mark = Instructions.Count;
+                            frame.Stage = 3;
+                            request = new(repeat.Body, false, false, 0);
+                            return true;
+                        }
                     }
                     if (frame.Stage == 3)
                     {
-                        // Each completed body consumes a run and its separator.
+                        // Each completed body has already advanced the input.
                         // A plain fork preserves greedy exits and capture undo.
                         Emit(new(Utf8SliceInstructionKind.Fork, Instructions.Count + 2, 0, 0, 0));
                         Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, 0, 0, 0));

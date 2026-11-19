@@ -41,6 +41,22 @@ public sealed class Pcre2AlternationRepeatTests
     }
 
     [Fact]
+    public void GreedyAlternationRewindsToTheLeftmostStartUnderLimits()
+    {
+        using var regex = new Utf8Pcre2Regex("(?<run>(?:ab|a|bc)+)z", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 512, MaxDepth = 32, MaxWorkingBytes = 4_096 }
+        });
+        using var source = new CancellationTokenSource();
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
+        var result = regex.Match("😀 abcz!"u8, startOffsetInBytes: 5, captures: captures, cancellationToken: source.Token);
+        Assert.True(result.Success);
+        Assert.Equal((5, 9), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+        Assert.True(captures[1].Success);
+        Assert.Equal((5, 8), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+    }
+
+    [Fact]
     public void AlternationRepeatsKeepPublicValuesAndOutputs()
     {
         var regex = new Utf8Pcre2Regex("(?:ab|a)+z");

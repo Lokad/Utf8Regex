@@ -278,6 +278,10 @@ Detailed and cursor results retain all captures. Eliminated bookkeeping can redu
 and working-byte requirements; other VM buffers, original interruption and result
 admission remain in force.
 
+Small forward greedy `+` repeats over provably consuming, side-effect-free
+alternatives can use ordinary branch retries without an iteration counter.
+Alternative priority, work checkpoints and admission for live frames still apply.
+
 Scalar sizing admits one work quantum before at most 64 bytes, and exact offset
 preparation one before at most 64 scalars. Viability preparation admits one before
 at most 64 instruction cells per row. Scanning prepared candidate starts admits
