@@ -119,7 +119,7 @@ public sealed class Utf8CaptureSlotMatchTests
     }
 
     [Fact]
-    public void WholeMatchSlotsOnlyReserveCapturesIfExecutionReadsThem()
+    public void WholeMatchOperationsOnlyReserveCapturesIfExecutionReadsThem()
     {
         var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkingBytes = 1 } };
         using var valueOnly = new Utf8Regex("([A-Z])", policy: policy);
@@ -131,6 +131,13 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.Equal(extent, valueOnly.Match(input, 2));
         Assert.Equal(extent, whole[0]);
 
+        var ranges = valueOnly.EnumerateMatches(input, startOffsetInBytes: 2);
+        Assert.True(ranges.MoveNext());
+        Assert.Equal(extent, ranges.Current);
+        Assert.True(ranges.MoveNext());
+        Assert.Equal((5, 6), (ranges.Current.StartOffsetInBytes, ranges.Current.EndOffsetInBytes));
+        Assert.False(ranges.MoveNext());
+
         var detail = new Utf8CaptureRange[2];
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => valueOnly.Match(input, 2, detail)).ResourceKind);
@@ -138,6 +145,8 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => reference.Match(input, 2, whole)).ResourceKind);
         Assert.False(whole[0].Success);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => reference.EnumerateMatches(input, 2).MoveNext()).ResourceKind);
     }
 
     [Theory]

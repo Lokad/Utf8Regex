@@ -199,7 +199,10 @@ internal ref partial struct Utf8OperationMatchCursor
             // even when a short VM attempt never reaches its polling cadence.
             CheckOwnedSliceCursorBoundary();
             if (_sliceProgram is null) return false;
-            slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
+            // This cursor returns whole-match extents. Only capture-dependent
+            // programs need the VM's capture registers during discovery.
+            var slotCount = _sliceProgram.ReadsCaptures ? _sliceProgram.GroupCount : 0;
+            slots = Utf8SliceRunner.RentSlots(slotCount, ref _sliceInvocation);
             _sliceInvocation.AnchorOriginByte = _sliceOriginByte;
             var outcome = _nonBacktrackingState is { } batch
                 ? batch.FindFirst(_sliceProgram, ref _nonBacktrackingBoundary, slots.Starts, slots.Ends, ref _sliceInvocation)
