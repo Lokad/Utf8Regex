@@ -220,20 +220,24 @@ internal readonly struct Utf8SliceInstruction
     internal static bool TryGetLiteralAfterCaptureMarkers(ReadOnlySpan<Utf8SliceInstruction> instructions,
         int index, out int scalar)
     {
-        for (var inspected = 0; inspected < 32 && (uint)index < (uint)instructions.Length; inspected++, index++)
+        index = SkipLeadingCaptureMarkers(instructions, index);
+        if ((uint)index < (uint)instructions.Length &&
+            instructions[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal &&
+            System.Text.Rune.IsValid(literal.A))
         {
-            var instruction = instructions[index];
-            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
-                continue;
-            if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && System.Text.Rune.IsValid(instruction.A))
-            {
-                scalar = instruction.A;
-                return true;
-            }
-            break;
+            scalar = literal.A;
+            return true;
         }
         scalar = -1;
         return false;
+    }
+
+    internal static int SkipLeadingCaptureMarkers(ReadOnlySpan<Utf8SliceInstruction> instructions, int index)
+    {
+        for (var skipped = 0; skipped < 31 && (uint)index < (uint)instructions.Length &&
+            instructions[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd; skipped++)
+            index++;
+        return index;
     }
 }
 

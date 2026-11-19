@@ -184,6 +184,20 @@ public sealed class Utf8OptionalRepeatTests
     }
 
     [Theory]
+    [InlineData(false, 3)]
+    [InlineData(true, 2)]
+    public void TerminalAsciiSuffixPreservesOptionalMatchLengthWithoutRewind(bool lazy, int end)
+    {
+        var pattern = @"\A[01]?" + (lazy ? "?" : "") + "[0-9][0-9]";
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 100, MaxWorkingBytes = 1 }
+        });
+        Assert.Equal(end, regex.Match("012"u8, cancellationToken: token.Token).EndOffsetInBytes);
+    }
+
+    [Theory]
     [InlineData(false, "012X")]
     [InlineData(true, "012X")]
     public void ViableOptionalEndpointsRetainCapturesAndAssertionRetry(bool lazy, string subject)

@@ -59,6 +59,38 @@ public sealed class Utf8Ipv4BooleanTests
         }
     }
 
+    [Theory]
+    [InlineData("012.200.033.199")]
+    [InlineData("012.29.033.199")]
+    public void DisprovedOctetAlternativesRequireNoWorkingStorage(string text)
+    {
+        var expected = Regex.Match(text, Pattern);
+        Assert.True(expected.Success);
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 100, MaxWorkingBytes = 1 }
+        });
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.True(regex.IsMatch(input, token.Token));
+        Assert.Equal(1, regex.Count(input, token.Token));
+        Utf8MatchSequence.AssertRange(regex.Match(input, cancellationToken: token.Token), text, expected.Index, expected.Length);
+    }
+
+    [Theory]
+    [InlineData("200X")]
+    [InlineData("200Y")]
+    public void BoundedAlternationProofLeavesViableCaptureChoicesInOrder(string text)
+    {
+        const string pattern = @"\A(?:(?<first>2[0-4][0-9])(?=X)|(?<retry>2[0-9][0-9]))[XY]\z";
+        using var regex = Utf8Regex.Compile(pattern);
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = Regex.Match(text, pattern);
+        Assert.True(expected.Success);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
+    }
+
     [Fact]
     public void AliasesCapturesAndExcludedModesKeepScalarSemantics()
     {

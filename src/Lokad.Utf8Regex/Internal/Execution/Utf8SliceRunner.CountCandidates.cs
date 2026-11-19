@@ -614,11 +614,18 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool MatchesStraightAsciiPrefix(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, int instructionIndex, int instructionLimit = 64)
+        ReadOnlySpan<byte> input, int position, int instructionIndex, int instructionLimit = 64) =>
+        MatchesStraightAsciiPrefix(program, input, position, instructionIndex, instructionLimit, out _);
+
+    private static bool MatchesStraightAsciiPrefix(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, int instructionIndex, int instructionLimit, out bool completes)
     {
-        // Reject only a proven mandatory straight-line prefix. This bounded
-        // filter accepts no match; branches, wider classes and effects stop it.
+        // Branches and wider classes stop the necessary-prefix check.
+        // Only a nonempty run of ASCII consumers may prove completion.
         var code = program.Instructions.AsSpan();
+        var prefixStart = instructionIndex;
+        var inputStart = position;
+        completes = false;
         var end = instructionIndex + Math.Min(code.Length - instructionIndex, instructionLimit);
         for (; instructionIndex < end; instructionIndex++)
         {
@@ -636,7 +643,22 @@ internal static partial class Utf8SliceRunner
             }
             else break;
         }
+        completes = instructionIndex < end && code[instructionIndex].Kind == Utf8SliceInstructionKind.Accept &&
+            position > inputStart && position - inputStart == instructionIndex - prefixStart;
         return true;
+    }
+
+    private static bool MayMatchForkPrefix(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position, int index)
+    {
+        var code = program.Instructions.AsSpan();
+        index = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, index);
+        if ((uint)index >= (uint)code.Length) return true;
+        // Keep nested arms opaque. Only a leading optional needs the
+        // branch-aware proof to establish the width before its suffix.
+        return code[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
+            RepeatMinimum: 0, RepeatMaximum: 1 }
+            ? MayMatchBranchedAsciiPrefix(program, input, position, index, 4)
+            : MatchesStraightAsciiPrefix(program, input, position, index, 2);
     }
 
     private static (int Min, int Max, byte Literal) FindBranchedAsciiLiteralWindow(
@@ -802,11 +824,11 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, int index)
+        ReadOnlySpan<byte> input, int position, int index, int instructionLimit = 96)
     {
         // Share one visit/byte allowance across both arms. Their caller meters
         // this bounded check along with the search for each candidate byte.
-        var remaining = 96;
+        var remaining = instructionLimit;
         return MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining);
     }
 }

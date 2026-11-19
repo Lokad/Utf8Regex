@@ -1129,23 +1129,17 @@ internal static partial class Utf8SliceRunner
                         if (!failed) programIndex = instruction.A + instruction.D;
                         break;
                     }
-                    // A required exact ASCII literal can disprove a branch
-                    // before its frame/rollback storage is needed. Ordinary
-                    // capture markers on that failing path would be rolled back,
-                    // including their balance heads. The proof stops at other
-                    // instructions, including balancing operations.
+                    // The fork step covers a bounded necessary-prefix check
+                    // for each arm. Capture markers on a disproved arm would
+                    // be rolled back, including their balance heads.
                     if (instruction.B == 0 && !program.RightToLeft)
                     {
-                        if (Utf8SliceInstruction.TryGetLiteralAfterCaptureMarkers(instructions, programIndex + 1, out var forkFirstScalar) &&
-                            (uint)forkFirstScalar < 0x80 &&
-                            (inputIndex >= input.Length || input[inputIndex] != forkFirstScalar))
+                        if (!MayMatchForkPrefix(program, input, inputIndex, programIndex + 1))
                         {
                             programIndex = instruction.A;
                             break;
                         }
-                        if (Utf8SliceInstruction.TryGetLiteralAfterCaptureMarkers(instructions, instruction.A, out var forkOtherScalar) &&
-                            (uint)forkOtherScalar < 0x80 &&
-                            (inputIndex >= input.Length || input[inputIndex] != forkOtherScalar))
+                        if (!MayMatchForkPrefix(program, input, inputIndex, instruction.A))
                         {
                             programIndex++;
                             break;
@@ -1227,11 +1221,11 @@ internal static partial class Utf8SliceRunner
                                         // The optional's input step covers this bounded
                                         // probe. Only the VM executes the suffix.
                                         const int suffixProbeLimit = 4;
-                                        if (MatchesStraightAsciiPrefix(program, input, retry, continuation, suffixProbeLimit))
-                                        {
-                                            if (!MatchesStraightAsciiPrefix(program, input, preferred, continuation, suffixProbeLimit))
-                                                preferred = retry;
-                                            else if (!stacks.PushFrame(new Utf8SliceFrame
+                                        if (!MatchesStraightAsciiPrefix(program, input, preferred, continuation, suffixProbeLimit, out var completes))
+                                            preferred = retry;
+                                        else if ((!completes || cursor.RequiredEnd.HasValue) &&
+                                            MatchesStraightAsciiPrefix(program, input, retry, continuation, suffixProbeLimit) &&
+                                            !stacks.PushFrame(new Utf8SliceFrame
                                             {
                                                 ResumeKind = Utf8SliceResumeKind.Alternation,
                                                 Target = continuation,
@@ -1239,8 +1233,7 @@ internal static partial class Utf8SliceRunner
                                                 TrailCount = stacks.TrailCount,
                                                 JournalCount = stacks.JournalCount,
                                             }, ref invocation))
-                                            { failure = stacks.Breach; goto Failure; }
-                                        }
+                                        { failure = stacks.Breach; goto Failure; }
                                         inputIndex = preferred;
                                     }
                                 }
