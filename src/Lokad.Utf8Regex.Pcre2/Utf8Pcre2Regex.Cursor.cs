@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Execution;
+
 namespace Lokad.Utf8Regex.Pcre2;
 
 public sealed partial class Utf8Pcre2Regex
@@ -14,7 +16,9 @@ public sealed partial class Utf8Pcre2Regex
         {
             workingMemoryAllowance ??= _programMemory?.Allowance;
             ThrowIfGenericIterationMayBeNonMonotone();
-            var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
+            var request = _program.Request;
+            var invocation = Utf8SliceInvocation.CreateExclusive(request.DefaultLimits.ToSliceLimits(),
+                request.MatchTimeout, cancellationToken, workingMemoryAllowance);
             var cursor = new Utf8Pcre2MatchCursor(input, _program, startOffsetInBytes, matchOptions, invocation);
             if (use is not null) cursor.AttachProgramUse(use);
             return cursor;

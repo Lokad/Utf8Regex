@@ -2648,9 +2648,7 @@ internal struct Pcre2ResourceBudget
         Utf8Pcre2ExecutionLimits limits,
         TimeSpan timeout,
         bool collectDiagnostics)
-        : this(limits, new Utf8SliceInvocation(
-            new Utf8ExecutionLimits(limits.MatchLimit, limits.DepthLimit, limits.HeapLimitInBytes, limits.ResultLimitInBytes),
-            timeout, CancellationToken.None), collectDiagnostics)
+        : this(limits, new Utf8SliceInvocation(limits.ToSliceLimits(), timeout, CancellationToken.None), collectDiagnostics)
     {
     }
 

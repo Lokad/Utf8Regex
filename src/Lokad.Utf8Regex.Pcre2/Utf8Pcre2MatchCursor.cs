@@ -26,7 +26,6 @@ public sealed class Utf8Pcre2MatchCursor : IDisposable
     {
         _program = program; _options = options;
         _budget = new(program.Request.DefaultLimits, invocation, false);
-        _budget.WorkingInvocation.ShareStorageForCursor();
         try
         {
             Pcre2Runner.CheckInput(input.Span, start, ref _budget.WorkingInvocation);

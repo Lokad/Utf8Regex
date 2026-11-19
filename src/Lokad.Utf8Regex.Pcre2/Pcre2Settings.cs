@@ -1,3 +1,5 @@
+using Lokad.Utf8Regex.Internal.Execution;
+
 namespace Lokad.Utf8Regex.Pcre2;
 
 /// <summary>Specifies whether a probe may report a match truncated by the subject end.</summary>
@@ -94,4 +96,7 @@ public readonly struct Utf8Pcre2ExecutionLimits
 
     /// <summary>Gets the maximum cumulative modeled major result and publication-staging capacity in bytes, or zero for no limit. This is a managed-profile extension; caller-owned storage and arbitrary retention have separate scope.</summary>
     public ulong ResultLimitInBytes { get; init; }
+
+    internal Utf8ExecutionLimits ToSliceLimits()
+        => new(MatchLimit, DepthLimit, HeapLimitInBytes, ResultLimitInBytes);
 }
