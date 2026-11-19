@@ -1115,13 +1115,23 @@ internal static class Pcre2BacktrackingRunner
                         }
 
                         var endCaptureSlot = instruction.CaptureSlot;
+                        var endCallDepth = subroutineCalls.Count;
                         if (captureOpenStarts[endCaptureSlot] < 0 ||
-                            captureOpenOwners[endCaptureSlot] != subroutineCalls.Count)
+                            captureOpenOwners[endCaptureSlot] != endCallDepth)
                         {
                             instructionIndex++;
                             continue;
                         }
 
+                        // The latest entry already undoes this slot if all
+                        // live checkpoints precede it. No retry or return
+                        // can observe the intervening open capture.
+                        var mutationsBeforeClose = captureMutations.Count;
+                        var recordClose = (frames.Count != 0 || endCallDepth != 0) &&
+                            (mutationsBeforeClose == 0 ||
+                                (frames.Count != 0 && frames[frames.Count - 1].CaptureCheckpoint >= mutationsBeforeClose) ||
+                                (endCallDepth != 0 && subroutineCalls[endCallDepth - 1].CaptureCheckpoint >= mutationsBeforeClose) ||
+                                captureMutations[mutationsBeforeClose - 1].Slot != endCaptureSlot);
                         SetCapture(
                             endCaptureSlot,
                             captureOpenStarts[endCaptureSlot],
@@ -1136,7 +1146,7 @@ internal static class Pcre2BacktrackingRunner
                             captureOpenOwners,
                             ref captureMutations,
                             ref budget,
-                            recordRollback: frames.Count != 0 || subroutineCalls.Count != 0);
+                            recordRollback: recordClose);
                         instructionIndex++;
                         continue;
 
