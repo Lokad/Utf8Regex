@@ -5,8 +5,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
-    // These packed graphs have no position-dependent epsilon edges. Their
-    // ancestor masks test closure membership without replaying the thread order.
+    // The ancestor masks test unconditional closure membership without
+    // replaying the thread order. Conditions are evaluated at their scalar edge.
     internal static Utf8ExecutionLimitKind IsMatchPackedNonBacktracking(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation, out bool found)
     {
@@ -29,6 +29,7 @@ internal static partial class Utf8SliceRunner
         {
             Span<(ulong States, byte Value, ulong Next)> transitions = stackalloc (ulong, byte, ulong)[cache ? capacity : 0];
             transitions.Clear();
+            var hasConditions = program.NonBacktrackingEpsilonOrder.Length != 0;
             ulong states = 1;
             var position = fromByte;
             while (true)
@@ -36,6 +37,11 @@ internal static partial class Utf8SliceRunner
                 // Cached transitions still spend a step at each scalar edge.
                 breach = invocation.TryChargeStep();
                 if (breach != Utf8ExecutionLimitKind.None) break;
+                if (hasConditions)
+                {
+                    breach = ExpandPackedNonBacktrackingConditions(program, input, position, ref states, ref invocation);
+                    if (breach != Utf8ExecutionLimitKind.None) break;
+                }
                 found = (states & program.NonBacktrackingAcceptClosure) != 0;
                 if (found || position == input.Length) break;
 
@@ -65,6 +71,28 @@ internal static partial class Utf8SliceRunner
             return breach;
         }
         finally { invocation.Ledger.Release(reserved); }
+    }
+
+    private static Utf8ExecutionLimitKind ExpandPackedNonBacktrackingConditions(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, ref ulong states, ref Utf8SliceInvocation invocation)
+    {
+        // Packed viability walks this order backwards through the graph.
+        // Walk it in reverse so each condition sees the roots admitted by its
+        // predecessors. Cache only the following consuming transition.
+        var order = program.NonBacktrackingEpsilonOrder;
+        for (var index = order.Length - 1; index >= 0; index--)
+        {
+            var pc = order[index];
+            if ((program.NonBacktrackingEpsilonAncestors[pc] & states) == 0) continue;
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var instruction = program.Instructions[pc];
+            var allows = instruction.Kind == Utf8SliceInstructionKind.Anchor
+                ? HoldsNonBacktrackingAnchor(instruction, input, position)
+                : MatchesBoundary(program, instruction, input, position);
+            if (allows) states |= 1UL << (pc + 1);
+        }
+        return Utf8ExecutionLimitKind.None;
     }
 
     private static Utf8ExecutionLimitKind AdvancePackedNonBacktracking(Utf8SliceProgram program,

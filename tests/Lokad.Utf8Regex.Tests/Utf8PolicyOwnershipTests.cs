@@ -253,10 +253,11 @@ public sealed class Utf8PolicyOwnershipTests
         Assert.Equal(2, regex.Count("a,b,c"u8));
     }
 
-    [Fact]
-    public void PackedBooleanAdmitsItsCacheWithinTheWorkingLimit()
+    [Theory]
+    [InlineData("(?:a?b|c)*[d-f][xy]")]
+    [InlineData(@"(?:a?b|c)*[d-f][xy]\z")]
+    public void PackedBooleanAdmitsItsCacheWithinTheWorkingLimit(string pattern)
     {
-        const string pattern = "(?:a?b|c)*[d-f][xy]";
         var input = Encoding.UTF8.GetBytes(new string('a', 4096) + "dy");
         var account = new Account { Maximum = 0 };
         using var cached = new Utf8Regex(pattern, RegexOptions.NonBacktracking);

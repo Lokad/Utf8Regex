@@ -115,6 +115,11 @@ public sealed class Utf8SliceNonBacktrackingTests
         yield return new object?[] { "(a?b|c)*(dé|😀)[xy]", "éz😀ydéz", true };
         yield return new object?[] { "(a?b|c)*(dé|😀)[xy]", "éz😀zdéz", false };
         yield return new object?[] { "(?:a?)*", "😀", true };
+        yield return new object?[] { @"(?m:^\b(?:[a-z]|é)+\b$)", "Φ\néabc\nß", true };
+        yield return new object?[] { @"\b[a-z]+\b", "éabc\u200C😀", false };
+        yield return new object?[] { @"\b[a-z]+\b", "😀abc!", true };
+        yield return new object?[] { @"(?:\b|a)*[bc]", "😀ab", true };
+        yield return new object?[] { @"\A(?:\B(?:x?|é))?\z", "é", false };
     }
 
     [Theory]

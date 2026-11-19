@@ -194,11 +194,11 @@ subset. It preserves ordered choice, greedy/lazy behavior, scalar empty progress
 and each group's last completed capture. Unsupported grammar fails before planning.
 Nullable cycles and zero-width repeats must terminate without bound-sized
 expansion. This mode does not expose ordinary backtracking capture history.
-For compact graphs with position-independent transitions, `IsMatch` can carry
-the active state set in a single mask and reuse admitted ASCII transitions.
-Every scalar edge still spends work and checks interruption. A tight working
-cap can run the same state calculation without caching. Ordered execution
-supplies match ranges and captures.
+For compact graphs, `IsMatch` can carry the active state set in a single mask.
+It evaluates anchors and boundaries at their original scalar edges before
+reusing admitted ASCII consuming transitions. Each advance spends work and
+checks interruption. A tight working cap can run the same state calculation
+without caching. Ordered execution supplies match ranges and captures.
 
 Backtracking first-match search can reuse Count's mandatory exact ASCII head or
 range proof. Controlled gap searches cover at most 2048 bytes per checkpoint;
