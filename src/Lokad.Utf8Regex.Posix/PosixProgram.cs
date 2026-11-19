@@ -129,7 +129,7 @@ internal sealed partial class PosixProgram
         var scalar = Utf8SliceLowerer.Lower(completed!, null, false,
             (options & PosixCompileOptions.IgnoreCase) != 0, false)
             ?? throw new InvalidOperationException("The admitted POSIX tree could not be lowered.");
-        var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget);
+        var firstAcceptanceIsLongest = CanSelectFirst(scalar, budget, out var capturesOpenOnce);
         var canReplayDirectly = true;
         var firstRunAtom = -1;
         var terminalLineEndRepeat = -1;
@@ -144,7 +144,7 @@ internal sealed partial class PosixProgram
             : (Nodes: Array.Empty<ChartNode>(), Classes: Array.Empty<Utf8SliceNode.CategorySetNode>());
         var parentTags = parents.Take();
         var useCaptureOffsets = firstAcceptanceIsLongest;
-        if (useCaptureOffsets && !directGreedyRuns)
+        if (useCaptureOffsets && !directGreedyRuns && !capturesOpenOnce)
         {
             // The root has one occurrence. A public tag below another
             // parent may need its last capture reconciled with that parent.
@@ -199,8 +199,9 @@ internal sealed partial class PosixProgram
         return length;
     }
 
-    private static bool CanSelectFirst(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    private static bool CanSelectFirst(Utf8SliceProgram program, Utf8ConstructionBudget budget, out bool capturesOpenOnce)
     {
+        capturesOpenOnce = false;
         // Fixed scalar pieces around one single-scalar greedy run consume a
         // fixed scalar count plus the repetitions. First successful descending
         // greedy count is longest and fixes every non-repeated capture edge.
@@ -209,6 +210,8 @@ internal sealed partial class PosixProgram
             var unique = true;
             var singleRepeat = -1;
             var captureOnlyTail = true;
+            var increasingCaptureTags = true;
+            var previousCaptureTag = -1;
             for (var index = 0; index < program.Instructions.Length; index++)
             {
                 budget.ChargeWork(1);
@@ -233,6 +236,11 @@ internal sealed partial class PosixProgram
                     Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or Utf8SliceInstructionKind.Accept) ||
                     kind == Utf8SliceInstructionKind.Accept && index != program.Instructions.Length - 1)
                 { unique = false; break; }
+                if (kind == Utf8SliceInstructionKind.CaptureStart)
+                {
+                    increasingCaptureTags &= instruction.A > previousCaptureTag;
+                    previousCaptureTag = instruction.A;
+                }
             }
             if (unique && program.Instructions.Length != 0 && program.Instructions[^1].Kind == Utf8SliceInstructionKind.Accept)
             {
@@ -244,6 +252,10 @@ internal sealed partial class PosixProgram
                     // the same unconditional tail and cannot improve the match.
                     program.Instructions[exitIndex] = new(exit.Kind, exit.A, RepeatExitWithoutRewind, exit.C, exit.D);
                 }
+                // The sole admitted loop consumes one scalar without a
+                // capture. Strictly increasing opens also rule out repeated
+                // tags emitted as separate copies outside that loop.
+                capturesOpenOnce = increasingCaptureTags;
                 return true;
             }
         }

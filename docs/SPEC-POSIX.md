@@ -192,9 +192,10 @@ allocate a second execution state.
 Fixed sequences without choices or repetitions have one parse. Existing proofs
 also retain first acceptance for homogeneous greedy literal runs, suitable equal
 literal alternatives, eligible flat ASCII-origin runs and repeated literal
-captures. Those routes keep one trace and project it directly, except the flat
-run case below. First and
-mandatory empty participation remain; redundant optional empty tails lose.
+captures. Fixed sequences with unique capture openings keep final byte offsets
+in admitted slots, including nested captures. Routes that need to reconcile
+repeated capture occurrences keep one trace. First and mandatory empty
+participation remain; redundant optional empty tails lose.
 No separate saved-best trace or competing-history copy/comparison remains.
 One greedy single-scalar repeat after a fixed scalar prefix, followed only by
 capture operations, also has one longest parse. Its ordinary scalar interpreter
@@ -206,9 +207,10 @@ or interruption enforcement; scalar values and finite repeat bounds are unchange
 Fixed scalar suffixes and anchors around one such repeat still require ordinary
 endpoint rewind and its frames. First successful greedy acceptance nevertheless
 maximizes the total scalar count and determines every non-repeated capture edge.
-It can reuse the native trace without general capture-chart construction. These
-tails do not receive the terminal-exit annotation; pending depth stays bounded by
-the actual scalar alternatives, and numerical working/work requirements may change.
+The capture-free repeat can use those same offset slots when every capture
+opening outside the repeat is unique. Rewind restores offsets with the other
+saved execution state. Tails with suffixes or anchors keep their pending
+alternatives and the associated depth/working admission.
 For positive ASCII-origin literals/classes, invariant lowercase-fiber keys can
 also prove folded run boundaries. Intersecting scalar closures necessarily share
 an ASCII key. This proof changes selection eligibility only: Unicode partners
@@ -243,11 +245,9 @@ occurrences. Construction can admit one balanced compiler-only wrapper around a
 atom after verifying its tag is not a public capture. The original syntax
 tags stay in the program; this proved route skips that private occurrence history.
 Repeated public captures, required overlapping successors, anchored nullable
-sequences and uncertain bodies retain their existing selection. Existing state
-slots keep the selected public opening/closing byte offsets;
-no trace is acquired or replayed for this route. State admission remains before
-acquisition, while numerical work/working requirements can fall. Other proven
-routes and general histories retain their existing trace/interval behavior.
+sequences and uncertain bodies retain their existing selection. On the direct
+run route, admitted state slots keep the selected public opening/closing byte
+offsets without a trace. Numerical work and working requirements can fall.
 
 Other requested captures select completed syntax intervals after the scalar
 executor fixes the whole winner. Immutable syntax records carry conservative

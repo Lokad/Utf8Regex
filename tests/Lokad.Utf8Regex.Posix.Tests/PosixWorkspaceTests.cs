@@ -81,6 +81,14 @@ public sealed class PosixWorkspaceTests
         Assert.True(PosixProgram.Compile("(a*)(b*)", default).DirectGreedyRuns);
     }
     [Fact]
+    public void FinalOffsetsAdmitSingleOccurrenceNestedCaptures()
+    {
+        Assert.True(PosixProgram.Compile("((((a))))", default).UseCaptureOffsets);
+        Assert.True(PosixProgram.Compile("^(((😀+))😀)$", default).UseCaptureOffsets);
+        Assert.False(PosixProgram.Compile("((a)?){2,4}", default).UseCaptureOffsets);
+    }
+
+    [Fact]
     public void FixedAlternativeProofKeepsUnequalNestedAndConsumingTailsGeneral()
     {
         Assert.True(PosixProgram.Compile("(a)|(a)", default).FirstAcceptanceIsLongest);
