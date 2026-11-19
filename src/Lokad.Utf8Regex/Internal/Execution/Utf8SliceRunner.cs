@@ -1286,6 +1286,7 @@ internal static partial class Utf8SliceRunner
                                 var breach = invocation.TryChargeStep();
                                 if (breach != Utf8ExecutionLimitKind.None)
                                 { failure = breach; goto Failure; }
+                                var suffixLength = 0;
                                 if (TryReadScalar(input, inputIndex, false, out var scalar, out var width))
                                 {
                                     breach = TryMatchScalarClass(program, instructions[programIndex + 1], scalar,
@@ -1302,7 +1303,8 @@ internal static partial class Utf8SliceRunner
                                         // A terminal suffix may need both arms of a branch checked.
                                         const int suffixProbeLimit = 4;
                                         var endLimit = instructions[instruction.A].B;
-                                        if (!MatchesStraightAsciiPrefix(program, input, preferred, continuation, suffixProbeLimit, out var completes))
+                                        if (!MatchesStraightAsciiPrefix(program, input, preferred, continuation,
+                                            suffixProbeLimit, out suffixLength, out var completes))
                                             preferred = retry;
                                         else if ((!completes || cursor.RequiredEnd.HasValue) &&
                                             (endLimit > 0 ? input.Length - retry < endLimit &&
@@ -1317,10 +1319,10 @@ internal static partial class Utf8SliceRunner
                                                 JournalCount = stacks.JournalCount,
                                             }, ref invocation))
                                         { failure = stacks.Breach; goto Failure; }
-                                        inputIndex = preferred;
+                                        inputIndex = preferred + suffixLength;
                                     }
                                 }
-                                programIndex = continuation;
+                                programIndex = continuation + suffixLength;
                                 break;
                             }
                             var guardedAtom = continuation == 0 && instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy

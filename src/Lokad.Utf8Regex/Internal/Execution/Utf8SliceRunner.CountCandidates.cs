@@ -670,16 +670,18 @@ internal static partial class Utf8SliceRunner
 
     private static bool MatchesStraightAsciiPrefix(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, int instructionIndex, int instructionLimit = 64) =>
-        MatchesStraightAsciiPrefix(program, input, position, instructionIndex, instructionLimit, out _);
+        MatchesStraightAsciiPrefix(program, input, position, instructionIndex, instructionLimit, out _, out _);
 
     private static bool MatchesStraightAsciiPrefix(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, int instructionIndex, int instructionLimit, out bool completes)
+        ReadOnlySpan<byte> input, int position, int instructionIndex, int instructionLimit,
+        out int verifiedLength, out bool completes)
     {
         // Branches and wider classes stop the necessary-prefix check.
         // Only a nonempty run of ASCII consumers may prove completion.
         var code = program.Instructions.AsSpan();
         var prefixStart = instructionIndex;
         var inputStart = position;
+        verifiedLength = 0;
         completes = false;
         var end = instructionIndex + Math.Min(code.Length - instructionIndex, instructionLimit);
         for (; instructionIndex < end; instructionIndex++)
@@ -698,8 +700,12 @@ internal static partial class Utf8SliceRunner
             }
             else break;
         }
-        completes = instructionIndex < end && code[instructionIndex].Kind == Utf8SliceInstructionKind.Accept &&
-            position > inputStart && position - inputStart == instructionIndex - prefixStart;
+        // A capture marker can help disprove the suffix, but the VM must
+        // execute it. Only publish a pure run of one-byte consumers.
+        var consumed = position - inputStart;
+        if (consumed == instructionIndex - prefixStart) verifiedLength = consumed;
+        completes = verifiedLength > 0 && instructionIndex < end &&
+            code[instructionIndex].Kind == Utf8SliceInstructionKind.Accept;
         return true;
     }
 
