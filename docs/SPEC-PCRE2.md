@@ -343,8 +343,12 @@ workspace still require admission. This limit does not cover total managed memor
 Fused scalar repeats can also execute without unused counter vectors. The first
 counter-dependent repeat admits its complete state before acquisition; retries
 reuse it under the same synchronous invocation lifetime. A nonpossessive optional
-literal or class can use an ordinary branch without a repeat counter. Required
-capture and assertion storage remains admitted. Work and heap requirements can fall.
+literal or class can use an ordinary branch without a repeat counter. A greedy
+run before a proved end can omit rewind when no shorter endpoint can satisfy
+the anchor. A greedy ASCII optional can omit its retry frame when the terminal
+suffix cannot begin with any byte it consumes. These paths still meter scanning
+and admit required capture and assertion storage. Work and heap requirements
+can fall.
 Uncontrolled compilation can also omit rewind state for positive word-only repeats
 before `\b`; explicit finite execution policies retain their established lowering.
 Original tokens and working allowances still meter/admit actual optimized work.

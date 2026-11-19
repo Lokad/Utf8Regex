@@ -25,7 +25,7 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
 
     [Theory]
     [InlineData("^((.)(?1)\\2|.?)$", Pcre2CompileOptions.None, "abccba")]
-    [InlineData("^[-+]?\\d*\\.?\\d*$", Pcre2CompileOptions.None, "-12.5")]
+    [InlineData("^[+-]?[+-]?[+-]?\\d*$", Pcre2CompileOptions.None, "++12")]
     [InlineData("^([0-9]+)(\\-| |$)(.*)$", Pcre2CompileOptions.None, "200 ok")]
     public void GrowingSearchBreachesDepth(string pattern, Pcre2CompileOptions options, string inputText)
     {
@@ -39,6 +39,7 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
     [InlineData("(\\d{4}[- ]){3}\\d{3,4}", "4111-1111-1111-1111")]
     [InlineData(".*(ss)", "xxss")]
     [InlineData("^[-+]?\\d*\\.?\\d*$", "12.5")]
+    [InlineData("^[-+]?\\d*\\.?\\d*$", "-12.5")]
     public void BoundedSearchSucceedsUnderDepthLimit(string pattern, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
@@ -46,11 +47,21 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
         Assert.True(Create(pattern, Pcre2CompileOptions.None, new Utf8Pcre2ExecutionLimits { DepthLimit = 1 }).IsMatch(input));
     }
 
+    [Fact]
+    public void DisjointOptionalTokensNeedNoHeapBeforeTerminalDigitRuns()
+    {
+        using var regex = Create(@"^[-+]?\d*\.?\d*$", Pcre2CompileOptions.Ucp,
+            new Utf8Pcre2ExecutionLimits { MatchLimit = 100, DepthLimit = 1, HeapLimitInBytes = 1 });
+        Assert.True(regex.IsMatch("-12.5"u8));
+        Assert.True(regex.IsMatch("+١.𝟚\n"u8));
+        Assert.False(regex.IsMatch("3.14x9"u8));
+    }
+
     [Theory]
     [InlineData("^((.)(?1)\\2|.?)$", Pcre2CompileOptions.None, "abccba")]
     [InlineData(".*(ss)", Pcre2CompileOptions.None, "xxss")]
     [InlineData("(\\d{4}[- ]){3}\\d{3,4}", Pcre2CompileOptions.None, "4111-1111-1111-1111")]
-    [InlineData("^[-+]?\\d*\\.?\\d*$", Pcre2CompileOptions.None, "12.5")]
+    [InlineData("^[+-]?[+-]?[+-]?\\d*$", Pcre2CompileOptions.None, "++12")]
     [InlineData("^([0-9]+)(\\-| |$)(.*)$", Pcre2CompileOptions.None, "200 ok")]
     public void AllocatingSearchBreachesHeap(string pattern, Pcre2CompileOptions options, string inputText)
     {

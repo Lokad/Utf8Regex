@@ -191,6 +191,58 @@ internal sealed class Pcre2BacktrackingLowerer
         return (own.Terms.AsSpan().SequenceEqual(other.Terms) ? children.Length - 4 : -1, final);
     }
 
+    private bool CanCommitTerminalOptional(IPcre2BacktrackingNode[] children, int index, Utf8ConstructionBudget budget)
+    {
+        if (children.Length - index is < 2 or > 8 ||
+            children[index] is not Pcre2RepeatBacktrackingNode { Minimum: 0, Maximum: 1,
+                Preference: Pcre2RepeatPreference.Greedy, Body: Pcre2TokenBacktrackingNode { Token: var optional } } ||
+            (optional.Options & Pcre2CharacterOptions.Caseless) != 0 ||
+            children[^1] is not Pcre2TokenBacktrackingNode { Token: var end } ||
+            !TryGetTerminalEnd(end, out var allowTrailingLf)) return false;
+
+        AsciiCharClass ascii;
+        if (optional.Kind == Pcre2CharacterTokenKind.Literal && optional.Literal.IsAscii)
+            ascii = AsciiCharClass.ForByte((byte)optional.Literal.Value);
+        else if (optional.Kind == Pcre2CharacterTokenKind.CharacterClass &&
+            optional.CharacterClass is { Negated: false, Terms.Length: <= 16 } characterClass)
+        {
+            foreach (var term in characterClass.Terms)
+            {
+                budget.ChargeWork(1);
+                if (term is not { Kind: Pcre2CharacterClassTermKind.Range, Negated: false, Range.High: < 128 }) return false;
+            }
+            ascii = characterClass.AsciiSet;
+        }
+        else return false;
+
+        // A skipped optional would leave its consumed byte at the start of
+        // the suffix. Every possible first consumer must reject that byte.
+        for (var cursor = index + 1; cursor < children.Length - 1; cursor++)
+        {
+            budget.ChargeWork(1);
+            var child = children[cursor];
+            var minimum = 1;
+            if (child is Pcre2RepeatBacktrackingNode repeat)
+            {
+                if (repeat.Maximum == 0) continue;
+                minimum = repeat.Minimum;
+                child = repeat.Body;
+            }
+            if (child is not Pcre2TokenBacktrackingNode { Token: var next } ||
+                (next.Options & Pcre2CharacterOptions.Caseless) != 0) return false;
+            var disjoint = next.Kind switch
+            {
+                Pcre2CharacterTokenKind.Literal => !next.Literal.IsAscii || !ascii.Contains((byte)next.Literal.Value),
+                Pcre2CharacterTokenKind.CharacterClass => ascii.IsDisjoint(next.CharacterClass.AsciiSet),
+                _ => false,
+            };
+            if (!disjoint) return false;
+            if (minimum > 0) return true;
+        }
+
+        return !allowTrailingLf || !ascii.Contains((byte)'\n');
+    }
+
     private void EmitPossessiveTokenRepeat(Pcre2RepeatBacktrackingNode repeat)
     {
         _autoPossessiveRepeatCount++;
@@ -324,7 +376,8 @@ internal sealed class Pcre2BacktrackingLowerer
                     var (earlierRepeat, finalRepeat) = FindTerminalRepeatsWithoutRewind(sequence.Children, budget);
                     for (var index = 0; index < sequence.Children.Length; index++)
                     {
-                        if (index == earlierRepeat || index == finalRepeat)
+                        if (index == earlierRepeat || index == finalRepeat ||
+                            CanCommitTerminalOptional(sequence.Children, index, budget))
                         {
                             EmitPossessiveTokenRepeat((Pcre2RepeatBacktrackingNode)sequence.Children[index]);
                             continue;
