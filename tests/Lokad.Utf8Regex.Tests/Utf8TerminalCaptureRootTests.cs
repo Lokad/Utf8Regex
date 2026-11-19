@@ -89,13 +89,13 @@ public sealed class Utf8TerminalCaptureRootTests
         var reference = new Utf8SliceInvocation(new(ulong.MaxValue, 1, working), Timeout.InfiniteTimeSpan, default);
         Assert.True(reference.Ledger.TryReserve(17));
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
-        var result = Utf8SliceRunner.TryMatchAt(program, bytes, 0, starts, ends, false, true, ref reference);
+        var result = Utf8SliceRunner.TryMatchAt(program, bytes, 0, starts, ends, true, ref reference);
         Assert.True(result.IsMatch); Assert.Equal(expected.Starts, starts); Assert.Equal(expected.Ends, ends);
         for (var cap = 1UL; cap < reference.Budget.Steps; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 1, working), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(17)); Array.Fill(starts, 99); Array.Fill(ends, 99);
-            var refused = Utf8SliceRunner.TryMatchAt(program, bytes, 0, starts, ends, false, true, ref invocation);
+            var refused = Utf8SliceRunner.TryMatchAt(program, bytes, 0, starts, ends, true, ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, refused.Breach);
             Assert.False(refused.IsMatch); Assert.All(starts, value => Assert.Equal(-1, value)); Assert.All(ends, value => Assert.Equal(-1, value));
             Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
@@ -107,7 +107,8 @@ public sealed class Utf8TerminalCaptureRootTests
     {
         var invocation = new Utf8SliceInvocation(new(1000000, 1000, 1 << 20), Timeout.InfiniteTimeSpan, default);
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
-        var result = Utf8SliceRunner.TryMatchAt(program, input, start, starts, ends, history, true, ref invocation);
+        var result = Utf8SliceRunner.TryMatchAt(program, input, start, starts, ends, true, ref invocation,
+            collectHistory: history);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Utf8SliceRunner.ReleaseHistory(result.CaptureStarts, result.CaptureLengths, ref invocation);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);

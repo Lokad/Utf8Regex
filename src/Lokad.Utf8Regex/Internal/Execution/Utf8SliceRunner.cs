@@ -302,34 +302,9 @@ internal static partial class Utf8SliceRunner
         int[] captureStarts,
         int[] captureEnds,
         bool startIsScalarBoundary,
-        ref Utf8SliceInvocation invocation)
-    {
-        return TryMatchAt(program, input, start, captureStarts, captureEnds, false, startIsScalarBoundary, ref invocation);
-    }
-
-    internal static Utf8SliceMatchOutcome TryMatchAt(
-        Utf8SliceProgram program,
-        ReadOnlySpan<byte> input,
-        int start,
-        int[] captureStarts,
-        int[] captureEnds,
-        bool collectHistory,
-        bool startIsScalarBoundary,
-        ref Utf8SliceInvocation invocation)
-    {
-        return TryMatchAt(program, input, start, captureStarts, captureEnds, collectHistory, false, startIsScalarBoundary, ref invocation);
-    }
-
-    internal static Utf8SliceMatchOutcome TryMatchAt(
-        Utf8SliceProgram program,
-        ReadOnlySpan<byte> input,
-        int start,
-        int[] captureStarts,
-        int[] captureEnds,
-        bool collectHistory,
-        bool requireNonEmpty,
-        bool startIsScalarBoundary,
-        ref Utf8SliceInvocation invocation)
+        ref Utf8SliceInvocation invocation,
+        bool collectHistory = false,
+        bool requireNonEmpty = false)
     {
         if (program.IsNonBacktracking)
         {
@@ -365,7 +340,7 @@ internal static partial class Utf8SliceRunner
         // attempts while preserving their own empty-match and anchor progress.
         if (program.IsNonBacktracking)
             return TryMatchAt(program, input, start, captureStarts, captureEnds,
-                collectHistory, requireNonEmpty, startIsScalarBoundary, ref invocation);
+                startIsScalarBoundary, ref invocation, collectHistory, requireNonEmpty);
         if (!startIsScalarBoundary || (uint)start > (uint)input.Length ||
             start < input.Length && (input[start] & 0xC0) == 0x80)
             return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None, null, null);

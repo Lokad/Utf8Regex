@@ -69,7 +69,7 @@ public sealed class Utf8RepeatProofPredicateTests
         var input = Encoding.UTF8.GetBytes(text);
         var invocation = new Utf8SliceInvocation(new(limit, 4096, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Utf8Validation.ThrowIfInvalidOnly(input);
-        var result = Utf8SliceRunner.TryMatchAt(program, input, 0, [], [], false, true, ref invocation);
+        var result = Utf8SliceRunner.TryMatchAt(program, input, 0, [], [], true, ref invocation);
         return (result.IsMatch, result.EndIndex, result.Breach, invocation.Budget.Steps, calls.ToArray(), invocation.Ledger.ReservedBytes);
     }
 }

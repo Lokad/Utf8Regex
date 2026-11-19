@@ -49,7 +49,8 @@ internal static class Utf8ScalarCaptureWitness
         var ends = new int[program.GroupCount];
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(invocation.Ledger.TryReserve(7));
-        var outcome = Utf8SliceRunner.TryMatchAt(program, Encoding.ASCII.GetBytes(text), start, starts, ends, true, true, ref invocation);
+        var outcome = Utf8SliceRunner.TryMatchAt(program, Encoding.ASCII.GetBytes(text), start, starts, ends,
+            true, ref invocation, collectHistory: true);
         try
         {
             Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);

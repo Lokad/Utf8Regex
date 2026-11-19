@@ -93,10 +93,9 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                 startByte,
                 slots.Starts,
                 slots.Ends,
-                false,
-                requireNonEmpty,
                 Pcre2SliceDriver.IsScalarAligned(_input.Bytes, startByte),
-                ref _invocation);
+                ref _invocation,
+                requireNonEmpty: requireNonEmpty);
             Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
             if (!outcome.IsMatch)
             {
@@ -423,8 +422,6 @@ internal static class Pcre2SliceDriver
                     position,
                     slots.Starts,
                     slots.Ends,
-                    false,
-                    false,
                     Pcre2SliceDriver.IsScalarAligned(bytes, position),
                     ref invocation);
                 ThrowIfSliceBreached(outcome.Breach);

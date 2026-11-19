@@ -58,7 +58,8 @@ public sealed class Utf8ReversibleMatchStateTests
         Assert.True(invocation.Ledger.TryReserve(7));
         ticks = 50;
         Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-            Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, true, ref invocation));
+            Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends,
+                true, ref invocation, collectHistory: true));
         Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         invocation.Ledger.Release(7);
         Utf8ScalarCaptureWitness.AssertAsciiAt(program, new Regex("((?:a|b)*)z"), "abz", 0);

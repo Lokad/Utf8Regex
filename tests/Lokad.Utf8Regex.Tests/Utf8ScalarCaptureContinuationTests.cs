@@ -44,7 +44,8 @@ public sealed class Utf8ScalarCaptureContinuationTests
         var starts = new int[program.GroupCount]; var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(baseline.Ledger.TryReserve(7));
-        var outcome = Utf8SliceRunner.TryMatchAt(program, "ab"u8, 0, starts, ends, true, true, ref baseline);
+        var outcome = Utf8SliceRunner.TryMatchAt(program, "ab"u8, 0, starts, ends,
+            true, ref baseline, collectHistory: true);
         Assert.True(outcome.IsMatch);
         Assert.Equal(2, outcome.EndIndex);
         Assert.Equal(new[] { 0 }, outcome.CaptureStarts?[0]);
@@ -59,7 +60,8 @@ public sealed class Utf8ScalarCaptureContinuationTests
         {
             var denied = new Utf8SliceInvocation(limit, Regex.InfiniteMatchTimeout, CancellationToken.None);
             Assert.True(denied.Ledger.TryReserve(7));
-            var failed = Utf8SliceRunner.TryMatchAt(program, "ab"u8, 0, starts, ends, true, true, ref denied);
+            var failed = Utf8SliceRunner.TryMatchAt(program, "ab"u8, 0, starts, ends,
+                true, ref denied, collectHistory: true);
             Assert.False(failed.IsMatch);
             Assert.Equal(limit.MaxWorkSteps == 0 ? Utf8ExecutionLimitKind.WorkingBytes : Utf8ExecutionLimitKind.WorkSteps, failed.Breach);
             Assert.Null(failed.CaptureStarts);
@@ -88,11 +90,13 @@ public sealed class Utf8ScalarCaptureContinuationTests
         invocation.CheckpointHook = _ => { entered = true; if (expire) ticks = 50; else source.Cancel(); };
         if (expire)
             Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-                Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, true, ref invocation));
+                Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends,
+                    true, ref invocation, collectHistory: true));
         else
         {
             var failure = Assert.Throws<OperationCanceledException>(() =>
-                Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, true, ref invocation));
+                Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends,
+                    true, ref invocation, collectHistory: true));
             Assert.Equal(source.Token, failure.CancellationToken);
         }
         Assert.True(entered);

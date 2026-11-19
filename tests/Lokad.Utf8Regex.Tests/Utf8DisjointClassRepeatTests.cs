@@ -474,7 +474,7 @@ public sealed class Utf8DisjointClassRepeatTests
         var ends = new int[program.GroupCount];
         var invocation = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(invocation.Ledger.TryReserve(17));
-        var actual = Utf8SliceRunner.TryMatchAt(program, input, prefix.Length, starts, ends, false, true, ref invocation);
+        var actual = Utf8SliceRunner.TryMatchAt(program, input, prefix.Length, starts, ends, true, ref invocation);
         Assert.True(actual.IsMatch);
         Assert.Equal(Utf8ExecutionLimitKind.None, actual.Breach);
         Assert.Equal(prefix.Length + length, actual.EndIndex);
@@ -493,14 +493,14 @@ public sealed class Utf8DisjointClassRepeatTests
         var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(new(100000, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
         Assert.True(baseline.Ledger.TryReserve(17));
-        var result = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, false, true, ref baseline);
+        var result = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref baseline);
         Assert.True(result.IsMatch);
         Assert.Equal(17UL, baseline.Ledger.ReservedBytes);
         for (ulong work = 1; work < baseline.Budget.Steps; work++)
         {
             var invocation = new Utf8SliceInvocation(new(work, 128, 1 << 20), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(17));
-            var denied = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, false, true, ref invocation);
+            var denied = Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
             Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
         }
@@ -533,10 +533,11 @@ public sealed class Utf8DisjointClassRepeatTests
         };
         if (deadline)
             Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-                Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, false, true, ref invocation));
+                Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref invocation));
         else
             Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
-                Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, false, true, ref invocation)).CancellationToken);
+                Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends,
+                    true, ref invocation)).CancellationToken);
         Assert.True(entered);
         Assert.Equal(17UL, invocation.Ledger.ReservedBytes);
     }

@@ -174,7 +174,7 @@ public sealed class Utf8TerminalCaptureRepeatTests
             var failure = Record.Exception(() =>
             {
                 if (count) Utf8SliceRunner.CountFromBytes(program, input, 0, starts, ends, ref invocation);
-                else Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, false, true, ref invocation);
+                else Utf8SliceRunner.TryMatchAt(program, input, 0, starts, ends, true, ref invocation);
             });
             if (timeout) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
             else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
