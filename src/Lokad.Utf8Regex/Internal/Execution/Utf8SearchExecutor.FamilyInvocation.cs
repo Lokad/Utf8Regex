@@ -233,6 +233,10 @@ internal static partial class Utf8SearchExecutor
         ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
         var breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
+        var candidateBoundary = confirm && !reverse ? leadingBoundary : Utf8BoundaryRequirement.None;
+        var matchBoundary = reverse ? leadingBoundary : Utf8BoundaryRequirement.None;
+        var confirmAfterComparison = confirm && (matchBoundary != Utf8BoundaryRequirement.None ||
+            trailingBoundary != Utf8BoundaryRequirement.None || trailingLiteral is { Length: > 0 });
         var low = start;
         var high = end - 1;
         if (literals.Length > 0)
@@ -339,6 +343,19 @@ internal static partial class Utf8SearchExecutor
                     continue;
                 }
 
+                if (candidateBoundary != Utf8BoundaryRequirement.None)
+                {
+                    // Forward candidates are UTF-8 lead bytes. Every branch at
+                    // this start has the same leading boundary requirement.
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                    if (!Utf8ScalarWordBoundary.MatchesRequirement(candidateBoundary, input, candidateByte))
+                    {
+                        low = candidateByte + 1;
+                        continue;
+                    }
+                }
+
                 for (var id = 0; id < literals.Length; id++)
                 {
                     breach = invocation.TryChargeInputStep();
@@ -354,9 +371,8 @@ internal static partial class Utf8SearchExecutor
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     if (!equal) continue;
                     var accepted = true;
-                    if (confirm && (leadingBoundary != Utf8BoundaryRequirement.None ||
-                        trailingBoundary != Utf8BoundaryRequirement.None || trailingLiteral is { Length: > 0 }))
-                        breach = TryConfirmLiteral(leadingBoundary, trailingBoundary, trailingLiteral,
+                    if (confirmAfterComparison)
+                        breach = TryConfirmLiteral(matchBoundary, trailingBoundary, trailingLiteral,
                             input, candidate, literal.Length,
                             ref invocation, out accepted);
                     if (breach != Utf8ExecutionLimitKind.None) return breach;

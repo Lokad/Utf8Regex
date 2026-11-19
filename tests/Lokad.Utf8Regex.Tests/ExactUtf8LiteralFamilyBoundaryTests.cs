@@ -136,6 +136,22 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
     }
 
     [Fact]
+    public void SharedLeadingBoundaryRejectsInteriorHeadsBeforeBranchWork()
+    {
+        var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("éthe ", 32)) + " and!");
+        using var regex = new Utf8Regex(@"\b(?:the|and|that|have|for)\b", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 200 }
+        });
+
+        Assert.True(regex.IsMatch(bytes));
+        using var cursor = regex.CreateMatchCursor(bytes);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal("and"u8.ToArray(), match.GetValueMemory().ToArray());
+        Assert.False(cursor.MoveNext(out _));
+    }
+
+    [Fact]
     public void ControlledWordFamilyBooleanChecksItsBudgetAndOriginalToken()
     {
         const string pattern = @"\b(?:the|and|that|have|for)\b";
