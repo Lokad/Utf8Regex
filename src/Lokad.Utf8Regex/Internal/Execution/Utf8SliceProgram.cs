@@ -911,7 +911,7 @@ internal static class Utf8SliceLowerer
     {
         // Slice nodes are records: structural hashing itself would recurse.
         // One identity cache serves the main and every nested assertion program.
-        using var frames = Utf8ConstructionFrames<AnalysisFrame>.Create(budget, new(root, new(root, budget)));
+        using var frames = Utf8ConstructionFrames<AnalysisFrame>.Create(budget, new(root));
         var facts = Utf8ConstructionMap<Utf8SliceNode, NodeFacts>.Create(budget, ReferenceEqualityComparer.Instance);
         try
         {
@@ -920,20 +920,16 @@ internal static class Utf8SliceLowerer
                 budget.ChargeWork(1);
                 var index = frames.Count - 1;
                 var frame = frames[index];
-                bool hasChild;
-                try { hasChild = frame.Children.MoveNext(); }
-                finally { frames[index] = frame; }
-                if (hasChild)
+                if (frame.NextChild(budget) is { } child)
                 {
-                    var child = frame.Children.Current;
-                    if (!facts.ContainsKey(child)) frames.Push(new(child, new(child, budget)));
+                    var analyzed = facts.TryGetValue(child, out var childFacts);
+                    if (analyzed) frame.WritesGroup |= childFacts.WritesGroup;
+                    frames[index] = frame;
+                    if (!analyzed) frames.Push(new(child));
                     continue;
                 }
                 frames.Pop();
                 var node = frame.Node;
-                var writes = node is Utf8SliceNode.CaptureNode or Utf8SliceNode.BalanceNode;
-                var children = new ChildCursor(node, budget);
-                while (children.MoveNext()) writes |= facts[children.Current].WritesGroup;
                 var empty = node switch
                 {
                     Utf8SliceNode.EmptyNode or Utf8SliceNode.AnchorNode or Utf8SliceNode.BoundaryNode or
@@ -961,7 +957,13 @@ internal static class Utf8SliceLowerer
                     Utf8SliceNode.ConditionalNode conditional => facts[conditional.YesBody].IsZeroWidth && facts[conditional.NoBody].IsZeroWidth,
                     _ => false,
                 });
-                facts[node] = new NodeFacts(empty, writes, zeroWidth, minimum, maximum);
+                facts[node] = new NodeFacts(empty, frame.WritesGroup, zeroWidth, minimum, maximum);
+                if (frame.WritesGroup && index > 0)
+                {
+                    var parent = frames[index - 1];
+                    parent.WritesGroup = true;
+                    frames[index - 1] = parent;
+                }
             }
             return facts;
         }
@@ -1051,46 +1053,40 @@ internal static class Utf8SliceLowerer
         static int Saturate(long value) => value > int.MaxValue ? int.MaxValue : (int)value;
     }
 
-    private struct AnalysisFrame(Utf8SliceNode node, ChildCursor children)
+    private struct AnalysisFrame(Utf8SliceNode node)
     {
-        internal Utf8SliceNode Node = node;
-        internal ChildCursor Children = children;
-    }
-
-    // Borrowed IR traversal has no enumerable/boxed state. Empty alternatives
-    // spend shared work even when they contain no child to push.
-    private struct ChildCursor(Utf8SliceNode node, Utf8ConstructionBudget budget)
-    {
+        internal readonly Utf8SliceNode Node = node;
+        internal bool WritesGroup = node is Utf8SliceNode.CaptureNode or Utf8SliceNode.BalanceNode;
         private int _index, _branch;
-        internal Utf8SliceNode Current = node;
-        internal bool MoveNext()
+
+        // Empty alternatives spend shared work even when they contain no child to push.
+        internal Utf8SliceNode? NextChild(Utf8ConstructionBudget budget)
         {
             budget.ChargeWork(1);
-            switch (node)
+            switch (Node)
             {
                 case Utf8SliceNode.ConcatNode concat:
-                    if (_index == concat.Children.Length) return false;
-                    Current = concat.Children[_index++]; return true;
+                    return _index == concat.Children.Length ? null : concat.Children[_index++];
                 case Utf8SliceNode.AlternationNode alternate:
                     while (_branch < alternate.Branches.Length)
                     {
                         budget.ChargeWork(1);
                         if (_index < alternate.Branches[_branch].Length)
-                        {
-                            Current = alternate.Branches[_branch][_index++]; return true;
-                        }
+                            return alternate.Branches[_branch][_index++];
                         _branch++; _index = 0;
                     }
-                    return false;
+                    return null;
                 case Utf8SliceNode.ConditionalNode conditional:
-                    var index = _index++;
-                    if (index == 0) { Current = conditional.YesBody; return true; }
-                    if (index == 1) { Current = conditional.NoBody; return true; }
-                    if (index == 2 && conditional.TestBody is { } test) { Current = test; return true; }
-                    return false;
+                    return _index++ switch
+                    {
+                        0 => conditional.YesBody,
+                        1 => conditional.NoBody,
+                        2 => conditional.TestBody,
+                        _ => null,
+                    };
                 default:
-                    if (_index++ != 0) return false;
-                    var body = node switch
+                    if (_index++ != 0) return null;
+                    return Node switch
                     {
                         Utf8SliceNode.CaptureNode capture => capture.Body,
                         Utf8SliceNode.BalanceNode balance => balance.Body,
@@ -1100,8 +1096,6 @@ internal static class Utf8SliceLowerer
                         Utf8SliceNode.LookbehindNode behind => behind.Body,
                         _ => null,
                     };
-                    if (body is null) return false;
-                    Current = body; return true;
             }
         }
     }

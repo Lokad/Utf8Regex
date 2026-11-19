@@ -645,6 +645,7 @@ or an empty pattern for byte source diagnostics.
 
 Admission precedes major buffers, instruction expansion and growth overlap.
 Construction work limits and interruption cover parsing, lowering and emission.
+Covered work and byte charges can change with compiler algorithms and storage layouts.
 Unpublished storage is released on failure. Replacement preparation uses
 its own construction backstops within the original invocation deadline.
 Finite working bytes also cover cold preparation and can cause
