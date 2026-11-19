@@ -722,12 +722,27 @@ internal static partial class Utf8SliceRunner
     internal static Utf8ExecutionLimitKind TrySeekBeginning(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation)
     {
-        var multiline = program.Instructions[0].B != 0;
+        var instructions = program.Instructions;
         var leadingLiteral = !program.IgnoreCase && !program.CanMatchEmpty &&
-            program.Instructions.Length > 1 &&
-            program.Instructions[1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } leading &&
+            instructions.Length > 1 &&
+            instructions[1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } leading &&
             (uint)leading.A < 0x80 ? leading.A : -1;
-        if (multiline && leadingLiteral >= 0)
+        if (instructions[0].B == 0)
+        {
+            if (position != 0)
+            {
+                position = -1;
+                return Utf8ExecutionLimitKind.None;
+            }
+            if (leadingLiteral < 0) return Utf8ExecutionLimitKind.None;
+
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (input.IsEmpty || input[0] != leadingLiteral) position = -1;
+            return Utf8ExecutionLimitKind.None;
+        }
+        if (leadingLiteral >= 0)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
@@ -755,36 +770,19 @@ internal static partial class Utf8SliceRunner
             position = -1;
             return Utf8ExecutionLimitKind.None;
         }
-        while (true)
+        if (position == 0 || input[position - 1] == (byte)'\n') return Utf8ExecutionLimitKind.None;
+        while (position < input.Length)
         {
-            if (position != 0 && !multiline) { position = -1; return Utf8ExecutionLimitKind.None; }
-            if (position != 0 && input[position - 1] != (byte)'\n')
-            {
-                while (position < input.Length)
-                {
-                    var seekBreach = invocation.TryChargeInputStep();
-                    if (seekBreach != Utf8ExecutionLimitKind.None) return seekBreach;
-                    var length = Math.Min(2048, input.Length - position);
-                    var newline = input.Slice(position, length).IndexOf((byte)'\n');
-                    position += newline >= 0 ? newline + 1 : length;
-                    if (newline >= 0) break;
-                }
-                // A trailing LF still admits the final empty line for patterns
-                // without a mandatory literal; exhaustion elsewhere does not.
-                if (position == input.Length && input[position - 1] != (byte)'\n')
-                { position = -1; return Utf8ExecutionLimitKind.None; }
-            }
-            if (leadingLiteral < 0) return Utf8ExecutionLimitKind.None;
-            // A mandatory first literal rejects this line start before VM state
-            // acquisition. This is necessary only; survivors still run the VM.
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (position == input.Length) { position = -1; return Utf8ExecutionLimitKind.None; }
-            if (input[position] == leadingLiteral) return Utf8ExecutionLimitKind.None;
-            position = AdvancePastScalar(input, position, false);
-            if (position < 0) return Utf8ExecutionLimitKind.None;
+            var length = Math.Min(2048, input.Length - position);
+            var newline = input.Slice(position, length).IndexOf((byte)'\n');
+            position += newline >= 0 ? newline + 1 : length;
+            // A trailing LF also admits the final empty line.
+            if (newline >= 0) return Utf8ExecutionLimitKind.None;
         }
+        position = -1;
+        return Utf8ExecutionLimitKind.None;
     }
 
     // Count receives caller-valid text and needs no coordinate map:
