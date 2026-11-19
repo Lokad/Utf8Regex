@@ -6,6 +6,41 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2AlternationRepeatTests
 {
     [Fact]
+    public void ControlledCountRejectsMissingFinalByteAfterTheRequestedStart()
+    {
+        const string pattern = "(?:ab|a)+z";
+        var subject = Encoding.UTF8.GetBytes("😀z " + string.Concat(Enumerable.Repeat("ababax ", 1024)));
+        var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 16 } };
+        using var regex = new Utf8Pcre2Regex(pattern, policy: policy);
+        using var source = new CancellationTokenSource();
+        Assert.Equal(0, regex.Count(subject, "😀z "u8.Length, cancellationToken: source.Token));
+
+        using var tight = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2 }
+        });
+        var failure = Assert.Throws<Pcre2MatchException>(() =>
+            tight.Count(subject, "😀z "u8.Length, cancellationToken: source.Token));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
+    }
+
+    [Theory]
+    [InlineData("(?:ab|a)+z", "ababax ")]
+    [InlineData("(?:ab|a|bc)+z", "abcz ")]
+    [InlineData("(?:(?:ab|a)+y|(?:ab|a)+z)", "abay ")]
+    [InlineData("(?:(?:ab|a)+é|(?:ab|a)+z)", "abaé ")]
+    public void FinalByteSearchKeepsEverySuccessfulAlternative(string pattern, string token)
+    {
+        var text = "😀 " + string.Concat(Enumerable.Repeat(token, 128));
+        var subject = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8Pcre2Regex(pattern);
+        using var core = new Utf8Regex(pattern);
+        var count = Regex.Count(text, pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(count, regex.Count(subject));
+        Assert.Equal(count, core.Count(subject));
+    }
+
+    [Fact]
     public void AlternationRepeatsKeepPublicValuesAndOutputs()
     {
         var regex = new Utf8Pcre2Regex("(?:ab|a)+z");

@@ -842,6 +842,15 @@ internal static partial class Utf8SliceRunner
             ? (-1, (byte)0, -1, (byte)0, -1, false)
             : program.LeadingAsciiCandidate;
         var checkBranchedPrefix = leadingAsciiFirst >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
+        if (checkBranchedPrefix && input.Length - fromByte >= 256 && program.RequiredUnanchoredFinalByte is { } finalByte)
+        {
+            // One bounded required-byte search can reject a whole Count before
+            // trying every prefix. A hit leaves the original subject and VM order intact.
+            var suffix = fromByte;
+            var breach = TrySeekAsciiCandidate(input, ref suffix, finalByte, finalByte, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+            if (suffix < 0) return new(0, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+        }
         var branchWindow = checkBranchedPrefix && input.Length - fromByte >= 256
             ? FindBranchedAsciiLiteralWindow(program.Instructions, leadingScalarIndex) : default;
         var checkRepeatChain = leadingAsciiFirst >= 0 && leadingScalarIndex == 1 && CanSkipShortRepeatChain(program);

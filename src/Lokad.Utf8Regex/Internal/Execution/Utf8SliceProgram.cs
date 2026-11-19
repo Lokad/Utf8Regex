@@ -425,7 +425,10 @@ internal sealed class Utf8SliceProgram
         // anchor can then still exclude the last scalar on nonempty extents.
         if (!rightToLeft && !isNonBacktracking && (!canMatchEmpty || instructions is
             [{ Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0 }, ..]))
-            RequiredFinalAscii = FindRequiredFinalAscii(Utf8ConstructionScope.CurrentBudget);
+        {
+            RequiredFinalAscii = FindRequiredFinalAscii(Utf8ConstructionScope.CurrentBudget, out var unanchoredByte);
+            RequiredUnanchoredFinalByte = unanchoredByte;
+        }
     }
 
     internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
@@ -604,6 +607,7 @@ internal sealed class Utf8SliceProgram
         = (-1, -1, -1, 0, false);
     private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
+    internal byte? RequiredUnanchoredFinalByte { get; }
 
     private bool CanReadCapturesFromSlots()
     {
@@ -688,15 +692,23 @@ internal sealed class Utf8SliceProgram
         return true;
     }
 
-    private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) FindRequiredFinalAscii(Utf8ConstructionBudget budget)
+    private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) FindRequiredFinalAscii(
+        Utf8ConstructionBudget budget, out byte? unanchoredByte)
     {
+        unanchoredByte = null;
         var code = Instructions.AsSpan();
         if (code.Length is < 2 or > 128 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return default;
         var end = FindTerminalEnd(code[..^1]);
-        if (end < 0) return default;
+        var unanchored = end < 0;
+        if (unanchored)
+        {
+            if (RepeatCount == 0 || CanMatchEmpty || LeadingAsciiCandidate is not { FromBranch: true, First: >= 0 } ||
+                code[^2] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) return default;
+            end = code.Length - 1;
+        }
 
         // An atom can provide the final scalar if its continuation can reach
-        // the anchor without consuming. Ignore repeat minima for this proof:
+        // the anchor or Accept without consuming. Ignore repeat minima for this proof:
         // admitting an extra possible last atom only widens the set.
         Span<bool> empty = stackalloc bool[end + 1];
         empty[end] = true;
@@ -751,13 +763,23 @@ internal sealed class Utf8SliceProgram
                 case Utf8SliceInstructionKind.Backref:
                     if (next)
                     {
-                        if (!TryGetUnfoldedAsciiSet(instruction, out var set, out _)) return default;
+                        if (!TryGetUnfoldedAsciiSet(instruction, out var set, out var asciiOnly) ||
+                            unanchored && !asciiOnly) return default;
                         ascii = Utf8SearchAsciiSet.FromMasks(ascii.Low | set.Low, ascii.High | set.High);
                     }
                     break;
                 default:
                     return default;
             }
+        }
+        if (unanchored)
+        {
+            // Collecting every possible last atom also accounts for branches
+            // that jump past the last literal in storage.
+            var last = (byte)code[^2].A;
+            var required = default(Utf8SearchAsciiSet).With(last);
+            if (ascii.Low == required.Low && ascii.High == required.High) unanchoredByte = last;
+            return default;
         }
         return ascii.Low == ulong.MaxValue && ascii.High == ulong.MaxValue
             ? default : ((Utf8SliceAnchorKind)code[end].A, ascii);

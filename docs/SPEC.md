@@ -134,9 +134,11 @@ results/cursor aliases, original synchronous cancellation and absolute deadlines
 are unchanged. Native byte discovery and the general VM avoid unrelated suffix
 preparation when no live eligibility or algorithm state needs it. Some routes
 still inspect ASCII/scalar facts, and NonBacktracking batches can prepare a scalar
-viability table. These are matching requirements, not subject-validity passes. No subject
-path computes UTF-16 totals or coordinate maps. Removed validation/description
-work can lower numerical limits; charges remain version/route dependent.
+viability table. Forward Count can reject a long subject by searching for a
+proved required final ASCII byte. Controlled searches charge each bounded block
+and retain the invocation's cancellation and deadline. Matching uses byte
+coordinates throughout. Removing validation and coordinate work can lower
+numerical limits. Charges remain version and route dependent.
 
 Core admits documented .NET-style syntax: literals/classes/subtraction, inline
 options, greedy/lazy repetition, captures/history, references, balancing groups,
