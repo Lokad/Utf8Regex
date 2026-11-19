@@ -155,6 +155,46 @@ public sealed class Pcre2CaptureRollbackTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void LongRollbackChecksTheOriginalInterruption(bool cancel)
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?:(?<each>a){256}(*MARK:first)\k<each>|a+(*MARK:second))\z",
+            policy: new Utf8RegexPolicy { MatchTimeout = TimeSpan.FromMilliseconds(20) });
+        using var cancellation = new CancellationTokenSource();
+        var subject = Encoding.UTF8.GetBytes(new string('a', 256));
+        var armed = false;
+        var reachedRollback = false;
+        // Trigger during capture restoration so ordinary VM and publication
+        // polls cannot satisfy this witness. The surrounding retry can inline.
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (!armed || !Environment.StackTrace.Contains("Pcre2BacktrackingRunner.RollbackCaptures(", StringComparison.Ordinal))
+                return 0;
+            reachedRollback = true;
+            if (!cancel) return 25;
+            cancellation.Cancel();
+            return 0;
+        });
+        Assert.True(regex.IsMatch(subject));
+        armed = true;
+        var failure = Record.Exception(() => { _ = regex.IsMatch(subject, cancellationToken: cancellation.Token); });
+        Assert.True(reachedRollback, $"The retry clock was not reached. Matching raised {failure}.");
+        if (cancel)
+        {
+            var error = Assert.IsType<OperationCanceledException>(failure);
+            Assert.Equal(cancellation.Token, error.CancellationToken);
+        }
+        else
+        {
+            var error = Assert.IsType<Pcre2MatchException>(failure);
+            Assert.Equal(Pcre2ErrorKind.Timeout, error.ErrorKind);
+        }
+        armed = false;
+        Assert.True(regex.IsMatch(subject));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void RetainedScalarCapturesAndAliasesKeepTheOriginalInterruption(bool cancel)
     {
         long ticks = 0;

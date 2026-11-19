@@ -2007,10 +2007,14 @@ internal static class Pcre2BacktrackingRunner
         out int inputIndex,
         out Pcre2BacktrackingFailure failure)
     {
+        // Verb retries can discard several frames in one VM step. The
+        // frame scan and each journal rewind check the same invocation.
+        var scannedFrames = 0;
         while (frames.Count != 0)
         {
+            if ((++scannedFrames & 63) == 0) budget.ChargeWorkspaceStep();
             var frame = frames.Pop();
-            RollbackRepeats(frame.RepeatCheckpoint, ref repeatMutations, counts, positions);
+            RollbackRepeats(frame.RepeatCheckpoint, ref repeatMutations, counts, positions, ref budget);
             RollbackCaptures(
                 frame.CaptureCheckpoint,
                 ref captureMutations,
@@ -2018,7 +2022,8 @@ internal static class Pcre2BacktrackingRunner
                 captureEnds,
                 captureOpenStarts,
                 captureOwners,
-                captureOpenOwners);
+                captureOpenOwners,
+                ref budget);
             RollbackSubroutineCalls(
                 frame.CallCheckpoint,
                 ref subroutineCalls,
@@ -2030,7 +2035,8 @@ internal static class Pcre2BacktrackingRunner
                 ref markMutations,
                 ref markTrail,
                 ref currentMarkId,
-                ref currentMarkPosition);
+                ref currentMarkPosition,
+                ref budget);
             reportedStartOffsetInBytes = frame.ReportedStartOffsetInBytes;
             matchBoundaryWasReset = frame.MatchBoundaryWasReset;
             var resumeOffset = frame.InputOffsetInBytes;
@@ -2076,8 +2082,10 @@ internal static class Pcre2BacktrackingRunner
             if (frame.ControlVerb == Pcre2ControlVerbKind.Then && frame.Instruction >= 0)
             {
                 var targetFrame = -1;
-                for (var index = frames.Count - 1; index >= 0; index--)
+                var lastFrame = frames.Count - 1;
+                for (var index = lastFrame; index >= 0; index--)
                 {
+                    if (((lastFrame - index) & 63) == 63) budget.ChargeWorkspaceStep();
                     if (frames[index].Instruction == frame.Instruction &&
                         frames[index].ResumeAction == Pcre2BacktrackingResumeAction.None)
                     {
@@ -2095,7 +2103,7 @@ internal static class Pcre2BacktrackingRunner
 
             if (frame.ControlVerb == Pcre2ControlVerbKind.Skip && frame.RepeatIdOrNameId >= 0)
             {
-                var namedSkipPosition = FindMarkPosition(frame.RepeatIdOrNameId, markTrail);
+                var namedSkipPosition = FindMarkPosition(frame.RepeatIdOrNameId, markTrail, ref budget);
                 if (namedSkipPosition < 0)
                 {
                     continue;
@@ -2247,8 +2255,9 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> mutations,
         ref Pcre2ResourceBudget budget)
     {
-        while (mutations.Count > checkpoint)
+        for (var remaining = mutations.Count - checkpoint; remaining > 0; remaining--)
         {
+            if ((remaining & 63) == 0) budget.ChargeWorkspaceStep();
             var mutation = mutations.Pop();
             if (mutation.ReturnInstruction < 0)
             {
@@ -2298,10 +2307,12 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2InvocationStateStack<Pcre2MarkMutation> mutations,
         ref Pcre2InvocationStateStack<Pcre2MarkTrailEntry> trail,
         ref int currentMarkId,
-        ref int currentMarkPosition)
+        ref int currentMarkPosition,
+        ref Pcre2ResourceBudget budget)
     {
-        while (mutations.Count > mutationCheckpoint)
+        for (var remaining = mutations.Count - mutationCheckpoint; remaining > 0; remaining--)
         {
+            if ((remaining & 63) == 0) budget.ChargeWorkspaceStep();
             var mutation = mutations.Pop();
             currentMarkId = mutation.PreviousMarkId;
             currentMarkPosition = mutation.PreviousPosition;
@@ -2312,10 +2323,13 @@ internal static class Pcre2BacktrackingRunner
 
     private static int FindMarkPosition(
         int markId,
-        Pcre2InvocationStateStack<Pcre2MarkTrailEntry> trail)
+        Pcre2InvocationStateStack<Pcre2MarkTrailEntry> trail,
+        ref Pcre2ResourceBudget budget)
     {
-        for (var index = trail.Count - 1; index >= 0; index--)
+        var last = trail.Count - 1;
+        for (var index = last; index >= 0; index--)
         {
+            if (((last - index) & 63) == 63) budget.ChargeWorkspaceStep();
             var mark = trail[index];
             if (mark.MarkId == markId)
             {
@@ -2351,10 +2365,12 @@ internal static class Pcre2BacktrackingRunner
         int checkpoint,
         ref Pcre2InvocationStateStack<Pcre2RepeatMutation> mutations,
         Span<int> counts,
-        Span<int> positions)
+        Span<int> positions,
+        ref Pcre2ResourceBudget budget)
     {
-        while (mutations.Count > checkpoint)
+        for (var remaining = mutations.Count - checkpoint; remaining > 0; remaining--)
         {
+            if ((remaining & 63) == 0) budget.ChargeWorkspaceStep();
             var mutation = mutations.Pop();
             counts[mutation.RepeatId] = mutation.PreviousCount;
             positions[mutation.RepeatId] = mutation.PreviousPosition;
@@ -2404,10 +2420,12 @@ internal static class Pcre2BacktrackingRunner
         Span<int> ends,
         Span<int> openStarts,
         Span<int> owners,
-        Span<int> openOwners)
+        Span<int> openOwners,
+        ref Pcre2ResourceBudget budget)
     {
-        while (mutations.Count > checkpoint)
+        for (var remaining = mutations.Count - checkpoint; remaining > 0; remaining--)
         {
+            if ((remaining & 63) == 0) budget.ChargeWorkspaceStep();
             var mutation = mutations.Pop();
             starts[mutation.Slot] = mutation.PreviousStart;
             ends[mutation.Slot] = mutation.PreviousEnd;

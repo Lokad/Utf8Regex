@@ -291,6 +291,8 @@ for ownership and exclusions.
 
 Execution twins preserve the original token. Checks cover bounded input inspection,
 search/VM/grapheme work, projection, byte output and publication.
+Long retries check and charge work in bounded blocks while rewinding journals
+or scanning saved frames and marks.
 One absolute deadline spans lazy advances and controlled preparation.
 Pre-cancellation wins; timeout reports `Pcre2MatchException` / Timeout.
 
