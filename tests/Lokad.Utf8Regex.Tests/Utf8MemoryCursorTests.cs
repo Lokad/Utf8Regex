@@ -78,6 +78,23 @@ public sealed class Utf8MemoryCursorTests
             Assert.Throws<ArgumentOutOfRangeException>(() => new Utf8Regex(".").CreateMatchCursor(bytes, start));
     }
 
+    [Fact]
+    public void BoundaryFamilyCursorAdmitsOnlyItsRangeSnapshot()
+    {
+        var root = new Root();
+        var working = new Account(root) { Maximum = 128 };
+        using var regex = new Utf8Regex(@"\b(?:the|and|that|have|for)\b");
+        using var cursor = regex.CreateMatchCursor("éthe xand forth that\u200d 😀for! and!"u8.ToArray(),
+            startOffsetInBytes: 2, workingMemoryAllowance: working);
+
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(0UL, root.Used);
+        Assert.Equal("for"u8.ToArray(), first.GetValueMemory().ToArray());
+        Assert.Equal("and"u8.ToArray(), second.GetValueMemory().ToArray());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

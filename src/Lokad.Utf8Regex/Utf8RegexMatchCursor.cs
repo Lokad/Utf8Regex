@@ -123,7 +123,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             var program = _program!;
             _invocation.AnchorOriginByte = _origin;
             if (program.GroupCount == 0 && _regex!.TryFindNativeLiteralForResult(_input.Span, _position,
-                    ref _invocation, out var found, out var start, out var end))
+                    ref _invocation, out var found, out var start, out var end, forCoreCursor: true))
                 outcome = new(found, start, end, null, null, Utf8ExecutionLimitKind.None);
             else outcome = _nonBacktracking is { } batch
                 ? batch.FindFirst(program, ref _boundary, _slots.Starts, _slots.Ends, true, ref _invocation)

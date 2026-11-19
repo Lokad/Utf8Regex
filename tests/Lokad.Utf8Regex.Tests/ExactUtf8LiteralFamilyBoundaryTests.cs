@@ -359,6 +359,12 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
 
         Assert.Equal(expectedMatches, actualMatches);
 
+        actualMatches.Clear();
+        using (var cursor = actual.CreateMatchCursor(bytes))
+            while (cursor.MoveNext(out var match))
+                actualMatches.Add((match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes - match.Value.StartOffsetInBytes));
+        Assert.Equal(expectedMatches, actualMatches);
+
         var expectedSplits = new List<(int ByteIndex, int ByteLength, string Value)>();
         foreach (var split in expected.EnumerateSplits(subject.Projected))
         {

@@ -31,15 +31,18 @@ public sealed partial class Utf8Regex
     // as Core Count. Result discovery retains its existing three-needle proof.
     internal bool CanCountNativeLiteralForResult => CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8);
 
-    // Borrow the adapter's already validated subject and invocation. Returning
-    // false declines the route without searching; found describes an accepted
-    // complete match, not a necessary start hint. The caller owns projection.
+    // Borrow caller-valid input and the existing invocation. The Core cursor
+    // can also confirm its own scalar word boundaries before projecting a range.
+    // Returning false declines the route without searching.
     internal bool TryFindNativeLiteralForResult(ReadOnlySpan<byte> input, int startOffsetInBytes,
-        ref Utf8SliceInvocation invocation, out bool found, out int start, out int end)
+        ref Utf8SliceInvocation invocation, out bool found, out int start, out int end, bool forCoreCursor = false)
     {
         found = false;
         start = end = -1;
-        if (!CanFindNativeLiteralForResult) return false;
+        var eligible = forCoreCursor
+            ? CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8, allowBoundaries: true)
+            : CanFindNativeLiteralForResult;
+        if (!eligible) return false;
         var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
             input, startOffsetInBytes, input.Length, false, ref invocation, out var match, out found);
         if (breach != Utf8ExecutionLimitKind.None)
