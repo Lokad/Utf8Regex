@@ -323,8 +323,15 @@ internal sealed partial class PosixProgram
         // Existing empty-repeat pruning keeps mandatory empty tails and removes
         // redundant optional ones, except for the saturated minimum-zero
         // unbounded outer counter. Leave that case to history comparison too.
-        return inner.RepeatMinimum <= 1 &&
-            (outer.RepeatMaximum != long.MaxValue || outer.RepeatMinimum > 0);
+        if (inner.RepeatMinimum > 1 || outer.RepeatMaximum == long.MaxValue && outer.RepeatMinimum == 0)
+            return false;
+
+        // When later occurrences can be empty, this literal run never needs
+        // to give back a scalar. The outer repeat still owns empty-occurrence
+        // priority and capture rollback.
+        if (inner.RepeatMinimum == 0)
+            code[inner.A] = new(innerExit.Kind, innerExit.A, RepeatExitWithoutRewind, innerExit.C, innerExit.D);
+        return true;
     }
 
     private static bool CanSelectGreedyRuns(Utf8SliceProgram program, ReadOnlySpan<int> publicTags, Utf8ConstructionBudget budget,

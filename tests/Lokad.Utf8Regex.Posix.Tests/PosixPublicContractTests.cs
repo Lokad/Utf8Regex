@@ -541,6 +541,28 @@ public sealed class PosixPublicContractTests
         Assert.Equal(start >= 0, groups[slot].Success);
         if (start >= 0) { Assert.Equal(start, groups[slot].StartOffsetInBytes); Assert.Equal(length, (groups[slot].EndOffsetInBytes - groups[slot].StartOffsetInBytes)); }
     }
+
+    [Theory]
+    [InlineData("a", 1)]
+    [InlineData("😀", 4)]
+    public void NullableLiteralRunKeepsMandatoryEmptyCaptureUnderWorkingLimit(string scalar, int end)
+    {
+        using var regex = new Utf8PosixRegex($"({scalar}?){{2,4}}",
+            policy: new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkingBytes = 64 } });
+        var input = Encoding.UTF8.GetBytes(scalar);
+        var captures = new Utf8CaptureRange[2];
+        var whole = new Utf8CaptureRange(0, end);
+        var mandatoryEmpty = new Utf8CaptureRange(end, end);
+
+        Assert.Equal(whole, regex.Match(input, captures: captures));
+        Assert.Equal(mandatoryEmpty, captures[1]);
+
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var match, captures));
+        Assert.Equal(whole, match);
+        Assert.Equal(mandatoryEmpty, captures[1]);
+    }
+
     [Theory]
     [InlineData(63)]
     [InlineData(64)]
