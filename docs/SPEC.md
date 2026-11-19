@@ -207,6 +207,10 @@ subcaptures still admit their working state and retain the same priority.
 Compact unconditional graphs can reuse ordered transitions across matching
 scalars in a whole-range search. Byte origins stay in invocation scratch.
 The cache stores which earlier thread supplied each surviving origin.
+When every initial path starts with an exact scalar literal, an empty frontier
+can search their leading bytes in bounded, metered blocks. Active paths and
+their priority keep the original scalar execution. A candidate still needs
+full scalar verification, including when different scalars share a lead byte.
 On longer first-match calls, an eligible compact graph can select the range
 before reserving subcapture storage. The existing anchored replay fills the
 subcaptures inside that range using the same work budget and deadline.

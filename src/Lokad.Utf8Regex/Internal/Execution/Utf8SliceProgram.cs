@@ -398,6 +398,9 @@ internal sealed class Utf8SliceProgram
         // Keep this bounded, allocation-free proof off repeated match attempts.
         HasTerminalCaptureRoot = Utf8SliceRunner.CanRunTerminalCaptureRoot(this);
         HasSingleCapturePerGroup = CanReadCapturesFromSlots();
+        if (nonBacktrackingOrderedClosures.Length != 0)
+            NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(instructions,
+                nonBacktrackingOrderedClosures[0], Utf8ConstructionScope.CurrentBudget);
         if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
             TerminalRepeatsWithoutRewind = Utf8SliceRunner.FindTerminalRepeatsWithoutRewind(this, Utf8ConstructionScope.CurrentBudget);
         // An absolute start confines an empty match to byte zero. A terminal
@@ -531,6 +534,7 @@ internal sealed class Utf8SliceProgram
     internal int[] NonBacktrackingEpsilonOrder { get; }
     internal ulong[] NonBacktrackingEpsilonAncestors { get; }
     internal ulong[] NonBacktrackingOrderedClosures { get; }
+    internal (byte First, byte Second, byte Third, bool Present) NonBacktrackingOrderedStartBytes { get; }
     internal ulong NonBacktrackingConsumerMask { get; }
     internal ulong NonBacktrackingAcceptClosure { get; }
     internal Func<int, int>[] BackreferenceLowerings { get; }

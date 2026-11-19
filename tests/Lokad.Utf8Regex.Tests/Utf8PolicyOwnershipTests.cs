@@ -338,13 +338,14 @@ public sealed class Utf8PolicyOwnershipTests
     }
 
     [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void CompactOrderedRangesRefundOnInterruption(bool expire)
+    [InlineData(false, false)] [InlineData(true, false)]
+    [InlineData(false, true)] [InlineData(true, true)]
+    public void CompactOrderedRangesRefundOnInterruption(bool expire, bool skipExactStarts)
     {
-        var input = Encoding.UTF8.GetBytes(new string('a', 4096) + "😀x");
+        var input = Encoding.UTF8.GetBytes((skipExactStarts ? new string('z', 140000) : new string('a', 4096)) + "😀x");
         using var cancellation = new CancellationTokenSource();
         using var clock = Utf8DeadlineTestClock.Start();
-        using var regex = new Utf8Regex("(a?b|c)*(dé|😀)[xy]", RegexOptions.NonBacktracking,
+        using var regex = new Utf8Regex(skipExactStarts ? "(?<x>😀|a){1,2}" : "(a?b|c)*(dé|😀)[xy]", RegexOptions.NonBacktracking,
             new Utf8RegexPolicy { MatchTimeout = TimeSpan.FromMilliseconds(20) });
         var account = new Account();
         var session = Utf8SearchDiagnosticsSession.Start(_ =>

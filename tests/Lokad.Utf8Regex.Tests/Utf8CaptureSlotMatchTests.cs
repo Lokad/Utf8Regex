@@ -255,6 +255,31 @@ public sealed class Utf8CaptureSlotMatchTests
     }
 
     [Theory]
+    [InlineData(2043)]
+    [InlineData(2044)]
+    [InlineData(2045)]
+    public void CompactRegularStartsSkipGapsAndKeepAnActiveMatch(int gapBytes)
+    {
+        using var regex = new Utf8Regex("(?<x>😀a|b)+", RegexOptions.NonBacktracking, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64 }
+        });
+        var text = "bé" + new string('z', gapBytes) + "💡😀ab!";
+        var input = Encoding.UTF8.GetBytes(text);
+        var floor = "bé"u8.Length;
+        var start = floor + gapBytes + "💡"u8.Length;
+        var end = start + "😀ab"u8.Length;
+        var output = new Utf8CaptureRange[2];
+        var account = new Account();
+
+        Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(input, floor, output, workingMemoryAllowance: account));
+        Assert.Equal(new Utf8CaptureRange(end - 1, end), output[1]);
+        Assert.False(regex.Match(input, floor, output, workingMemoryAllowance: account, endOffsetInBytes: start).Success);
+        Assert.All(output, range => Assert.False(range.Success));
+        Assert.Equal(0UL, account.Held);
+    }
+
+    [Theory]
     [InlineData(3, true)]
     [InlineData(4, false)]
     public void PackedCaptureReplayUsesBoundedScratchAtTheByteThreshold(int asciiCount, bool fits)

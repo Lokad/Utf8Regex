@@ -66,6 +66,28 @@ internal static partial class Utf8SliceRunner
         return closures;
     }
 
+    internal static (byte First, byte Second, byte Third, bool Present) GetOrderedRegularStartBytes(
+        Utf8SliceInstruction[] instructions, ulong root, Utf8ConstructionBudget budget)
+    {
+        Span<byte> starts = stackalloc byte[3];
+        Span<byte> encoded = stackalloc byte[4];
+        var count = 0;
+        for (var tags = root; tags != 0; tags >>= OrderedTagBits)
+        {
+            budget.ChargeWork(1);
+            var instruction = instructions[(int)tags & 63];
+            // An accepting root can match without inspecting any subject byte.
+            if (instruction.Kind != Utf8SliceInstructionKind.Literal || instruction.B != 0 ||
+                !Rune.TryCreate(instruction.A, out var literal)) return default;
+            _ = literal.EncodeToUtf8(encoded);
+            var first = encoded[0];
+            if (starts[..count].Contains(first)) continue;
+            if (count == starts.Length) return default;
+            starts[count++] = first;
+        }
+        return count == 0 ? default : (starts[0], starts[Math.Min(1, count - 1)], starts[count - 1], true);
+    }
+
     internal static Utf8SliceSearchOutcome FindOrderedRegularRange(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation)
     {
@@ -86,12 +108,28 @@ internal static partial class Utf8SliceRunner
             Span<OrderedRegularTransition> table = stackalloc OrderedRegularTransition[cache ? capacity : 0];
             table.Clear();
             var closures = program.NonBacktrackingOrderedClosures;
+            var starts = input.Length - fromByte >= 64 ? program.NonBacktrackingOrderedStartBytes : default;
             var current = new OrderedRegularFrontier();
             var bestStart = -1;
             var bestEnd = -1;
             var position = fromByte;
             while (true)
             {
+                if (current.Count == 0 && bestStart < 0 && starts.Present && position < input.Length &&
+                    input[position] != starts.First && input[position] != starts.Second && input[position] != starts.Third)
+                {
+                    // A proved start byte never occurs inside any UTF-8 scalar.
+                    // Only an empty frontier can skip starts without losing priority.
+                    while (position < input.Length)
+                    {
+                        breach = invocation.TryChargeInputStep();
+                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                        var block = input.Slice(position, Math.Min(2048, input.Length - position));
+                        var candidate = block.IndexOfAny(starts.First, starts.Second, starts.Third);
+                        if (candidate >= 0) { position += candidate; break; }
+                        position += block.Length;
+                    }
+                }
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
                 // Active starts precede the new start. A saved acceptance
