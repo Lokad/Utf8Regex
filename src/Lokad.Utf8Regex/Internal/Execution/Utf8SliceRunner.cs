@@ -340,7 +340,8 @@ internal static partial class Utf8SliceRunner
         bool requireNonEmpty,
         bool startIsScalarBoundary,
         ref AttemptWorkspace workspace,
-        ref Utf8SliceInvocation invocation, bool existenceOnly = false)
+        ref Utf8SliceInvocation invocation, bool existenceOnly = false,
+        (int Instruction, int Bytes) verifiedPrefix = default)
     {
         // Profile cursors can reuse this admitted workspace across candidate
         // attempts while preserving their own empty-match and anchor progress.
@@ -404,7 +405,11 @@ internal static partial class Utf8SliceRunner
                 // This root cannot suspend or publish capture history. Execute
                 // the same VM without the unused assertion-continuation driver.
                 var current = new AssertionCursor(program, start, counts, positions,
-                    requireNonEmpty, startIsScalarBoundary, workspace.Stacks.FrameCount);
+                    requireNonEmpty, startIsScalarBoundary, workspace.Stacks.FrameCount)
+                {
+                    ProgramIndex = verifiedPrefix.Instruction,
+                    InputIndex = start + verifiedPrefix.Bytes
+                };
                 try
                 {
                     attempt = RunSegment(input, captureStarts, captureEnds, heads, ref current,
@@ -606,7 +611,7 @@ internal static partial class Utf8SliceRunner
             }
             if (seekLiteral)
             {
-                var seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation);
+                var seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation, out _);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
@@ -695,8 +700,9 @@ internal static partial class Utf8SliceRunner
                 Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals;
 
     private static Utf8ExecutionLimitKind TrySeekExactPrefix(in Utf8SearchPlan candidatePlan,
-        ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation)
+        ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation, out int familyLength)
     {
+        familyLength = 0;
         if (candidatePlan.LiteralSearch is { Length: > 0 } literal)
             return Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, position,
                 input.Length - literal.Length, false, ref invocation, out position);
@@ -704,6 +710,7 @@ internal static partial class Utf8SliceRunner
             candidatePlan.AlternateLiteralsUtf8 ?? [], false, input, position, input.Length,
             false, ref invocation, out var candidate, out var found);
         position = found ? candidate.Index : -1;
+        if (found) familyLength = candidate.Length;
         return breach;
     }
 
@@ -838,6 +845,15 @@ internal static partial class Utf8SliceRunner
         // PCRE2-INTEGRATION-POINT: a caller may provide its proved branch prefixes.
         var useBranchPrefixes = branchPrefixes.HasValue;
         var seekLiteral = useBranchPrefixes || CanSeekExactPrefix(program, candidatePlan);
+        var familyContinuation = 0;
+        if (seekLiteral && !useBranchPrefixes && input.Length - fromByte >= 256 &&
+            program.Assertions.Length == 0 && candidatePlan.Kind == Utf8SearchKind.ExactAsciiLiterals &&
+            candidatePlan.LiteralSearch is null && candidatePlan.AlternateLiteralsUtf8 is { Length: >= 2 and <= 8 } literals)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+            familyContinuation = FindExactFamilyContinuation(program.Instructions, literals);
+        }
         // A direct beginning anchor already owns bounded line/prefix discovery.
         // Keep one candidate search rather than scanning its prefix twice.
         var (leadingAsciiFirst, leadingAsciiLast, leadingAsciiSecond, leadingAsciiSecondLast, leadingScalarIndex, _) = seekLiteral
@@ -982,6 +998,7 @@ internal static partial class Utf8SliceRunner
                 // an offset or the preceding match has moved below that start.
                 if (seekVeryEnd && position != input.Length)
                     return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                var familyLength = 0;
                 if (seekLiteral)
                 {
                     Utf8ExecutionLimitKind seekBreach;
@@ -991,7 +1008,7 @@ internal static partial class Utf8SliceRunner
                             ref invocation, out var candidate, out var found);
                         position = found ? candidate.Index : -1;
                     }
-                    else seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation);
+                    else seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation, out familyLength);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     // Keep the final charge and recheck the original token after
                     // its diagnostic hook before publishing any accumulated count.
@@ -1028,7 +1045,16 @@ internal static partial class Utf8SliceRunner
                         }
                     }
                 }
-                var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true, ref workspace, ref invocation);
+                if (familyContinuation != 0 && first.Kind == Utf8SliceInstructionKind.Boundary &&
+                    !MatchesBoundary(program, first, input, position))
+                {
+                    // The verified literal begins with a complete ASCII scalar.
+                    position++;
+                    continue;
+                }
+                var verifiedPrefix = familyContinuation == 0 ? default : (familyContinuation, familyLength);
+                var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true,
+                    ref workspace, ref invocation, verifiedPrefix: verifiedPrefix);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, outcome.Breach);
                 invocation.Budget.ThrowIfCancellationRequested();

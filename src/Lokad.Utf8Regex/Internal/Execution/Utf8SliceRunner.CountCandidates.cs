@@ -8,6 +8,45 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
+    private static int FindExactFamilyContinuation(ReadOnlySpan<Utf8SliceInstruction> code, byte[][] literals)
+    {
+        // Prove that the discovery plan covers every arm of one leading fork
+        // family. Distinct first bytes leave no priority or retry to preserve.
+        // The caller checks a leading boundary before entering the shared tail.
+        var index = code[0].Kind == Utf8SliceInstructionKind.Boundary ? 1 : 0;
+        var continuation = 0;
+        var heads = default(Utf8SearchAsciiSet);
+        for (var arm = 0; arm < literals.Length; arm++)
+        {
+            var literal = literals[arm];
+            if (literal.Length is 0 or > 16 || literal[0] >= 128 || heads.Contains(literal[0])) return 0;
+            heads = heads.With(literal[0]);
+
+            var last = arm == literals.Length - 1;
+            var next = continuation;
+            if (!last)
+            {
+                if ((uint)index >= (uint)code.Length ||
+                    code[index++] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0, C: 0, D: 0 } fork)
+                    return 0;
+                next = fork.A;
+            }
+            if ((uint)next >= (uint)code.Length || next - index != literal.Length + (last ? 0 : 1)) return 0;
+
+            foreach (var value in literal)
+                if (value >= 128 || code[index++] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } atom || atom.A != value)
+                    return 0;
+
+            if (last) break;
+            if (code[index] is not { Kind: Utf8SliceInstructionKind.Jump, B: 0 } jump ||
+                jump.A <= next || jump.A >= code.Length || continuation != 0 && continuation != jump.A)
+                return 0;
+            continuation = jump.A;
+            index = next;
+        }
+        return continuation;
+    }
+
     // These entries leave the input edge unchanged when they succeed. The
     // scanner can reject an impossible consuming byte before the VM runs them.
     private static bool PrecedesRequiredScalar(Utf8SliceInstruction entry) =>

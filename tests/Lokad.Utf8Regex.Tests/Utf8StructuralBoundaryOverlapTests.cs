@@ -11,17 +11,25 @@ public sealed class Utf8StructuralBoundaryOverlapTests
 
     [Theory]
     [InlineData(Declaration, "class Alpha struct Beta record Gamma")]
+    [InlineData(Declaration, "éclass Wrong 😀class\u2003Right _struct Wrong record Good")]
     [InlineData(@"\b(?:ab|ba)\s+[A-Z][A-Za-z0-9_]+", "aba Wrong ab Good ba Right")]
     [InlineData(@"\b(?:foobar|bar)\s+[A-Z][A-Za-z0-9_]+", "foobar Good bar Right")]
     [InlineData(@"\b(?:foo|foobar)[A-Z][A-Za-z0-9_]*", "foobarAlpha fooBeta")]
     [InlineData(@"\b(?:foo:|:bar)[A-Z][A-Za-z0-9_]*", "foo:barAlpha foo:Beta")]
+    [InlineData(@"\b(?:foo|foobar|qux)[A-Z][A-Za-z0-9_]*", "foobarAlpha fooBeta quxGamma")]
+    [InlineData(@"\b(?:record|struct|class)(\s+)([A-Z][A-Za-z0-9_]+)", "record Alpha; class Beta")]
     [InlineData(@"(?:class|struct)\s+[A-Z][A-Za-z0-9_]+", "classstruct Good class Right")]
     public void BoundariesAndOverlappingPrefixesPreservePublicCount(string pattern, string text)
     {
+        using var token = new CancellationTokenSource();
+        var longText = new string(' ', 260) + text;
+        var longInput = Encoding.UTF8.GetBytes(longText);
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled })
         {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(new Regex(pattern).Count(text), regex.Count(Encoding.UTF8.GetBytes(text)));
+            using var regex = new Utf8Regex(pattern, options: options);
+            var expected = new Regex(pattern).Count(text);
+            Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text)));
+            Assert.Equal(expected, regex.Count(longInput, token.Token));
         }
     }
 
