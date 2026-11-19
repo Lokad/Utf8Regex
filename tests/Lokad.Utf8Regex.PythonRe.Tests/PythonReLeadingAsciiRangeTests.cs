@@ -33,7 +33,8 @@ public sealed class PythonReLeadingAsciiRangeTests
     public void MandatoryMaskIsContainedInTheDerivedAsciiInterval(string pattern, int minimum, int maximum)
     {
         var program = Compile(pattern);
-        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, false, out var low, out var high));
+        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, out var low, out var high, out var widerStart));
+        Assert.False(widerStart);
         Assert.Equal(minimum, low);
         Assert.Equal(maximum, high);
         var mask = program.SetMasks[program.Instructions.First(instruction => instruction.Kind == Utf8SliceInstructionKind.Set).A];
@@ -59,7 +60,7 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData("(?>a?)b")]
     public void UnprovedPrefixesKeepTheExistingCandidateLoop(string pattern)
     {
-        Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), false, out _, out _));
+        Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), out _, out _, out _));
     }
 
     [Theory]
@@ -77,7 +78,8 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData("(?i:(?>a+))b", 65, 97)]
     public void DistinctFirstConsumersShareANecessaryAsciiInterval(string pattern, int minimum, int maximum)
     {
-        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), false, out var low, out var high));
+        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), out var low, out var high, out var widerStart));
+        Assert.False(widerStart);
         Assert.Equal(minimum, low);
         Assert.Equal(maximum, high);
     }
@@ -90,7 +92,8 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData("(?![0-9])[a-z]+")]
     public void ZeroWidthPrefixesConvergeOnTheSameMandatoryMask(string pattern)
     {
-        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), false, out var low, out var high));
+        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), out var low, out var high, out var widerStart));
+        Assert.False(widerStart);
         Assert.Equal(97, low);
         Assert.Equal(122, high);
     }
@@ -104,20 +107,20 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData(@"(?<!:)\s+", 9, 32)]
     [InlineData(@"(?:\d+|[a-z]+)", 48, 122)]
     [InlineData(@"(?P<x>[a-z]+)?\d+", 48, 122)]
-    public void ProfileCategoryProjectionRequiresAuthoritativeAsciiInput(string pattern, int minimum, int maximum)
+    public void ProfileCategoryProjectionRetainsWiderStarts(string pattern, int minimum, int maximum)
     {
         var program = Compile(pattern);
-        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, true, out var low, out var high));
+        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, out var low, out var high, out var widerStart));
         Assert.Equal(minimum, low);
         Assert.Equal(maximum, high);
-        Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, false, out _, out _));
+        Assert.True(widerStart);
     }
 
     [Theory]
     [InlineData(@"(?i:[a-z]+)")]
     [InlineData(@"[\d\s]+")]
     public void UnprovedCategoryDefinitionsDecline(string pattern)
-        => Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), true, out _, out _));
+        => Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), out _, out _, out _));
 
     [Theory]
     [InlineData("(?i:sherlock)", 83, 115)]
@@ -126,13 +129,13 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData("(?i:İ)abc", 73, 105)]
     [InlineData("(?i:ı)abc", 73, 105)]
     [InlineData("[éa]+", 97, 97)]
-    public void SingleUnicodeRemainderAddsNothingToAnAuthoritativeAsciiSubject(string pattern, int minimum, int maximum)
+    public void SingleUnicodeRemainderLeavesTheAsciiProjectionUnchanged(string pattern, int minimum, int maximum)
     {
         var program = Compile(pattern);
-        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, true, out var low, out var high));
+        Assert.True(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, out var low, out var high, out var widerStart));
         Assert.Equal(minimum, low);
         Assert.Equal(maximum, high);
-        Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(program, false, out _, out _));
+        Assert.True(widerStart);
     }
 
     [Theory]
@@ -228,7 +231,7 @@ public sealed class PythonReLeadingAsciiRangeTests
             string.Concat(Enumerable.Repeat("(?>", 70)) + "[a-z]+" + new string(')', 70),
             new string('(', 17) + "a" + string.Concat(Enumerable.Repeat("|b)", 17)) })
         {
-            Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), true, out _, out _));
+            Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), out _, out _, out _));
             Assert.True(new Utf8PythonRegex(pattern).IsMatch("123 alpha"u8));
         }
     }

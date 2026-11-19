@@ -70,7 +70,7 @@ internal struct PythonReScalarMatchState
             if (program.Instructions[0].Kind == Utf8SliceInstructionKind.Fail ||
                 !prepareSearch && candidateRegex is not null &&
                 (uint)startOffsetInBytes <= (uint)input.Length &&
-                TryGetLeadingAsciiRange(program, false, out var startLow, out var startHigh) &&
+                TryGetLeadingAsciiRange(program, out var startLow, out var startHigh, out var widerStart) && !widerStart &&
                 (startOffsetInBytes == input.Length ||
                  (uint)(input[startOffsetInBytes] - startLow) > (uint)(startHigh - startLow)) ||
                 !program.CanMatchEmpty && !program.IgnoreCase && candidateRegex is { } required &&
@@ -87,13 +87,12 @@ internal struct PythonReScalarMatchState
                 if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
                 if (_candidateRegex is null)
                 {
-                    var asciiOnly = TryGetLeadingAsciiRange(program, false, out var low, out var high);
-                    if (asciiOnly || TryGetLeadingAsciiRange(program, true, out low, out high))
+                    if (TryGetLeadingAsciiRange(program, out var low, out var high, out var mayMatchUnicode))
                     {
                         _leadingAsciiLow = low;
                         _leadingAsciiHigh = high;
-                        _leadingAsciiMayMatchUnicode = !asciiOnly;
-                        if (asciiOnly && TryGetLaterAsciiRange(program, low, high, ref _invocation,
+                        _leadingAsciiMayMatchUnicode = mayMatchUnicode;
+                        if (!mayMatchUnicode && TryGetLaterAsciiRange(program, low, high, ref _invocation,
                             out var distance, out var laterLow, out var laterHigh))
                         {
                             _laterAsciiDistance = distance;
@@ -237,16 +236,17 @@ internal struct PythonReScalarMatchState
             // The same bounded first-consumer proof must cover every suffix
             // branch. Optional/empty suffixes and opaque effects decline. A
             // disjoint later interval rejects repeated false prefix heads.
-            return distance > 0 && TryGetLeadingAsciiRange(program, false, out low, out high, index) &&
+            return distance > 0 && TryGetLeadingAsciiRange(program, out low, out high, out var widerStart, index) && !widerStart &&
                 (high < leadingLow || low > leadingHigh);
         }
         return false;
     }
 
-    internal static bool TryGetLeadingAsciiRange(Utf8SliceProgram program, bool asciiInput, out int low, out int high,
-        int startIndex = 0)
+    internal static bool TryGetLeadingAsciiRange(Utf8SliceProgram program, out int low, out int high,
+        out bool mayMatchUnicode, int startIndex = 0)
     {
         low = high = -1;
+        mayMatchUnicode = false;
         if (program.CanMatchEmpty || program.HasContiguousAnchor || program.RightToLeft || program.IgnoreCase ||
             program.Instructions.Length == 0) return false;
         // Union necessary starts across zero-width branches. This proof stays
@@ -306,9 +306,10 @@ internal struct PythonReScalarMatchState
                     else return false;
                     continue;
             }
-            if (!TryGetAsciiInterval(program, instruction, asciiInput, out var first, out var last)) return false;
+            if (!TryGetAsciiInterval(program, instruction, out var first, out var last)) return false;
             minimum = Math.Min(minimum, first);
             maximum = Math.Max(maximum, last);
+            mayMatchUnicode |= instruction.Kind == Utf8SliceInstructionKind.CategorySet;
             if (count == 0)
             {
                 low = minimum;
@@ -320,8 +321,7 @@ internal struct PythonReScalarMatchState
         return false;
     }
 
-    private static bool TryGetAsciiInterval(Utf8SliceProgram program, Utf8SliceInstruction atom,
-        bool asciiInput, out int low, out int high)
+    private static bool TryGetAsciiInterval(Utf8SliceProgram program, Utf8SliceInstruction atom, out int low, out int high)
     {
         low = high = -1;
         if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } literal && (uint)literal.A < 128)
@@ -330,8 +330,7 @@ internal struct PythonReScalarMatchState
             return true;
         }
 
-        if (atom is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } &&
-            !(asciiInput && atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 }))
+        if (atom is not { Kind: Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 })
             return false;
         var mask = program.SetMasks[atom.A];
         if (mask.Length != 16) return false;
