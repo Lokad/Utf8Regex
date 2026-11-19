@@ -338,13 +338,15 @@ internal sealed class Utf8NonBacktrackingSearchState
                 invocation.Budget.CheckDeadline();
                 return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
             }
-            var bytes = Utf8ConstructionBudget.ArrayBytes<int>(program.NonBacktrackingCaptureOpeningCount);
+            var recordCaptures = captureStarts.Length != 0;
+            var openingCount = recordCaptures ? program.NonBacktrackingCaptureOpeningCount : 0;
+            var bytes = Utf8ConstructionBudget.ArrayBytes<int>(openingCount);
             var admission = invocation.TryReserveWorking(bytes);
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
             reservation = bytes;
             admission = invocation.TryChargeInputStep();
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
-            var openings = program.NonBacktrackingCaptureOpeningCount == 0 ? [] : new int[program.NonBacktrackingCaptureOpeningCount];
+            var openings = openingCount == 0 ? [] : new int[openingCount];
             var start = boundary;
             var pc = 0;
             while (true)
@@ -363,12 +365,15 @@ internal sealed class Utf8NonBacktrackingSearchState
                         pc = instruction.A;
                         break;
                     case Utf8SliceInstructionKind.CaptureStart:
-                        openings[instruction.B] = _boundaries[boundary];
+                        if (recordCaptures) openings[instruction.B] = _boundaries[boundary];
                         pc++;
                         break;
                     case Utf8SliceInstructionKind.CaptureEnd:
-                        captureStarts[instruction.A] = openings[instruction.B];
-                        captureEnds[instruction.A] = _boundaries[boundary];
+                        if (recordCaptures)
+                        {
+                            captureStarts[instruction.A] = openings[instruction.B];
+                            captureEnds[instruction.A] = _boundaries[boundary];
+                        }
                         pc++;
                         break;
                     case Utf8SliceInstructionKind.Anchor:

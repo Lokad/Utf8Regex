@@ -315,6 +315,28 @@ public sealed class Utf8PolicyOwnershipTests
         finally { diagnostics.Complete(); }
     }
 
+    [Fact]
+    public void NonBacktrackingWholeRangesFitWhileSubcapturesStillRequireWorkingStorage()
+    {
+        using var regex = new Utf8Regex("(a?b|c)*(dé|😀)[xy]", RegexOptions.NonBacktracking, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 1024 }
+        });
+        var input = "éxx😀x!"u8.ToArray();
+        var account = new Account();
+        var whole = new Utf8CaptureRange[1];
+        var from = "é"u8.Length;
+        var expected = new Utf8CaptureRange("éxx"u8.Length, input.Length - 1);
+        Assert.Equal(expected, regex.Match(input));
+        Assert.Equal(expected, regex.Match(input, from, whole, workingMemoryAllowance: account, endOffsetInBytes: input.Length - 1));
+        Assert.Equal(expected, whole[0]);
+        Assert.Equal(1, regex.Count(input, workingMemoryAllowance: account));
+        var groups = new Utf8CaptureRange[3];
+        var denied = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.Match(input, from, groups, workingMemoryAllowance: account));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, denied.ResourceKind);
+        Assert.Equal(0UL, account.Used);
+    }
+
     private sealed class Account : IUtf8MemoryAllowance
     {
         internal ulong Used, Maximum = 64 << 20;

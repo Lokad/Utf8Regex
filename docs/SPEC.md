@@ -199,6 +199,9 @@ It evaluates anchors and boundaries at their original scalar edges before
 reusing admitted ASCII consuming transitions. Each advance spends work and
 checks interruption. A tight working cap can run the same state calculation
 without caching. Ordered execution supplies match ranges and captures.
+NonBacktracking operations that only return whole-match ranges or counts
+can use ordered execution without reserving capture registers. Requests for
+subcaptures still admit their working state and retain the same priority.
 
 Backtracking first-match search can reuse Count's mandatory exact ASCII head or
 range proof. Controlled gap searches cover at most 2048 bytes per checkpoint;

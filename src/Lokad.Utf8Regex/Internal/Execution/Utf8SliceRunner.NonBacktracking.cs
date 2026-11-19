@@ -142,7 +142,7 @@ internal static partial class Utf8SliceRunner
         Array.Fill(captureEnds, -1);
         try
         {
-            var breach = workspace.Initialize(program, ref invocation);
+            var breach = workspace.Initialize(program, captureStarts.Length != 0, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
             var bestStart = -1;
             var bestEnd = -1;
@@ -246,10 +246,10 @@ internal static partial class Utf8SliceRunner
         internal bool[] Visited = [];
         internal ulong Reserved;
 
-        internal Utf8ExecutionLimitKind Initialize(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
+        internal Utf8ExecutionLimitKind Initialize(Utf8SliceProgram program, bool recordCaptures, ref Utf8SliceInvocation invocation)
         {
             var states = program.Instructions.Length;
-            var registers = (long)program.GroupCount * 2 + program.NonBacktrackingCaptureOpeningCount;
+            var registers = recordCaptures ? (long)program.GroupCount * 2 + program.NonBacktrackingCaptureOpeningCount : 0;
             if (registers > Array.MaxLength || registers * states > Array.MaxLength)
                 return Utf8ExecutionLimitKind.WorkingBytes;
             RegisterCount = (int)registers;
@@ -356,12 +356,15 @@ internal static partial class Utf8SliceRunner
                             pc = instruction.A;
                             continue;
                         case Utf8SliceInstructionKind.CaptureStart:
-                            Scratch[program.GroupCount * 2 + instruction.B] = position;
+                            if (RegisterCount != 0) Scratch[program.GroupCount * 2 + instruction.B] = position;
                             pc++;
                             continue;
                         case Utf8SliceInstructionKind.CaptureEnd:
-                            Scratch[instruction.A * 2] = Scratch[program.GroupCount * 2 + instruction.B];
-                            Scratch[instruction.A * 2 + 1] = position;
+                            if (RegisterCount != 0)
+                            {
+                                Scratch[instruction.A * 2] = Scratch[program.GroupCount * 2 + instruction.B];
+                                Scratch[instruction.A * 2 + 1] = position;
+                            }
                             pc++;
                             continue;
                         case Utf8SliceInstructionKind.Anchor:
@@ -398,7 +401,8 @@ internal static partial class Utf8SliceRunner
         {
             starts = null;
             lengths = null;
-            for (var group = 0; group < program.GroupCount; group++)
+            var groupCount = RegisterCount == 0 ? 0 : program.GroupCount;
+            for (var group = 0; group < groupCount; group++)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;

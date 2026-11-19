@@ -657,9 +657,9 @@ public sealed partial class Utf8Regex : IDisposable
     internal bool CanOmitValueCaptureSlots => GetValueOperationCaptureSlotCount(_ownedSliceProgram) == 0;
 
     private int GetValueOperationCaptureSlotCount(Utf8SliceProgram program)
-        => ReferenceEquals(program, _ownedSliceProgram) &&
+        => program.IsNonBacktracking || ReferenceEquals(program, _ownedSliceProgram) &&
             _preparedRegex.Features is { CaptureCount: > 0, HasBackreferences: false, HasConditionals: false, HasLookarounds: false } &&
-            !program.IsNonBacktracking && !program.HasBalancing &&
+            !program.HasBalancing &&
             !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
             !program.HasConditionalTest && !program.SawLookaround && !program.SawCapturingLookbehind
                 ? 0 : program.GroupCount;
