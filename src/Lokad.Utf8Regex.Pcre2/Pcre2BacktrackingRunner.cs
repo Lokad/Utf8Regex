@@ -283,7 +283,7 @@ internal static class Pcre2BacktrackingRunner
         var useCandidateSearch = !anchored &&
             candidateSearch.HasValue &&
             matchOptions == Pcre2MatchOptions.None &&
-            budget.IsUnmetered;
+            (budget.IsUnmetered || candidateSearch.MinimumWordRunLength > 0);
         var candidateState = new PreparedSearchScanState(
             candidate,
             new PreparedMultiLiteralScanState(candidate, candidate, 0));
@@ -409,6 +409,8 @@ internal static class Pcre2BacktrackingRunner
                 candidateSearch.Kind == Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun,
                 ref nextWindowCandidate,
                 ref windowCandidateEnd,
+                ref lastWindowCandidate,
+                ref budget,
                 out candidate);
         }
 
@@ -492,9 +494,20 @@ internal static class Pcre2BacktrackingRunner
         bool requiresBoundary,
         ref int scanOffset,
         ref int confirmedWordEnd,
+        ref int admittedEnd,
+        ref Pcre2ResourceBudget budget,
         out int candidate)
     {
         var offset = Math.Max(lowerBound, scanOffset);
+        if (admittedEnd < 0)
+        {
+            if (budget.IsUnmetered) admittedEnd = input.Length;
+            else
+            {
+                budget.ReserveWorking(0);
+                admittedEnd = offset;
+            }
+        }
         var lastStart = input.Length - minimumWordRunLength;
         while (offset <= lastStart)
         {
@@ -502,9 +515,7 @@ internal static class Pcre2BacktrackingRunner
             // the VM needs another start in the same word, read only the
             // additional byte needed to prove its minimum.
             var requiredEnd = offset + minimumWordRunLength;
-            var next = Math.Max(offset, confirmedWordEnd);
-            while (next < requiredEnd && Utf8AsciiBytePredicates.IsWord(input[next]))
-                next++;
+            var next = ScanAsciiWord(input, Math.Max(offset, confirmedWordEnd), requiredEnd, ref admittedEnd, ref budget);
             if (next < requiredEnd)
             {
                 offset = next + 1;
@@ -520,9 +531,7 @@ internal static class Pcre2BacktrackingRunner
             }
 
             // An interior offset cannot begin a boundary-qualified match.
-            offset = requiredEnd;
-            while (offset < input.Length && Utf8AsciiBytePredicates.IsWord(input[offset]))
-                offset++;
+            offset = ScanAsciiWord(input, requiredEnd, input.Length, ref admittedEnd, ref budget);
         }
 
         scanOffset = input.Length;
@@ -530,6 +539,23 @@ internal static class Pcre2BacktrackingRunner
         return false;
     }
 
+    private static int ScanAsciiWord(ReadOnlySpan<byte> input, int offset, int end,
+        ref int admittedEnd, ref Pcre2ResourceBudget budget)
+    {
+        while (offset < end)
+        {
+            if (offset >= admittedEnd)
+            {
+                budget.ChargeWorkspaceStep();
+                admittedEnd = offset + Math.Min(2048, input.Length - offset);
+            }
+            var blockEnd = Math.Min(end, admittedEnd);
+            while (offset < blockEnd && Utf8AsciiBytePredicates.IsWord(input[offset]))
+                offset++;
+            if (offset < blockEnd) break;
+        }
+        return offset;
+    }
 
     private static bool TryFindNextBoundedWindowCandidate(
         Pcre2CandidateSearchProgram candidateSearch,

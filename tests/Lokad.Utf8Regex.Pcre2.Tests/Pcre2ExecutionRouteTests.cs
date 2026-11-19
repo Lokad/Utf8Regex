@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Text;
 
 using global::Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -383,7 +384,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void LeadingAsciiWordRunSearchFallsBackForRuntimeLimitsAndOptions(bool requiresBoundary)
+    public void LeadingAsciiWordRunSearchPreservesRuntimeLimitsAndOptions(bool requiresBoundary)
     {
         var input = "abcdefghijkl mnopqrstuv"u8.ToArray();
         var pattern = requiresBoundary ? @"\b\w{10,}\b" : @"\w{10,}";
@@ -416,6 +417,48 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.Equal((9, 11), (match.StartOffsetInBytes, match.EndOffsetInBytes));
         Assert.Equal(2, regex.Count(input, 7));
         Assert.Equal(1, regex.Count(input, 10));
+        using var source = new CancellationTokenSource();
+        Assert.Equal(2, regex.Count(input, 7, cancellationToken: source.Token));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LeadingAsciiWordRunScanChargesWorkAndChecksInterruption(bool cancel)
+    {
+        const string pattern = @"\w{10,}";
+        var input = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("abc ", 8192)));
+        using var limited = new Utf8Pcre2Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 8 },
+        });
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
+
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 32 },
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+        });
+        var reads = 0;
+        var interrupt = false;
+        using var source = new CancellationTokenSource();
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (!interrupt || ++reads < 10) return 0;
+            if (!cancel) return 25;
+            source.Cancel();
+            return 0;
+        });
+        Assert.Equal(0, regex.Count(input, cancellationToken: source.Token));
+        interrupt = true;
+        if (cancel)
+        {
+            var failure = Assert.Throws<OperationCanceledException>(() => regex.Count(input, cancellationToken: source.Token));
+            Assert.Equal(source.Token, failure.CancellationToken);
+        }
+        else Assert.Equal(Pcre2ErrorKind.Timeout,
+            Assert.Throws<Pcre2MatchException>(() => regex.Count(input)).ErrorKind);
     }
 
     [Fact]
