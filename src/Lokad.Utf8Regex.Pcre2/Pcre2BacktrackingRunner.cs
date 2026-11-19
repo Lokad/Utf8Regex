@@ -754,7 +754,11 @@ internal static class Pcre2BacktrackingRunner
             program.CaptureReadSlot > 0 ? program.CaptureReadSlot : 0;
         var captureSlots = needsCaptureState && program.CaptureSlotCount > 1 ? program.CaptureSlotCount : 0;
         var captureStateLength = checked(captureSlots * 5);
-        var acquiredWorkspace = workspace.EnsureInitialized(program.RepeatCount, captureSlots, program.SubroutineTargets.Length != 0, ref budget);
+        var restoresSubroutines = program.SubroutineTargets.Length != 0;
+        // Slot zero belongs to the match result, outside the capture journal.
+        var restoresMultipleCaptures = restoresSubroutines && captureSlots > 2 && onlyCaptureSlot == 0;
+        var acquiredWorkspace = workspace.EnsureInitialized(program.RepeatCount, captureSlots,
+            restoresSubroutines, restoresMultipleCaptures, ref budget);
         var rentedRepeatState = workspace.RepeatState;
         var rentedCaptureState = workspace.CaptureState;
         var rentedCaptureRestoreGenerations = workspace.CaptureRestoreGenerations;
@@ -2241,16 +2245,22 @@ internal static class Pcre2BacktrackingRunner
         }
 
         var captureMutationCount = captureMutations.Count;
+        // With at most one writable slot, the first entry is its call-entry
+        // value. The inverse write still belongs to the retry journal.
+        var tracksMultipleCaptures = !captureRestoreGenerations.IsEmpty;
+        if (!tracksMultipleCaptures && call.CaptureCheckpoint < captureMutationCount)
+            captureMutationCount = call.CaptureCheckpoint + 1;
+
         for (var index = call.CaptureCheckpoint; index < captureMutationCount; index++)
         {
             if (((index - call.CaptureCheckpoint) & 63) == 63) budget.ChargeWorkspaceStep();
             var mutation = captureMutations[index];
-            if (captureRestoreGenerations[mutation.Slot] == generation)
+            if (tracksMultipleCaptures)
             {
-                continue;
+                if (captureRestoreGenerations[mutation.Slot] == generation) continue;
+                captureRestoreGenerations[mutation.Slot] = generation;
             }
 
-            captureRestoreGenerations[mutation.Slot] = generation;
             SetCapture(
                 mutation.Slot,
                 mutation.PreviousStart,

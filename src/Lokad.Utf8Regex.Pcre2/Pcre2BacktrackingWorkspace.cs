@@ -16,7 +16,8 @@ internal ref struct Pcre2BacktrackingWorkspace
     private int[]? _captureRestoreGenerations;
     private int[]? _repeatRestoreGenerations;
 
-    internal bool EnsureInitialized(int repeatCount, int captureSlotCount, bool restoreSubroutines, scoped ref Pcre2ResourceBudget budget)
+    internal bool EnsureInitialized(int repeatCount, int captureSlotCount, bool restoreRepeats, bool restoreCaptures,
+        scoped ref Pcre2ResourceBudget budget)
     {
         if (_reservedBytes != 0 || repeatCount == 0 && captureSlotCount == 0)
         {
@@ -28,8 +29,8 @@ internal ref struct Pcre2BacktrackingWorkspace
         ArgumentOutOfRangeException.ThrowIfNegative(repeatCount);
         ArgumentOutOfRangeException.ThrowIfNegative(captureSlotCount);
         _retain = budget.CanRetainWorkspace;
-        var repeatCapacity = restoreSubroutines ? Capacity(repeatCount) : 0;
-        var captureCapacity = restoreSubroutines ? Capacity(captureSlotCount) : 0;
+        var repeatCapacity = restoreRepeats ? Capacity(repeatCount) : 0;
+        var captureCapacity = restoreCaptures ? Capacity(captureSlotCount) : 0;
         var repeatStateCapacity = Capacity(checked(repeatCount * 2));
         var captureStateCapacity = Capacity(checked(captureSlotCount * 5));
         var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(repeatStateCapacity) +
