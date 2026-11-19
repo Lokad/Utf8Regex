@@ -281,6 +281,30 @@ public sealed class LokadPublicRouteGuardrailTests
     }
 
     [Fact]
+    public void CommonDateDelimiterWindowsKeepWiderStartsAndCaptureOffsets()
+    {
+        const string pattern = @"\b(\d{1,2})/\d{1,2}/\d{2,4}\b";
+        using var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled,
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 1 << 20 } });
+        using var source = new CancellationTokenSource();
+        ReadOnlySpan<byte> input = "x11/18/201A | é1/2/2026 | 𝟙/٢/٢٠٢٦ | 11/20/2026"u8;
+        var wideDate = "𝟙/٢/٢٠٢٦"u8;
+        var wideStart = input.IndexOf(wideDate);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+
+        Assert.False(regex.IsMatch(input[..wideStart], source.Token));
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(new Utf8CaptureRange(wideStart, wideStart + wideDate.Length),
+            regex.Match(input, captures: captures, cancellationToken: source.Token));
+        Assert.Equal(new Utf8CaptureRange(wideStart, wideStart + "𝟙"u8.Length), captures[1]);
+
+        var asciiStart = input.IndexOf("11/20/2026"u8);
+        Assert.Equal(new Utf8CaptureRange(asciiStart, asciiStart + "11/20/2026"u8.Length),
+            regex.Match(input, wideStart + wideDate.Length, captures, source.Token));
+        Assert.Equal(new Utf8CaptureRange(asciiStart, asciiStart + 2), captures[1]);
+    }
+
+    [Fact]
     public void WholeDatePreservesItsPublicByteRange()
     { var regex = new Utf8Regex(@"^[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}$", options: RegexOptions.Compiled); Assert.Equal(new Utf8CaptureRange(0, 10), regex.Match("12/12/2001"u8)); }
     [Theory]

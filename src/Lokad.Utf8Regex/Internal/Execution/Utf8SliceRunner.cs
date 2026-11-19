@@ -560,6 +560,8 @@ internal static partial class Utf8SliceRunner
         // Keep existing literal guidance when available. The decimal scan
         // lands at an ASCII digit or a wider scalar to classify below.
         var hasClassWindow = classLiteral >= 0 || classAlternatives is not null;
+        var screenDecimalWindow = hasClassWindow && first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
+            leadingClass == leadingScalarIndex && IsLeadingDecimalSet(program, leadingScalarIndex);
         var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
             IsLeadingDecimalSet(program, leadingScalarIndex);
         if (seekDecimal)
@@ -632,6 +634,13 @@ internal static partial class Utf8SliceRunner
             // bounded work and the original interruption authority.
             if (leadingPrefix.IsEmpty && leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                 (uint)(input[position + 1] - second) > (uint)(secondLast - second)))
+                continue;
+            // A delimiter window can include interior digits and the
+            // delimiter itself. ASCII starts must be digits and cannot
+            // follow another ASCII word byte. The VM checks wider neighbors.
+            if (screenDecimalWindow && (position == input.Length || input[position] < 128 &&
+                (!Utf8AsciiBytePredicates.IsDigit(input[position]) ||
+                    position > 0 && Utf8AsciiBytePredicates.IsWord(input[position - 1]))))
                 continue;
             if (seekDecimal && IsNonDecimalWideStart(input, position))
                 continue;
