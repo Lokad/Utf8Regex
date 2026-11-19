@@ -1221,9 +1221,17 @@ internal static partial class Utf8SliceRunner
         var atom = program.Instructions[repeatIndex + 1];
         var minimum = repeat.RepeatMinimum;
         var maximum = minimumOnly ? minimum : repeat.RepeatMaximum;
-        if (maximum is >= 2 and <= 4 && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
-            return RunShortAsciiSetRepeat(input, start, (int)minimum, (int)maximum, program.SetMasks[atom.A],
-                ref invocation, out minimumEnd, checkExitDeadline);
+        if (maximum is >= 2 and <= 4 &&
+            atom is { Kind: Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 })
+        {
+            var window = input.Slice(start, Math.Min(input.Length - start, (int)maximum));
+            // An ASCII-only window covers every scalar the repeat can inspect.
+            // A wider category candidate still needs the normal scalar loop.
+            if (atom.Kind == Utf8SliceInstructionKind.Set ||
+                Ascii.IsValid(window) && program.GetCompleteAsciiCategoryMask(atom) != 0)
+                return RunShortAsciiSetRepeat(window, start, (int)minimum, program.SetMasks[atom.A],
+                    ref invocation, out minimumEnd, checkExitDeadline);
+        }
 
         minimumEnd = start;
         var position = start;
@@ -1320,16 +1328,16 @@ internal static partial class Utf8SliceRunner
     }
 
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunShortAsciiSetRepeat(
-        ReadOnlySpan<byte> input, int start, int minimum, int maximum, ReadOnlySpan<byte> mask,
+        ReadOnlySpan<byte> window, int start, int minimum, ReadOnlySpan<byte> mask,
         ref Utf8SliceInvocation invocation, out int minimumEnd, bool checkExitDeadline)
     {
         minimumEnd = start;
-        // One step covers at most four bytes. This unfolded set rejects any
-        // wider scalar at its first byte, so each accepted byte is an endpoint.
+        // One step covers at most four bytes. Each accepted byte is a complete
+        // ASCII scalar and a valid rewind endpoint.
         var breach = invocation.TryChargeStep();
         if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
         var consumed = 0;
-        foreach (var value in input.Slice(start, Math.Min(input.Length - start, maximum)))
+        foreach (var value in window)
         {
             if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) break;
             consumed++;

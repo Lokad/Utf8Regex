@@ -57,6 +57,9 @@ public sealed class Utf8ControlledDecimalBooleanTests
 
     [Theory]
     [InlineData("12/12/2001")]
+    [InlineData("1/2/2001\n")]
+    [InlineData("12/12/20٠1")]
+    [InlineData("12/12/20𝟙1")]
     [InlineData("١٢/12/٢٠٠١\n")]
     [InlineData("𝟙/٢/٢٠٠١")]
     public void TerminalAsciiDelimitersProveUnicodeDigitRepeats(string text)
