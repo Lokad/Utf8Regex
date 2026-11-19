@@ -869,21 +869,23 @@ internal static partial class Utf8SliceRunner
             (window.Max != window.Min && window.Max < remaining && input[start + window.Max] == window.Literal);
     }
 
-    private static (int Min, int Max, byte Literal) GetShortRepeatLiteralWindow(Utf8SliceProgram program, int atomIndex)
+    internal static (int Min, int Max, byte Literal) GetShortRepeatLiteralWindow(Utf8SliceProgram program, int atomIndex)
     {
         var code = program.Instructions.AsSpan();
+        if (atomIndex <= 0 || code.Length - atomIndex < 4) return default;
         var repeat = code[atomIndex - 1];
-        if (code.Length - atomIndex < 4 || repeat.RepeatMinimum == 0 || repeat.RepeatMaximum > 3 ||
+        if (repeat.RepeatMinimum == 0 || repeat.RepeatMaximum > 3 ||
             !IsSingleClassRepeat(code, atomIndex - 1) ||
             code[atomIndex + 3] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal)
             return default;
         return ((int)repeat.RepeatMinimum, (int)repeat.RepeatMaximum, (byte)literal.A);
     }
 
-    private static bool MayReachShortRepeatLiteral(ReadOnlySpan<byte> input, int start,
+    internal static bool MayReachShortRepeatLiteral(ReadOnlySpan<byte> input, int start,
         (int Min, int Max, byte Literal) window, bool admitsWideScalars)
     {
         var remaining = input.Length - start;
+        if (remaining <= window.Min) return false;
         // The byte window covers every repeat length only when the consumed
         // scalars are all ASCII. Leave any possible wider scalar to the VM.
         return admitsWideScalars && (input[start] >= 128 ||

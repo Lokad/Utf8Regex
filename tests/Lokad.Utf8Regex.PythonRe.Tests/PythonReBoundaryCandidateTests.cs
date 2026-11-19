@@ -29,6 +29,8 @@ public sealed class PythonReBoundaryCandidateTests
     [InlineData(@"[a-z ]{1,8}\b", "alpha beta gamma", 0, "alpha ", 3)]
     [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "é11/18/2019 😀١١/١٨/٢٠١٩", 0, "١١/١٨/٢٠١٩", 1)]
     [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "😀𐒡/2/٣٤ !11/18/2019", 4, "𐒡/2/٣٤", 2)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/201A; next 11/𝟙/2026", 0, "11/𝟙/2026", 1)]
+    [InlineData(@"\b[0-9/]{1,3}/[0-9]{1,2}/[0-9]{2,4}\b", "prefix 9/44/201x then 1//2/2026.", 0, "1//2/2026", 1)]
     [InlineData(@"\b(?P<n>\d{1,2})/X", "café11/X 22/X suffix", 0, "22/X", 1)]
     [InlineData(@"\b[01]{1,3}1X", "prefix é01X 0011X after", 0, "0011X", 1)]
     public void SearchKeepsBoundaryPredicatesCapturesAndOffsets(string pattern, string text, int offset, string? expected, int expectedCount)
@@ -69,6 +71,17 @@ public sealed class PythonReBoundaryCandidateTests
         });
         using var source = new CancellationTokenSource();
         Assert.False(regex.IsMatch("Today is 11 18 2019 and tomorrow is 11 19 2019."u8, cancellationToken: source.Token));
+    }
+
+    [Fact]
+    public void RequiredNextDelimiterCanRejectAWindowBeforeVerification()
+    {
+        using var regex = new Utf8PythonRegex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 85, MaxWorkingBytes = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.False(regex.IsMatch("Today is 11/18/201A and tomorrow is 11/19/201A."u8, cancellationToken: source.Token));
     }
 
     [Fact]

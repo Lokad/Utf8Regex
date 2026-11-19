@@ -371,6 +371,10 @@ internal struct PythonReScalarMatchState
         var windowEnd = -1;
         var verifyFirstCandidate = delimiter >= 0 && _leadingAsciiLow >= 0 &&
             (delimiter < _leadingAsciiLow || delimiter > _leadingAsciiHigh);
+        var followingWindow = verifyFirstCandidate &&
+            _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 }
+            ? Utf8SliceRunner.GetShortRepeatLiteralWindow(_program, _program.LeadingClassDelimiter.LiteralIndex + 2)
+            : default;
         try
         {
             while (!_finished)
@@ -425,6 +429,15 @@ internal struct PythonReScalarMatchState
                             ref _position, ref _invocation, out windowEnd);
                         if (breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
                         if (_position < 0) { Checkpoint(); _finished = true; return false; }
+                        // The leading boundary leaves the repeat at the start
+                        // and its range excludes this delimiter. Every start
+                        // in the window must reach the next literal from here.
+                        if (followingWindow.Min != 0 && _position <= windowEnd &&
+                            !Utf8SliceRunner.MayReachShortRepeatLiteral(input, windowEnd + 1, followingWindow, admitsWideScalars: true))
+                        {
+                            _position = windowEnd + 1;
+                            continue;
+                        }
                     }
                     // A necessary start hint still requires profile verification.
                     // Avoid its search helper when the current byte meets the hint.
