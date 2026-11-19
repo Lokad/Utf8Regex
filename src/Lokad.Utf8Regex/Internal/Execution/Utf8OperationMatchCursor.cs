@@ -202,7 +202,7 @@ internal ref partial struct Utf8OperationMatchCursor
             slots = Utf8SliceRunner.RentSlots(_sliceProgram.GroupCount, ref _sliceInvocation);
             _sliceInvocation.AnchorOriginByte = _sliceOriginByte;
             var outcome = _nonBacktrackingState is { } batch
-                ? batch.FindFirst(_sliceProgram, ref _nonBacktrackingBoundary, slots.Starts, slots.Ends, false, ref _sliceInvocation)
+                ? batch.FindFirst(_sliceProgram, ref _nonBacktrackingBoundary, slots.Starts, slots.Ends, ref _sliceInvocation)
                 : Utf8SliceRunner.TryFindFirst(_sliceProgram, _input, _slicePositionByte, slots.Starts, slots.Ends, false, ref _sliceInvocation);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Owned slice execution breached an unlimited invocation budget.");

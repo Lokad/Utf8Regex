@@ -162,21 +162,17 @@ internal static partial class Utf8SliceRunner
 
     internal static Utf8SliceSearchOutcome ReplayOrderedRegularRange(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, Utf8SliceSearchOutcome selected, Utf8SliceSlots slots,
-        bool collectHistory, ref Utf8SliceInvocation invocation)
+        ref Utf8SliceInvocation invocation)
     {
         // Unconditional edges make replay independent of the suffix. Clipping
         // after the winning end removes only continuations that lost to it.
         var replay = TryMatchAt(program, input[..selected.EndByte], selected.StartByte,
-            slots.Starts, slots.Ends, collectHistory, true, ref invocation);
+            slots.Starts, slots.Ends, true, ref invocation);
         if (replay.Breach != Utf8ExecutionLimitKind.None)
             return new(false, -1, -1, null, null, replay.Breach);
         if (!replay.IsMatch || replay.EndIndex != selected.EndByte)
-        {
-            ReleaseHistory(replay.CaptureStarts, replay.CaptureLengths, ref invocation);
             throw new InvalidOperationException("NonBacktracking capture replay changed the selected range.");
-        }
-        return new(true, selected.StartByte, selected.EndByte, replay.CaptureStarts, replay.CaptureLengths,
-            Utf8ExecutionLimitKind.None);
+        return selected;
     }
 
     private struct OrderedRegularFrontier

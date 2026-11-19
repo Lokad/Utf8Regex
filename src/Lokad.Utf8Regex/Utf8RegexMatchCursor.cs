@@ -117,14 +117,15 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         try
         {
             var program = _program!;
-            var useCaptureSlots = program.HasSingleCapturePerGroup;
+            // Regular execution exposes only the last completed capture.
+            var useCaptureSlots = program.IsNonBacktracking || program.HasSingleCapturePerGroup;
             var collectHistory = program.GroupCount != 0 && !useCaptureSlots;
             _invocation.AnchorOriginByte = _origin;
             if (program.GroupCount == 0 && _regex!.TryFindNativeLiteralForResult(_input.Span, _position,
                     ref _invocation, out var found, out var start, out var end, forCoreCursor: true))
                 outcome = new(found, start, end, null, null, Utf8ExecutionLimitKind.None);
             else outcome = program.IsNonBacktracking
-                ? FindNonBacktracking(program, collectHistory)
+                ? FindNonBacktracking(program)
                 : Utf8SliceRunner.TryFindFirst(program, _input.Span, _position, _slots.Starts, _slots.Ends,
                     collectHistory, ref _workspace, ref _invocation, _regex!.Inspection.SearchPlan);
             if (outcome.Breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
@@ -173,7 +174,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         }
     }
 
-    private Utf8SliceSearchOutcome FindNonBacktracking(Utf8SliceProgram program, bool collectHistory)
+    private Utf8SliceSearchOutcome FindNonBacktracking(Utf8SliceProgram program)
     {
         if (_nonBacktracking is null && (_firstCompactRegular || _input.Length - _position < 64))
         {
@@ -181,14 +182,14 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             var input = _input.Span;
             var selected = Utf8SliceRunner.FindOrderedRegularRange(program, input, _position, ref _invocation);
             return selected.Found && _slots.Starts.Length != 0
-                ? Utf8SliceRunner.ReplayOrderedRegularRange(program, input, selected, _slots, collectHistory, ref _invocation)
+                ? Utf8SliceRunner.ReplayOrderedRegularRange(program, input, selected, _slots, ref _invocation)
                 : selected;
         }
 
         // After the first result, use viability unless only a bounded tail
         // remains. A preferred cyclic branch can otherwise rescan each suffix.
         if (_nonBacktracking is null) PrepareNonBacktracking(program);
-        return _nonBacktracking!.FindFirst(program, ref _boundary, _slots.Starts, _slots.Ends, collectHistory, ref _invocation);
+        return _nonBacktracking!.FindFirst(program, ref _boundary, _slots.Starts, _slots.Ends, ref _invocation);
     }
 
     private void PrepareNonBacktracking(Utf8SliceProgram program)

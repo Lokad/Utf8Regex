@@ -67,8 +67,7 @@ public sealed partial class Utf8Regex
                 if (selected.Found)
                 {
                     slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-                    var replay = Utf8SliceRunner.ReplayOrderedRegularRange(program, subject, selected, slots,
-                        false, ref invocation);
+                    var replay = Utf8SliceRunner.ReplayOrderedRegularRange(program, subject, selected, slots, ref invocation);
                     if (replay.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
                     result = new(selected.StartByte, selected.EndByte);
                 }

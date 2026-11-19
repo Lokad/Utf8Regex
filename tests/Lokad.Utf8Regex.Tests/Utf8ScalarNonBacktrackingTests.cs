@@ -158,7 +158,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         {
             var input = Encoding.UTF8.GetBytes(new string('a', length));
             var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, new int[program.GroupCount], new int[program.GroupCount], true, ref invocation);
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, new int[program.GroupCount], new int[program.GroupCount], false, ref invocation);
             Assert.False(outcome.Found);
             Assert.Equal(Utf8ExecutionLimitKind.None, outcome.Breach);
             if (previous != 0) Assert.InRange(invocation.Budget.Steps, previous, previous * 2 + 64);
@@ -168,25 +168,23 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void WorkStorageAndCancellationFailuresReleaseWorkspace(bool histories)
+    [Fact]
+    public void WorkStorageAndCancellationFailuresReleaseWorkspace()
     {
         var regex = new Utf8Regex("(?<x>.)+b", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("NFA missing.");
         var input = "😀😀b"u8.ToArray();
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(13));
-        var measured = Utf8SliceRunner.TryFindFirst(program, input, 0, new int[1], new int[1], histories, ref baseline);
+        var measured = Utf8SliceRunner.TryFindFirst(program, input, 0, new int[1], new int[1], false, ref baseline);
         Assert.True(measured.Found);
-        Utf8SliceRunner.ReleaseHistory(measured.CaptureStarts, measured.CaptureLengths, ref baseline);
         Assert.Equal(13UL, baseline.Ledger.ReservedBytes);
         for (ulong steps = 1; steps < baseline.Budget.Steps; steps++)
         {
             var invocation = new Utf8SliceInvocation(new(steps, 0, 0), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
             var starts = new[] { 42 }; var ends = new[] { 43 };
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends, histories, ref invocation);
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends, false, ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, outcome.Breach);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
             Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]);
@@ -195,9 +193,8 @@ public sealed class Utf8ScalarNonBacktrackingTests
         {
             var storage = new Utf8SliceInvocation(new(0, 0, cap), Regex.InfiniteMatchTimeout, default);
             Assert.True(storage.Ledger.TryReserve(13));
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, new int[1], new int[1], histories, ref storage);
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, new int[1], new int[1], false, ref storage);
             Assert.Equal(cap == baseline.Budget.PeakWorkingBytes ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkingBytes, outcome.Breach);
-            Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref storage);
             Assert.Equal(13UL, storage.Ledger.ReservedBytes);
         }
         using var source = new CancellationTokenSource();
@@ -206,20 +203,19 @@ public sealed class Utf8ScalarNonBacktrackingTests
         cancelled.CheckpointHook = _ => source.Cancel();
         var error = Assert.Throws<OperationCanceledException>(() =>
             Utf8SliceRunner.TryFindFirst(program, Encoding.UTF8.GetBytes(new string('a', 4096)), 0,
-                new int[1], new int[1], histories, ref cancelled));
+                new int[1], new int[1], false, ref cancelled));
         Assert.Equal(source.Token, error.CancellationToken);
         Assert.Equal(13UL, cancelled.Ledger.ReservedBytes);
     }
 
     [Fact]
-    public void CancellationAtTheFinalHistoryCheckpointReleasesUnpublishedCaptures()
+    public void CancellationAtTheFinalProjectionCheckpointClearsUnpublishedSlots()
     {
         var regex = new Utf8Regex("(a)", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("NFA missing.");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
-        var measured = Utf8SliceRunner.TryFindFirst(program, "a"u8, 0, new int[1], new int[1], true, ref baseline);
+        var measured = Utf8SliceRunner.TryFindFirst(program, "a"u8, 0, new int[1], new int[1], false, ref baseline);
         Assert.True(measured.Found);
-        Utf8SliceRunner.ReleaseHistory(measured.CaptureStarts, measured.CaptureLengths, ref baseline);
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
@@ -229,7 +225,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
         invocation.CheckpointHook = steps => { if (steps == finalStep) source.Cancel(); };
         var starts = new int[1]; var ends = new int[1];
         var error = Assert.Throws<OperationCanceledException>(() =>
-            Utf8SliceRunner.TryFindFirst(program, "a"u8, 0, starts, ends, true, ref invocation));
+            Utf8SliceRunner.TryFindFirst(program, "a"u8, 0, starts, ends, false, ref invocation));
         Assert.Equal(source.Token, error.CancellationToken);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]);

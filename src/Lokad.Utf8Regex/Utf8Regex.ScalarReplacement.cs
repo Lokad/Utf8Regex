@@ -92,7 +92,7 @@ public sealed partial class Utf8Regex
                 }
                 var outcome = batch is null
                     ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, false, ref workspace, ref invocation)
-                    : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, false, ref invocation);
+                    : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, ref invocation);
                 try
                 {
                     if (outcome.Breach != Utf8ExecutionLimitKind.None)

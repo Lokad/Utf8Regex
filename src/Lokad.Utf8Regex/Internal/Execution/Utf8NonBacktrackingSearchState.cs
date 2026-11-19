@@ -315,7 +315,7 @@ internal sealed class Utf8NonBacktrackingSearchState
     }
 
     internal Utf8SliceSearchOutcome FindFirst(Utf8SliceProgram program, ref int boundary,
-        int[] captureStarts, int[] captureEnds, bool collectHistory, ref Utf8SliceInvocation invocation)
+        int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation)
     {
         var completed = false;
         ulong reservation = 0;
@@ -383,19 +383,12 @@ internal sealed class Utf8NonBacktrackingSearchState
                         pc++;
                         break;
                     case Utf8SliceInstructionKind.Accept:
-                        breach = Utf8SliceRunner.BuildNonBacktrackingHistory(captureStarts, captureEnds, collectHistory,
-                            ref invocation, out var starts, out var lengths);
-                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
-                        try
-                        {
-                            invocation.Budget.ThrowIfCancellationRequested();
-                            var startByte = _boundaries[start];
-                            var endByte = _boundaries[boundary];
-                            boundary += start == boundary ? 1 : 0;
-                            completed = true;
-                            return new(true, startByte, endByte, starts, lengths, Utf8ExecutionLimitKind.None);
-                        }
-                        catch { Utf8SliceRunner.ReleaseHistory(starts, lengths, ref invocation); throw; }
+                        invocation.Budget.ThrowIfCancellationRequested();
+                        var startByte = _boundaries[start];
+                        var endByte = _boundaries[boundary];
+                        boundary += start == boundary ? 1 : 0;
+                        completed = true;
+                        return new(true, startByte, endByte, null, null, Utf8ExecutionLimitKind.None);
                     default:
                         boundary++;
                         pc++;

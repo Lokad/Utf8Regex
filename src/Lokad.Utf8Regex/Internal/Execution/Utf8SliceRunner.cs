@@ -337,8 +337,8 @@ internal static partial class Utf8SliceRunner
                 start < input.Length && (input[start] & 0xC0) == 0x80)
                 return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
             var outcome = RunNonBacktracking(program, input, start, captureStarts, captureEnds,
-                collectHistory, true, requireNonEmpty, ref invocation);
-            return new(outcome.Found, outcome.EndByte, outcome.Breach, outcome.CaptureStarts, outcome.CaptureLengths);
+                true, requireNonEmpty, ref invocation);
+            return new(outcome.Found, outcome.EndByte, outcome.Breach, null, null);
         }
         var workspace = new AttemptWorkspace();
         try
@@ -499,10 +499,10 @@ internal static partial class Utf8SliceRunner
             return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
         if (program.IsNonBacktracking)
         {
-            if (!collectHistory && captureStarts.Length == 0 && program.NonBacktrackingOrderedClosures.Length != 0)
+            if (captureStarts.Length == 0 && program.NonBacktrackingOrderedClosures.Length != 0)
                 return FindOrderedRegularRange(program, input, fromByte, ref invocation);
             return RunNonBacktracking(program, input, fromByte, captureStarts, captureEnds,
-                collectHistory, false, false, ref invocation);
+                false, false, ref invocation);
         }
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
@@ -813,7 +813,7 @@ internal static partial class Utf8SliceRunner
                 var boundary = batch.ResolveByteOffset(fromByte);
                 while (true)
                 {
-                    var found = batch.FindFirst(program, ref boundary, captureStarts, captureEnds, false, ref invocation);
+                    var found = batch.FindFirst(program, ref boundary, captureStarts, captureEnds, ref invocation);
                     if (found.Breach != Utf8ExecutionLimitKind.None) return new(count, found.Breach);
                     if (!found.Found) break;
                     count++;

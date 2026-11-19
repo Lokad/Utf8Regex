@@ -437,32 +437,34 @@ public sealed class Utf8MemoryCursorTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ResultTrafficIsCumulativeEvenWhenEachPublishedLoanRefunds(bool withCapture)
+    [InlineData(false, RegexOptions.None)]
+    [InlineData(true, RegexOptions.None)]
+    [InlineData(true, RegexOptions.NonBacktracking)]
+    public void ResultTrafficIsCumulativeEvenWhenEachPublishedLoanRefunds(bool withCapture, RegexOptions options)
     {
         var root = new Root(); var working = new Account(root);
         var resultBytes = withCapture
             ? Utf8ConstructionBudget.ArrayBytes<int>(3) + Utf8ConstructionBudget.ArrayBytes<Utf8CaptureRange>(2)
             : Utf8ConstructionBudget.ArrayBytes<Utf8CaptureRange>(1);
-        using var cursor = new Utf8Regex(withCapture ? "(x)" : "x", options: RegexOptions.None, policy: new Utf8RegexPolicy
+        using var cursor = new Utf8Regex(withCapture ? "(x)" : "x", options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxResultBytes = 2 * resultBytes
             }
-        }).CreateMatchCursor("xxxxx"u8.ToArray(), workingMemoryAllowance: working);
+        }).CreateMatchCursor(Encoding.UTF8.GetBytes(new string('x', 80)), workingMemoryAllowance: working);
         Assert.True(cursor.MoveNext(out var first));
         Assert.True(cursor.MoveNext(out var second));
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _));
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, error.ResourceKind);
         Assert.Equal(0UL, root.Used);
         Assert.Equal(0, first.GetCaptures(0)[0].StartOffsetInBytes);
         Assert.Equal(1, second.GetCaptures(0)[0].StartOffsetInBytes);
         if (withCapture)
         {
-            Assert.Equal(first.Value, first.GetCaptures(1)[0]);
-            Assert.Equal(second.Value, second.GetCaptures(1)[0]);
+            Assert.Equal(first.Value, Assert.Single(first.GetCaptures(1).ToArray()));
+            Assert.Equal(second.Value, Assert.Single(second.GetCaptures(1).ToArray()));
         }
     }
 

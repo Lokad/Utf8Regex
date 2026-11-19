@@ -269,7 +269,7 @@ public sealed class Utf8NonBacktrackingBatchTests
     }
 
     [Fact]
-    public void EveryHistoryReplayWorkCutoffReleasesScratchAndUnpublishedCaptures()
+    public void EveryCaptureReplayCutoffRestoresWorkingStorage()
     {
         var program = Program("(?<x>a(?<x>b)c)");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
@@ -278,10 +278,9 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.NotNull(measured);
         var preparationSteps = baseline.Budget.Steps;
         var boundary = 0;
-        var found = measured.FindFirst(program, ref boundary, new int[1], new int[1], true, ref baseline);
+        var found = measured.FindFirst(program, ref boundary, new int[1], new int[1], ref baseline);
         Assert.True(found.Found);
         var replaySteps = baseline.Budget.Steps - preparationSteps;
-        Utf8SliceRunner.ReleaseHistory(found.CaptureStarts, found.CaptureLengths, ref baseline);
         measured.Release(ref baseline);
         for (ulong limit = 1; limit <= replaySteps; limit++)
         {
@@ -292,9 +291,8 @@ public sealed class Utf8NonBacktrackingBatchTests
             var held = invocation.Ledger.ReservedBytes;
             boundary = 0;
             var starts = new[] { 42 }; var ends = new[] { 43 };
-            var result = table.FindFirst(program, ref boundary, starts, ends, true, ref invocation);
+            var result = table.FindFirst(program, ref boundary, starts, ends, ref invocation);
             Assert.Equal(limit == replaySteps ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, result.Breach);
-            Utf8SliceRunner.ReleaseHistory(result.CaptureStarts, result.CaptureLengths, ref invocation);
             Assert.Equal(held, invocation.Ledger.ReservedBytes);
             if (!result.Found) { Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]); }
             table.Release(ref invocation);
@@ -308,9 +306,8 @@ public sealed class Utf8NonBacktrackingBatchTests
             if (table is not null)
             {
                 boundary = 0;
-                var result = table.FindFirst(program, ref boundary, new int[1], new int[1], true, ref invocation);
+                var result = table.FindFirst(program, ref boundary, new int[1], new int[1], ref invocation);
                 breach = result.Breach;
-                Utf8SliceRunner.ReleaseHistory(result.CaptureStarts, result.CaptureLengths, ref invocation);
                 table.Release(ref invocation);
             }
             Assert.Equal(cap == baseline.Budget.PeakWorkingBytes ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkingBytes, breach);
@@ -319,16 +316,15 @@ public sealed class Utf8NonBacktrackingBatchTests
     }
 
     [Fact]
-    public void FinalHistoryCancellationReleasesTheTableAndUnpublishedCaptures()
+    public void FinalReplayCancellationReleasesTheTableAndClearsSlots()
     {
         var program = Program("(a)");
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8NonBacktrackingSearchState.TryCreate(program, "a"u8, ref baseline, out var measured));
         Assert.NotNull(measured);
         var boundary = 0;
-        var found = measured.FindFirst(program, ref boundary, new int[1], new int[1], true, ref baseline);
+        var found = measured.FindFirst(program, ref boundary, new int[1], new int[1], ref baseline);
         Assert.True(found.Found);
-        Utf8SliceRunner.ReleaseHistory(found.CaptureStarts, found.CaptureLengths, ref baseline);
         measured.Release(ref baseline);
         using var source = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
@@ -342,7 +338,7 @@ public sealed class Utf8NonBacktrackingBatchTests
         {
             Assert.Equal(Utf8ExecutionLimitKind.None, Utf8NonBacktrackingSearchState.TryCreate(program, "a"u8, ref invocation, out var table));
             Assert.NotNull(table);
-            try { boundary = 0; _ = table.FindFirst(program, ref boundary, starts, ends, true, ref invocation); }
+            try { boundary = 0; _ = table.FindFirst(program, ref boundary, starts, ends, ref invocation); }
             finally { table.Release(ref invocation); }
         });
         Assert.Equal(source.Token, error.CancellationToken);

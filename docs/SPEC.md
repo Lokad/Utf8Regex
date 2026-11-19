@@ -194,6 +194,8 @@ subset. It preserves ordered choice, greedy/lazy behavior, scalar empty progress
 and each group's last completed capture. Unsupported grammar fails before planning.
 Nullable cycles and zero-width repeats must terminate without bound-sized
 expansion. This mode does not expose ordinary backtracking capture history.
+Its persistent cursor snapshots the last completed slots directly and charges
+the snapshot arrays to the cumulative result budget.
 For compact graphs, `IsMatch` can carry the active state set in a single mask.
 It evaluates anchors and boundaries at their original scalar edges before
 reusing admitted ASCII consuming transitions. Each advance spends work and

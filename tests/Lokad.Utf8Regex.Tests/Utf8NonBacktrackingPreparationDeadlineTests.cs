@@ -36,7 +36,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
                     Assert.True(invocation.Ledger.TryReserve(13));
                     var boundary = origin;
                     var starts = new[] { 42 }; var ends = new[] { 43 };
-                    var found = state.FindFirst(program, ref boundary, starts, ends, false, ref invocation);
+                    var found = state.FindFirst(program, ref boundary, starts, ends, ref invocation);
                     Assert.Equal(Utf8ExecutionLimitKind.None, found.Breach);
                     Assert.Equal(hit, found.Found);
                     var candidateQuanta = (ulong)(prefix - origin + 1 + 63) / 64;
@@ -53,7 +53,7 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
                     var limited = new Utf8SliceInvocation(new(1, 0, 0), Timeout.InfiniteTimeSpan, default);
                     Assert.True(limited.Ledger.TryReserve(13));
                     boundary = origin;
-                    var denied = state.FindFirst(program, ref boundary, starts, ends, false, ref limited);
+                    var denied = state.FindFirst(program, ref boundary, starts, ends, ref limited);
                     Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
                     Assert.False(denied.Found); Assert.Equal(origin + 64, boundary);
                     Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]);
@@ -90,9 +90,9 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
             invocation.CheckpointHook = _ => { if (expire) ticks = 100; else live.Cancel(); };
             var starts = new[] { 42 }; var ends = new[] { 43 }; var boundary = 0;
             if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-                state.FindFirst(program, ref boundary, starts, ends, false, ref invocation));
+                state.FindFirst(program, ref boundary, starts, ends, ref invocation));
             else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() =>
-                state.FindFirst(program, ref boundary, starts, ends, false, ref invocation)).CancellationToken);
+                state.FindFirst(program, ref boundary, starts, ends, ref invocation)).CancellationToken);
             Assert.Equal(expire ? 64 : 128, boundary);
             Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
@@ -127,9 +127,9 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
             armed = expire;
             var starts = new[] { 42 }; var ends = new[] { 43 }; var boundary = 0;
             if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
-                state.FindFirst(program, ref boundary, starts, ends, false, ref invocation));
+                state.FindFirst(program, ref boundary, starts, ends, ref invocation));
             else Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() =>
-                state.FindFirst(program, ref boundary, starts, ends, false, ref invocation)).CancellationToken);
+                state.FindFirst(program, ref boundary, starts, ends, ref invocation)).CancellationToken);
             Assert.Equal(64, boundary);
             Assert.Equal(-1, starts[0]); Assert.Equal(-1, ends[0]);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);

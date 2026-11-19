@@ -133,7 +133,7 @@ internal static partial class Utf8SliceRunner
     // misses. A saved acceptance waits only for its higher-priority threads.
     private static Utf8SliceSearchOutcome RunNonBacktracking(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
-        int[] captureStarts, int[] captureEnds, bool collectHistory,
+        int[] captureStarts, int[] captureEnds,
         bool anchored, bool requireNonEmpty, ref Utf8SliceInvocation invocation)
     {
         var workspace = new NonBacktrackingWorkspace();
@@ -187,20 +187,11 @@ internal static partial class Utf8SliceRunner
                 }
                 if (bestStart >= 0 && workspace.Next.Count == 0)
                 {
-                    breach = workspace.Project(program, captureStarts, captureEnds, collectHistory,
-                        ref invocation, out var starts, out var lengths);
+                    breach = workspace.Project(program, captureStarts, captureEnds, ref invocation);
                     if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
-                    try
-                    {
-                        invocation.Budget.ThrowIfCancellationRequested();
-                        completed = true;
-                        return new(true, bestStart, bestEnd, starts, lengths, Utf8ExecutionLimitKind.None);
-                    }
-                    catch
-                    {
-                        ReleaseHistory(starts, lengths, ref invocation);
-                        throw;
-                    }
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    completed = true;
+                    return new(true, bestStart, bestEnd, null, null, Utf8ExecutionLimitKind.None);
                 }
                 if (!hasScalar || anchored && workspace.Next.Count == 0)
                     return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
@@ -397,10 +388,8 @@ internal static partial class Utf8SliceRunner
         }
 
         internal Utf8ExecutionLimitKind Project(Utf8SliceProgram program, int[] captureStarts, int[] captureEnds,
-            bool collectHistory, ref Utf8SliceInvocation invocation, out int[][]? starts, out int[][]? lengths)
+            ref Utf8SliceInvocation invocation)
         {
-            starts = null;
-            lengths = null;
             var groupCount = RegisterCount == 0 ? 0 : program.GroupCount;
             for (var group = 0; group < groupCount; group++)
             {
@@ -409,49 +398,8 @@ internal static partial class Utf8SliceRunner
                 captureStarts[group] = Best[group * 2];
                 captureEnds[group] = Best[group * 2 + 1];
             }
-            return BuildNonBacktrackingHistory(captureStarts, captureEnds, collectHistory, ref invocation, out starts, out lengths);
-        }
-    }
-
-    internal static Utf8ExecutionLimitKind BuildNonBacktrackingHistory(int[] captureStarts, int[] captureEnds,
-        bool collectHistory, ref Utf8SliceInvocation invocation, out int[][]? starts, out int[][]? lengths)
-    {
-        starts = null;
-        lengths = null;
-        var participants = 0;
-        if (collectHistory)
-            for (var group = 0; group < captureStarts.Length; group++)
-            {
-                var breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                if (captureStarts[group] >= 0) participants++;
-            }
-        if (!collectHistory) return Utf8ExecutionLimitKind.None;
-        var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int[]>(captureStarts.Length) * 2
-            + (ulong)participants * Utf8ConstructionBudget.ArrayBytes<int>(1) * 2);
-        var resultAdmission = invocation.Budget.TryChargeResultBytes(bytes);
-        if (resultAdmission != Utf8ExecutionLimitKind.None) return resultAdmission;
-        var admission = invocation.TryReserveWorking(bytes);
-        if (admission != Utf8ExecutionLimitKind.None) return admission;
-        var published = false;
-        try
-        {
-            if (bytes != 0 && (admission = invocation.TryChargeInputStep()) != Utf8ExecutionLimitKind.None) return admission;
-            var resultStarts = captureStarts.Length == 0 ? [] : new int[captureStarts.Length][];
-            var resultLengths = captureStarts.Length == 0 ? [] : new int[captureStarts.Length][];
-            for (var group = 0; group < captureStarts.Length; group++)
-            {
-                var breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                resultStarts[group] = captureStarts[group] >= 0 ? [captureStarts[group]] : [];
-                resultLengths[group] = captureStarts[group] >= 0 ? [captureEnds[group] - captureStarts[group]] : [];
-            }
-            starts = resultStarts;
-            lengths = resultLengths;
-            published = true;
             return Utf8ExecutionLimitKind.None;
         }
-        finally { if (!published) invocation.Ledger.Release(bytes); }
     }
 
     internal static bool HoldsNonBacktrackingAnchor(in Utf8SliceInstruction instruction, ReadOnlySpan<byte> input, int position)
