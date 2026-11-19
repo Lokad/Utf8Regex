@@ -28,6 +28,8 @@ public sealed class Utf8MemoryCursorTests
     [InlineData(@"\b", "éa-β C", RegexOptions.None)]
     [InlineData(@"(\w+)\s+(ab|bc|longer)", "😀é abc beta bc X longer", RegexOptions.None)]
     [InlineData(@"(\w+)\s+(X?Holmes|Watson)", "é XHolmes beta Watson", RegexOptions.None)]
+    [InlineData(@"\B[a-zA-Z]{0,12}ing\B", "éwalkingish a starting point", RegexOptions.None)]
+    [InlineData(@"\b([a-zA-Z]{0,12})ing\b", "β walking abcdefghijklmnopqring éworking", RegexOptions.None)]
     public void PublicRangesPreserveGroupsAndHistories(string pattern, string subject, RegexOptions options)
     {
         var bcl = new Regex(pattern, options);
@@ -119,6 +121,21 @@ public sealed class Utf8MemoryCursorTests
         Assert.Equal("a@b.cd"u8.ToArray(), result.GetValueMemory().ToArray());
         Assert.False(cursor.MoveNext(out _));
         Assert.Equal(0UL, working.Used);
+    }
+
+    [Fact]
+    public void ShortSuffixWindowKeepsTheOriginalBoundariesAndByteFloor()
+    {
+        var input = "😀walking Sherlock Holmes and Watson were quietly outside 😀starting! kingpin"u8.ToArray();
+        using var regex = new Utf8Regex(@"\b[a-zA-Z]{0,12}ing\b", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128 }
+        });
+        using var cursor = regex.CreateMatchCursor(input, startOffsetInBytes: "😀wa"u8.Length);
+
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal("starting"u8.ToArray(), match.GetValueMemory().ToArray());
+        Assert.False(cursor.MoveNext(out _));
     }
 
     [Fact]

@@ -404,7 +404,9 @@ internal static partial class Utf8SliceRunner
         var index = 0;
         while (index < code.Length && index < 64)
         {
-            if (code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+            // The verifier still checks boundaries on the original subject.
+            if (code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
+                Utf8SliceInstructionKind.Boundary)
             {
                 index++;
                 continue;

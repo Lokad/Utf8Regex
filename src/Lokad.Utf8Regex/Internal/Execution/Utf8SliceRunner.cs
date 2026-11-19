@@ -555,8 +555,7 @@ internal static partial class Utf8SliceRunner
                     return new(false, -1, -1, null, null, proofBreach);
                 classAlternatives = GetAlignedDelimiterAlternatives(program, literalIndex, candidatePlan.PrefilterPlan.PrimarySearcher);
             }
-            if (classLiteral < 0 && wideInput &&
-                classAlternatives is null &&
+            if (classLiteral < 0 && classAlternatives is null &&
                 GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefixAscii) is { } prefixSearch)
             {
                 classSearch = prefixSearch;
