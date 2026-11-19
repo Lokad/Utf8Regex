@@ -340,6 +340,23 @@ internal sealed class Pcre2BacktrackingLowerer
                         CanAutoPossess(repeat, followingToken);
                     if (autoPossessive)
                         EmitPossessiveTokenRepeat(repeat);
+                    else if (repeat is { Minimum: 0, Maximum: 1 } &&
+                        repeat.Preference != Pcre2RepeatPreference.Possessive &&
+                        repeat.Body is Pcre2TokenBacktrackingNode
+                        {
+                            Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass,
+                        })
+                    {
+                        // A single consuming atom has no iteration state to restore.
+                        // The fork preserves which branch is tried and unwound first.
+                        var fork = _instructions.Count;
+                        _instructions.Add(default);
+                        EmitNode(repeat.Body, null);
+                        var exit = _instructions.Count;
+                        _instructions[fork] = repeat.Preference == Pcre2RepeatPreference.Greedy
+                            ? Pcre2BacktrackingInstruction.CreateSplit(fork + 1, exit)
+                            : Pcre2BacktrackingInstruction.CreateSplit(exit, fork + 1);
+                    }
                     else if (repeat.Preference == Pcre2RepeatPreference.Greedy &&
                         repeat.Body is Pcre2TokenBacktrackingNode { Token: var collapsibleToken } &&
                         collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass)

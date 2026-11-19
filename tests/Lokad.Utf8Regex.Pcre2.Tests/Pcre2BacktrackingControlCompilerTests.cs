@@ -68,6 +68,23 @@ public sealed class Pcre2BacktrackingControlCompilerTests
         Assert.Equal("ab", System.Text.Encoding.UTF8.GetString((fallback2Captures[2].Success ? fallback2Input.Slice(fallback2Captures[2].StartOffsetInBytes, fallback2Captures[2].EndOffsetInBytes - fallback2Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
+    [Theory]
+    [InlineData("?", 2)]
+    [InlineData("??", 0)]
+    public void OptionalScalarKeepsCapturePreferenceAndCanRetry(string quantifier, int preferredBoundary)
+    {
+        using var regex = new Utf8Pcre2Regex($@"\A(?<first>é{quantifier})(?<second>[é😀]?)(*MARK:end)\z");
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+
+        Assert.True(regex.Match("é"u8, captures: captures).Success);
+        Assert.Equal((0, preferredBoundary), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal((preferredBoundary, 2), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
+
+        Assert.True(regex.Match("é😀"u8, captures: captures).Success);
+        Assert.Equal((0, 2), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal((2, 6), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
+    }
+
     [Fact]
     public void AcceptSucceedsImmediatelyAtTheCurrentInvocationBoundary()
     {
