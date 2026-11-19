@@ -215,10 +215,16 @@ public sealed class Utf8FiniteLiteralMatchTests
             });
             var expected = working ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes;
             Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.First(limited.CreateMatchCursor(input))).ResourceKind);
+            AssertRange(limited.Match(input, 0, []), text, 3, 6);
+            var slots = new Utf8CaptureRange[3];
             if (working)
-                Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input, 0, []).Success).ResourceKind);
+                Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input, 0, slots)).ResourceKind);
             else
-                Assert.True(limited.Match(input, 0, []).Success); // Caller-owned output creates no result-storage payload.
+            {
+                AssertRange(limited.Match(input, 0, slots), text, 3, 6);
+                AssertRange(slots[1], text, 3, 3);
+                AssertRange(slots[2], text, 6, 3);
+            }
         }
     }
 
