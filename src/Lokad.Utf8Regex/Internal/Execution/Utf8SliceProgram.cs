@@ -1622,7 +1622,7 @@ internal static class Utf8SliceLowerer
                     if (frame.Stage == 0 && !MirrorExecute && repeat is { Minimum: 1, Maximum: long.MaxValue, Lazy: false })
                     {
                         var remaining = 32;
-                        if (IsDelimitedAsciiRun(repeat.Body) ||
+                        if (GetDelimitedAsciiRunByte(repeat.Body) >= 0 ||
                             repeat.Body is Utf8SliceNode.AlternationNode && Facts[repeat.Body].Minimum > 0 &&
                             IsSmallPureBody(repeat.Body, ref remaining))
                         {
@@ -1637,7 +1637,9 @@ internal static class Utf8SliceLowerer
                         // Each completed body has already advanced the input.
                         // A plain fork preserves greedy exits and capture undo.
                         Emit(new(Utf8SliceInstructionKind.Fork, Instructions.Count + 2, 0, 0, 0));
-                        Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, 0, 0, 0));
+                        // Jump.B carries the required delimiter plus one, or zero
+                        // for a loop without a proved delimiter.
+                        Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, GetDelimitedAsciiRunByte(repeat.Body) + 1, 0, 0));
                         break;
                     }
                     // Zero or one iteration needs a branch, not a counter or
@@ -1921,14 +1923,14 @@ internal static class Utf8SliceLowerer
             }
         }
 
-        private static bool IsDelimitedAsciiRun(Utf8SliceNode body)
+        private static int GetDelimitedAsciiRunByte(Utf8SliceNode body)
         {
             if (body is Utf8SliceNode.CaptureNode capture) body = capture.Body;
             return body is Utf8SliceNode.ConcatNode { Children: [
                 Utf8SliceNode.RepeatNode { Minimum: 1, Maximum: long.MaxValue, Lazy: false, Body:
                     Utf8SliceNode.SetNode { Mask16.Length: 16, Negated: false, Members.Length: 0, FoldCase: false } set },
                 Utf8SliceNode.LiteralNode { Value: >= 0 and < 128, FoldCase: false } delimiter] } &&
-                (set.Mask16[delimiter.Value >> 3] & (1 << (delimiter.Value & 7))) == 0;
+                (set.Mask16[delimiter.Value >> 3] & (1 << (delimiter.Value & 7))) == 0 ? delimiter.Value : -1;
         }
 
         private void CompleteNullableNonBacktrackingIteration(ref EmissionFrame frame, int continueAt)

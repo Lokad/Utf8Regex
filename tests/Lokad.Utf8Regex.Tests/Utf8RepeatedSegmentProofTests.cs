@@ -27,6 +27,18 @@ public sealed class Utf8RepeatedSegmentProofTests
         Assert.False(regex.IsMatch("northwind.control.net#"u8));
     }
 
+    [Theory]
+    [InlineData("northwind.io")]
+    [InlineData("northwind.io\n")]
+    public void MissingDelimiterAvoidsAnImpossibleExtraIteration(string subject)
+    {
+        using var regex = new Utf8Regex(@"\A(?<label>[a-z]+\.)+[a-z]{2,12}$", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 100, MaxWorkingBytes = 1 }
+        });
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(subject)));
+    }
+
     [Fact]
     public void FixedCapturedRunsPreserveEveryCaptureAndTheFinalBackreference()
     {

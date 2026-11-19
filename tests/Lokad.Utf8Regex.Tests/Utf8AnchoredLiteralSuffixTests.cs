@@ -12,7 +12,9 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [Fact]
     public void FinalScalarScreenRejectsBeforeWorkingAdmission()
     {
-        const string pattern = @"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[0-9])\]?$";
+        // Both tails can start at A. The successful case needs the saved
+        // alternative after the letter-only arm rejects the digit.
+        const string pattern = @"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[A-Z][0-9])\]?$";
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy { MaxWorkingBytes = 1 }
@@ -21,7 +23,7 @@ public sealed class Utf8AnchoredLiteralSuffixTests
         Assert.False(regex.IsMatch("abc.A#\n"u8, token.Token));
         Assert.Equal(0, regex.Count("abc.A#"u8, token.Token));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch("abc.AB\n"u8, token.Token)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch("abc.A1\n"u8, token.Token)).ResourceKind);
     }
 
     [Theory]

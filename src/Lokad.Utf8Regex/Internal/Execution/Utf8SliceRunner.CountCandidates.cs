@@ -770,6 +770,10 @@ internal static partial class Utf8SliceRunner
         var probe = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, index);
         if ((uint)probe >= (uint)code.Length) return 0;
         var entry = code[probe];
+        // A lowered delimited repeat cannot complete another iteration without
+        // its exact delimiter. The fork step covers this bounded byte search.
+        if (entry is { Kind: Utf8SliceInstructionKind.Jump, B: > 0 } && input.Length - position <= 32)
+            return input[position..].Contains((byte)(entry.B - 1)) ? 0 : -1;
         // Nested forks prove viability without selecting an inner path.
         if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > probe + 1)
             return MatchesStraightAsciiPrefix(program, input, position, entry.A, 2) ||
@@ -779,13 +783,20 @@ internal static partial class Utf8SliceRunner
             var minimum = entry.RepeatMinimum;
             if (minimum == 0 && entry.RepeatMaximum == 1)
                 return MayMatchBranchedAsciiPrefix(program, input, position, probe, out _, instructionLimit: 4) ? 0 : -1;
-            // Each required iteration consumes at least one byte. An opaque
-            // or zero-width body cannot use this lower bound.
-            if (minimum > input.Length - position && IsSingleAtomRepeat(code, probe, entry) &&
-                code[probe + 1].Kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or
+            if (minimum > 0 && IsSingleAtomRepeat(code, probe, entry))
+            {
+                var atom = code[probe + 1];
+                var remaining = input.Length - position;
+                // A required pure atom consumes at least one byte. An exact
+                // ASCII interval also proves whether its first byte can fit.
+                if (minimum > remaining && atom.Kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or
                     Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Shorthand or
                     Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid)
-                return -1;
+                    return -1;
+                var first = GetUnfoldedAsciiRange(atom, out var last);
+                if (first >= 0 && (remaining == 0 || (uint)(input[position] - first) > (uint)(last - first)))
+                    return -1;
+            }
         }
         if (!MatchesStraightAsciiPrefix(program, input, position, probe, 2, out var verified, out _))
             return -1;
