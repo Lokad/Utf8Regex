@@ -2606,7 +2606,7 @@ internal static partial class BenchmarkInspectReporter
         Measure("WellFormedOnly", iterations, context.ExecuteUtf8WellFormedOnly);
         Measure("PrefilterOnly", iterations, context.ExecuteUtf8PrefilterOnly);
         Measure("DirectHook", iterations, context.ExecuteUtf8DirectHookOnly);
-        if (context.Utf8Regex.Inspection.DebugCanGuideFallbackVerification)
+        if (context.Utf8Regex.Inspection.SearchPlan.HasFallbackCandidates)
         {
             Measure("FallbackSearchStartsOnly", iterations, context.ExecuteUtf8FallbackSearchStartsOnly);
         }
@@ -2693,7 +2693,7 @@ internal static partial class BenchmarkInspectReporter
         });
         Measure("TryMatchNoValidation", iterations, () => context.Utf8Regex.TryMatchDirectWithoutValidation(context.InputBytes, out _) ? 1 : 0);
         Measure("CompiledTryMatchNoValidation", iterations, () => context.CompiledUtf8Regex.TryMatchDirectWithoutValidation(context.InputBytes, out _) ? 1 : 0);
-        if (context.Utf8Regex.Inspection.DebugCanGuideFallbackVerification)
+        if (context.Utf8Regex.Inspection.SearchPlan.HasFallbackCandidates)
         {
             Measure("FallbackSearchStartsOnly", iterations, context.ExecuteUtf8FallbackSearchStartsOnly);
         }
@@ -3640,14 +3640,12 @@ internal static partial class BenchmarkInspectReporter
                 Console.WriteLine($"StructuralStage[{i}] : {FormatStructuralSearchStage(structuralStages[i])}");
             }
         }
-        Console.WriteLine($"FallbackPlans     : {regex.Inspection.SearchPlan.FallbackCandidatePlans?.Length ?? 0}");
-        if (regex.Inspection.SearchPlan.FallbackCandidatePlans is { Length: > 0 } fallbackPlans)
+        var fallbackPlans = Utf8FallbackReplay.GetCandidatePlans(regex.Inspection.SearchPlan);
+        Console.WriteLine($"FallbackPlans     : {fallbackPlans.Length}");
+        for (var i = 0; i < fallbackPlans.Length; i++)
         {
-            for (var i = 0; i < fallbackPlans.Length; i++)
-            {
-                var plan = fallbackPlans[i];
-                Console.WriteLine($"FallbackPlan[{i}]  : Yield={plan.YieldKind}, Stages={plan.Stages?.Length ?? 0}");
-            }
+            var plan = fallbackPlans[i];
+            Console.WriteLine($"FallbackPlan[{i}]  : Yield={plan.YieldKind}, Stages={plan.Stages?.Length ?? 0}");
         }
         Console.WriteLine($"FallbackReason    : {regex.Inspection.FallbackReason ?? "<native>"}");
     }

@@ -48,9 +48,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Assert.Equal(PreparedMultiLiteralKind.ExactDirect, plan.MultiLiteralSearch.Kind);
             Assert.True(plan.AlternateLiteralSearch.HasValue);
             Assert.Same(plan.AlternateLiteralSearch.Value.SearchData.Buckets, plan.MultiLiteralSearch.ExactSearch.SearchData.Buckets);
-            var expected = payload + Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchStage>(plan.StructuralSearchPlan.Stages.Length)
-                + Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchPlan>(1)
-               ;
+            var expected = payload + Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchStage>(plan.StructuralSearchPlan.Stages.Length);
             Assert.Equal(expected, owner.Budget.ReservedBytes);
             Assert.Equal(Math.Max(payloadPeak, expected), owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
@@ -73,7 +71,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
             var plan = Utf8SearchPlan.Prepare(facts);
             var windows = Assert.IsType<Utf8StructuralSearchPlan[]>(plan.PrefilterPlan.WindowPlans);
             Assert.Equal(2, windows.Length);
-            Assert.Same(windows, plan.FallbackCandidatePlans);
+            Assert.Same(windows, plan.PrefilterPlan.WindowSource.StructuralSearchPlans);
             var primary = Family(plan.PrefilterPlan.PrimarySearcher);
             var first = Family(Window(windows[0]).LeadingSearcher);
             var second = Family(Window(windows[1]).TrailingSearcher);
@@ -103,12 +101,11 @@ public sealed class Utf8CanonicalSearchPayloadTests
             var plan = Utf8SearchPlan.Prepare(facts);
             Assert.Equal(primaryLiteral is null ? PreparedSearcherKind.MultiLiteral : PreparedSearcherKind.ExactLiteral,
                 plan.PrefilterPlan.PrimarySearcher.Kind);
-            var windows = Assert.IsType<Utf8StructuralSearchPlan[]>(plan.FallbackCandidatePlans);
+            var windows = Assert.IsType<Utf8StructuralSearchPlan[]>(plan.PrefilterPlan.WindowPlans);
             var family = Family(Window(windows[0]).LeadingSearcher);
             Assert.Equal(1, family.IndexOf("xbar"u8));
             Assert.Equal(-1, family.IndexOf("needle"u8));
             Assert.Equal(primaryLiteral is null ? -1 : 0, plan.PrefilterPlan.PrimarySearcher.FindFirst("needle"u8));
-            Assert.Same(windows, plan.PrefilterPlan.WindowPlans);
             Assert.Equal(0ul, owner.Budget.Depth);
         }
     }

@@ -158,7 +158,7 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecuteUtf8FallbackSearchStartsOnly()
     {
-        if (Operation != LokadPublicBenchmarkOperation.IsMatch || !Utf8Regex.Inspection.DebugCanGuideFallbackVerification)
+        if (Operation != LokadPublicBenchmarkOperation.IsMatch || !Utf8Regex.Inspection.SearchPlan.HasFallbackCandidates)
         {
             return 0;
         }

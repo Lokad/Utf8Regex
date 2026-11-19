@@ -65,7 +65,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
     }
 
     [Fact]
-    public void SearchPreparationFundsItsCandidateVectorWithoutAcquiringRejectedWindows()
+    public void SearchPreparationFundsItsStructuralStagesWithoutAcquiringRejectedWindows()
     {
         var set = Utf8FixedDistanceSet.FromMask(0, AsciiCharClass.FromBytes("ab"u8));
         var invalid = Utf8WindowSearchFacts.WithinLines(Utf8PreparedSearcherInfo.LiteralFamily(["a"u8.ToArray()]),
@@ -74,7 +74,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var plan = Utf8SearchPlan.Prepare(facts);
         Assert.True(plan.StructuralSearchPlan.HasValue);
-        Assert.Equal(StageBytes(plan.StructuralSearchPlan) + Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchPlan>(1), owner.Budget.ReservedBytes);
+        Assert.Equal(StageBytes(plan.StructuralSearchPlan), owner.Budget.ReservedBytes);
         Assert.Equal(owner.Budget.ReservedBytes, owner.Budget.PeakBytes);
         var state = default(Utf8StructuralSearchState);
         Assert.True(plan.StructuralSearchPlan.TryFindNextCandidate("😀xb"u8, ref state, out var candidate)); Assert.Equal(5, candidate.StartIndex);

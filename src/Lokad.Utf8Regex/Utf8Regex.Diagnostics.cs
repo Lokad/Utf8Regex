@@ -79,8 +79,6 @@ public sealed partial class Utf8Regex
 
         public bool DebugSupportsUtf8MatchProbe => CompiledRuntime?.SupportsUtf8MatchProbe ?? false;
 
-        public bool DebugCanGuideFallbackVerification => _owner.CanGuideFallbackVerification();
-
         public int DebugReplacementCacheEntryCount => _owner._replacementCache.Count;
     }
 }

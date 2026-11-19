@@ -33,7 +33,7 @@ internal static class Utf8SearchStrategySelector
                     : Utf8SearchObservabilityKind.CandidateCounts);
         }
 
-        var fallbackSource = plan.FallbackCandidateSource;
+        var fallbackSource = plan.PrefilterPlan.WindowSource;
         if (fallbackSource.HasValue)
         {
             var kind = plan.HasRequiredPrefilter

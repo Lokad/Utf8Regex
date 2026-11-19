@@ -135,9 +135,4 @@ public sealed partial class Utf8Regex
 
     private static bool ContainsAsciiK(byte[]? literal)
         => literal is not null && literal.AsSpan().IndexOfAny((byte)'K', (byte)'k') >= 0;
-
-    private bool CanGuideFallbackVerification()
-    {
-        return _preparedRegex.SearchPlan.HasFallbackCandidates;
-    }
 }

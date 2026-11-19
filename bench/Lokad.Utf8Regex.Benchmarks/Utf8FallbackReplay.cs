@@ -9,6 +9,9 @@ namespace Lokad.Utf8Regex.Benchmarks;
 
 internal static class Utf8FallbackReplay
 {
+    internal static Utf8StructuralSearchPlan[] GetCandidatePlans(in Utf8SearchPlan plan) =>
+        plan.HasStructuralCandidates ? [plan.StructuralSearchPlan] : plan.RequiredWindowPrefilterPlans ?? [];
+
     public static bool TryFindNextVerifiedMatch(
         Utf8StructuralSearchPlan[] candidatePlans,
         Utf8PreparedRegex prepared,
@@ -50,7 +53,8 @@ internal static class Utf8FallbackReplay
 
     public static int CountCandidates(Utf8SearchPlan searchPlan, ReadOnlySpan<byte> input, bool requireScalarBoundary)
     {
-        if (searchPlan.FallbackCandidatePlans is not { Length: > 0 } candidatePlans)
+        var candidatePlans = GetCandidatePlans(searchPlan);
+        if (candidatePlans.Length == 0)
         {
             return 0;
         }
@@ -70,10 +74,11 @@ internal static class Utf8FallbackReplay
 
     internal static bool IsMatch(Utf8Regex regex, ReadOnlySpan<byte> input)
     {
-        if (!regex.Inspection.DebugCanGuideFallbackVerification || Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)) return false;
+        var plan = regex.Inspection.SearchPlan;
+        if (!plan.HasFallbackCandidates || Utf8PrefilterExecutor.Rejects(plan.PrefilterPlan, input)) return false;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, regex.MatchTimeout, default);
         invocation.AnchorOriginByte = 0;
-        return TryFindNextVerifiedMatch(regex.Inspection.SearchPlan.FallbackCandidatePlans ?? [], regex.Inspection.PreparedRegex,
+        return TryFindNextVerifiedMatch(GetCandidatePlans(plan), regex.Inspection.PreparedRegex,
             input, 0, ref invocation, out _, out _);
     }
 
@@ -83,7 +88,8 @@ internal static class Utf8FallbackReplay
         invocation.AnchorOriginByte = 0;
         var count = 0;
         var position = 0;
-        while ((uint)position <= (uint)input.Length && TryFindNextVerifiedMatch(regex.Inspection.SearchPlan.FallbackCandidatePlans ?? [],
+        var candidatePlans = GetCandidatePlans(regex.Inspection.SearchPlan);
+        while ((uint)position <= (uint)input.Length && TryFindNextVerifiedMatch(candidatePlans,
             regex.Inspection.PreparedRegex, input, position, ref invocation, out _, out var match))
         {
             count++;

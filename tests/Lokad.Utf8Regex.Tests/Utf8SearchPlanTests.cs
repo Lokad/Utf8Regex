@@ -218,8 +218,6 @@ public sealed class Utf8SearchPlanTests
         var regex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
 
         Assert.True(regex.Inspection.SearchPlan.HasFallbackCandidates);
-        Assert.NotNull(regex.Inspection.SearchPlan.FallbackCandidatePlans);
-        Assert.Equal(Utf8CandidateSearchKind.StructuralSearchSet, regex.Inspection.SearchPlan.FallbackCandidateSource.Kind);
         Assert.Equal(1, regex.Count("a😀b"u8));
         Assert.Equal(6, (regex.Match("a😀b"u8).EndOffsetInBytes - regex.Match("a😀b"u8).StartOffsetInBytes));
     }
@@ -306,7 +304,7 @@ public sealed class Utf8SearchPlanTests
         var orderedWindow = Utf8FrontEnd.Compile(@"\b(?:using\s+var|await\s+using\s+var)\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*await\b", RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, literalFamily.Inspection.SearchPlan.NativeCandidateSource.Kind);
-        Assert.Equal(Utf8CandidateSearchKind.StructuralSearchSet, fallback.SearchPlan.FallbackCandidateSource.Kind);
+        Assert.True(fallback.SearchPlan.HasFallbackCandidates);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, Utf8CompiledEngineSelector.Select(literalFamily.Inspection.PreparedRegex).Kind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(fallback).Kind);
     }

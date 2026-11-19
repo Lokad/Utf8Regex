@@ -8,8 +8,6 @@ namespace Lokad.Utf8Regex.Internal.Planning;
 
 internal readonly struct Utf8SearchPlan
 {
-    private readonly Utf8StructuralSearchPlan[]? _fallbackCandidatePlans;
-
     private Utf8SearchPlan(Utf8SearchFacts facts)
     {
         var kind = facts.Kind;
@@ -98,7 +96,6 @@ internal readonly struct Utf8SearchPlan
             requiredPrefilterSearcher,
             secondaryRequiredPrefilterSearcher,
             requiredWindowPrefilterPlans);
-        _fallbackCandidatePlans = CreateFallbackCandidatePlans(structuralSearchPlan, requiredWindowPrefilterPlans);
         Distance = distance;
         MinRequiredLength = minRequiredLength;
         ExactRequiredLength = exactRequiredLength;
@@ -157,9 +154,6 @@ internal readonly struct Utf8SearchPlan
         ? Utf8CandidateSearchPlan.FromPreparedSearcher(PreparedSearcher, PortfolioKind)
         : Utf8CandidateSearchPlan.FromStructuralSearch(StructuralSearchPlan, PortfolioKind);
 
-    public Utf8CandidateSearchPlan FallbackCandidateSource =>
-        Utf8CandidateSearchPlan.FromStructuralSearchSet(_fallbackCandidatePlans);
-
     public Utf8ConfirmationPlan ConfirmationPlan => CreateConfirmationPlan();
 
     public Utf8SearchOperationPlan SearchOperation =>
@@ -186,8 +180,6 @@ internal readonly struct Utf8SearchPlan
     public PreparedWindowSearch WindowSearch { get; }
 
     public Utf8StructuralSearchPlan StructuralSearchPlan { get; }
-
-    public Utf8StructuralSearchPlan[]? FallbackCandidatePlans => _fallbackCandidatePlans;
 
     public int Distance { get; }
 
@@ -221,7 +213,7 @@ internal readonly struct Utf8SearchPlan
 
     public bool HasWindowSearch => WindowSearch.HasValue;
 
-    public bool HasFallbackCandidates => _fallbackCandidatePlans is { Length: > 0 };
+    public bool HasFallbackCandidates => HasStructuralCandidates || RequiredWindowPrefilterPlans is { Length: > 0 };
 
     public bool HasBoundaryRequirements =>
         LeadingBoundary != Utf8BoundaryRequirement.None ||
@@ -229,7 +221,7 @@ internal readonly struct Utf8SearchPlan
 
     private Utf8ConfirmationPlan CreateConfirmationPlan()
     {
-        if (!HasPreparedSearcher && FallbackCandidateSource.HasValue)
+        if (!HasPreparedSearcher && HasFallbackCandidates)
         {
             return new Utf8ConfirmationPlan(Utf8ConfirmationKind.ScalarVerifier);
         }
@@ -413,21 +405,6 @@ internal readonly struct Utf8SearchPlan
                 => new PreparedSearcher(new PreparedQuotedAsciiRunSearch(searcherInfo.QuotedAsciiSet, searcherInfo.QuotedAsciiLength)),
             _ => default,
         };
-    }
-
-    private static Utf8StructuralSearchPlan[]? CreateFallbackCandidatePlans(
-        Utf8StructuralSearchPlan structuralSearchPlan, Utf8StructuralSearchPlan[]? requiredWindowPrefilterPlans)
-    {
-        if (structuralSearchPlan.HasValue)
-        {
-            var plans = Utf8ConstructionScope.CurrentBudget.AllocateArray<Utf8StructuralSearchPlan>(1, false);
-            plans[0] = structuralSearchPlan;
-            return plans;
-        }
-
-        return requiredWindowPrefilterPlans is { Length: > 0 }
-            ? requiredWindowPrefilterPlans
-            : null;
     }
 
     internal static Utf8AlternateLiteralOverlapKind GetLiteralOverlap(byte[][]? literals)

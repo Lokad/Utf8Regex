@@ -17,10 +17,9 @@ public sealed class Utf8SearchDispositionQualificationTests
     {
         var fields = typeof(Utf8SearchPlan).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.InRange(Unsafe.SizeOf<Utf8SearchPlan>(), 1, 4096);
-        var retired = new[] { "NativeCandidateSource", "FallbackCandidateSource", "ConfirmationPlan",
+        var retired = new[] { "NativeCandidateSource", "ConfirmationPlan",
             "SearchOperation" };
         Assert.DoesNotContain(fields, f => retired.Any(name => f.Name == $"<{name}>k__BackingField"));
-        Assert.Single(fields.Where(f => f.Name == "_fallbackCandidatePlans"));
         Assert.True(typeof(Utf8SearchStrategySelector).GetMethod("Create")!.GetParameters()[0].ParameterType.IsByRef);
     }
 
@@ -60,7 +59,7 @@ public sealed class Utf8SearchDispositionQualificationTests
             using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
             {
                 var operation = plan.SearchOperation;
-                var native = plan.NativeCandidateSource; var fallback = plan.FallbackCandidateSource;
+                var native = plan.NativeCandidateSource; var fallback = plan.PrefilterPlan.WindowSource;
                 var confirm = native.HasValue ? plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement : fallback.HasValue;
                 var expected = !native.HasValue && !fallback.HasValue ? Utf8SearchOperationKind.None :
                     !native.HasValue ? plan.HasRequiredPrefilter ? Utf8SearchOperationKind.PrefilterThenConfirm : Utf8SearchOperationKind.SearchThenConfirm :
