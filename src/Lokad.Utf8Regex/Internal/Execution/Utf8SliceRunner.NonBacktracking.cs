@@ -1,7 +1,91 @@
+using System.Numerics;
+using System.Runtime.CompilerServices;
+
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
+    // These packed graphs have no position-dependent epsilon edges. Their
+    // ancestor masks test closure membership without replaying the thread order.
+    internal static Utf8ExecutionLimitKind IsMatchPackedNonBacktracking(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation, out bool found)
+    {
+        found = false;
+        invocation.Budget.ThrowIfCancellationRequested();
+        if ((uint)fromByte > (uint)input.Length ||
+            fromByte < input.Length && (input[fromByte] & 0xC0) == 0x80)
+            return Utf8ExecutionLimitKind.None;
+
+        const int capacity = 32;
+        var tableBytes = (ulong)(capacity * Unsafe.SizeOf<(ulong States, byte Value, ulong Next)>());
+        var workingLimit = invocation.Budget.Limits.MaxWorkingBytes;
+        // A tight numeric cap can use the same state calculation without caching.
+        var cache = input.Length - fromByte >= 64 && (program.NonBacktrackingAcceptClosure & 1) == 0 &&
+            (workingLimit == 0 || tableBytes <= workingLimit && invocation.Ledger.ReservedBytes <= workingLimit - tableBytes);
+        var reserved = cache ? tableBytes : 0;
+        var breach = invocation.TryReserveWorking(reserved);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        try
+        {
+            Span<(ulong States, byte Value, ulong Next)> transitions = stackalloc (ulong, byte, ulong)[cache ? capacity : 0];
+            transitions.Clear();
+            ulong states = 1;
+            var position = fromByte;
+            while (true)
+            {
+                // Cached transitions still spend a step at each scalar edge.
+                breach = invocation.TryChargeStep();
+                if (breach != Utf8ExecutionLimitKind.None) break;
+                found = (states & program.NonBacktrackingAcceptClosure) != 0;
+                if (found || position == input.Length) break;
+
+                var value = input[position];
+                var width = 1;
+                var ascii = value < 0x80;
+                var canCache = ascii && cache;
+                var slot = (int)((states ^ (states >> 32) ^ (uint)(value * 13)) & (capacity - 1));
+                if (canCache && transitions[slot].States == states && transitions[slot].Value == value)
+                {
+                    states = transitions[slot].Next;
+                    position++;
+                    continue;
+                }
+
+                Rune scalar;
+                if (ascii) scalar = new Rune(value);
+                else if (!TryReadScalar(input, position, false, out scalar, out width)) break;
+                breach = AdvancePackedNonBacktracking(program, states, scalar, ref invocation, out var next);
+                if (breach != Utf8ExecutionLimitKind.None) break;
+                if (canCache) transitions[slot] = (states, value, next);
+                states = next;
+                position += width;
+            }
+            invocation.Budget.ThrowIfCancellationRequested();
+            invocation.Budget.CheckDeadline();
+            return breach;
+        }
+        finally { invocation.Ledger.Release(reserved); }
+    }
+
+    private static Utf8ExecutionLimitKind AdvancePackedNonBacktracking(Utf8SliceProgram program,
+        ulong states, Rune scalar, ref Utf8SliceInvocation invocation, out ulong next)
+    {
+        // Unanchored search admits a new start at every scalar edge. All
+        // consuming instructions have a following instruction in this graph.
+        next = 1;
+        var consumers = program.NonBacktrackingConsumerMask;
+        while (consumers != 0)
+        {
+            var pc = BitOperations.TrailingZeroCount(consumers);
+            consumers &= consumers - 1;
+            if ((program.NonBacktrackingEpsilonAncestors[pc] & states) == 0) continue;
+            var hit = MatchesNonBacktrackingAtom(program, program.Instructions[pc], scalar, ref invocation, out var breach);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (hit) next |= 1UL << (pc + 1);
+        }
+        return Utf8ExecutionLimitKind.None;
+    }
+
     // Ordered Thompson search: earlier starts and preferred branches enter a
     // boundary's closure first. The first visit to a state dominates all later
     // visits because this grammar never reads captures or counter state. Each

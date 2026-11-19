@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -111,6 +112,9 @@ public sealed class Utf8SliceNonBacktrackingTests
         yield return new object?[] { "^a$", "a", true };
         yield return new object?[] { "\\Aabc\\z", "abc", true };
         yield return new object?[] { "(?<n>a)+", "aaa", true };
+        yield return new object?[] { "(a?b|c)*(dé|😀)[xy]", "éz😀ydéz", true };
+        yield return new object?[] { "(a?b|c)*(dé|😀)[xy]", "éz😀zdéz", false };
+        yield return new object?[] { "(?:a?)*", "😀", true };
     }
 
     [Theory]
@@ -185,20 +189,23 @@ public sealed class Utf8SliceNonBacktrackingTests
     public void NonBacktrackingTimeoutReportsTheOwnedPattern()
     {
         const string pattern = "a+b+";
-        var inputText = new string('a', 2000000) + new string('b', 2000000);
-        var input = Encoding.UTF8.GetBytes(inputText);
+        var input = Encoding.UTF8.GetBytes(new string('a', 4096) + "b");
         var options = RegexOptions.NonBacktracking | RegexOptions.CultureInvariant;
-        var budget = TimeSpan.FromTicks(1);
-        var oracle = new Regex(pattern, options, budget);
-        Assert.Throws<RegexMatchTimeoutException>(() => oracle.IsMatch(inputText));
-        var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        var budget = TimeSpan.FromMilliseconds(20);
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = budget
         });
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        var failure = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
-        Assert.Equal(pattern, failure.Pattern);
-        Assert.Equal(budget, failure.MatchTimeout);
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => clock.Advance(20));
+        try
+        {
+            var failure = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
+            Assert.Equal(pattern, failure.Pattern);
+            Assert.Equal(budget, failure.MatchTimeout);
+        }
+        finally { diagnostics.Complete(); }
     }
 
     [Fact]

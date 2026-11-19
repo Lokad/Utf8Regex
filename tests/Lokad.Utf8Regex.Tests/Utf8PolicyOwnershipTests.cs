@@ -253,6 +253,67 @@ public sealed class Utf8PolicyOwnershipTests
         Assert.Equal(2, regex.Count("a,b,c"u8));
     }
 
+    [Fact]
+    public void PackedBooleanAdmitsItsCacheWithinTheWorkingLimit()
+    {
+        const string pattern = "(?:a?b|c)*[d-f][xy]";
+        var input = Encoding.UTF8.GetBytes(new string('a', 4096) + "dy");
+        var account = new Account { Maximum = 0 };
+        using var cached = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+        Assert.Throws<Utf8MemoryAdmissionException>(() => cached.IsMatch(input, workingMemoryAllowance: account));
+        Assert.Equal(1, account.Attempts);
+        Assert.Equal(0UL, account.Used);
+
+        using var tight = new Utf8Regex(pattern, RegexOptions.NonBacktracking, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
+        });
+        Assert.True(tight.IsMatch(input, workingMemoryAllowance: account));
+        Assert.Equal(1, account.Attempts);
+        Assert.Equal(0UL, account.Used);
+
+        account.Maximum = 2048;
+        Assert.True(cached.IsMatch(input, workingMemoryAllowance: account));
+        Assert.Equal(2, account.Attempts);
+        Assert.Equal(0UL, account.Used);
+    }
+
+    [Theory]
+    [InlineData(0)] [InlineData(1)] [InlineData(2)]
+    public void PackedBooleanChargesAndRefundsCachedTransitionsOnInterruption(int interruption)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('a', 4096));
+        using var cancellation = new CancellationTokenSource();
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var regex = new Utf8Regex("(?:a?b|c)*[d-f][xy]", RegexOptions.NonBacktracking, new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20),
+            ResourcePolicy = new() { MaxWorkSteps = interruption == 0 ? 128UL : null }
+        });
+        var account = new Account();
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (interruption == 1) cancellation.Cancel();
+            if (interruption == 2) clock.Advance(20);
+        });
+        try
+        {
+            if (interruption == 0)
+            {
+                var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(input, cancellation.Token, account));
+                Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+                Assert.Equal(129UL, error.Requested);
+            }
+            else if (interruption == 1)
+                Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, cancellation.Token, account)).CancellationToken);
+            else
+                Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input, cancellation.Token, account));
+            Assert.Equal(1, account.Attempts);
+            Assert.Equal(0UL, account.Used);
+        }
+        finally { diagnostics.Complete(); }
+    }
+
     private sealed class Account : IUtf8MemoryAllowance
     {
         internal ulong Used, Maximum = 64 << 20;
