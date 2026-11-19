@@ -109,8 +109,18 @@ public sealed class Utf8ProgramContinuationTests
     [Fact]
     public void AggregateDenialSkipsAllocationAndFiniteStorageDoesNotGrowRetainedPools()
     {
-        var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, 1), Regex.InfiniteMatchTimeout, CancellationToken.None);
+        var limits = new Utf8ExecutionLimits(0, 0, 1);
         var buffer = new Utf8InvocationStateBuffer<long>();
+        var pending = buffer.PendingGrowthBytes;
+        var warmup = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, CancellationToken.None);
+        Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes, buffer.TryPush(1, ref warmup));
+        Assert.Equal(pending, buffer.PendingGrowthBytes);
+        Assert.Equal(0, buffer.Count);
+        Assert.Equal(0UL, warmup.Ledger.ReservedBytes);
+
+        // Runtime initialization can allocate on first use. Measure a fresh
+        // denial after warmup, with no sticky limit result from the warmup.
+        var invocation = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, CancellationToken.None);
         var before = GC.GetAllocatedBytesForCurrentThread();
         var breach = buffer.TryPush(1, ref invocation);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
