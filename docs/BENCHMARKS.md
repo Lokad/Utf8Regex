@@ -14,11 +14,12 @@ work in progress.
 
 Inputs are caller-valid, unchanged UTF-8 across all profiles; regex operations
 expose no validation mode. .NET receives predecoded text; a separate
-lane includes UTF-8 decoding. Matching options and complete capture histories are
-checked before timing. .NET byte-coordinate lookup is prepared outside timing;
-the comparison includes public result handling, rather than only matching kernels.
-Capture matching uses the public caller-buffer byte-start operation or one memory
-cursor advance when the case requests capture history.
+lane includes UTF-8 decoding. Matching options and capture results are checked
+before timing. The comparison includes public result handling with the .NET
+byte-coordinate lookup prepared outside timing. `MatchSlots` uses the public
+caller-buffer match from a byte offset and reads one range per participating
+group. `Cursor` reads complete capture histories. Archived `MatchCaptures` rows
+measure one cursor advance with histories.
 
 Run the existing Release driver, using the SDK from `global.json`:
 
@@ -26,7 +27,7 @@ Run the existing Release driver, using the SDK from `global.json`:
 # Verify outputs across all modes without timing.
 ./tools/bench.ps1 -SkipBuild -CommandArgs '--measure-generality','','','verify'
 
-# One bounded selection; operations: IsMatch, MatchCaptures, Cursor, Count, Construct.
+# One bounded selection; operations: IsMatch, MatchSlots, Cursor, Count, Construct.
 ./tools/bench.ps1 -SkipBuild -CommandArgs '--measure-generality','word/flexible-literal','Cursor'
 
 # Include the catalog in the existing refresh; a selected phase is not a full refresh.

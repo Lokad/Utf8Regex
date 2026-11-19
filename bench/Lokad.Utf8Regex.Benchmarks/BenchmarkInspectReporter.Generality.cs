@@ -45,7 +45,7 @@ internal static partial class BenchmarkInspectReporter
 #else
         var selected = GeneralityCases.Where(row => string.IsNullOrEmpty(filter) || row.Id.Contains(filter, StringComparison.Ordinal)).ToArray();
         if (selected.Length == 0) throw new ArgumentException("No generality case matched the filter.");
-        string[] operations = ["IsMatch", "MatchCaptures", "Cursor", "Count", "Construct"];
+        string[] operations = ["IsMatch", "MatchSlots", "Cursor", "Count", "Construct"];
         if (!string.IsNullOrEmpty(operationFilter))
         {
             if (!operations.Contains(operationFilter)) throw new ArgumentException("Unknown generality operation.");
@@ -98,7 +98,7 @@ internal static partial class BenchmarkInspectReporter
                 Profile = "Core", Filter = filter, OperationFilter = operationFilter,
                 InputContract = "Caller-valid unchanged UTF-8 / predecoded .NET text; Core performs no subject validation. DecodeThenRegex includes decoding.",
                 Scope = "24 representative patterns; structural neighbours and everyday patterns. Not exhaustive old-catalog coverage or adapter coverage.",
-                OutputContract = "Byte ranges and complete capture histories; BCL coordinate map is prepared outside timing. No string materialization. Construction consumes the same CultureInvariant Options mask on every producer, without metadata-array copies.",
+                OutputContract = "MatchSlots reads last captures into caller slots. Cursor reads complete capture histories. Both return byte ranges, with the BCL coordinate map prepared outside timing. No string materialization. Construction consumes the same CultureInvariant Options mask on every producer, without metadata-array copies.",
                 Policy = "Token, 10-second deadline, 50M work steps, 4096 depth, 16 MiB working/result; caller working allowance in combined lane.",
                 Results = results }, new JsonSerializerOptions { WriteIndented = true }) + "\n");
             Console.WriteLine($"Generality output: {path}; elapsed {started.Elapsed.TotalSeconds:F1}s.");
@@ -159,12 +159,21 @@ internal static partial class BenchmarkInspectReporter
                 if (operation == "Count") return regex.Count(text);
                 var match = regex.Match(text, _start);
                 var checksum = 0;
+                if (operation == "MatchSlots")
+                {
+                    foreach (var number in _numbers)
+                    {
+                        var group = match.Groups[number];
+                        if (group.Success)
+                            checksum = AddRange(checksum, _boundaries[group.Index], _boundaries[group.Index + group.Length]);
+                    }
+                    return checksum;
+                }
                 while (match.Success)
                 {
                     foreach (var number in _numbers)
                     foreach (Capture capture in match.Groups[number].Captures)
-                        checksum = unchecked(checksum * 31 + _boundaries[capture.Index] * 7 + _boundaries[capture.Index + capture.Length] + 1);
-                    if (operation == "MatchCaptures") break;
+                        checksum = AddRange(checksum, _boundaries[capture.Index], _boundaries[capture.Index + capture.Length]);
                     match = match.NextMatch();
                 }
                 return checksum;
@@ -175,21 +184,33 @@ internal static partial class BenchmarkInspectReporter
             var core = _core[index];
             if (operation == "IsMatch") return (allowance is null ? core.IsMatch(_input, token) : core.IsMatch(_input, token, allowance)) ? 1 : 0;
             if (operation == "Count") return core.Count(_input);
-            using var cursor = core.CreateMatchCursor(_input, _boundaries[_start], token, allowance);
             var sum = 0;
+            if (operation == "MatchSlots")
+            {
+                Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[_numbers.Length];
+                core.Match(_input, _boundaries[_start], slots, token, allowance);
+                foreach (var range in slots)
+                    if (range.Success) sum = AddRange(sum, range.StartOffsetInBytes, range.EndOffsetInBytes);
+                return sum;
+            }
+            using var cursor = core.CreateMatchCursor(_input, _boundaries[_start], token, allowance);
             while (cursor.MoveNext(out var result))
             {
                 foreach (var number in result.GroupNumbers)
                 foreach (var capture in result.GetCaptures(number))
-                    sum = unchecked(sum * 31 + capture.StartOffsetInBytes * 7 + capture.EndOffsetInBytes + 1);
-                if (operation == "MatchCaptures") break;
+                    sum = AddRange(sum, capture.StartOffsetInBytes, capture.EndOffsetInBytes);
             }
             return sum;
         }
 
         internal void VerifyCaptureTraces(string operation)
         {
-            if (operation is not ("MatchCaptures" or "Cursor")) return;
+            if (operation == "MatchSlots")
+            {
+                VerifyLastCaptures();
+                return;
+            }
+            if (operation != "Cursor") return;
             var expected = new List<(int Group, int Start, int End)>();
             var match = _oracle.Match(_text, _start);
             while (match.Success)
@@ -197,7 +218,6 @@ internal static partial class BenchmarkInspectReporter
                 foreach (var number in _numbers)
                 foreach (Capture capture in match.Groups[number].Captures)
                     expected.Add((number, _boundaries[capture.Index], _boundaries[capture.Index + capture.Length]));
-                if (operation == "MatchCaptures") break;
                 match = match.NextMatch();
             }
             foreach (var core in _core)
@@ -209,12 +229,38 @@ internal static partial class BenchmarkInspectReporter
                         foreach (var number in result.GroupNumbers)
                         foreach (var capture in result.GetCaptures(number))
                             actual.Add((number, capture.StartOffsetInBytes, capture.EndOffsetInBytes));
-                        if (operation == "MatchCaptures") break;
                     }
                 if (!actual.SequenceEqual(expected)) throw new InvalidOperationException($"Generality capture trace differs: {_pattern}/{operation}.");
                 if (_allowance.Used != 0) throw new InvalidOperationException("Generality cursor failed to return working storage.");
             }
         }
+
+        private void VerifyLastCaptures()
+        {
+            var reference = _oracle.Match(_text, _start);
+            var compiled = _compiled.Match(_text, _start);
+            Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[_numbers.Length];
+            foreach (var core in _core)
+            {
+                var match = core.Match(_input, _boundaries[_start], slots, _token, _allowance);
+                if (!MatchesRange(reference, match) || core.CaptureGroupCount + 1 != slots.Length)
+                    throw new InvalidOperationException($"Generality match range differs: {_pattern}.");
+                for (var slot = 0; slot < slots.Length; slot++)
+                {
+                    var number = _numbers[slot];
+                    if (core.GroupNumberFromCaptureSlot(slot) != number || !MatchesRange(reference.Groups[number], slots[slot]) ||
+                        !MatchesRange(compiled.Groups[number], slots[slot]))
+                        throw new InvalidOperationException($"Generality capture slot {number} differs: {_pattern}.");
+                }
+                if (_allowance.Used != 0) throw new InvalidOperationException("Generality Match failed to return working storage.");
+            }
+        }
+
+        private bool MatchesRange(Group expected, Utf8CaptureRange actual) => expected.Success == actual.Success &&
+            (!actual.Success || (actual.StartOffsetInBytes, actual.EndOffsetInBytes) ==
+                (_boundaries[expected.Index], _boundaries[expected.Index + expected.Length]));
+
+        private static int AddRange(int checksum, int start, int end) => unchecked(checksum * 31 + start * 7 + end + 1);
 
         public void Dispose()
         {
