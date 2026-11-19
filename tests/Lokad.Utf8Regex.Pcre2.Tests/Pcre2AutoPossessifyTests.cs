@@ -141,7 +141,7 @@ public sealed class Pcre2AutoPossessifyTests
     [Fact]
     public void FundedGreedyClassRunAdmitsTheSuccessfulEndpointWithoutPerScalarState()
     {
-        using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z]+)Z\z", policy: new Utf8RegexPolicy
+        using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z]+)[Z!]\z", policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 2, MaxWorkingBytes = 1024 }
         });
@@ -161,7 +161,7 @@ public sealed class Pcre2AutoPossessifyTests
     [Fact]
     public void FundedGreedyClassRunPollsOriginalTokenDuringLongScan()
     {
-        using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z]+)Z\z", policy: new Utf8RegexPolicy
+        using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z]+)[Z!]\z", policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromSeconds(10),
             ResourcePolicy = new() { MaxWorkSteps = 512, MaxDepth = 2, MaxWorkingBytes = 1024 }
@@ -196,7 +196,7 @@ public sealed class Pcre2AutoPossessifyTests
     }
 
     [Fact]
-    public void DateWordBoundaryCommitsOnlyUncontrolledPlans()
+    public void FundedPlansCommitTheDateDelimitersButKeepTheWordBoundaryRetry()
     {
         const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";
         // Count consumes the same lowered VM program even when Boolean calls
@@ -214,7 +214,28 @@ public sealed class Pcre2AutoPossessifyTests
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(controlled.DebugCompiledProgram.Operations.Count);
-        Assert.Equal(0, program.Program.AutoPossessiveRepeatCount);
+        Assert.Equal(2, program.Program.AutoPossessiveRepeatCount);
+    }
+
+    [Theory]
+    [InlineData(@"\A(?P<field>[\w]+):\z", "𐐀x:", Pcre2CompileOptions.Ucp, 5, true)]
+    [InlineData(@"\A(?P<field>(?i:[a-z]+))A\z", "aA", Pcre2CompileOptions.None, 1, false)]
+    public void FundedLiteralProofUsesTheRunPredicate(
+        string pattern, string subject, Pcre2CompileOptions options, int fieldEnd, bool commits)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64, MaxDepth = 32, MaxWorkingBytes = commits ? 128UL : 4096UL }
+        });
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
+        Assert.Equal(commits ? 1 : 0, program.AutoPossessiveRepeatCount);
+
+        using var source = new CancellationTokenSource();
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
+        var input = Encoding.UTF8.GetBytes(subject);
+        var result = regex.Match(input, captures: captures, cancellationToken: source.Token);
+        Assert.Equal((0, input.Length), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+        Assert.Equal((0, fieldEnd), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
     }
 
     [Theory]

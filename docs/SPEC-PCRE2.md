@@ -346,9 +346,11 @@ when a shorter endpoint is legal. Only a failed continuation replays the
 counted repeat from the original start. A nonpossessive optional literal,
 class, dot or subroutine call can use an ordinary branch without a
 repeat counter. Subroutine calls retain their usual state restoration. A greedy
-run before a proved end can omit rewind when no shorter endpoint can satisfy
-the anchor. A greedy ASCII optional can omit its retry frame when the terminal
-suffix cannot begin with any byte it consumes. These paths still meter scanning
+run can omit rewind before a required literal it cannot consume, including
+under finite execution limits. It can also omit rewind before a proved end
+when no shorter endpoint can satisfy the anchor. A greedy ASCII optional can
+omit its retry frame when the terminal suffix cannot begin with any byte it
+consumes. These paths still meter scanning
 and admit required capture and assertion storage. Work and heap requirements
 can fall.
 Subroutine return restores caller state from the existing mutation journals.

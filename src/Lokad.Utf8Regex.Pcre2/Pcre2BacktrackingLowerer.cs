@@ -263,11 +263,7 @@ internal sealed class Pcre2BacktrackingLowerer
                 Pcre2RepeatBacktrackingNode repeat,
                 Pcre2CharacterToken followingToken)
             {
-                // Keep controlled plans on their established instruction/depth
-                // accounting. Uncontrolled plans still meter actual VM/scan work
-                // when invoked with an original token or working allowance.
-                if (!Pcre2GlobalOperationDriver.HasUnmeteredExecution(_request) ||
-                    repeat.Maximum == 0 ||
+                if (repeat.Maximum == 0 ||
                     repeat.Body is not Pcre2TokenBacktrackingNode repeated ||
                     followingToken.Options != Pcre2CharacterOptions.None)
                 {
@@ -282,7 +278,8 @@ internal sealed class Pcre2BacktrackingLowerer
                     // to each other, so it cannot make this boundary succeed.
                     // With minimum zero, giving back the entire run can expose
                     // a boundary at its start; retain that alternative.
-                    if (repeat.Minimum == 0 || repeated.Token.Options != Pcre2CharacterOptions.None) return false;
+                    if (!Pcre2GlobalOperationDriver.HasUnmeteredExecution(_request) ||
+                        repeat.Minimum == 0 || repeated.Token.Options != Pcre2CharacterOptions.None) return false;
                     if (repeated.Token.Kind == Pcre2CharacterTokenKind.Literal)
                         return Pcre2CharacterSemantics.IsWord(repeated.Token.Literal, ucp);
                     if (repeated.Token.Kind != Pcre2CharacterTokenKind.CharacterClass ||
@@ -304,6 +301,8 @@ internal sealed class Pcre2BacktrackingLowerer
                     return true;
                 }
                 if (followingToken.Kind != Pcre2CharacterTokenKind.Literal) return false;
+                // Every shorter choice would leave a scalar accepted by the
+                // repeat where the required literal must begin.
                 return repeated.Token.Kind switch
                 {
                     Pcre2CharacterTokenKind.Literal =>
