@@ -114,7 +114,7 @@ public sealed class Utf8PolicyOwnershipTests
     public void FundedSpanWorkingLimitsStayNumericWithoutAHostWorkingLoan()
     {
         var account = new Account();
-        using var regex = new Utf8Regex("(a+)", policy: new()
+        using var regex = new Utf8Regex(@"(a)\1", policy: new()
         {
             ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxWorkingBytes = 1 }
         });

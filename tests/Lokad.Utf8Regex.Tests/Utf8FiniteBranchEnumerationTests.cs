@@ -22,8 +22,12 @@ public sealed class Utf8FiniteBranchEnumerationTests
                 MaxWorkingBytes = 1
             }
         });
+        var ranges = denied.EnumerateMatches("b12"u8);
+        Assert.True(ranges.MoveNext());
+        Assert.Equal((0, 3), (ranges.Current.StartOffsetInBytes, ranges.Current.EndOffsetInBytes));
+        Assert.False(ranges.MoveNext());
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => { var cursor = denied.EnumerateMatches("b12"u8); cursor.MoveNext(); }).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.CreateMatchCursor("b12"u8.ToArray())).ResourceKind);
         Assert.Equal(1, new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = Funded()

@@ -239,8 +239,7 @@ public sealed class Utf8FiniteLiteralCountTests
             }
         });
         Assert.Equal(4, tight.Count(input));
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8MatchSequence.Count(tight.EnumerateMatches(input, 0))).ResourceKind);
+        Assert.Equal(4, Utf8MatchSequence.Count(tight.EnumerateMatches(input, 0)));
     }
 
     [Theory]
