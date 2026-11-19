@@ -98,6 +98,27 @@ public sealed class Utf8CaptureSlotMatchTests
     }
 
     [Theory]
+    [InlineData(@"(?<=(\w))B", "😀éB", 4, 6)]
+    [InlineData(@"(?<=(.))B", "😀B", 0, 4)]
+    public void ForwardLookbehindPublishesOrderedCaptureEdges(string pattern, string text, int start, int end)
+    {
+        using var regex = Utf8Regex.Compile(pattern);
+        var input = Encoding.UTF8.GetBytes(text);
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+        var match = regex.Match(input, end, slots);
+        Assert.True(match.Success);
+        Assert.Equal((end, end + 1), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.True(slots[1].Success);
+        Assert.Equal((start, end), (slots[1].StartOffsetInBytes, slots[1].EndOffsetInBytes));
+
+        using var cursor = regex.CreateMatchCursor(input, end);
+        Assert.True(cursor.MoveNext(out var range));
+        Assert.True(range.TryGetGroup(1, out var capture));
+        Assert.Equal(slots[1], capture);
+        Assert.True(range.GetGroupMemory(1).Span.SequenceEqual(input.AsSpan(start, end - start)));
+    }
+
+    [Theory]
     [InlineData(RegexOptions.None)] [InlineData(RegexOptions.Compiled)]
     [InlineData(RegexOptions.RightToLeft)] [InlineData(RegexOptions.NonBacktracking)]
     public void SupplementaryCapturesAndHistoryRemainScalarRanges(RegexOptions options)

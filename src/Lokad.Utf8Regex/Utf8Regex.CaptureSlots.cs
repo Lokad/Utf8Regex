@@ -84,9 +84,17 @@ public sealed partial class Utf8Regex
             for (var ordinal = 0; ordinal < output.Length; ordinal++)
             {
                 if ((ordinal & 255) == 0) Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
-                output[ordinal] = !result.Success ? default : ordinal == 0 ? result :
-                    slots.Starts[ordinal - 1] < 0 || slots.Ends[ordinal - 1] < 0 ? default :
-                    new(slots.Starts[ordinal - 1], slots.Ends[ordinal - 1]);
+                if (!result.Success || ordinal == 0)
+                {
+                    output[ordinal] = result;
+                    continue;
+                }
+                // A forward search can capture inside a mirrored lookbehind.
+                // Its execution slots contain opening and closing edges.
+                var opening = slots.Starts[ordinal - 1];
+                var closing = slots.Ends[ordinal - 1];
+                output[ordinal] = opening < 0 || closing < 0 ? default :
+                    new(Math.Min(opening, closing), Math.Max(opening, closing));
             }
             FinishFundedInvocation(ref invocation);
             return result;
