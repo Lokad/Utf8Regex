@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -127,6 +128,45 @@ public sealed class Utf8SliceBoundaryTests
         Assert.Equal(expected, regex.Count(input));
         Utf8AsciiScalarOperationAssertions.Operations(pattern, RegexOptions.CultureInvariant, inputText, requireSlice: true);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
+    }
+
+    [Theory]
+    [InlineData(@"\b\w{10,}\b", RegexOptions.None)]
+    [InlineData(@"\b\w{10,}\b", RegexOptions.ECMAScript)]
+    [InlineData(@"\b[!,]", RegexOptions.None)]
+    [InlineData(@"\B\w{4}(?=\w)", RegexOptions.None)]
+    public void LeadingBoundaryCountKeepsBothAsciiAndUnicodeNeighbors(string pattern, RegexOptions options)
+    {
+        const string part = "abc, abcdefghij! é! a\u200Dabcdefghij! a\u0301bcdefghijk! İabcdefghij! ";
+        var text = string.Concat(Enumerable.Repeat(part, 8));
+        var expected = new Regex(pattern, options).Count(text);
+        Assert.True(expected > 0);
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 20_000, MaxWorkingBytes = 4096 }
+        });
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text), token.Token));
+    }
+
+    [Fact]
+    public void RejectedAsciiStartsUseBoundedWorkAndObserveOriginalCancellation()
+    {
+        var input = Encoding.UTF8.GetBytes(new string(' ', 256));
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(@"\b\w{10,}\b", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 320, MaxWorkingBytes = 1 }
+        });
+        Assert.Equal(0, regex.Count(input, token.Token));
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(steps => { if (steps >= 64) token.Cancel(); });
+        try
+        {
+            var error = Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token));
+            Assert.Equal(token.Token, error.CancellationToken);
+        }
+        finally { diagnostics.Complete(); }
+        Assert.Equal(0, regex.Count(input));
     }
 
     [Theory]

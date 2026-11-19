@@ -279,6 +279,9 @@ internal static partial class Utf8SliceRunner
     private static bool MatchesBoundary(Utf8SliceProgram program, in Utf8SliceInstruction instruction,
         ReadOnlySpan<byte> input, int index)
     {
+        if (instruction.C == 0 && Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, index, out var asciiBoundary))
+            return asciiBoundary == (instruction.A != 0);
+
         // Callers have checked the scalar-aligned position. The VM and its
         // complete boundary root classify the same two complete neighbors.
         var beforeWord = false;
@@ -869,6 +872,17 @@ internal static partial class Utf8SliceRunner
         var leadingPrefix = input.Length - fromByte >= 256 && whitespaceLiteral < 0 && leadingAsciiSecond >= 0
             ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage)
             : default;
+        // When Count has no stronger start search, reject an impossible ASCII
+        // boundary before resetting the VM. Profile predicates and wider
+        // neighbors keep the complete scalar check inside the VM.
+        var checkAsciiBoundary = first is { Kind: Utf8SliceInstructionKind.Boundary, C: 0 } &&
+            !program.RightToLeft && !program.CanMatchEmpty && !seekLiteral &&
+            leadingAsciiFirst < 0 && whitespaceLiteral < 0 && input.Length - fromByte >= 256;
+        if (checkAsciiBoundary)
+        {
+            var admission = invocation.TryReserveWorking(0);
+            if (admission != Utf8ExecutionLimitKind.None) return new(count, admission);
+        }
         var whitespaceWindowEnd = -1;
         var workspace = new AttemptWorkspace();
         try
@@ -952,6 +966,13 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, breach);
                 invocation.Budget.ThrowIfCancellationRequested();
+                if (checkAsciiBoundary && Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary) &&
+                    boundary != (first.A != 0))
+                {
+                    if (position == input.Length) break;
+                    position++;
+                    continue;
+                }
                 var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true, ref workspace, ref invocation);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, outcome.Breach);
