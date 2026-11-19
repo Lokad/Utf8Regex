@@ -24,9 +24,10 @@ internal sealed class Utf8NonBacktrackingSearchState
         _reservation = reservation;
     }
 
-    internal static int[] BuildEpsilonOrder(Utf8SliceInstruction[] instructions, out ulong[] ancestors)
+    internal static int[] BuildEpsilonOrder(Utf8SliceInstruction[] instructions, out ulong[] ancestors, out ulong[] orderedClosures)
     {
         ancestors = [];
+        orderedClosures = [];
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
         var colors = budget.AllocateArray<byte>(instructions.Length, false);
@@ -75,6 +76,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             // remains a runtime decision; its unconditional ancestors can fold.
             if (instructions.Length <= 64)
             {
+                orderedClosures = Utf8SliceRunner.BuildOrderedRegularClosures(instructions, order, budget);
                 ancestors = budget.AllocateArray<ulong>(instructions.Length, false);
                 budget.ChargeWork(3UL * (ulong)instructions.Length);
                 for (var pc = 0; pc < instructions.Length; pc++) ancestors[pc] = 1UL << pc;

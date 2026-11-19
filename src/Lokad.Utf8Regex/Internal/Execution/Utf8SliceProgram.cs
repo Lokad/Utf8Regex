@@ -326,6 +326,7 @@ internal sealed class Utf8SliceProgram
         int nonBacktrackingCaptureOpeningCount,
         int[] nonBacktrackingEpsilonOrder,
         ulong[] nonBacktrackingEpsilonAncestors,
+        ulong[] nonBacktrackingOrderedClosures,
         ulong nonBacktrackingConsumerMask,
         ulong nonBacktrackingAcceptClosure,
         Func<int, int>[] backreferenceLowerings,
@@ -362,6 +363,7 @@ internal sealed class Utf8SliceProgram
         NonBacktrackingCaptureOpeningCount = nonBacktrackingCaptureOpeningCount;
         NonBacktrackingEpsilonOrder = nonBacktrackingEpsilonOrder;
         NonBacktrackingEpsilonAncestors = nonBacktrackingEpsilonAncestors;
+        NonBacktrackingOrderedClosures = nonBacktrackingOrderedClosures;
         NonBacktrackingConsumerMask = nonBacktrackingConsumerMask;
         NonBacktrackingAcceptClosure = nonBacktrackingAcceptClosure;
         BackreferenceLowerings = backreferenceLowerings;
@@ -405,7 +407,8 @@ internal sealed class Utf8SliceProgram
             RequiredFinalAscii = FindRequiredFinalAscii(Utf8ConstructionScope.CurrentBudget);
     }
 
-    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings)
+    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
+        ulong[]? nonBacktrackingOrderedClosures = null)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -488,6 +491,7 @@ internal sealed class Utf8SliceProgram
             nonBacktrackingCaptureOpeningCount,
             nonBacktrackingEpsilonOrder,
             nonBacktrackingEpsilonAncestors,
+            nonBacktrackingOrderedClosures ?? [],
             consumers,
             accepts,
             backreferenceLowerings,
@@ -526,6 +530,7 @@ internal sealed class Utf8SliceProgram
     internal int NonBacktrackingCaptureOpeningCount { get; }
     internal int[] NonBacktrackingEpsilonOrder { get; }
     internal ulong[] NonBacktrackingEpsilonAncestors { get; }
+    internal ulong[] NonBacktrackingOrderedClosures { get; }
     internal ulong NonBacktrackingConsumerMask { get; }
     internal ulong NonBacktrackingAcceptClosure { get; }
     internal Func<int, int>[] BackreferenceLowerings { get; }
@@ -1157,8 +1162,9 @@ internal static class Utf8SliceLowerer
             instructions = lifted;
         }
         ulong[] epsilonAncestors = [];
+        ulong[] orderedClosures = [];
         var epsilonOrder = lowerer.NonBacktracking
-            ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions, out epsilonAncestors) : [];
+            ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions, out epsilonAncestors, out orderedClosures) : [];
         return Utf8SliceProgram.Create(
             instructions,
             lowerer.SetMasks.Take(),
@@ -1172,7 +1178,7 @@ internal static class Utf8SliceLowerer
             hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
-            lowerer.BackreferenceLowerings.Take());
+            lowerer.BackreferenceLowerings.Take(), orderedClosures);
     }
 
     internal static void MarkBoundedEndTails(Span<Utf8SliceInstruction> code, Utf8ConstructionBudget budget,

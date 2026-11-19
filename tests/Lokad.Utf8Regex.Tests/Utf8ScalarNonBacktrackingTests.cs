@@ -10,7 +10,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
     [InlineData(false)] [InlineData(true)]
     public void WorkspacePeakIncludesEveryCompleteStateVector(bool captured)
     {
-        var regex = new Utf8Regex(captured ? "(?<x>.)+b" : ".+b", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(captured ? "(?<x>.)+b" : "^.+b", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
         var states = program.Instructions.Length;
         var registers = 2 * program.GroupCount + program.NonBacktrackingCaptureOpeningCount;
@@ -25,6 +25,21 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.Equal((0, 9), (outcome.StartByte, outcome.EndByte));
         Assert.Equal(expected + 13, invocation.Budget.PeakWorkingBytes);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData("(ab|a)*", 7)]
+    [InlineData("(a|ab)*", 5)]
+    [InlineData("(a|ab)*?", 4)]
+    public void CompactOrderedRangePreservesPriorityFromAByteFloor(string pattern, int expectedEnd)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+        var input = "😀aba!"u8;
+        var range = regex.Match(input, startOffsetInBytes: 4, endOffsetInBytes: 7);
+        Assert.True(range.Success);
+        Assert.Equal((4, expectedEnd), (range.StartOffsetInBytes, range.EndOffsetInBytes));
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        Assert.Equal(range, regex.Match(input, 4, captures, endOffsetInBytes: 7));
     }
 
     public static IEnumerable<object[]> OverlapCases()

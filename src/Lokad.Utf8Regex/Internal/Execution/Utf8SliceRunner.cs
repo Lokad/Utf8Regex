@@ -498,8 +498,12 @@ internal static partial class Utf8SliceRunner
             fromByte < input.Length && (input[fromByte] & 0xC0) == 0x80)
             return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
         if (program.IsNonBacktracking)
+        {
+            if (!collectHistory && captureStarts.Length == 0 && program.NonBacktrackingOrderedClosures.Length != 0)
+                return FindOrderedRegularRange(program, input, fromByte, ref invocation);
             return RunNonBacktracking(program, input, fromByte, captureStarts, captureEnds,
                 collectHistory, false, false, ref invocation);
+        }
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;

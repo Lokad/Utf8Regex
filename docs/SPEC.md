@@ -202,6 +202,9 @@ without caching. Ordered execution supplies match ranges and captures.
 NonBacktracking operations that only return whole-match ranges or counts
 can use ordered execution without reserving capture registers. Requests for
 subcaptures still admit their working state and retain the same priority.
+Compact unconditional graphs can reuse ordered transitions across matching
+scalars in a whole-range search. Byte origins stay in invocation scratch.
+The cache stores which earlier thread supplied each surviving origin.
 
 Backtracking first-match search can reuse Count's mandatory exact ASCII head or
 range proof. Controlled gap searches cover at most 2048 bytes per checkpoint;

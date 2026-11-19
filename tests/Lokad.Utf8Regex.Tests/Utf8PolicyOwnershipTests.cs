@@ -337,6 +337,34 @@ public sealed class Utf8PolicyOwnershipTests
         Assert.Equal(0UL, account.Used);
     }
 
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void CompactOrderedRangesRefundOnInterruption(bool expire)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('a', 4096) + "😀x");
+        using var cancellation = new CancellationTokenSource();
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var regex = new Utf8Regex("(a?b|c)*(dé|😀)[xy]", RegexOptions.NonBacktracking,
+            new Utf8RegexPolicy { MatchTimeout = TimeSpan.FromMilliseconds(20) });
+        var account = new Account();
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (expire) clock.Advance(20);
+            else cancellation.Cancel();
+        });
+        try
+        {
+            if (expire)
+                Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, cancellationToken: cancellation.Token, workingMemoryAllowance: account));
+            else
+                Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(() =>
+                    regex.Match(input, cancellationToken: cancellation.Token, workingMemoryAllowance: account)).CancellationToken);
+            Assert.Equal(1, account.Attempts);
+            Assert.Equal(0UL, account.Used);
+        }
+        finally { session.Complete(); }
+    }
+
     private sealed class Account : IUtf8MemoryAllowance
     {
         internal ulong Used, Maximum = 64 << 20;
