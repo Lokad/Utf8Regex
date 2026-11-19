@@ -27,6 +27,20 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     }
 
     [Theory]
+    [InlineData("ABC")]
+    [InlineData("ABC]\n")]
+    public void TerminalRepeatUsesDisjointSuffixAfterAlternativeJump(string subject)
+    {
+        const string pattern = @"\A(?<tail>[A-Z]{2,6}|[0-9]{1,3})\]?$";
+        using var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 100, MaxWorkingBytes = 1 }
+        });
+
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(subject)));
+    }
+
+    [Theory]
     [InlineData(@"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[0-9])\]?$", "abc.AB]\n", true)]
     [InlineData(@"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[0-9])\]?\z", "abc.AB]\n", false)]
     [InlineData(@"\A(?:[a-z]+\.)+(?:AB|é)\]?$", "abc.é\n", true)]

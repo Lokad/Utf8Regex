@@ -518,6 +518,10 @@ assertion state retain their own admission. When the remaining instructions
 prove an exact terminal literal, the engine can find the last reachable
 occurrence in bounded, metered blocks and execute the tail without a rewind
 frame. The usual capture and result admission applies at that endpoint.
+A forward repeat that consumes only ASCII can also use the longest endpoint
+when every possible first byte of its terminal continuation is disjoint from
+the repeated atom. The proof includes final LF for a lax end anchor and can
+reuse the first-byte set after a proved forward jump.
 When a bounded continuation must reach a terminal end anchor, the engine
 can discard a saved repeat exit that is too far from the end. Its rollback
 and interruption checks still run. A lax anchor allows a final LF, and a

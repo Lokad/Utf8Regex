@@ -12,7 +12,8 @@ public sealed class Pcre2SliceAnchorTests
     [Fact]
     public void ImpossibleFinalScalarSkipsSliceWorkingAdmission()
     {
-        using var regex = new Utf8Pcre2Regex(@"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[0-9])\]?$", policy: new Utf8RegexPolicy
+        // The two tails both start at A. The hit requires a real retry.
+        using var regex = new Utf8Pcre2Regex(@"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[A-Z][0-9])\]?$", policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy { MaxWorkingBytes = 1 }
         });
@@ -20,7 +21,7 @@ public sealed class Pcre2SliceAnchorTests
         Assert.False(regex.IsMatch("abc.A#\n"u8));
         Assert.Equal(0, regex.Count("abc.A#"u8));
         Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("abc.AB\n"u8)).ErrorKind);
+            Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("abc.A1\n"u8)).ErrorKind);
     }
 
     [Fact]
