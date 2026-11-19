@@ -287,4 +287,392 @@ public sealed class RegexDifferentialTests
             Assert.Equal(expected, regex.Count(input, cancellation.Token));
         }
     }
+
+    [Theory]
+    // Atomic groups
+    [InlineData("(?>a+)ab", "aaab", false)]
+    [InlineData("(?>a|ab)c", "abc", false)]
+    [InlineData("(?>a+)b", "aaab", true)]
+    [InlineData("(?>(a+))b", "aaab", true)]
+    [InlineData("(?>a+)+b", "aaab", true)]
+    [InlineData("(?>)a", "a", true)]
+    [InlineData("x(?>y|y)z", "xyz", true)]
+    [InlineData("(?>a+)ab", "aab", false)]
+    [InlineData("(?>ab|a)+z", "abababz", true)]
+    [InlineData("(?>a)?b", "ab", true)]
+    [InlineData("(?>a)?b", "b", true)]
+    [InlineData("(?>\\p{L}+)1", "aa1", true)]
+    [InlineData("(?>\\p{L}+)b", "ab", false)]
+    // Contiguous anchors
+    [InlineData("\\Ga+", "aabaa", true)]
+    [InlineData("\\Ga+", "baa", false)]
+    [InlineData("a\\Gb", "aab", false)]
+    [InlineData("\\Ga*", "aaa", true)]
+    [InlineData("\\Gx*", "abc", true)]
+    [InlineData("\\G(?:a|b)+", "abxab", true)]
+    [InlineData("\\Gb", "ab", false)]
+    [InlineData("\\Ga+", "aay\U0001F600", true)]
+    [InlineData("\\G(a|ab)+", "aab\U0001F600", true)]
+    [InlineData("\\Ga+\\b", "aay\U0001F600", false)]
+    [InlineData("a+\\G", "aya\U0001F600", false)]
+    // Escapes
+    [InlineData("\\x41", "A", true)]
+    [InlineData("\\x41", "B", false)]
+    [InlineData("\\x41+", "AAB", true)]
+    [InlineData("\\u0041", "A", true)]
+    [InlineData("\\u004A", "J", true)]
+    [InlineData("\\0", "\u0000", true)]
+    [InlineData("\\00", "\u0000", true)]
+    [InlineData("\\000", "\u0000", true)]
+    [InlineData("\\07", "\u0007", true)]
+    [InlineData("\\12", "\n", true)]
+    [InlineData("\\12B", "\nB", true)]
+    [InlineData("\\08", "\u0000" + "8", true)]
+    [InlineData("a\\0", "a\u0000", true)]
+    [InlineData("[\\x41]", "A", true)]
+    [InlineData("[\\x41]", "B", false)]
+    [InlineData("[\\x41-\\x5A]", "M", true)]
+    [InlineData("[\\x41-\\x5A]", "a", false)]
+    [InlineData("[\\101-\\132]", "S", true)]
+    [InlineData("[\\u0041]", "A", true)]
+    [InlineData("[\\0]", "\u0000", true)]
+    [InlineData("[\\7]", "\u0007", true)]
+    [InlineData("[\\12]", "\n", true)]
+    [InlineData("[\\77]", "?", true)]
+    [InlineData("(\\x41)(\\x42)", "AB", true)]
+    [InlineData("\\n", "\n", true)]
+    [InlineData("\\n", "n", false)]
+    [InlineData("\\t", "\t", true)]
+    [InlineData("\\r", "\r", true)]
+    [InlineData("\\a", "\u0007", true)]
+    [InlineData("\\a", "a", false)]
+    [InlineData("\\f", "\f", true)]
+    [InlineData("\\v", "\v", true)]
+    [InlineData("\\e", "\u001B", true)]
+    [InlineData("\\e", "e", false)]
+    [InlineData("\\cA", "\u0001", true)]
+    [InlineData("\\cA", "A", false)]
+    [InlineData("\\cZ", "\u001A", true)]
+    [InlineData("\\c@", "\u0000", true)]
+    [InlineData("\\n+", "\n\n\n", true)]
+    [InlineData("\\cA+", "\u0001\u0001", true)]
+    [InlineData("(?<=\\n)x", "\nx", true)]
+    [InlineData("(?<=\\n)x", "ax", false)]
+    [InlineData("\\cM", "M", false)]
+    [InlineData("\\cm", "m", false)]
+    public void FeatureIsMatchMatchesOracle(string pattern, string inputText, bool expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.IsMatch(inputText));
+        foreach (var options in new[]
+        {
+            RegexOptions.None,
+            RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        })
+        {
+            var regex = new Utf8Regex(pattern, options: options);
+            Assert.Equal(expected, regex.IsMatch(input));
+            using var source = new CancellationTokenSource();
+            Assert.Equal(expected, regex.IsMatch(input, source.Token));
+            if (regex.Inspection.DebugUsesOwnedSliceProgram)
+            {
+                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
+            }
+        }
+    }
+
+
+    [Theory]
+    // Atomic groups
+    [InlineData("(?>a+)b", "aaab aaab", 2)]
+    [InlineData("(?>a+)ab", "aaab aaab", 0)]
+    // Backreferences
+    [InlineData("(a)\\1", "aaabaaa", 2)]
+    [InlineData("(a|b)+\\1", "abb abb", 2)]
+    [InlineData("(x)?b\\1", "bbb", 0)]
+    // Balancing groups
+    [InlineData("(?<open>a)+(?<-open>b)+", "aab aab", 2)]
+    [InlineData("(?<o>a)(?<-o>b)", "ab ab", 2)]
+    [InlineData("(?<o>\\p{L}+)(?<-o>\\d+)", "ab12 cd34", 2)]
+    // Unicode categories in sets
+    [InlineData("[\\p{L}a]+", "1a\u03B1", 1)]
+    [InlineData("[\\p{L}\\p{Nd}_]+", "a1_-", 1)]
+    [InlineData("[^\\p{L}a]+", "a1 b", 1)]
+    [InlineData("[\\P{L}-x]+", "a-x1", 1)]
+    [InlineData("[\\p{L}-x]+", "a-x1", 1)]
+    [InlineData("[\\p{L}\\D]+", "a15 ", 2)]
+    [InlineData("[^\\p{L}\\d]+", "a1 ", 1)]
+    [InlineData("[\\p{IsGreek}a]+", "a\u03B1b1", 1)]
+    [InlineData("[^\\p{IsGreek}a]+", "a\u03B1b1", 1)]
+    [InlineData("[\\d-\\p{L}]+", "5-a", 1)]
+    // Classes
+    [InlineData("[a-z]+", "abUG12cd", 2)]
+    [InlineData("[^a-z]+", "abUG12", 1)]
+    [InlineData("[a-c-e]+", "abcdef-", 3)]
+    [InlineData("[abc]+", "xxcabbayy", 1)]
+    [InlineData("[\\n-\\r]+", "a\n\rb", 1)]
+    // Dot
+    [InlineData("a.*b", "aab aabb", 1)]
+    [InlineData("(a.c)+", "abc ayc", 2)]
+    [InlineData("a.*?b", "a1b a22b", 2)]
+    [InlineData("a.*b", "xyz", 0)]
+    // Escapes
+    [InlineData("\\x41+", "aAb", 1)]
+    [InlineData("[\\x41-\\x5A]+", "ABc", 1)]
+    [InlineData("\\t+", "\ta\t", 2)]
+    [InlineData("\\cA+", "\u0001x\u0001", 2)]
+    [InlineData("(?<=\\n)x", "ax\nx", 1)]
+    // Compound patterns
+    [InlineData("[\\da]+", "a1b22", 2)]
+    [InlineData("[^\\da]+", "a-b", 1)]
+    [InlineData("[\\w-]+", "a-b c", 2)]
+    // Lookaround
+    [InlineData("(?=a)a", "aaa", 3)]
+    [InlineData("(?<=a)b", "aab ab", 2)]
+    [InlineData("(?!b)a", "ba ba", 2)]
+    [InlineData("(?<=\\p{L}{2})x", "abxabx", 2)]
+    [InlineData("(?<=a{2})x", "aaxaa", 1)]
+    [InlineData("(?<=(a))b", "xa\U0001F600b", 0)]
+    [InlineData("(?<=(a))b", "xaab\U0001F600", 1)]
+    // Named groups
+    [InlineData("(?<v>a)+", "aa aa", 2)]
+    [InlineData("(?<a>x)+", "xxx", 1)]
+    // Shorthands
+    [InlineData("\\d+", "a12b34", 2)]
+    [InlineData("\\d+", "a\u0661\u0662b", 1)]
+    [InlineData("\\D+", "a1b2", 2)]
+    [InlineData("\\w+", "a b_c1", 2)]
+    [InlineData("\\s+", "a\t b\nc", 2)]
+    [InlineData("\\S+", "a b", 2)]
+    [InlineData("(\\d+)", "a12b", 1)]
+    public void FeatureCountMatchesOracleOnOwnedSlice(string pattern, string inputText, int expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.Matches(inputText).Count);
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
+        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
+        Assert.Equal(expected, regex.Count(input));
+        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
+    }
+
+
+    [Theory]
+    // Backreferences
+    [InlineData("(a)\\1", "aa", true)]
+    [InlineData("(a)\\1", "ab", false)]
+    [InlineData("(a|b)+\\1", "abb", true)]
+    [InlineData("(a|b)+\\1", "aba", false)]
+    [InlineData("(a*)\\1", "aaa", true)]
+    [InlineData("(x)?b\\1", "b", false)]
+    [InlineData("(x)?b\\1", "bxb", false)]
+    [InlineData("(a)(b)\\2\\1", "abba", true)]
+    [InlineData("((a)b)\\1", "abb", false)]
+    [InlineData("((a)b)\\1", "abab", true)]
+    [InlineData("([a-z]+)\\1", "abcabc", true)]
+    [InlineData("(a+)\\1", "aaabaaa", true)]
+    [InlineData("(a?)\\1b", "b", true)]
+    [InlineData("(\\p{L}+)\\1", "abab", true)]
+    [InlineData("(\\p{L}+)\\1", "ab ab", false)]
+    [InlineData("(\\p{IsBasicLatin}+)\\1", "HiHi", true)]
+    [InlineData("([^\\p{L}]+)\\1", "11", true)]
+    [InlineData("([\\p{L}a]+)\\1", "aBaB", true)]
+    [InlineData("(a)(b)(c)(d)(e)(f)(g)(h)\\8", "abcdefghh", true)]
+    [InlineData("(a)(b)(c)(d)(e)(f)(g)(h)\\8", "abcdefgha", false)]
+    [InlineData("(a)(b)(c)(d)(e)(f)(g)(h)(i)\\9", "abcdefghii", true)]
+    [InlineData("(a)(b)(c)(d)(e)(f)(g)(h)(i)\\9", "abcdefghia", false)]
+    // Balancing groups
+    [InlineData("(?<open>a)+(?<-open>b)+", "aab", true)]
+    [InlineData("(?<open>a)+(?<-open>b)+", "bbb", false)]
+    [InlineData("(?<open>a)(?<-open>b)", "ab", true)]
+    [InlineData("(?<open>a)(?<-open>b)", "ac", false)]
+    [InlineData("(?<a>x)(?<b-a>y)", "xy", true)]
+    [InlineData("(?<a>x)(?<b-a>y)", "xx", false)]
+    [InlineData("(?<a>x)(?<b-a>y)(?<c-b>z)", "xyz", true)]
+    [InlineData("(?<o>a)(?<-o>b)?b", "ab", true)]
+    [InlineData("(?<o>a)+(?<-o>b)+(?<-o>c)", "aabc", true)]
+    [InlineData("((?<o>a)+(?<-o>b)+)", "aab", true)]
+    [InlineData("(?<o>a)+(?<-o>b)+\\1", "aabaa", true)]
+    [InlineData("(?<a>x)(?'b-a'y)", "xy", true)]
+    [InlineData("(?<o>\\p{L}+)(?<-o>\\d+)", "ab12", true)]
+    [InlineData("(?<o>\\p{L}+)(?<-o>\\d+)", "ab1", true)]
+    [InlineData("(?<o>\\p{L}+)(?<-o>\\d+)", "ab", false)]
+    [InlineData("(?<o>\\p{L}+)(?<-o>\\p{Nd}+)", "ab12", true)]
+    [InlineData("(?<o>\\p{L}+)(?<-o>\\p{Nd}+)", "ab", false)]
+    // Word boundaries
+    [InlineData("x\\b!", "ax!by", true)]
+    [InlineData("x\\b!", "axby", false)]
+    [InlineData("x\\Bx", "axxb", true)]
+    [InlineData("x\\Bx", "ax bx", false)]
+    [InlineData("\\A.*\\z", "ab", true)]
+    [InlineData("\\A.*\\z", "xab\n", false)]
+    [InlineData("\\A.*\\Z", "ab", true)]
+    [InlineData("\\A.*\\Z", "ab\n", true)]
+    [InlineData("\\b", "a\u2060b", true)]
+    [InlineData("\\b", "a\u200Db", true)]
+    [InlineData("\\b\\p{L}+\\b", "\u00E9x", true)]
+    [InlineData("\\b\\w+\\b", "caf\u00E9", true)]
+    // Classes
+    [InlineData("[a-z]+", "xxabyy", true)]
+    [InlineData("[a-z]+", "XXABYY", false)]
+    [InlineData("[^a-z]+", "xxAYyy", true)]
+    [InlineData("[abc]+", "xxcabbayy", true)]
+    [InlineData("[a-c-e]+", "xxdyy", false)]
+    [InlineData("[a-c-e]+", "xxeyy", true)]
+    [InlineData("[a-c-e]+", "xx-yy", true)]
+    [InlineData("[A-z]+", "xx[\\]^_`yy", true)]
+    [InlineData("[]a]+", "xx]yy", true)]
+    [InlineData("[-a]+", "xx-yy", true)]
+    [InlineData("[a-]+", "xx-yy", true)]
+    [InlineData("[a\\-z]+", "xx-yy", true)]
+    [InlineData("[a\\-z]+", "xxmyy", false)]
+    [InlineData("[[a]+", "xx[yy", true)]
+    [InlineData("[a[]+", "xx[yy", true)]
+    [InlineData("[+--.]+", "xx,yy", true)]
+    [InlineData("[+--.]+", "xx*yy", false)]
+    [InlineData("[--a]+", "xx/yy", true)]
+    [InlineData("[--0]+", "xx/yy", true)]
+    [InlineData("[--0]+", "xxayy", false)]
+    [InlineData("[a-b-c]+", "xx-yy", true)]
+    [InlineData("[\\n-\\r]+", "x\ny\rz", true)]
+    [InlineData("[\\b]+", "x\by", true)]
+    [InlineData("[\\0]+", "x\0y", true)]
+    [InlineData("[\\e]+", "x\ey", true)]
+    [InlineData("[\\--0]+", "xx/yy", false)]
+    [InlineData("[\\--0]+", "xx-yy", true)]
+    [InlineData("[^]a]+", "xxyy", true)]
+    [InlineData("[^]a]+", "]]aa", false)]
+    [InlineData("[]-a]+", "xx]yy", true)]
+    [InlineData("[]-a]+", "xx_yy", true)]
+    [InlineData("[]-a]+", "xxAyy", false)]
+    // Dot
+    [InlineData("a.*b", "xxa1bzz", true)]
+    [InlineData("a.*b", "xxayy", false)]
+    [InlineData("a.*b", "xxabyy", true)]
+    [InlineData("a.*b", "", false)]
+    [InlineData(".*b", "xxb", true)]
+    [InlineData("(a.c)+", "xxabcaycyy", true)]
+    [InlineData("(a.c)+", "xxayy", false)]
+    [InlineData("a.*?b", "xxa1b2byy", true)]
+    [InlineData("x*|y.", "ay", true)]
+    [InlineData("a|.*", "zz", true)]
+    // Compound patterns
+    [InlineData("[\\da]+", "a1", true)]
+    [InlineData("[\\da]+", "xy", false)]
+    [InlineData("[\\da]+", "5", true)]
+    [InlineData("[\\da]+", "b", false)]
+    [InlineData("[a\\d]+", "b", false)]
+    [InlineData("[a\\d]+", "5", true)]
+    [InlineData("[\\Da]+", "5", false)]
+    [InlineData("[\\Da]+", "x", true)]
+    [InlineData("[^\\da]+", "5", false)]
+    [InlineData("[^\\da]+", "-", true)]
+    [InlineData("[\\w-]+", "-", true)]
+    [InlineData("[\\w-]+", " ", false)]
+    [InlineData("[^\\w\\s]+", "-", true)]
+    [InlineData("[^\\w\\s]+", "_", false)]
+    [InlineData("[^\\D\\s]+", "5", true)]
+    [InlineData("[^\\D\\s]+", " ", false)]
+    [InlineData("[\\d-e]+", "5", true)]
+    [InlineData("[\\d-e]+", "-", true)]
+    [InlineData("[\\d-e]+", "e", true)]
+    [InlineData("[\\d-e]+", "d", false)]
+    [InlineData("[\\d-x]+", "5", true)]
+    [InlineData("[\\d-x]+", "e", false)]
+    [InlineData("[\\d-x]+", "-", true)]
+    [InlineData("[-\\d]+", "-", true)]
+    [InlineData("[-\\d]+", "7", true)]
+    [InlineData("[\\s\\S]+", "x", true)]
+    // Lookaround
+    [InlineData("(?=a)a", "ba", true)]
+    [InlineData("(?=a)b", "ab", false)]
+    [InlineData("(?!b)a", "ba", true)]
+    [InlineData("(?!b)a", "b", false)]
+    [InlineData("(?!a)a", "a", false)]
+    [InlineData("(?!)a", "a", false)]
+    [InlineData("(?<=a)b", "ab", true)]
+    [InlineData("(?<=a)b", "cb", false)]
+    [InlineData("(?<=(a))b", "xa\U0001F600b", false)]
+    [InlineData("(?<=(a))b", "xaab\U0001F600", true)]
+    [InlineData("(?<!a)b", "cb", true)]
+    [InlineData("(?<!a)b", "ab", false)]
+    [InlineData("((?=a)a)\\1", "aaa", true)]
+    [InlineData("x(?=a*)", "xa", true)]
+    [InlineData("x(?=a+)", "xa", true)]
+    [InlineData("x(?=a+)", "xx", false)]
+    [InlineData("x(?=[a-z]*)", "xa", true)]
+    [InlineData("x(?=\\p{L}*)", "xa", true)]
+    [InlineData("a(?<=a)b", "ab", true)]
+    [InlineData("(?<=^a)b", "ab", true)]
+    [InlineData("(?<=a$)b", "ab", false)]
+    [InlineData("(?=(a)|ab)b", "ab", false)]
+    [InlineData("(?=a)b|ab", "ab", true)]
+    [InlineData("(?=a(?=b))", "ab", true)]
+    [InlineData("(?<=(?<=a)a)b", "aab", true)]
+    [InlineData("(?<=a)+b", "ab", true)]
+    [InlineData("(?<!\\p{Nd})x", "ax", true)]
+    [InlineData("(?<=\\b\\p{L})x", "axb", true)]
+    [InlineData("(?<=\\B\\p{L})x", "axb", false)]
+    [InlineData("(?<=(?=\\p{L})\\p{L})x", "axb", true)]
+    [InlineData("(?<=\\p{L}{2})x", "abx", true)]
+    [InlineData("(?<=\\p{L}{2})x", "axb", false)]
+    [InlineData("(?<=a{2})x", "aax", true)]
+    [InlineData("((?=a)a)(b)", "ab", true)]
+    // Named groups
+    [InlineData("(?<word>a)+", "xaa", true)]
+    [InlineData("(?<word>a)+", "xb", false)]
+    [InlineData("(?<a>x)+", "xx", true)]
+    [InlineData("(?<a>x)(?<b>y)+", "xyy", true)]
+    [InlineData("(?<b>a)(c)+", "acc", true)]
+    [InlineData("((?<a>x)+)", "xx", true)]
+    [InlineData("(?<word>\\d+)+", "12", true)]
+    [InlineData("(?<b>a)(c)\\2", "aca", true)]
+    [InlineData("(?<b>a)(c)\\1", "aca", false)]
+    [InlineData("(?<a>ab|cd)+", "abcd", true)]
+    [InlineData("(?<a>ab|cd)+", "ax", false)]
+    // Shorthands
+    [InlineData("\\d+", "a1b", true)]
+    [InlineData("\\d+", "aab", false)]
+    [InlineData("\\d+", "a\u0661b", true)]
+    [InlineData("\\D+", "a b", true)]
+    [InlineData("\\w+", "a_b1", true)]
+    [InlineData("\\w+", "a\u0301b", true)]
+    [InlineData("\\w+", "a\u203Fb", true)]
+    [InlineData("\\w+", "a\u200Db", true)]
+    [InlineData("\\W+", "a b", true)]
+    [InlineData("\\W+", "ab", false)]
+    [InlineData("\\s+", "a\t b", true)]
+    [InlineData("\\s+", "a\u0085b", true)]
+    [InlineData("\\s+", "a\u00A0b", true)]
+    [InlineData("\\s+", "a\u2000b", true)]
+    [InlineData("\\s+", "a\u001Cb", false)]
+    [InlineData("\\s+", "a\u202Fb", true)]
+    [InlineData("\\s+", "a\uFEFFb", false)]
+    [InlineData("\\S+", "a b", true)]
+    [InlineData("[\\d]+", "a1b", true)]
+    [InlineData("[^\\d]+", "a1b", true)]
+    [InlineData("[^\\d]+", "123", false)]
+    [InlineData("\\d+:\\w+", "12:ab", true)]
+    public void FeatureIsMatchMatchesOracleOnOwnedSlice(string pattern, string inputText, bool expected)
+    {
+        var input = Encoding.UTF8.GetBytes(inputText);
+        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+        Assert.Equal(expected, oracle.IsMatch(inputText));
+        foreach (var options in new[]
+        {
+            RegexOptions.None,
+            RegexOptions.CultureInvariant,
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+        })
+        {
+            var regex = new Utf8Regex(pattern, options: options);
+            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
+            Assert.Equal(expected, regex.IsMatch(input));
+            using var source = new CancellationTokenSource();
+            Assert.Equal(expected, regex.IsMatch(input, source.Token));
+            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
+        }
+    }
 }

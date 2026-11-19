@@ -10,34 +10,6 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8SliceSplitTests
 {
     // Bare shapes keep native precedence; quantified shapes route owned.
-    public static IEnumerable<object?[]> SliceSplitShapes()
-    {
-        yield return new object?[] { "a+" };
-        yield return new object?[] { "x*|y" };
-        yield return new object?[] { "\\d+" };
-        yield return new object?[] { "(?:cat|horse)+" };
-        yield return new object?[] { "(a)(?:b)(c)+" };
-        yield return new object?[] { "\\t+" };
-        yield return new object?[] { "\\n+" };
-        yield return new object?[] { "\\cA+" };
-    }
-
-    [Theory]
-    [MemberData(nameof(SliceSplitShapes))]
-    public void SplitShapesRouteOwned(string pattern)
-    {
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-        }
-    }
-
     public static IEnumerable<object?[]> SplitCases()
     {
         yield return new object?[] { ",", "a,b,,c", int.MaxValue };

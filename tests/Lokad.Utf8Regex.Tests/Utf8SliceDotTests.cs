@@ -37,43 +37,6 @@ public sealed class Utf8SliceDotTests
         }
     }
 
-    public static IEnumerable<object?[]> IsMatchCases()
-    {
-        yield return new object?[] { "a.*b", "xxa1bzz", true };
-        yield return new object?[] { "a.*b", "xxayy", false };
-        yield return new object?[] { "a.*b", "xxabyy", true };
-        yield return new object?[] { "a.*b", "", false };
-        yield return new object?[] { ".*b", "xxb", true };
-        yield return new object?[] { "(a.c)+", "xxabcaycyy", true };
-        yield return new object?[] { "(a.c)+", "xxayy", false };
-        yield return new object?[] { "a.*?b", "xxa1b2byy", true };
-        yield return new object?[] { "x*|y.", "ay", true };
-        yield return new object?[] { "a|.*", "zz", true };
-    }
-
-    [Theory]
-    [MemberData(nameof(IsMatchCases))]
-    public void OwnedIsMatchMatchesOracle(string pattern, string inputText, bool expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.IsMatch(inputText));
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-            Assert.Equal(expected, regex.IsMatch(input));
-            using var source = new CancellationTokenSource();
-            Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-        }
-    }
-
     [Theory]
     [InlineData("a.*b", "xxa\rbzz", true)]
     [InlineData("a.*b", "xxa\nbzz", false)]
@@ -152,27 +115,6 @@ public sealed class Utf8SliceDotTests
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, regex.IsMatch(input));
         Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-    }
-
-    public static IEnumerable<object?[]> CountCases()
-    {
-        yield return new object?[] { "a.*b", "aab aabb", 1 };
-        yield return new object?[] { "(a.c)+", "abc ayc", 2 };
-        yield return new object?[] { "a.*?b", "a1b a22b", 2 };
-        yield return new object?[] { "a.*b", "xyz", 0 };
-    }
-
-    [Theory]
-    [MemberData(nameof(CountCases))]
-    public void OwnedCountMatchesOracle(string pattern, string inputText, int expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, regex.Count(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 

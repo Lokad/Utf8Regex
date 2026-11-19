@@ -42,45 +42,6 @@ public sealed class Utf8SliceBoundaryTests
         }
     }
 
-    public static IEnumerable<object?[]> IsMatchCases()
-    {
-        yield return new object?[] { "x\\b!", "ax!by", true };
-        yield return new object?[] { "x\\b!", "axby", false };
-        yield return new object?[] { "x\\Bx", "axxb", true };
-        yield return new object?[] { "x\\Bx", "ax bx", false };
-        yield return new object?[] { "\\A.*\\z", "ab", true };
-        yield return new object?[] { "\\A.*\\z", "xab\n", false };
-        yield return new object?[] { "\\A.*\\Z", "ab", true };
-        yield return new object?[] { "\\A.*\\Z", "ab\n", true };
-        yield return new object?[] { "\\b", "a\u2060b", true };
-        yield return new object?[] { "\\b", "a\u200Db", true };
-        yield return new object?[] { "\\b\\p{L}+\\b", "\u00E9x", true };
-        yield return new object?[] { "\\b\\w+\\b", "caf\u00E9", true };
-    }
-
-    [Theory]
-    [MemberData(nameof(IsMatchCases))]
-    public void OwnedIsMatchMatchesOracle(string pattern, string inputText, bool expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.IsMatch(inputText));
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-            Assert.Equal(expected, regex.IsMatch(input));
-            using var source = new CancellationTokenSource();
-            Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-        }
-    }
-
     public static IEnumerable<object?[]> IgnoreCaseBoundaryCases()
     {
         // Word boundaries are case-transparent; the folded category inside

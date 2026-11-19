@@ -12,34 +12,6 @@ namespace Lokad.Utf8Regex.Tests;
 // spellings fail construction.
 public sealed class Utf8SliceNamedTests
 {
-    public static IEnumerable<object?[]> SliceNamedShapes()
-    {
-        yield return new object?[] { "(?<word>a)+" };
-        yield return new object?[] { "(?<a>x)+" };
-        yield return new object?[] { "(?<a>x)(?<b>y)+" };
-        yield return new object?[] { "(?<b>a)(c)+" };
-        yield return new object?[] { "((?<a>x)+)" };
-        yield return new object?[] { "(?<word>\\d+)+" };
-        yield return new object?[] { "(?<b>a)(c)\\2" };
-        yield return new object?[] { "(?<a>ab|cd)+" };
-    }
-
-    [Theory]
-    [MemberData(nameof(SliceNamedShapes))]
-    public void NamedShapesRouteOwned(string pattern)
-    {
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-        }
-    }
-
     [Theory]
     [InlineData("(?<word>a)", "a1", 1)]
     [InlineData("(?<a>x)(b)(?<c>y)", "xby", 1)]
@@ -77,63 +49,6 @@ public sealed class Utf8SliceNamedTests
     {
         Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex(pattern, options: RegexOptions.CultureInvariant));
-    }
-
-    public static IEnumerable<object?[]> IsMatchCases()
-    {
-        yield return new object?[] { "(?<word>a)+", "xaa", true };
-        yield return new object?[] { "(?<word>a)+", "xb", false };
-        yield return new object?[] { "(?<a>x)+", "xx", true };
-        yield return new object?[] { "(?<a>x)(?<b>y)+", "xyy", true };
-        yield return new object?[] { "(?<b>a)(c)+", "acc", true };
-        yield return new object?[] { "((?<a>x)+)", "xx", true };
-        yield return new object?[] { "(?<word>\\d+)+", "12", true };
-        yield return new object?[] { "(?<b>a)(c)\\2", "aca", true };
-        yield return new object?[] { "(?<b>a)(c)\\1", "aca", false };
-        yield return new object?[] { "(?<a>ab|cd)+", "abcd", true };
-        yield return new object?[] { "(?<a>ab|cd)+", "ax", false };
-    }
-
-    [Theory]
-    [MemberData(nameof(IsMatchCases))]
-    public void OwnedIsMatchMatchesOracle(string pattern, string inputText, bool expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.IsMatch(inputText));
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-            Assert.Equal(expected, regex.IsMatch(input));
-            using var source = new CancellationTokenSource();
-            Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-        }
-    }
-
-    public static IEnumerable<object?[]> CountCases()
-    {
-        yield return new object?[] { "(?<v>a)+", "aa aa", 2 };
-        yield return new object?[] { "(?<a>x)+", "xxx", 1 };
-    }
-
-    [Theory]
-    [MemberData(nameof(CountCases))]
-    public void OwnedCountMatchesOracle(string pattern, string inputText, int expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, regex.Count(input));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]

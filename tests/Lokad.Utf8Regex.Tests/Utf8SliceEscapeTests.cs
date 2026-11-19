@@ -15,85 +15,6 @@ namespace Lokad.Utf8Regex.Tests;
 // decline with legacy-exact construction failures.
 public sealed class Utf8SliceEscapeTests
 {
-    public static IEnumerable<object?[]> SliceEscapeShapes()
-    {
-        yield return new object?[] { "\\x41+" };
-        yield return new object?[] { "\\u0041+" };
-        yield return new object?[] { "\\01+" };
-        yield return new object?[] { "[\\x41-\\x5A]+" };
-        yield return new object?[] { "[\\101-\\132]+" };
-        yield return new object?[] { "[\\u0041]+" };
-    }
-
-    [Theory]
-    [MemberData(nameof(SliceEscapeShapes))]
-    public void EscapeShapesRouteOwned(string pattern)
-    {
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-        }
-    }
-
-    public static IEnumerable<object?[]> IsMatchCases()
-    {
-        yield return new object?[] { "\\x41", "A", true };
-        yield return new object?[] { "\\x41", "B", false };
-        yield return new object?[] { "\\x41+", "AAB", true };
-        yield return new object?[] { "\\u0041", "A", true };
-        yield return new object?[] { "\\u004A", "J", true };
-        yield return new object?[] { "\\0", "\u0000", true };
-        yield return new object?[] { "\\00", "\u0000", true };
-        yield return new object?[] { "\\000", "\u0000", true };
-        yield return new object?[] { "\\07", "\u0007", true };
-        yield return new object?[] { "\\12", "\n", true };
-        yield return new object?[] { "\\12B", "\nB", true };
-        yield return new object?[] { "\\08", "\u0000" + "8", true };
-        yield return new object?[] { "a\\0", "a\u0000", true };
-        yield return new object?[] { "[\\x41]", "A", true };
-        yield return new object?[] { "[\\x41]", "B", false };
-        yield return new object?[] { "[\\x41-\\x5A]", "M", true };
-        yield return new object?[] { "[\\x41-\\x5A]", "a", false };
-        yield return new object?[] { "[\\101-\\132]", "S", true };
-        yield return new object?[] { "[\\u0041]", "A", true };
-        yield return new object?[] { "[\\0]", "\u0000", true };
-        yield return new object?[] { "[\\7]", "\u0007", true };
-        yield return new object?[] { "[\\12]", "\n", true };
-        yield return new object?[] { "[\\77]", "?", true };
-        yield return new object?[] { "(\\x41)(\\x42)", "AB", true };
-    }
-
-    [Theory]
-    [MemberData(nameof(IsMatchCases))]
-    public void OwnedIsMatchMatchesOracle(string pattern, string inputText, bool expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.IsMatch(inputText));
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(expected, regex.IsMatch(input));
-            using var source = new CancellationTokenSource();
-            Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            if (regex.Inspection.DebugUsesOwnedSliceProgram)
-            {
-                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-            }
-        }
-    }
-
     public static IEnumerable<object?[]> ThrowCases()
     {
         yield return new object?[] { "\\x4" };
@@ -139,20 +60,6 @@ public sealed class Utf8SliceEscapeTests
     }
 
     [Theory]
-    [InlineData("\\x41+", "aAb", 1)]
-    [InlineData("[\\x41-\\x5A]+", "ABc", 1)]
-    public void OwnedCountMatchesOracle(string pattern, string inputText, int expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, regex.Count(input));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-    }
-
-    [Theory]
     [InlineData("\\t+", "\ta\t", "\t")]
     [InlineData("\\cA+", "x\u0001\u0001", "\u0001\u0001")]
     [InlineData("(?<=\\n)x", "a\nx", "x")]
@@ -177,100 +84,6 @@ public sealed class Utf8SliceEscapeTests
         var regex = new Utf8Regex(pattern, options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
         Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor(input)).GetGroupMemory(0).Span));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-    }
-
-    public static IEnumerable<object?[]> SliceControlShapes()
-    {
-        yield return new object?[] { "\\n+" };
-        yield return new object?[] { "\\t+" };
-        yield return new object?[] { "\\r+" };
-        yield return new object?[] { "\\a+" };
-        yield return new object?[] { "\\f+" };
-        yield return new object?[] { "\\v+" };
-        yield return new object?[] { "\\e+" };
-        yield return new object?[] { "\\cA+" };
-        yield return new object?[] { "\\cZ+" };
-        yield return new object?[] { "(?<=\\n)x" };
-    }
-
-    [Theory]
-    [MemberData(nameof(SliceControlShapes))]
-    public void ControlShapesRouteOwned(string pattern)
-    {
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-        }
-    }
-
-    public static IEnumerable<object?[]> ControlIsMatchCases()
-    {
-        yield return new object?[] { "\\n", "\n", true };
-        yield return new object?[] { "\\n", "n", false };
-        yield return new object?[] { "\\t", "\t", true };
-        yield return new object?[] { "\\r", "\r", true };
-        yield return new object?[] { "\\a", "\u0007", true };
-        yield return new object?[] { "\\a", "a", false };
-        yield return new object?[] { "\\f", "\f", true };
-        yield return new object?[] { "\\v", "\v", true };
-        yield return new object?[] { "\\e", "\u001B", true };
-        yield return new object?[] { "\\e", "e", false };
-        yield return new object?[] { "\\cA", "\u0001", true };
-        yield return new object?[] { "\\cA", "A", false };
-        yield return new object?[] { "\\cZ", "\u001A", true };
-        yield return new object?[] { "\\c@", "\u0000", true };
-        yield return new object?[] { "\\n+", "\n\n\n", true };
-        yield return new object?[] { "\\cA+", "\u0001\u0001", true };
-        yield return new object?[] { "(?<=\\n)x", "\nx", true };
-        yield return new object?[] { "(?<=\\n)x", "ax", false };
-        yield return new object?[] { "\\cM", "M", false };
-        yield return new object?[] { "\\cm", "m", false };
-    }
-
-    [Theory]
-    [MemberData(nameof(ControlIsMatchCases))]
-    public void OwnedControlIsMatchMatchesOracle(string pattern, string inputText, bool expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.IsMatch(inputText));
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.Equal(expected, regex.IsMatch(input));
-            using var source = new CancellationTokenSource();
-            Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            if (regex.Inspection.DebugUsesOwnedSliceProgram)
-            {
-                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-            }
-        }
-    }
-
-    [Theory]
-    [InlineData("\\t+", "\ta\t", 2)]
-    [InlineData("\\cA+", "\u0001x\u0001", 2)]
-    [InlineData("(?<=\\n)x", "ax\nx", 1)]
-    public void OwnedControlCountMatchesOracle(string pattern, string inputText, int expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, regex.Count(input));
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 

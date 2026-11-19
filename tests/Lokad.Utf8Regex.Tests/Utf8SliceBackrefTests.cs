@@ -10,38 +10,6 @@ namespace Lokad.Utf8Regex.Tests;
 // fail construction. BCL comparisons below cover overlapping scalar outcomes.
 public sealed class Utf8SliceBackrefTests
 {
-    public static IEnumerable<object?[]> SliceBackrefShapes()
-    {
-        yield return new object?[] { "(a)\\1" };
-        yield return new object?[] { "\\1(a)" };
-        yield return new object?[] { "(\\2a|(b))+" };
-        yield return new object?[] { "(a|b)+\\1" };
-        yield return new object?[] { "(a+)\\1" };
-        yield return new object?[] { "(a)(b)\\2\\1" };
-        yield return new object?[] { "((a)b)\\1" };
-        yield return new object?[] { "(a*)\\1" };
-        yield return new object?[] { "(x)?b\\1" };
-        yield return new object?[] { "([a-z]+)\\1" };
-        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)\\8" };
-        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)\\9" };
-    }
-
-    [Theory]
-    [MemberData(nameof(SliceBackrefShapes))]
-    public void BackrefShapesRouteOwned(string pattern)
-    {
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-        }
-    }
-
     [Theory]
     [InlineData("a\\12b")]
     [InlineData("(a)\\10")]
@@ -56,75 +24,6 @@ public sealed class Utf8SliceBackrefTests
     {
         Utf8PatternFailureAssert.Throws(
             () => new Utf8Regex("a\\1b", options: RegexOptions.CultureInvariant));
-    }
-
-    public static IEnumerable<object?[]> IsMatchCases()
-    {
-        yield return new object?[] { "(a)\\1", "aa", true };
-        yield return new object?[] { "(a)\\1", "ab", false };
-        yield return new object?[] { "(a|b)+\\1", "abb", true };
-        yield return new object?[] { "(a|b)+\\1", "aba", false };
-        yield return new object?[] { "(a*)\\1", "aaa", true };
-        yield return new object?[] { "(x)?b\\1", "b", false };
-        yield return new object?[] { "(x)?b\\1", "bxb", false };
-        yield return new object?[] { "(a)(b)\\2\\1", "abba", true };
-        yield return new object?[] { "((a)b)\\1", "abb", false };
-        yield return new object?[] { "((a)b)\\1", "abab", true };
-        yield return new object?[] { "([a-z]+)\\1", "abcabc", true };
-        yield return new object?[] { "(a+)\\1", "aaabaaa", true };
-        yield return new object?[] { "(a?)\\1b", "b", true };
-        yield return new object?[] { "(\\p{L}+)\\1", "abab", true };
-        yield return new object?[] { "(\\p{L}+)\\1", "ab ab", false };
-        yield return new object?[] { "(\\p{IsBasicLatin}+)\\1", "HiHi", true };
-        yield return new object?[] { "([^\\p{L}]+)\\1", "11", true };
-        yield return new object?[] { "([\\p{L}a]+)\\1", "aBaB", true };
-        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)\\8", "abcdefghh", true };
-        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)\\8", "abcdefgha", false };
-        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)\\9", "abcdefghii", true };
-        yield return new object?[] { "(a)(b)(c)(d)(e)(f)(g)(h)(i)\\9", "abcdefghia", false };
-    }
-
-    [Theory]
-    [MemberData(nameof(IsMatchCases))]
-    public void OwnedIsMatchMatchesOracle(string pattern, string inputText, bool expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.IsMatch(inputText));
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-            Assert.Equal(expected, regex.IsMatch(input));
-            using var source = new CancellationTokenSource();
-            Assert.Equal(expected, regex.IsMatch(input, source.Token));
-            Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-        }
-    }
-
-    public static IEnumerable<object?[]> CountCases()
-    {
-        yield return new object?[] { "(a)\\1", "aaabaaa", 2 };
-        yield return new object?[] { "(a|b)+\\1", "abb abb", 2 };
-        yield return new object?[] { "(x)?b\\1", "bbb", 0 };
-    }
-
-    [Theory]
-    [MemberData(nameof(CountCases))]
-    public void OwnedCountMatchesOracle(string pattern, string inputText, int expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, regex.Count(input));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
     [Theory]

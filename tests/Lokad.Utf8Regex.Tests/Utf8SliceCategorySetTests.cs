@@ -199,33 +199,6 @@ public sealed class Utf8SliceCategorySetTests
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
     }
 
-    public static IEnumerable<object?[]> CountCases()
-    {
-        yield return new object?[] { "[\\p{L}a]+", "1a\u03B1", 1 };
-        yield return new object?[] { "[\\p{L}\\p{Nd}_]+", "a1_-", 1 };
-        yield return new object?[] { "[^\\p{L}a]+", "a1 b", 1 };
-        yield return new object?[] { "[\\P{L}-x]+", "a-x1", 1 };
-        yield return new object?[] { "[\\p{L}-x]+", "a-x1", 1 };
-        yield return new object?[] { "[\\p{L}\\D]+", "a15 ", 2 };
-        yield return new object?[] { "[^\\p{L}\\d]+", "a1 ", 1 };
-        yield return new object?[] { "[\\p{IsGreek}a]+", "a\u03B1b1", 1 };
-        yield return new object?[] { "[^\\p{IsGreek}a]+", "a\u03B1b1", 1 };
-        yield return new object?[] { "[\\d-\\p{L}]+", "5-a", 1 };
-    }
-
-    [Theory]
-    [MemberData(nameof(CountCases))]
-    public void OwnedCountMatchesOracle(string pattern, string inputText, int expected)
-    {
-        var input = Encoding.UTF8.GetBytes(inputText);
-        var oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
-        Assert.Equal(expected, oracle.Matches(inputText).Count);
-        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant);
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, "pattern=" + pattern);
-        Assert.Equal(expected, regex.Count(input));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=" + pattern);
-    }
-
     public static IEnumerable<object?[]> FirstMatchCases()
     {
         yield return new object?[] { "[\\p{L}a]+", "1a\u03B1", 1, 2 };

@@ -12,31 +12,6 @@ namespace Lokad.Utf8Regex.Tests;
 // fails exactly like the BCL oracle.
 public sealed class Utf8SliceNonCapturingTests
 {
-    public static IEnumerable<object?[]> SliceTransparentShapes()
-    {
-        yield return new object?[] { "(?:a)+" };
-        yield return new object?[] { "(?:a|b)+c" };
-        yield return new object?[] { "(a)(?:b)\\1" };
-        yield return new object?[] { "(?:a)+(?:b)+" };
-        yield return new object?[] { "((?:ab)+c)" };
-    }
-
-    [Theory]
-    [MemberData(nameof(SliceTransparentShapes))]
-    public void TransparentShapesRouteOwned(string pattern)
-    {
-        foreach (var options in new[]
-        {
-            RegexOptions.None,
-            RegexOptions.CultureInvariant,
-            RegexOptions.Compiled | RegexOptions.CultureInvariant,
-        })
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram, options.ToString());
-        }
-    }
-
     public static IEnumerable<object?[]> IsMatchCases()
     {
         yield return new object?[] { "(?:a)+", "aaa", true };
