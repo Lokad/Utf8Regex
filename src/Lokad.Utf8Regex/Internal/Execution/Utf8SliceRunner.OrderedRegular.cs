@@ -66,7 +66,7 @@ internal static partial class Utf8SliceRunner
         return closures;
     }
 
-    private static Utf8SliceSearchOutcome FindOrderedRegularRange(Utf8SliceProgram program,
+    internal static Utf8SliceSearchOutcome FindOrderedRegularRange(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation)
     {
         const int capacity = 16;
@@ -158,6 +158,25 @@ internal static partial class Utf8SliceRunner
             }
         }
         finally { invocation.Ledger.Release(reserved); }
+    }
+
+    internal static Utf8SliceSearchOutcome ReplayOrderedRegularRange(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, Utf8SliceSearchOutcome selected, Utf8SliceSlots slots,
+        bool collectHistory, ref Utf8SliceInvocation invocation)
+    {
+        // Unconditional edges make replay independent of the suffix. Clipping
+        // after the winning end removes only continuations that lost to it.
+        var replay = TryMatchAt(program, input[..selected.EndByte], selected.StartByte,
+            slots.Starts, slots.Ends, collectHistory, true, ref invocation);
+        if (replay.Breach != Utf8ExecutionLimitKind.None)
+            return new(false, -1, -1, null, null, replay.Breach);
+        if (!replay.IsMatch || replay.EndIndex != selected.EndByte)
+        {
+            ReleaseHistory(replay.CaptureStarts, replay.CaptureLengths, ref invocation);
+            throw new InvalidOperationException("NonBacktracking capture replay changed the selected range.");
+        }
+        return new(true, selected.StartByte, selected.EndByte, replay.CaptureStarts, replay.CaptureLengths,
+            Utf8ExecutionLimitKind.None);
     }
 
     private struct OrderedRegularFrontier

@@ -24,6 +24,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
     private int _origin;
     private int _boundary;
     private int _active;
+    private bool _firstCompactRegular;
     private Status _status;
     private enum Status : byte { Open, Ended, Faulted, Disposed }
 
@@ -39,12 +40,8 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                 throw new ArgumentOutOfRangeException("startOffsetInBytes");
             _position = _origin = start;
             _slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref _invocation);
-            if (program.IsNonBacktracking)
-            {
-                var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input.Span, ref _invocation, out _nonBacktracking);
-                if (breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
-                _boundary = _nonBacktracking!.ResolveByteOffset(start);
-            }
+            _firstCompactRegular = input.Length - start >= 64 && program.NonBacktrackingOrderedClosures.Length != 0;
+            if (program.IsNonBacktracking && !_firstCompactRegular) PrepareNonBacktracking(program);
             Checkpoint();
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
@@ -58,7 +55,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
     // Attached only before the cursor escapes; failed owner setup keeps its own lease.
     internal void AttachProgramUse(Utf8FundedStorage.Use use) => _programUse = use;
 
-    /// <summary>Advances to immutable byte ranges without captured text or a whole-subject map.</summary>
+    /// <summary>Advances to immutable byte ranges without materializing captured text.</summary>
     /// <remarks>The optional token applies only to this synchronous advance; the original token/deadline and cumulative limits remain authoritative. A failed advance faults the cursor and releases exclusive scratch. Ordinary publication leaves continued result retention to the caller.</remarks>
     public bool MoveNext(out Utf8RangeMatch match, CancellationToken cancellationToken = default)
         => MoveNextCore(cancellationToken, false, null, out match, out _);
@@ -126,8 +123,8 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             if (program.GroupCount == 0 && _regex!.TryFindNativeLiteralForResult(_input.Span, _position,
                     ref _invocation, out var found, out var start, out var end, forCoreCursor: true))
                 outcome = new(found, start, end, null, null, Utf8ExecutionLimitKind.None);
-            else outcome = _nonBacktracking is { } batch
-                ? batch.FindFirst(program, ref _boundary, _slots.Starts, _slots.Ends, collectHistory, ref _invocation)
+            else outcome = program.IsNonBacktracking
+                ? FindNonBacktracking(program, collectHistory)
                 : Utf8SliceRunner.TryFindFirst(program, _input.Span, _position, _slots.Starts, _slots.Ends,
                     collectHistory, ref _workspace, ref _invocation, _regex!.Inspection.SearchPlan);
             if (outcome.Breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
@@ -174,6 +171,31 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             // Close only after transient reservations/roots have finished.
             if (exhausted) Close(Status.Ended);
         }
+    }
+
+    private Utf8SliceSearchOutcome FindNonBacktracking(Utf8SliceProgram program, bool collectHistory)
+    {
+        if (_nonBacktracking is null && (_firstCompactRegular || _input.Length - _position < 64))
+        {
+            _firstCompactRegular = false;
+            var input = _input.Span;
+            var selected = Utf8SliceRunner.FindOrderedRegularRange(program, input, _position, ref _invocation);
+            return selected.Found && _slots.Starts.Length != 0
+                ? Utf8SliceRunner.ReplayOrderedRegularRange(program, input, selected, _slots, collectHistory, ref _invocation)
+                : selected;
+        }
+
+        // After the first result, use viability unless only a bounded tail
+        // remains. A preferred cyclic branch can otherwise rescan each suffix.
+        if (_nonBacktracking is null) PrepareNonBacktracking(program);
+        return _nonBacktracking!.FindFirst(program, ref _boundary, _slots.Starts, _slots.Ends, collectHistory, ref _invocation);
+    }
+
+    private void PrepareNonBacktracking(Utf8SliceProgram program)
+    {
+        var breach = Utf8NonBacktrackingSearchState.TryCreate(program, _input.Span, ref _invocation, out _nonBacktracking);
+        if (breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
+        _boundary = _nonBacktracking!.ResolveByteOffset(_position);
     }
 
     private Utf8RangeMatch Snapshot(Utf8SliceSearchOutcome outcome, bool useCaptureSlots, ref Utf8InvocationResultLedger results)

@@ -253,6 +253,52 @@ public sealed class Utf8MemoryCursorTests
         Assert.Equal("aaa"u8.ToArray(), first.Match.GetValueMemory().ToArray()); first.Dispose(); Assert.Equal(0UL, root.Used);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CompactRegularFirstCaptureNeedsNoBatchLoan(bool late)
+    {
+        var root = new Root(); var working = new Account(root) { Maximum = 8192 }; var results = new Account(root);
+        using var regex = new Utf8Regex("(?<x>😀|a){1,2}", RegexOptions.NonBacktracking);
+        var input = Encoding.UTF8.GetBytes(late ? new string('z', 2048) + "😀a" : "😀a" + new string('z', 2048) + "a");
+        var start = late ? 2048 : 0;
+        using var cursor = regex.CreateMatchCursor(input, workingMemoryAllowance: working);
+        var alias = cursor;
+
+        Assert.True(cursor.MoveNextRetained(out var first, resultMemoryAllowance: results));
+        using (first)
+        {
+            Assert.Equal(new Utf8CaptureRange(start, start + 5), first.Match.Value);
+            Assert.Equal(new Utf8CaptureRange(start + 4, start + 5), Assert.Single(first.Match.GetCaptures(1).ToArray()));
+            if (late) Assert.False(alias.MoveNext(out _));
+            else
+            {
+                Assert.Throws<Utf8MemoryAdmissionException>(() => alias.MoveNext(out _));
+                Assert.Throws<InvalidOperationException>(() => cursor.MoveNext(out _));
+            }
+            Assert.Equal(0UL, working.Used);
+            Assert.Equal("😀a"u8.ToArray(), first.Match.GetValueMemory().ToArray());
+        }
+        Assert.Equal(0UL, root.Used);
+    }
+
+    [Fact]
+    public void CompactRegularFirstEmptyCaptureAdvancesByScalarBeforePreparingTheBatch()
+    {
+        var root = new Root(); var working = new Account(root);
+        using var regex = new Utf8Regex("(?<x>a?)", RegexOptions.NonBacktracking);
+        var input = Encoding.UTF8.GetBytes("é😀a" + new string('z', 64));
+        using var cursor = regex.CreateMatchCursor(input, startOffsetInBytes: 2, workingMemoryAllowance: working);
+
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.Equal(new Utf8CaptureRange(2, 2), first.Value);
+        Assert.Equal(first.Value, Assert.Single(first.GetCaptures(1).ToArray()));
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.Equal(new Utf8CaptureRange(6, 7), second.Value);
+        Assert.Equal(second.Value, Assert.Single(second.GetCaptures(1).ToArray()));
+        cursor.Dispose(); Assert.Equal(0UL, root.Used);
+    }
+
     [Fact]
     public void SameOwnerReceiptTransfersWithoutAnotherAcquisition()
     {

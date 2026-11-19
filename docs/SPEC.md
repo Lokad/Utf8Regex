@@ -131,8 +131,8 @@ Scalar boundaries, byte offsets, captures, RTL/NonBacktracking behavior, retaine
 results/cursor aliases, original synchronous cancellation and absolute deadlines
 are unchanged. Native byte discovery and the general VM avoid unrelated suffix
 preparation when no live eligibility or algorithm state needs it. Some routes
-still inspect ASCII/scalar facts, and NonBacktracking retains its scalar viability
-table. These are matching requirements, not subject-validity passes. No subject
+still inspect ASCII/scalar facts, and NonBacktracking batches can prepare a scalar
+viability table. These are matching requirements, not subject-validity passes. No subject
 path computes UTF-16 totals or coordinate maps. Removed validation/description
 work can lower numerical limits; charges remain version/route dependent.
 
@@ -208,6 +208,11 @@ The cache stores which earlier thread supplied each surviving origin.
 On longer first-match calls, an eligible compact graph can select the range
 before reserving subcapture storage. The existing anchored replay fills the
 subcaptures inside that range using the same work budget and deadline.
+Persistent cursors for these graphs can return their first result before
+preparing a viability table. If another advance needs the table, that advance
+admits and builds it using the original cursor budget and deadline. First-match
+misses and bounded final tails can finish without the table. A refusal during a
+later advance faults the cursor and leaves earlier results valid.
 
 Backtracking first-match search can reuse Count's mandatory exact ASCII head or
 range proof. Controlled gap searches cover at most 2048 bytes per checkpoint;

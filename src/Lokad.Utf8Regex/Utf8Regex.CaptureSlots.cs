@@ -66,15 +66,10 @@ public sealed partial class Utf8Regex
                 result = default;
                 if (selected.Found)
                 {
-                    // With unconditional epsilon edges, clipping after the
-                    // winning end removes only continuations that lost to it.
-                    // Replay the same priority from the selected byte start.
                     slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
-                    var replay = Utf8SliceRunner.TryMatchAt(program, subject[..selected.EndByte], selected.StartByte,
-                        slots.Starts, slots.Ends, true, ref invocation);
+                    var replay = Utf8SliceRunner.ReplayOrderedRegularRange(program, subject, selected, slots,
+                        false, ref invocation);
                     if (replay.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
-                    if (!replay.IsMatch || replay.EndIndex != selected.EndByte)
-                        throw new InvalidOperationException("NonBacktracking capture replay changed the selected range.");
                     result = new(selected.StartByte, selected.EndByte);
                 }
             }
