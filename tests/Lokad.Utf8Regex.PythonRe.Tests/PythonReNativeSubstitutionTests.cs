@@ -28,6 +28,22 @@ public sealed class PythonReNativeSubstitutionTests
         Assert.Equal(expected, regex.Replace(input, replacement, count, start));
     }
 
+    [Theory]
+    [InlineData(0, 12)]
+    [InlineData(3, 3)]
+    [InlineData(8, 8)]
+    [InlineData(9, 9)]
+    public void LiteralCopyKeepsMatchOrderAcrossTheSearchBatch(int count, int replaced)
+    {
+        using var regex = new Utf8PythonRegex("cat");
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("é cat ", 12)));
+        var expected = string.Concat(Enumerable.Repeat("é 😀 ", replaced)) +
+            string.Concat(Enumerable.Repeat("é cat ", 12 - replaced));
+        var actual = regex.Subn(input, "😀"u8, count);
+        Assert.Equal(replaced, actual.ReplacementCount);
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), actual.ResultBytes);
+    }
+
     [Fact]
     public void NativeKeysAreImmutableAndWarmCallsBorrowTheirQueries()
     {

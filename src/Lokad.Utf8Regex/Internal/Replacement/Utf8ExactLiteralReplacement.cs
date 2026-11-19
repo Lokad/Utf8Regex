@@ -4,8 +4,8 @@ namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal static class Utf8ExactLiteralReplacement
 {
-    // A miss needs no materialized byte result. The caller can decode the
-    // validated subject directly or acquire the owned byte copy it publishes.
+    // A miss lets the caller publish the unchanged subject with its own
+    // output admission and lifetime.
     internal static byte[]? Replace(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> literal,
@@ -27,6 +27,9 @@ internal static class Utf8ExactLiteralReplacement
 
         var control = new Utf8InvocationBufferControl(ref invocation);
         replacementCount = 0;
+        // Short substitutions already find these positions while sizing
+        // the output. Keep them on the stack for the copy pass.
+        Span<int> matchStarts = stackalloc int[8];
         var remaining = input;
         while (replacementCount < maximumReplacementCount)
         {
@@ -37,6 +40,8 @@ internal static class Utf8ExactLiteralReplacement
                 break;
             }
 
+            if (replacementCount < matchStarts.Length)
+                matchStarts[replacementCount] = input.Length - remaining.Length + index;
             replacementCount++;
             remaining = remaining[(index + literal.Length)..];
         }
@@ -47,11 +52,13 @@ internal static class Utf8ExactLiteralReplacement
         var output = results.AllocateArray<byte>(outputLength, ref invocation);
         var sourcePosition = 0;
         var destinationPosition = 0;
-        var remainingReplacements = replacementCount;
-        while (remainingReplacements > 0)
+        var copied = 0;
+        while (copied < replacementCount)
         {
             Utf8InvocationOutput.Checkpoint(control);
-            var relativeIndex = input[sourcePosition..].IndexOf(literal);
+            var relativeIndex = copied < matchStarts.Length
+                ? matchStarts[copied] - sourcePosition
+                : input[sourcePosition..].IndexOf(literal);
             if (relativeIndex < 0)
             {
                 throw new InvalidOperationException(
@@ -63,7 +70,7 @@ internal static class Utf8ExactLiteralReplacement
             Utf8InvocationOutput.Copy(replacement, output.AsSpan(destinationPosition), control);
             destinationPosition += replacement.Length;
             sourcePosition += relativeIndex + literal.Length;
-            remainingReplacements--;
+            copied++;
         }
 
         Utf8InvocationOutput.Copy(input[sourcePosition..], output.AsSpan(destinationPosition), control);

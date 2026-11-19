@@ -164,7 +164,8 @@ public sealed partial class Utf8Regex
             _preparedRegex.LiteralUtf8 is not { Length: > 0 } literal)
             throw new InvalidOperationException("The exact replacement requires a nonempty ASCII literal plan.");
         Utf8SliceBufferWork.Checkpoint(ref invocation);
-        Utf8Validation.ThrowIfInvalidOnly(literalReplacementUtf8, ref invocation);
+        // PythonRe supplies the immutable literal from its validated
+        // replacement plan.
         // ASCII needles select complete scalar ranges. The caller's result
         // ledger sizes text only when requested; bytes need no UTF-16 metadata.
         return Utf8ExactLiteralReplacement.Replace(input, literal, literalReplacementUtf8,
