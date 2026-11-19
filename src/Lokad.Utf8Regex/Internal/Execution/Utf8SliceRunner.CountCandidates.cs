@@ -751,7 +751,14 @@ internal static partial class Utf8SliceRunner
                 var value = input[position++];
                 if ((program.SetMasks[entry.A][value >> 3] & (1 << (value & 7))) == 0) return false;
             }
-            else break;
+            else
+            {
+                if (!program.RightToLeft && entry is
+                    { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd } &&
+                    !MatchesEndAnchor(input, position, entry))
+                    return false;
+                break;
+            }
         }
         // A capture marker can help disprove the suffix, but the VM must
         // execute it. Only publish a pure run of one-byte consumers.

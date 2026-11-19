@@ -810,6 +810,24 @@ internal static partial class Utf8SliceRunner
         int excludedScalar;
         if (suffix is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && suffix.A > tail)
         {
+            if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
+            {
+                var proofBreach = invocation.TryChargeStep();
+                if (proofBreach != Utf8ExecutionLimitKind.None)
+                {
+                    outcome = new(false, -1, proofBreach, null, null);
+                    return true;
+                }
+                program.TryGetUnfoldedAsciiSet(atom, out var ascii, out _);
+                var remaining = 12;
+                if (ExcludesShorterAsciiRepeatEnds(instructions, tail, ascii, ref remaining))
+                {
+                    var branchedRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
+                    outcome = new(branchedRepeat.EndIndex >= 0, branchedRepeat.EndIndex, branchedRepeat.Breach, null, null);
+                    return true;
+                }
+            }
+
             // Each alternative's first consuming atom must be an excluded literal.
             // Only inspect through bounded capture markers;
             // the VM still executes their effects and chooses the branch normally.
@@ -886,6 +904,35 @@ internal static partial class Utf8SliceRunner
         var finalRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
         outcome = new(finalRepeat.EndIndex >= 0, finalRepeat.EndIndex, finalRepeat.Breach, null, null);
         return true;
+    }
+
+    private static bool ExcludesShorterAsciiRepeatEnds(ReadOnlySpan<Utf8SliceInstruction> instructions,
+        int index, Utf8SearchAsciiSet consumed, ref int remaining)
+    {
+        // A shorter endpoint precedes a consumed ASCII scalar. Each arm
+        // must reject that scalar, or require the actual end of the input.
+        for (; remaining > 0 && (uint)index < (uint)instructions.Length; index++)
+        {
+            remaining--;
+            var entry = instructions[index];
+            switch (entry)
+            {
+                case { Kind: Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd }:
+                    continue;
+                case { Kind: Utf8SliceInstructionKind.Fork, B: 0 } when entry.A > index:
+                    if (!ExcludesShorterAsciiRepeatEnds(instructions, entry.A, consumed, ref remaining)) return false;
+                    continue;
+                case { Kind: Utf8SliceInstructionKind.Literal, B: 0 }:
+                    return (uint)entry.A >= 128 || !consumed.Contains((byte)entry.A);
+                case { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd }:
+                    return true;
+                case { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End }:
+                    return !consumed.Contains((byte)'\n');
+                default:
+                    return false;
+            }
+        }
+        return false;
     }
 
     private static bool TryGetPositiveCategorySet(Utf8SliceProgram program,

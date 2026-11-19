@@ -276,6 +276,12 @@ internal static partial class Utf8SliceRunner
         => TryReadScalar(input, index, false, out var scalar, out _) &&
             Utf8SliceScalarClasses.IsBoundaryWord(scalar, program, instruction);
 
+    private static bool MatchesEndAnchor(ReadOnlySpan<byte> input, int position, in Utf8SliceInstruction instruction) =>
+        position == input.Length ||
+        instruction.A != (int)Utf8SliceAnchorKind.VeryEnd &&
+        (uint)position < (uint)input.Length &&
+        (instruction.B != 0 || position == input.Length - 1) && input[position] == (byte)'\n';
+
     private static bool MatchesBoundary(Utf8SliceProgram program, in Utf8SliceInstruction instruction,
         ReadOnlySpan<byte> input, int index)
     {
@@ -1625,10 +1631,6 @@ internal static partial class Utf8SliceRunner
                         anchorHolds = (inputIndex == 0 && startIsScalarBoundary) ||
                             (anchorMultiline && inputIndex > 0 && input[inputIndex - 1] == (byte)'\n');
                     }
-                    else if (instruction.A == 2)
-                    {
-                        anchorHolds = inputIndex == input.Length;
-                    }
                     else if (instruction.A == 3)
                     {
                         // Contiguous matches pin to the scan start (BCL startat),
@@ -1636,17 +1638,9 @@ internal static partial class Utf8SliceRunner
                         var origin = invocation.AnchorOriginByte;
                         anchorHolds = inputIndex == (origin < 0 ? start : origin);
                     }
-                    else if (inputIndex == input.Length)
-                    {
-                        anchorHolds = true;
-                    }
-                    else if (anchorMultiline)
-                    {
-                        anchorHolds = input[inputIndex] == (byte)'\n';
-                    }
                     else
                     {
-                        anchorHolds = inputIndex + 1 == input.Length && input[inputIndex] == (byte)'\n';
+                        anchorHolds = MatchesEndAnchor(input, inputIndex, instruction);
                     }
 
                     if (anchorHolds)

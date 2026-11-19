@@ -400,7 +400,13 @@ public sealed class LokadPublicRouteGuardrailTests
     public void BoostdocsFtpLineMatchUsesPrioritizedAnchoredLeadingDigitsTailFamily(RegexOptions options)
     {
         const string pattern = @"^([0-9]+)(\-| |$)(.*)$";
-        var regex = new Utf8Regex(pattern, options: options);
+        var oracle = new Regex(pattern, options);
+        using var regex = new Utf8Regex(pattern, options: options);
+        using var limited = new Utf8Regex(pattern, options: options, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64, MaxWorkingBytes = 1 }
+        });
+        using var cancellation = new CancellationTokenSource();
 
         string[] inputs =
         [
@@ -414,10 +420,15 @@ public sealed class LokadPublicRouteGuardrailTests
             "100-\nmore",
             "é100-message",
             "100-é",
+            "100 😀",
         ];
         foreach (var input in inputs)
         {
-            Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var expected = oracle.Match(input);
+            Assert.Equal(expected.Success, limited.IsMatch(bytes, cancellation.Token));
+            var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes));
+            Utf8MatchSequence.AssertCaptures(expected, actual, bytes, input);
         }
     }
 
