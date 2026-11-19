@@ -494,6 +494,10 @@ successful result. Charges depend on the route and version. For example,
 a proved repeat endpoint can avoid acquiring backtracking frames, and a
 proved candidate filter can avoid VM work before verification.
 
+A lookaround body consisting of one side-effect-free scalar class can run
+without allocating a continuation. Its logical depth, directional edge and
+interruption checks still apply.
+
 A forward greedy repeat of one side-effect-free scalar atom can keep its
 remaining endpoints in a single live frame. The run scan and each retry are
 metered. Depth and working admission cover the frame, while capture and

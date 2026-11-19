@@ -169,4 +169,24 @@ public sealed class Utf8SliceAssertionDirectionTests
         Assert.Equal(3U, admitted.Budget.PeakDepth);
         Assert.Equal(0UL, admitted.Ledger.ReservedBytes);
     }
+
+    [Theory]
+    [InlineData(@"(?<=\s)B", "😀\u2003B", 7)]
+    [InlineData(@"(?<=[A-Z])B", "😀AB", 5)]
+    [InlineData(@"(?<=\p{Nd})B", "𐒠B", 4)]
+    [InlineData(@"(?<!\s)B", "😀B", 4)]
+    [InlineData(@"(?<!\s)B", "B", 0)]
+    [InlineData(@"B(?=\p{Nd})", "B𐒠", 0, RegexOptions.RightToLeft)]
+    public void SingleScalarAssertionsKeepTheirEdgeAndNeedOnlyLogicalDepth(
+        string pattern, string text, int start, RegexOptions options = RegexOptions.None)
+    {
+        using var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        var input = Encoding.UTF8.GetBytes(text);
+        var match = regex.Match(input, options == RegexOptions.RightToLeft ? input.Length : start, []);
+        Assert.True(match.Success);
+        Assert.Equal((start, start + 1), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+    }
 }

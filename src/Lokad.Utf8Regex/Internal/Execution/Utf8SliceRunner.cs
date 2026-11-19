@@ -1785,9 +1785,8 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.Lookbehind:
                 case Utf8SliceInstructionKind.Lookahead:
                 {
-                    // Side-effect-free literal assertions use the same bounded
-                    // evaluator without leaving and re-entering this segment.
-                    if (TryRunAsciiLiteralAssertion(program.Assertions[instruction.A], input, inputIndex,
+                    // Simple side-effect-free assertions can stay in this segment.
+                    if (TryRunInlineAssertion(program.Assertions[instruction.A], input, inputIndex,
                         (uint)stacks.FrameCount + 1, ref invocation, out var matched, out var assertionBreach))
                     {
                         if (assertionBreach != Utf8ExecutionLimitKind.None)

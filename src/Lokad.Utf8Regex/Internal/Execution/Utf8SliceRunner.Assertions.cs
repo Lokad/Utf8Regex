@@ -217,23 +217,45 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
-    private static bool TryRunAsciiLiteralAssertion(Utf8SliceAssertion assertion, ReadOnlySpan<byte> input,
+    private static bool TryRunInlineAssertion(Utf8SliceAssertion assertion, ReadOnlySpan<byte> input,
         int start, uint depth, ref Utf8SliceInvocation invocation,
         out bool matched, out Utf8ExecutionLimitKind breach)
     {
         matched = false;
         breach = Utf8ExecutionLimitKind.None;
+        var body = assertion.Body;
+        var code = body.Instructions;
         var prefixLength = assertion.InlineLiteralPrefixLength;
-        if (prefixLength < 0) return false;
+        var singleClass = prefixLength < 0 && code is
+            [{ Kind: Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+                Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.CategorySet },
+             { Kind: Utf8SliceInstructionKind.Accept }];
+        if (prefixLength < 0 && !singleClass) return false;
         // Fixed-forward lookbehind keeps its original scalar rewind and end
         // constraint, without suspending the parent for this bounded body.
         int? requiredEnd = assertion.ForwardScalarCount.HasValue ? start : null;
         breach = TryRewindAssertionStart(input, assertion.ForwardScalarCount,
             ref start, ref invocation, out var available);
         if (breach != Utf8ExecutionLimitKind.None || !available) return true;
-        var body = assertion.Body;
-        breach = TryMatchInlineLiteralAssertion(body.Instructions, 0, body.Instructions.Length - 1, prefixLength,
-            input, start, body.RightToLeft, requiredEnd, depth, ref invocation, out matched);
+        if (!singleClass)
+        {
+            breach = TryMatchInlineLiteralAssertion(code, 0, code.Length - 1, prefixLength,
+                input, start, body.RightToLeft, requiredEnd, depth, ref invocation, out matched);
+            return true;
+        }
+
+        breach = invocation.TryChargeInputStep();
+        if (breach == Utf8ExecutionLimitKind.None) breach = invocation.Budget.TryNoteDepth(depth);
+        if (breach != Utf8ExecutionLimitKind.None) return true;
+        var reverse = body.RightToLeft;
+        if (TryReadScalar(input, start, reverse, out var scalar, out var width) &&
+            (requiredEnd is null || requiredEnd == start + (reverse ? -width : width)))
+        {
+            breach = TryMatchScalarClass(body, code[0], scalar, ref invocation, out matched);
+            if (breach != Utf8ExecutionLimitKind.None) return true;
+        }
+        breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
         return true;
     }
 
