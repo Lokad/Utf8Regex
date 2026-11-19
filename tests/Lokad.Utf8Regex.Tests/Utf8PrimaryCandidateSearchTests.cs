@@ -64,6 +64,35 @@ public sealed class Utf8PrimaryCandidateSearchTests
         Assert.Equal(expected, Assert.Single(match.GetCaptures(1).ToArray()));
     }
 
+    [Fact]
+    public void DecimalStartsSkipWiderNonDigitsWithinFiniteWork()
+    {
+        var prefix = string.Concat(Enumerable.Repeat("é😀 ", 384)) + "Ⅳ² ";
+        const string first = "𝟡٢.4";
+        const string second = "٣.12";
+        var input = Encoding.UTF8.GetBytes(prefix + first + " " + second);
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var end = start + Encoding.UTF8.GetByteCount(first);
+        var expected = new Utf8CaptureRange(start, end);
+        using var regex = Utf8Regex.Compile(@"(?<number>\b\d{1,3}\.\d{1,3}\b)", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2200 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(2, regex.Count(input, source.Token));
+        var slots = new Utf8CaptureRange[2];
+        Assert.Equal(expected, regex.Match(input, 0, slots, source.Token));
+        Assert.Equal(expected, slots[1]);
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: source.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(expected, match.GetCaptures(1)[0]);
+        Assert.True(cursor.MoveNext(out var next));
+        Assert.Equal(new Utf8CaptureRange(end + 1, input.Length), next.Value);
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(expected, match.Value);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

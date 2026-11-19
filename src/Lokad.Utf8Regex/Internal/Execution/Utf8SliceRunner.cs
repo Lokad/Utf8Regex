@@ -565,8 +565,8 @@ internal static partial class Utf8SliceRunner
                 classLiteral = prefixSearch.Needle[0];
             }
         }
-        // Keep existing literal guidance when available. A decimal set can
-        // reject unrelated ASCII, but any wider scalar may need verification.
+        // Keep existing literal guidance when available. The decimal scan
+        // lands at an ASCII digit or a wider scalar to classify below.
         var hasClassWindow = classLiteral >= 0 || classAlternatives is not null;
         var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
             IsLeadingDecimalSet(program, leadingScalarIndex);
@@ -640,6 +640,8 @@ internal static partial class Utf8SliceRunner
             // bounded work and the original interruption authority.
             if (leadingPrefix.IsEmpty && leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                 (uint)(input[position + 1] - second) > (uint)(secondLast - second)))
+                continue;
+            if (seekDecimal && IsNonDecimalWideStart(input, position))
                 continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
                 continue;
@@ -919,6 +921,11 @@ internal static partial class Utf8SliceRunner
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                    if (seekDecimal && IsNonDecimalWideStart(input, position))
+                    {
+                        position = AdvancePastScalar(input, position, false);
+                        continue;
+                    }
                     if (shortRepeatWindow.Min != 0 ? !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal) :
                         (leadingPrefix.IsEmpty && leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond))) ||
@@ -926,8 +933,8 @@ internal static partial class Utf8SliceRunner
                         !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex) :
                             MatchesStraightAsciiPrefix(program, input, position, 0)))
                     {
-                        // The decimal window always retains wider starts. Each
-                        // rejection is therefore at an admitted ASCII scalar.
+                        // The delimiter window retains wider decimals. Each
+                        // rejection here is at an admitted ASCII scalar.
                         position++;
                         continue;
                     }

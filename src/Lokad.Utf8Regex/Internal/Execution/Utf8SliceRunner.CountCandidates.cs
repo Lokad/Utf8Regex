@@ -114,6 +114,9 @@ internal static partial class Utf8SliceRunner
     private static bool IsLeadingDecimalSet(Utf8SliceProgram program, int index)
         => index >= 0 && IsDecimalDigitSet(program, program.Instructions[index]);
 
+    private static bool IsNonDecimalWideStart(ReadOnlySpan<byte> input, int position)
+        => input[position] >= 128 && TryReadScalar(input, position, false, out var scalar, out _) && !Rune.IsDigit(scalar);
+
     private static bool IsDecimalDigitSet(Utf8SliceProgram program, in Utf8SliceInstruction atom)
         => atom.Kind == Utf8SliceInstructionKind.CategorySet &&
             TryGetPositiveCategorySet(program, atom, out var categories, out var low, out var high) &&
