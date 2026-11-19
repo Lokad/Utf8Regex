@@ -57,17 +57,12 @@ internal readonly record struct Pcre2SubroutineCallFrame(
     int CaptureCheckpoint,
     int BacktrackingCheckpoint,
     int AtomicCheckpoint,
-    int MarkTrailCheckpoint);
-
-internal enum Pcre2SubroutineCallMutationKind : byte
+    int MarkTrailCheckpoint)
 {
-    Pushed = 0,
-    Popped = 1,
+    // Undoing a push only pops the current call. Every real return address
+    // is nonnegative, so this entry needs no second tag beside the frame.
+    internal static Pcre2SubroutineCallFrame UndoPush => new(-1, 0, 0, 0, 0, 0, 0);
 }
-
-internal readonly record struct Pcre2SubroutineCallMutation(
-    Pcre2SubroutineCallMutationKind Kind,
-    Pcre2SubroutineCallFrame Frame);
 
 internal readonly record struct Pcre2AtomicCheckpoint(int BacktrackingCheckpoint, int MarkTrailCheckpoint);
 
@@ -747,7 +742,7 @@ internal static class Pcre2BacktrackingRunner
         var initialRepeatRents = repeatMutations.RentCount;
         var captureMutations = new Pcre2InvocationStateStack<Pcre2CaptureMutation>(int.MaxValue, budget.CollectsDiagnostics);
         var subroutineCalls = new Pcre2InvocationStateStack<Pcre2SubroutineCallFrame>(frameLimit, budget.CollectsDiagnostics);
-        var subroutineCallMutations = new Pcre2InvocationStateStack<Pcre2SubroutineCallMutation>(int.MaxValue, budget.CollectsDiagnostics);
+        var subroutineCallMutations = new Pcre2InvocationStateStack<Pcre2SubroutineCallFrame>(int.MaxValue, budget.CollectsDiagnostics);
         var atomicCheckpoints = new Pcre2InvocationStateStack<Pcre2AtomicCheckpoint>(frameLimit, budget.CollectsDiagnostics);
         var markMutations = new Pcre2InvocationStateStack<Pcre2MarkMutation>(int.MaxValue, budget.CollectsDiagnostics);
         var markTrail = new Pcre2InvocationStateStack<Pcre2MarkTrailEntry>(int.MaxValue, budget.CollectsDiagnostics);
@@ -1260,8 +1255,7 @@ internal static class Pcre2BacktrackingRunner
                             ref captureMutations,
                             ref budget);
                         var completedCall = subroutineCalls.Pop();
-                        RecordSubroutineCallMutation(
-                            Pcre2SubroutineCallMutationKind.Popped,
+                        RecordSubroutineUndo(
                             completedCall,
                             ref subroutineCallMutations,
                             ref budget);
@@ -1414,8 +1408,7 @@ internal static class Pcre2BacktrackingRunner
                                 ref captureMutations,
                                 ref budget);
                             var completedAcceptedCall = subroutineCalls.Pop();
-                            RecordSubroutineCallMutation(
-                                Pcre2SubroutineCallMutationKind.Popped,
+                            RecordSubroutineUndo(
                                 completedAcceptedCall,
                                 ref subroutineCallMutations,
                                 ref budget);
@@ -1994,7 +1987,7 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
         ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> subroutineCalls,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallMutation> subroutineCallMutations,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> subroutineCallMutations,
         ref Pcre2InvocationStateStack<Pcre2AtomicCheckpoint> atomicCheckpoints,
         ref Pcre2InvocationStateStack<Pcre2MarkMutation> markMutations,
         ref Pcre2InvocationStateStack<Pcre2MarkTrailEntry> markTrail,
@@ -2142,7 +2135,7 @@ internal static class Pcre2BacktrackingRunner
     private static void PushSubroutineCall(
         Pcre2SubroutineCallFrame frame,
         ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> calls,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> mutations,
         int depthBase,
         ref Pcre2ResourceBudget budget)
     {
@@ -2153,9 +2146,8 @@ internal static class Pcre2BacktrackingRunner
             throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
         }
 
-        RecordSubroutineCallMutation(
-            Pcre2SubroutineCallMutationKind.Pushed,
-            frame,
+        RecordSubroutineUndo(
+            Pcre2SubroutineCallFrame.UndoPush,
             ref mutations,
             ref budget);
     }
@@ -2238,13 +2230,12 @@ internal static class Pcre2BacktrackingRunner
         }
     }
 
-    private static void RecordSubroutineCallMutation(
-        Pcre2SubroutineCallMutationKind kind,
+    private static void RecordSubroutineUndo(
         Pcre2SubroutineCallFrame frame,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> mutations,
         ref Pcre2ResourceBudget budget)
     {
-        if (!mutations.TryPush(new Pcre2SubroutineCallMutation(kind, frame), ref budget))
+        if (!mutations.TryPush(frame, ref budget))
         {
             throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
@@ -2253,17 +2244,17 @@ internal static class Pcre2BacktrackingRunner
     private static void RollbackSubroutineCalls(
         int checkpoint,
         ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> calls,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallMutation> mutations,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> mutations,
         ref Pcre2ResourceBudget budget)
     {
         while (mutations.Count > checkpoint)
         {
             var mutation = mutations.Pop();
-            if (mutation.Kind == Pcre2SubroutineCallMutationKind.Pushed)
+            if (mutation.ReturnInstruction < 0)
             {
                 _ = calls.Pop();
             }
-            else if (!calls.TryPush(mutation.Frame, ref budget))
+            else if (!calls.TryPush(mutation, ref budget))
             {
                 throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
             }
