@@ -1381,8 +1381,9 @@ internal static class Utf8SliceLowerer
                     // An invalid scalar is an impossible atom, not a three-byte
                     // literal or a code-unit special mode. Repetition still
                     // controls whether the atom must execute.
-                    Emit(System.Text.Rune.IsValid(literal.Value)
-                        ? new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, literal.Value, literal.FoldCase ? 1 : 0, 0, 0)
+                    Emit(Rune.TryCreate(literal.Value, out var scalar)
+                        ? new Utf8SliceInstruction(Utf8SliceInstructionKind.Literal, literal.Value,
+                            literal.FoldCase && Utf8SliceCaseEquivalences.HasAlternateScalar(scalar, CaseBehavior) ? 1 : 0, 0, 0)
                         : new Utf8SliceInstruction(Utf8SliceInstructionKind.Fail, 0, 0, 0, 0));
                     break;
                 case Utf8SliceNode.SetNode set:

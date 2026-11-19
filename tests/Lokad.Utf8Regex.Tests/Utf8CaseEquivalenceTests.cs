@@ -38,6 +38,29 @@ public sealed class Utf8CaseEquivalenceTests
     }
 
     [Fact]
+    public void CaseInertOptionalPrefixDoesNotRequireARepeatFrame()
+    {
+        var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkingBytes = 1 } };
+        using var regex = new Utf8Regex("^#?([a-f0-9]{6}|[a-f0-9]{3})$", RegexOptions.IgnoreCase, policy);
+
+        Assert.Equal(new Utf8CaptureRange(0, 7), regex.Match("#AF01BC"u8));
+        Assert.Equal(new Utf8CaptureRange(0, 7), regex.Match("#AF01BC\n"u8));
+        Assert.Equal(new Utf8CaptureRange(0, 6), regex.Match("AF01BC"u8));
+    }
+
+    [Fact]
+    public void OptionalPrefixCanBacktrackWhenItsSuffixAcceptsTheSameByte()
+    {
+        using var regex = new Utf8Regex("^#?(?<value>[#a-f]{3})$", RegexOptions.IgnoreCase);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+
+        Assert.Equal(new Utf8CaptureRange(0, 3), regex.Match("#Af"u8, captures: captures));
+        Assert.Equal(captures[0], captures[1]);
+        Assert.Equal(new Utf8CaptureRange(0, 4), regex.Match("##Af"u8, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(1, 4), captures[1]);
+    }
+
+    [Fact]
     public void FoldedAsciiFamilyKeepsItsBytePlanAndVerifiesKelvinSubjects()
     {
         const string pattern = "kat|abc";

@@ -39,6 +39,13 @@ internal static class Utf8SliceCaseEquivalences
         return GetEquivalents((char)left.Value, behavior).Contains((char)right.Value);
     }
 
+    internal static bool HasAlternateScalar(Rune scalar, Utf8ScalarCaseBehavior behavior)
+    {
+        if (scalar.IsBmp) return GetEquivalents((char)scalar.Value, behavior).Length > 1;
+        var lower = Utf8SupplementaryCase.Lower(scalar.Value);
+        return lower != scalar.Value || Utf8SupplementaryCase.Upper(lower) != scalar.Value;
+    }
+
     /// <summary>Returns the case equivalents of one BMP scalar (the scalar
     /// itself is always included when the table knows it). Dotted and dotless I
     /// take the probed special case below; every other scalar reads its

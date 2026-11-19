@@ -1298,13 +1298,16 @@ internal static partial class Utf8SliceRunner
                                         var lazy = instruction.Kind == Utf8SliceInstructionKind.RepeatLazy;
                                         var preferred = lazy ? inputIndex : end;
                                         var retry = lazy ? end : inputIndex;
-                                        // The optional's input step covers this bounded
-                                        // probe. Only the VM executes the suffix.
+                                        // The optional's input step covers a bounded prefix probe.
+                                        // A terminal suffix may need both arms of a branch checked.
                                         const int suffixProbeLimit = 4;
+                                        var endLimit = instructions[instruction.A].B;
                                         if (!MatchesStraightAsciiPrefix(program, input, preferred, continuation, suffixProbeLimit, out var completes))
                                             preferred = retry;
                                         else if ((!completes || cursor.RequiredEnd.HasValue) &&
-                                            MatchesStraightAsciiPrefix(program, input, retry, continuation, suffixProbeLimit) &&
+                                            (endLimit > 0 ? input.Length - retry < endLimit &&
+                                                MayMatchBranchedAsciiPrefix(program, input, retry, continuation, suffixProbeLimit * 2)
+                                                : MatchesStraightAsciiPrefix(program, input, retry, continuation, suffixProbeLimit)) &&
                                             !stacks.PushFrame(new Utf8SliceFrame
                                             {
                                                 ResumeKind = Utf8SliceResumeKind.Alternation,
