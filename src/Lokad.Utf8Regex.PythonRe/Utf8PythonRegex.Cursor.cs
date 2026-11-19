@@ -16,8 +16,8 @@ public sealed partial class Utf8PythonRegex
         {
             if ((uint)mode > (uint)Utf8PythonMatchMode.FullMatch)
                 throw new ArgumentOutOfRangeException(nameof(mode));
-            var invocation = workingMemoryAllowance is null ? CreateInvocation(cancellationToken)
-                : new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+            var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken,
+                workingMemoryAllowance ?? _programMemory?.Allowance);
             var end = GetScalarEndOffset(input.Span, endOffsetInBytes);
             var subject = input[..end];
             ValidateScalarStartOffset(subject.Span, startOffsetInBytes);

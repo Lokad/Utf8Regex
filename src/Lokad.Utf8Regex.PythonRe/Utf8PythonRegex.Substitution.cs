@@ -49,7 +49,7 @@ public sealed partial class Utf8PythonRegex
     }
 
     private PythonReReplacementPlan GetReplacementPlan(ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> query, Utf8SliceInvocation invocation,
+        ReadOnlySpan<byte> query, ref Utf8SliceInvocation invocation,
         CancellationToken cancellationToken, out Utf8FundedStorage.Use? memoryUse)
     {
         memoryUse = null;
@@ -210,7 +210,7 @@ public sealed partial class Utf8PythonRegex
         using var programUse = EnterProgramUse();
         ValidateStartOffset(input, startOffsetInBytes);
         var invocation = CreateInvocation(cancellationToken);
-        var scalarPlan = GetReplacementPlan(input, replacement, invocation, cancellationToken, out var memoryUse);
+        var scalarPlan = GetReplacementPlan(input, replacement, ref invocation, cancellationToken, out var memoryUse);
         using var planUse = memoryUse;
         if (!HasFiniteExecutionLimits && !cancellationToken.CanBeCanceled && MatchTimeout == Timeout.InfiniteTimeSpan &&
             TryReplaceViaUtf8Literal(input, scalarPlan, count, startOffsetInBytes, ref invocation, out var literalBytes, out var literalCount, out retained, retain))

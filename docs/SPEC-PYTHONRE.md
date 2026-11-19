@@ -498,7 +498,8 @@ modeled capacities.
 ### Replacement preparation
 
 The bounded cache keeps validated template keys and plans. Warm lookups borrow
-the supplied span. A cold lookup admits the immutable key before copying and
+the supplied span. Template lookup and matching draw from the same execution
+work budget. A cold lookup admits the immutable key before copying and
 keeps its working charge during preparation. Cold template and FullMatch
 preparation retain their construction backstops within the original invocation
 deadline. Finite working bytes also cap additional covered preparation storage.
