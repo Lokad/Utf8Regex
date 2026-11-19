@@ -1125,9 +1125,6 @@ internal sealed class Pcre2CharacterParser : IDisposable
         return -1;
     }
 
-    private static bool IsExtendedPatternWhitespace(char value) => value is
-        ' ' or '\t' or '\n' or '\v' or '\f' or '\r';
-
     private bool TryReadPatternRune(out Rune rune, out int length)
     {
         var status = _pattern.DecodeScalar(_offset, out rune, out length);

@@ -18,12 +18,6 @@ public sealed partial class Utf8Regex
     private Utf8CaptureRange MatchScalarProgram(ReadOnlySpan<byte> input, CancellationToken token)
         => OwnedSliceMatch(input, _ownedSliceProgram, token);
 
-    private Utf8CaptureRange MatchFallback(ReadOnlySpan<byte> input)
-    {
-        if (RejectsByRequiredPrefilter(input)) return default(Utf8CaptureRange);
-        return MatchScalarProgram(input, CancellationToken.None);
-    }
-
     private bool RejectsByRequiredPrefilter(ReadOnlySpan<byte> input)
     {
         return Utf8PrefilterExecutor.Rejects(_preparedRegex.SearchPlan.PrefilterPlan, input);

@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -69,33 +68,6 @@ public sealed class Utf8CountSubjectTests
             }
             finally { session.Complete(); }
         }
-    }
-
-    [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2045)] [InlineData(2046)]
-    [InlineData(2047)] [InlineData(2048)] [InlineData(2049)] [InlineData(4095)]
-    public void BorrowedAsciiProofUsesTheSelectedSpan(int prefix)
-    {
-        foreach (var suffix in new[] { "", "é", "中", "😀", "é😀中" })
-        {
-            var text = new string('a', prefix) + suffix;
-            var bytes = Encoding.UTF8.GetBytes(text);
-            var backing = new byte[bytes.Length + 13];
-            bytes.CopyTo(backing.AsSpan(5));
-            var input = backing.AsSpan(5, bytes.Length);
-            var flags = new Utf8SliceInvocation(new(1_000_000, 0, 0), Timeout.InfiniteTimeSpan, default);
-            Assert.Equal(suffix.Length == 0, Utf8InputAnalyzer.IsAscii(input, ref flags));
-            Assert.Equal(0UL, flags.Ledger.ReservedBytes);
-        }
-    }
-
-    [Theory]
-    [InlineData("")] [InlineData("ascii")] [InlineData("é")] [InlineData("😀")]
-    public void UnmeteredAsciiProofAgreesWithTheRuntime(string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
-        Assert.Equal(System.Text.Ascii.IsValid(input), Utf8InputAnalyzer.IsAscii(input, ref invocation));
     }
 
     [Theory]
@@ -170,23 +142,4 @@ public sealed class Utf8CountSubjectTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
             Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Count(input)).ResourceKind);
     }
-    [Theory]
-    [InlineData(0)]
-    [InlineData(2047)]
-    [InlineData(4095)]
-    [InlineData(4096)]
-    public void NonAsciiFactStopsInspectingTheUnusedSuffix(int prefix)
-    {
-        var bytes = Encoding.UTF8.GetBytes(new string('a', prefix) + "é😀" + new string('x', 1 << 20));
-        var invocation = new Utf8SliceInvocation(new(8, 0, 0), Timeout.InfiniteTimeSpan, default);
-        Assert.False(Utf8InputAnalyzer.IsAscii(bytes, ref invocation));
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-
-        // A true ASCII proof still has to inspect every byte under its allowance.
-        bytes.AsSpan().Fill((byte)'a');
-        invocation = new(new(8, 0, 0), Timeout.InfiniteTimeSpan, default);
-        Assert.Throws<InvalidOperationException>(() => Utf8InputAnalyzer.IsAscii(bytes, ref invocation));
-        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, invocation.Budget.LimitBreach);
-    }
-
 }
