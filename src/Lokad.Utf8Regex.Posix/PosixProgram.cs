@@ -8,6 +8,9 @@ namespace Lokad.Utf8Regex.Posix;
 // parts. Final public capture slots alone cannot order repeated POSIX parses.
 internal sealed partial class PosixProgram
 {
+    // Core uses positive RepeatExit.B values for terminal byte bounds.
+    internal const int RepeatExitWithoutRewind = -1;
+
     private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool directGreedyRuns,
         bool useCaptureOffsets,
         int firstRequiredRunAtom, int terminalLineEndRepeat,
@@ -237,9 +240,9 @@ internal sealed partial class PosixProgram
                 {
                     var exitIndex = program.Instructions[singleRepeat].A;
                     var exit = program.Instructions[exitIndex];
-                    // POSIX owns this stream. RepeatExit.B marks an impossible
-                    // shorter choice; repeat C/D remain their original bounds.
-                    program.Instructions[exitIndex] = new(exit.Kind, exit.A, 1, exit.C, exit.D);
+                    // POSIX owns this stream. Every shorter choice here has
+                    // the same unconditional tail and cannot improve the match.
+                    program.Instructions[exitIndex] = new(exit.Kind, exit.A, RepeatExitWithoutRewind, exit.C, exit.D);
                 }
                 return true;
             }

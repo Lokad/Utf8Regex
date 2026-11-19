@@ -223,7 +223,7 @@ internal partial struct PosixWorkspace
                         // A proved terminal scalar run has no shorter choice.
                         // Keep its ordinary counters, decoder and predicates;
                         // a failed optional atom selects the same exit directly.
-                        if (code[instruction.A].B != 0) terminalExit = instruction.A;
+                        if (code[instruction.A].B == PosixProgram.RepeatExitWithoutRewind) terminalExit = instruction.A;
                         else PushFrame(new(instruction.A, at, _trace.Count, _undo.Count), ref invocation);
                         SetState(state, slot, maximum == long.MaxValue ? (int)minimum + 1 : count + 1, ref invocation);
                         SetState(state, slot + 1, at, ref invocation);

@@ -119,6 +119,27 @@ public sealed class PosixTerminalRepeatTests
     }
 
     [Theory]
+    [InlineData("a", 1)]
+    [InlineData("😀", 4)]
+    public void EndAnchoredRepeatCanRewindBeforeAnOverlappingSuffix(string scalar, int width)
+    {
+        var pattern = $"^((({scalar}+)){scalar})$";
+        var input = Encoding.UTF8.GetBytes(string.Concat(scalar, scalar, scalar, scalar));
+        using var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 1024 }
+        });
+        var captures = new Utf8CaptureRange[4];
+        var whole = new Utf8CaptureRange(0, 4 * width);
+        var repeat = new Utf8CaptureRange(0, 3 * width);
+
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(1, regex.Count(input));
+        Assert.Equal(whole, regex.Match(input, captures: captures));
+        Assert.Equal(new[] { whole, whole, repeat, repeat }, captures);
+    }
+
+    [Theory]
     [InlineData("a")]
     [InlineData("é")]
     [InlineData("😀")]
