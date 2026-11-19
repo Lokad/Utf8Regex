@@ -238,7 +238,7 @@ public sealed class Utf8CaptureSlotMatchTests
     {
         using var regex = new Utf8Regex("(a?b|c)*(dé|😀)[xy]", RegexOptions.NonBacktracking, new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkingBytes = 1024 }
+            ResourcePolicy = new() { MaxWorkingBytes = 160 }
         });
         var prefix = string.Concat(Enumerable.Repeat("aababc😀z é ", 32));
         var account = new Account();
@@ -251,6 +251,37 @@ public sealed class Utf8CaptureSlotMatchTests
         var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             regex.Match(Encoding.UTF8.GetBytes(prefix + "😀x"), captures: output, workingMemoryAllowance: account));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, error.ResourceKind);
+        Assert.Equal(0UL, account.Held);
+    }
+
+    [Theory]
+    [InlineData(3, true)]
+    [InlineData(4, false)]
+    public void PackedCaptureReplayUsesBoundedScratchAtTheByteThreshold(int asciiCount, bool fits)
+    {
+        using var regex = new Utf8Regex("(?<x>😀|a)+b", RegexOptions.NonBacktracking, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 640 }
+        });
+        var subject = "é " + string.Concat(Enumerable.Repeat("😀", 7)) + new string('a', asciiCount) + "b" + new string('z', 64);
+        var input = Encoding.UTF8.GetBytes(subject);
+        var start = "é "u8.Length;
+        var groupEnd = start + 28 + asciiCount;
+        var slots = new Utf8CaptureRange[2];
+        var account = new Account();
+
+        if (fits)
+        {
+            Assert.Equal(new Utf8CaptureRange(start, groupEnd + 1), regex.Match(input, start, slots, workingMemoryAllowance: account));
+            Assert.Equal(new Utf8CaptureRange(groupEnd - 1, groupEnd), slots[1]);
+        }
+        else
+        {
+            var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+                regex.Match(input, start, slots, workingMemoryAllowance: account));
+            Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, error.ResourceKind);
+            Assert.All(slots, range => Assert.False(range.Success));
+        }
         Assert.Equal(0UL, account.Held);
     }
 

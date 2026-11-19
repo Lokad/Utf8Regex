@@ -314,6 +314,67 @@ internal sealed class Utf8NonBacktrackingSearchState
         _reservation = 0;
     }
 
+    internal static Utf8SliceSearchOutcome ReplayCompactRange(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        Utf8SliceSearchOutcome selected, Utf8SliceSlots slots, ref Utf8SliceInvocation invocation)
+    {
+        // ReplayOrderedRegularRange admits at most 32 subject bytes here.
+        var from = selected.StartByte;
+        var end = selected.EndByte;
+        var maxRows = end - from + 1;
+        var openingCount = program.NonBacktrackingCaptureOpeningCount;
+        var bytes = (ulong)(maxRows * (sizeof(int) + sizeof(ulong)) + openingCount * sizeof(int));
+        Array.Fill(slots.Starts, -1);
+        Array.Fill(slots.Ends, -1);
+        var breach = invocation.TryReserveWorking(bytes);
+        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+        var completed = false;
+        try
+        {
+            Span<int> boundaries = stackalloc int[maxRows];
+            Span<ulong> rows = stackalloc ulong[maxRows];
+            Span<int> openings = stackalloc int[openingCount];
+            openings.Clear();
+
+            // There can be at most one row per byte. Fill from the end so the
+            // occupied rows are contiguous even for multi-byte scalars.
+            var boundary = maxRows - 1;
+            var scalar = default(Rune);
+            var following = 0UL;
+            for (var edge = end; ; boundary--)
+            {
+                boundaries[boundary] = edge;
+                // Compact ordered graphs have unconditional epsilon edges.
+                // No prefix, suffix or prior scalar can affect these rows.
+                breach = TryBuildPackedRow(program, input, edge, scalar, default, following, ref invocation, out var row);
+                if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                rows[boundary] = row;
+                if (edge == from) break;
+                _ = Rune.DecodeLastFromUtf8(input[from..edge], out scalar, out var width);
+                edge -= width;
+                following = row;
+            }
+
+            if ((rows[boundary] & 1) == 0)
+                throw new InvalidOperationException("The selected NonBacktracking range is not viable.");
+            var outcome = Replay(program, boundaries, rows, 1, ref boundary, slots.Starts, slots.Ends,
+                openings, ref invocation);
+            if (outcome.Breach != Utf8ExecutionLimitKind.None) return outcome;
+            if (outcome.EndByte != end)
+                throw new InvalidOperationException("NonBacktracking capture replay changed the selected range.");
+            completed = true;
+            return outcome;
+        }
+        finally
+        {
+            invocation.Ledger.Release(bytes);
+            if (!completed)
+            {
+                Array.Fill(slots.Starts, -1);
+                Array.Fill(slots.Ends, -1);
+            }
+        }
+    }
+
     internal Utf8SliceSearchOutcome FindFirst(Utf8SliceProgram program, ref int boundary,
         int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation)
     {
@@ -349,52 +410,10 @@ internal sealed class Utf8NonBacktrackingSearchState
             admission = invocation.TryChargeInputStep();
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
             var openings = openingCount == 0 ? [] : new int[openingCount];
-            var start = boundary;
-            var pc = 0;
-            while (true)
-            {
-                var breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
-                var instruction = program.Instructions[pc];
-                switch (instruction.Kind)
-                {
-                    case Utf8SliceInstructionKind.Fork:
-                        var first = instruction.B == 0 ? pc + 1 : instruction.A;
-                        var second = instruction.B == 0 ? instruction.A : pc + 1;
-                        pc = CanMatch(boundary, first) ? first : second;
-                        break;
-                    case Utf8SliceInstructionKind.Jump:
-                        pc = instruction.A;
-                        break;
-                    case Utf8SliceInstructionKind.CaptureStart:
-                        if (recordCaptures) openings[instruction.B] = _boundaries[boundary];
-                        pc++;
-                        break;
-                    case Utf8SliceInstructionKind.CaptureEnd:
-                        if (recordCaptures)
-                        {
-                            captureStarts[instruction.A] = openings[instruction.B];
-                            captureEnds[instruction.A] = _boundaries[boundary];
-                        }
-                        pc++;
-                        break;
-                    case Utf8SliceInstructionKind.Anchor:
-                    case Utf8SliceInstructionKind.Boundary:
-                        pc++;
-                        break;
-                    case Utf8SliceInstructionKind.Accept:
-                        invocation.Budget.ThrowIfCancellationRequested();
-                        var startByte = _boundaries[start];
-                        var endByte = _boundaries[boundary];
-                        boundary += start == boundary ? 1 : 0;
-                        completed = true;
-                        return new(true, startByte, endByte, null, null, Utf8ExecutionLimitKind.None);
-                    default:
-                        boundary++;
-                        pc++;
-                        break;
-                }
-            }
+            var outcome = Replay(program, _boundaries, _viability, _stride, ref boundary, captureStarts, captureEnds,
+                openings, ref invocation);
+            completed = outcome.Found;
+            return outcome;
         }
         finally
         {
@@ -403,6 +422,59 @@ internal sealed class Utf8NonBacktrackingSearchState
             {
                 Array.Fill(captureStarts, -1);
                 Array.Fill(captureEnds, -1);
+            }
+        }
+    }
+
+    private static Utf8SliceSearchOutcome Replay(Utf8SliceProgram program, ReadOnlySpan<int> boundaries,
+        ReadOnlySpan<ulong> viability, int stride, ref int boundary, int[] captureStarts, int[] captureEnds,
+        Span<int> openings, ref Utf8SliceInvocation invocation)
+    {
+        var recordCaptures = captureStarts.Length != 0;
+        var start = boundary;
+        var pc = 0;
+        while (true)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+            var instruction = program.Instructions[pc];
+            switch (instruction.Kind)
+            {
+                case Utf8SliceInstructionKind.Fork:
+                    var first = instruction.B == 0 ? pc + 1 : instruction.A;
+                    var second = instruction.B == 0 ? instruction.A : pc + 1;
+                    var viable = (viability[boundary * stride + (first >> 6)] & (1UL << (first & 63))) != 0;
+                    pc = viable ? first : second;
+                    break;
+                case Utf8SliceInstructionKind.Jump:
+                    pc = instruction.A;
+                    break;
+                case Utf8SliceInstructionKind.CaptureStart:
+                    if (recordCaptures) openings[instruction.B] = boundaries[boundary];
+                    pc++;
+                    break;
+                case Utf8SliceInstructionKind.CaptureEnd:
+                    if (recordCaptures)
+                    {
+                        captureStarts[instruction.A] = openings[instruction.B];
+                        captureEnds[instruction.A] = boundaries[boundary];
+                    }
+                    pc++;
+                    break;
+                case Utf8SliceInstructionKind.Anchor:
+                case Utf8SliceInstructionKind.Boundary:
+                    pc++;
+                    break;
+                case Utf8SliceInstructionKind.Accept:
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    var startByte = boundaries[start];
+                    var endByte = boundaries[boundary];
+                    boundary += start == boundary ? 1 : 0;
+                    return new(true, startByte, endByte, null, null, Utf8ExecutionLimitKind.None);
+                default:
+                    boundary++;
+                    pc++;
+                    break;
             }
         }
     }

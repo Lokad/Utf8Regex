@@ -164,6 +164,9 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> input, Utf8SliceSearchOutcome selected, Utf8SliceSlots slots,
         ref Utf8SliceInvocation invocation)
     {
+        if (selected.EndByte - selected.StartByte <= 32)
+            return Utf8NonBacktrackingSearchState.ReplayCompactRange(program, input, selected, slots, ref invocation);
+
         // Unconditional edges make replay independent of the suffix. Clipping
         // after the winning end removes only continuations that lost to it.
         var replay = TryMatchAt(program, input[..selected.EndByte], selected.StartByte,

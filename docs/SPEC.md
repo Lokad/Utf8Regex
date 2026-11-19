@@ -210,6 +210,8 @@ The cache stores which earlier thread supplied each surviving origin.
 On longer first-match calls, an eligible compact graph can select the range
 before reserving subcapture storage. The existing anchored replay fills the
 subcaptures inside that range using the same work budget and deadline.
+Short selected ranges can reuse packed viability rows and slot replay with
+bounded, admitted stack scratch. Longer ranges use the ordered runner.
 Persistent cursors for these graphs can return their first result before
 preparing a viability table. If another advance needs the table, that advance
 admits and builds it using the original cursor budget and deadline. First-match
