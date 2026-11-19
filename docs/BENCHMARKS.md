@@ -40,11 +40,12 @@ Raw durations, iteration counts, allocations and loaded producer identities go
 to a unique JSON file under `artifacts/benchmark-refresh/generality/`. A focused
 selection neither replaces accepted README tables nor qualifies a package.
 
-The 18 November 2026 full refresh on `654d5716` completed in 52m17s on the quiet
-VM. Core generality took 609.55 seconds and qualified all 816 lanes across 120 rows.
-The run verified all catalogs, paired comparisons, lifecycle, scaling and resource
-checks. Compact summaries are in [bench/Snapshots](../bench/Snapshots/). Raw
-durations and the full receipt are under `artifacts/benchmark-refresh/`.
+The 19 November 2026 full refresh on `be9c7473` completed in 51m 59s on the
+quiet VM. Core generality took 602.37 seconds. All 90 steps passed, including
+both-runtime tests, paired comparisons, lifecycle, scaling and resource checks.
+Raw durations and the receipt are under `artifacts/benchmark-refresh/`.
+The measured source and results are recorded in the
+[compact summaries](../bench/Snapshots/).
 
 Keep experiments selective and bounded, reuse matching binaries and build
 servers, and compare equal public outputs. Use one ordinary producer per process
