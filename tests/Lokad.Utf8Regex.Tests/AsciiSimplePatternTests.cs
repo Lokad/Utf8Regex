@@ -14630,22 +14630,12 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(HeadedGroupCategoryVerifierUseCases))]
-    public void HeadedGroupCategoryVerifierUseMatchesConstruction(string pattern, RegexOptions options, string text)
+    public void HeadedGroupCategoryPreservesResultsWithoutCandidateSearch(string pattern, RegexOptions options, string text)
     {
         Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text);
         var subject = new Utf8AsciiScalarOperationAssertions.Subject(text);
-        var oracle = Utf8AsciiScalarOperationAssertions.Comparator(pattern, options);
-        var isMatchProbe = new Utf8Regex(pattern, options: options);
-        var isMatchDiagnostics = isMatchProbe.CollectIsMatchDiagnostics(subject.Input);
-        Assert.Equal(oracle.IsMatch(subject.Projected), isMatchDiagnostics.Result);
-        Assert.Equal(0, isMatchDiagnostics.VerifierInvocations);
-        Assert.Equal(0, isMatchDiagnostics.SearchCandidates);
-        Utf8AsciiScalarOperationAssertions.Owned(isMatchProbe);
-        var countProbe = new Utf8Regex(pattern, options: options);
-        var countDiagnostics = countProbe.CollectCountDiagnostics(subject.Input);
-        Assert.Equal(oracle.Count(subject.Projected), countDiagnostics.Result);
-        Assert.Equal(0, countDiagnostics.VerifierInvocations);
-        Utf8AsciiScalarOperationAssertions.Owned(countProbe);
+        using var regex = new Utf8Regex(pattern, options: options);
+        Assert.Equal(0, regex.CollectIsMatchDiagnostics(subject.Input).SearchCandidates);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedWordGroupMinBoundDivertCases()

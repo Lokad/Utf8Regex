@@ -15,9 +15,6 @@ internal static class Utf8RegexDiagnosticsReporter
         Console.WriteLine($"VerifierNeedsEnd  : {diagnostics.RequiresCandidateEndCoverage}");
         Console.WriteLine($"Result            : {diagnostics.Result}");
         Console.WriteLine($"SearchCandidates  : {diagnostics.SearchCandidates}");
-        Console.WriteLine($"FixedCheckRejects : {diagnostics.FixedCheckRejects}");
-        Console.WriteLine($"VerifierInvokes   : {diagnostics.VerifierInvocations}");
-        Console.WriteLine($"VerifierMatches   : {diagnostics.VerifierMatches}");
         Console.WriteLine($"ProbeWindows      : {diagnostics.PrefilterWindows}");
         Console.WriteLine($"ProbeSkipped      : {diagnostics.PrefilterSkippedWindows}");
         Console.WriteLine($"ProbePromoted     : {diagnostics.PrefilterPromotedWindows}");

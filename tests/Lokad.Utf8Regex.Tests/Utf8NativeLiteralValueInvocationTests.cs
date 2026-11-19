@@ -96,7 +96,6 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             }
             else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
             Assert.True(entered);
-            Assert.Equal(0, session.VerifierInvocations);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
@@ -214,7 +213,6 @@ public sealed class Utf8NativeLiteralValueInvocationTests
             Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, source.Token)).CancellationToken);
             Assert.True(entered);
             Assert.InRange(session.SearchCandidates, 100, 999);
-            Assert.Equal(0, session.VerifierInvocations);
         }
         finally { session.Complete(); }
         Assert.Equal(1000, regex.Count(input));

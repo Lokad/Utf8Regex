@@ -31,11 +31,8 @@ internal sealed class Utf8SearchDiagnosticsSession
 
     public int SearchCandidates { get; private set; }
 
-    public int FixedCheckRejects { get; private set; }
 
-    public int VerifierInvocations { get; private set; }
 
-    public int VerifierMatches { get; private set; }
 
     public int PrefilterWindows { get; private set; }
 
@@ -54,21 +51,6 @@ internal sealed class Utf8SearchDiagnosticsSession
     public void CountSearchCandidate()
     {
         SearchCandidates++;
-    }
-
-    public void CountFixedCheckReject()
-    {
-        FixedCheckRejects++;
-    }
-
-    public void CountVerifierInvocation()
-    {
-        VerifierInvocations++;
-    }
-
-    public void CountVerifierMatch()
-    {
-        VerifierMatches++;
     }
 
     public void CountPrefilterWindow(bool promoted, int byteCount)

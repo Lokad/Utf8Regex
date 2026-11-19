@@ -4312,9 +4312,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"{label}ExecKind   : {diagnostics.ExecutionKind}");
         Console.WriteLine($"{label}SearchKind : {diagnostics.SearchKind}");
         Console.WriteLine($"{label}Candidates : {diagnostics.SearchCandidates}");
-        Console.WriteLine($"{label}FixedReject: {diagnostics.FixedCheckRejects}");
-        Console.WriteLine($"{label}VerifierInv: {diagnostics.VerifierInvocations}");
-        Console.WriteLine($"{label}VerifierHit: {diagnostics.VerifierMatches}");
         Console.WriteLine($"{label}ProbeWin   : {diagnostics.PrefilterWindows}");
         Console.WriteLine($"{label}ProbeSkip  : {diagnostics.PrefilterSkippedWindows}");
         Console.WriteLine($"{label}ProbeProm  : {diagnostics.PrefilterPromotedWindows}");
@@ -4329,8 +4326,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"{label}ExecKind   : {diagnostics.ExecutionKind}");
         Console.WriteLine($"{label}SearchKind : {diagnostics.SearchKind}");
         Console.WriteLine($"{label}Candidates : {diagnostics.SearchCandidates}");
-        Console.WriteLine($"{label}VerifierInv: {diagnostics.VerifierInvocations}");
-        Console.WriteLine($"{label}VerifierHit: {diagnostics.VerifierMatches}");
         Console.WriteLine($"{label}ProbeWin   : {diagnostics.PrefilterWindows}");
         Console.WriteLine($"{label}ProbeSkip  : {diagnostics.PrefilterSkippedWindows}");
         Console.WriteLine($"{label}ProbeProm  : {diagnostics.PrefilterPromotedWindows}");

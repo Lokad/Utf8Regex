@@ -337,7 +337,6 @@ public sealed class Utf8NativeFamilyInvocationTests
             Assert.True(failed);
             Assert.True(entered);
             Assert.False(enumerator.Current.Success);
-            Assert.Equal(0, session.VerifierInvocations);
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         }
         finally { session.Complete(); }
