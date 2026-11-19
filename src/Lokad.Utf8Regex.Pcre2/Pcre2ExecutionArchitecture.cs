@@ -2768,7 +2768,7 @@ internal struct Pcre2ResourceBudget
                     diagnostics.VmRepeatEnterSteps++;
                     diagnostics.VmPossessiveTokenScanSteps++;
                     break;
-                case Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat:
+                case Pcre2BacktrackingInstructionKind.GreedyClassRepeat:
                     diagnostics.VmRepeatSteps++;
                     diagnostics.VmRepeatEnterSteps++;
                     break;

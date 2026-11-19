@@ -442,25 +442,15 @@ internal sealed class Pcre2BacktrackingLowerer
                             : Pcre2BacktrackingInstruction.CreateSplit(exit, fork + 1);
                     }
                     else if (repeat.Preference == Pcre2RepeatPreference.Greedy &&
-                        repeat.Body is Pcre2TokenBacktrackingNode { Token: var collapsibleToken } &&
-                        collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass)
+                        repeat.Body is Pcre2TokenBacktrackingNode { Token: { Kind: Pcre2CharacterTokenKind.CharacterClass } classToken })
                     {
-                        if ((collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0)
+                        if ((classToken.Options & Pcre2CharacterOptions.Caseless) == 0)
                         {
-                            collapsibleToken.CharacterClass.PrepareAsciiByteSet();
+                            classToken.CharacterClass.PrepareAsciiByteSet();
                         }
 
-                        var collapsibleIndex = _instructions.Count;
-                        _instructions.Add(default);
-                        EmitRepeat(repeat);
-                        // Only the ordinary retry enters the repeat and owns a
-                        // counter. A successful scan skips its counter reset.
-                        _instructions[collapsibleIndex] = Pcre2BacktrackingInstruction.CreateCollapsibleTokenRepeat(
-                            collapsibleToken,
-                            collapsibleIndex + 1,
-                            _instructions.Count,
-                            repeat.Minimum,
-                            repeat.Maximum);
+                        _instructions.Add(Pcre2BacktrackingInstruction.CreateGreedyClassRepeat(
+                            classToken, repeat.Minimum, repeat.Maximum));
                     }
                     else if (repeat.Preference == Pcre2RepeatPreference.Possessive)
                     {

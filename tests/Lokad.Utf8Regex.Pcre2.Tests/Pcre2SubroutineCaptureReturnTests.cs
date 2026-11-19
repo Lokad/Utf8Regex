@@ -9,7 +9,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ClassRunRetriesFromItsStartWhenTheFollowingCallNeedsOneMoreScalar(bool funded)
+    public void ClassRunLeavesAScalarWhenTheFollowingCallNeedsIt(bool funded)
     {
         using var regex = new Utf8Pcre2Regex(@"^(?<word>[😀a]+)(?&tail)$(?(DEFINE)(?<tail>[😀a]+!))",
             policy: funded ? new Utf8RegexPolicy
@@ -17,8 +17,7 @@ public sealed class Pcre2SubroutineCaptureReturnTests
                 ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 16 << 10 }
             } : null);
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
-        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat);
-        Assert.Equal(program.RepeatCount, program.Instructions.Count(instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.Repeat));
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
 
         using var source = new CancellationTokenSource();
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];

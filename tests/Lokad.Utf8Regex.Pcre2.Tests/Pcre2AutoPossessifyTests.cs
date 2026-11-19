@@ -146,7 +146,7 @@ public sealed class Pcre2AutoPossessifyTests
             ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 2, MaxWorkingBytes = 1024 }
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
-        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat);
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
 
         var input = new byte[16 * 1024 + 1];
         input.AsSpan(0, input.Length - 1).Fill((byte)'a');
@@ -188,11 +188,31 @@ public sealed class Pcre2AutoPossessifyTests
             ResourcePolicy = new() { MaxWorkSteps = 64, MaxDepth = 1, MaxWorkingBytes = 128 }
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch).Program;
-        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat);
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
 
         using var source = new CancellationTokenSource();
         Assert.False(regex.IsMatch("a!!"u8, cancellationToken: source.Token));
         Assert.False(regex.IsMatch("😀!!"u8, cancellationToken: source.Token));
+    }
+
+    [Fact]
+    public void ShorterClassEndpointsReuseOneFrameAndRestoreCaptures()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a😀]+)a{8}!\z", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 512, MaxDepth = 2, MaxWorkingBytes = 1024 }
+        });
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
+        Assert.Equal(0, program.RepeatCount);
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat);
+
+        var prefix = string.Concat(Enumerable.Repeat("😀", 32));
+        var input = Encoding.UTF8.GetBytes(prefix + "aaaaaaaa!");
+        using var source = new CancellationTokenSource();
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
+        var result = regex.Match(input, captures: captures, cancellationToken: source.Token);
+        Assert.Equal((0, input.Length), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+        Assert.Equal((0, 128), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
     }
 
     [Fact]

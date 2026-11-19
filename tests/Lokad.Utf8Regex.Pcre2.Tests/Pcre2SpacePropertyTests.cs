@@ -138,12 +138,13 @@ public sealed class Pcre2SpacePropertyTests
             result3Cursor.Dispose();
             _ = result3Result;
         }).ErrorKind);
-        // A consuming suffix makes the greedy alternatives necessary.
-        var depth = new Utf8Pcre2Regex(@"(?<x>\p{Xsp}+)\p{Xsp}\z", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        // After the first run retreats, the second can leave its own shorter
+        // choice pending while the first still has alternatives.
+        var depth = new Utf8Pcre2Regex(@"(?<x>\p{Xsp}+)\p{Xsp}*\p{Xsp}\z", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxDepth = 256
+                MaxDepth = 1
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });

@@ -342,9 +342,10 @@ counter-dependent repeat admits its complete state before acquisition; retries
 reuse it under the same synchronous invocation lifetime. Greedy class runs can
 scan in blocks of at most 2,048 ASCII bytes or one Unicode scalar between
 work and interruption checkpoints. A retryable scan saves one admitted frame
-when a shorter endpoint is legal. Only a failed continuation replays the
-counted repeat from the original start. A nonpossessive optional literal,
-class, dot or subroutine call can use an ordinary branch without a
+when a shorter endpoint is legal. It restores checkpoints and visits earlier
+scalar boundaries in greedy order, charging work at each retry. Reusing the
+same frame can lower depth and working requirements. A nonpossessive optional
+literal, class, dot or subroutine call can use an ordinary branch without a
 repeat counter. Subroutine calls retain their usual state restoration. A greedy
 run can omit rewind before a required literal it cannot consume, including
 under finite execution limits. It can also omit rewind before a proved end

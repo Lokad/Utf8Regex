@@ -13,10 +13,13 @@ internal enum Pcre2BacktrackingResumeAction : byte
     None = 0,
     EnterRepeat = 1,
     ControlVerb = 2,
+    RetreatClassRepeat = 3,
 }
 
 // A control frame stores its THEN target in Instruction and its SKIP
 // name in RepeatIdOrNameId. Its input offset is already the SKIP position.
+// A class-repeat frame stores the last tried endpoint in InputOffsetInBytes
+// and the number of shorter choices in RepeatCount.
 internal readonly record struct Pcre2BacktrackingFrame(
     int Instruction,
     int InputOffsetInBytes,
@@ -930,9 +933,8 @@ internal static class Pcre2BacktrackingRunner
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
-                    case Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat:
-                        var canRetryRun = instruction.Kind == Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat;
-                        var runStart = inputIndex;
+                    case Pcre2BacktrackingInstructionKind.GreedyClassRepeat:
+                        var canRetryRun = instruction.Kind == Pcre2BacktrackingInstructionKind.GreedyClassRepeat;
                         var runCount = 0;
                         var meterRun = !budget.IsUnmetered;
                         var asciiByteSet =
@@ -981,15 +983,15 @@ internal static class Pcre2BacktrackingRunner
                         }
 
                         if (runCount < instruction.Minimum) break;
-                        // Only a shorter legal endpoint warrants replay of
-                        // the ordinary repeat from the original byte start.
+                        // Retain the visited endpoint and the number of shorter
+                        // choices. The subject stays valid and unchanged.
                         if (canRetryRun && runCount > instruction.Minimum)
                         {
                             PushFrame(
                                 ref frames,
                                 new Pcre2BacktrackingFrame(
-                                    instruction.PrimaryTarget,
-                                    runStart,
+                                    instructionIndex + 1,
+                                    inputIndex,
                                     reportedStartOffsetInBytes,
                                     repeatMutations.Count,
                                     captureMutations.Count,
@@ -997,13 +999,15 @@ internal static class Pcre2BacktrackingRunner
                                     atomicCheckpoints.Count,
                                     markMutations.Count,
                                     markTrail.Count,
-                                    matchBoundaryWasReset),
+                                    matchBoundaryWasReset,
+                                    Pcre2BacktrackingResumeAction.RetreatClassRepeat,
+                                    RepeatCount: runCount - instruction.Minimum),
                                 depthBase,
                                 subroutineCalls.Count,
                                 ref budget);
                         }
 
-                        instructionIndex = canRetryRun ? instruction.SecondaryTarget : instructionIndex + 1;
+                        instructionIndex++;
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.CaptureStart:
@@ -1536,6 +1540,7 @@ internal static class Pcre2BacktrackingRunner
                 }
 
                 if (!TryResume(
+                        input,
                         ref frames,
                         ref repeatMutations,
                         ref captureMutations,
@@ -1970,6 +1975,7 @@ internal static class Pcre2BacktrackingRunner
     }
 
     private static bool TryResume(
+        ReadOnlySpan<byte> input,
         scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
@@ -2020,6 +2026,7 @@ internal static class Pcre2BacktrackingRunner
                 ref currentMarkPosition);
             reportedStartOffsetInBytes = frame.ReportedStartOffsetInBytes;
             matchBoundaryWasReset = frame.MatchBoundaryWasReset;
+            var resumeOffset = frame.InputOffsetInBytes;
             if (frame.ResumeAction == Pcre2BacktrackingResumeAction.EnterRepeat)
             {
                 SetRepeat(
@@ -2031,11 +2038,23 @@ internal static class Pcre2BacktrackingRunner
                     ref repeatMutations,
                     ref budget);
             }
+            else if (frame.ResumeAction == Pcre2BacktrackingResumeAction.RetreatClassRepeat)
+            {
+                budget.ChargeWorkspaceStep();
+                if (!TryRetreatScalar(input, resumeOffset, out resumeOffset))
+                    throw new InvalidOperationException("A PCRE2 class-repeat endpoint must follow a consumed scalar.");
+
+                // The next retry uses the capacity and depth just vacated by
+                // this frame, with the restored checkpoints still in force.
+                if (frame.RepeatCount > 1 && !frames.TryPush(frame with
+                    { InputOffsetInBytes = resumeOffset, RepeatCount = frame.RepeatCount - 1 }, ref budget))
+                    throw new InvalidOperationException("The PCRE2 class-repeat frame lost its admitted capacity.");
+            }
 
             if (frame.ResumeAction != Pcre2BacktrackingResumeAction.ControlVerb)
             {
                 instructionIndex = frame.Instruction;
-                inputIndex = frame.InputOffsetInBytes;
+                inputIndex = resumeOffset;
                 failure = default;
                 return true;
             }
