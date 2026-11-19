@@ -236,6 +236,9 @@ When an unbounded prefix class excludes its direct delimiter, and matching
 does not read captures, one complete verification can cover the window.
 This includes one-byte delimiters. Successful matches retain their capture
 histories. Skipping impossible starts can reduce work and avoid local scratch.
+For direct unbounded classes with a complete ASCII predicate, the backward
+scan can rewind up to 64 ASCII bytes per work charge. It decodes wider scalars
+at their original right edges and retains the caller's byte floor.
 Enclosing storage loans and final interruption and admission checks still apply.
 
 A complete LTR backtracking root containing only a word-boundary instruction and

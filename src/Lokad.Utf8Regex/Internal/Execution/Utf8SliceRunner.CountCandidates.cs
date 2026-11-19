@@ -513,10 +513,25 @@ internal static partial class Utf8SliceRunner
         }
         var classStart = position;
         var classMaximum = leadingClass >= 0 ? program.Instructions[leadingClass - 1].RepeatMaximum : 0;
+        var ascii = default(Utf8SearchAsciiSet);
+        var hasAsciiMask = directClassLiteral && classMaximum == long.MaxValue &&
+            program.TryGetUnfoldedAsciiSet(code[leadingClass], out ascii, out _);
         for (long remaining = classMaximum; remaining > 0 && position > floor; remaining--)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (hasAsciiMask && input[position - 1] < 128)
+            {
+                // The exact ASCII predicate can rewind one charged block.
+                // Stop at the first wider scalar and decode it at its right edge.
+                var length = Math.Min(64, position - floor);
+                var block = input.Slice(position - length, length);
+                var index = length - 1;
+                while (index >= 0 && ascii.Contains(block[index])) index--;
+                position -= length - 1 - index;
+                if (index < 0) continue;
+                if (block[index] < 128) break;
+            }
             if (!TryReadScalar(input, position, true, out var scalar, out var width)) break;
             breach = TryMatchScalarClass(program, program.Instructions[leadingClass], scalar, ref invocation, out var hit);
             if (breach != Utf8ExecutionLimitKind.None) return breach;

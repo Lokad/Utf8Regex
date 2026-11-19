@@ -10,6 +10,28 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ClassPrefixCandidateTests
 {
     [Theory]
+    [InlineData(63)] [InlineData(64)] [InlineData(65)]
+    public void AlignedDelimiterRewindKeepsWideMembersAndTheRequestedFloor(int asciiLength)
+    {
+        const string prefix = "🚧junk://a ";
+        var ascii = new string('s', asciiLength);
+        var scheme = "a𐐀" + ascii;
+        var input = Encoding.UTF8.GetBytes(prefix + scheme + "://é/");
+        using var regex = Utf8Regex.Compile(@"(?<scheme>[\w]+)://[^/\s?#]+[^\s?#]+", policy: new() { ResourcePolicy = Funded });
+        Assert.Equal(1, regex.Count(input));
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var retained));
+        Assert.Equal(Encoding.UTF8.GetByteCount(prefix), retained.Value.StartOffsetInBytes);
+        Assert.Equal(scheme, Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
+
+        var floor = Encoding.UTF8.GetByteCount(prefix + "a𐐀") + 1;
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        var selected = regex.Match(input, floor, captures);
+        Assert.Equal((floor, input.Length), (selected.StartOffsetInBytes, selected.EndOffsetInBytes));
+        Assert.Equal((floor, floor + asciiLength - 1), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+    }
+
+    [Theory]
     [InlineData(@"(?<value>\d+(?:\.\d+)?)", "", "𝟚.٣")]
     [InlineData(@"\b(?<value>(?:\d{1,3}\.){3}\d{1,3})\b", "é1.2.3.4,", "𝟘.١.2.３")]
     public void DecimalCandidatesPreserveScalarStartsCapturesAndBoundary(string pattern, string before, string value)
