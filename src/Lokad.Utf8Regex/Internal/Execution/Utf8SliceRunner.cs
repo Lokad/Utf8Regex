@@ -662,8 +662,22 @@ internal static partial class Utf8SliceRunner
                 continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
                 continue;
-            if (checkBranchedPrefix && !MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex))
-                continue;
+            if (checkBranchedPrefix)
+            {
+                var proveMatch = existenceOnly && !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
+                if (!MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex, out var acceptedEnd, proveMatch))
+                    continue;
+                if (acceptedEnd >= 0)
+                {
+                    // The candidate step admitted the bounded walk. Confirm
+                    // the original interruption and work before publishing it.
+                    breach = invocation.TryChargeInputStep();
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    return breach == Utf8ExecutionLimitKind.None
+                        ? new(true, position, acceptedEnd, null, null, breach)
+                        : new(false, -1, -1, null, null, breach);
+                }
+            }
             var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds,
                 collectHistory, false, true, ref workspace, ref invocation, existenceOnly);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
@@ -956,7 +970,7 @@ internal static partial class Utf8SliceRunner
                         (leadingPrefix.IsEmpty && leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond))) ||
                         (branchWindow.Min != 0 && !HasAsciiLiteralInWindow(input, position, branchWindow)) ||
-                        !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex) :
+                        !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex, out _) :
                             MatchesStraightAsciiPrefix(program, input, position, 0)))
                     {
                         // The delimiter window retains wider decimals. Each
@@ -1360,7 +1374,7 @@ internal static partial class Utf8SliceRunner
                                             preferred = retry;
                                         else if ((!completes || cursor.RequiredEnd.HasValue) &&
                                             (endLimit > 0 ? input.Length - retry < endLimit &&
-                                                MayMatchBranchedAsciiPrefix(program, input, retry, continuation, suffixProbeLimit * 2)
+                                                MayMatchBranchedAsciiPrefix(program, input, retry, continuation, out _, instructionLimit: suffixProbeLimit * 2)
                                                 : MatchesStraightAsciiPrefix(program, input, retry, continuation, suffixProbeLimit)) &&
                                             !stacks.PushFrame(new Utf8SliceFrame
                                             {

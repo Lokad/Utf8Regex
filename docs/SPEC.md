@@ -503,6 +503,9 @@ effect across cursor copies. A denied acquisition never publishes a partial
 successful result. Charges depend on the route and version. For example,
 a proved repeat endpoint can avoid acquiring backtracking frames, and a
 proved candidate filter can avoid VM work before verification.
+A bounded candidate walk can also verify a capture-free Boolean match
+directly. Candidate admission and completion both retain work and
+interruption checks.
 
 A lookaround body consisting of one side-effect-free scalar class can run
 without allocating a continuation. Its logical depth, directional edge and

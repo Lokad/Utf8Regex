@@ -778,7 +778,7 @@ internal static partial class Utf8SliceRunner
         {
             var minimum = entry.RepeatMinimum;
             if (minimum == 0 && entry.RepeatMaximum == 1)
-                return MayMatchBranchedAsciiPrefix(program, input, position, probe, 4) ? 0 : -1;
+                return MayMatchBranchedAsciiPrefix(program, input, position, probe, out _, instructionLimit: 4) ? 0 : -1;
             // Each required iteration consumes at least one byte. An opaque
             // or zero-width body cannot use this lower bound.
             if (minimum > input.Length - position && IsSingleAtomRepeat(code, probe, entry) &&
@@ -900,16 +900,22 @@ internal static partial class Utf8SliceRunner
             code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == index &&
             code[entry.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == entry.B;
 
-    // This check only eliminates impossible starts. The VM owns branch order,
-    // captures and every effect beyond the bounded prefix.
+    // This check eliminates impossible starts. A Boolean caller at the root
+    // can also reuse an Accept reached through completely verified atoms.
     private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, int index, ref int remaining)
+        ReadOnlySpan<byte> input, int position, int index, ref int remaining, bool proveMatch, out int acceptedEnd)
     {
+        acceptedEnd = -1;
         var code = program.Instructions;
         while (remaining > 0 && (uint)index < (uint)code.Length)
         {
             remaining--;
             var entry = code[index++];
+            if (entry.Kind == Utf8SliceInstructionKind.Accept)
+            {
+                if (proveMatch) acceptedEnd = position;
+                return true;
+            }
             if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
             if (entry is { Kind: Utf8SliceInstructionKind.Jump } && entry.A >= index)
             {
@@ -918,7 +924,7 @@ internal static partial class Utf8SliceRunner
             }
             if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index)
             {
-                if (MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining)) return true;
+                if (MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, out acceptedEnd)) return true;
                 index = entry.A;
                 continue;
             }
@@ -937,14 +943,17 @@ internal static partial class Utf8SliceRunner
                     // An optional ASCII atom can consume one byte or leave the
                     // start unchanged. Reject only if neither continuation fits.
                     if (position < input.Length && (uint)(input[position] - first) <= (uint)(last - first) &&
-                        MayMatchBranchedAsciiPrefix(program, input, position + 1, index, ref remaining))
+                        MayMatchBranchedAsciiPrefix(program, input, position + 1, index, ref remaining, proveMatch, out acceptedEnd))
                         return true;
                     continue;
                 }
                 // A required body always starts here. After a nontrivial loop,
                 // its end stays unknown. Skip only a proved fixed-width atom.
                 if (minimum != entry.RepeatMaximum || minimum > remaining || !singleAtom)
+                {
+                    proveMatch = false;
                     continue;
+                }
                 width = (int)minimum;
                 remaining -= width;
                 var atomIndex = index;
@@ -971,11 +980,11 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, int index, int instructionLimit = 96)
+        ReadOnlySpan<byte> input, int position, int index, out int acceptedEnd, bool proveMatch = false, int instructionLimit = 96)
     {
         // Share one visit/byte allowance across both arms. Their caller meters
         // this bounded check along with the search for each candidate byte.
         var remaining = instructionLimit;
-        return MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining);
+        return MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, out acceptedEnd);
     }
 }

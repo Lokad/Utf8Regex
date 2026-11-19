@@ -78,6 +78,20 @@ public sealed class Utf8Ipv4BooleanTests
     }
 
     [Theory]
+    [InlineData("012.200.033.199")]
+    [InlineData("250.250.250.250")]
+    [InlineData("😀012.200.033.199")]
+    public void CompleteBranchProofFitsBooleanWorkAndStorageLimits(string text)
+    {
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 8, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(text), token.Token));
+    }
+
+    [Theory]
     [InlineData("200X")]
     [InlineData("200Y")]
     public void BoundedAlternationProofLeavesViableCaptureChoicesInOrder(string text)
