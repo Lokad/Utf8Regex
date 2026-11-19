@@ -80,7 +80,6 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expected.Count(input), actual.Count(utf8));
         Assert.Equal(expected.Matches(input).Select(static match => match.Value), actualMatches);
         Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(actual.Replace(utf8, "#"u8)));
-        Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(actual.Replace(utf8, "#"u8)));
         Assert.Equal(System.Buffers.OperationStatus.Done, replaceStatus);
         Assert.Equal(expectedReplacement, System.Text.Encoding.UTF8.GetString(destination[..bytesWritten]));
         Assert.Equal(expected.Split(input), actualSplits);
@@ -338,7 +337,8 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(AbsoluteStartAnchoredLinearCases))]
-    public void AbsoluteStartAnchoredLinearOperationsMatchOracle(string pattern, string inputText)
+    [MemberData(nameof(LineEndAnchorScanCases))]
+    public void AnchoredLinearOperationsMatchOracle(string pattern, string inputText)
     {
         var input = System.Text.Encoding.UTF8.GetBytes(inputText);
         foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
@@ -500,72 +500,6 @@ public sealed class AsciiSimplePatternTests
         yield return new object?[] { "(?m:^(ab|cd)$)", "ab\ncd" };
         yield return new object?[] { "ab$", "xxab" };
         yield return new object?[] { "ab$", "ab\n" };
-    }
-
-    [Theory]
-    [MemberData(nameof(LineEndAnchorScanCases))]
-    public void LineEndAnchorScanOperationsMatchOracle(string pattern, string inputText)
-    {
-        var input = System.Text.Encoding.UTF8.GetBytes(inputText);
-        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
-        {
-            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-            var regex = new Utf8Regex(pattern, options: options);
-
-            Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
-            Assert.Equal(oracle.Matches(inputText).Count, regex.Count(input));
-
-            var expectedMatch = oracle.Match(inputText);
-            var actualMatch = regex.Match(input);
-            Assert.Equal(expectedMatch.Success, actualMatch.Success);
-            if (expectedMatch.Success)
-            {
-                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
-                Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
-            }
-
-            Assert.Equal(oracle.Match(inputText).Success, Utf8MatchSequence.First(regex.CreateMatchCursor(input)).Success);
-
-            var expectedPositions = new List<string>();
-            foreach (Match m in oracle.Matches(inputText))
-            {
-                expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(m.Index, m.Length)));
-            }
-
-            var actualPositions = new List<string>();
-            foreach (var m in regex.EnumerateMatches(input))
-            {
-                actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
-            }
-
-            Assert.Equal(expectedPositions, actualPositions);
-
-            foreach (var offset in new[] { 0, 1, 2 })
-            {
-                if (offset > inputText.Length)
-                {
-                    continue;
-                }
-
-                Assert.Equal(oracle.IsMatch(inputText, offset), regex.Match(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)), []).Success);
-                Assert.Equal(oracle.Matches(inputText, offset).Count, Utf8MatchSequence.Count(regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)))));
-                Assert.Equal(oracle.Match(inputText, offset).Success, Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset)))).Success);
-
-                var expectedOffsetPositions = new List<string>();
-                foreach (Match m in oracle.Matches(inputText, offset))
-                {
-                    expectedOffsetPositions.Add(System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(inputText.AsSpan(m.Index, m.Length)));
-                }
-
-                var actualOffsetPositions = new List<string>();
-                foreach (var m in regex.EnumerateMatches(input, Encoding.UTF8.GetByteCount(inputText.AsSpan(0, offset))))
-                {
-                    actualOffsetPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
-                }
-
-                Assert.Equal(expectedOffsetPositions, actualOffsetPositions);
-            }
-        }
     }
 
     public static IEnumerable<object?[]> GrouplessSimpleDetailedCases()
@@ -865,9 +799,10 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(ScalarDiscoveryOwnedCases))]
-    public void ScalarDiscoveryOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(FoldedScalarDiscoveryOwnedCases))]
+    [MemberData(nameof(DoublyNegatedShorthandOwnedCases))]
+    public void NonAsciiDiscoveryMatchesOracle(string pattern, RegexOptions options, string text)
     {
-
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -905,22 +840,6 @@ public sealed class AsciiSimplePatternTests
             yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
             yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
     }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedScalarDiscoveryOwnedCases))]
-    public void ScalarDiscoveryOwnsFoldedNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-
-        var isMatchRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Utf8AsciiScalarOperationAssertions.Owned(isMatchRegex);
-
-        var countRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ScalarMatchOwnedCases()
@@ -1102,9 +1021,13 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(ScalarGrouplessTemplateOwnedCases))]
-    public void ScalarGrouplessTemplateOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
+    [MemberData(nameof(FoldedScalarTemplateOwnedCases))]
+    [MemberData(nameof(DigitTemplateCases))]
+    [MemberData(nameof(WordSpaceTemplateCases))]
+    [MemberData(nameof(NegatedShorthandTemplateCases))]
+    [MemberData(nameof(SinglelineDotTemplateCases))]
+    public void NonAsciiTemplateReplacementMatchesOracle(string pattern, RegexOptions options, string template, string text)
     {
-
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
@@ -1131,21 +1054,6 @@ public sealed class AsciiSimplePatternTests
                 }
             }
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedScalarTemplateOwnedCases))]
-    public void FoldedScalarTemplateOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> DigitDiscoveryMatchDetailedCases()
@@ -1177,9 +1085,11 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(DigitDiscoveryMatchDetailedCases))]
-    public void DigitDiscoveryMatchDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(WordSpaceDiscoveryMatchDetailedCases))]
+    [MemberData(nameof(NegatedShorthandDiscoveryMatchDetailedCases))]
+    [MemberData(nameof(SinglelineDotDiscoveryMatchDetailedCases))]
+    public void NonAsciiDiscoveryAndCapturesMatchOracle(string pattern, RegexOptions options, string text)
     {
-
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
 
@@ -1204,12 +1114,14 @@ public sealed class AsciiSimplePatternTests
         var expectedDetailed = oracle.Match(text);
         var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
         Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
-
     }
 
     [Theory]
     [MemberData(nameof(DigitDiscoveryMatchDetailedCases))]
-    public void DigitEnumerationSplitOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(WordSpaceDiscoveryMatchDetailedCases))]
+    [MemberData(nameof(NegatedShorthandDiscoveryMatchDetailedCases))]
+    [MemberData(nameof(SinglelineDotDiscoveryMatchDetailedCases))]
+    public void NonAsciiEnumerationAndSplitsMatchOracle(string pattern, RegexOptions options, string text)
     {
         AssertEnumerationAndSplits(pattern, options, text);
     }
@@ -1247,40 +1159,11 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(DigitTemplateCases))]
-    public void DigitTemplateStringCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
+    [MemberData(nameof(WordSpaceTemplateCases))]
+    [MemberData(nameof(NegatedShorthandTemplateCases))]
+    [MemberData(nameof(SinglelineDotTemplateCases))]
+    public void NonAsciiDestinationReplacementMatchesOracle(string pattern, RegexOptions options, string template, string text)
     {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
-    [Theory]
-    [MemberData(nameof(DigitTemplateCases))]
-    public void DigitTemplateByteCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-        // Control: the byte core rides the same groupless worker; these rows pin
-        // the shared behavior while the string and destination cores graduate.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
-    [Theory]
-    [MemberData(nameof(DigitTemplateCases))]
-    public void DigitTemplateDestinationCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
@@ -1325,45 +1208,6 @@ public sealed class AsciiSimplePatternTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(WordSpaceDiscoveryMatchDetailedCases))]
-    public void WordSpaceDiscoveryMatchDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-
-        var isMatchRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Utf8AsciiScalarOperationAssertions.Owned(isMatchRegex);
-
-        var countRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-
-        var matchRegex = new Utf8Regex(pattern, options: options);
-        var expectedMatch = oracle.Match(text);
-        var actualMatch = matchRegex.Match(input);
-        Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        if (expectedMatch.Success)
-        {
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
-        }
-
-        var detailedRegex = new Utf8Regex(pattern, options: options);
-        var expectedDetailed = oracle.Match(text);
-        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
-        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
-
-    }
-
-    [Theory]
-    [MemberData(nameof(WordSpaceDiscoveryMatchDetailedCases))]
-    public void WordSpaceEnumerationSplitOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-        AssertEnumerationAndSplits(pattern, options, text);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> WordSpaceTemplateCases()
     {
         string[] patterns = ["a\\sb", "a\\wb"];
@@ -1395,53 +1239,6 @@ public sealed class AsciiSimplePatternTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(WordSpaceTemplateCases))]
-    public void WordSpaceTemplateStringCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
-    [Theory]
-    [MemberData(nameof(WordSpaceTemplateCases))]
-    public void WordSpaceTemplateByteCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-        // Control: the byte core rides the same groupless worker.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
-    [Theory]
-    [MemberData(nameof(WordSpaceTemplateCases))]
-    public void WordSpaceTemplateDestinationCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var destination = new byte[4096];
-        var status = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
-
-        Assert.Equal(System.Buffers.OperationStatus.Done, status);
-        Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> NegatedShorthandDiscoveryMatchDetailedCases()
     {
         (string pattern, string text)[] rows =
@@ -1470,45 +1267,6 @@ public sealed class AsciiSimplePatternTests
             yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
             yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(NegatedShorthandDiscoveryMatchDetailedCases))]
-    public void NegatedShorthandDiscoveryMatchDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-
-        var isMatchRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Utf8AsciiScalarOperationAssertions.Owned(isMatchRegex);
-
-        var countRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-
-        var matchRegex = new Utf8Regex(pattern, options: options);
-        var expectedMatch = oracle.Match(text);
-        var actualMatch = matchRegex.Match(input);
-        Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        if (expectedMatch.Success)
-        {
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
-        }
-
-        var detailedRegex = new Utf8Regex(pattern, options: options);
-        var expectedDetailed = oracle.Match(text);
-        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
-        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
-
-    }
-
-    [Theory]
-    [MemberData(nameof(NegatedShorthandDiscoveryMatchDetailedCases))]
-    public void NegatedShorthandEnumerationSplitOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-        AssertEnumerationAndSplits(pattern, options, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> NegatedShorthandTemplateCases()
@@ -1542,53 +1300,6 @@ public sealed class AsciiSimplePatternTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(NegatedShorthandTemplateCases))]
-    public void NegatedShorthandTemplateStringCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
-    [Theory]
-    [MemberData(nameof(NegatedShorthandTemplateCases))]
-    public void NegatedShorthandTemplateByteCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-        // Control: the byte core rides the same groupless worker.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
-    [Theory]
-    [MemberData(nameof(NegatedShorthandTemplateCases))]
-    public void NegatedShorthandTemplateDestinationCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var destination = new byte[4096];
-        var status = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
-
-        Assert.Equal(System.Buffers.OperationStatus.Done, status);
-        Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> DoublyNegatedShorthandOwnedCases()
     {
         (string pattern, string text)[] rows =
@@ -1611,21 +1322,6 @@ public sealed class AsciiSimplePatternTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(DoublyNegatedShorthandOwnedCases))]
-    public void DoublyNegatedShorthandOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-
-        var isMatchRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Utf8AsciiScalarOperationAssertions.Owned(isMatchRegex);
-
-        var countRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-    }
     public static System.Collections.Generic.IEnumerable<object?[]> SinglelineDotDiscoveryMatchDetailedCases()
     {
         (string pattern, string text)[] rows =
@@ -1646,45 +1342,6 @@ public sealed class AsciiSimplePatternTests
             yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text };
             yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text };
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineDotDiscoveryMatchDetailedCases))]
-    public void SinglelineDotDiscoveryMatchDetailedOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-
-        var isMatchRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Utf8AsciiScalarOperationAssertions.Owned(isMatchRegex);
-
-        var countRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-
-        var matchRegex = new Utf8Regex(pattern, options: options);
-        var expectedMatch = oracle.Match(text);
-        var actualMatch = matchRegex.Match(input);
-        Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        if (expectedMatch.Success)
-        {
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
-        }
-
-        var detailedRegex = new Utf8Regex(pattern, options: options);
-        var expectedDetailed = oracle.Match(text);
-        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
-        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
-
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineDotDiscoveryMatchDetailedCases))]
-    public void SinglelineDotEnumerationSplitOwnsNonAsciiInput(string pattern, RegexOptions options, string text)
-    {
-        AssertEnumerationAndSplits(pattern, options, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SinglelineDotTemplateCases()
@@ -1713,53 +1370,6 @@ public sealed class AsciiSimplePatternTests
                 }
             }
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineDotTemplateCases))]
-    public void SinglelineDotTemplateStringCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineDotTemplateCases))]
-    public void SinglelineDotTemplateByteCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-        // Control: the byte core rides the same groupless worker.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineDotTemplateCases))]
-    public void SinglelineDotTemplateDestinationCoreOwnsNonAsciiInput(string pattern, RegexOptions options, string template, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var destination = new byte[4096];
-        var status = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
-
-        Assert.Equal(System.Buffers.OperationStatus.Done, status);
-        Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
-        Utf8AsciiScalarOperationAssertions.Owned(regex);
     }
 
     [Theory]
@@ -2871,7 +2481,8 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(TailedLazySpaceShapingOwnedCases))]
-    public void TailedLazySpaceShapingServesOwned(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(SpaceMinBoundShapingOwnedCases))]
+    public void BoundedSpaceOperationsMatchOracle(string pattern, RegexOptions options, string text, string template)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -4288,77 +3899,6 @@ public sealed class AsciiSimplePatternTests
             yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.template };
             yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.template };
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(SpaceMinBoundShapingOwnedCases))]
-    public void SpaceMinBoundShapingServesOwned(string pattern, RegexOptions options, string text, string template)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var isMatchRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Utf8AsciiScalarOperationAssertions.Owned(isMatchRegex);
-        var countRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-        var matchRegex = new Utf8Regex(pattern, options: options);
-        var expectedMatch = oracle.Match(text);
-        var actualMatch = matchRegex.Match(input);
-        Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        if (expectedMatch.Success)
-        {
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
-        }
-        var detailedRegex = new Utf8Regex(pattern, options: options);
-        var expectedDetailed = oracle.Match(text);
-        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
-        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
-        Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        var enumerateRegex = new Utf8Regex(pattern, options: options);
-        var expectedPositions = new System.Collections.Generic.List<string>();
-        foreach (Match m in oracle.Matches(text))
-        {
-            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
-        }
-        var actualPositions = new System.Collections.Generic.List<string>();
-        foreach (var m in enumerateRegex.EnumerateMatches(input))
-        {
-            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
-        }
-        Assert.Equal(expectedPositions, actualPositions);
-        Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        var splitRegex = new Utf8Regex(pattern, options: options);
-        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
-        {
-            var start = range.Start.Value;
-            var end = range.End.Value;
-            expectedSplits.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
-        }
-        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
-        {
-            actualSplits.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
-        }
-        Assert.Equal(expectedSplits, actualSplits);
-        Assert.True(splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        var expected = oracle.Replace(text, template);
-        var expectedBytes = Encoding.UTF8.GetBytes(expected);
-        var bytesRegex = new Utf8Regex(pattern, options: options);
-        var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
-        Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        var destinationRegex = new Utf8Regex(pattern, options: options);
-        Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
-        Assert.Equal(System.Buffers.OperationStatus.Done, status);
-        Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> PositiveCategoryRangeAstralCases()
@@ -14894,10 +14434,9 @@ public sealed class AsciiSimplePatternTests
 
     [Theory]
     [MemberData(nameof(HeadedUnboundedLazyRangeAstralMissCases))]
-    public void HeadedUnboundedLazyRangeAstralMissMatchesOracleAndPinsEngineUse(string pattern, RegexOptions options, string text, string template)
+    [MemberData(nameof(HeadedUnboundedGreedyRangeAstralMissCases))]
+    public void UnboundedHeadedRangeAstralMissMatchesOracle(string pattern, RegexOptions options, string text, string template)
     {
-        // R05 unit subject: matching and split projection own admitted UTF-16
-        // units and completed UTF-16 replacement output.
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var oracleHit = oracle.IsMatch(text);
@@ -15053,66 +14592,6 @@ public sealed class AsciiSimplePatternTests
             yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.template };
             yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.template };
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(HeadedUnboundedGreedyRangeAstralMissCases))]
-    public void HeadedUnboundedGreedyRangeAstralMissOwnsEveryOperation(string pattern, RegexOptions options, string text, string template)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var oracleHit = oracle.IsMatch(text);
-        Assert.False(oracleHit);
-        var sliceRegex = new Utf8Regex(pattern, options: options);
-        Assert.True(sliceRegex.Inspection.DebugUsesOwnedSliceProgram);
-        var isMatchRegex = new Utf8Regex(pattern, options: options);
-        Assert.False(isMatchRegex.IsMatch(input));
-        Utf8AsciiScalarOperationAssertions.Owned(isMatchRegex);
-        var countRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(0, countRegex.Count(input));
-        var matchRegex = new Utf8Regex(pattern, options: options);
-        Assert.False(matchRegex.Match(input).Success);
-        var detailedRegex = new Utf8Regex(pattern, options: options);
-        Assert.False(Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input)).Success);
-        Assert.True(detailedRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        var enumerateRegex = new Utf8Regex(pattern, options: options);
-        var expectedPositions = new System.Collections.Generic.List<string>();
-        foreach (Match m in oracle.Matches(text))
-        {
-            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
-        }
-        var actualPositions = new System.Collections.Generic.List<string>();
-        foreach (var m in enumerateRegex.EnumerateMatches(input))
-        {
-            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
-        }
-        Assert.Equal(expectedPositions, actualPositions);
-        Assert.True(enumerateRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        var splitRegex = new Utf8Regex(pattern, options: options);
-        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
-        {
-            actualSplits.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
-        }
-        Assert.Equal(new System.Collections.Generic.List<(string Value, int Index, int Length)> { (text, 0, input.Length) }, actualSplits);
-        Assert.True(splitRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        var expected = oracle.Replace(text, template);
-        var expectedBytes = Encoding.UTF8.GetBytes(expected);
-        var bytesRegex = new Utf8Regex(pattern, options: options);
-        var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
-        Assert.Equal(expectedBytes, bytesActual);
-        Assert.True(bytesRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, stringActual);
-        Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
-        var destinationRegex = new Utf8Regex(pattern, options: options);
-        Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
-        Assert.Equal(System.Buffers.OperationStatus.Done, status);
-        Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-        Assert.True(destinationRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> MinBoundAsciiClosedOwnedCases()
