@@ -173,7 +173,8 @@ public sealed class Utf8PosixRegex : IDisposable
     internal Utf8SliceInvocation StartInvocation(CancellationToken token, IUtf8MemoryAllowance? allowance)
     {
         token.ThrowIfCancellationRequested();
-        return new(_limits, MatchTimeout, token, allowance ?? _programMemory?.Allowance);
+        // The call or reference cursor owns the budget and lends it by reference.
+        return Utf8SliceInvocation.CreateExclusive(_limits, MatchTimeout, token, allowance ?? _programMemory?.Allowance);
     }
 
     internal PosixWorkspace CreateWorkspace(ref Utf8SliceInvocation invocation, bool captureHistory = true)
