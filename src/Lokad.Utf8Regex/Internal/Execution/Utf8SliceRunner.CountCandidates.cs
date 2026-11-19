@@ -653,9 +653,13 @@ internal static partial class Utf8SliceRunner
         var code = program.Instructions.AsSpan();
         index = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, index);
         if ((uint)index >= (uint)code.Length) return true;
-        // Keep nested arms opaque. Only a leading optional needs the
-        // branch-aware proof to establish the width before its suffix.
-        return code[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
+        var entry = code[index];
+        // A nested fork admits two straight checks. Leave any further
+        // branches and repeats opaque so the proof stays cheap.
+        if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index + 1)
+            return MatchesStraightAsciiPrefix(program, input, position, entry.A, 2) ||
+                MatchesStraightAsciiPrefix(program, input, position, index + 1, 2);
+        return entry is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
             RepeatMinimum: 0, RepeatMaximum: 1 }
             ? MayMatchBranchedAsciiPrefix(program, input, position, index, 4)
             : MatchesStraightAsciiPrefix(program, input, position, index, 2);

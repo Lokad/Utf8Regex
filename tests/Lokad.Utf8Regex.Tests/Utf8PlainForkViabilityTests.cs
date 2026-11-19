@@ -24,6 +24,8 @@ public sealed class Utf8PlainForkViabilityTests
     [InlineData(@"^(?:(?<x>😀)b|c)d$", "😀bd")]
     [InlineData(@"^(?:(?<x>a)b|c)d$", "")]
     [InlineData(@"^(?<x>ab|cd)+e$", "abcdabe")]
+    [InlineData(@"\A(?:(?<x>ab)|(?<y>a)c|(?<z>😀))d\z", "acd")]
+    [InlineData(@"\A(?:(?<x>ab)|(?<y>a)c|(?<z>😀))d\z", "😀d")]
     public void RequiredLiteralsKeepOrderingCapturesAndOpaqueAlternatives(string pattern, string text)
     {
         foreach (var option in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft })
@@ -33,6 +35,23 @@ public sealed class Utf8PlainForkViabilityTests
     [Fact]
     public void NonBacktrackingKeepsItsOwnCaptureAndAlternativeRules()
         => Compare(@"^(?<x>ab|cd)+e$", "abcdabe", RegexOptions.NonBacktracking);
+
+    [Theory]
+    [InlineData(@"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+", "record Token", 1)]
+    [InlineData(@"\b(?:public|private|internal)\s+class\b", "public class", 1)]
+    [InlineData(@"\b(?:public|private|internal)\s+class\b", "public sealed class", 0)]
+    public void DisprovedNestedForkKeepsWorkingAdmissionSmall(string pattern, string subject, int count)
+    {
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        var input = Encoding.UTF8.GetBytes(subject);
+        Assert.Equal(count, regex.Count(input, token.Token));
+        Assert.Equal(count != 0, regex.IsMatch(input, token.Token));
+        Assert.Equal(count != 0, regex.Match(input, cancellationToken: token.Token).Success);
+    }
 
     [Fact]
     public void ImportsWithoutPendingAlternativesFitSmallWorkingCapacity()
