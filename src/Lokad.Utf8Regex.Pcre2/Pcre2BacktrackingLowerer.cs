@@ -411,7 +411,8 @@ internal sealed class Pcre2BacktrackingLowerer
                         repeat.Preference != Pcre2RepeatPreference.Possessive &&
                         repeat.Body is Pcre2SubroutineCallBacktrackingNode or Pcre2TokenBacktrackingNode
                         {
-                            Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass,
+                            Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass
+                                or Pcre2CharacterTokenKind.Any,
                         })
                     {
                         // One attempt or a skip needs no counter, even if the call

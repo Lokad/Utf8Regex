@@ -343,8 +343,8 @@ workspace still require admission. This limit does not cover total managed memor
 Fused scalar repeats can also execute without unused counter vectors. The first
 counter-dependent repeat admits its complete state before acquisition; retries
 reuse it under the same synchronous invocation lifetime. A nonpossessive optional
-literal, class or subroutine call can use an ordinary branch without a repeat
-counter. Subroutine calls retain their usual state restoration. A greedy
+literal, class, dot or subroutine call can use an ordinary branch without a
+repeat counter. Subroutine calls retain their usual state restoration. A greedy
 run before a proved end can omit rewind when no shorter endpoint can satisfy
 the anchor. A greedy ASCII optional can omit its retry frame when the terminal
 suffix cannot begin with any byte it consumes. These paths still meter scanning

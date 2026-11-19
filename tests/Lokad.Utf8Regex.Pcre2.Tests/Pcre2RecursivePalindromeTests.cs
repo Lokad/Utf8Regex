@@ -130,6 +130,27 @@ public sealed class Pcre2RecursivePalindromeTests
         Assert.Equal((1, 2), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
     }
 
+    [Theory]
+    [InlineData(".?", "q😀é", 5)]
+    [InlineData(".?", "qé", 1)]
+    [InlineData(".??", "q😀é", 5)]
+    [InlineData(".?", "q\né", -1)]
+    [InlineData("(?s:.?)", "q\né", 2)]
+    public void OptionalDotInSubroutineProgramRetainsScalarWidthAndNewlineRules(
+        string optional, string text, int optionalEnd)
+    {
+        using var regex = CreateMetered(@"(?(DEFINE)(?<piece>q))\A(?&piece)(?<prefix>" + optional + @")é\z", 1_000);
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+        var result = regex.Match(Encoding.UTF8.GetBytes(text), captures: captures);
+
+        Assert.Equal(optionalEnd >= 0, result.Success);
+        if (result.Success)
+        {
+            Assert.True(captures[2].Success);
+            Assert.Equal((1, optionalEnd), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
+        }
+    }
+
     private static bool ScalarPalindrome(string text, bool allowsEmpty)
     {
         // Default $ may precede one terminal LF; dot cannot consume any LF.
