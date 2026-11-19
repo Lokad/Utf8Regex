@@ -8,8 +8,9 @@ namespace Lokad.Utf8Regex.Posix;
 // parts. Final public capture slots alone cannot order repeated POSIX parses.
 internal sealed partial class PosixProgram
 {
-    // Core uses positive RepeatExit.B values for terminal byte bounds.
+    // Core uses positive values in these fields for terminal byte bounds.
     internal const int RepeatExitWithoutRewind = -1;
+    internal const int ForkTargetFirst = -1;
 
     private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool directGreedyRuns,
         bool useCaptureOffsets,
@@ -168,7 +169,7 @@ internal sealed partial class PosixProgram
     {
         // Search order is only a heuristic: semantic tags retain their original
         // preorder. Leave proven first-acceptance programs entirely unchanged.
-        // Fork.C is private to this POSIX-owned stream; Core never executes it.
+        // The negative Fork.C marker is private to this POSIX-owned stream.
         for (var pc = 0; pc < code.Length; pc++)
         {
             budget.ChargeWork(1);
@@ -180,7 +181,7 @@ internal sealed partial class PosixProgram
             var left = ScalarBranchLength(code.AsSpan(pc + 1, fork.A - pc - 2), budget);
             var right = ScalarBranchLength(code.AsSpan(fork.A, jump.A - fork.A), budget);
             if (left >= 0 && right > left)
-                code[pc] = new(fork.Kind, fork.A, fork.B, 1, fork.D);
+                code[pc] = new(fork.Kind, fork.A, fork.B, ForkTargetFirst, fork.D);
         }
     }
 

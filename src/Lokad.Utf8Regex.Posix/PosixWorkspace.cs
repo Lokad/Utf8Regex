@@ -138,8 +138,9 @@ internal partial struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.Fork:
                     if (instruction.B != 0) throw new InvalidOperationException("Unsupported POSIX fork.");
-                    PushFrame(new(instruction.C == 0 ? instruction.A : pc + 1, at, _trace.Count, _undo.Count), ref invocation);
-                    pc = instruction.C == 0 ? pc + 1 : instruction.A;
+                    var targetFirst = instruction.C == PosixProgram.ForkTargetFirst;
+                    PushFrame(new(targetFirst ? pc + 1 : instruction.A, at, _trace.Count, _undo.Count), ref invocation);
+                    pc = targetFirst ? instruction.A : pc + 1;
                     break;
                 case Utf8SliceInstructionKind.Jump: pc = instruction.A; break;
                 case Utf8SliceInstructionKind.RepeatGreedy:

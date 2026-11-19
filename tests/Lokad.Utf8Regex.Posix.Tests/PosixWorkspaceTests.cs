@@ -99,6 +99,23 @@ public sealed class PosixWorkspaceTests
         Assert.False(PosixProgram.Compile("((a)|(a))b*", default).FirstAcceptanceIsLongest);
     }
     [Theory]
+    [InlineData("^Z+(ab|a)$", "ZZab", 43UL)]
+    [InlineData("^Z+(a|ab)$", "ZZab", 43UL)]
+    [InlineData("^Z+((😀a)|(😀))$", "ZZ😀a", 45UL)]
+    [InlineData("^Z+((😀)|(😀a))$", "ZZ😀a", 45UL)]
+    public void TerminalByteBoundsDoNotOverrideLongerFirstChoice(string pattern, string subject, ulong maxWorkSteps)
+    {
+        using var regex = new Utf8PosixRegex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = maxWorkSteps, MaxDepth = 64, MaxWorkingBytes = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        var account = new Account(4096);
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(subject), cancellationToken: source.Token, workingMemoryAllowance: account));
+        Assert.Equal(0UL, account.Used);
+    }
+
+    [Theory]
     [InlineData(Utf8ResourceLimitKind.ExecutionWorkSteps, "(a|aa)*")]
     [InlineData(Utf8ResourceLimitKind.ExecutionDepth, "(a|aa)*")]
     [InlineData(Utf8ResourceLimitKind.ExecutionWorkingBytes, "(a|aa)*")]
