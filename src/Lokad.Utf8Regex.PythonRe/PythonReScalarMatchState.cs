@@ -107,8 +107,7 @@ internal struct PythonReScalarMatchState
                     if (input.Length >= 16 && !program.CanMatchEmpty && !program.HasContiguousAnchor &&
                         !program.RightToLeft && !program.IgnoreCase)
                     {
-                        var delimiter = Utf8SliceRunner.GetLeadingWhitespaceLiteral(program,
-                            out var leadingClass, out _, out _, out var directClassLiteral);
+                        var (delimiter, leadingClass, _, _, directClassLiteral) = program.LeadingClassDelimiter;
                         // Only direct ASCII class/delimiter windows qualify;
                         // whitespace/gaps and opaque prefixes keep their route.
                         if (directClassLiteral &&

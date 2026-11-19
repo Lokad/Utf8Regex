@@ -263,7 +263,7 @@ internal static partial class Utf8SliceRunner
     // Verify every start in that window with the unchanged VM: captures,
     // references and assertions may make a later start win after an earlier
     // one fails. No candidate is itself accepted by this necessary condition.
-    internal static int GetLeadingWhitespaceLiteral(Utf8SliceProgram program,
+    internal static int FindLeadingClassDelimiter(Utf8SliceProgram program,
         out int leadingClass, out int literalIndex, out long gapMaximum, out bool directClassLiteral)
     {
         leadingClass = -1;

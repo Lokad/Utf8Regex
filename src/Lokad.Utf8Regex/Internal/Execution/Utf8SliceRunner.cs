@@ -528,8 +528,10 @@ internal static partial class Utf8SliceRunner
             (wideInput || candidatePlan.LiteralSearch is { Length: > 0, IgnoreCase: false } ||
                 candidatePlan.PrefilterPlan.PrimarySearcher.Kind == PreparedSearcherKind.MultiLiteral))
         {
-            var literal = GetLeadingWhitespaceLiteral(program, out leadingClass, out var literalIndex,
-                out classGapMaximum, out directClassLiteral);
+            var (literal, windowClass, literalIndex, gapMaximum, direct) = program.LeadingClassDelimiter;
+            leadingClass = windowClass;
+            classGapMaximum = gapMaximum;
+            directClassLiteral = direct;
             if (leadingClass >= 0 && literal >= 0)
             {
                 classSearch = GetAlignedDelimiterSearch(program, literalIndex, candidatePlan);
@@ -841,14 +843,10 @@ internal static partial class Utf8SliceRunner
         var branchWindow = checkBranchedPrefix && input.Length - fromByte >= 256
             ? FindBranchedAsciiLiteralWindow(program.Instructions, leadingScalarIndex) : default;
         var checkRepeatChain = leadingAsciiFirst >= 0 && leadingScalarIndex == 1 && CanSkipShortRepeatChain(program);
-        var leadingClass = -1;
-        var whitespaceLiteralIndex = -1;
-        long whitespaceGapMaximum = 0;
-        var directClassLiteral = false;
-        var whitespaceLiteral = !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
+        var (whitespaceLiteral, leadingClass, whitespaceLiteralIndex, whitespaceGapMaximum, directClassLiteral) =
+            !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
             !program.HasContiguousAnchor && input.Length - fromByte >= 256
-            ? GetLeadingWhitespaceLiteral(program, out leadingClass, out whitespaceLiteralIndex,
-                out whitespaceGapMaximum, out directClassLiteral) : -1;
+            ? program.LeadingClassDelimiter : (-1, -1, -1, 0L, false);
         // Count keeps its prepared literal search when capture markers or
         // consuming instructions separate the repeat from its delimiter.
         var literalImmediatelyAfterRepeat = whitespaceLiteral >= 0 && whitespaceLiteralIndex == leadingClass + 3;

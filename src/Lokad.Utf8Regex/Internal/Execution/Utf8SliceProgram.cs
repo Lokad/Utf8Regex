@@ -407,6 +407,15 @@ internal sealed class Utf8SliceProgram
         if (!rightToLeft && !isNonBacktracking && !ignoreCase && !canMatchEmpty && !hasContiguousAnchor &&
             instructions is not [{ Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning }, ..])
             LeadingAsciiCandidate = Utf8SliceRunner.FindLeadingAsciiCandidate(instructions, Utf8ConstructionScope.CurrentBudget);
+        if (!rightToLeft && !isNonBacktracking && !ignoreCase && !hasContiguousAnchor && repeatCount != 0)
+        {
+            // The class/delimiter shape is independent of the subject and its
+            // search plan. Charge for the bounded inspection before it starts.
+            Utf8ConstructionScope.CurrentBudget.ChargeWork((ulong)Math.Min(instructions.Length, 64));
+            var literal = Utf8SliceRunner.FindLeadingClassDelimiter(this,
+                out var leadingClass, out var literalIndex, out var gapMaximum, out var direct);
+            LeadingClassDelimiter = (literal, leadingClass, literalIndex, gapMaximum, direct);
+        }
         if (nonBacktrackingOrderedClosures.Length != 0)
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
         if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
@@ -590,6 +599,8 @@ internal sealed class Utf8SliceProgram
     internal bool HasSingleCapturePerGroup { get; }
     internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch) LeadingAsciiCandidate { get; }
         = (-1, 0, -1, 0, -1, false);
+    internal (int Literal, int LeadingClass, int LiteralIndex, long GapMaximum, bool Direct) LeadingClassDelimiter { get; }
+        = (-1, -1, -1, 0, false);
     private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
 
