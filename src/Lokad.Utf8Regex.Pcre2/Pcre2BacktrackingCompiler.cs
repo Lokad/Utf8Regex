@@ -279,26 +279,6 @@ internal static class Pcre2BacktrackingAnalysis
         };
     }
 
-    internal static bool ContainsCodeUnit(IPcre2BacktrackingNode node)
-    {
-        Utf8ConstructionScope.ChargeWork(1);
-        return node switch
-        {
-            Pcre2TokenBacktrackingNode token => token.Token.Kind == Pcre2CharacterTokenKind.CodeUnit,
-            Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(ContainsCodeUnit),
-            Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(ContainsCodeUnit),
-            Pcre2RepeatBacktrackingNode repeat => ContainsCodeUnit(repeat.Body),
-            Pcre2CaptureBacktrackingNode capture => ContainsCodeUnit(capture.Body),
-            Pcre2AssertionBacktrackingNode assertion => ContainsCodeUnit(assertion.Body),
-            Pcre2ConditionalBacktrackingNode conditional =>
-                conditional.Assertion is not null && ContainsCodeUnit(conditional.Assertion.Body) ||
-                ContainsCodeUnit(conditional.YesBranch) ||
-                ContainsCodeUnit(conditional.NoBranch),
-            Pcre2AtomicBacktrackingNode atomic => ContainsCodeUnit(atomic.Body),
-            _ => false,
-        };
-    }
-
     private static int GetSequenceMinimum(Pcre2SequenceBacktrackingNode sequence)
     {
         var result = 0;

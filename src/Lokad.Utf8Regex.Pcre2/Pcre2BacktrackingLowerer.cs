@@ -89,7 +89,6 @@ internal sealed class Pcre2BacktrackingLowerer
             Pcre2BacktrackingAnalysis.GetMaximumScalarLength(root),
             Pcre2BacktrackingAnalysis.GetLeadingAsciiByte(root),
             Pcre2BacktrackingAnalysis.StartsWithExtendedGraphemeCluster(root),
-            Pcre2BacktrackingAnalysis.ContainsCodeUnit(root),
             FindAnchoredFinalAscii(root));
     }
 
