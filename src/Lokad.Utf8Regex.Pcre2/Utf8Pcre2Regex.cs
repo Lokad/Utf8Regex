@@ -158,12 +158,13 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     private bool IsMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
         CancellationToken cancellationToken, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
+        var budget = Pcre2ResourceBudget.CreateExclusive(_program.Request, cancellationToken, workingMemoryAllowance);
+        ref var invocation = ref budget.WorkingInvocation;
         try
         {
             var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-            if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, ref invocation, out var result))
+            if (Pcre2Runner.TryIsMatch(_program, ref subject, start, matchOptions, ref budget, out var result))
             {
                 if (!invocation.IsUnmetered)
                 {
@@ -182,7 +183,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         finally
         {
             // This lexical bool result leaves no cursor or payload alias. The
-            // separate funded invocation owns every remaining temporary loan.
+            // invocation owns every remaining temporary loan.
             if (workingMemoryAllowance is not null) invocation.Ledger.Release(invocation.Ledger.ReservedBytes);
         }
     }
@@ -272,12 +273,13 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     private Utf8Pcre2ValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken,
         IUtf8MemoryAllowance? workingMemoryAllowance, scoped Span<Utf8Pcre2CaptureRange> output)
     {
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
+        var budget = Pcre2ResourceBudget.CreateExclusive(_program.Request, cancellationToken, workingMemoryAllowance);
+        ref var invocation = ref budget.WorkingInvocation;
         try
         {
             var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);
             var start = subject.GetBytePosition(startOffsetInBytes, nameof(startOffsetInBytes));
-            if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, ref invocation, out var directMatch, out var mark))
+            if (Pcre2Runner.TryMatch(_program, ref subject, start, matchOptions, ref budget, out var directMatch, out var mark))
             {
                 if (!output.IsEmpty)
                     output[0] = directMatch.Success ? new(0, true, directMatch.StartOffsetInBytes,
@@ -325,8 +327,8 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         scoped Span<Utf8Pcre2CaptureRange> output, Pcre2MatchOptions matchOptions, CancellationToken token,
         IUtf8MemoryAllowance? workingMemoryAllowance)
     {
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, token, workingMemoryAllowance);
-        var budget = new Pcre2ResourceBudget(_program.Request.DefaultLimits, invocation, false);
+        var budget = Pcre2ResourceBudget.CreateExclusive(_program.Request, token, workingMemoryAllowance);
+        budget.WorkingInvocation.CheckpointHook = null;
         try
         {
             var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref budget.WorkingInvocation);

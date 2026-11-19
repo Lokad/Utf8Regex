@@ -1404,16 +1404,15 @@ internal static partial class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        scoped ref Utf8SliceInvocation invocation,
+        scoped ref Pcre2ResourceBudget budget,
         out bool result)
     {
-        var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
         var program = compiledProgram.Operations.IsMatch;
-        // Keep ordinary matching out of the large specialized dispatch frame.
-        // Both paths use this same invocation and budget; only their stack
-        // preparation differs.
+        // Keep ordinary matching out of the larger specialized dispatch frame.
+        // Profile instructions use their own checkpoint cadence.
         if (program is Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
+            budget.WorkingInvocation.CheckpointHook = null;
             result = Pcre2BacktrackingRunner.Match(
                 backtrackingProgram.Program,
                 compiledProgram.CandidateSearch,
@@ -1426,6 +1425,7 @@ internal static partial class Pcre2Runner
 
         if (program is Pcre2LiteralDirectProgram literalProgram)
         {
+            budget.WorkingInvocation.CheckpointHook = null;
             result = Pcre2LiteralRunner.Match(
                 literalProgram.Program,
                 ref input,
@@ -1436,7 +1436,7 @@ internal static partial class Pcre2Runner
         }
 
         return TryIsMatchSpecialized(compiledProgram, ref input, start, matchOptions,
-            ref invocation, ref budget, out result);
+            ref budget, out result);
     }
 
     private static bool TryIsMatchSpecialized(
@@ -1444,11 +1444,11 @@ internal static partial class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        scoped ref Utf8SliceInvocation invocation,
-        ref Pcre2ResourceBudget budget,
+        scoped ref Pcre2ResourceBudget budget,
         out bool result)
     {
         var program = compiledProgram.Operations.IsMatch;
+        ref var invocation = ref budget.WorkingInvocation;
 
         if (program is Pcre2FiniteLiteralLanguageDirectProgram finiteLiteralProgram &&
             matchOptions == Pcre2MatchOptions.None &&
@@ -1467,6 +1467,7 @@ internal static partial class Pcre2Runner
                         ref invocation, out result, out _, out _)) return true;
             }
 
+            invocation.CheckpointHook = null;
             result = Pcre2BacktrackingRunner.Match(
                 literalFamilyProgram.Fallback,
                 compiledProgram.CandidateSearch,
@@ -1481,6 +1482,7 @@ internal static partial class Pcre2Runner
         {
             if (matchOptions != Pcre2MatchOptions.None)
             {
+                invocation.CheckpointHook = null;
                 result = Pcre2BacktrackingRunner.Match(
                     sliceProgram.Fallback,
                     compiledProgram.CandidateSearch,
@@ -1517,16 +1519,18 @@ internal static partial class Pcre2Runner
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
-        scoped ref Utf8SliceInvocation invocation,
+        scoped ref Pcre2ResourceBudget budget,
         out Pcre2GroupData result, out string? mark)
     {
         mark = null;
-        var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
+        var program = compiledProgram.Operations.Match;
+        ref var invocation = ref budget.WorkingInvocation;
         Pcre2CharacterMatch directMatch;
-        if (compiledProgram.Operations.Match is Pcre2SliceDirectProgram sliceProgram)
+        if (program is Pcre2SliceDirectProgram sliceProgram)
         {
             if (matchOptions != Pcre2MatchOptions.None)
             {
+                invocation.CheckpointHook = null;
                 directMatch = Pcre2BacktrackingRunner.Match(
                     sliceProgram.Fallback,
                     compiledProgram.CandidateSearch,
@@ -1543,11 +1547,13 @@ internal static partial class Pcre2Runner
                     start,
                     compiledProgram.Request,
                     ref invocation);
+                invocation.CheckpointHook = null;
             }
         }
 
-        else if (compiledProgram.Operations.Match is Pcre2LiteralDirectProgram literalProgram)
+        else if (program is Pcre2LiteralDirectProgram literalProgram)
         {
+            invocation.CheckpointHook = null;
             var literalMatch = Pcre2LiteralRunner.Match(
                 literalProgram.Program,
                 ref input,
@@ -1562,8 +1568,9 @@ internal static partial class Pcre2Runner
             budget.CheckDeadline();
             return true;
         }
-        else if (compiledProgram.Operations.Match is Pcre2BacktrackingDirectProgram backtrackingProgram)
+        else if (program is Pcre2BacktrackingDirectProgram backtrackingProgram)
         {
+            invocation.CheckpointHook = null;
             directMatch = Pcre2BacktrackingRunner.Match(
                 backtrackingProgram.Program,
                 compiledProgram.CandidateSearch,
@@ -1572,7 +1579,8 @@ internal static partial class Pcre2Runner
                 matchOptions,
                 ref budget, out mark);
         }
-        else         {
+        else
+        {
             result = default;
             return false;
         }
@@ -2656,16 +2664,27 @@ internal struct Pcre2ResourceBudget
         Utf8Pcre2ExecutionLimits limits,
         Utf8SliceInvocation invocation,
         bool collectDiagnostics)
+        : this(limits, invocation, collectDiagnostics ? new Pcre2ExecutionDiagnosticsCollector() : null)
+    {
+        // Profile-only callers use their own instruction checkpoint cadence.
+        _invocation.CheckpointHook = null;
+    }
+
+    private Pcre2ResourceBudget(Utf8Pcre2ExecutionLimits limits,
+        Utf8SliceInvocation invocation, Pcre2ExecutionDiagnosticsCollector? diagnostics)
     {
         Limits = limits;
         _invocation = invocation;
-        // This profile's native steps retain their original cadence and do not
-        // invoke the diagnostic hook belonging to the shared scalar-slice VM.
-        _invocation.CheckpointHook = null;
-        _diagnostics = collectDiagnostics ? new Pcre2ExecutionDiagnosticsCollector() : null;
+        _diagnostics = diagnostics;
         CandidateSteps = 0;
         BacktrackingSteps = 0;
     }
+
+    // One-shot dispatch can enter the shared VM using the same owner and hook.
+    internal static Pcre2ResourceBudget CreateExclusive(Pcre2CompileRequest request,
+        CancellationToken token, IUtf8MemoryAllowance? allowance = null)
+        => new(request.DefaultLimits, Utf8SliceInvocation.CreateExclusive(
+            request.DefaultLimits.ToSliceLimits(), request.MatchTimeout, token, allowance), diagnostics: null);
 
     internal Utf8Pcre2ExecutionLimits Limits { get; }
 

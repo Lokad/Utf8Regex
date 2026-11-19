@@ -89,15 +89,16 @@ public sealed class Pcre2LeadingSetCountTests
                 Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(hit))).ErrorKind);
         else Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(hit)));
 
-        invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
-        validation = invocation.Budget.Steps;
+        var budget = Pcre2ResourceBudget.CreateExclusive(regex.DebugCompiledProgram.Request, default);
+        ref var matchInvocation = ref budget.WorkingInvocation;
+        input = Pcre2Runner.PrepareInput(bytes, 0, ref matchInvocation);
+        validation = matchInvocation.Budget.Steps;
         Assert.True(Pcre2Runner.TryIsMatch(regex.DebugCompiledProgram, ref input,
-            new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var found));
+            new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget, out var found));
         Assert.False(found);
-        Assert.True(invocation.Budget.Steps > validation);
-        Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
-        Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
+        Assert.True(matchInvocation.Budget.Steps > validation);
+        Assert.Equal(0UL, matchInvocation.Budget.PeakWorkingBytes);
+        Assert.Equal(0UL, matchInvocation.Ledger.ReservedBytes);
         Assert.False(regex.IsMatch(bytes));
         if (needsStorage)
             Assert.Equal(Pcre2ErrorKind.HeapLimit,
@@ -158,7 +159,10 @@ public sealed class Pcre2LeadingSetCountTests
         ReadOnlySpan<byte> retained2Input = Encoding.UTF8.GetBytes(hit);
         var retained2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
         var retained = regex.Match(retained2Input, captures: retained2Captures);
-        var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
+        var request = regex.DebugCompiledProgram.Request;
+        var budget = isMatch ? Pcre2ResourceBudget.CreateExclusive(request, token.Token)
+            : new Pcre2ResourceBudget(request.DefaultLimits, Pcre2SliceDriver.CreateInvocation(request, token.Token), false);
+        ref var invocation = ref budget.WorkingInvocation;
         var bytes = Encoding.UTF8.GetBytes(new string('x', 262144));
         var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var validation = invocation.Budget.Steps;
@@ -169,7 +173,7 @@ public sealed class Pcre2LeadingSetCountTests
         {
             if (isMatch)
                 Pcre2Runner.TryIsMatch(regex.DebugCompiledProgram, ref input,
-                    new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
+                    new Utf8BytePosition(0), Pcre2MatchOptions.None, ref budget, out _);
             else
                 Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
                     new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out _);
