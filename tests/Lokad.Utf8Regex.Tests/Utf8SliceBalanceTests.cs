@@ -13,6 +13,34 @@ namespace Lokad.Utf8Regex.Tests;
 // spellings fail construction.
 public sealed class Utf8SliceBalanceTests
 {
+    [Fact]
+    public void DisprovedBalancingAlternativeFitsFiniteWork()
+    {
+        const string pattern = @"\ABEGIN(?:(?<open>BEGIN)|(?<-open>END)|(?:(?!BEGIN|END)[\s\S]))*END(?(open)(?!))\z";
+        var text = "BEGIN" + new string('a', 8190) + "é😀BEGINENDEND";
+        Assert.Equal(1, new Regex(pattern).Count(text));
+        using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 85000, MaxWorkingBytes = 32768, MaxDepth = 128 }
+        });
+        using var token = new CancellationTokenSource();
+        Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(text), token.Token));
+    }
+
+    [Theory]
+    [InlineData(@"\A(?<open>x)(?:(?<discard>(?<open>)a)|(?<keep>b))(?<gap-open>c)\z", "xbc")]
+    [InlineData(@"\A(?<open>x)(?:(?<discard>(?<open>)a)|(?<keep>b))(?<gap-open>c)\z", "xac")]
+    [InlineData(@"\A(?<open>x)(?:(?<discard>b)(?<gone-open>c)|(?<keep>bc))(?<gap-open>d)\z", "xbcd")]
+    public void LiteralAlternativePreservesBalancingHistory(string pattern, string text)
+    {
+        var expected = new Regex(pattern).Match(text);
+        Assert.True(expected.Success);
+        using var regex = Utf8Regex.Compile(pattern);
+        var input = Encoding.UTF8.GetBytes(text);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

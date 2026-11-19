@@ -1130,9 +1130,11 @@ internal static partial class Utf8SliceRunner
                         break;
                     }
                     // A required exact ASCII literal can disprove a branch
-                    // before its frame/rollback storage is needed. Reuse the
-                    // bounded capture-marker proof; opaque branches keep frames.
-                    if (instruction.B == 0 && !program.RightToLeft && !program.HasBalancing)
+                    // before its frame/rollback storage is needed. Ordinary
+                    // capture markers on that failing path would be rolled back,
+                    // including their balance heads. The proof stops at other
+                    // instructions, including balancing operations.
+                    if (instruction.B == 0 && !program.RightToLeft)
                     {
                         if (TryGetLiteralAfterCaptureMarkers(instructions, programIndex + 1, out var forkFirstScalar) &&
                             (uint)forkFirstScalar < 0x80 &&
