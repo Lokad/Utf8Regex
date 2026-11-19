@@ -1697,6 +1697,15 @@ internal static class Pcre2BacktrackingRunner
         if (!isLookbehind)
         {
             budget.ChargeCandidate();
+            if (captureStarts.IsEmpty && TryMatchStatelessLookahead(assertionProgram, input, inputIndex,
+                    outerFirstMatchingPosition, nestedOptions, ref budget, out var probeMatched))
+            {
+                captures = [];
+                mark = null;
+                reportedStartOffsetInBytes = -1;
+                return isNegative != probeMatched;
+            }
+
             var matched = TryMatchAt(
                 assertionProgram,
                 input,
@@ -1782,6 +1791,50 @@ internal static class Pcre2BacktrackingRunner
         mark = null;
         reportedStartOffsetInBytes = -1;
         return isNegative;
+    }
+
+    private static bool TryMatchStatelessLookahead(
+        Pcre2BacktrackingProgram program,
+        ReadOnlySpan<byte> input,
+        int position,
+        int firstMatchingPosition,
+        Pcre2MatchOptions options,
+        ref Pcre2ResourceBudget budget,
+        out bool matched)
+    {
+        matched = false;
+        var instructions = program.Instructions.AsSpan();
+        if (instructions.Length > 8) return false;
+        foreach (ref readonly var instruction in instructions)
+        {
+            if (instruction.Kind is Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureStart
+                or Pcre2BacktrackingInstructionKind.CaptureEnd or Pcre2BacktrackingInstructionKind.Accept)
+                continue;
+            if (instruction.Kind != Pcre2BacktrackingInstructionKind.ControlAccept || instruction.ControlNameId >= 0)
+                return false;
+        }
+
+        // Keep the zero-byte admission checkpoint and charge the same reached
+        // instructions as a nested VM. A stateless lookahead has no open
+        // captures to close on ACCEPT and cannot publish a mark or reset.
+        budget.ReserveWorking(0);
+        foreach (ref readonly var instruction in instructions)
+        {
+            budget.ChargeBacktracking(instruction.Kind, instruction.Token.Kind);
+            if (instruction.Kind == Pcre2BacktrackingInstructionKind.Token)
+            {
+                if (!Pcre2CharacterRunner.TryMatchToken(instruction.Token, program.Request, input,
+                        position, firstMatchingPosition, options, ref budget, out position))
+                    break;
+            }
+            else if (instruction.Kind is Pcre2BacktrackingInstructionKind.Accept
+                or Pcre2BacktrackingInstructionKind.ControlAccept)
+            {
+                matched = true;
+                break;
+            }
+        }
+        return true;
     }
 
     private static void ThrowIfDisallowedNonMonotoneLookaroundReset(

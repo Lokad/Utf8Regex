@@ -354,6 +354,9 @@ Subroutine return restores caller state from the existing mutation journals.
 The heap limit covers the retained journals and the vectors used to identify
 each changed slot. Long restoration scans check interruption and charge work
 every 64 journal entries.
+Short straight-line lookaheads with unobserved captures can evaluate their
+existing instructions without nested VM state. They charge the same reached
+instructions and retain the assertion depth and interruption checks.
 Uncontrolled compilation can also omit rewind state for positive word-only repeats
 before `\b`; explicit finite execution policies retain their established lowering.
 Original tokens and working allowances still meter/admit actual optimized work.
