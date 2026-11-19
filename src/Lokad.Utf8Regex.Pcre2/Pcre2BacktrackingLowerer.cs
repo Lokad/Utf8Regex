@@ -409,13 +409,13 @@ internal sealed class Pcre2BacktrackingLowerer
                         EmitPossessiveTokenRepeat(repeat);
                     else if (repeat is { Minimum: 0, Maximum: 1 } &&
                         repeat.Preference != Pcre2RepeatPreference.Possessive &&
-                        repeat.Body is Pcre2TokenBacktrackingNode
+                        repeat.Body is Pcre2SubroutineCallBacktrackingNode or Pcre2TokenBacktrackingNode
                         {
                             Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass,
                         })
                     {
-                        // A single consuming atom has no iteration state to restore.
-                        // The fork preserves which branch is tried and unwound first.
+                        // One attempt or a skip needs no counter, even if the call
+                        // returns empty. The call keeps its own restoration checkpoints.
                         var fork = _instructions.Count;
                         _instructions.Add(default);
                         EmitNode(repeat.Body, null);

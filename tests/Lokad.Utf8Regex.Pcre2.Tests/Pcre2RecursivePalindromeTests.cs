@@ -99,6 +99,23 @@ public sealed class Pcre2RecursivePalindromeTests
             Assert.Throws<Pcre2MatchException>(() => tightlyMetered.IsMatch("abcba"u8)).ErrorKind);
     }
 
+    [Theory]
+    [InlineData(@"(?(DEFINE)(?<n>a?))\A(?&n)?(?<tail>a*)\z", "aa", 1)]
+    [InlineData(@"(?(DEFINE)(?<n>a?))\A(?&n)??(?<tail>a*)\z", "aa", 0)]
+    [InlineData(@"(?(DEFINE)(?<n>a?))\A(?&n)?(?<tail>a*)\z", "", 0)]
+    [InlineData(@"(?(DEFINE)(?<n>a?))\A(?&n)?(?<tail>aa)\z", "aa", 0)]
+    public void OptionalCallsPreservePriorityEmptyReturnAndCallerCaptures(string pattern, string text, int tailStart)
+    {
+        using var regex = CreateMetered(pattern, 1_000_000);
+        var captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        var input = Encoding.UTF8.GetBytes(text);
+
+        Assert.True(regex.Match(input, captures: captures).Success);
+        Assert.False(captures[1].Success);
+        Assert.True(captures[2].Success);
+        Assert.Equal((tailStart, input.Length), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
+    }
+
     private static bool ScalarPalindrome(string text, bool allowsEmpty)
     {
         // Default $ may precede one terminal LF; dot cannot consume any LF.
