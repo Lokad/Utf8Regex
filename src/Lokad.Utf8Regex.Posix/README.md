@@ -39,7 +39,6 @@ without changing longest-match or capture priority. For example, `(a|aa)(a*)`
 on `AAA` captures `AA` then `A`; `(k|kk)` on `KK` selects four original bytes.
 The relation is single-scalar, with no normalization or multi-scalar folds;
 see the [exact relation and class behavior](../../docs/SPEC-POSIX.md#input-and-syntax).
-This option postdates the frozen 0.5.0 candidate and requires a subsequent package.
 `Newline` enables LF line anchors and excludes LF from dot/negated
 brackets. Locale collation, backreferences, lookarounds and non-ERE extensions
 are rejected. Matching is resource-metered; worst-case linear time is not promised.
