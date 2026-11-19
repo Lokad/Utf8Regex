@@ -229,10 +229,10 @@ internal static partial class Utf8SliceRunner
         finally { invocation.Ledger.Release(reserved); }
     }
 
-    private static bool IsRegularStartByte(byte value, (byte First, byte Second, byte Third, bool Present) starts)
+    internal static bool IsRegularStartByte(byte value, (byte First, byte Second, byte Third, bool Present) starts)
         => value == starts.First || value == starts.Second || value == starts.Third;
 
-    private static Utf8ExecutionLimitKind TrySeekRegularStart(ReadOnlySpan<byte> input, ref int position,
+    internal static Utf8ExecutionLimitKind TrySeekRegularStart(ReadOnlySpan<byte> input, ref int position,
         (byte First, byte Second, byte Third, bool Present) starts, ref Utf8SliceInvocation invocation)
     {
         // A proved start byte cannot occur inside a scalar. Each caller has

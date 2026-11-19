@@ -327,6 +327,7 @@ internal sealed class Utf8SliceProgram
         int[] nonBacktrackingEpsilonOrder,
         ulong[] nonBacktrackingEpsilonAncestors,
         ulong[] nonBacktrackingOrderedClosures,
+        bool nonBacktrackingOrderedForwardOnly,
         ulong nonBacktrackingConsumerMask,
         ulong nonBacktrackingAcceptClosure,
         Func<int, int>[] backreferenceLowerings,
@@ -365,6 +366,7 @@ internal sealed class Utf8SliceProgram
         NonBacktrackingEpsilonOrder = nonBacktrackingEpsilonOrder;
         NonBacktrackingEpsilonAncestors = nonBacktrackingEpsilonAncestors;
         NonBacktrackingOrderedClosures = nonBacktrackingOrderedClosures;
+        NonBacktrackingOrderedForwardOnly = nonBacktrackingOrderedForwardOnly;
         NonBacktrackingConsumerMask = nonBacktrackingConsumerMask;
         NonBacktrackingAcceptClosure = nonBacktrackingAcceptClosure;
         BackreferenceLowerings = backreferenceLowerings;
@@ -424,6 +426,7 @@ internal sealed class Utf8SliceProgram
         var readsCaptures = false;
         var hasUnicodePatternAtoms = false;
         var hasOrderSensitiveLookbehind = false;
+        var nonBacktrackingOrderedForwardOnly = nonBacktrackingOrderedClosures is { Length: > 0 };
         ulong consumers = 0, accepts = 0;
         budget.ChargeWork((ulong)instructions.Length);
         for (var pc = 0; pc < instructions.Length; pc++)
@@ -457,6 +460,8 @@ internal sealed class Utf8SliceProgram
                     break;
                 case Utf8SliceInstructionKind.Fork:
                 case Utf8SliceInstructionKind.Jump:
+                    nonBacktrackingOrderedForwardOnly &= instruction.A > pc;
+                    break;
                 case Utf8SliceInstructionKind.CaptureStart:
                 case Utf8SliceInstructionKind.CaptureEnd:
                 case Utf8SliceInstructionKind.Anchor:
@@ -500,6 +505,7 @@ internal sealed class Utf8SliceProgram
             nonBacktrackingEpsilonOrder,
             nonBacktrackingEpsilonAncestors,
             nonBacktrackingOrderedClosures ?? [],
+            nonBacktrackingOrderedForwardOnly,
             consumers,
             accepts,
             backreferenceLowerings,
@@ -540,6 +546,7 @@ internal sealed class Utf8SliceProgram
     internal int[] NonBacktrackingEpsilonOrder { get; }
     internal ulong[] NonBacktrackingEpsilonAncestors { get; }
     internal ulong[] NonBacktrackingOrderedClosures { get; }
+    internal bool NonBacktrackingOrderedForwardOnly { get; }
     internal (byte First, byte Second, byte Third, bool Present) NonBacktrackingOrderedStartBytes { get; }
     internal ulong NonBacktrackingConsumerMask { get; }
     internal ulong NonBacktrackingAcceptClosure { get; }

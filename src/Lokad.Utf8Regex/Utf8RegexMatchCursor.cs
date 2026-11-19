@@ -186,6 +186,10 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                 : selected;
         }
 
+        if (program.NonBacktrackingOrderedForwardOnly && (_nonBacktracking is null || _nonBacktracking.IsWindow))
+            return Utf8NonBacktrackingSearchState.FindInWindows(program, _input.Span, _position, _slots,
+                ref _nonBacktracking, ref _boundary, ref _invocation);
+
         // After the first result, use viability unless only a bounded tail
         // remains. A preferred cyclic branch can otherwise rescan each suffix.
         if (_nonBacktracking is null) PrepareNonBacktracking(program);

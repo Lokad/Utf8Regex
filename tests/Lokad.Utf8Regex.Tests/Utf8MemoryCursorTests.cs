@@ -256,10 +256,10 @@ public sealed class Utf8MemoryCursorTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void CompactRegularFirstCaptureNeedsNoBatchLoan(bool late)
+    public void CyclicRegularFirstCaptureNeedsNoBatchLoan(bool late)
     {
         var root = new Root(); var working = new Account(root) { Maximum = 8192 }; var results = new Account(root);
-        using var regex = new Utf8Regex("(?<x>😀|a){1,2}", RegexOptions.NonBacktracking);
+        using var regex = new Utf8Regex("(?<x>😀|a)+", RegexOptions.NonBacktracking);
         var input = Encoding.UTF8.GetBytes(late ? new string('z', 2048) + "😀a" : "😀a" + new string('z', 2048) + "a");
         var start = late ? 2048 : 0;
         using var cursor = regex.CreateMatchCursor(input, workingMemoryAllowance: working);
@@ -283,11 +283,11 @@ public sealed class Utf8MemoryCursorTests
     }
 
     [Fact]
-    public void CompactRegularFirstEmptyCaptureAdvancesByScalarBeforePreparingTheBatch()
+    public void CompactRegularCursorAdvancesAnEmptyMatchByOneScalar()
     {
-        var root = new Root(); var working = new Account(root);
+        var root = new Root(); var working = new Account(root) { Maximum = 2048 };
         using var regex = new Utf8Regex("(?<x>a?)", RegexOptions.NonBacktracking);
-        var input = Encoding.UTF8.GetBytes("é😀a" + new string('z', 64));
+        var input = Encoding.UTF8.GetBytes("é😀a" + new string('z', 256));
         using var cursor = regex.CreateMatchCursor(input, startOffsetInBytes: 2, workingMemoryAllowance: working);
 
         Assert.True(cursor.MoveNext(out var first));
@@ -297,6 +297,35 @@ public sealed class Utf8MemoryCursorTests
         Assert.Equal(new Utf8CaptureRange(6, 7), second.Value);
         Assert.Equal(second.Value, Assert.Single(second.GetCaptures(1).ToArray()));
         cursor.Dispose(); Assert.Equal(0UL, root.Used);
+    }
+
+    [Fact]
+    public void ForwardOnlyRegularCursorReusesBoundedScratchAndPreservesRetainedCaptures()
+    {
+        var root = new Root(); var working = new Account(root) { Maximum = 2048 }; var results = new Account(root);
+        using var regex = new Utf8Regex("(?<x>😀ab|a){1,2}", RegexOptions.NonBacktracking);
+        // The second result spans the nominal window edge. A later refill skips a sparse gap.
+        var input = Encoding.UTF8.GetBytes("aa" + "ab" + new string('z', 61) + "😀aba" + new string('z', 8192) + "a");
+        using var cursor = regex.CreateMatchCursor(input, workingMemoryAllowance: working);
+        var alias = cursor;
+
+        Assert.True(cursor.MoveNextRetained(out var first, resultMemoryAllowance: results));
+        using (first)
+        {
+            Assert.Equal(new Utf8CaptureRange(0, 2), first.Match.Value);
+            Assert.True(alias.MoveNext(out var seed));
+            Assert.Equal(new Utf8CaptureRange(2, 3), seed.Value);
+            Assert.True(cursor.MoveNext(out var crossing));
+            Assert.Equal(new Utf8CaptureRange(65, 72), crossing.Value);
+            Assert.Equal(new Utf8CaptureRange(71, 72), crossing.GetCaptures(1)[0]);
+            Assert.True(alias.MoveNext(out var last));
+            Assert.Equal(new Utf8CaptureRange(input.Length - 1, input.Length), last.Value);
+            Assert.False(cursor.MoveNext(out _));
+            Assert.Equal(0UL, working.Used);
+            Assert.Equal("aa"u8.ToArray(), first.Match.GetValueMemory().ToArray());
+            Assert.Equal(new Utf8CaptureRange(1, 2), first.Match.GetCaptures(1)[0]);
+        }
+        Assert.Equal(0UL, root.Used);
     }
 
     [Fact]

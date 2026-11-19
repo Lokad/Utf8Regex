@@ -219,10 +219,12 @@ subcaptures inside that range using the same work budget and deadline.
 Short selected ranges can reuse packed viability rows and slot replay with
 bounded, admitted stack scratch. Longer ranges use the ordered runner.
 Persistent cursors for these graphs can return their first result before
-preparing a viability table. If another advance needs the table, that advance
-admits and builds it using the original cursor budget and deadline. First-match
-misses and bounded final tails can finish without the table. A refusal during a
-later advance faults the cursor and leaves earlier results valid.
+preparing viability rows. Forward-only compact graphs reuse one admitted window
+with bounded scalar lookahead across subsequent results. Graphs with cycles
+can prepare a whole-subject table. Both use the original cursor budget and
+deadline. First-match misses and bounded final tails can finish without preparing
+rows. A refusal during a later advance faults the cursor and leaves earlier
+results valid.
 
 Backtracking first-match search can reuse Count's mandatory exact ASCII head or
 range proof. Controlled gap searches cover at most 2048 bytes per checkpoint,

@@ -3,7 +3,7 @@ using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-/// <summary>Immutable scalar-boundary viability for one NonBacktracking batch.
+/// <summary>Scalar-boundary viability for a NonBacktracking batch or an exclusive cursor window.
 /// Each row records which instruction states can reach acceptance from that
 /// boundary. Ordered replay then skips dead choices without rescanning suffixes.
 /// Capture values never affect viability in this regular grammar. Preparation
@@ -14,6 +14,8 @@ internal sealed class Utf8NonBacktrackingSearchState
     private readonly int[] _boundaries;
     private readonly ulong[] _viability;
     private readonly int _stride;
+    private int _startLimit;
+    private int _windowEnd = -1;
     private ulong _reservation;
 
     private Utf8NonBacktrackingSearchState(int[] boundaries, ulong[] viability, int stride, ulong reservation)
@@ -21,8 +23,11 @@ internal sealed class Utf8NonBacktrackingSearchState
         _boundaries = boundaries;
         _viability = viability;
         _stride = stride;
+        _startLimit = boundaries.Length;
         _reservation = reservation;
     }
+
+    internal bool IsWindow => _windowEnd >= 0;
 
     internal static int[] BuildEpsilonOrder(Utf8SliceInstruction[] instructions, out ulong[] ancestors, out ulong[] orderedClosures)
     {
@@ -119,7 +124,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         }
     }
 
-    // The caller has validated the complete subject. A bounded size scan and scalar pass
+    // Input is caller-valid UTF-8. A bounded size scan and scalar pass
     // admit exact offsets and bit rows; no UTF-16 subject or unit map is built.
     internal static Utf8ExecutionLimitKind TryCreate(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         ref Utf8SliceInvocation invocation, out Utf8NonBacktrackingSearchState? state)
@@ -314,6 +319,72 @@ internal sealed class Utf8NonBacktrackingSearchState
         _reservation = 0;
     }
 
+    internal static Utf8SliceSearchOutcome FindInWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, Utf8SliceSlots slots, ref Utf8NonBacktrackingSearchState? window, ref int boundary,
+        ref Utf8SliceInvocation invocation)
+    {
+        const int windowBytes = 64;
+        while (true)
+        {
+            if (window is null || position >= window._windowEnd && window._windowEnd < input.Length)
+            {
+                var starts = program.NonBacktrackingOrderedStartBytes;
+                if (starts.Present)
+                {
+                    if (position < input.Length && !Utf8SliceRunner.IsRegularStartByte(input[position], starts))
+                    {
+                        var seek = Utf8SliceRunner.TrySeekRegularStart(input, ref position, starts, ref invocation);
+                        if (seek != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, seek);
+                    }
+                    if (position == input.Length)
+                    {
+                        invocation.Budget.ThrowIfCancellationRequested();
+                        invocation.Budget.CheckDeadline();
+                        return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
+                    }
+                }
+                // A forward-only path can visit each consuming instruction at most once.
+                // The commit boundary limits starts, while the remaining rows settle their ends.
+                var lookahead = BitOperations.PopCount(program.NonBacktrackingConsumerMask) * 4;
+                if (window is null)
+                {
+                    // Both ends can round up by at most three bytes. An ASCII
+                    // window uses the most rows for a given byte capacity.
+                    var capacity = windowBytes + lookahead + 2 * 3 + 1;
+                    var bytes = Utf8ConstructionBudget.ArrayBytes<int>(capacity)
+                        + Utf8ConstructionBudget.ArrayBytes<ulong>(capacity);
+                    var admission = invocation.TryReserveWorking(bytes);
+                    if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
+                    try
+                    {
+                        admission = invocation.TryChargeInputStep();
+                        if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
+                        window = new(new int[capacity], new ulong[capacity], 1, bytes);
+                    }
+                    finally { if (window is null) invocation.Ledger.Release(bytes); }
+                }
+                var commit = AlignedEnd(input, position, windowBytes);
+                var end = AlignedEnd(input, commit, lookahead);
+                var build = BuildUnconditionalPackedRows(program, input, position, end, window._boundaries,
+                    window._viability, ref invocation, out boundary);
+                if (build != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, build);
+                window._windowEnd = commit;
+                window._startLimit = commit == input.Length ? window._boundaries.Length :
+                    Array.BinarySearch(window._boundaries, boundary, window._boundaries.Length - boundary, commit);
+            }
+            var found = window.FindFirst(program, ref boundary, slots.Starts, slots.Ends, ref invocation);
+            if (found.Found || found.Breach != Utf8ExecutionLimitKind.None || window._windowEnd == input.Length) return found;
+            position = window._windowEnd;
+        }
+    }
+
+    private static int AlignedEnd(ReadOnlySpan<byte> input, int position, int bytes)
+    {
+        var end = position + Math.Min(bytes, input.Length - position);
+        while (end < input.Length && (input[end] & 0xc0) == 0x80) end++;
+        return end;
+    }
+
     internal static Utf8SliceSearchOutcome ReplayCompactRange(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         Utf8SliceSearchOutcome selected, Utf8SliceSlots slots, ref Utf8SliceInvocation invocation)
     {
@@ -335,24 +406,9 @@ internal sealed class Utf8NonBacktrackingSearchState
             Span<int> openings = stackalloc int[openingCount];
             openings.Clear();
 
-            // There can be at most one row per byte. Fill from the end so the
-            // occupied rows are contiguous even for multi-byte scalars.
-            var boundary = maxRows - 1;
-            var scalar = default(Rune);
-            var following = 0UL;
-            for (var edge = end; ; boundary--)
-            {
-                boundaries[boundary] = edge;
-                // Compact ordered graphs have unconditional epsilon edges.
-                // No prefix, suffix or prior scalar can affect these rows.
-                breach = TryBuildPackedRow(program, input, edge, scalar, default, following, ref invocation, out var row);
-                if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
-                rows[boundary] = row;
-                if (edge == from) break;
-                _ = Rune.DecodeLastFromUtf8(input[from..edge], out scalar, out var width);
-                edge -= width;
-                following = row;
-            }
+            breach = BuildUnconditionalPackedRows(program, input, from, end, boundaries, rows, ref invocation,
+                out var boundary);
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
 
             if ((rows[boundary] & 1) == 0)
                 throw new InvalidOperationException("The selected NonBacktracking range is not viable.");
@@ -375,6 +431,27 @@ internal sealed class Utf8NonBacktrackingSearchState
         }
     }
 
+    private static Utf8ExecutionLimitKind BuildUnconditionalPackedRows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int from, int end, Span<int> boundaries, Span<ulong> rows, ref Utf8SliceInvocation invocation, out int boundary)
+    {
+        // Fill backwards from the end so occupied rows are contiguous even
+        // when some positions within the byte capacity are not scalar edges.
+        boundary = boundaries.Length - 1;
+        var scalar = default(Rune);
+        var following = 0UL;
+        for (var edge = end; ; boundary--)
+        {
+            boundaries[boundary] = edge;
+            var breach = TryBuildPackedRow(program, input, edge, scalar, default, following, ref invocation, out var row);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            rows[boundary] = row;
+            if (edge == from) return Utf8ExecutionLimitKind.None;
+            _ = Rune.DecodeLastFromUtf8(input[from..edge], out scalar, out var width);
+            edge -= width;
+            following = row;
+        }
+    }
+
     internal Utf8SliceSearchOutcome FindFirst(Utf8SliceProgram program, ref int boundary,
         int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation)
     {
@@ -385,7 +462,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         try
         {
             var visited = 0;
-            for (; boundary < _boundaries.Length; boundary++)
+            for (; boundary < _startLimit; boundary++)
             {
                 // A candidate lookup reads one already prepared viability bit.
                 if ((visited++ & 63) == 0)
@@ -395,7 +472,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 }
                 if (CanMatch(boundary, 0)) break;
             }
-            if (boundary == _boundaries.Length)
+            if (boundary >= _startLimit)
             {
                 invocation.Budget.ThrowIfCancellationRequested();
                 invocation.Budget.CheckDeadline();
