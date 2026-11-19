@@ -191,6 +191,10 @@ effects. Opaque branches keep normal verification. Balancing, assertion/atomic
 frames and RTL retain their existing behavior. Avoided frames can lower work,
 depth and working requirements; needed state remains admitted before acquisition.
 
+Leading ASCII range facts are computed from the lowered instructions at
+construction. Count, first-match discovery and cursors reuse them while each
+invocation still owns candidate scanning and full match verification.
+
 `NonBacktracking` is a separate owned linear mode for its admitted regular
 subset. It preserves ordered choice, greedy/lazy behavior, scalar empty progress
 and each group's last completed capture. Unsupported grammar fails before planning.

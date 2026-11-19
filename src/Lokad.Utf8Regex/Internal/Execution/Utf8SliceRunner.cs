@@ -507,18 +507,12 @@ internal static partial class Utf8SliceRunner
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
-        byte leadingLast = 0, secondLast = 0;
-        var second = -1;
-        var leadingScalarIndex = -1;
-        // Borrow Count's bounded necessary-start proof. Every survivor still
-        // executes the VM; empty/contiguous/mirrored/folded roots stay unchanged.
-        var leading = !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
-            !program.CanMatchEmpty && !program.HasContiguousAnchor
-            ? GetLeadingAsciiCandidate(program, candidatePlan, out leadingLast, out second, out secondLast, out leadingScalarIndex) : -1;
+        var (leading, leadingLast, second, secondLast, leadingScalarIndex, fromBranch) = program.LeadingAsciiCandidate;
+        // Prefer a straight leading byte proof. Prepared literal search takes
+        // priority over the broader range inferred from a branch.
+        var seekLiteral = (leading < 0 || fromBranch) && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
+        if (seekLiteral) leading = -1;
         var checkBranchedPrefix = leading >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
-        // Keep the cheaper existing head proof when available. Prepared prefix
-        // search fills its gaps, including multi-alternative and UTF-8 starts.
-        var seekLiteral = leading < 0 && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
         var leadingClass = -1;
         var classLiteral = -1;
         var classSearch = default(PreparedSubstringSearch?);
@@ -838,15 +832,11 @@ internal static partial class Utf8SliceRunner
         // PCRE2-INTEGRATION-POINT: a caller may provide its proved branch prefixes.
         var useBranchPrefixes = branchPrefixes.HasValue;
         var seekLiteral = useBranchPrefixes || CanSeekExactPrefix(program, candidatePlan);
-        byte leadingAsciiLast = 0;
-        var leadingAsciiSecond = -1;
-        byte leadingAsciiSecondLast = 0;
-        var leadingScalarIndex = -1;
         // A direct beginning anchor already owns bounded line/prefix discovery.
         // Keep one candidate search rather than scanning its prefix twice.
-        var leadingAsciiFirst = !seekLiteral && !seekBeginning && !program.RightToLeft && !program.IgnoreCase &&
-            !program.CanMatchEmpty && !program.HasContiguousAnchor
-            ? GetLeadingAsciiCandidate(program, candidatePlan, out leadingAsciiLast, out leadingAsciiSecond, out leadingAsciiSecondLast, out leadingScalarIndex) : -1;
+        var (leadingAsciiFirst, leadingAsciiLast, leadingAsciiSecond, leadingAsciiSecondLast, leadingScalarIndex, _) = seekLiteral
+            ? (-1, (byte)0, -1, (byte)0, -1, false)
+            : program.LeadingAsciiCandidate;
         var checkBranchedPrefix = leadingAsciiFirst >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
         var branchWindow = checkBranchedPrefix && input.Length - fromByte >= 256
             ? FindBranchedAsciiLiteralWindow(program.Instructions, leadingScalarIndex) : default;

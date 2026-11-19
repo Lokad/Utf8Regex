@@ -404,6 +404,9 @@ internal sealed class Utf8SliceProgram
         // Keep this bounded, allocation-free proof off repeated match attempts.
         HasTerminalCaptureRoot = Utf8SliceRunner.CanRunTerminalCaptureRoot(this);
         HasSingleCapturePerGroup = CanReadCapturesFromSlots();
+        if (!rightToLeft && !isNonBacktracking && !ignoreCase && !canMatchEmpty && !hasContiguousAnchor &&
+            instructions is not [{ Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning }, ..])
+            LeadingAsciiCandidate = Utf8SliceRunner.FindLeadingAsciiCandidate(instructions, Utf8ConstructionScope.CurrentBudget);
         if (nonBacktrackingOrderedClosures.Length != 0)
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
         if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
@@ -585,6 +588,8 @@ internal sealed class Utf8SliceProgram
     internal bool HasUnicodePatternAtoms { get; }
     internal bool HasTerminalCaptureRoot { get; }
     internal bool HasSingleCapturePerGroup { get; }
+    internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch) LeadingAsciiCandidate { get; }
+        = (-1, 0, -1, 0, -1, false);
     private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
 
