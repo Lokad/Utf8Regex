@@ -790,16 +790,6 @@ internal static partial class Utf8SliceRunner
         }
     }
 
-    internal static Utf8SliceMatchOutcome IsMatch(
-        Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation)
-    {
-        var start = program.RightToLeft ? input.Length : 0;
-        invocation.AnchorOriginByte = start;
-        var outcome = TryFindFirst(program, input, start, captureStarts, captureEnds, false, ref invocation);
-        return new(outcome.Found, outcome.EndByte, outcome.Breach, null, null);
-    }
-
     // Count receives caller-valid text and needs no coordinate map:
     // attempts, successful endpoints and empty progress are all byte boundaries.
     internal static Utf8SliceCountOutcome CountFromBytes(

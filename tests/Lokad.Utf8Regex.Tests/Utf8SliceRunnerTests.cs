@@ -79,7 +79,8 @@ public sealed class Utf8SliceRunnerTests
         var oracle = new Regex(bclPattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
         var invocation = Unmetered();
         var (starts, ends) = Slots(program);
-        Assert.Equal(oracle.IsMatch(inputText), Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation).IsMatch);
+        Assert.Equal(oracle.IsMatch(inputText), Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref invocation).Found);
         invocation = Unmetered();
         (starts, ends) = Slots(program);
         Assert.Equal(oracle.Matches(inputText).Count,
@@ -104,9 +105,10 @@ public sealed class Utf8SliceRunnerTests
         var input = Encoding.ASCII.GetBytes(inputText);
         var invocation = Unmetered();
         var (starts, ends) = Slots(program);
-        var outcome = Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation);
-        Assert.Equal(expected, outcome.IsMatch);
-        Assert.Equal(new Regex(@"(a+)(b+)", RegexOptions.CultureInvariant).IsMatch(inputText), outcome.IsMatch);
+        var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref invocation);
+        Assert.Equal(expected, outcome.Found);
+        Assert.Equal(new Regex(@"(a+)(b+)", RegexOptions.CultureInvariant).IsMatch(inputText), outcome.Found);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
 
@@ -120,8 +122,9 @@ public sealed class Utf8SliceRunnerTests
         var input = Encoding.ASCII.GetBytes("xxaaabbyy");
         var invocation = Unmetered();
         var (starts, ends) = Slots(program);
-        var outcome = Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation);
-        Assert.True(outcome.IsMatch);
+        var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref invocation);
+        Assert.True(outcome.Found);
         var oracle = new Regex(@"(a+)(b+)", RegexOptions.CultureInvariant).Match("xxaaabbyy");
         Assert.Equal(oracle.Groups[1].Index, starts[0]);
         Assert.Equal(oracle.Groups[1].Index + oracle.Groups[1].Length, ends[0]);
@@ -164,7 +167,8 @@ public sealed class Utf8SliceRunnerTests
         var input = Encoding.ASCII.GetBytes(inputText);
         var invocation = Unmetered();
         var (starts, ends) = Slots(program);
-        Assert.Equal(expected, Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation).IsMatch);
+        Assert.Equal(expected, Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref invocation).Found);
     }
 
     [Theory]
@@ -181,7 +185,8 @@ public sealed class Utf8SliceRunnerTests
         var input = Encoding.ASCII.GetBytes(inputText);
         var invocation = Unmetered();
         var (starts, ends) = Slots(program);
-        Assert.Equal(expected, Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation).IsMatch);
+        Assert.Equal(expected, Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref invocation).Found);
     }
 
     [Fact]
@@ -230,7 +235,8 @@ public sealed class Utf8SliceRunnerTests
         var input = Encoding.ASCII.GetBytes(inputText);
         var invocation = Unmetered();
         var (starts, ends) = Slots(program);
-        Assert.Equal(expected, Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation).IsMatch);
+        Assert.Equal(expected, Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref invocation).Found);
         var oracle = new Regex("(a)|(b)", RegexOptions.CultureInvariant).Match(inputText);
         Assert.Equal(oracle.Groups[1].Success, starts[0] >= 0);
         Assert.Equal(oracle.Groups[2].Success, starts[1] >= 0);
@@ -255,7 +261,8 @@ public sealed class Utf8SliceRunnerTests
         var input = Encoding.ASCII.GetBytes(inputText);
         var invocation = Unmetered();
         var (starts, ends) = Slots(program);
-        Assert.Equal(expected, Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation).IsMatch);
+        Assert.Equal(expected, Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref invocation).Found);
     }
 
     [Theory]
@@ -274,6 +281,7 @@ public sealed class Utf8SliceRunnerTests
         var input = Encoding.ASCII.GetBytes(inputText);
         var invocation = Unmetered();
         var (starts, ends) = Slots(program);
-        Assert.Equal(expected, Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation).IsMatch);
+        Assert.Equal(expected, Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref invocation).Found);
     }
 }

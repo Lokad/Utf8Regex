@@ -99,26 +99,30 @@ public sealed class Utf8SliceAssertionDirectionTests
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(Utf8SliceRunner.IsMatch(program, input, starts, ends, ref baseline).IsMatch);
+        Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref baseline).Found);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
         for (ulong work = 1; work < baseline.Budget.Steps; work++)
         {
             var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
-                Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation).Breach);
+                Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+                    collectHistory: false, ref invocation).Breach);
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         }
         for (uint depth = 1; depth < baseline.Budget.PeakDepth; depth++)
         {
             var invocation = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, depth, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
             Assert.Equal(Utf8ExecutionLimitKind.Depth,
-                Utf8SliceRunner.IsMatch(program, input, starts, ends, ref invocation).Breach);
+                Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+                    collectHistory: false, ref invocation).Breach);
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
         }
         var denied = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.BalanceReserveBytes - 1),
             Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.Equal(Utf8ExecutionLimitKind.WorkingBytes,
-            Utf8SliceRunner.IsMatch(program, input, starts, ends, ref denied).Breach);
+            Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+                collectHistory: false, ref denied).Breach);
         Assert.Equal(0UL, denied.Ledger.ReservedBytes);
         var regex = new Utf8Regex(pattern, options: options);
         Assert.Equal(1, regex.Count(input));

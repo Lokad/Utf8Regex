@@ -121,7 +121,8 @@ public sealed class Utf8SliceLoweringContinuationTests
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];
         var baseline = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(Utf8SliceRunner.IsMatch(program, input, starts, ends, ref baseline).IsMatch);
+        Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref baseline).Found);
         Assert.Equal(0UL, baseline.Ledger.ReservedBytes);
         if (shape == 0)
         {
@@ -135,7 +136,8 @@ public sealed class Utf8SliceLoweringContinuationTests
             Array.Fill(starts, -1);
             Array.Fill(ends, -1);
             var limited = new Utf8SliceInvocation(new Utf8ExecutionLimits(work, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8SliceRunner.IsMatch(program, input, starts, ends, ref limited).Breach);
+            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+                collectHistory: false, ref limited).Breach);
             Assert.Equal(0UL, limited.Ledger.ReservedBytes);
         }
         var storage = new Utf8SliceInvocation(new Utf8ExecutionLimits(0, 0, (ulong)Utf8SliceRunner.TrailReserveBytes - 1),
@@ -143,16 +145,19 @@ public sealed class Utf8SliceLoweringContinuationTests
         // A single linear slot has no rollback/history consumer. Its caller-owned
         // arrays need no runner scratch; continuations still require admission.
         Assert.Equal(shape == 0 ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkingBytes,
-            Utf8SliceRunner.IsMatch(program, input, starts, ends, ref storage).Breach);
+            Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+                collectHistory: false, ref storage).Breach);
         Assert.Equal(0UL, storage.Ledger.ReservedBytes);
         using var source = new CancellationTokenSource();
         var canceled = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token);
         canceled.CheckpointHook = steps => { if (steps >= 64) source.Cancel(); };
-        var failure = Assert.Throws<OperationCanceledException>(() => Utf8SliceRunner.IsMatch(program, input, starts, ends, ref canceled));
+        var failure = Assert.Throws<OperationCanceledException>(() => Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref canceled));
         Assert.Equal(source.Token, failure.CancellationToken);
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
         var recovered = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, CancellationToken.None);
-        Assert.True(Utf8SliceRunner.IsMatch(program, input, starts, ends, ref recovered).IsMatch);
+        Assert.True(Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends,
+            collectHistory: false, ref recovered).Found);
         Assert.Equal(0UL, recovered.Ledger.ReservedBytes);
     }
 

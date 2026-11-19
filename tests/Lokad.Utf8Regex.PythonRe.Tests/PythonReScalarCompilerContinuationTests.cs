@@ -43,8 +43,9 @@ public sealed class PythonReScalarCompilerContinuationTests
         Array.Fill(ends, -1);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited,
             Regex.InfiniteMatchTimeout, CancellationToken.None);
-        var outcome = Utf8SliceRunner.IsMatch(program, "\U0001f600"u8, starts, ends, ref invocation);
-        Assert.True(outcome.IsMatch);
+        var outcome = Utf8SliceRunner.TryFindFirst(program, "\U0001f600"u8, 0, starts, ends,
+            collectHistory: false, ref invocation);
+        Assert.True(outcome.Found);
         Assert.Equal((0, 4), (starts[0], ends[0]));
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
