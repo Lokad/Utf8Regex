@@ -199,17 +199,16 @@ profile's shared space predicate, including NEL and U+180E. Without UCP, generic
 and POSIX space remain ASCII; property escapes remain Unicode-aware.
 
 `\X` uses pinned Unicode 16 Grapheme_Cluster_Break, Extended_Pictographic and
-Indic_Conjunct_Break data. Long clusters meter bounded scalar blocks, separately
-from validation. The profile intentionally retains Unicode Indic-conjunct and
+Indic_Conjunct_Break data. Long clusters meter bounded scalar blocks.
+The profile intentionally retains Unicode Indic-conjunct and
 no-break-before-ZWJ rules where native 10.47 differs, including after a regional
 indicator. Extended replacement uppercasing of final sigma intentionally yields
 uppercase sigma, rather than the recorded native lowercase result.
 These are disclosed differences, not full Unicode/native equivalence.
-A lone default `\X` under unlimited Boolean matching can answer existence from
-validated nonempty scalar input, retaining the candidate charge without computing
-an unused cluster endpoint. Explicit
-flags, finite/token/deadline/funded calls, hooks and range-returning operations
-retain the established execution and grapheme metering.
+A lone default `\X` under unlimited Boolean matching can answer existence from a
+nonempty caller-valid subject and still charge the candidate. Explicit flags,
+controlled calls, hooks and range-returning operations continue to scan clusters
+under the matching budget.
 
 ## Reported ranges and global progress
 
@@ -236,8 +235,7 @@ Caller NotEmpty/NotEmptyAtStart flags apply to every attempt.
 Replacement preserves an admitted reset-empty `\K` result that ordinary
 enumeration suppresses, as pinned by operation-specific fixtures.
 
-Analyze exposes advisory
-length/literal/eligibility facts, not an executable plan or validation exemption.
+Analyze exposes advisory length, literal and eligibility facts.
 Mark reports the last relevant named verb on success, partial or failure.
 
 ## Partial probing
@@ -336,24 +334,22 @@ Class/delimiter Count windows can reject an unproved prefix using the original
 scalar predicate before VM admission. Classification retains bounded work and
 the original token/deadline; viable starts retain complete verification. Skipped
 attempts can reduce required work, depth and heap capacity.
-Eligible nonempty, unanchored literal Count can validate without deriving UTF-16
-coordinates, including under finite policies, live tokens and deadlines. Its
-controlled search reuses the shared bounded candidate/comparison kernel: at most
-2,048 bytes per search window, with separately charged long-literal comparisons.
-This replaces the former 4,096-byte PCRE2 candidate windows for this Count route;
-tight numerical work caps may need readmission. No capture/result buffer is needed.
+Controlled Count of eligible nonempty, unanchored literals searches windows of
+at most 2,048 bytes and charges long-literal comparisons separately. It keeps
+the original token and deadline and acquires no capture or result buffer.
 Disproved plain-alternative branches need no frame storage. For example, Count
 of `cat|horse` can succeed with a one-byte heap limit; nonlinear paths that need
 workspace still require admission. This limit does not cover total managed memory.
 Fused scalar repeats can also execute without unused counter vectors. The first
 counter-dependent repeat admits its complete state before acquisition; retries
-reuse it under the same synchronous invocation lifetime. Required capture and
-assertion storage remains admitted. Work and heap requirements can therefore fall.
+reuse it under the same synchronous invocation lifetime. A nonpossessive optional
+literal or class can use an ordinary branch without a repeat counter. Required
+capture and assertion storage remains admitted. Work and heap requirements can fall.
 Uncontrolled compilation can also omit rewind state for positive word-only repeats
 before `\b`; explicit finite execution policies retain their established lowering.
 Original tokens and working allowances still meter/admit actual optimized work.
 Proved unbounded repeats excluding an ASCII pair can scan checked blocks of at
-most 2048 bytes after UTF-window validation, retaining scalar endpoints and
+most 2048 bytes on caller-valid subjects, retaining scalar endpoints and
 bounded work/interruption checks. This can reduce route-dependent work charges.
 Boolean slice searches can reuse a compiler-proved first ASCII byte to skip
 impossible starts. Each scan admits at most 2048 bytes, with original-token and
