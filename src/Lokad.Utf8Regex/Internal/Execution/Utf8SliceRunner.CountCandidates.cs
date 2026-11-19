@@ -762,30 +762,34 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static bool MayMatchForkPrefix(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position, int index)
+    // Return -1 for a disproved arm or the number of consecutive pure
+    // one-byte atoms verified at the arm's original entry.
+    private static int GetForkPrefixLength(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position, int index)
     {
         var code = program.Instructions.AsSpan();
-        index = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, index);
-        if ((uint)index >= (uint)code.Length) return true;
-        var entry = code[index];
-        // A nested fork admits two straight checks. Leave any deeper branch opaque.
-        if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index + 1)
+        var probe = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, index);
+        if ((uint)probe >= (uint)code.Length) return 0;
+        var entry = code[probe];
+        // Nested forks prove viability without selecting an inner path.
+        if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > probe + 1)
             return MatchesStraightAsciiPrefix(program, input, position, entry.A, 2) ||
-                MatchesStraightAsciiPrefix(program, input, position, index + 1, 2);
+                MatchesStraightAsciiPrefix(program, input, position, probe + 1, 2) ? 0 : -1;
         if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
         {
             var minimum = entry.RepeatMinimum;
             if (minimum == 0 && entry.RepeatMaximum == 1)
-                return MayMatchBranchedAsciiPrefix(program, input, position, index, 4);
+                return MayMatchBranchedAsciiPrefix(program, input, position, probe, 4) ? 0 : -1;
             // Each required iteration consumes at least one byte. An opaque
             // or zero-width body cannot use this lower bound.
-            if (minimum > input.Length - position && IsSingleAtomRepeat(code, index, entry) &&
-                code[index + 1].Kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or
+            if (minimum > input.Length - position && IsSingleAtomRepeat(code, probe, entry) &&
+                code[probe + 1].Kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or
                     Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Shorthand or
                     Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid)
-                return false;
+                return -1;
         }
-        return MatchesStraightAsciiPrefix(program, input, position, index, 2);
+        if (!MatchesStraightAsciiPrefix(program, input, position, probe, 2, out var verified, out _))
+            return -1;
+        return probe == index ? verified : 0;
     }
 
     private static (int Min, int Max, byte Literal) FindBranchedAsciiLiteralWindow(

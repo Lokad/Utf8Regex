@@ -1222,6 +1222,8 @@ internal static partial class Utf8SliceRunner
                     // The fork step covers a bounded necessary-prefix check
                     // for each arm. Capture markers on a disproved arm would
                     // be rolled back, including their balance heads.
+                    var verifiedPrefix = 0;
+                    var saveAlternative = true;
                     if (instruction.B == 0 && !program.RightToLeft)
                     {
                         if ((instruction.C | instruction.D) != 0)
@@ -1240,18 +1242,16 @@ internal static partial class Utf8SliceRunner
                                 break;
                             }
                         }
-                        if (!MayMatchForkPrefix(program, input, inputIndex, programIndex + 1))
+                        verifiedPrefix = GetForkPrefixLength(program, input, inputIndex, programIndex + 1);
+                        if (verifiedPrefix < 0)
                         {
                             programIndex = instruction.A;
                             break;
                         }
-                        if (!MayMatchForkPrefix(program, input, inputIndex, instruction.A))
-                        {
-                            programIndex++;
-                            break;
-                        }
+                        saveAlternative = GetForkPrefixLength(program, input, inputIndex, instruction.A) >= 0;
                     }
-                    if (!stacks.PushFrame(
+
+                    if (saveAlternative && !stacks.PushFrame(
                         new Utf8SliceFrame
                         {
                             ResumeKind = instruction.B == 0 ? Utf8SliceResumeKind.Alternation : instruction.B == 1 ? Utf8SliceResumeKind.Assertion : Utf8SliceResumeKind.Atomic,
@@ -1266,7 +1266,16 @@ internal static partial class Utf8SliceRunner
                         goto Failure;
                     }
 
-                    programIndex++;
+                    // The saved retry retains the alternative's original location.
+                    // Charge each verified instruction before advancing over it.
+                    for (var consumed = 0; consumed < verifiedPrefix; consumed++)
+                    {
+                        var prefixBreach = invocation.TryChargeStep();
+                        if (prefixBreach != Utf8ExecutionLimitKind.None)
+                        { failure = prefixBreach; goto Failure; }
+                    }
+                    inputIndex += verifiedPrefix;
+                    programIndex += 1 + verifiedPrefix;
                     break;
                 case Utf8SliceInstructionKind.Jump:
                     programIndex = instruction.A;
