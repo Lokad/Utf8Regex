@@ -22,7 +22,7 @@ internal sealed class Pcre2BacktrackingLowerer
     private readonly IReadOnlyDictionary<string, int[]> _nameSlots;
     private readonly Pcre2CompileRequest _request;
     private int _repeatCount;
-    private bool _requiresCaptureState;
+    private int _captureReadSlot;
     private bool _hasCaptureWrites;
     private bool _usesMatchBoundaryReset;
     private bool _mayReportNonMonotoneMatchOffsets;
@@ -70,7 +70,7 @@ internal sealed class Pcre2BacktrackingLowerer
             _request,
             _repeatCount,
             _captureCount + 1,
-            _requiresCaptureState,
+            _captureReadSlot,
             _hasCaptureWrites,
             _usesMatchBoundaryReset,
             _mayReportNonMonotoneMatchOffsets,
@@ -474,7 +474,6 @@ internal sealed class Pcre2BacktrackingLowerer
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureEnd(capture.Slot));
                     return;
                 case Pcre2BackreferenceBacktrackingNode backreference:
-                    _requiresCaptureState = true;
                     EmitBackreference(backreference);
                     return;
                 case Pcre2AssertionBacktrackingNode assertion:
@@ -487,7 +486,7 @@ internal sealed class Pcre2BacktrackingLowerer
                     var assertionProgramId = _assertionPrograms.Count;
                     var assertionProgram = assertionLowerer.Lower(assertion.Body);
                     _assertionPrograms.Add(assertionProgram);
-                    _requiresCaptureState |= assertionProgram.RequiresCaptureState;
+                    if (assertionProgram.CaptureReadSlot != 0) _captureReadSlot = -1;
                     _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
                     _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
                     _mayReportNonMonotoneMatchOffsets |= ContainsMatchBoundaryReset(assertion.Body);
@@ -737,7 +736,7 @@ internal sealed class Pcre2BacktrackingLowerer
             var assertionProgramId = _assertionPrograms.Count;
             var assertionProgram = assertionLowerer.Lower(assertion.Body);
             _assertionPrograms.Add(assertionProgram);
-            _requiresCaptureState |= assertionProgram.RequiresCaptureState;
+            if (assertionProgram.CaptureReadSlot != 0) _captureReadSlot = -1;
             _hasCaptureWrites |= assertionProgram.HasCaptureWrites;
             _usesMatchBoundaryReset |= assertionProgram.UsesMatchBoundaryReset;
             _mayReportNonMonotoneMatchOffsets |= ContainsMatchBoundaryReset(assertion.Body);
@@ -778,7 +777,8 @@ internal sealed class Pcre2BacktrackingLowerer
         var captureSlots = conditional.Target.Kind == Pcre2BackreferenceTargetKind.Named
             ? ResolveNamedSlots(conditional.Target.Name)
             : [ResolveBackreference(conditional.Target)];
-        _requiresCaptureState = true;
+        if (captureSlots.Length == 1) NoteCaptureRead(captureSlots[0]);
+        else _captureReadSlot = -1;
         return new Pcre2BacktrackingCondition(
             conditional.ConditionKind,
             captureSlots,
@@ -822,9 +822,9 @@ internal sealed class Pcre2BacktrackingLowerer
     {
         if (backreference.Target.Kind != Pcre2BackreferenceTargetKind.Named)
         {
-            _instructions.Add(Pcre2BacktrackingInstruction.CreateBackreference(
-                ResolveBackreference(backreference.Target),
-                backreference.Options));
+            var slot = ResolveBackreference(backreference.Target);
+            NoteCaptureRead(slot);
+            _instructions.Add(Pcre2BacktrackingInstruction.CreateBackreference(slot, backreference.Options));
             return;
         }
 
@@ -837,15 +837,23 @@ internal sealed class Pcre2BacktrackingLowerer
 
         if (slots.Length == 1)
         {
+            NoteCaptureRead(slots[0]);
             _instructions.Add(Pcre2BacktrackingInstruction.CreateBackreference(slots[0], backreference.Options));
             return;
         }
 
+        _captureReadSlot = -1;
         var slotSetId = _backreferenceSlotSets.Count;
         _backreferenceSlotSets.Add(new Pcre2BackreferenceSlotSet(slots));
         _instructions.Add(Pcre2BacktrackingInstruction.CreateBackreferenceSlotSet(
             slotSetId,
             backreference.Options));
+    }
+
+    private void NoteCaptureRead(int slot)
+    {
+        if (_captureReadSlot != slot)
+            _captureReadSlot = _captureReadSlot == 0 ? slot : -1;
     }
 
     private int ResolveSubroutine(Pcre2BackreferenceTarget target)

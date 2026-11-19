@@ -321,7 +321,7 @@ internal sealed class Pcre2BacktrackingProgram
         Pcre2CompileRequest request,
         int repeatCount,
         int captureSlotCount,
-        bool requiresCaptureState,
+        int captureReadSlot,
         bool hasCaptureWrites,
         bool usesMatchBoundaryReset,
         bool mayReportNonMonotoneMatchOffsets,
@@ -346,7 +346,7 @@ internal sealed class Pcre2BacktrackingProgram
         _request = request;
         RepeatCount = repeatCount;
         CaptureSlotCount = captureSlotCount;
-        RequiresCaptureState = requiresCaptureState;
+        CaptureReadSlot = captureReadSlot;
         HasCaptureWrites = hasCaptureWrites;
         UsesMatchBoundaryReset = usesMatchBoundaryReset ||
             instructions.Any(static instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.MatchBoundaryReset) ||
@@ -379,7 +379,9 @@ internal sealed class Pcre2BacktrackingProgram
 
     internal int CaptureSlotCount { get; }
 
-    internal bool RequiresCaptureState { get; }
+    // Zero means no capture readers, a positive value identifies the sole
+    // slot read, and -1 keeps all slots for multiple or nested readers.
+    internal int CaptureReadSlot { get; }
 
     internal bool HasCaptureWrites { get; }
 

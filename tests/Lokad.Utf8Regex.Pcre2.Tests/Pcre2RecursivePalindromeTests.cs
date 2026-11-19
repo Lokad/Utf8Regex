@@ -123,6 +123,7 @@ public sealed class Pcre2RecursivePalindromeTests
         var input = Encoding.UTF8.GetBytes("aa:" + new string('b', 80) + "a");
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
 
+        Assert.True(regex.IsMatch(input));
         Assert.True(regex.Match(input, captures: captures).Success);
         Assert.True(captures[1].Success);
         Assert.True(captures[2].Success);

@@ -93,6 +93,9 @@ public sealed class Pcre2SubroutineCaptureReturnTests
     [InlineData(@"(?(DEFINE)(?<x>a(*PRUNE)))(?&x)(?(x)c|d)", "ad", true)]
     [InlineData(@"(?(DEFINE)(?<x>a))(?=(?&x))a(?(x)c|d)", "ac", false)]
     [InlineData(@"(?(DEFINE)(?<x>a))(?=(?&x))a(?(x)c|d)", "ad", true)]
+    [InlineData(@"\A(?<seen>a)(b)\2(?(seen)c|d)\z", "abbc", true)]
+    [InlineData(@"\A(?<seen>a)(b)\2(?(seen)c|d)\z", "abbd", false)]
+    [InlineData(@"\A(a)(b)(?=\1)a\2\z", "abab", true)]
     public void ReferencesAndConditionsObserveCallerCaptureState(string pattern, string text, bool expected)
     {
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy

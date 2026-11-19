@@ -746,9 +746,12 @@ internal static class Pcre2BacktrackingRunner
         var atomicCheckpoints = new Pcre2InvocationStateStack<Pcre2AtomicCheckpoint>(frameLimit, budget.CollectsDiagnostics);
         var markMutations = new Pcre2InvocationStateStack<Pcre2MarkMutation>(int.MaxValue, budget.CollectsDiagnostics);
         var markTrail = new Pcre2InvocationStateStack<Pcre2MarkTrailEntry>(int.MaxValue, budget.CollectsDiagnostics);
-        var needsCaptureState = program.RequiresCaptureState ||
-            captureMaterialization != Pcre2CaptureMaterialization.None ||
-            !initialCaptureStarts.IsEmpty;
+        var retainCaptures = captureMaterialization != Pcre2CaptureMaterialization.None || !initialCaptureStarts.IsEmpty;
+        var needsCaptureState = program.CaptureReadSlot != 0 || retainCaptures;
+        // Without output or an assertion boundary, a write to another slot
+        // cannot be seen by the sole reader, even across calls and retries.
+        var onlyCaptureSlot = !retainCaptures && !isAssertion && program.AssertionPrograms.Length == 0 &&
+            program.CaptureReadSlot > 0 ? program.CaptureReadSlot : 0;
         var captureSlots = needsCaptureState && program.CaptureSlotCount > 1 ? program.CaptureSlotCount : 0;
         var captureStateLength = checked(captureSlots * 5);
         var acquiredWorkspace = workspace.EnsureInitialized(program.RepeatCount, captureSlots, program.SubroutineTargets.Length != 0, ref budget);
@@ -1024,9 +1027,10 @@ internal static class Pcre2BacktrackingRunner
                         if (!Pcre2CharacterRunner.TryMatchToken(instruction.Token, program.Request, input,
                                 inputIndex, firstMatchingPosition, matchOptions, ref budget, out inputIndex))
                             break;
-                        if (!captureStarts.IsEmpty)
+                        var tokenCaptureSlot = instruction.CaptureSlot;
+                        if (!captureStarts.IsEmpty && (onlyCaptureSlot == 0 || tokenCaptureSlot == onlyCaptureSlot))
                         {
-                            var slot = instruction.CaptureSlot;
+                            var slot = tokenCaptureSlot;
                             var depth = subroutineCalls.Count;
                             var recordRollback = frames.Count != 0 || depth != 0;
                             if (captureStarts[slot] >= 0 && captureOwners[slot] > depth ||
@@ -1052,13 +1056,13 @@ internal static class Pcre2BacktrackingRunner
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.CaptureStart:
-                        if (captureStarts.IsEmpty)
+                        var startCaptureSlot = instruction.CaptureSlot;
+                        if (captureStarts.IsEmpty || onlyCaptureSlot != 0 && startCaptureSlot != onlyCaptureSlot)
                         {
                             instructionIndex++;
                             continue;
                         }
 
-                        var startCaptureSlot = instruction.CaptureSlot;
                         var currentCallDepth = subroutineCalls.Count;
                         if (captureStarts[startCaptureSlot] >= 0 && captureOwners[startCaptureSlot] > currentCallDepth ||
                             captureOpenStarts[startCaptureSlot] >= 0 && captureOpenOwners[startCaptureSlot] > currentCallDepth)
@@ -1086,13 +1090,13 @@ internal static class Pcre2BacktrackingRunner
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.CaptureEnd:
-                        if (captureStarts.IsEmpty)
+                        var endCaptureSlot = instruction.CaptureSlot;
+                        if (captureStarts.IsEmpty || onlyCaptureSlot != 0 && endCaptureSlot != onlyCaptureSlot)
                         {
                             instructionIndex++;
                             continue;
                         }
 
-                        var endCaptureSlot = instruction.CaptureSlot;
                         var endCallDepth = subroutineCalls.Count;
                         if (captureOpenStarts[endCaptureSlot] < 0 ||
                             captureOpenOwners[endCaptureSlot] != endCallDepth)
