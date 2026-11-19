@@ -1181,25 +1181,30 @@ internal static partial class Utf8SliceRunner
                 ? (position, Utf8ExecutionLimitKind.None)
                 : (-1, Utf8ExecutionLimitKind.None);
         }
-        ReadOnlySpan<byte> asciiMask = atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
+        // Lowering includes every shorthand's ASCII members in an unfolded
+        // Hybrid mask. Its shorthand bits still classify non-ASCII scalars.
+        var hybrid = atom is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 };
+        var asciiNegated = hybrid && atom.B != 0;
+        var completeMask = hybrid || atom.Kind == Utf8SliceInstructionKind.Set;
+        ReadOnlySpan<byte> asciiMask = hybrid ||
+            atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
             atom.B == 0 && atom.C == 0 ? program.SetMasks[atom.A] : [];
         while (count < maximum)
         {
             var breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
-            // A positive, unfolded mask proves its ASCII hits without decoding
-            // or class dispatch. A plain set or complete category mask can
-            // also reject an ASCII miss without decoding.
+            // Exact ASCII masks also reject a miss without scalar dispatch.
             if (!asciiMask.IsEmpty && (uint)position < (uint)input.Length && input[position] < 128)
             {
                 var value = input[position];
-                if ((asciiMask[value >> 3] & (1 << (value & 7))) != 0)
+                var member = (asciiMask[value >> 3] & (1 << (value & 7))) != 0;
+                if (member != asciiNegated)
                 {
                     position++;
                     if (++count == minimum) minimumEnd = position;
                     continue;
                 }
-                if (atom.Kind == Utf8SliceInstructionKind.Set || program.GetCompleteAsciiCategoryMask(atom) != 0)
+                if (completeMask || program.GetCompleteAsciiCategoryMask(atom) != 0)
                     break;
             }
             if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;

@@ -81,6 +81,10 @@ public sealed class Utf8DisjointClassRepeatTests
     [InlineData("(?i:([a-z]+))-", "AbC- dEF-")]
     [InlineData(@"(\w+)-", "abc- def-")]
     [InlineData(@"(\p{L}+)-", "abc- def-")]
+    [InlineData(@"([^/\s?#]+)[^\s?#]+", "exemple.fr/été?x autre.fr/y")]
+    [InlineData(@"([\s!]{2,4})!", "x!\t\u2002!! y!")]
+    [InlineData(@"([^\sK]{2,4})K", "aK xyézK\t abcdK")]
+    [InlineData(@"(?i:([^\sK]{2,4}))K", "abcKK xyéK")]
     [InlineData("([a-z]+)a", "baaa")]
     [InlineData("([a-z]+)(?i:A)", "baaa baA")]
     [InlineData("([^0-9]+)-", "abc-def-")]
@@ -171,6 +175,18 @@ public sealed class Utf8DisjointClassRepeatTests
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
         Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
         Assert.Equal(oracle.Count(text), regex.Count(input));
+    }
+
+    [Fact]
+    public void NegatedHybridRepeatCountsSupplementaryScalarsWithinItsMaximum()
+    {
+        using var regex = new Utf8Regex(@"([^\sK]{2,4})K");
+        var input = "\txx😀éK"u8.ToArray();
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Assert.True(match.Success);
+        Assert.Equal(1, match.Value.StartOffsetInBytes);
+        Assert.Equal(10, match.Value.EndOffsetInBytes);
+        Assert.Equal("xx😀é", Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
     }
 
     [Theory]
