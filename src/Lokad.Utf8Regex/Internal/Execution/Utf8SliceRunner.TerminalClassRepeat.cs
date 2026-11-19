@@ -724,10 +724,11 @@ internal static partial class Utf8SliceRunner
                 outcome = new(literalRepeat.EndIndex >= 0, literalRepeat.EndIndex, literalRepeat.Breach, null, null);
                 return true;
             }
-            if (atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 })
+            if (atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 } or
+                { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 })
             {
-                // Exact ASCII intersection also rejects overlap in constant
-                // work, before falling back to the original rewind path.
+                // Unfolded hybrid masks already include their shorthand's
+                // ASCII members. The follower contains no wider scalars.
                 var own = program.SetMasks[atom.A].AsSpan(0, 16);
                 for (var offset = 0; offset < 16; offset += 8)
                 {
