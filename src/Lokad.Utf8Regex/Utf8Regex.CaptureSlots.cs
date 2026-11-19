@@ -57,6 +57,27 @@ public sealed partial class Utf8Regex
                 Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
                 result = found ? new(selected.Index, selected.Index + selected.Length) : default;
             }
+            else if (output.Length > 1 && subject.Length - startOffsetInBytes >= 64 &&
+                program.NonBacktrackingOrderedClosures.Length != 0)
+            {
+                var selected = Utf8SliceRunner.TryFindFirst(program, subject, startOffsetInBytes,
+                    [], [], false, ref invocation);
+                if (selected.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                result = default;
+                if (selected.Found)
+                {
+                    // With unconditional epsilon edges, clipping after the
+                    // winning end removes only continuations that lost to it.
+                    // Replay the same priority from the selected byte start.
+                    slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
+                    var replay = Utf8SliceRunner.TryMatchAt(program, subject[..selected.EndByte], selected.StartByte,
+                        slots.Starts, slots.Ends, true, ref invocation);
+                    if (replay.Breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
+                    if (!replay.IsMatch || replay.EndIndex != selected.EndByte)
+                        throw new InvalidOperationException("NonBacktracking capture replay changed the selected range.");
+                    result = new(selected.StartByte, selected.EndByte);
+                }
+            }
             else
             {
                 var slotCount = program.IsNonBacktracking && output.Length <= 1 ? 0 : program.GroupCount;

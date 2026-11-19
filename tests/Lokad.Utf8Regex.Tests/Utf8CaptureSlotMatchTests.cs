@@ -212,6 +212,48 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.All(output, range => Assert.False(range.Success));
     }
 
+    [Fact]
+    public void CompactReplayPreservesTheLastCapturesAfterALateByteStart()
+    {
+        using var regex = new Utf8Regex("(a?b|c)*(dé|😀)[xy]", RegexOptions.NonBacktracking, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2048, MaxResultBytes = 1 }
+        });
+        var prefix = "😀y " + string.Concat(Enumerable.Repeat("aababc😀z é ", 64));
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var end = start + "abcc😀x"u8.Length;
+        var input = Encoding.UTF8.GetBytes(prefix + "abcc😀x 😀y");
+        var account = new Account();
+        var output = new Utf8CaptureRange[3];
+        var found = regex.Match(input, "😀y "u8.Length, output, workingMemoryAllowance: account, endOffsetInBytes: end);
+        Assert.Equal(new Utf8CaptureRange(start, end), found);
+        Assert.Equal(found, output[0]);
+        Assert.Equal(new Utf8CaptureRange(start + 3, start + 4), output[1]);
+        Assert.Equal(new Utf8CaptureRange(start + 4, end - 1), output[2]);
+        Assert.Equal(0UL, account.Held);
+    }
+
+    [Fact]
+    public void CompactReplayMissFitsAWorkingLimitBelowTheCaptureWorkspace()
+    {
+        using var regex = new Utf8Regex("(a?b|c)*(dé|😀)[xy]", RegexOptions.NonBacktracking, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 1024 }
+        });
+        var prefix = string.Concat(Enumerable.Repeat("aababc😀z é ", 32));
+        var account = new Account();
+        var sentinel = new Utf8CaptureRange(123, 124);
+        var output = new[] { sentinel, sentinel, sentinel, sentinel };
+        Assert.False(regex.Match(Encoding.UTF8.GetBytes(prefix), captures: output, workingMemoryAllowance: account).Success);
+        Assert.All(output[..3], range => Assert.False(range.Success));
+        Assert.Equal(sentinel, output[3]);
+        Assert.Equal(0UL, account.Held);
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+            regex.Match(Encoding.UTF8.GetBytes(prefix + "😀x"), captures: output, workingMemoryAllowance: account));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes, error.ResourceKind);
+        Assert.Equal(0UL, account.Held);
+    }
+
     private sealed class Account : IUtf8MemoryAllowance
     {
         internal ulong Held;
