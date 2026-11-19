@@ -808,17 +808,8 @@ internal static partial class Utf8SliceRunner
         int fromByte,
         int[] captureStarts,
         int[] captureEnds,
-        ref Utf8SliceInvocation invocation)
-        => CountFromBytes(program, input, fromByte, captureStarts, captureEnds, ref invocation, default);
-
-    internal static Utf8SliceCountOutcome CountFromBytes(
-        Utf8SliceProgram program,
-        ReadOnlySpan<byte> input,
-        int fromByte,
-        int[] captureStarts,
-        int[] captureEnds,
         ref Utf8SliceInvocation invocation,
-        in Utf8SearchPlan candidatePlan,
+        in Utf8SearchPlan candidatePlan = default,
         in PreparedSearcher branchPrefixes = default)
     {
         invocation.Budget.ThrowIfCancellationRequested();
@@ -1084,16 +1075,6 @@ internal static partial class Utf8SliceRunner
         }
 
         finally { workspace.Release(ref invocation); }
-    }
-
-    internal static Utf8SliceCountOutcome Count(
-        Utf8SliceProgram program,
-        ReadOnlySpan<byte> input,
-        int[] captureStarts,
-        int[] captureEnds,
-        ref Utf8SliceInvocation invocation)
-    {
-        return CountFromBytes(program, input, program.RightToLeft ? input.Length : 0, captureStarts, captureEnds, ref invocation);
     }
 
     private static Utf8SliceMatchOutcome RunSegment(

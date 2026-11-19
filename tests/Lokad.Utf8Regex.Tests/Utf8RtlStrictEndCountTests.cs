@@ -105,7 +105,7 @@ public sealed class Utf8RtlStrictEndCountTests
         var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 1024, 1 << 20, 1 << 20),
             Regex.InfiniteMatchTimeout, default);
         Assert.True(funded.Ledger.TryReserve(7));
-        var match = Utf8SliceRunner.Count(program, input, new int[program.GroupCount],
+        var match = Utf8SliceRunner.CountFromBytes(program, input, input.Length, new int[program.GroupCount],
             new int[program.GroupCount], ref funded);
         Assert.Equal(Utf8ExecutionLimitKind.None, match.Breach);
         Assert.Equal(1, match.Count);
@@ -115,7 +115,7 @@ public sealed class Utf8RtlStrictEndCountTests
             var invocation = new Utf8SliceInvocation(new(cap, 1024, 1 << 20, 1 << 20),
                 Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            var denied = Utf8SliceRunner.Count(program, input, new int[program.GroupCount],
+            var denied = Utf8SliceRunner.CountFromBytes(program, input, input.Length, new int[program.GroupCount],
                 new int[program.GroupCount], ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);

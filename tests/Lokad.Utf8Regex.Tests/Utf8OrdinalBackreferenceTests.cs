@@ -107,10 +107,11 @@ public sealed class Utf8OrdinalBackreferenceTests
         var regex = new Utf8Regex(Pattern(64, rtl), options: options);
         var program = regex.Inspection.PreparedRegex.ScalarProgram!;
         var input = Encoding.UTF8.GetBytes(new string('a', 128));
+        var start = rtl ? input.Length : 0;
         var funded = new Utf8SliceInvocation(new(ulong.MaxValue, 1024, 1 << 20, 1 << 20),
             Regex.InfiniteMatchTimeout, default);
         Assert.True(funded.Ledger.TryReserve(13));
-        var result = Utf8SliceRunner.Count(program, input, new int[program.GroupCount],
+        var result = Utf8SliceRunner.CountFromBytes(program, input, start, new int[program.GroupCount],
             new int[program.GroupCount], ref funded);
         Assert.Equal(Utf8ExecutionLimitKind.None, result.Breach);
         Assert.Equal(1, result.Count);
@@ -120,7 +121,7 @@ public sealed class Utf8OrdinalBackreferenceTests
             var invocation = new Utf8SliceInvocation(new(cap, 1024, 1 << 20, 1 << 20),
                 Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
-            var denied = Utf8SliceRunner.Count(program, input, new int[program.GroupCount],
+            var denied = Utf8SliceRunner.CountFromBytes(program, input, start, new int[program.GroupCount],
                 new int[program.GroupCount], ref invocation);
             Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
