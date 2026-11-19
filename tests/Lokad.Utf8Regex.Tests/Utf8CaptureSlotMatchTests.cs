@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -277,6 +278,37 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.False(regex.Match(input, floor, output, workingMemoryAllowance: account, endOffsetInBytes: start).Success);
         Assert.All(output, range => Assert.False(range.Success));
         Assert.Equal(0UL, account.Held);
+    }
+
+    [Theory]
+    [InlineData("(?i:(?<x>😀|a)){1,2}", "", "😀A", "A")]
+    [InlineData("(?i:(?<x>k)){1,2}", "", "Kk", "k")]
+    [InlineData("(?i:(?<x>i)){1,2}", "tr-TR", "İi", "i")]
+    [InlineData("(?i:(?<x>I)){1,2}", "tr-TR", "ıI", "I")]
+    [InlineData("(?i:(?<x>𐐀)){1,2}", "", "𐐨𐐀", "𐐀")]
+    public void CompactFoldedStartsRetainEveryCaseEquivalent(string pattern, string culture, string tail, string last)
+    {
+        const int floor = 4097;
+        var saved = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+            using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking, new Utf8RegexPolicy
+            {
+                ResourcePolicy = new() { MaxWorkSteps = 64 }
+            });
+            var input = Encoding.UTF8.GetBytes(new string('z', floor) + tail);
+            var slots = new Utf8CaptureRange[2];
+            var account = new Account();
+
+            Assert.Equal(new Utf8CaptureRange(floor, input.Length), regex.Match(input, captures: slots, workingMemoryAllowance: account));
+            Assert.Equal(new Utf8CaptureRange(input.Length - Encoding.UTF8.GetByteCount(last), input.Length), slots[1]);
+            using var cursor = regex.CreateMatchCursor(input, workingMemoryAllowance: account);
+            Assert.True(cursor.MoveNext(out var first));
+            Assert.Equal(slots[0], first.Value);
+            Assert.Equal(slots[1], Assert.Single(first.GetCaptures(1).ToArray()));
+        }
+        finally { CultureInfo.CurrentCulture = saved; }
     }
 
     [Theory]

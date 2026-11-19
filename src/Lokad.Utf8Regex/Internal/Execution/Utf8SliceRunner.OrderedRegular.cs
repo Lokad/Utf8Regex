@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -67,25 +68,64 @@ internal static partial class Utf8SliceRunner
     }
 
     internal static (byte First, byte Second, byte Third, bool Present) GetOrderedRegularStartBytes(
-        Utf8SliceInstruction[] instructions, ulong root, Utf8ConstructionBudget budget)
+        Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
         Span<byte> starts = stackalloc byte[3];
-        Span<byte> encoded = stackalloc byte[4];
         var count = 0;
-        for (var tags = root; tags != 0; tags >>= OrderedTagBits)
+        var behavior = program.CaseBehavior;
+        for (var tags = program.NonBacktrackingOrderedClosures[0]; tags != 0; tags >>= OrderedTagBits)
         {
             budget.ChargeWork(1);
-            var instruction = instructions[(int)tags & 63];
-            // An accepting root can match without inspecting any subject byte.
-            if (instruction.Kind != Utf8SliceInstructionKind.Literal || instruction.B != 0 ||
-                !Rune.TryCreate(instruction.A, out var literal)) return default;
-            _ = literal.EncodeToUtf8(encoded);
-            var first = encoded[0];
-            if (starts[..count].Contains(first)) continue;
-            if (count == starts.Length) return default;
-            starts[count++] = first;
+            var instruction = program.Instructions[(int)tags & 63];
+            if (instruction.Kind == Utf8SliceInstructionKind.Literal)
+            {
+                if (!Rune.TryCreate(instruction.A, out var literal) ||
+                    !TryAddOrderedRegularStarts(literal, instruction.B != 0, behavior, starts, ref count)) return default;
+                continue;
+            }
+
+            // Acceptance, complements and general class predicates lack a
+            // complete list of scalar starts here.
+            if (instruction is not { Kind: Utf8SliceInstructionKind.Set, B: 0 }) return default;
+            var mask = program.SetMasks[instruction.A];
+            budget.ChargeWork((ulong)mask.Length);
+            for (var index = 0; index < mask.Length; index++)
+                for (var bits = (uint)mask[index]; bits != 0; bits &= bits - 1)
+                {
+                    var scalar = new Rune((index << 3) + BitOperations.TrailingZeroCount(bits));
+                    if (!TryAddOrderedRegularStarts(scalar, instruction.C != 0, behavior, starts, ref count)) return default;
+                }
         }
         return count == 0 ? default : (starts[0], starts[Math.Min(1, count - 1)], starts[count - 1], true);
+    }
+
+    private static bool TryAddOrderedRegularStarts(Rune scalar, bool folded, Utf8ScalarCaseBehavior behavior,
+        Span<byte> starts, ref int count)
+    {
+        if (!TryAddOrderedRegularStartByte(scalar, starts, ref count)) return false;
+        if (!folded) return true;
+        if (!scalar.IsBmp)
+        {
+            // Supplementary equivalence uses simple lowercase. Its table
+            // consists of reversible pairs contained in the supplementary planes.
+            var lower = Utf8SupplementaryCase.Lower(scalar.Value);
+            return TryAddOrderedRegularStartByte(new Rune(lower), starts, ref count) &&
+                TryAddOrderedRegularStartByte(new Rune(Utf8SupplementaryCase.Upper(lower)), starts, ref count);
+        }
+        foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)scalar.Value, behavior))
+            if (!TryAddOrderedRegularStartByte(new Rune(equivalent), starts, ref count)) return false;
+        return true;
+    }
+
+    private static bool TryAddOrderedRegularStartByte(Rune scalar, Span<byte> starts, ref int count)
+    {
+        Span<byte> encoded = stackalloc byte[4];
+        _ = scalar.EncodeToUtf8(encoded);
+        var first = encoded[0];
+        if (starts[..count].Contains(first)) return true;
+        if (count == starts.Length) return false;
+        starts[count++] = first;
+        return true;
     }
 
     internal static Utf8SliceSearchOutcome FindOrderedRegularRange(Utf8SliceProgram program,

@@ -401,8 +401,7 @@ internal sealed class Utf8SliceProgram
         HasTerminalCaptureRoot = Utf8SliceRunner.CanRunTerminalCaptureRoot(this);
         HasSingleCapturePerGroup = CanReadCapturesFromSlots();
         if (nonBacktrackingOrderedClosures.Length != 0)
-            NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(instructions,
-                nonBacktrackingOrderedClosures[0], Utf8ConstructionScope.CurrentBudget);
+            NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
         if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
             TerminalRepeatsWithoutRewind = Utf8SliceRunner.FindTerminalRepeatsWithoutRewind(this, Utf8ConstructionScope.CurrentBudget);
         // An absolute start confines an empty match to byte zero. A terminal
