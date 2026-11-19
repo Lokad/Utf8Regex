@@ -212,7 +212,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         CancellationToken cancellationToken, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         ThrowIfGenericIterationMayBeNonMonotone();
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
+        var invocation = Pcre2SliceDriver.CreateExclusiveInvocation(_program.Request, cancellationToken, workingMemoryAllowance);
         try
         {
             // Literal Count needs only byte-boundary admission and original
@@ -474,7 +474,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             ((matchOptions & Pcre2MatchOptions.EndAnchored) != 0 ||
              (_program.Request.Options & Pcre2CompileOptions.EndAnchored) != 0))
             throw new Pcre2MatchException("Partial matching cannot be combined with EndAnchored.", Pcre2ErrorKind.BadOption);
-        var invocation = Pcre2SliceDriver.CreateInvocation(_program.Request, cancellationToken);
+        var invocation = Pcre2SliceDriver.CreateExclusiveInvocation(_program.Request, cancellationToken);
         try
         {
             var subject = Pcre2Runner.PrepareInput(input, startOffsetInBytes, ref invocation);

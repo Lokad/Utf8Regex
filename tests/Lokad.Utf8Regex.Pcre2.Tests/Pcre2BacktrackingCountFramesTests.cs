@@ -82,7 +82,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
             ResultLimitInBytes = deniedLimit == 3 ? 1UL : 1UL << 20
         });
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 100)));
-        var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
+        var invocation = Pcre2SliceDriver.CreateExclusiveInvocation(regex.DebugCompiledProgram.Request, default);
         var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var validated = invocation.Budget.Steps;
         Exception? failure = null;
@@ -123,7 +123,7 @@ public sealed class Pcre2BacktrackingCountFramesTests
         ReadOnlySpan<byte> retained1Input = "aaab"u8;
         var retained1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
         var retained = regex.Match(retained1Input, captures: retained1Captures);
-        var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, token.Token);
+        var invocation = Pcre2SliceDriver.CreateExclusiveInvocation(regex.DebugCompiledProgram.Request, token.Token);
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("aaab ", 3000)));
         var input = Pcre2Runner.PrepareInput(bytes, 0, ref invocation);
         var validated = invocation.Budget.Steps;

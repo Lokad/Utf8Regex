@@ -500,6 +500,10 @@ internal static class Pcre2SliceDriver
         CancellationToken cancellationToken, IUtf8MemoryAllowance? memoryAllowance = null)
         => new(request.DefaultLimits.ToSliceLimits(), request.MatchTimeout, cancellationToken, memoryAllowance);
 
+    internal static Utf8SliceInvocation CreateExclusiveInvocation(Pcre2CompileRequest request,
+        CancellationToken token, IUtf8MemoryAllowance? allowance = null)
+        => Utf8SliceInvocation.CreateExclusive(request.DefaultLimits.ToSliceLimits(), request.MatchTimeout, token, allowance);
+
     // Global cursors retain this authority across waits/copies. A return check
     // spends no additional work and preserves cancellation raised by the clock.
     internal static void CheckInvocation(scoped ref Utf8SliceInvocation invocation)

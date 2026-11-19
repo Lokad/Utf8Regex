@@ -24,8 +24,7 @@ public sealed partial class Utf8Pcre2Regex
         Pcre2MatchOptions matchOptions, Pcre2ResourceBudget budget)
     {
         _input = input;
-        // Transfer the validation authority into this one-shot runner. Controlled
-        // counters share the original owner; unlimited state stays inline.
+        // Move the invocation into this one-shot runner through publication.
         _budget = budget;
         _matchOptions = matchOptions;
         _compiled = program;

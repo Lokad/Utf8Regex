@@ -1760,54 +1760,8 @@ internal static class Pcre2GlobalOperationDriver
             }
         }
 
-        var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
-        if (program is not Pcre2SliceDirectProgram &&
-            TryCreateCursor(compiledProgram, input, start, matchOptions, out var cursor, budget))
+        if (program is Pcre2SliceDirectProgram sliceProgram && matchOptions == Pcre2MatchOptions.None)
         {
-            if (program is Pcre2BacktrackingDirectProgram)
-            {
-                // Count has one lexical owner. Copied public value cursors never
-                // acquire owned scratch, and release uses the cursor's budget.
-                var frames = Pcre2BacktrackingRunner.CreateFrames(ref budget, 0);
-                var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
-                var workspace = new Pcre2BacktrackingWorkspace();
-                try
-                {
-                    result = 0;
-                    while (cursor.MoveNext(ref frames, ref repeatMutations, ref workspace)) result = checked(result + 1);
-                    return true;
-                }
-                finally { cursor.ReleaseBacktrackingStorage(ref frames, ref repeatMutations, ref workspace); }
-            }
-            result = 0;
-            while (cursor.MoveNext())
-            {
-                result = checked(result + 1);
-            }
-
-            return true;
-        }
-
-        if (program is Pcre2SliceDirectProgram sliceProgram)
-        {
-            if (matchOptions != Pcre2MatchOptions.None)
-            {
-                var fallbackCursor = Pcre2GlobalMatchCursor.CreateBacktracking(
-                    sliceProgram.Fallback,
-                    compiledProgram.CandidateSearchPlan,
-                    input,
-                    start,
-                    matchOptions,
-                    compiledProgram.Request,
-                    budget);
-                result = 0;
-                while (fallbackCursor.MoveNext())
-                {
-                    result = checked(result + 1);
-                }
-
-                return true;
-            }
             if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,
                 compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation))
             {
@@ -1825,31 +1779,66 @@ internal static class Pcre2GlobalOperationDriver
             return true;
         }
 
-        // The slice overlay claims Enumerate while Count stays on a native
-        // program without a metered vehicle: count through the slice shell's
-        // backtracking fallback, the exact vehicle the overlay kept, so finite
-        // heap limits keep breaching instead of reporting unsupported.
-        if (compiledProgram.Operations.Enumerate is Pcre2SliceDirectProgram enumerateSlice)
+        var budget = new Pcre2ResourceBudget(compiledProgram.Request.DefaultLimits, invocation, false);
+        Pcre2GlobalMatchCursor cursor;
+        var reuseBacktrackingScratch = false;
+        if (program is not Pcre2SliceDirectProgram &&
+            TryCreateCursor(compiledProgram, input, start, matchOptions, out cursor, budget))
         {
-            var fallbackCursor = Pcre2GlobalMatchCursor.CreateBacktracking(
-                enumerateSlice.Fallback,
+            reuseBacktrackingScratch = program is Pcre2BacktrackingDirectProgram;
+        }
+        else
+        {
+            // Flagged slice Count uses the selected slice's fallback. The
+            // enumeration overlay also supplies one when no other global
+            // vehicle can count the program under the active limits.
+            var fallback = (program as Pcre2SliceDirectProgram ??
+                compiledProgram.Operations.Enumerate as Pcre2SliceDirectProgram)?.Fallback;
+            if (fallback is null)
+            {
+                result = 0;
+                return false;
+            }
+
+            cursor = Pcre2GlobalMatchCursor.CreateBacktracking(
+                fallback,
                 compiledProgram.CandidateSearchPlan,
                 input,
                 start,
                 matchOptions,
                 compiledProgram.Request,
                 budget);
-            result = 0;
-            while (fallbackCursor.MoveNext())
-            {
-                result = checked(result + 1);
-            }
-
-            return true;
         }
 
-        result = 0;
-        return false;
+        try
+        {
+            result = 0;
+            if (reuseBacktrackingScratch)
+            {
+                // This lexical cursor owns scratch across attempts.
+                var frames = Pcre2BacktrackingRunner.CreateFrames(ref budget, 0);
+                var repeatMutations = new Pcre2InvocationStateStack<Pcre2RepeatMutation>(int.MaxValue, budget.CollectsDiagnostics);
+                var workspace = new Pcre2BacktrackingWorkspace();
+                try
+                {
+                    while (cursor.MoveNext(ref frames, ref repeatMutations, ref workspace)) result = checked(result + 1);
+                }
+                finally { cursor.ReleaseBacktrackingStorage(ref frames, ref repeatMutations, ref workspace); }
+            }
+            else
+            {
+                while (cursor.MoveNext()) result = checked(result + 1);
+            }
+            return true;
+        }
+        finally
+        {
+            // Return ownership after cursor cleanup, including on denial.
+            // The profile cursor used its own checkpoint cadence.
+            var hook = invocation.CheckpointHook;
+            invocation = cursor.WorkingBufferControl.WorkingInvocation;
+            invocation.CheckpointHook = hook;
+        }
     }
 
     internal static bool HasUnmeteredExecution(Pcre2CompileRequest request) =>
@@ -2683,8 +2672,7 @@ internal struct Pcre2ResourceBudget
     // One-shot dispatch can enter the shared VM using the same owner and hook.
     internal static Pcre2ResourceBudget CreateExclusive(Pcre2CompileRequest request,
         CancellationToken token, IUtf8MemoryAllowance? allowance = null)
-        => new(request.DefaultLimits, Utf8SliceInvocation.CreateExclusive(
-            request.DefaultLimits.ToSliceLimits(), request.MatchTimeout, token, allowance), diagnostics: null);
+        => new(request.DefaultLimits, Pcre2SliceDriver.CreateExclusiveInvocation(request, token, allowance), diagnostics: null);
 
     internal Utf8Pcre2ExecutionLimits Limits { get; }
 
