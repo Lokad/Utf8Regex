@@ -517,20 +517,20 @@ internal static partial class Utf8SliceRunner
         outcome = default;
         continuation = 0;
         var instructions = program.Instructions;
-        if (program.RightToLeft || instructions.Length - repeatIndex < 5) return false;
         var repeat = instructions[repeatIndex];
+        // The terminal proof already verified the atom and exit. A required
+        // assertion endpoint uses the ordinary repeat checks.
+        var provedTerminal = requiredEnd is null && program.SkipsTerminalRewind(repeatIndex);
+        if (!provedTerminal && (program.RightToLeft || instructions.Length - repeatIndex < 5 ||
+            repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) ||
+            !IsSingleAtomRepeat(instructions, repeatIndex, repeat))) return false;
         var atom = instructions[repeatIndex + 1];
-        if (repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) || repeat.A != repeatIndex + 3 ||
-            instructions[repeatIndex + 2].Kind != Utf8SliceInstructionKind.RepeatEnd ||
-            instructions[repeatIndex + 2].A != repeatIndex ||
-            instructions[repeatIndex + 3].Kind != Utf8SliceInstructionKind.RepeatExit ||
-            instructions[repeatIndex + 3].A != repeat.B ||
-            atom.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
-                Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
+        if (!provedTerminal && (atom.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or
+                Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid) ||
+            atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0))
             return false;
-        if (atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0) return false;
         continuation = repeat.A + 1;
-        if (existenceOnly && requiredEnd is null && CanAcceptEmptyTail(instructions, continuation))
+        if (!provedTerminal && existenceOnly && requiredEnd is null && CanAcceptEmptyTail(instructions, continuation))
         {
             // An endpoint at the minimum proves existence. There is no
             // observable range or capture, and the terminal path needs no
@@ -541,8 +541,7 @@ internal static partial class Utf8SliceRunner
             return true;
         }
         // A fixed count or a proved terminal continuation needs one endpoint.
-        if (repeat.RepeatMinimum == repeat.RepeatMaximum ||
-            requiredEnd is null && program.SkipsTerminalRewind(repeatIndex))
+        if (provedTerminal || repeat.RepeatMinimum == repeat.RepeatMaximum)
         {
             var fixedRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             outcome = new(fixedRepeat.EndIndex >= 0, fixedRepeat.EndIndex, fixedRepeat.Breach, null, null);
