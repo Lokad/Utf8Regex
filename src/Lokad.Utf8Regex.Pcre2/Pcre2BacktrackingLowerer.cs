@@ -446,9 +446,7 @@ internal sealed class Pcre2BacktrackingLowerer
                         repeat.Body is Pcre2TokenBacktrackingNode { Token: var collapsibleToken } &&
                         collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass)
                     {
-                        var collapsibleId = _repeatCount++;
-                        if (collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
-                            (collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0)
+                        if ((collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0)
                         {
                             collapsibleToken.CharacterClass.PrepareAsciiByteSet();
                         }
@@ -456,12 +454,12 @@ internal sealed class Pcre2BacktrackingLowerer
                         var collapsibleIndex = _instructions.Count;
                         _instructions.Add(default);
                         EmitRepeat(repeat);
-                        var collapsibleExit = _instructions.Count - 1;
+                        // Only the ordinary retry enters the repeat and owns a
+                        // counter. A successful scan skips its counter reset.
                         _instructions[collapsibleIndex] = Pcre2BacktrackingInstruction.CreateCollapsibleTokenRepeat(
                             collapsibleToken,
                             collapsibleIndex + 1,
-                            collapsibleExit,
-                            collapsibleId,
+                            _instructions.Count,
                             repeat.Minimum,
                             repeat.Maximum);
                     }

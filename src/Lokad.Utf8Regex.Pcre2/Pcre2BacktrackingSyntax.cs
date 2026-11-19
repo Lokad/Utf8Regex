@@ -548,16 +548,15 @@ internal readonly struct Pcre2BacktrackingInstruction
     internal static Pcre2BacktrackingInstruction CreateCollapsibleTokenRepeat(
         Pcre2CharacterToken token,
         int fallbackTarget,
-        int exitTarget,
-        int repeatId,
+        int continuation,
         int minimum,
         int maximum) =>
         new(
             Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat,
             token,
             fallbackTarget,
-            exitTarget,
-            repeatId,
+            continuation,
+            0,
             minimum,
             maximum,
             Pcre2RepeatPreference.Greedy);

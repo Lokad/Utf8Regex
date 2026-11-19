@@ -996,31 +996,14 @@ internal static class Pcre2BacktrackingRunner
                         var collapsibleMaximum = instruction.Maximum;
                         var collapsibleStart = inputIndex;
                         var collapsibleCount = 0;
-                        var collapsibleAsciiByteSet =
-                            collapsibleToken.Kind == Pcre2CharacterTokenKind.CharacterClass &&
-                            (collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0
-                                ? collapsibleToken.CharacterClass.AsciiByteSet
-                                : null;
-                        var collapsibleLiteralByte =
-                            collapsibleToken.Kind == Pcre2CharacterTokenKind.Literal &&
-                            collapsibleToken.Literal.Value <= 0x7F
-                                ? (byte)collapsibleToken.Literal.Value
-                                : (byte?)null;
+                        var collapsibleAsciiByteSet = (collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0
+                            ? collapsibleToken.CharacterClass.AsciiByteSet
+                            : null;
                         while (collapsibleCount < collapsibleMaximum)
                         {
                             if (inputIndex < input.Length)
                             {
-                                if (collapsibleLiteralByte is { } literalByte)
-                                {
-                                    while (collapsibleCount < collapsibleMaximum &&
-                                        inputIndex < input.Length &&
-                                        input[inputIndex] == literalByte)
-                                    {
-                                        inputIndex++;
-                                        collapsibleCount++;
-                                    }
-                                }
-                                else if (collapsibleAsciiByteSet is not null)
+                                if (collapsibleAsciiByteSet is not null)
                                 {
                                     var remainingMaximum = collapsibleMaximum - collapsibleCount;
                                     var remainingLength = Math.Min(remainingMaximum, input.Length - inputIndex);
@@ -1078,7 +1061,6 @@ internal static class Pcre2BacktrackingRunner
                                 ref budget);
                         }
 
-                        SetRepeat(instruction.RepeatId, collapsibleCount, inputIndex, counts, positions, ref repeatMutations, ref budget);
                         instructionIndex = instruction.SecondaryTarget;
                         continue;
 

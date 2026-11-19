@@ -6,6 +6,28 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2SubroutineCaptureReturnTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ClassRunRetriesFromItsStartWhenTheFollowingCallNeedsOneMoreScalar(bool funded)
+    {
+        using var regex = new Utf8Pcre2Regex(@"^(?<word>[😀a]+)(?&tail)$(?(DEFINE)(?<tail>[😀a]+!))",
+            policy: funded ? new Utf8RegexPolicy
+            {
+                ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 16 << 10 }
+            } : null);
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat);
+        Assert.Equal(program.RepeatCount, program.Instructions.Count(instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.Repeat));
+
+        using var source = new CancellationTokenSource();
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+        var match = regex.Match("😀a😀!"u8, captures: captures, cancellationToken: funded ? source.Token : default);
+        Assert.Equal((0, 10), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal((0, 5), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.False(captures[2].Success);
+    }
+
     // Native PCRE2 10.47 witnesses: captures are caller state after a return,
     // even when a different value was set in a deeper recursion level.
     [Theory]
