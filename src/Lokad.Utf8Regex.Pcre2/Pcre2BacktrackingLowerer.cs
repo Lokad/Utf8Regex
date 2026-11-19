@@ -45,9 +45,9 @@ internal sealed class Pcre2BacktrackingLowerer
         _request = request;
     }
 
-    internal Pcre2BacktrackingProgram Lower(IPcre2BacktrackingNode root)
+    internal Pcre2BacktrackingProgram Lower(IPcre2BacktrackingNode root, bool isMainProgram = false)
     {
-        EmitNode(root, null);
+        EmitNode(root, null, followedByMatchAccept: isMainProgram);
         _instructions.Add(Pcre2BacktrackingInstruction.CreateAccept());
         var subroutineTargets = Array.Empty<int>();
         if (_hasSubroutineCalls)
@@ -253,7 +253,8 @@ internal sealed class Pcre2BacktrackingLowerer
 
     private void EmitNode(
         IPcre2BacktrackingNode node,
-        Pcre2CharacterToken? requiredFollowingToken)
+        Pcre2CharacterToken? requiredFollowingToken,
+        bool followedByMatchAccept = false)
     {
         var budget = Pcre2BacktrackingCompiler.EnterDepth();
         try
@@ -394,17 +395,32 @@ internal sealed class Pcre2BacktrackingLowerer
                             childFollowingToken = requiredFollowingToken;
                         }
 
-                        EmitNode(sequence.Children[index], childFollowingToken);
+                        EmitNode(sequence.Children[index], childFollowingToken,
+                            followedByMatchAccept && index == sequence.Children.Length - 1);
                     }
                     return;
                 case Pcre2AlternationBacktrackingNode alternation:
                     EmitAlternation(alternation, requiredFollowingToken);
                     return;
                 case Pcre2RepeatBacktrackingNode repeat:
+                    // At the main Accept, shortening a positive run cannot
+                    // reach the subject end or turn an empty match into a hit.
+                    // Match-boundary resets can make the reported start
+                    // differ from the consumed start, so decline them.
+                    var finalTokenRun = followedByMatchAccept && !_usesMatchBoundaryReset && !_hasSubroutineCalls &&
+                        repeat is
+                        {
+                            Minimum: > 0,
+                            Preference: Pcre2RepeatPreference.Greedy,
+                            Body: Pcre2TokenBacktrackingNode
+                            {
+                                Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass
+                            }
+                        };
                     var autoPossessive = repeat.Preference == Pcre2RepeatPreference.Greedy &&
                         requiredFollowingToken is { } followingToken &&
                         CanAutoPossess(repeat, followingToken);
-                    if (autoPossessive || IsSmallFixedTokenRepeat(repeat))
+                    if (finalTokenRun || autoPossessive || IsSmallFixedTokenRepeat(repeat))
                         EmitPossessiveTokenRepeat(repeat);
                     else if (TryEmitSmallFixedSequence(repeat, budget))
                         return;
@@ -467,7 +483,7 @@ internal sealed class Pcre2BacktrackingLowerer
                 case Pcre2CaptureBacktrackingNode capture:
                     _hasCaptureWrites = true;
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureStart(capture.Slot));
-                    EmitNode(capture.Body, requiredFollowingToken);
+                    EmitNode(capture.Body, requiredFollowingToken, followedByMatchAccept);
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureEnd(capture.Slot));
                     return;
                 case Pcre2BackreferenceBacktrackingNode backreference:

@@ -78,7 +78,7 @@ internal static class Pcre2BacktrackingCompiler
             parser.CaptureDefinitions,
             nameSlots,
             request);
-        var program = lowerer.Lower(root);
+        var program = lowerer.Lower(root, isMainProgram: true);
         construction.Complete();
         return new Pcre2CompiledBacktrackingOutcome(
             root,

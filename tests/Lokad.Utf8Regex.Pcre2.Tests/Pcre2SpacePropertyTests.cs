@@ -138,9 +138,8 @@ public sealed class Pcre2SpacePropertyTests
             result3Cursor.Dispose();
             _ = result3Result;
         }).ErrorKind);
-        // This route keeps greedy alternatives for the long run. Preserve the
-        // denied smaller depth allowance as well as a funded successful call.
-        var depth = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        // A consuming suffix makes the greedy alternatives necessary.
+        var depth = new Utf8Pcre2Regex(@"(?<x>\p{Xsp}+)\p{Xsp}\z", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

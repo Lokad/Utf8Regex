@@ -1,5 +1,6 @@
 using System.Text;
 using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -82,6 +83,59 @@ public sealed class Pcre2AutoPossessifyTests
         // runner; caseless still routes the backtracking program, where the
         // overlap decline is proven.
         AssertAutoPossessCount(pattern, options, 0);
+    }
+
+    [Fact]
+    public void GreedyAcceptingTailKeepsLongestCaptureWithoutARewindFrame()
+    {
+        const string pattern = @"(\d{4}[- ]){3}(\d{3,4})";
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 768 }
+        });
+        using var source = new CancellationTokenSource();
+        var options = Pcre2MatchOptions.Anchored | Pcre2MatchOptions.EndAnchored | Pcre2MatchOptions.NotEmptyAtStart;
+        ReadOnlySpan<byte> input = "é 1234-5678-1234-4567"u8;
+        var groups = new Utf8Pcre2CaptureRange[3];
+        Assert.True(regex.IsMatch(input, 3, options, source.Token));
+        var result = regex.Match(input, 3, groups, options, source.Token);
+        Assert.True(result.Success);
+        Assert.Equal(22, result.EndOffsetInBytes);
+        Assert.Equal(18, groups[2].StartOffsetInBytes);
+        Assert.Equal(22, groups[2].EndOffsetInBytes);
+        Assert.False(regex.IsMatch("é 1234-5678-1234-4567x"u8, 3, options, source.Token));
+    }
+
+    [Fact]
+    public void RepeatBeforeConsumingSuffixStillCanGiveBackAScalar()
+    {
+        using var regex = new Utf8Pcre2Regex(@"(\d{4}[- ]){3}(\d{3,4})[0-9]\z");
+        var groups = new Utf8Pcre2CaptureRange[3];
+        var result = regex.Match("1234-5678-1234-4567"u8, captures: groups);
+        Assert.True(result.Success);
+        Assert.Equal(15, groups[2].StartOffsetInBytes);
+        Assert.Equal(18, groups[2].EndOffsetInBytes);
+    }
+
+    [Fact]
+    public void LongAcceptingTailObservesTheOriginalCancellationToken()
+    {
+        using var regex = new Utf8Pcre2Regex(@"(\d{4}[- ]){3}\d+",
+            policy: new Utf8RegexPolicy { MatchTimeout = TimeSpan.FromSeconds(10) });
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        var input = new byte[256 * 1024];
+        input.AsSpan().Fill((byte)'5');
+        "1234-5678-1234-"u8.CopyTo(input);
+        using var source = new CancellationTokenSource();
+        var polls = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (++polls == 32) source.Cancel();
+            return 0;
+        });
+        var failure = Assert.Throws<OperationCanceledException>(() =>
+            regex.IsMatch(input, matchOptions: Pcre2MatchOptions.Anchored, cancellationToken: source.Token));
+        Assert.Equal(source.Token, failure.CancellationToken);
     }
 
     [Fact]
