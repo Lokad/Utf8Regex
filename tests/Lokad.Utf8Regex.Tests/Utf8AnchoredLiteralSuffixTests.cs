@@ -95,17 +95,19 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     }
 
     [Theory]
-    [InlineData(2047)]
-    [InlineData(2048)]
-    [InlineData(2049)]
-    public void DecimalBlocksKeepScalarRewindEndpoints(int asciiLength)
+    [InlineData(4, false)]
+    [InlineData(2047, true)]
+    [InlineData(2048, true)]
+    [InlineData(2049, true)]
+    public void DecimalBlocksKeepScalarRewindEndpoints(int asciiLength, bool startsWithWideDigit)
     {
         using var regex = Utf8Regex.Compile(@"\A(?<digits>\d+)\dX*!\z", policy: new()
         {
             ResourcePolicy = new() { MaxWorkSteps = 128 }
         });
         using var token = new CancellationTokenSource();
-        var digits = "𝟘" + new string('7', asciiLength) + "١";
+        var ascii = new string('7', asciiLength);
+        var digits = startsWithWideDigit ? "𝟘" + ascii + "١" : ascii + "𝟘١";
         var input = Encoding.UTF8.GetBytes(digits + "𝟚!");
         using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
         Assert.True(cursor.MoveNext(out var match));

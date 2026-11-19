@@ -1112,30 +1112,32 @@ internal static partial class Utf8SliceRunner
         return terminal == Utf8ExecutionLimitKind.None ? (position, terminal) : (-1, terminal);
     }
 
+    private static bool StartsWithFourAsciiDigits(ReadOnlySpan<byte> input, int start) =>
+        input.Length - start >= 4 &&
+        (uint)(input[start] - '0') <= 9 && (uint)(input[start + 1] - '0') <= 9 &&
+        (uint)(input[start + 2] - '0') <= 9 && (uint)(input[start + 3] - '0') <= 9;
+
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunUnboundedDecimalDigits(
         ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation, bool checkExitDeadline)
     {
         var position = start;
         while (position < input.Length)
         {
-            var value = input[position];
-            var isAsciiDigit = (uint)(value - '0') <= 9;
-            if (isAsciiDigit && input.Length - position >= 16 &&
-                (uint)(input[position + 1] - '0') <= 9 && (uint)(input[position + 2] - '0') <= 9 &&
-                (uint)(input[position + 3] - '0') <= 9)
+            if (StartsWithFourAsciiDigits(input, position))
             {
-                // Leave interleaved scalars to the scalar loop. A longer ASCII
-                // run shares the existing checked, interruptible block scan.
+                // The block already rejects an ASCII stop. A wider stop can
+                // still belong to the Unicode decimal class.
                 var ascii = RunUnboundedAsciiRange(input, position, (byte)'0', (byte)'9', ref invocation,
                     checkExitDeadline: false);
                 if (ascii.Breach != Utf8ExecutionLimitKind.None) return ascii;
                 position = ascii.EndIndex;
-                continue;
+                if (position == input.Length || input[position] < 128) break;
             }
 
             var breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
-            if (isAsciiDigit)
+            var value = input[position];
+            if ((uint)(value - '0') <= 9)
             {
                 position++;
                 continue;
@@ -1232,7 +1234,8 @@ internal static partial class Utf8SliceRunner
             if (minimum != 0 && ascii.EndIndex > start) minimumEnd = start + 1;
             return ascii.EndIndex == start && minimum != 0 ? (-1, ascii.Breach) : ascii;
         }
-        if (unbounded && input.Length - start >= 64 && IsDecimalDigitSet(program, atom))
+        if (unbounded && atom.Kind == Utf8SliceInstructionKind.CategorySet &&
+            (input.Length - start >= 64 || StartsWithFourAsciiDigits(input, start)) && IsDecimalDigitSet(program, atom))
         {
             var digits = RunUnboundedDecimalDigits(input, start, ref invocation, checkExitDeadline);
             if (minimum != 0 && digits.EndIndex > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);
