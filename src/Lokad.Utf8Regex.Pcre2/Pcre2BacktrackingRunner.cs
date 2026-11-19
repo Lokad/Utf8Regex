@@ -15,25 +15,24 @@ internal enum Pcre2BacktrackingResumeAction : byte
     ControlVerb = 2,
 }
 
+// A control frame stores its THEN target in Instruction and its SKIP
+// name in RepeatIdOrNameId. Its input offset is already the SKIP position.
 internal readonly record struct Pcre2BacktrackingFrame(
     int Instruction,
     int InputOffsetInBytes,
     int ReportedStartOffsetInBytes,
-    bool MatchBoundaryWasReset,
     int RepeatCheckpoint,
     int CaptureCheckpoint,
     int CallCheckpoint,
     int AtomicCheckpoint,
     int MarkMutationCheckpoint,
     int MarkTrailCheckpoint,
-    Pcre2BacktrackingResumeAction ResumeAction,
-    int RepeatId,
-    int RepeatCount,
-    int RepeatPosition,
-    Pcre2ControlVerbKind ControlVerb,
-    int ControlTarget,
-    int ControlPosition,
-    int ControlNameId);
+    bool MatchBoundaryWasReset,
+    Pcre2BacktrackingResumeAction ResumeAction = Pcre2BacktrackingResumeAction.None,
+    Pcre2ControlVerbKind ControlVerb = default,
+    int RepeatIdOrNameId = 0,
+    int RepeatCount = 0,
+    int RepeatPosition = 0);
 
 internal readonly record struct Pcre2RepeatMutation(
     int RepeatId,
@@ -827,21 +826,13 @@ internal static class Pcre2BacktrackingRunner
                                 instruction.SecondaryTarget,
                                 inputIndex,
                                 reportedStartOffsetInBytes,
-                                matchBoundaryWasReset,
                                 repeatMutations.Count,
                                 captureMutations.Count,
                                 subroutineCallMutations.Count,
                                 atomicCheckpoints.Count,
                                 markMutations.Count,
                                 markTrail.Count,
-                                Pcre2BacktrackingResumeAction.None,
-                                0,
-                                0,
-                                0,
-                                default,
-                                -1,
-                                0,
-                                -1),
+                                matchBoundaryWasReset),
                             depthBase,
                             subroutineCalls.Count,
                             ref budget);
@@ -874,21 +865,13 @@ internal static class Pcre2BacktrackingRunner
                                             instruction.SecondaryTarget,
                                             inputIndex,
                                             reportedStartOffsetInBytes,
-                                            matchBoundaryWasReset,
                                             repeatMutations.Count,
                                             captureMutations.Count,
                                             subroutineCallMutations.Count,
                                             atomicCheckpoints.Count,
                                             markMutations.Count,
                                             markTrail.Count,
-                                            Pcre2BacktrackingResumeAction.None,
-                                            0,
-                                            0,
-                                            0,
-                                            default,
-                                            -1,
-                                            0,
-                                            -1),
+                                            matchBoundaryWasReset),
                                         depthBase,
                                         subroutineCalls.Count,
                                         ref budget);
@@ -901,21 +884,17 @@ internal static class Pcre2BacktrackingRunner
                                             instruction.PrimaryTarget,
                                             inputIndex,
                                             reportedStartOffsetInBytes,
-                                            matchBoundaryWasReset,
                                             repeatMutations.Count,
                                             captureMutations.Count,
                                             subroutineCallMutations.Count,
                                             atomicCheckpoints.Count,
                                             markMutations.Count,
                                             markTrail.Count,
+                                            matchBoundaryWasReset,
                                             Pcre2BacktrackingResumeAction.EnterRepeat,
-                                            repeatId,
-                                            count + 1,
-                                            inputIndex,
-                                            default,
-                                            -1,
-                                            0,
-                                            -1),
+                                            RepeatIdOrNameId: repeatId,
+                                            RepeatCount: count + 1,
+                                            RepeatPosition: inputIndex),
                                         depthBase,
                                         subroutineCalls.Count,
                                         ref budget);
@@ -1078,21 +1057,13 @@ internal static class Pcre2BacktrackingRunner
                                     instruction.PrimaryTarget,
                                     collapsibleStart,
                                     reportedStartOffsetInBytes,
-                                    matchBoundaryWasReset,
                                     repeatMutations.Count,
                                     captureMutations.Count,
                                     subroutineCallMutations.Count,
                                     atomicCheckpoints.Count,
                                     markMutations.Count,
                                     markTrail.Count,
-                                    Pcre2BacktrackingResumeAction.None,
-                                    0,
-                                    0,
-                                    0,
-                                    default,
-                                    -1,
-                                    0,
-                                    -1),
+                                    matchBoundaryWasReset),
                                 depthBase,
                                 subroutineCalls.Count,
                                 ref budget);
@@ -1556,24 +1527,19 @@ internal static class Pcre2BacktrackingRunner
                         PushFrame(
                             ref frames,
                             new Pcre2BacktrackingFrame(
-                                instructionIndex,
+                                instruction.PrimaryTarget,
                                 inputIndex,
                                 reportedStartOffsetInBytes,
-                                matchBoundaryWasReset,
                                 repeatMutations.Count,
                                 captureMutations.Count,
                                 subroutineCallMutations.Count,
                                 atomicCheckpoints.Count,
                                 markMutations.Count,
                                 markTrail.Count,
+                                matchBoundaryWasReset,
                                 Pcre2BacktrackingResumeAction.ControlVerb,
-                                0,
-                                0,
-                                0,
                                 instruction.ControlVerb,
-                                instruction.PrimaryTarget,
-                                inputIndex,
-                                instruction.ControlNameId),
+                                RepeatIdOrNameId: instruction.ControlNameId),
                             depthBase,
                             subroutineCalls.Count,
                             ref budget);
@@ -2114,7 +2080,7 @@ internal static class Pcre2BacktrackingRunner
             if (frame.ResumeAction == Pcre2BacktrackingResumeAction.EnterRepeat)
             {
                 SetRepeat(
-                    frame.RepeatId,
+                    frame.RepeatIdOrNameId,
                     frame.RepeatCount,
                     frame.RepeatPosition,
                     counts,
@@ -2138,12 +2104,12 @@ internal static class Pcre2BacktrackingRunner
                 continue;
             }
 
-            if (frame.ControlVerb == Pcre2ControlVerbKind.Then && frame.ControlTarget >= 0)
+            if (frame.ControlVerb == Pcre2ControlVerbKind.Then && frame.Instruction >= 0)
             {
                 var targetFrame = -1;
                 for (var index = frames.Count - 1; index >= 0; index--)
                 {
-                    if (frames[index].Instruction == frame.ControlTarget &&
+                    if (frames[index].Instruction == frame.Instruction &&
                         frames[index].ResumeAction == Pcre2BacktrackingResumeAction.None)
                     {
                         targetFrame = index;
@@ -2158,9 +2124,9 @@ internal static class Pcre2BacktrackingRunner
                 }
             }
 
-            if (frame.ControlVerb == Pcre2ControlVerbKind.Skip && frame.ControlNameId >= 0)
+            if (frame.ControlVerb == Pcre2ControlVerbKind.Skip && frame.RepeatIdOrNameId >= 0)
             {
-                var namedSkipPosition = FindMarkPosition(frame.ControlNameId, markTrail);
+                var namedSkipPosition = FindMarkPosition(frame.RepeatIdOrNameId, markTrail);
                 if (namedSkipPosition < 0)
                 {
                     continue;
@@ -2183,7 +2149,7 @@ internal static class Pcre2BacktrackingRunner
                     0),
                 Pcre2ControlVerbKind.Skip => new Pcre2BacktrackingFailure(
                     Pcre2BacktrackingFailureKind.Skip,
-                    frame.ControlPosition),
+                    frame.InputOffsetInBytes),
                 _ => new Pcre2BacktrackingFailure(
                     Pcre2BacktrackingFailureKind.Prune,
                     0),
