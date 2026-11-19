@@ -404,8 +404,10 @@ internal sealed class Pcre2BacktrackingLowerer
                     var autoPossessive = repeat.Preference == Pcre2RepeatPreference.Greedy &&
                         requiredFollowingToken is { } followingToken &&
                         CanAutoPossess(repeat, followingToken);
-                    if (autoPossessive)
+                    if (autoPossessive || IsSmallFixedTokenRepeat(repeat))
                         EmitPossessiveTokenRepeat(repeat);
+                    else if (TryEmitSmallFixedSequence(repeat, budget))
+                        return;
                     else if (repeat is { Minimum: 0, Maximum: 1 } &&
                         repeat.Preference != Pcre2RepeatPreference.Possessive &&
                         repeat.Body is Pcre2SubroutineCallBacktrackingNode or Pcre2TokenBacktrackingNode
@@ -611,6 +613,44 @@ internal sealed class Pcre2BacktrackingLowerer
         _markNames.Add(name);
         _markNameIds.Add(name, id);
         return id;
+    }
+
+    private static bool IsSmallFixedTokenRepeat(Pcre2RepeatBacktrackingNode repeat)
+        => repeat is
+        {
+            Minimum: >= 2 and <= 8,
+            Preference: Pcre2RepeatPreference.Greedy,
+            Body: Pcre2TokenBacktrackingNode
+            {
+                Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass
+            }
+        } && repeat.Minimum == repeat.Maximum;
+
+    private bool TryEmitSmallFixedSequence(Pcre2RepeatBacktrackingNode repeat, Utf8ConstructionBudget budget)
+    {
+        if (repeat is not { Minimum: 2 or 3, Preference: Pcre2RepeatPreference.Greedy } ||
+            repeat.Minimum != repeat.Maximum) return false;
+        var capture = repeat.Body as Pcre2CaptureBacktrackingNode;
+        if ((capture?.Body ?? repeat.Body) is not Pcre2SequenceBacktrackingNode
+            { Children: { Length: >= 2 and <= 8 } children }) return false;
+
+        budget.ChargeWork((ulong)children.Length);
+        foreach (var child in children)
+        {
+            if (child is Pcre2TokenBacktrackingNode
+                { Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass } ||
+                child is Pcre2RepeatBacktrackingNode fixedToken && IsSmallFixedTokenRepeat(fixedToken))
+                continue;
+            return false;
+        }
+
+        // Every child consumes a fixed number of scalars without a retry.
+        // Each copy writes the same capture slot, in the original order.
+        // Admit bounded expansion work before the ordinary instruction writes.
+        budget.ChargeWork((ulong)(repeat.Minimum * (children.Length + (capture is null ? 0 : 2))));
+        for (var copy = 0; copy < repeat.Minimum; copy++)
+            EmitNode(repeat.Body, null);
+        return true;
     }
 
     private void EmitRepeat(Pcre2RepeatBacktrackingNode repeat)

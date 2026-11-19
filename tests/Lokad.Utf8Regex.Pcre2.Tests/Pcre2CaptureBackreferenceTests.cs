@@ -8,6 +8,24 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2CaptureBackreferenceTests
 {
     [Fact]
+    public void FixedCapturedSequenceKeepsTheLastUnicodeCaptureForBackreference()
+    {
+        using var regex = new Utf8Pcre2Regex(@"(?<pair>\d{2}[- ]){3}\k<pair>\z",
+            options: Pcre2CompileOptions.Ucp, policy: new Utf8RegexPolicy
+            {
+                ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 1 << 16 }
+            });
+        using var source = new CancellationTokenSource();
+        ReadOnlySpan<byte> input = "é١٢-٣٤ 𝟡٦-𝟡٦-"u8;
+        var groups = new Utf8Pcre2CaptureRange[2];
+        var match = regex.Match(input, 2, captures: groups, cancellationToken: source.Token);
+        Assert.True(match.Success);
+        AssertGroup(groups[0], input, "١٢-٣٤ 𝟡٦-𝟡٦-", 2, 26);
+        AssertGroup(groups[1], input, "𝟡٦-", 12, 19);
+        Assert.False(regex.IsMatch("é١٢-٣٤ 𝟡٦-𝟡٦ "u8, 2, cancellationToken: source.Token));
+    }
+
+    [Fact]
     public void PrimaryMatchWritesNestedCapturesFromByteCoordinates()
     {
         var regex = new Utf8Pcre2Regex("(é)(😀)");
