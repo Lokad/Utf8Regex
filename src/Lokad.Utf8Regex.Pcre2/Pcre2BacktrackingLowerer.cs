@@ -148,10 +148,24 @@ internal sealed class Pcre2BacktrackingLowerer
         return _request.Settings.Newline is Pcre2NewlineConvention.Default or Pcre2NewlineConvention.Lf;
     }
 
-    private int FindTerminalRepeatWithoutRewind(IPcre2BacktrackingNode[] children, Utf8ConstructionBudget budget)
+    private (int Earlier, int Final) FindTerminalRepeatsWithoutRewind(IPcre2BacktrackingNode[] children,
+        Utf8ConstructionBudget budget)
     {
-        if (children.Length < 4 || children[^1] is not Pcre2TokenBacktrackingNode { Token: var end } ||
-            !TryGetTerminalEnd(end, out _)) return -1;
+        if (children.Length < 2 || children[^1] is not Pcre2TokenBacktrackingNode { Token: var end } ||
+            !TryGetTerminalEnd(end, out var allowTrailingLf)) return (-1, -1);
+        budget.ChargeWork(1);
+        var final = -1;
+        // A shorter endpoint would lie before a scalar the repeat consumed.
+        // Only a final LF could satisfy a lax end there.
+        if (children[^2] is Pcre2RepeatBacktrackingNode { Maximum: > 0, Preference: Pcre2RepeatPreference.Greedy,
+                Body: Pcre2TokenBacktrackingNode { Token: var finalAtom } } &&
+            finalAtom.Kind is Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass &&
+            (!allowTrailingLf || (finalAtom.Options & Pcre2CharacterOptions.Caseless) == 0 &&
+                (finalAtom.Kind == Pcre2CharacterTokenKind.Literal ? finalAtom.Literal.Value != '\n'
+                    : !finalAtom.CharacterClass.AsciiSet.Contains((byte)'\n'))))
+            final = children.Length - 2;
+
+        if (children.Length < 4) return (-1, final);
         budget.ChargeWork(3);
         if (children[^4] is not Pcre2RepeatBacktrackingNode { Maximum: int.MaxValue, Preference: Pcre2RepeatPreference.Greedy,
                 Body: Pcre2TokenBacktrackingNode { Token: var first } } ||
@@ -160,21 +174,21 @@ internal sealed class Pcre2BacktrackingLowerer
             children[^2] is not Pcre2RepeatBacktrackingNode { Minimum: 0, Maximum: int.MaxValue,
                 Body: Pcre2TokenBacktrackingNode { Token: var last } } ||
             first.Kind != last.Kind || ((first.Options | last.Options | separator.Options) & Pcre2CharacterOptions.Caseless) != 0 ||
-            !separator.Literal.IsAscii || separator.Literal.Value == '\n') return -1;
+            !separator.Literal.IsAscii || separator.Literal.Value == '\n') return (-1, final);
 
         // The pure second repeat covers the same run on a retry. The optional
         // separator cannot participate until the first run's maximal endpoint.
         var separatorByte = (byte)separator.Literal.Value;
         if (first.Kind == Pcre2CharacterTokenKind.Literal)
-            return first.Literal == last.Literal && first.Literal.Value != separatorByte && first.Literal.Value != '\n'
-                ? children.Length - 4 : -1;
-        if (first.Kind != Pcre2CharacterTokenKind.CharacterClass) return -1;
+            return (first.Literal == last.Literal && first.Literal.Value != separatorByte && first.Literal.Value != '\n'
+                ? children.Length - 4 : -1, final);
+        if (first.Kind != Pcre2CharacterTokenKind.CharacterClass) return (-1, final);
         var own = first.CharacterClass;
         var other = last.CharacterClass;
         if (own.Negated != other.Negated || own.Terms.Length > 16 || own.Terms.Length != other.Terms.Length ||
-            own.AsciiSet.Contains(separatorByte) || own.AsciiSet.Contains((byte)'\n')) return -1;
+            own.AsciiSet.Contains(separatorByte) || own.AsciiSet.Contains((byte)'\n')) return (-1, final);
         budget.ChargeWork((ulong)own.Terms.Length);
-        return own.Terms.AsSpan().SequenceEqual(other.Terms) ? children.Length - 4 : -1;
+        return (own.Terms.AsSpan().SequenceEqual(other.Terms) ? children.Length - 4 : -1, final);
     }
 
     private void EmitPossessiveTokenRepeat(Pcre2RepeatBacktrackingNode repeat)
@@ -307,10 +321,10 @@ internal sealed class Pcre2BacktrackingLowerer
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateToken(token.Token));
                     return;
                 case Pcre2SequenceBacktrackingNode sequence:
-                    var terminalRepeat = FindTerminalRepeatWithoutRewind(sequence.Children, budget);
+                    var (earlierRepeat, finalRepeat) = FindTerminalRepeatsWithoutRewind(sequence.Children, budget);
                     for (var index = 0; index < sequence.Children.Length; index++)
                     {
-                        if (index == terminalRepeat)
+                        if (index == earlierRepeat || index == finalRepeat)
                         {
                             EmitPossessiveTokenRepeat((Pcre2RepeatBacktrackingNode)sequence.Children[index]);
                             continue;

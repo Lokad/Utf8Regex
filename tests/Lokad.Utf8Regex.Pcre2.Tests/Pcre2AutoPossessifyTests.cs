@@ -107,6 +107,24 @@ public sealed class Pcre2AutoPossessifyTests
     }
 
     [Theory]
+    [InlineData(Pcre2CompileOptions.None, "-3.14159\n", 8)]
+    [InlineData(Pcre2CompileOptions.Ucp, "+١.𝟚\n", 8)]
+    [InlineData(Pcre2CompileOptions.None, "+١.𝟚\n", -1)]
+    public void TerminalDigitRunsPreserveFinalLfAndUnicodeMode(Pcre2CompileOptions options, string input, int end)
+    {
+        using var regex = new Utf8Pcre2Regex(@"^[-+]?\d*\.?\d*$", options: options,
+            policy: new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 100_000 } });
+        var direct = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Assert.Equal(0, direct.Program.RepeatCount);
+
+        var subject = Encoding.UTF8.GetBytes(input);
+        Assert.Equal(end >= 0, regex.IsMatch(subject));
+        var match = regex.Match(subject);
+        Assert.Equal(end >= 0, match.Success);
+        if (match.Success) Assert.Equal(end, match.EndOffsetInBytes);
+    }
+
+    [Theory]
     [InlineData(@"\d+\b", "123 ")]
     [InlineData(@"\d{2,4}\b", "12345 ")]
     [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "11/18/2019 11/19/201A")]

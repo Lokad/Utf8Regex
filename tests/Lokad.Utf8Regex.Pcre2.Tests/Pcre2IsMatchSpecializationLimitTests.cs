@@ -25,7 +25,7 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
 
     [Theory]
     [InlineData("^((.)(?1)\\2|.?)$", Pcre2CompileOptions.None, "abccba")]
-    [InlineData("^[-+]?\\d*\\.?\\d*$", Pcre2CompileOptions.None, "12.5")]
+    [InlineData("^[-+]?\\d*\\.?\\d*$", Pcre2CompileOptions.None, "-12.5")]
     [InlineData("^([0-9]+)(\\-| |$)(.*)$", Pcre2CompileOptions.None, "200 ok")]
     public void GrowingSearchBreachesDepth(string pattern, Pcre2CompileOptions options, string inputText)
     {
@@ -38,6 +38,7 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
     [Theory]
     [InlineData("(\\d{4}[- ]){3}\\d{3,4}", "4111-1111-1111-1111")]
     [InlineData(".*(ss)", "xxss")]
+    [InlineData("^[-+]?\\d*\\.?\\d*$", "12.5")]
     public void BoundedSearchSucceedsUnderDepthLimit(string pattern, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
