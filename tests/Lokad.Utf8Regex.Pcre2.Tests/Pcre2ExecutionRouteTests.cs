@@ -368,26 +368,32 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     [InlineData(@"(\b\w{10,}\b)", Pcre2CompileOptions.None)]
     [InlineData(@"\b\w{10,}\b", Pcre2CompileOptions.Ucp)]
     [InlineData(@"\b\w{10,}\b", Pcre2CompileOptions.Caseless)]
-    public void LeadingAsciiWordBoundaryRunSearchRejectsBroaderSemantics(
+    [InlineData(@"\w{10,}", Pcre2CompileOptions.Ucp)]
+    [InlineData(@"(?i:\w{10,})", Pcre2CompileOptions.None)]
+    public void LeadingAsciiWordRunSearchRejectsBroaderSemantics(
         string pattern,
         Pcre2CompileOptions options)
     {
         var regex = new Utf8Pcre2Regex(pattern, options: options);
 
         Assert.NotEqual(Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.NotEqual(Pcre2CandidateSearchKind.LeadingAsciiWordRun, regex.DebugCompiledProgram.CandidateSearch.Kind);
     }
 
-    [Fact]
-    public void LeadingAsciiWordBoundaryRunSearchFallsBackForRuntimeLimitsAndOptions()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void LeadingAsciiWordRunSearchFallsBackForRuntimeLimitsAndOptions(bool requiresBoundary)
     {
-        var input = "abcdefghij klmnopqrst"u8.ToArray();
-        var regex = new Utf8Pcre2Regex(@"\b\w{10,}\b");
+        var input = "abcdefghijkl mnopqrstuv"u8.ToArray();
+        var pattern = requiresBoundary ? @"\b\w{10,}\b" : @"\w{10,}";
+        var regex = new Utf8Pcre2Regex(pattern);
         Assert.Equal(2, regex.Count(input));
-        Assert.Equal(1, regex.Count(input, 2));
+        Assert.Equal(requiresBoundary ? 1 : 2, regex.Count(input, 2));
         Assert.True(regex.IsMatch(input, 0, Pcre2MatchOptions.Anchored));
-        Assert.False(regex.IsMatch(input, 2, Pcre2MatchOptions.Anchored));
+        Assert.Equal(!requiresBoundary, regex.IsMatch(input, 2, Pcre2MatchOptions.Anchored));
 
-        var limited = new Utf8Pcre2Regex(@"\b\w{10,}\b", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        var limited = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -398,6 +404,18 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.Equal(
             Pcre2ErrorKind.MatchLimit,
             Assert.Throws<Pcre2MatchException>(() => limited.Count(input)).ErrorKind);
+    }
+
+    [Fact]
+    public void LeadingAsciiWordRunSearchRetriesInsideTheSameWord()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\w{2}(?=!)");
+        var input = "é😀abcde! _xyz!"u8;
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiWordRun, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        var match = regex.Match(input, 7);
+        Assert.Equal((9, 11), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal(2, regex.Count(input, 7));
+        Assert.Equal(1, regex.Count(input, 10));
     }
 
     [Fact]
@@ -414,7 +432,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     }
 
     [Fact]
-    public void LeadingAsciiWordBoundaryRunSearchMatchesVmOnlyGeneratedCases()
+    public void LeadingAsciiWordRunSearchMatchesVmOnlyGeneratedCases()
     {
         string[] patterns =
         [
@@ -423,14 +441,20 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
             @"\b\w{4,}?\b",
             @"\b\w{4,}+\b",
             @"\b\w{3,}\B",
+            @"\w{3,5}",
+            @"\w{4,}?",
+            @"\w{4,}+",
+            @"\w{2}(?=!)",
         ];
-        string[] fragments = ["a", "Z", "0", "_", " ", "-", ".", "\n", "é", "😀"];
+        string[] fragments = ["a", "Z", "0", "_", " ", "-", ".", "!", "\n", "é", "😀"];
         var random = new Random(0x5EED);
         foreach (var pattern in patterns)
         {
             var candidate = new Utf8Pcre2Regex(pattern);
             var vmOnly = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.NoAutoCapture);
-            Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun, candidate.DebugCompiledProgram.CandidateSearch.Kind);
+            var kind = pattern.StartsWith(@"\b", StringComparison.Ordinal)
+                ? Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun : Pcre2CandidateSearchKind.LeadingAsciiWordRun;
+            Assert.Equal(kind, candidate.DebugCompiledProgram.CandidateSearch.Kind);
             Assert.Equal(Pcre2CandidateSearchKind.None, vmOnly.DebugCompiledProgram.CandidateSearch.Kind);
 
             for (var caseIndex = 0; caseIndex < 128; caseIndex++)
@@ -444,6 +468,7 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
 
                 var input = Encoding.UTF8.GetBytes(builder.ToString());
                 Assert.Equal(GetRanges(vmOnly, input), GetRanges(candidate, input));
+                Assert.Equal(vmOnly.Count(input), candidate.Count(input));
                 Assert.Equal(System.Text.Encoding.UTF8.GetString(vmOnly.Replace(input, "<$0>"u8)), System.Text.Encoding.UTF8.GetString(candidate.Replace(input, "<$0>"u8)));
             }
         }

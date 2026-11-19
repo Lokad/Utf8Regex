@@ -348,6 +348,7 @@ internal enum Pcre2CandidateSearchKind : byte
     LeadingAsciiSetWithWindow = 4,
     BoundedLiteralWindow = 5,
     LeadingAsciiWordBoundaryRun = 6,
+    LeadingAsciiWordRun = 7,
 }
 
 internal readonly record struct Pcre2CandidateWindowConstraint(
@@ -431,9 +432,9 @@ internal readonly struct Pcre2CandidateSearchProgram
             windowConstraint,
             0);
 
-    internal static Pcre2CandidateSearchProgram FromLeadingAsciiWordBoundaryRun(int minimumWordRunLength) =>
+    internal static Pcre2CandidateSearchProgram FromLeadingAsciiWordRun(int minimumWordRunLength, bool requiresBoundary) =>
         new(
-            Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun,
+            requiresBoundary ? Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun : Pcre2CandidateSearchKind.LeadingAsciiWordRun,
             default,
             [],
             default,
@@ -945,7 +946,7 @@ internal static class Pcre2CandidateSearchAnalyzer
             return runPlan;
         }
 
-        if (TryCompileLeadingAsciiWordBoundaryRun(root, out var wordRunPlan))
+        if (TryCompileLeadingAsciiWordRun(root, out var wordRunPlan))
         {
             return wordRunPlan;
         }
@@ -1062,20 +1063,22 @@ internal static class Pcre2CandidateSearchAnalyzer
         return true;
     }
 
-    private static bool TryCompileLeadingAsciiWordBoundaryRun(
+    private static bool TryCompileLeadingAsciiWordRun(
         IPcre2BacktrackingNode root,
         out Pcre2CandidateSearchProgram plan)
     {
-        if (root is not Pcre2SequenceBacktrackingNode { Children.Length: >= 2 } sequence ||
-            sequence.Children[0] is not Pcre2TokenBacktrackingNode
+        var requiresBoundary = false;
+        if (root is Pcre2SequenceBacktrackingNode { Children.Length: > 0 } sequence)
+        {
+            root = sequence.Children[0];
+            requiresBoundary = sequence.Children.Length >= 2 && root is Pcre2TokenBacktrackingNode
             {
-                Token:
-                {
-                    Kind: Pcre2CharacterTokenKind.WordBoundary,
-                    Options: Pcre2CharacterOptions.None,
-                },
-            } ||
-            sequence.Children[1] is not Pcre2RepeatBacktrackingNode
+                Token: { Kind: Pcre2CharacterTokenKind.WordBoundary, Options: Pcre2CharacterOptions.None },
+            };
+            if (requiresBoundary) root = sequence.Children[1];
+        }
+
+        if (root is not Pcre2RepeatBacktrackingNode
             {
                 Minimum: >= 2,
                 Body: Pcre2TokenBacktrackingNode { Token: var runToken },
@@ -1095,7 +1098,7 @@ internal static class Pcre2CandidateSearchAnalyzer
             return false;
         }
 
-        plan = Pcre2CandidateSearchProgram.FromLeadingAsciiWordBoundaryRun(repeat.Minimum);
+        plan = Pcre2CandidateSearchProgram.FromLeadingAsciiWordRun(repeat.Minimum, requiresBoundary);
         return true;
     }
 

@@ -400,13 +400,15 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2ResourceBudget budget,
         out int candidate)
     {
-        if (candidateSearch.Kind == Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun)
+        if (candidateSearch.Kind is Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun or Pcre2CandidateSearchKind.LeadingAsciiWordRun)
         {
-            return TryFindNextLeadingAsciiWordBoundaryRun(
+            return TryFindNextLeadingAsciiWordRun(
                 input,
                 lowerBound,
                 candidateSearch.MinimumWordRunLength,
+                candidateSearch.Kind == Pcre2CandidateSearchKind.LeadingAsciiWordBoundaryRun,
                 ref nextWindowCandidate,
+                ref windowCandidateEnd,
                 out candidate);
         }
 
@@ -483,36 +485,44 @@ internal static class Pcre2BacktrackingRunner
         return false;
     }
 
-    private static bool TryFindNextLeadingAsciiWordBoundaryRun(
+    private static bool TryFindNextLeadingAsciiWordRun(
         ReadOnlySpan<byte> input,
         int lowerBound,
         int minimumWordRunLength,
+        bool requiresBoundary,
         ref int scanOffset,
+        ref int confirmedWordEnd,
         out int candidate)
     {
         var offset = Math.Max(lowerBound, scanOffset);
-        while (offset < input.Length)
+        var lastStart = input.Length - minimumWordRunLength;
+        while (offset <= lastStart)
         {
-            if (!IsAsciiWordByte(input[offset]))
+            // A rejected byte excludes all starts through that byte. When
+            // the VM needs another start in the same word, read only the
+            // additional byte needed to prove its minimum.
+            var requiredEnd = offset + minimumWordRunLength;
+            var next = Math.Max(offset, confirmedWordEnd);
+            while (next < requiredEnd && Utf8AsciiBytePredicates.IsWord(input[next]))
+                next++;
+            if (next < requiredEnd)
             {
-                offset++;
+                offset = next + 1;
                 continue;
             }
 
-            var runStart = offset;
-            do
+            if (!requiresBoundary || offset == 0 || !Utf8AsciiBytePredicates.IsWord(input[offset - 1]))
             {
-                offset++;
-            }
-            while (offset < input.Length && IsAsciiWordByte(input[offset]));
-
-            scanOffset = offset;
-            if ((runStart == 0 || !IsAsciiWordByte(input[runStart - 1])) &&
-                offset - runStart >= minimumWordRunLength)
-            {
-                candidate = runStart;
+                confirmedWordEnd = requiredEnd;
+                scanOffset = requiresBoundary ? requiredEnd : offset + 1;
+                candidate = offset;
                 return true;
             }
+
+            // An interior offset cannot begin a boundary-qualified match.
+            offset = requiredEnd;
+            while (offset < input.Length && Utf8AsciiBytePredicates.IsWord(input[offset]))
+                offset++;
         }
 
         scanOffset = input.Length;
@@ -520,11 +530,6 @@ internal static class Pcre2BacktrackingRunner
         return false;
     }
 
-    private static bool IsAsciiWordByte(byte value) =>
-        value is >= (byte)'a' and <= (byte)'z' or
-            >= (byte)'A' and <= (byte)'Z' or
-            >= (byte)'0' and <= (byte)'9' or
-            (byte)'_';
 
     private static bool TryFindNextBoundedWindowCandidate(
         Pcre2CandidateSearchProgram candidateSearch,
