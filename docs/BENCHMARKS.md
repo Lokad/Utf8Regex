@@ -41,8 +41,8 @@ Raw durations, iteration counts, allocations and loaded producer identities go
 to a unique JSON file under `artifacts/benchmark-refresh/generality/`. A focused
 selection neither replaces accepted README tables nor qualifies a package.
 
-The 19 November 2026 full refresh on `be9c7473` completed in 51m 59s on the
-quiet VM. Core generality took 602.37 seconds. All 90 steps passed, including
+The 19 November 2026 full refresh on `c66180bb` completed in 52m 06s on the
+quiet VM. Core generality took 593.88 seconds. All 90 steps passed, including
 both-runtime tests, paired comparisons, lifecycle, scaling and resource checks.
 Raw durations and the receipt are under `artifacts/benchmark-refresh/`.
 The measured source and results are recorded in the
