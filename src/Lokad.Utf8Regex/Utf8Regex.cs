@@ -1149,12 +1149,13 @@ public sealed partial class Utf8Regex : IDisposable
         return TryReplaceCore(input, replacementPattern, destination, out bytesWritten, cancellationToken, deadline);
     }
 
-    /// <summary>Attempts to apply a UTF-8-encoded replacement pattern into a caller-provided UTF-8 destination, observing cancellation during validation, matching and required result processing.</summary>
-    /// <param name="input">The well-formed UTF-8 input to match against.</param>
+    /// <summary>Attempts to apply a UTF-8 replacement template to a caller-provided destination, with cancellation during template processing, matching and output.</summary>
+    /// <param name="input">The well-formed UTF-8 subject. Keep the borrowed bytes unchanged during the operation.</param>
     /// <param name="replacementPatternUtf8">The replacement pattern encoded as well-formed UTF-8.</param>
     /// <param name="destination">The destination buffer for the UTF-8 replacement result.</param>
     /// <param name="bytesWritten">When this method returns, the number of bytes written to the destination.</param>
     /// <param name="cancellationToken">The token to observe at entry and during bounded operation checkpoints.</param>
+    /// <param name="workingMemoryAllowance">Admission for covered working storage. Null uses the program allowance when present. The engine's numeric limits still apply.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested through the supplied token.</exception>
     public OperationStatus TryReplace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, Span<byte> destination, out int bytesWritten, CancellationToken cancellationToken = default, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
