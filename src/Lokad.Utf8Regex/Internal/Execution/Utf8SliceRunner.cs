@@ -279,7 +279,7 @@ internal static partial class Utf8SliceRunner
     private static bool MatchesBoundary(Utf8SliceProgram program, in Utf8SliceInstruction instruction,
         ReadOnlySpan<byte> input, int index)
     {
-        if (instruction.C == 0 && Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, index, out var asciiBoundary))
+        if (Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, index, out var asciiBoundary))
             return asciiBoundary == (instruction.A != 0);
 
         // Callers have checked the scalar-aligned position. The VM and its

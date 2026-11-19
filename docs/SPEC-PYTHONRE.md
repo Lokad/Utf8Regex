@@ -213,16 +213,13 @@ ASCII facts can be reused when a coordinate consumer already requested them.
 This can lower numerical work requirements without changing captures, scalar
 boundaries, major allocation admission or synchronous original interruption.
 
-After VM scratch has been admitted, a positive leading word boundary can reject
-an ASCII word-interior start using the profile's exact word predicate. Scalar
-advancement and interruption checks remain in the cursor; the first attempt still
-admits required VM storage. For standard word predicates and Python's fixed word
-predicate, the cursor skips ASCII word interiors in blocks of at most 2048 bytes,
-with an interruption/work checkpoint per block. Other predicates keep scalar
-advancement. Complete capture-free boundary-only programs reuse this proof without
-a consuming start hint; EOF remains a candidate boundary. Non-ASCII neighbors and
-possible boundaries retain complete VM verification. Eliminated failed attempts
-and bounded block accounting can lower version-dependent work charges.
+Word boundaries share Core's checked ASCII byte comparison. PythonRe's Unicode
+word table still classifies wider neighbors. After VM scratch has been admitted,
+a positive leading word boundary can skip ASCII word interiors in blocks of at
+most 2048 bytes, with an interruption and work checkpoint per block. Complete
+capture-free boundary-only programs reuse this proof without a consuming start
+hint. Non-ASCII neighbors, possible boundaries and EOF retain complete VM
+verification. The skipped attempts can lower version-dependent work charges.
 
 Capture-free exact literals, including two or three alternatives, followed by
 an exact positive literal lookahead can borrow complete native discovery. The

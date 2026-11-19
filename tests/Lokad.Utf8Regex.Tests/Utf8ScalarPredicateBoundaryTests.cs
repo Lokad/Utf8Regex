@@ -7,16 +7,16 @@ public sealed class Utf8ScalarPredicateBoundaryTests
 {
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void AllBoundaryConsumersUseTheOwnedPredicateAndReleaseScratch(bool nonBoundary)
+    public void AllBoundaryConsumersShareAsciiAndUseTheOwnedWidePredicate(bool nonBoundary)
     {
-        var input = "😀a!aa"u8.ToArray();
+        var input = "😀b!_z"u8.ToArray();
         var expected = nonBoundary ? new[] { 4, 7 } : new[] { 0, 5, 6, 8 };
         foreach (var nonBacktracking in new[] { false, true })
         foreach (var reverse in new[] { false, true })
         {
             if (nonBacktracking && reverse) continue;
             var root = new Utf8SliceNode.BoundaryNode(!nonBoundary)
-                { WordPredicate = static value => value is 'a' or 0x1F600 };
+                { NonAsciiWordPredicate = static value => value == 0x1F600 };
             var program = Utf8SliceLowerer.Lower(root, null, false, false, reverse, null, false, false,
                 Utf8ScalarCaseBehavior.Invariant, nonBacktracking);
             Assert.NotNull(program);

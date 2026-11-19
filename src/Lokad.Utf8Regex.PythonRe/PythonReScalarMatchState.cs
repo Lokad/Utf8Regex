@@ -447,31 +447,24 @@ internal struct PythonReScalarMatchState
                     if (delimiter >= 0 && _position > windowEnd && !bypassWindow) continue;
                     _invocation.AnchorOriginByte = _position;
                     // Once scratch is admitted, a positive leading boundary
-                    // cannot match between two ASCII word scalars. Borrow the
-                    // exact profile predicate and keep failure's advancement.
+                    // cannot match between two ASCII word scalars.
                     // A complete boundary-only root has no consuming hint,
                     // but admits the same proof without changing its retries.
                     if (search && _workspace.Initialized &&
-                        _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } boundary &&
+                        _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
                         (_leadingAsciiLow >= 0 || _program.GroupCount == 0 && !_program.IsNonBacktracking &&
                             _program.Instructions is { Length: 2 } boundaryCode &&
                             boundaryCode[1].Kind == Utf8SliceInstructionKind.Accept) &&
                         _position > 0 && _position < input.Length &&
-                        input[_position - 1] < 128 && input[_position] < 128 &&
-                        Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position - 1]), _program, boundary) &&
-                        Utf8SliceScalarClasses.IsBoundaryWord(new Rune(input[_position]), _program, boundary))
+                        Utf8AsciiBytePredicates.IsWord(input[_position - 1]) &&
+                        Utf8AsciiBytePredicates.IsWord(input[_position]))
                     {
-                        // These predicates share the exact ASCII word set.
-                        // Bound each skip by the next loop's interruption poll;
-                        // non-ASCII context and EOF still reach the verifier.
-                        if (boundary.C == 0 || _program.CategorySetMembers[boundary.C - 1][0].Table.ScalarPredicate == PythonReScalarClassData.IsWord)
-                        {
-                            var block = input.Slice(_position, Math.Min(2048, input.Length - _position));
-                            var stop = Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(block);
-                            _position += stop < 0 ? block.Length : stop;
-                            continue;
-                        }
-                        outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                        // Bound each skip by the next loop's interruption poll.
+                        // Non-ASCII context and EOF still reach the verifier.
+                        var block = input.Slice(_position, Math.Min(2048, input.Length - _position));
+                        var stop = Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(block);
+                        _position += stop < 0 ? block.Length : stop;
+                        continue;
                     }
                     // A complete boundary-only root cannot satisfy a nonempty
                     // retry. Reuse failure's scalar advance/EOF checks; actual

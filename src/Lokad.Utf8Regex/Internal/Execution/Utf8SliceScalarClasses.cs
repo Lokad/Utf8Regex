@@ -37,14 +37,14 @@ internal static class Utf8SliceScalarClasses
             includeJoiners && scalar.Value is 0x200C or 0x200D;
     }
 
-    internal static bool IsBoundaryWord(Rune scalar, Utf8SliceWordKind kind)
-        => kind == Utf8SliceWordKind.Ascii
-            ? (uint)scalar.Value < 128 && WordCharAsciiLookup[scalar.Value] != 0
-            : IsWord(scalar, true, kind == Utf8SliceWordKind.Ecma);
-
     internal static bool IsBoundaryWord(Rune scalar, Utf8SliceProgram program, in Utf8SliceInstruction instruction)
-        => instruction.C == 0 ? IsBoundaryWord(scalar, (Utf8SliceWordKind)instruction.B)
-            : program.CategorySetMembers[instruction.C - 1][0].Table.ScalarPredicate!(scalar.Value);
+    {
+        if (scalar.IsAscii) return WordCharAsciiLookup[scalar.Value] != 0;
+        if (instruction.C != 0)
+            return program.CategorySetMembers[instruction.C - 1][0].Table.ScalarPredicate!(scalar.Value);
+        var kind = (Utf8SliceWordKind)instruction.B;
+        return kind != Utf8SliceWordKind.Ascii && IsWord(scalar, true, kind == Utf8SliceWordKind.Ecma);
+    }
 
     internal static bool MatchesShorthand(Rune scalar, Utf8SliceShorthand shorthand)
     {

@@ -67,8 +67,9 @@ internal abstract record Utf8SliceNode
     internal sealed record BoundaryNode(bool IsWordBoundary, Utf8SliceWordKind WordKind = Utf8SliceWordKind.Unicode)
         : Utf8SliceNode
     {
-        // Same fixed, bounded, invocation-free contract as scalar class predicates.
-        internal Func<int, bool>? WordPredicate { get; init; }
+        // ASCII word membership is shared by all boundary kinds. The optional
+        // fixed, bounded predicate handles only wider scalars.
+        internal Func<int, bool>? NonAsciiWordPredicate { get; init; }
     }
 
     internal sealed record ShorthandNode(Utf8SliceShorthand Shorthand) : Utf8SliceNode;
@@ -1669,7 +1670,7 @@ internal static class Utf8SliceLowerer
                     break;
                 case Utf8SliceNode.BoundaryNode boundary:
                     var wordTable = 0;
-                    if (boundary.WordPredicate is { } wordPredicate)
+                    if (boundary.NonAsciiWordPredicate is { } wordPredicate)
                     {
                         // Borrow the existing category-table pool, with one-based
                         // operand C; zero preserves the builtin boundary encoding.

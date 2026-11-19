@@ -72,7 +72,7 @@ internal static class PythonReScalarNodeFactory
 
     internal static Utf8SliceNode.BoundaryNode UnicodeBoundary(bool wordBoundary) =>
         Create(wordBoundary, static state => new Utf8SliceNode.BoundaryNode(state)
-            { WordPredicate = PythonReScalarClassData.IsWord });
+            { NonAsciiWordPredicate = PythonReScalarClassData.IsWord });
 
     internal static Utf8SliceNode.CategorySetNode Class(byte[] ascii, bool negated, Func<int, bool> predicate, Utf8ConstructionArena arena)
     {
