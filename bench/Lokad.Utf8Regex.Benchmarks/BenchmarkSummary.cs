@@ -90,6 +90,7 @@ internal sealed class BenchmarkSummaryRow
     public required string Source { get; init; }
     public string? InputSha256 { get; init; }
     public string? ResultContract { get; init; }
+    public string? ReferenceMatchOptions { get; init; }
     public double ManagedUs { get; init; }
     public double? ReferenceUs { get; init; }
     public double? DecodeUs { get; init; }

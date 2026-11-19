@@ -107,6 +107,8 @@ internal static partial class BenchmarkInspectReporter
                 {
                     Operation = pair?.Operation ?? section[(section.LastIndexOf('-') + 1)..],
                     Source = summary.AddSource(pair?.Environment ?? row.Environment),
+                    ReferenceMatchOptions = pair is null
+                        ? row.PcreNetNativeMatchOptions : pair.ComparatorPlanFingerprint?.MatchOptions,
                     ManagedUs = pair?.ManagedMedianMicroseconds ?? row.Utf8Pcre2,
                     ReferenceUs = pair?.ComparatorMedianMicroseconds ?? row.PcreNetNative,
                     Ratio = pair?.RatioMedian,

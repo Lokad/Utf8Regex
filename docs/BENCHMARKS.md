@@ -52,15 +52,17 @@ for before/after comparisons. Report kernel attribution separately from public
 operation measurements.
 
 Comparator scope matters: Python uses a long-lived official CPython worker over
-`str`. PCRE.NET is a benchmark-only PCRE2 comparator. The existing focused
-`--measure-pcre2-case <id> 1 3` command also compares explicitly labeled native
-interpreted and JIT lanes for IsMatch and Count. It verifies actual JIT compilation
-and equal results, uses native `NO_UTF_CHECK` and the managed caller-valid contract, and
-reports token, finite-limit and deadline costs separately. The canonical PCRE2
-tables use the interpreted comparator. JIT catalog coverage and adapter generality
-catalogs remain pending. The POSIX table also uses PCRE2's ordered NFA, restricted
-to verified equal-result workloads. The focused DFA checks below cover longest
-whole-match extents on haystacks.
+`str`. The canonical PCRE2 comparison uses the interpreted UTF-mode matcher
+through benchmark-only PCRE.NET, with `NO_UTF_CHECK` on caller-valid text.
+Compact PCRE2 rows report `ReferenceMatchOptions` when the measured lane records
+the flags. Historical rows keep their original measurements and metadata.
+
+`--measure-pcre2-case <id> 1 3` compares labeled native interpreted and JIT
+lanes for IsMatch and Count. It checks JIT compilation and equal results, and
+reports token, finite-limit and deadline costs separately. JIT catalog coverage
+and adapter generality catalogs remain pending. The POSIX table uses PCRE2's
+ordered NFA for verified equal-result workloads. The focused DFA checks below
+cover longest whole-match extents on haystacks.
 
 For whole-match extents, `--measure-posix-case extent/ambiguous-haystack 3` and
 `extent/word-haystack` use PCRE2's DFA with longest results first. Both cases
