@@ -930,26 +930,29 @@ internal static class Pcre2BacktrackingRunner
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
-                        var possessiveCount = 0;
-                        var meterPossessive = !budget.IsUnmetered;
+                    case Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat:
+                        var canRetryRun = instruction.Kind == Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat;
+                        var runStart = inputIndex;
+                        var runCount = 0;
+                        var meterRun = !budget.IsUnmetered;
                         var asciiByteSet =
                             instruction.Token.Kind == Pcre2CharacterTokenKind.CharacterClass &&
                             (instruction.Token.Options & Pcre2CharacterOptions.Caseless) == 0
                                 ? instruction.Token.CharacterClass.AsciiByteSet
                                 : null;
-                        while (possessiveCount < instruction.Maximum)
+                        while (runCount < instruction.Maximum)
                         {
-                            if (meterPossessive) budget.ChargeWorkspaceStep();
+                            if (meterRun) budget.ChargeWorkspaceStep();
                             if (asciiByteSet is not null && inputIndex < input.Length)
                             {
-                                var remainingMaximum = instruction.Maximum - possessiveCount;
+                                var remainingMaximum = instruction.Maximum - runCount;
                                 var remainingLength = Math.Min(remainingMaximum, input.Length - inputIndex);
-                                if (meterPossessive) remainingLength = Math.Min(remainingLength, 2048);
+                                if (meterRun) remainingLength = Math.Min(remainingLength, 2048);
                                 var stop = asciiByteSet.IndexOfAnyExcept(input.Slice(inputIndex, remainingLength));
                                 var asciiCount = stop < 0 ? remainingLength : stop;
                                 inputIndex += asciiCount;
-                                possessiveCount += asciiCount;
-                                if (possessiveCount >= instruction.Maximum || inputIndex >= input.Length)
+                                runCount += asciiCount;
+                                if (runCount >= instruction.Maximum || inputIndex >= input.Length)
                                 {
                                     break;
                                 }
@@ -964,90 +967,29 @@ internal static class Pcre2BacktrackingRunner
                                     firstMatchingPosition,
                                     matchOptions,
                                     ref budget,
-                                    out var possessiveEnd))
+                                    out var runEnd))
                             {
                                 break;
                             }
 
-                            inputIndex = possessiveEnd;
-                            possessiveCount++;
+                            inputIndex = runEnd;
+                            runCount++;
                         }
-
-                        if (budget.CollectsDiagnostics)
+                        if (!canRetryRun && budget.CollectsDiagnostics)
                         {
-                            budget.RecordPossessiveTokenScanCharacters((ulong)possessiveCount);
+                            budget.RecordPossessiveTokenScanCharacters((ulong)runCount);
                         }
 
-                        if (possessiveCount >= instruction.Minimum)
-                        {
-                            instructionIndex++;
-                            continue;
-                        }
-                        break;
-
-                    case Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat:
-                        if (!budget.IsUnmetered)
-                        {
-                            instructionIndex = instruction.PrimaryTarget;
-                            continue;
-                        }
-
-                        var collapsibleToken = instruction.Token;
-                        var collapsibleMaximum = instruction.Maximum;
-                        var collapsibleStart = inputIndex;
-                        var collapsibleCount = 0;
-                        var collapsibleAsciiByteSet = (collapsibleToken.Options & Pcre2CharacterOptions.Caseless) == 0
-                            ? collapsibleToken.CharacterClass.AsciiByteSet
-                            : null;
-                        while (collapsibleCount < collapsibleMaximum)
-                        {
-                            if (inputIndex < input.Length)
-                            {
-                                if (collapsibleAsciiByteSet is not null)
-                                {
-                                    var remainingMaximum = collapsibleMaximum - collapsibleCount;
-                                    var remainingLength = Math.Min(remainingMaximum, input.Length - inputIndex);
-                                    var stop = collapsibleAsciiByteSet.IndexOfAnyExcept(input.Slice(inputIndex, remainingLength));
-                                    var asciiCount = stop < 0 ? remainingLength : stop;
-                                    inputIndex += asciiCount;
-                                    collapsibleCount += asciiCount;
-                                }
-
-                                if (collapsibleCount >= collapsibleMaximum || inputIndex >= input.Length)
-                                {
-                                    break;
-                                }
-                            }
-
-                            if (!Pcre2CharacterRunner.TryMatchToken(
-                                    collapsibleToken,
-                                    program.Request,
-                                    input,
-                                    inputIndex,
-                                    firstMatchingPosition,
-                                    matchOptions,
-                                    ref budget,
-                                    out var collapsibleEnd))
-                            {
-                                break;
-                            }
-
-                            inputIndex = collapsibleEnd;
-                            collapsibleCount++;
-                        }
-
-                        if (collapsibleCount < instruction.Minimum)
-                        {
-                            break;
-                        }
-
-                        if (collapsibleCount > 0)
+                        if (runCount < instruction.Minimum) break;
+                        // A failed continuation can replay the ordinary repeat
+                        // from the original byte start with its own metering.
+                        if (canRetryRun && runCount > 0)
                         {
                             PushFrame(
                                 ref frames,
                                 new Pcre2BacktrackingFrame(
                                     instruction.PrimaryTarget,
-                                    collapsibleStart,
+                                    runStart,
                                     reportedStartOffsetInBytes,
                                     repeatMutations.Count,
                                     captureMutations.Count,
@@ -1061,7 +1003,7 @@ internal static class Pcre2BacktrackingRunner
                                 ref budget);
                         }
 
-                        instructionIndex = instruction.SecondaryTarget;
+                        instructionIndex = canRetryRun ? instruction.SecondaryTarget : instructionIndex + 1;
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.CaptureStart:

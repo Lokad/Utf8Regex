@@ -339,7 +339,11 @@ of `cat|horse` can succeed with a one-byte heap limit; nonlinear paths that need
 workspace still require admission. This limit does not cover total managed memory.
 Fused scalar repeats can also execute without unused counter vectors. The first
 counter-dependent repeat admits its complete state before acquisition; retries
-reuse it under the same synchronous invocation lifetime. A nonpossessive optional
+reuse it under the same synchronous invocation lifetime. Greedy class runs can
+scan in blocks of at most 2,048 ASCII bytes or one Unicode scalar between
+work and interruption checkpoints. A retryable scan saves one admitted frame.
+Only a failed continuation replays the counted repeat from the original start.
+A nonpossessive optional
 literal, class, dot or subroutine call can use an ordinary branch without a
 repeat counter. Subroutine calls retain their usual state restoration. A greedy
 run before a proved end can omit rewind when no shorter endpoint can satisfy

@@ -139,6 +139,48 @@ public sealed class Pcre2AutoPossessifyTests
     }
 
     [Fact]
+    public void FundedGreedyClassRunAdmitsTheSuccessfulEndpointWithoutPerScalarState()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z]+)Z\z", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 2, MaxWorkingBytes = 1024 }
+        });
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
+        Assert.Contains(program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.CollapsibleTokenRepeat);
+
+        var input = new byte[16 * 1024 + 1];
+        input.AsSpan(0, input.Length - 1).Fill((byte)'a');
+        input[^1] = (byte)'Z';
+        using var source = new CancellationTokenSource();
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
+        var result = regex.Match(input, captures: captures, cancellationToken: source.Token);
+        Assert.Equal((0, input.Length), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+        Assert.Equal((0, input.Length - 1), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+    }
+
+    [Fact]
+    public void FundedGreedyClassRunPollsOriginalTokenDuringLongScan()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?P<run>[a-z]+)Z\z", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10),
+            ResourcePolicy = new() { MaxWorkSteps = 512, MaxDepth = 2, MaxWorkingBytes = 1024 }
+        });
+        var input = new byte[256 * 1024 + 1];
+        input.AsSpan(0, input.Length - 1).Fill((byte)'a');
+        input[^1] = (byte)'Z';
+        using var source = new CancellationTokenSource();
+        var polls = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (++polls == 32) source.Cancel();
+            return 0;
+        });
+        var failure = Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, cancellationToken: source.Token));
+        Assert.Equal(source.Token, failure.CancellationToken);
+    }
+
+    [Fact]
     public void DateWordBoundaryCommitsOnlyUncontrolledPlans()
     {
         const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";
