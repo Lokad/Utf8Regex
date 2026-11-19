@@ -207,6 +207,8 @@ internal readonly struct Utf8SliceInstruction
     // RepeatExit uses a positive B as an exclusive byte bound to the input end.
     // A nonzero RepeatEnd B packs three ASCII stop bytes for its guarded fallback.
     internal int B { get; }
+    // A normal Fork can carry exclusive remaining byte bounds in C and D
+    // for the fall-through and target respectively. Zero leaves an arm unknown.
     internal int C { get; }
     // For a positive unfolded Set, packed ASCII interval endpoints:
     // low byte is first+1, high byte is last; zero means no exact interval.
@@ -1220,6 +1222,8 @@ internal static class Utf8SliceLowerer
                 var previous = code[index];
                 if (previous is { Kind: Utf8SliceInstructionKind.RepeatExit, B: > 0 })
                     code[index] = new(previous.Kind, previous.A, 0, previous.C, previous.D);
+                else if (previous is { Kind: Utf8SliceInstructionKind.Fork, B: 0 })
+                    code[index] = new(previous.Kind, previous.A, 0, 0, 0);
             }
         }
         Span<int> limits = stackalloc int[end - start + 1];
@@ -1248,9 +1252,11 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceInstructionKind.Jump when instruction.A > index && instruction.A <= end:
                     limit = limits[instruction.A - start];
                     break;
-                case Utf8SliceInstructionKind.Fork when instruction.B == 0 && next != 0 && instruction.A > index && instruction.A <= end:
-                    var other = limits[instruction.A - start];
-                    if (other != 0) limit = Math.Max(next, other);
+                case Utf8SliceInstructionKind.Fork when instruction.B == 0:
+                    var other = instruction.A > index && instruction.A <= end ? limits[instruction.A - start] : 0;
+                    if (instruction.C != next || instruction.D != other)
+                        code[index] = new(instruction.Kind, instruction.A, 0, next, other);
+                    if (next != 0 && other != 0) limit = Math.Max(next, other);
                     break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
                 case Utf8SliceInstructionKind.RepeatLazy:

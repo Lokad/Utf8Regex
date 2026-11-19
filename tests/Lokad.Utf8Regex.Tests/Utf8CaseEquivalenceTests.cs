@@ -9,6 +9,35 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8CaseEquivalenceTests
 {
     [Fact]
+    public void ClosedAsciiCaseFibersUseOrdinaryMasksAndKeepCaptureRanges()
+    {
+        using var regex = Utf8Regex.Compile("^#?(?<digits>[a-f0-9]{6}|[a-f0-9]{3})$",
+            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        var instructions = regex.Inspection.AvailableOwnedSliceProgram.Instructions;
+        Assert.Contains(instructions, instruction => instruction.Kind == Utf8SliceInstructionKind.Set);
+        Assert.DoesNotContain(instructions, instruction => instruction is { Kind: Utf8SliceInstructionKind.Set, C: not 0 });
+
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        Assert.Equal(new Utf8CaptureRange(0, 4), regex.Match("#Af1\n"u8, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(1, 4), captures[1]);
+        Assert.False(regex.Match("#AK1"u8, captures: captures).Success);
+        Assert.False(captures[1].Success);
+    }
+
+    [Theory]
+    [InlineData("^([a-f0-9]{3}|[a-f0-9]{6})$")]
+    [InlineData("^([a-f0-9]{6}|[a-f0-9]{3})$")]
+    public void EndWidthRulesOutEitherArmBeforeAcquiringAFrame(string pattern)
+    {
+        var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkingBytes = 1 } };
+        using var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase, policy);
+
+        Assert.Equal(new Utf8CaptureRange(0, 6), regex.Match("AF01BC"u8));
+        Assert.Equal(new Utf8CaptureRange(0, 6), regex.Match("AF01BC\n"u8));
+        Assert.False(regex.Match("AF01BC\n\n"u8).Success);
+    }
+
+    [Fact]
     public void FoldedAsciiFamilyKeepsItsBytePlanAndVerifiesKelvinSubjects()
     {
         const string pattern = "kat|abc";

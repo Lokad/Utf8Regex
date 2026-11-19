@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Numerics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Internal.FrontEnd;
@@ -127,27 +129,52 @@ internal static class Utf8ScalarAsciiProjector
     {
         charClass = definition;
         if (!folded) return !definition.IsEmpty;
-        ulong low = definition.ActualLowMask, high = definition.ActualHighMask;
-        var lastBehavior = (options & RegexOptions.CultureInvariant) != 0 ? 0 : 2;
-        for (var value = 0; value < 128; value++)
+        if (!TryCloseAsciiCaseFiber(definition.ActualLowMask, definition.ActualHighMask,
+            0, (options & RegexOptions.CultureInvariant) != 0 ? 0 : 2, out var low, out var high))
         {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (!definition.Contains((byte)value)) continue;
-            for (var behavior = 0; behavior <= lastBehavior; behavior++)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)value,
-                    (Utf8ScalarCaseBehavior)behavior))
-                {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    if (equivalent >= 128) { charClass = default; return false; }
-                    if (equivalent < 64) low |= 1UL << equivalent;
-                    else high |= 1UL << (equivalent - 64);
-                }
-            }
+            charClass = default;
+            return false;
         }
         charClass = new AsciiCharClass(low, high);
-        return !charClass.IsEmpty;
+        return true;
+    }
+
+    // Lowering already knows the culture. Only replace the mask if all its
+    // equivalents are one-byte scalars under that behavior.
+    internal static bool TryCloseAsciiCaseFiber(Span<byte> mask, Utf8ScalarCaseBehavior behavior)
+    {
+        if (!TryCloseAsciiCaseFiber(BinaryPrimitives.ReadUInt64LittleEndian(mask),
+            BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]), (int)behavior, (int)behavior, out var low, out var high))
+            return false;
+        BinaryPrimitives.WriteUInt64LittleEndian(mask, low);
+        BinaryPrimitives.WriteUInt64LittleEndian(mask[8..], high);
+        return true;
+    }
+
+    private static bool TryCloseAsciiCaseFiber(ulong definitionLow, ulong definitionHigh,
+        int firstBehavior, int lastBehavior, out ulong low, out ulong high)
+    {
+        low = definitionLow;
+        high = definitionHigh;
+        Utf8ConstructionScope.ChargeWork(2);
+        for (var word = 0; word < 2; word++)
+            for (var bits = word == 0 ? definitionLow : definitionHigh; bits != 0; bits &= bits - 1)
+            {
+                Utf8ConstructionScope.ChargeWork(1);
+                var value = (char)(word * 64 + BitOperations.TrailingZeroCount(bits));
+                for (var behavior = firstBehavior; behavior <= lastBehavior; behavior++)
+                {
+                    Utf8ConstructionScope.ChargeWork(1);
+                    foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents(value, (Utf8ScalarCaseBehavior)behavior))
+                    {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        if (equivalent >= 128) return false;
+                        if (equivalent < 64) low |= 1UL << equivalent;
+                        else high |= 1UL << (equivalent - 64);
+                    }
+                }
+            }
+        return (low | high) != 0;
     }
 
     // Construction queries may inspect any owned class on the ASCII domain.

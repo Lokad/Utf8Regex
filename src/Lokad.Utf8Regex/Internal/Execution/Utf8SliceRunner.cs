@@ -1198,6 +1198,22 @@ internal static partial class Utf8SliceRunner
                     // be rolled back, including their balance heads.
                     if (instruction.B == 0 && !program.RightToLeft)
                     {
+                        if ((instruction.C | instruction.D) != 0)
+                        {
+                            var remaining = input.Length - inputIndex;
+                            var excludesTarget = instruction.D > 0 && remaining >= instruction.D;
+                            if (instruction.C > 0 && remaining >= instruction.C)
+                            {
+                                failed = excludesTarget;
+                                if (!failed) programIndex = instruction.A;
+                                break;
+                            }
+                            if (excludesTarget)
+                            {
+                                programIndex++;
+                                break;
+                            }
+                        }
                         if (!MayMatchForkPrefix(program, input, inputIndex, programIndex + 1))
                         {
                             programIndex = instruction.A;

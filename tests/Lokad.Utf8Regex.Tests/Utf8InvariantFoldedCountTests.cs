@@ -191,8 +191,10 @@ public sealed class Utf8InvariantFoldedCountTests
             }
         });
         Assert.Equal(512, tiny.Count(input));
-        var withKelvin = input.Concat(" K "u8.ToArray()).ToArray();
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => tiny.Count(withKelvin));
+        // The lowered ASCII prefixes rule out the other fork arm without a
+        // frame. The owned path can still verify the wider Kelvin spelling.
+        var withKelvin = input.Concat(" SherlocK Holmes "u8.ToArray()).ToArray();
+        Assert.Equal(513, tiny.Count(withKelvin));
         using var tokens = new CancellationTokenSource();
         tokens.Cancel();
         var ordinary = new Utf8Regex("Sherlock Holmes|John Watson", options: options);

@@ -321,10 +321,12 @@ internal static class Utf8OwnedTreeSliceLowerer
                         if (hit != (((int)member & 1) != 0)) mask[value >> 3] |= (byte)(1 << (value & 7));
                     }
                 }
+                var foldMask = foldCase && (categories.Count != 0 || members.Count != 0 ||
+                    !Utf8ScalarAsciiProjector.TryCloseAsciiCaseFiber(mask, caseBehavior));
                 var shorthand = arena.Take(members, segments.Count != 0 || position < data.Length);
                 segments.Add(categories.Count == 0
-                    ? new Utf8SliceNode.SetNode(mask, negated, shorthand, foldCase)
-                    : new Utf8SliceNode.CategorySetNode(mask, negated, shorthand, arena.Take(categories, true), foldCase));
+                    ? new Utf8SliceNode.SetNode(mask, negated, shorthand, foldMask)
+                    : new Utf8SliceNode.CategorySetNode(mask, negated, shorthand, arena.Take(categories, true), foldMask));
             }
             if (segments.Count == 0) return null;
             return segments.Count == 1 ? segments[0] : Utf8SliceClassProgram.Subtract(segments, arena);
