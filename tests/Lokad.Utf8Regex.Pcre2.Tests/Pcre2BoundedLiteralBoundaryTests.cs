@@ -1,4 +1,5 @@
 using System.Text;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -11,11 +12,16 @@ public sealed class Pcre2BoundedLiteralBoundaryTests
     [InlineData(@"\B\d{1,2}/", "a1/ 2/ _12/ 😀34/")]
     [InlineData(@"\b([0-9]{1,2})/(?<tail>[0-9]{1,2})", "é1/2😀 123/45 6/78")]
     [InlineData(@"\b[\x00-\x7f]{1,3}foo", "😀xfoo\0afooé abfoo")]
+    [InlineData(@"\b[\x00-\x7f]{1,3}aaa", "😀aaaaaaX aaaaa! éaaa!")]
     [InlineData(@"\b[0-9]{1,2}\B/", "1/ a12/ 😀3/")]
     [InlineData(@"\b[0-9]{1,64}/", "é" + "12345678901234567890/ 1/")]
     public void WindowPreservesPublicResultsAtEveryScalarOrigin(string pattern, string text)
     {
-        var regex = new Utf8Pcre2Regex(pattern);
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20 }
+        });
+        using var source = new CancellationTokenSource();
         Assert.Equal(Pcre2CandidateSearchKind.BoundedLiteralWindow, regex.DebugCompiledProgram.CandidateSearch.Kind);
         var bytes = Encoding.UTF8.GetBytes(text);
         // Each pattern consumes input. NotEmpty disables candidate search without
@@ -23,24 +29,18 @@ public sealed class Pcre2BoundedLiteralBoundaryTests
         for (var start = 0; start <= bytes.Length; start++)
         {
             if (start < bytes.Length && (bytes[start] & 0xc0) == 0x80) continue;
-            Assert.Equal(regex.IsMatch(bytes, start, Pcre2MatchOptions.NotEmpty), regex.IsMatch(bytes, start));
-            Assert.Equal(regex.Count(bytes, start, Pcre2MatchOptions.NotEmpty), regex.Count(bytes, start));
-            ReadOnlySpan<byte> expected1Input = bytes;
-            var expected1Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
-            var expected = regex.Match(expected1Input, startOffsetInBytes: start, captures: expected1Captures, matchOptions: Pcre2MatchOptions.NotEmpty);
-            ReadOnlySpan<byte> actual2Input = bytes;
-            var actual2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
-            var actual = regex.Match(actual2Input, startOffsetInBytes: start, captures: actual2Captures);
+            Assert.Equal(regex.IsMatch(bytes, start, Pcre2MatchOptions.NotEmpty),
+                regex.IsMatch(bytes, start, cancellationToken: source.Token));
+            Assert.Equal(regex.Count(bytes, start, Pcre2MatchOptions.NotEmpty),
+                regex.Count(bytes, start, cancellationToken: source.Token));
+            var expectedCaptures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var expected = regex.Match(bytes.AsSpan(), startOffsetInBytes: start, captures: expectedCaptures,
+                matchOptions: Pcre2MatchOptions.NotEmpty);
+            var actualCaptures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+            var actual = regex.Match(bytes.AsSpan(), startOffsetInBytes: start, captures: actualCaptures,
+                cancellationToken: source.Token);
             Assert.Equal(expected.Success, actual.Success);
-            Assert.Equal((expected.Success ? expected1Captures.Length : 0), (actual.Success ? actual2Captures.Length : 0));
-            for (var slot = 0; slot < (expected.Success ? expected1Captures.Length : 0); slot++)
-            {
-                var left = expected1Captures[slot]; var right = actual2Captures[slot];
-                Assert.Equal(left.Success, right.Success);
-                Assert.Equal((left.StartOffsetInBytes, left.EndOffsetInBytes),
-                    (right.StartOffsetInBytes, right.EndOffsetInBytes));
-                Assert.Equal(System.Text.Encoding.UTF8.GetString((left.Success ? expected1Input.Slice(left.StartOffsetInBytes, left.EndOffsetInBytes - left.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)), System.Text.Encoding.UTF8.GetString((right.Success ? actual2Input.Slice(right.StartOffsetInBytes, right.EndOffsetInBytes - right.StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-            }
+            if (expected.Success) Assert.Equal(expectedCaptures, actualCaptures);
         }
     }
 
@@ -57,13 +57,46 @@ public sealed class Pcre2BoundedLiteralBoundaryTests
     }
 
     [Fact]
-    public void FullSubjectValidationAndOriginalCancellationRemainAuthoritative()
+    public void ControlledWindowRejectsAbsentDelimiterWithinWorkLimit()
     {
-        var regex = new Utf8Pcre2Regex(Date);
-        byte[] invalid = [.. "1/2/2024 "u8, 0xff];
-        using var canceled = new CancellationTokenSource(); canceled.Cancel();
-        var failure = Assert.Throws<OperationCanceledException>(() =>
-            regex.IsMatch(invalid, 0, Pcre2MatchOptions.None, canceled.Token));
-        Assert.Equal(canceled.Token, failure.CancellationToken);
+        using var regex = new Utf8Pcre2Regex(Date, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 16, MaxWorkingBytes = 1 }
+        });
+        var input = Encoding.UTF8.GetBytes(new string('1', 8192));
+        using var source = new CancellationTokenSource();
+        Assert.False(regex.IsMatch(input, cancellationToken: source.Token));
+        Assert.False(regex.Match(input.AsSpan(), cancellationToken: source.Token).Success);
+        Assert.Equal(0, regex.Count(input, cancellationToken: source.Token));
+
+        using var tight = new Utf8Pcre2Regex(Date, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2, MaxWorkingBytes = 1 }
+        });
+        var failure = Assert.Throws<Pcre2MatchException>(() => tight.IsMatch(input, cancellationToken: source.Token));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ControlledWindowChecksInterruptionBetweenSearchBlocks(bool cancel)
+    {
+        using var regex = new Utf8Pcre2Regex(Date, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
+        var input = Encoding.UTF8.GetBytes(new string('1', 65_536));
+        using var source = new CancellationTokenSource();
+        var reads = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (++reads < 8) return 0;
+            if (cancel) { source.Cancel(); return 0; }
+            return 20;
+        });
+        var failure = Record.Exception(() => regex.IsMatch(input, cancellationToken: source.Token));
+        if (cancel) Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        else Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
     }
 }

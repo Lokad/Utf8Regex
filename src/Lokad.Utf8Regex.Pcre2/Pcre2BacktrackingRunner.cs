@@ -278,13 +278,14 @@ internal static class Pcre2BacktrackingRunner
             : bytes.Length - program.MinimumByteLength;
         var meterLiteralPrefix = candidateSearch.Kind == Pcre2CandidateSearchKind.BranchLeadingLiterals &&
             !budget.WorkingInvocation.IsUnmetered;
-        var meterRunDelimiter = candidateSearch.Kind == Pcre2CandidateSearchKind.LeadingRunThenLiteral &&
+        var meterDelimiter = candidateSearch.Kind is (Pcre2CandidateSearchKind.LeadingRunThenLiteral or
+            Pcre2CandidateSearchKind.BoundedLiteralWindow) &&
             !budget.WorkingInvocation.IsUnmetered;
         var useCandidateSearch = !anchored &&
             candidateSearch.HasValue &&
             matchOptions == Pcre2MatchOptions.None &&
             (candidate < maximumCandidate || candidateSearch.Kind != Pcre2CandidateSearchKind.BranchLeadingLiterals) &&
-            (budget.IsUnmetered || meterLiteralPrefix || meterRunDelimiter || candidateSearch.MinimumWordRunLength > 0);
+            (budget.IsUnmetered || meterLiteralPrefix || meterDelimiter || candidateSearch.MinimumWordRunLength > 0);
         var candidateState = new PreparedSearchScanState(
             candidate,
             new PreparedMultiLiteralScanState(candidate, candidate, 0));
@@ -305,7 +306,7 @@ internal static class Pcre2BacktrackingRunner
                         program.Request,
                         bytes,
                         start.Value,
-                        meterRunDelimiter,
+                        meterDelimiter,
                         ref candidateState,
                         ref nextWindowCandidate,
                         ref lastWindowCandidate,
@@ -431,7 +432,7 @@ internal static class Pcre2BacktrackingRunner
         Pcre2CompileRequest request,
         ReadOnlySpan<byte> input,
         int lowerBound,
-        bool meterRunDelimiter,
+        bool meterDelimiter,
         ref PreparedSearchScanState state,
         ref int nextWindowCandidate,
         ref int lastWindowCandidate,
@@ -459,17 +460,19 @@ internal static class Pcre2BacktrackingRunner
                 candidateSearch,
                 input,
                 lowerBound,
+                meterDelimiter,
                 ref state,
                 ref nextWindowCandidate,
                 ref lastWindowCandidate,
                 ref windowCandidateEnd,
+                ref budget,
                 out candidate);
         }
 
         while (true)
         {
             int literalStart;
-            if (meterRunDelimiter)
+            if (meterDelimiter)
             {
                 // A delimiter can occur beyond the last possible match start.
                 if (!TryFindMeteredLiteral(candidateSearch, input, input.Length, ref state, ref budget, out literalStart)) break;
@@ -506,7 +509,7 @@ internal static class Pcre2BacktrackingRunner
                 var consumed = false;
                 while (TryRetreatScalarToBoundary(input, lowerBound, runStart, out var previous))
                 {
-                    if (meterRunDelimiter && (rewindSteps++ & 63) == 0) budget.ChargeWorkspaceStep();
+                    if (meterDelimiter && (rewindSteps++ & 63) == 0) budget.ChargeWorkspaceStep();
                     if (!Pcre2CharacterRunner.TryMatchToken(candidateSearch.LeadingRunTokens[i], request, input,
                             previous, lowerBound, Pcre2MatchOptions.None, ref budget, out var next) || next != runStart) break;
                     runStart = previous;
@@ -605,10 +608,12 @@ internal static class Pcre2BacktrackingRunner
         Pcre2CandidateSearchProgram candidateSearch,
         ReadOnlySpan<byte> input,
         int lowerBound,
+        bool meterDelimiter,
         ref PreparedSearchScanState state,
         ref int nextWindowCandidate,
         ref int lastWindowCandidate,
         ref int windowCandidateEnd,
+        ref Pcre2ResourceBudget budget,
         out int candidate)
     {
         while (true)
@@ -625,17 +630,26 @@ internal static class Pcre2BacktrackingRunner
                 }
             }
 
-            if (!candidateSearch.Searcher.TryFindNextOverlappingMatch(input, ref state, out var requiredLiteral))
+            int literalStart;
+            if (meterDelimiter)
             {
-                candidate = -1;
-                return false;
+                // The required literal can begin after the last candidate.
+                if (!TryFindMeteredLiteral(candidateSearch, input, input.Length, ref state, ref budget, out literalStart)) break;
+            }
+            else
+            {
+                if (!candidateSearch.Searcher.TryFindNextOverlappingMatch(input, ref state, out var requiredLiteral)) break;
+                literalStart = requiredLiteral.Index;
             }
 
             nextWindowCandidate = Math.Max(
                 Math.Max(lowerBound, lastWindowCandidate + 1),
-                requiredLiteral.Index - candidateSearch.WindowConstraint.MaximumOffset);
-            windowCandidateEnd = requiredLiteral.Index - candidateSearch.WindowConstraint.MinimumOffset;
+                literalStart - candidateSearch.WindowConstraint.MaximumOffset);
+            windowCandidateEnd = literalStart - candidateSearch.WindowConstraint.MinimumOffset;
         }
+
+        candidate = -1;
+        return false;
     }
 
     private static bool MatchesCandidateWindow(
