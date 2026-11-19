@@ -205,6 +205,7 @@ internal readonly struct Utf8SliceInstruction
     internal Utf8SliceInstructionKind Kind { get; }
     internal int A { get; }
     // RepeatExit uses a positive B as an exclusive byte bound to the input end.
+    // A nonzero RepeatEnd B packs three ASCII stop bytes for its guarded fallback.
     internal int B { get; }
     internal int C { get; }
     // For a positive unfolded Set, packed ASCII interval endpoints:
@@ -215,6 +216,25 @@ internal readonly struct Utf8SliceInstruction
     // existing instruction layout; UINT_MAX is their distinct infinity marker.
     internal long RepeatMinimum => unchecked((uint)C);
     internal long RepeatMaximum => D == -1 ? long.MaxValue : unchecked((uint)D);
+
+    internal static bool TryGetLiteralAfterCaptureMarkers(ReadOnlySpan<Utf8SliceInstruction> instructions,
+        int index, out int scalar)
+    {
+        for (var inspected = 0; inspected < 32 && (uint)index < (uint)instructions.Length; inspected++, index++)
+        {
+            var instruction = instructions[index];
+            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                continue;
+            if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && System.Text.Rune.IsValid(instruction.A))
+            {
+                scalar = instruction.A;
+                return true;
+            }
+            break;
+        }
+        scalar = -1;
+        return false;
+    }
 }
 
 /// <summary>Immutable lowered slice program: instruction array, ASCII set masks,
@@ -1502,7 +1522,8 @@ internal static class Utf8SliceLowerer
                         request = new(repeat.Body, false, MirrorExecute, 0);
                         return true;
                     }
-                    Emit(new(Utf8SliceInstructionKind.RepeatEnd, frame.Mark, 0, 0, 0));
+                    var stopBytes = FindGuardedRepeatStopBytes(repeat, frame.Mark);
+                    Emit(new(Utf8SliceInstructionKind.RepeatEnd, frame.Mark, stopBytes, 0, 0));
                     var repeatExit = Instructions.Count;
                     Emit(new(Utf8SliceInstructionKind.RepeatExit, frame.RepeatId, 0, 0, 0));
                     var repeatKind = repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy : Utf8SliceInstructionKind.RepeatGreedy;
@@ -1813,6 +1834,64 @@ internal static class Utf8SliceLowerer
                     inlinePrefixLength + 1, positive ? 1 : 0);
             }
             return false;
+        }
+
+        private int FindGuardedRepeatStopBytes(Utf8SliceNode.RepeatNode repeat, int start)
+        {
+            if (MirrorExecute || repeat.Lazy || repeat.Minimum != 0 || repeat.Maximum != long.MaxValue ||
+                repeat.Body is not Utf8SliceNode.AlternationNode)
+                return 0;
+            var code = Instructions.Span;
+            var atom = code.Length - 1;
+            if (code[atom] is not { Kind: Utf8SliceInstructionKind.Dot, A: 1 }) return 0;
+
+            // At other bytes the earlier arms cannot reach their first literal.
+            // The final arm must be a pure negative literal assertion and a dot.
+            Span<byte> stops = stackalloc byte[3];
+            var count = 0;
+            var position = start + 1;
+            for (var arms = 0; position < atom &&
+                code[position] is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } arm; arms++)
+            {
+                Budget.ChargeWork(33);
+                if (arms == 3 || arm.A <= position || arm.A >= atom ||
+                    !Utf8SliceInstruction.TryGetLiteralAfterCaptureMarkers(code, position + 1, out var first) ||
+                    !AddStop(stops, ref count, first))
+                    return 0;
+                position = arm.A;
+            }
+            if (position == start + 1 || position >= atom ||
+                code[position] is not { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: > 0, D: 0 } guard || guard.A != atom)
+                return 0;
+
+            var assertionEnd = atom - 2;
+            position++;
+            Budget.ChargeWork((ulong)(assertionEnd - position));
+            // A common prefix contributes just its first byte. Otherwise all
+            // arms must start with a literal. An empty arm would always match.
+            if (guard.C == 1)
+            {
+                while (position < assertionEnd && code[position] is { Kind: Utf8SliceInstructionKind.Fork } choice)
+                {
+                    if (!AddLiteralStop(stops, ref count, code[position + 1])) return 0;
+                    position = choice.A;
+                }
+            }
+            if (position >= assertionEnd || !AddLiteralStop(stops, ref count, code[position])) return 0;
+            stops[count..].Fill(stops[count - 1]);
+            return (1 << 24) | stops[0] | (stops[1] << 8) | (stops[2] << 16);
+
+            static bool AddLiteralStop(Span<byte> bytes, ref int length, Utf8SliceInstruction literal)
+                => literal is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && AddStop(bytes, ref length, literal.A);
+
+            static bool AddStop(Span<byte> bytes, ref int length, int scalar)
+            {
+                if ((uint)scalar >= 0x80) return false;
+                if (bytes[..length].Contains((byte)scalar)) return true;
+                if (length == bytes.Length) return false;
+                bytes[length++] = (byte)scalar;
+                return true;
+            }
         }
 
         private void Patch(int index, int target)

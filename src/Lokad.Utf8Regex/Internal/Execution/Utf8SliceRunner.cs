@@ -1136,14 +1136,14 @@ internal static partial class Utf8SliceRunner
                     // instructions, including balancing operations.
                     if (instruction.B == 0 && !program.RightToLeft)
                     {
-                        if (TryGetLiteralAfterCaptureMarkers(instructions, programIndex + 1, out var forkFirstScalar) &&
+                        if (Utf8SliceInstruction.TryGetLiteralAfterCaptureMarkers(instructions, programIndex + 1, out var forkFirstScalar) &&
                             (uint)forkFirstScalar < 0x80 &&
                             (inputIndex >= input.Length || input[inputIndex] != forkFirstScalar))
                         {
                             programIndex = instruction.A;
                             break;
                         }
-                        if (TryGetLiteralAfterCaptureMarkers(instructions, instruction.A, out var forkOtherScalar) &&
+                        if (Utf8SliceInstruction.TryGetLiteralAfterCaptureMarkers(instructions, instruction.A, out var forkOtherScalar) &&
                             (uint)forkOtherScalar < 0x80 &&
                             (inputIndex >= input.Length || input[inputIndex] != forkOtherScalar))
                         {
@@ -1360,8 +1360,13 @@ internal static partial class Utf8SliceRunner
                 {
                     var repeat = instructions[instruction.A];
                     if (!program.RightToLeft && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
-                        repeat.A == programIndex + 1 && instructions[repeat.A].B == 0)
-                        stacks.CompactScalarRepeatExit(frameBase, repeat.A, positions[repeat.B], input, inputIndex);
+                        repeat.A == programIndex + 1 && instructions[repeat.A].B == 0 &&
+                        stacks.CompactScalarRepeatExit(frameBase, repeat.A, positions[repeat.B], input, inputIndex) &&
+                        instruction.B != 0)
+                    {
+                        failure = stacks.ScanScalarRepeatExit(input, instruction.B, ref positions[repeat.B], ref inputIndex, ref invocation);
+                        if (failure != Utf8ExecutionLimitKind.None) goto Failure;
+                    }
                     programIndex = instruction.A;
                     break;
                 }
@@ -2027,19 +2032,19 @@ internal static partial class Utf8SliceRunner
             return Push(ref _frameTables, ref _frameCount, FrameChunkCapacity, frame, ref invocation, ref _reservedBytes, out Breach);
         }
 
-        internal void CompactScalarRepeatExit(int frameBase, int exit, int start, ReadOnlySpan<byte> input, int end)
+        internal bool CompactScalarRepeatExit(int frameBase, int exit, int start, ReadOnlySpan<byte> input, int end)
         {
-            if (_frameCount <= frameBase) return;
+            if (_frameCount <= frameBase) return false;
             ref var latest = ref FrameAt(_frameCount - 1);
             // The repeat's own exit must be on top, with no surviving body
             // alternative, capture change, or nested repeat mutation.
             if (latest.ResumeKind != Utf8SliceResumeKind.RepeatUnwind || latest.Target != exit ||
                 latest.InputIndex != start || latest.TrailCount != _trailCount || latest.JournalCount != _journalCount - 1 ||
                 !TryGetScalarWidthEndingAt(input, end, out var width) || end - start != width)
-                return;
+                return false;
 
             var mark = latest.JournalCount;
-            if (_journalTables[mark / JournalChunkCapacity][mark % JournalChunkCapacity].RepeatId != latest.Aux) return;
+            if (_journalTables[mark / JournalChunkCapacity][mark % JournalChunkCapacity].RepeatId != latest.Aux) return false;
             if (_frameCount - frameBase > 1)
             {
                 ref var previous = ref FrameAt(_frameCount - 2);
@@ -2052,13 +2057,53 @@ internal static partial class Utf8SliceRunner
                     previous.InputIndex = end;
                     _frameCount--;
                     _journalCount--;
-                    return;
+                    return true;
                 }
             }
 
             latest.ResumeKind = Utf8SliceResumeKind.ScalarRepeatRewind;
             latest.Aux = start;
             latest.InputIndex = end;
+            return true;
+        }
+
+        internal Utf8ExecutionLimitKind ScanScalarRepeatExit(ReadOnlySpan<byte> input, int stops,
+            ref int lastStart, ref int end, ref Utf8SliceInvocation invocation)
+        {
+            if (end == input.Length) return Utf8ExecutionLimitKind.None;
+            var first = (byte)stops;
+            var second = (byte)(stops >> 8);
+            var third = (byte)(stops >> 16);
+            var next = input[end];
+            if (next == first || next == second || next == third) return Utf8ExecutionLimitKind.None;
+
+            var breach = invocation.TryChargeInputStep();
+            // The skipped body would hold one transient repeat exit and
+            // evaluate its assertion above the existing compact rewind.
+            if (breach == Utf8ExecutionLimitKind.None) breach = invocation.Budget.TryNoteDepth((uint)_frameCount + 2);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var position = end;
+            while (true)
+            {
+                var block = input.Slice(position, Math.Min(512, input.Length - position));
+                var stop = block.IndexOfAny(first, second, third);
+                if (stop >= 0) { position += stop; break; }
+                position += block.Length;
+                if (position == input.Length) break;
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+            }
+
+            invocation.Budget.ThrowIfCancellationRequested();
+            invocation.Budget.CheckDeadline();
+            // A found ASCII byte or the end of valid input is a scalar
+            // boundary even if the intermediate blocks split a scalar.
+            if (TryGetScalarWidthEndingAt(input, position, out var width))
+            {
+                lastStart = position - width;
+                FrameAt(_frameCount - 1).InputIndex = end = position;
+            }
+            return Utf8ExecutionLimitKind.None;
         }
 
         internal bool PushTrail(int slot, int oldValue, int newValue, bool isStart, ref Utf8SliceInvocation invocation)

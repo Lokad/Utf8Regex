@@ -47,18 +47,35 @@ public sealed class Utf8SliceBalanceTests
     public void CompoundScalarRunsRetainBalanceChoicesUnderWorkingCap(bool closed)
     {
         const string pattern = @"\ABEGIN(?:(?<seen>(?<open>BEGIN))|(?<-open>END)|(?:(?!BEGIN|END)[\s\S]))*END(?(open)(?!))";
-        var run = new string('x', 6000) + "😀é";
+        var run = new string('x', 511) + "😀é\nBEGIx ENx" + new string('x', 5487);
         var text = "BEGIN" + run + "BEGIN" + run + "END" + run + (closed ? "END" : "tail");
         var input = Encoding.UTF8.GetBytes(text);
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
         {
-            ResourcePolicy = new() { MaxWorkingBytes = 32768, MaxDepth = 65536, MaxWorkSteps = 2000000 }
+            ResourcePolicy = new() { MaxWorkingBytes = 32768, MaxDepth = 128, MaxWorkSteps = 66000 }
         });
         var expected = new Regex(pattern, RegexOptions.Compiled).Match(text);
         Assert.Equal(closed, expected.Success);
         Assert.Equal(closed ? 1 : 0, regex.Count(input, token.Token));
         Assert.Equal(closed, regex.IsMatch(input, token.Token));
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
+    }
+
+    [Fact]
+    public void CompoundScanCanRewindToAUnicodeSuffixInsideTheRun()
+    {
+        const string pattern = @"\A(?:(?<arm>AB)|(?!STOP|HALT)[\s\S])*(?<tail>Ω😀STOP)";
+        var text = "AB" + new string('x', 512) + "😀\n" + new string('x', 4096) + "Ω😀STOP";
+        var expected = new Regex(pattern).Match(text);
+        Assert.True(expected.Success);
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1000 }
+        });
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token));
         Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
     }

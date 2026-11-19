@@ -717,8 +717,8 @@ internal static partial class Utf8SliceRunner
             // Each alternative's first consuming atom must be an excluded literal.
             // Only inspect through bounded capture markers;
             // the VM still executes their effects and chooses the branch normally.
-            if (!TryGetLiteralAfterCaptureMarkers(instructions, tail + 1, out excludedScalar) ||
-                !TryGetLiteralAfterCaptureMarkers(instructions, suffix.A, out alternateScalar))
+            if (!Utf8SliceInstruction.TryGetLiteralAfterCaptureMarkers(instructions, tail + 1, out excludedScalar) ||
+                !Utf8SliceInstruction.TryGetLiteralAfterCaptureMarkers(instructions, suffix.A, out alternateScalar))
                 return false;
         }
         else
@@ -947,25 +947,6 @@ internal static partial class Utf8SliceRunner
             width += scalar.Utf8SequenceLength;
         }
         return width != 0;
-    }
-
-    private static bool TryGetLiteralAfterCaptureMarkers(ReadOnlySpan<Utf8SliceInstruction> instructions,
-        int index, out int scalar)
-    {
-        for (var inspected = 0; inspected < 32 && (uint)index < (uint)instructions.Length; inspected++, index++)
-        {
-            var instruction = instructions[index];
-            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
-                continue;
-            if (instruction is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && Rune.IsValid(instruction.A))
-            {
-                scalar = instruction.A;
-                return true;
-            }
-            break;
-        }
-        scalar = -1;
-        return false;
     }
 
     // Shared by generic repeats and complete capture roots. Scalar alignment is

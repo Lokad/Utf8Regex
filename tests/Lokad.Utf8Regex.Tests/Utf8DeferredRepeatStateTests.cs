@@ -91,6 +91,7 @@ public sealed class Utf8DeferredRepeatStateTests
     [InlineData(@"a{1,3}?a\z", "aaaa")]
     [InlineData("a{1,3}(?=b{1,2}c)b+c", "aaabbc")]
     [InlineData(@"\A(?:AB|(?:(?!STOP|HALT)[\s\S]))+ΩSTOP", "é😀ΩSTOP")]
+    [InlineData(@"\A(?:AB|(?:(?!STOP|HALT)[\s\S]))*ΩSTOP", "é😀aaΩSTOP")]
     public void EveryWorkCutoffAndWorkingDenialRefundsTheEnclosingLoan(string pattern, string text)
     {
         var program = Program(pattern); var input = System.Text.Encoding.UTF8.GetBytes(text);
@@ -118,6 +119,25 @@ public sealed class Utf8DeferredRepeatStateTests
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         }
         Assert.True(succeeded); Assert.True(deniedWorking);
+    }
+
+    [Theory]
+    [InlineData(false)] [InlineData(true)]
+    public void InterruptionDuringGuardedBlockScanRefundsTheEnclosingLoan(bool expire)
+    {
+        var program = Program(@"\A(?:AB|(?!STOP|HALT)[\s\S])*STOP");
+        var input = System.Text.Encoding.UTF8.GetBytes(new string('x', 65536) + "STOP");
+        using var token = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var invocation = new Utf8SliceInvocation(new(10000, 1000, 1 << 20), TimeSpan.FromMilliseconds(20), token.Token);
+        invocation.CheckpointHook = _ => { if (expire) ticks = 25; else token.Cancel(); };
+        Assert.True(invocation.Ledger.TryReserve(13));
+        var failure = Record.Exception(() => Utf8SliceRunner.TryMatchAt(program, input, 0, [], [], true, ref invocation));
+        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(failure);
+        else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(13);
     }
 
     [Theory]
