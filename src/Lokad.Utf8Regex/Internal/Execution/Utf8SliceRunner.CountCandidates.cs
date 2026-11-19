@@ -441,13 +441,13 @@ internal static partial class Utf8SliceRunner
         byte delimiter, ref Utf8SliceInvocation invocation, out bool singleAttempt)
     {
         singleAttempt = false;
-        if (program.GroupCount != 0 || program.Assertions.Length != 0 ||
+        if (program.ReadsCaptures || program.Assertions.Length != 0 ||
             program.Instructions[leadingClass - 1].RepeatMaximum != long.MaxValue)
             return Utf8ExecutionLimitKind.None;
 
         // An excluded delimiter fixes the suffix entry for every start in the
-        // run. With no captures or assertion continuations, later starts have
-        // the same suffix state and fewer scalars available for the minimum.
+        // run. When matching cannot read captures, later starts have the
+        // same suffix decisions and fewer scalars available for the minimum.
         var breach = invocation.TryChargeStep();
         if (breach != Utf8ExecutionLimitKind.None) return breach;
         breach = TryMatchScalarClass(program, program.Instructions[leadingClass], new Rune(delimiter),

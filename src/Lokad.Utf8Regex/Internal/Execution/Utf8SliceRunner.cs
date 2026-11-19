@@ -863,7 +863,7 @@ internal static partial class Utf8SliceRunner
         {
             classSearch = GetAlignedDelimiterSearch(program, whitespaceLiteralIndex, candidatePlan);
             if (!literalImmediatelyAfterRepeat && classSearch is null) whitespaceLiteral = -1;
-            if (literalImmediatelyAfterRepeat && classSearch is not null)
+            if (directClassLiteral && classSearch is not null)
             {
                 var proofBreach = TryProveSingleWindowAttempt(program, leadingClass, (byte)whitespaceLiteral,
                     ref invocation, out singleWindowAttempt);

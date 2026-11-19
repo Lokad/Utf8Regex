@@ -227,11 +227,11 @@ range proof. Controlled gap searches cover at most 2048 bytes per checkpoint,
 and rejected neighbouring bytes still consume work. Every surviving start runs the
 normal VM with captures and rollback. Nullable, contiguous-anchor, folded and RTL
 roots retain their existing discovery, as do initial beginning anchors.
-When a direct delimiter is outside an unbounded prefix class, an eligible
-capture-free window needs only one complete verification before moving on to
-the next window. This includes one-byte delimiters. Skipping impossible starts
-can reduce work and avoid local scratch. Enclosing storage loans and final
-interruption and admission checks still apply.
+When an unbounded prefix class excludes its direct delimiter, and matching
+does not read captures, one complete verification can cover the window.
+This includes one-byte delimiters. Successful matches retain their capture
+histories. Skipping impossible starts can reduce work and avoid local scratch.
+Enclosing storage loans and final interruption and admission checks still apply.
 
 A complete LTR backtracking root containing only a word-boundary instruction and
 Accept can omit general VM dispatch when capture history is not requested. It

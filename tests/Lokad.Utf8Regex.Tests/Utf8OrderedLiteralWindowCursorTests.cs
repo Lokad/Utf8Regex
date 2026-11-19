@@ -49,6 +49,36 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
         Assert.False(cursor.MoveNext(out _));
     }
 
+    [Fact]
+    public void FailedDelimiterWindowStillPublishesEveryCaptureOfTheNextMatch()
+    {
+        const string pattern = @"([\w.+-]+)@([\w-]+\.)+([\w-]+)";
+        using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096 }
+        });
+        var missed = string.Concat(Enumerable.Repeat("é", 512)) + "@b! ";
+        var input = Encoding.UTF8.GetBytes(missed + "yes@b.cd.é");
+        var start = Encoding.UTF8.GetByteCount(missed);
+        var range = new Utf8CaptureRange(start, input.Length);
+        var slots = new Utf8CaptureRange[4];
+
+        Assert.Equal(range, regex.Match(input, captures: slots));
+        Assert.Equal(range, regex.Match(input));
+        Assert.Equal(1, regex.Count(input));
+        Assert.Equal(new Utf8CaptureRange(start, start + 3), slots[1]);
+        Assert.Equal(new Utf8CaptureRange(start + 6, start + 9), slots[2]);
+        Assert.Equal(new Utf8CaptureRange(start + 9, input.Length), slots[3]);
+
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(range, first.Value);
+        Assert.Equal([slots[1]], first.GetCaptures(1).ToArray());
+        Assert.Equal([new Utf8CaptureRange(start + 4, start + 6), slots[2]], first.GetCaptures(2).ToArray());
+        Assert.Equal([slots[3]], first.GetCaptures(3).ToArray());
+    }
+
     [Theory]
     [MemberData(nameof(Windows))]
     public void WindowCursorsOwnEnumerationSplitsAndReplacement(string pattern, string text)

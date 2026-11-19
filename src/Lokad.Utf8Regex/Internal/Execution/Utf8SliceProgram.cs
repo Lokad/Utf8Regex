@@ -341,6 +341,7 @@ internal sealed class Utf8SliceProgram
         bool hasMixedNamedGroups,
         Utf8CaptureCatalog? captureCatalog,
         bool usesCaptureOpeningJournal,
+        bool readsCaptures,
         bool hasBalancing,
         bool ignoreCase,
         Utf8ScalarCaseBehavior caseBehavior,
@@ -378,6 +379,7 @@ internal sealed class Utf8SliceProgram
         HasMixedNamedGroups = hasMixedNamedGroups;
         CaptureCatalog = captureCatalog;
         UsesCaptureOpeningJournal = usesCaptureOpeningJournal;
+        ReadsCaptures = readsCaptures;
         HasBalancing = hasBalancing;
         IgnoreCase = ignoreCase;
         CaseBehavior = caseBehavior;
@@ -420,6 +422,7 @@ internal sealed class Utf8SliceProgram
             !hasConditionalTest && !sawLookaround && assertions.Length == 0;
         var captureIsOpen = false;
         var hasClosedCapture = false;
+        var readsCaptures = false;
         var hasUnicodePatternAtoms = false;
         var hasOrderSensitiveLookbehind = false;
         ulong consumers = 0, accepts = 0;
@@ -427,6 +430,8 @@ internal sealed class Utf8SliceProgram
         for (var pc = 0; pc < instructions.Length; pc++)
         {
             var instruction = instructions[pc];
+            readsCaptures |= instruction.Kind is Utf8SliceInstructionKind.Backref or Utf8SliceInstructionKind.TestGroup or
+                Utf8SliceInstructionKind.BalanceStart or Utf8SliceInstructionKind.BalancePop;
             if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart) captureIsOpen = true;
             else if (instruction.Kind == Utf8SliceInstructionKind.CaptureEnd)
             {
@@ -467,6 +472,7 @@ internal sealed class Utf8SliceProgram
         foreach (var assertion in assertions)
         {
             usesCaptureOpeningJournal |= assertion.Body.UsesCaptureOpeningJournal;
+            readsCaptures |= assertion.Body.ReadsCaptures;
             hasUnicodePatternAtoms |= assertion.Body.HasUnicodePatternAtoms;
             hasOrderSensitiveLookbehind |= assertion.Body.HasOrderSensitiveLookbehind;
             usesLiteralClassBracketSyntax |= assertion.Body.UsesLiteralClassBracketSyntax;
@@ -509,6 +515,7 @@ internal sealed class Utf8SliceProgram
             hasMixedNamedGroups,
             captureCatalog,
             usesCaptureOpeningJournal,
+            readsCaptures,
             hasBalancing,
             ignoreCase,
             caseBehavior,
@@ -555,6 +562,7 @@ internal sealed class Utf8SliceProgram
     internal bool HasMixedNamedGroups { get; }
     internal Utf8CaptureCatalog? CaptureCatalog { get; }
     internal bool UsesCaptureOpeningJournal { get; }
+    internal bool ReadsCaptures { get; }
     internal bool HasExplicitCaptureNumbers => CaptureCatalog is { HasExplicitCaptureNumbers: true };
     internal bool HasSharedCaptureDeclarations => CaptureCatalog is { HasSharedCaptureDeclarations: true };
     internal bool HasBalancing { get; }
