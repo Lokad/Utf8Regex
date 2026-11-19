@@ -44,7 +44,14 @@ public sealed class GroupedLiteralCaptureTests
 
     [Theory]
     [MemberData(nameof(GroupedLiteralHitCases))]
-    public void GroupedLiteralCapturesMatchesOracle(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(OptionalGroupedLiteralHitCases))]
+    [MemberData(nameof(AlternationSpanHitCases))]
+    [MemberData(nameof(DivergentBranchHitCases))]
+    [MemberData(nameof(MultiLoopHitCases))]
+    [MemberData(nameof(NestedInvariantAlternationCases))]
+    [MemberData(nameof(NestedDivergentOwnedCases))]
+    [MemberData(nameof(SingleWrapCapturesCases))]
+    public void GroupedCapturesMatchOracle(string pattern, RegexOptions options, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -54,6 +61,7 @@ public sealed class GroupedLiteralCaptureTests
 
         Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
     }
+
     public static IEnumerable<object?[]> GroupedLiteralMissCases()
     {
         yield return new object?[] { "(a)(b)", RegexOptions.CultureInvariant, "no match here" };
@@ -65,7 +73,8 @@ public sealed class GroupedLiteralCaptureTests
 
     [Theory]
     [MemberData(nameof(GroupedLiteralMissCases))]
-    public void GroupedLiteralCapturesMissMatchesOracle(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(OptionalGroupedLiteralMissCases))]
+    public void GroupedCaptureMissesMatchOracle(string pattern, RegexOptions options, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -108,7 +117,9 @@ public sealed class GroupedLiteralCaptureTests
 
     [Theory]
     [MemberData(nameof(GroupedLiteralFromOffsetCases))]
-    public void GroupedLiteralCapturesFromOffsetMatchesOracle(string pattern, RegexOptions options, string text, int offset)
+    [MemberData(nameof(NestedDivergentFromOffsetCases))]
+    [MemberData(nameof(SingleWrapFromOffsetCases))]
+    public void GroupedCapturesFromOffsetMatchOracle(string pattern, RegexOptions options, string text, int offset)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -116,8 +127,8 @@ public sealed class GroupedLiteralCaptureTests
         var expected = oracle.Match(text, offset);
         var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))));
         Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
-
     }
+
     public static IEnumerable<object?[]> OptionalGroupedLiteralHitCases()
     {
         string[] patterns =
@@ -143,19 +154,6 @@ public sealed class GroupedLiteralCaptureTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(OptionalGroupedLiteralHitCases))]
-    public void OptionalGroupedLiteralCapturesMatchesOracle(string pattern, RegexOptions options, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Match(text);
-        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-
-        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
-    }
-
     public static IEnumerable<object?[]> OptionalGroupedLiteralMissCases()
     {
         string[] patterns = ["(a)?b", "a(b)?", "(a)?(b)", "((a)?b)", "(a(b)?)", "(?<x>a)?b", "(a)(?:b)?c"];
@@ -168,21 +166,6 @@ public sealed class GroupedLiteralCaptureTests
                 yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
             }
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(OptionalGroupedLiteralMissCases))]
-    public void OptionalGroupedLiteralCapturesMissMatchesOracle(string pattern, RegexOptions options, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Match(text);
-        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-
-        Assert.False(expected.Success);
-        Assert.False(actual.Success);
-        Assert.Empty(actual.GroupNumbers.ToArray());
     }
 
     public static IEnumerable<object?[]> AlternationSpanHitCases()
@@ -214,19 +197,6 @@ public sealed class GroupedLiteralCaptureTests
         yield return new object?[] { "a(b|c)d", RegexOptions.Compiled | RegexOptions.CultureInvariant, "éabd" };
     }
 
-    [Theory]
-    [MemberData(nameof(AlternationSpanHitCases))]
-    public void AlternationSpanCapturesMatchesOracle(string pattern, RegexOptions options, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Match(text);
-        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-
-        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
-    }
-
     public static IEnumerable<object?[]> DivergentBranchHitCases()
     {
         string[] patterns =
@@ -247,6 +217,8 @@ public sealed class GroupedLiteralCaptureTests
         {
             foreach (var text in texts)
             {
+                // Both nested-alternation data sources already supply these misses.
+                if (text == "xyz" && pattern is ("((a|b)c)" or "((a)|(a))")) continue;
                 yield return new object?[] { pattern, RegexOptions.CultureInvariant, text };
                 yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
             }
@@ -254,19 +226,6 @@ public sealed class GroupedLiteralCaptureTests
 
         yield return new object?[] { "(ab|c)(d)", RegexOptions.CultureInvariant, "éabd" };
         yield return new object?[] { "(a|bc)d", RegexOptions.Compiled | RegexOptions.CultureInvariant, "éabcd" };
-    }
-
-    [Theory]
-    [MemberData(nameof(DivergentBranchHitCases))]
-    public void DivergentBranchCapturesMatchesOracle(string pattern, RegexOptions options, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Match(text);
-        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-
-        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
     }
 
     public static IEnumerable<object?[]> MultiLoopHitCases()
@@ -295,19 +254,6 @@ public sealed class GroupedLiteralCaptureTests
         }
 
         yield return new object?[] { "(a)?b(c)?", RegexOptions.CultureInvariant, "eabce" };
-    }
-
-    [Theory]
-    [MemberData(nameof(MultiLoopHitCases))]
-    public void MultiLoopCapturesMatchesOracle(string pattern, RegexOptions options, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Match(text);
-        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-
-        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
     }
 
     public static IEnumerable<object?[]> LiteralEnumerationNonAsciiCases()
@@ -483,7 +429,9 @@ public sealed class GroupedLiteralCaptureTests
 
     [Theory]
     [MemberData(nameof(GroupedTemplateCases))]
-    public void GroupedTemplateMatchesOracle(string pattern, RegexOptions options, string template, string text)
+    [MemberData(nameof(SingleLiteralTemplateCases))]
+    [MemberData(nameof(GrouplessTemplateCases))]
+    public void AllocatingLiteralReplacementMatchesOracle(string pattern, RegexOptions options, string template, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -492,10 +440,6 @@ public sealed class GroupedLiteralCaptureTests
         var bytesRegex = new Utf8Regex(pattern, options: options);
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
-
-        var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, stringActual);
     }
 
     public static IEnumerable<object?[]> GrouplessTemplateCases()
@@ -551,23 +495,6 @@ public sealed class GroupedLiteralCaptureTests
     }
 
     [Theory]
-    [MemberData(nameof(SingleLiteralTemplateCases))]
-    public void SingleLiteralTemplateMatchesOracle(string pattern, RegexOptions options, string template, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, template);
-
-        var bytesRegex = new Utf8Regex(pattern, options: options);
-        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, bytesActual);
-
-        var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, stringActual);
-    }
-
-    [Theory]
     [InlineData("a.c")]
     public void SingleNonLiteralTemplateOwnsNonAsciiInput(string pattern)
     {
@@ -615,27 +542,6 @@ public sealed class GroupedLiteralCaptureTests
         var bytesRegex = new Utf8Regex(pattern, options: options);
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
-
-        var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, stringActual);
-    }
-
-    [Theory]
-    [MemberData(nameof(GrouplessTemplateCases))]
-    public void GrouplessTemplateMatchesOracle(string pattern, RegexOptions options, string template, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var expected = oracle.Replace(text, template);
-
-        var bytesRegex = new Utf8Regex(pattern, options: options);
-        var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, bytesActual);
-
-        var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, stringActual);
     }
 
     public static IEnumerable<object?[]> MultiLoopOverCapCases()
@@ -684,10 +590,6 @@ public sealed class GroupedLiteralCaptureTests
         var bytesRegex = new Utf8Regex(pattern, options: options);
         var bytesActual = Encoding.UTF8.GetString(bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
         Assert.Equal(expected, bytesActual);
-
-        var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, stringActual);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SliceComboTemplateOwnedCases()
@@ -734,9 +636,10 @@ public sealed class GroupedLiteralCaptureTests
 
     [Theory]
     [MemberData(nameof(SliceComboTemplateOwnedCases))]
-    public void SliceComboTemplateStringCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
+    [MemberData(nameof(NestedDivergentTemplateCases))]
+    [MemberData(nameof(SingleWrapTemplateAllCoresCases))]
+    public void AllocatingSliceReplacementMatchesOracle(string pattern, RegexOptions options, string template, string text)
     {
-
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
@@ -748,24 +651,9 @@ public sealed class GroupedLiteralCaptureTests
 
     [Theory]
     [MemberData(nameof(SliceComboTemplateOwnedCases))]
-    public void SliceComboTemplateByteCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
+    [MemberData(nameof(SingleWrapTemplateAllCoresCases))]
+    public void DestinationSliceReplacementMatchesOracle(string pattern, RegexOptions options, string template, string text)
     {
-        // Control: the byte core already serves slice shapes owned; these rows
-        // pin the shared behavior while the string and destination cores graduate.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-    }
-
-    [Theory]
-    [MemberData(nameof(SliceComboTemplateOwnedCases))]
-    public void SliceComboTemplateDestinationCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
-    {
-
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var regex = new Utf8Regex(pattern, options: options);
@@ -826,19 +714,6 @@ public sealed class GroupedLiteralCaptureTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(NestedInvariantAlternationCases))]
-    public void NestedInvariantAlternationCapturesOwnsInput(string pattern, RegexOptions options, string text)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Match(text);
-        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-
-        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentOwnedCases()
     {
         string[] patterns =
@@ -858,20 +733,6 @@ public sealed class GroupedLiteralCaptureTests
                 yield return new object?[] { pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, text };
             }
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(NestedDivergentOwnedCases))]
-    public void NestedDivergentCapturesOwnsInput(string pattern, RegexOptions options, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Match(text);
-        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-
-        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentFromOffsetCases()
@@ -913,21 +774,6 @@ public sealed class GroupedLiteralCaptureTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(NestedDivergentFromOffsetCases))]
-    public void NestedDivergentFromOffsetCapturesOwnsInput(string pattern, RegexOptions options, string text, int offset)
-    {
-        // FromOffset keeps absolute-origin semantics through the shared
-        // first-of-enumeration arm and projects the winning nested entry.
-        // Scalar-boundary starts on astral-adjacent input serve owned; interior starts reject, see NestedDivergentInteriorOffsetCases.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Match(text, offset);
-        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))));
-        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentTemplateCases()
     {
         string[] patterns =
@@ -951,22 +797,6 @@ public sealed class GroupedLiteralCaptureTests
                 }
             }
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(NestedDivergentTemplateCases))]
-    public void NestedDivergentTemplateOwnsInput(string pattern, RegexOptions options, string template, string text)
-    {
-        // Group-reference templates expand through the same nested entry spans
-        // via the shared owned template worker.
-        // Astral-adjacent texts expand through the same spans with zero fallback construction.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> NestedDivergentInteriorOffsetCases()
@@ -1017,20 +847,6 @@ public sealed class GroupedLiteralCaptureTests
         }
     }
 
-    [Theory]
-    [MemberData(nameof(SingleWrapCapturesCases))]
-    public void SingleWrapCapturesOwnsInput(string pattern, RegexOptions options, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Match(text);
-        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
-
-        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapFromOffsetCases()
     {
         (string pattern, string text, int offset)[] rows =
@@ -1049,20 +865,6 @@ public sealed class GroupedLiteralCaptureTests
             yield return new object?[] { row.pattern, RegexOptions.CultureInvariant, row.text, row.offset };
             yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, row.text, row.offset };
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(SingleWrapFromOffsetCases))]
-    public void SingleWrapFromOffsetCapturesOwnsInput(string pattern, RegexOptions options, string text, int offset)
-    {
-        // FromOffset keeps absolute-origin semantics through the shared
-        // first-of-enumeration arm and projects the single wrap the same way.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Match(text, offset);
-        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, offset))));
-        Utf8MatchSequence.AssertCaptures(expected, actual, input, text);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SingleWrapTemplateAllCoresCases()
@@ -1090,50 +892,6 @@ public sealed class GroupedLiteralCaptureTests
                 yield return new object?[] { row.pattern, RegexOptions.Compiled | RegexOptions.CultureInvariant, template, row.text };
             }
         }
-    }
-
-    [Theory]
-    [MemberData(nameof(SingleWrapTemplateAllCoresCases))]
-    public void SingleWrapTemplateStringCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-    }
-
-    [Theory]
-    [MemberData(nameof(SingleWrapTemplateAllCoresCases))]
-    public void SingleWrapTemplateByteCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var actual = Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template)));
-
-        Assert.Equal(expected, actual);
-    }
-
-    [Theory]
-    [MemberData(nameof(SingleWrapTemplateAllCoresCases))]
-    public void SingleWrapTemplateDestinationCoreOwnsInput(string pattern, RegexOptions options, string template, string text)
-    {
-
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var regex = new Utf8Regex(pattern, options: options);
-        var expected = oracle.Replace(text, template);
-        var destination = new byte[4096];
-        var status = regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
-
-        Assert.Equal(System.Buffers.OperationStatus.Done, status);
-        Assert.Equal(expected, Encoding.UTF8.GetString(destination.AsSpan(0, bytesWritten)));
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> GroupedCategorySplitEnumerateCases()
