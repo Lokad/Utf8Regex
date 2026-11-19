@@ -805,6 +805,9 @@ internal static partial class Utf8SliceRunner
             Array.Fill(captureEnds, -1);
             if (TryCountAnchoredLine(program, input, fromByte, ref invocation, out var lineCount))
                 return lineCount;
+            if (program.NonBacktrackingOrderedForwardOnly && input.Length - fromByte >= 64)
+                return Utf8NonBacktrackingSearchState.CountInWindows(program, input, fromByte,
+                    new(captureStarts, captureEnds), ref invocation);
             var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out var batch);
             if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
             if (batch is null) throw new InvalidOperationException("NonBacktracking preparation returned no state.");

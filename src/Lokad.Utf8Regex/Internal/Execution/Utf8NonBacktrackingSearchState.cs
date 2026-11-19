@@ -319,6 +319,29 @@ internal sealed class Utf8NonBacktrackingSearchState
         _reservation = 0;
     }
 
+    internal static Utf8SliceCountOutcome CountInWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, Utf8SliceSlots slots, ref Utf8SliceInvocation invocation)
+    {
+        Utf8NonBacktrackingSearchState? window = null;
+        var boundary = 0;
+        var count = 0;
+        try
+        {
+            while (position >= 0)
+            {
+                var found = FindInWindows(program, input, position, slots, ref window, ref boundary, ref invocation);
+                if (!found.Found) return new(count, found.Breach);
+                count++;
+                position = found.StartByte != found.EndByte ? found.EndByte
+                    : Utf8SliceRunner.AdvancePastScalar(input, found.EndByte, false);
+            }
+            invocation.Budget.ThrowIfCancellationRequested();
+            invocation.Budget.CheckDeadline();
+            return new(count, Utf8ExecutionLimitKind.None);
+        }
+        finally { window?.Release(ref invocation); }
+    }
+
     internal static Utf8SliceSearchOutcome FindInWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int position, Utf8SliceSlots slots, ref Utf8NonBacktrackingSearchState? window, ref int boundary,
         ref Utf8SliceInvocation invocation)

@@ -225,6 +225,7 @@ can prepare a whole-subject table. Both use the original cursor budget and
 deadline. First-match misses and bounded final tails can finish without preparing
 rows. A refusal during a later advance faults the cursor and leaves earlier
 results valid.
+Count reuses the same window for longer subjects with these forward-only graphs.
 
 Backtracking first-match search can reuse Count's mandatory exact ASCII head or
 range proof. Controlled gap searches cover at most 2048 bytes per checkpoint,

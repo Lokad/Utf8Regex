@@ -328,6 +328,22 @@ public sealed class Utf8MemoryCursorTests
         Assert.Equal(0UL, root.Used);
     }
 
+    [Theory]
+    [InlineData("(?<x>😀|a){1,2}", 3)]
+    [InlineData("(?<x>😀|a){0,2}", 3076)]
+    public void ForwardOnlyRegularCountFitsBoundedWorkingAllowance(string pattern, int expected)
+    {
+        var root = new Root(); var working = new Account(root) { Maximum = 2048 };
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀a" + new string('z', 1024), 3)));
+        using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+
+        Assert.Equal(expected, regex.Count(input, workingMemoryAllowance: working));
+        Assert.Equal(0UL, root.Used);
+        working.Maximum = 128;
+        Assert.Throws<Utf8MemoryAdmissionException>(() => regex.Count(input, workingMemoryAllowance: working));
+        Assert.Equal(0UL, root.Used);
+    }
+
     [Fact]
     public void SameOwnerReceiptTransfersWithoutAnotherAcquisition()
     {
