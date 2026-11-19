@@ -280,13 +280,33 @@ public sealed class Utf8PolicyOwnershipTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)]
-    public void PackedBooleanChargesAndRefundsCachedTransitionsOnInterruption(int interruption)
+    [InlineData("(?<x>😀a|b)+", "😀a")]
+    [InlineData("(?i:(?<x>😀|a)){1,2}", "😀A")]
+    [InlineData("(?i:(?<x>k)){1,2}", "Kk")]
+    public void PackedBooleanSkipsImpossibleStartsAndKeepsActivePaths(string pattern, string tail)
     {
-        var input = Encoding.UTF8.GetBytes(new string('a', 4096));
+        const int gap = 4097;
+        var subject = Encoding.UTF8.GetBytes(new string('z', gap) + tail);
+        using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking | RegexOptions.CultureInvariant, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64 }
+        });
+        using var cancellation = new CancellationTokenSource();
+        var account = new Account();
+        Assert.True(regex.IsMatch(subject, cancellation.Token, account));
+        Assert.False(regex.IsMatch(subject.AsSpan(0, gap), cancellation.Token, account));
+        Assert.Equal(0UL, account.Used);
+    }
+
+    [Theory]
+    [InlineData(0, false)] [InlineData(1, false)] [InlineData(2, false)]
+    [InlineData(0, true)] [InlineData(1, true)] [InlineData(2, true)]
+    public void PackedBooleanChargesAndRefundsOnInterruption(int interruption, bool skipStarts)
+    {
+        var input = Encoding.UTF8.GetBytes(skipStarts ? new string('z', 270000) : new string('a', 4096));
         using var cancellation = new CancellationTokenSource();
         using var clock = Utf8DeadlineTestClock.Start();
-        using var regex = new Utf8Regex("(?:a?b|c)*[d-f][xy]", RegexOptions.NonBacktracking, new Utf8RegexPolicy
+        using var regex = new Utf8Regex(skipStarts ? "(?i:(?<x>😀|a)){1,2}" : "(?:a?b|c)*[d-f][xy]", RegexOptions.NonBacktracking, new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = new() { MaxWorkSteps = interruption == 0 ? 128UL : null }

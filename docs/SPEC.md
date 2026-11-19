@@ -208,7 +208,8 @@ Compact unconditional graphs can reuse ordered transitions across matching
 scalars in a whole-range search. Byte origins stay in invocation scratch.
 The cache stores which earlier thread supplied each surviving origin.
 When the initial literals or positive ASCII masks prove a small complete set
-of leading bytes, an empty frontier can search them in bounded, metered blocks.
+of leading bytes, Boolean and ordered search can skip impossible starts in
+bounded, metered blocks while no earlier path is active.
 Folded proofs include the existing construction-culture case equivalents.
 Active paths and their priority keep the original scalar execution. A candidate
 still needs full scalar verification, including when scalars share a lead byte.

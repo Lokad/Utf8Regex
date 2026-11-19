@@ -30,10 +30,19 @@ internal static partial class Utf8SliceRunner
             Span<(ulong States, byte Value, ulong Next)> transitions = stackalloc (ulong, byte, ulong)[cache ? capacity : 0];
             transitions.Clear();
             var hasConditions = program.NonBacktrackingEpsilonOrder.Length != 0;
+            var starts = input.Length - fromByte >= 64 ? program.NonBacktrackingOrderedStartBytes : default;
             ulong states = 1;
             var position = fromByte;
             while (true)
             {
+                // Bit zero seeds the next start. Other live states can consume
+                // bytes that the root proof excludes, so they must advance first.
+                if (states == 1 && starts.Present && position < input.Length &&
+                    !IsRegularStartByte(input[position], starts))
+                {
+                    breach = TrySeekRegularStart(input, ref position, starts, ref invocation);
+                    if (breach != Utf8ExecutionLimitKind.None || position == input.Length) break;
+                }
                 // Cached transitions still spend a step at each scalar edge.
                 breach = invocation.TryChargeStep();
                 if (breach != Utf8ExecutionLimitKind.None) break;

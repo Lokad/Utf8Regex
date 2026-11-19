@@ -156,19 +156,10 @@ internal static partial class Utf8SliceRunner
             while (true)
             {
                 if (current.Count == 0 && bestStart < 0 && starts.Present && position < input.Length &&
-                    input[position] != starts.First && input[position] != starts.Second && input[position] != starts.Third)
+                    !IsRegularStartByte(input[position], starts))
                 {
-                    // A proved start byte never occurs inside any UTF-8 scalar.
-                    // Only an empty frontier can skip starts without losing priority.
-                    while (position < input.Length)
-                    {
-                        breach = invocation.TryChargeInputStep();
-                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
-                        var block = input.Slice(position, Math.Min(2048, input.Length - position));
-                        var candidate = block.IndexOfAny(starts.First, starts.Second, starts.Third);
-                        if (candidate >= 0) { position += candidate; break; }
-                        position += block.Length;
-                    }
+                    breach = TrySeekRegularStart(input, ref position, starts, ref invocation);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
                 }
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
@@ -236,6 +227,26 @@ internal static partial class Utf8SliceRunner
             }
         }
         finally { invocation.Ledger.Release(reserved); }
+    }
+
+    private static bool IsRegularStartByte(byte value, (byte First, byte Second, byte Third, bool Present) starts)
+        => value == starts.First || value == starts.Second || value == starts.Third;
+
+    private static Utf8ExecutionLimitKind TrySeekRegularStart(ReadOnlySpan<byte> input, ref int position,
+        (byte First, byte Second, byte Third, bool Present) starts, ref Utf8SliceInvocation invocation)
+    {
+        // A proved start byte cannot occur inside a scalar. Each caller has
+        // established that there is no older path to advance over this gap.
+        while (position < input.Length)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var block = input.Slice(position, Math.Min(2048, input.Length - position));
+            var candidate = block.IndexOfAny(starts.First, starts.Second, starts.Third);
+            if (candidate >= 0) { position += candidate; break; }
+            position += block.Length;
+        }
+        return Utf8ExecutionLimitKind.None;
     }
 
     internal static Utf8SliceSearchOutcome ReplayOrderedRegularRange(Utf8SliceProgram program,
