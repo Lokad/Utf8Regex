@@ -9,10 +9,11 @@ public sealed class Utf8SliceDepthAdmissionTests
     private static Utf8SliceProgram Frames(int count, bool repeats, bool rtl)
     {
         Utf8SliceNode root = repeats
-            // The folded literal keeps per-iteration frames on both directions.
-            // The overlapping suffix keeps those alternatives live.
+            // Two scalars per iteration keep separate rewind frames.
             ? new Utf8SliceNode.ConcatNode([
-                new Utf8SliceNode.RepeatNode(new Utf8SliceNode.LiteralNode(0x1f600, true), 0, count, false),
+                new Utf8SliceNode.RepeatNode(new Utf8SliceNode.ConcatNode([
+                    new Utf8SliceNode.LiteralNode(0x1f600, false),
+                    new Utf8SliceNode.LiteralNode(0x1f600, false)]), 0, count, false),
                 new Utf8SliceNode.LiteralNode(0x1f600, false)])
             : new Utf8SliceNode.ConcatNode(Enumerable.Range(0, count).Select(_ => (Utf8SliceNode)
                 new Utf8SliceNode.AlternationNode([[new Utf8SliceNode.LiteralNode(0x1f600, false)], [new Utf8SliceNode.LiteralNode(0xe9, false)]])).ToArray());
@@ -31,8 +32,8 @@ public sealed class Utf8SliceDepthAdmissionTests
         var capacity = Utf8SliceRunner.FrameChunkCapacity;
         var exact = Frames(capacity, repeats, rtl);
         var extra = Frames(capacity + 1, repeats, rtl);
-        var firstInput = System.Text.Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", capacity)));
-        var secondInput = System.Text.Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", capacity + 1)));
+        var firstInput = Subject(capacity);
+        var secondInput = Subject(capacity + 1);
         var admitted = new Utf8SliceInvocation(new(0, (uint)capacity, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
         Assert.True(admitted.Ledger.TryReserve(7));
         Assert.True(Run(exact, firstInput, ref admitted).IsMatch);
@@ -45,6 +46,9 @@ public sealed class Utf8SliceDepthAdmissionTests
         Assert.Equal((uint)capacity + 1, denied.Budget.PeakDepth);
         Assert.Equal(peak, denied.Budget.PeakWorkingBytes); Assert.Equal(7UL, denied.Ledger.ReservedBytes);
         admitted.Ledger.Release(7); denied.Ledger.Release(7);
+
+        byte[] Subject(int frameCount)
+            => System.Text.Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", repeats ? frameCount * 2 + 1 : frameCount)));
     }
 
     private static Utf8SliceProgram Assertions(int repeats, bool positive)
