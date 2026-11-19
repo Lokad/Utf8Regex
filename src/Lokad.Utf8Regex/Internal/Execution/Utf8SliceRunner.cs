@@ -507,6 +507,23 @@ internal static partial class Utf8SliceRunner
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
+        if (seekBeginning && first.B == 0)
+        {
+            // An absolute beginning admits at most one start. Keep the same
+            // literal screen and attempt charges without preparing a search.
+            var breach = TrySeekBeginning(program, input, ref fromByte, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || fromByte < 0)
+                return new(false, -1, -1, null, null, breach);
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None)
+                return new(false, -1, -1, null, null, breach);
+            invocation.Budget.ThrowIfCancellationRequested();
+            var outcome = TryMatchAt(program, input, fromByte, captureStarts, captureEnds,
+                collectHistory, false, true, ref workspace, ref invocation, existenceOnly);
+            return outcome.IsMatch && outcome.Breach == Utf8ExecutionLimitKind.None
+                ? new(true, fromByte, outcome.EndIndex, outcome.CaptureStarts, outcome.CaptureLengths, Utf8ExecutionLimitKind.None)
+                : new(false, -1, -1, null, null, outcome.Breach);
+        }
         var (leading, leadingLast, second, secondLast, leadingScalarIndex, fromBranch) = program.LeadingAsciiCandidate;
         // Prefer a straight leading byte proof. Prepared literal search takes
         // priority over the broader range inferred from a branch.
