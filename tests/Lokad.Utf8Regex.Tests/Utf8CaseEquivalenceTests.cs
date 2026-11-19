@@ -27,13 +27,14 @@ public sealed class Utf8CaseEquivalenceTests
     [Theory]
     [InlineData("^([a-f0-9]{3}|[a-f0-9]{6})$")]
     [InlineData("^([a-f0-9]{6}|[a-f0-9]{3})$")]
-    public void EndWidthRulesOutEitherArmBeforeAcquiringAFrame(string pattern)
+    public void RepeatWidthRulesOutEitherArmBeforeAcquiringAFrame(string pattern)
     {
         var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkingBytes = 1 } };
         using var regex = new Utf8Regex(pattern, RegexOptions.IgnoreCase, policy);
 
         Assert.Equal(new Utf8CaptureRange(0, 6), regex.Match("AF01BC"u8));
         Assert.Equal(new Utf8CaptureRange(0, 6), regex.Match("AF01BC\n"u8));
+        Assert.Equal(new Utf8CaptureRange(0, 3), regex.Match("AF1"u8));
         Assert.False(regex.Match("AF01BC\n\n"u8).Success);
     }
 
@@ -46,6 +47,7 @@ public sealed class Utf8CaseEquivalenceTests
         Assert.Equal(new Utf8CaptureRange(0, 7), regex.Match("#AF01BC"u8));
         Assert.Equal(new Utf8CaptureRange(0, 7), regex.Match("#AF01BC\n"u8));
         Assert.Equal(new Utf8CaptureRange(0, 6), regex.Match("AF01BC"u8));
+        Assert.Equal(new Utf8CaptureRange(0, 4), regex.Match("#AF1\n"u8));
     }
 
     [Fact]

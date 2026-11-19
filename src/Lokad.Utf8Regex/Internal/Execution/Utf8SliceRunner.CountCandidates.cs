@@ -709,15 +709,24 @@ internal static partial class Utf8SliceRunner
         index = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, index);
         if ((uint)index >= (uint)code.Length) return true;
         var entry = code[index];
-        // A nested fork admits two straight checks. Leave any further
-        // branches and repeats opaque so the proof stays cheap.
+        // A nested fork admits two straight checks. Leave any deeper branch opaque.
         if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index + 1)
             return MatchesStraightAsciiPrefix(program, input, position, entry.A, 2) ||
                 MatchesStraightAsciiPrefix(program, input, position, index + 1, 2);
-        return entry is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
-            RepeatMinimum: 0, RepeatMaximum: 1 }
-            ? MayMatchBranchedAsciiPrefix(program, input, position, index, 4)
-            : MatchesStraightAsciiPrefix(program, input, position, index, 2);
+        if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
+        {
+            var minimum = entry.RepeatMinimum;
+            if (minimum == 0 && entry.RepeatMaximum == 1)
+                return MayMatchBranchedAsciiPrefix(program, input, position, index, 4);
+            // Each required iteration consumes at least one byte. An opaque
+            // or zero-width body cannot use this lower bound.
+            if (minimum > input.Length - position && IsSingleAtomRepeat(code, index, entry) &&
+                code[index + 1].Kind is Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or
+                    Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Shorthand or
+                    Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid)
+                return false;
+        }
+        return MatchesStraightAsciiPrefix(program, input, position, index, 2);
     }
 
     private static (int Min, int Max, byte Literal) FindBranchedAsciiLiteralWindow(
