@@ -269,10 +269,24 @@ internal static partial class Utf8SliceRunner
         var index = 0;
         while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
             index++;
+        var singleLeadingSpace = index < code.Length && IsUnicodeSpace(program, code[index]);
+        if (singleLeadingSpace)
+        {
+            index++;
+            while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                index++;
+            // Disjointness makes the whitespace before a bounded ASCII
+            // run the unique possible start for a given literal position.
+            const ulong asciiWhitespace = (0x1FUL << 9) | (1UL << ' ');
+            if (index >= 64 || !IsSingleClassRepeat(code, index) || code[index].RepeatMaximum > 64 ||
+                !program.TryGetUnfoldedAsciiSet(code[index + 1], out var ascii, out var asciiOnly) ||
+                !asciiOnly || (ascii.Low & asciiWhitespace) != 0)
+                return -1;
+        }
         // One leading scalar-class run may precede the whitespace run. Reuse
         // the actual VM predicate when rewinding: ASCII intersections are not
         // a proof of Unicode word/category membership.
-        if (IsSingleClassRepeat(code, index) && code[index].RepeatMinimum > 0)
+        if (IsSingleClassRepeat(code, index) && (singleLeadingSpace || code[index].RepeatMinimum > 0))
         {
             leadingClass = index + 1;
             index += 4;
@@ -289,16 +303,12 @@ internal static partial class Utf8SliceRunner
             directClassLiteral = true;
             return direct.A;
         }
+        if (singleLeadingSpace) return -1;
         if (index >= 64 || !IsSingleClassRepeat(code, index)) return -1;
         var repeat = code[index];
         if (repeat.RepeatMaximum != long.MaxValue ||
             repeat.RepeatMinimum > (leadingClass >= 0 ? 1 : 0)) return -1;
-        var body = code[index + 1];
-        var whitespace = body.Kind == Utf8SliceInstructionKind.Shorthand && body.A == (int)Utf8SliceShorthand.Space ||
-            body.Kind == Utf8SliceInstructionKind.Hybrid && body.B == 0 && body.D == 0 &&
-            body.C == 1 << (int)Utf8SliceShorthand.Space &&
-            ContainsOnlyAsciiWhitespace(program.SetMasks[body.A]);
-        if (!whitespace) return -1;
+        if (!IsUnicodeSpace(program, code[index + 1])) return -1;
         index += 4;
         while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
             index++;
@@ -317,6 +327,11 @@ internal static partial class Utf8SliceRunner
         literalIndex = index;
         return code[index].A;
     }
+
+    private static bool IsUnicodeSpace(Utf8SliceProgram program, in Utf8SliceInstruction instruction) =>
+        instruction is { Kind: Utf8SliceInstructionKind.Shorthand, A: (int)Utf8SliceShorthand.Space } ||
+        instruction is { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, C: 1 << (int)Utf8SliceShorthand.Space, D: 0 } &&
+        ContainsOnlyAsciiWhitespace(program.SetMasks[instruction.A]);
 
     private static bool IsSingleClassRepeat(ReadOnlySpan<Utf8SliceInstruction> code, int index)
         => code.Length - index >= 4 && code[index].Kind == Utf8SliceInstructionKind.RepeatGreedy &&
@@ -520,6 +535,15 @@ internal static partial class Utf8SliceRunner
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
         Utf8SearchAsciiSet prefixAscii = default)
     {
+        if (leadingClass >= 2 && !prefixAscii.HasValue)
+        {
+            var code = program.Instructions;
+            var preceding = leadingClass - 2;
+            while (preceding >= 0 && code[preceding].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                preceding--;
+            if (preceding >= 0 && IsUnicodeSpace(program, code[preceding]))
+                return TrySeekWhitespaceClassStart(program, input, leadingClass, literal, search, ref position, ref invocation, out windowEnd);
+        }
         var floor = position;
         var breach = search is { } prepared && (prepared.Length > 1 || !direct)
             ? Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, input.Length - prepared.Length,
@@ -551,6 +575,42 @@ internal static partial class Utf8SliceRunner
             return invocation.TryChargeInputStep();
         }
         return TryRewindClassWhitespace(program, input, floor, leadingClass, gapMaximum, direct, ref position, ref invocation);
+    }
+
+    private static Utf8ExecutionLimitKind TrySeekWhitespaceClassStart(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
+        ref int position, ref Utf8SliceInvocation invocation, out int windowEnd)
+    {
+        var repeat = program.Instructions[leadingClass - 1];
+        program.TryGetUnfoldedAsciiSet(program.Instructions[leadingClass], out var ascii, out _);
+        var floor = position;
+        var last = input.Length - (search?.Length ?? 1);
+        windowEnd = -1;
+        while (position <= last)
+        {
+            var breach = search is { } prepared
+                ? Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, last, false, ref invocation, out position)
+                : TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
+            if (search.HasValue || MatchesStraightAsciiPrefix(program, input, position, leadingClass + 3))
+            {
+                var head = position;
+                var lower = Math.Max(floor, position - (int)repeat.RepeatMaximum);
+                while (head > lower && ascii.Contains(input[head - 1])) head--;
+                // The class excludes whitespace. The next literal hit has the
+                // same head or a later one, so verification stays leftmost.
+                if (head > floor && position - head >= repeat.RepeatMinimum &&
+                    TryReadScalar(input, head, true, out var scalar, out var width) &&
+                    head - width >= floor && Rune.IsWhiteSpace(scalar))
+                {
+                    windowEnd = position = head - width;
+                    return Utf8ExecutionLimitKind.None;
+                }
+            }
+            position++;
+        }
+        position = -1;
+        return Utf8ExecutionLimitKind.None;
     }
 
     private static bool MatchesStraightAsciiPrefix(Utf8SliceProgram program,

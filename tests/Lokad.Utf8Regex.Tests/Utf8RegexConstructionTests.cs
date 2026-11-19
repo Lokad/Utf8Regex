@@ -962,6 +962,50 @@ public sealed class Utf8RegexConstructionTests
         Assert.False(compiled.Match(bytes).Success);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void BoundedSuffixSearchSharesSparseCandidateDiscovery(bool trailingWhitespace)
+    {
+        const string pattern = @"\s(?<prefix>[a-zA-Z]{0,12})ing\s";
+        var text = "😀" + new string('x', 49152) + "\u2003abcdefghijklmning\u0085sing" +
+            (trailingWhitespace ? "\u00a0" : "");
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var expected = Regex.Match(text, pattern);
+        Assert.Equal(trailingWhitespace, expected.Success);
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4000, MaxWorkingBytes = 32768 }
+        });
+        Assert.Equal(trailingWhitespace ? 1 : 0, regex.Count(bytes, token.Token));
+        var match = regex.Match(bytes, cancellationToken: token.Token);
+        Assert.Equal(expected.Success, match.Success);
+        if (expected.Success) Utf8MatchSequence.AssertRange(match, text, expected.Index, expected.Length);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes, cancellationToken: token.Token));
+        Utf8MatchSequence.AssertCaptures(expected, actual, bytes, text);
+    }
+
+    [Theory]
+    [InlineData(@"\s([a-z]{0,12})(aba)[a-z]*\s")]
+    [InlineData(@"\s([a-z ]{0,12})(aba)[a-z]*\s")]
+    public void BoundedSuffixWindowPreservesGreedyCapturesAndOffset(string pattern)
+    {
+        var prefix = "😀" + new string('x', 256);
+        var text = prefix + "\u2003ababa\u0085aaaba aaba\u00a0" + new string('x', 256);
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern);
+        using var regex = Utf8Regex.Compile(pattern);
+        Assert.Equal(oracle.Count(text), regex.Count(bytes));
+        foreach (var offset in new[] { prefix.Length, prefix.Length + 1 })
+        {
+            var expected = oracle.Match(text, offset);
+            var fromByte = Encoding.UTF8.GetByteCount(text.AsSpan(0, offset));
+            var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes, startOffsetInBytes: fromByte));
+            Utf8MatchSequence.AssertCaptures(expected, actual, bytes, text);
+        }
+    }
+
     [Fact]
     public void CompiledAnchoredFixedAlternationSimplePatternMatchesDotNet()
     {
