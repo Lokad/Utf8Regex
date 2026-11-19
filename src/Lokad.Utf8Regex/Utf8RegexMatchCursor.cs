@@ -32,7 +32,6 @@ public sealed class Utf8RegexMatchCursor : IDisposable
     {
         _input = input; _regex = regex; _program = program; _catalog = catalog;
         _timeout = regex.MatchTimeout; _invocation = invocation;
-        _invocation.ShareStorageForCursor();
         try
         {
             Utf8SliceBufferWork.Checkpoint(ref _invocation);

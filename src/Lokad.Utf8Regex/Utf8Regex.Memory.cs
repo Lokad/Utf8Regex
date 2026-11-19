@@ -56,7 +56,7 @@ public sealed partial class Utf8Regex
             try { return IsMatchCore(input, cancellationToken); }
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         }
-        var invocation = Utf8SliceInvocation.CreateSynchronous(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+        var invocation = Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
         try
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);

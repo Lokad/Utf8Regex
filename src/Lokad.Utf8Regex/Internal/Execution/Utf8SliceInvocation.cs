@@ -6,9 +6,9 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// <summary>Invocation-owned state bundle for one owned-slice run: step/depth
 /// budget with deadline and token, aggregate storage admission ledger, and an
 /// optional deterministic checkpoint hook (test-only cancellation injection).
-/// Synchronous calls that pass this state by reference can keep it inline.
-/// Calls that pass it by value or lend the ledger use a shared owner.
-/// Cursors also promote unlimited scopes before publishing reservations.</summary>
+/// An exclusive owner can keep this state inline and pass it by reference.
+/// Value cursors and operations that lend the ledger share the accounting state.
+/// Value cursors promote unlimited scopes before publishing reservations.</summary>
 internal struct Utf8SliceInvocation
 {
     private Utf8ExecutionBudget _inlineBudget;
@@ -33,7 +33,7 @@ internal struct Utf8SliceInvocation
 
     // The caller owns both counters and passes the invocation by reference for
     // the whole operation, including assertion evaluation and workspace cleanup.
-    internal static Utf8SliceInvocation CreateSynchronous(Utf8ExecutionLimits limits, TimeSpan timeout,
+    internal static Utf8SliceInvocation CreateExclusive(Utf8ExecutionLimits limits, TimeSpan timeout,
         CancellationToken token, IUtf8MemoryAllowance? memoryAllowance = null)
         => new(limits, Utf8ExecutionDeadline.Start(timeout), token, memoryAllowance, share: false);
 
