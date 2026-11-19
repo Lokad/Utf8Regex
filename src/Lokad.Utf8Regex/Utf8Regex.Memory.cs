@@ -60,14 +60,7 @@ public sealed partial class Utf8Regex
         try
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);
-            bool result;
-            if (CanUseNativeLiteralSearch(_ownedSliceProgram))
-            {
-                var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
-                    input, 0, input.Length, false, ref invocation, out _, out result);
-                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            }
-            else result = OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
+            var result = OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
                 _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
             FinishFundedInvocation(ref invocation);
             return result;

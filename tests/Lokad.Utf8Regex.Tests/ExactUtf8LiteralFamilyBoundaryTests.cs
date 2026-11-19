@@ -1,6 +1,7 @@
 using Lokad.Utf8Regex.Internal.Input;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
 
@@ -111,6 +112,57 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
             AssertGlobalParity(pattern, input, options, Regex.InfiniteMatchTimeout);
             AssertGlobalParity(pattern, input, options, TimeSpan.FromSeconds(1));
         }
+    }
+
+    [Theory]
+    [InlineData("😀that😀", true)]
+    [InlineData("there éthat", false)]
+    [InlineData("𐐀the that\u200d", false)]
+    [InlineData("the\u0301 xand !have!", true)]
+    [InlineData("xfor the", true)]
+    public void ControlledWordFamilyBooleanNeedsNoWorkingStorage(string text, bool expected)
+    {
+        using var token = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var options in new[] { RegexOptions.CultureInvariant, RegexOptions.CultureInvariant | RegexOptions.Compiled })
+        {
+            using var regex = new Utf8Regex(@"\b(?:the|and|that|have|for)\b", options, new()
+            {
+                ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+            });
+            Assert.Equal(expected, regex.IsMatch(input, token.Token));
+            Assert.Equal(expected, regex.IsMatch(input, token.Token, new NoWorkingStorage()));
+        }
+    }
+
+    [Fact]
+    public void ControlledWordFamilyBooleanChecksItsBudgetAndOriginalToken()
+    {
+        const string pattern = @"\b(?:the|and|that|have|for)\b";
+        using var denied = new Utf8Regex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.IsMatch("the"u8)).ResourceKind);
+
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxWorkingBytes = 1 }
+        });
+        var input = new byte[160 * 1024];
+        Array.Fill(input, (byte)'z');
+        var session = Utf8SearchDiagnosticsSession.Start(_ => token.Cancel());
+        try
+        {
+            Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
+                regex.IsMatch(input, token.Token, new NoWorkingStorage())).CancellationToken);
+        }
+        finally { session.Complete(); }
+    }
+
+    private sealed class NoWorkingStorage : IUtf8MemoryAllowance
+    {
+        public bool TryReserve(ulong bytes) => false;
+        public void Release(ulong bytes) => throw new InvalidOperationException("No working storage was reserved.");
     }
 
     [Theory]

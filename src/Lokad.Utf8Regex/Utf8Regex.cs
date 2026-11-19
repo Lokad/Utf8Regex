@@ -385,7 +385,10 @@ public sealed partial class Utf8Regex : IDisposable
     private bool OwnedSliceIsMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, ref Utf8SliceInvocation invocation)
     {
         invocation.AnchorOriginByte = startByte;
-        if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program))
+        // Boolean results need no capture storage. The bounded finder confirms
+        // boundary requirements on the original subject under this invocation.
+        if ((HasFiniteExecutionLimits || invocation.Ledger.HasMemoryAllowance) &&
+            CanUseNativeLiteralSearch(program, maximumAlternatives: 8, allowBoundaries: true))
         {
             var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
                 input, startByte, input.Length, false, ref invocation, out _, out var found);
