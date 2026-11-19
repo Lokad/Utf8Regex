@@ -177,17 +177,19 @@ public sealed class Utf8RegexMatchCursor : IDisposable
 
     private Utf8RangeMatch Snapshot(Utf8SliceSearchOutcome outcome, ref Utf8InvocationResultLedger results)
     {
-        var catalog = _catalog!;
+        var numbers = _catalog!.GroupNumbers;
         var count = 1;
         if (outcome.CaptureStarts is { } history)
             for (var slot = 0; slot < history.Length; slot++)
             { if ((slot & 255) == 0) Checkpoint(); count = checked(count + history[slot].Length); }
-        var offsets = results.AllocateArray<int>(checked(catalog.GroupNumbers.Length + 1), ref _invocation);
+        var offsets = numbers.Length == 1 ? null
+            : results.AllocateArray<int>(checked(numbers.Length + 1), ref _invocation);
         var captures = results.AllocateArray<Utf8CaptureRange>(count, ref _invocation);
         captures[0] = new(outcome.StartByte, outcome.EndByte);
+        if (offsets is null) return new(_input, captures, null, numbers);
         var written = 1;
         offsets[1] = written;
-        for (var slot = 1; slot < catalog.GroupNumbers.Length; slot++)
+        for (var slot = 1; slot < numbers.Length; slot++)
         {
             if ((slot & 255) == 0) Checkpoint();
             if (outcome.CaptureStarts is { } starts && outcome.CaptureLengths is { } lengths)
@@ -199,7 +201,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                 }
             offsets[slot + 1] = written;
         }
-        return new(_input, captures, offsets, catalog.GroupNumbers);
+        return new(_input, captures, offsets, numbers);
     }
 
     private void Checkpoint()

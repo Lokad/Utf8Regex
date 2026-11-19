@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -190,6 +191,13 @@ public sealed class Utf8MemoryCursorTests
         Assert.True(cursor.MoveNextRetained(out var result)); Assert.True(working.Used >= result.ChargedBytes);
         Assert.False(cursor.MoveNext(out _)); Assert.Equal(result.ChargedBytes, working.Used);
         var copy = result.Match; result.Dispose(); Assert.Equal(0UL, root.Used); Assert.True(copy.Success);
+        Assert.True(copy.TryGetGroup(0, out var group));
+        Assert.Equal((0, 1), (group.StartOffsetInBytes, group.EndOffsetInBytes));
+        Assert.Equal(group, copy.GetCaptures(0)[0]);
+        Assert.False(copy.TryGetGroup(1, out _));
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = copy.GetCaptures(1); });
+        Assert.False(default(Utf8RangeMatch).TryGetGroup(0, out _));
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = default(Utf8RangeMatch).GetCaptures(0); });
     }
 
     [Fact]
@@ -321,13 +329,15 @@ public sealed class Utf8MemoryCursorTests
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = new Utf8ResourcePolicy
             {
-                MaxResultBytes = 150
+                MaxResultBytes = 2 * Utf8ConstructionBudget.ArrayBytes<Utf8CaptureRange>(1)
             }
         }).CreateMatchCursor("xxxxx"u8.ToArray(), workingMemoryAllowance: working);
         Assert.True(cursor.MoveNext(out var first));
-        var published = 1;
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => { while (cursor.MoveNext(out _)) published++; });
-        Assert.InRange(published, 1, 4); Assert.Equal(0UL, root.Used); Assert.True(first.Success);
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.Throws<Utf8ResourceLimitExceededException>(() => cursor.MoveNext(out _));
+        Assert.Equal(0UL, root.Used);
+        Assert.Equal(0, first.GetCaptures(0)[0].StartOffsetInBytes);
+        Assert.Equal(1, second.GetCaptures(0)[0].StartOffsetInBytes);
     }
 
     [Theory]

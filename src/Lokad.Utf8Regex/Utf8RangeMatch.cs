@@ -24,7 +24,7 @@ public readonly struct Utf8RangeMatch
     private readonly int[]? _numbers;
 
     internal Utf8RangeMatch(ReadOnlyMemory<byte> input, Utf8CaptureRange[] captures,
-        int[] offsets, int[] numbers)
+        int[]? offsets, int[] numbers)
     { _input = input; _captures = captures; _offsets = offsets; _numbers = numbers; }
 
     /// <summary>Whether group zero represents a successful match.</summary>
@@ -37,6 +37,11 @@ public readonly struct Utf8RangeMatch
     /// <summary>Gets the last capture of an existing slot; an unmatched slot returns a default range.</summary>
     public bool TryGetGroup(int number, out Utf8CaptureRange group)
     {
+        if (number == 0)
+        {
+            group = Value;
+            return group.Success;
+        }
         var ordinal = _numbers is null ? -1 : Array.BinarySearch(_numbers, number);
         group = ordinal >= 0 && _offsets![ordinal] < _offsets[ordinal + 1]
             ? _captures![_offsets[ordinal + 1] - 1] : default;
@@ -47,6 +52,7 @@ public readonly struct Utf8RangeMatch
     /// <exception cref="ArgumentOutOfRangeException">The slot does not exist.</exception>
     public ReadOnlySpan<Utf8CaptureRange> GetCaptures(int number)
     {
+        if (number == 0 && Success) return _captures.AsSpan(0, 1);
         var ordinal = _numbers is null ? -1 : Array.BinarySearch(_numbers, number);
         if (ordinal < 0) throw new ArgumentOutOfRangeException(nameof(number));
         return _captures.AsSpan(_offsets![ordinal], _offsets[ordinal + 1] - _offsets[ordinal]);
