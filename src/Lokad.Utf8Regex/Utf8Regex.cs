@@ -761,7 +761,8 @@ public sealed partial class Utf8Regex : IDisposable
         try
         {
             slots = Utf8SliceRunner.RentSlots(GetValueOperationCaptureSlotCount(program), ref invocation);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends, false, ref invocation);
+            var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends,
+                false, ref invocation, _preparedRegex.SearchPlan);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
             invocation.Budget.ThrowIfCancellationRequested();

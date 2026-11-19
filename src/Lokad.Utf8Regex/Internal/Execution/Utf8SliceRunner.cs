@@ -538,7 +538,7 @@ internal static partial class Utf8SliceRunner
             if (leadingClass >= 0 && literal >= 0)
             {
                 classSearch = GetAlignedDelimiterSearch(program, literalIndex, candidatePlan);
-                if (directClassLiteral && classSearch is { Length: > 1 })
+                if (directClassLiteral && classSearch is not null)
                 {
                     var proofBreach = TryProveSingleWindowAttempt(program, leadingClass, (byte)literal,
                         ref invocation, out singleWindowAttempt);
@@ -863,7 +863,7 @@ internal static partial class Utf8SliceRunner
         {
             classSearch = GetAlignedDelimiterSearch(program, whitespaceLiteralIndex, candidatePlan);
             if (!literalImmediatelyAfterRepeat && classSearch is null) whitespaceLiteral = -1;
-            if (literalImmediatelyAfterRepeat && classSearch is { Length: > 1 })
+            if (literalImmediatelyAfterRepeat && classSearch is not null)
             {
                 var proofBreach = TryProveSingleWindowAttempt(program, leadingClass, (byte)whitespaceLiteral,
                     ref invocation, out singleWindowAttempt);

@@ -18,8 +18,35 @@ public sealed class Utf8OrderedLiteralWindowCursorTests
         yield return [@"\b(?:public|private|internal)\b\s+.{0,80}\bclass\b", "publicclass noise public sealed class One\ninternal partial class Two\nprivate struct Skip"];
         yield return [@"HttpClient(?=\s+client)", "HttpClient client HttpClient\tclient HttpClient other"];
         yield return [@"\ba.{0,4}b\b", "xa-b a-b a.b a-bx"];
+        yield return [@"[a-z@]+@b\.d", "miss@c ok@b.d"];
+        yield return [@"(?<local>[a-z]+)@\k<local>", "ab@b q@q"];
         yield return [@"a\s{2,}b", "no match here"];
         yield return [@"a\s{2,}b", ""];
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FailedSingleByteDelimiterSuffixSkipsTheRestOfItsPrefixRun(bool appendMatch)
+    {
+        const string pattern = @"[\w.+-]+@[\w-]+\.[\w.-]+";
+        using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2048 }
+        });
+        var missed = string.Concat(Enumerable.Repeat("é", 512)) + "@b! ";
+        var input = Encoding.UTF8.GetBytes(missed + (appendMatch ? "yes@b.cd" : ""));
+        var matched = regex.Match(input);
+        Assert.Equal(appendMatch, matched.Success);
+        Assert.Equal(appendMatch ? 1 : 0, regex.Count(input));
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.Equal(appendMatch, cursor.MoveNext(out var first));
+        if (appendMatch)
+        {
+            Assert.Equal(new Utf8CaptureRange(Encoding.UTF8.GetByteCount(missed), input.Length), matched);
+            Assert.Equal(matched, first.Value);
+        }
+        Assert.False(cursor.MoveNext(out _));
     }
 
     [Theory]

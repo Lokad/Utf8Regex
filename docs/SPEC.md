@@ -223,13 +223,15 @@ misses and bounded final tails can finish without the table. A refusal during a
 later advance faults the cursor and leaves earlier results valid.
 
 Backtracking first-match search can reuse Count's mandatory exact ASCII head or
-range proof. Controlled gap searches cover at most 2048 bytes per checkpoint;
-rejected neighbouring bytes still consume work. Every surviving start runs the
+range proof. Controlled gap searches cover at most 2048 bytes per checkpoint,
+and rejected neighbouring bytes still consume work. Every surviving start runs the
 normal VM with captures and rollback. Nullable, contiguous-anchor, folded and RTL
-roots retain their existing discovery, as do initial beginning anchors. Skipping
-impossible starts can reduce work and avoid local scratch; enclosing storage loans,
-final interruption/admission still
-apply.
+roots retain their existing discovery, as do initial beginning anchors.
+When a direct delimiter is outside an unbounded prefix class, an eligible
+capture-free window needs only one complete verification before moving on to
+the next window. This includes one-byte delimiters. Skipping impossible starts
+can reduce work and avoid local scratch. Enclosing storage loans and final
+interruption and admission checks still apply.
 
 A complete LTR backtracking root containing only a word-boundary instruction and
 Accept can omit general VM dispatch when capture history is not requested. It
