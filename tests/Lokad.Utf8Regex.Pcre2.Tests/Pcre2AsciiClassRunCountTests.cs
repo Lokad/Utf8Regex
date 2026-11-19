@@ -6,6 +6,18 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 public sealed class Pcre2AsciiClassRunCountTests
 {
+    [Fact]
+    public void NullableTerminalCountHonorsOffsetAndNotEmpty()
+    {
+        using var regex = new Utf8Pcre2Regex(@"[^\r\n]*");
+        using var token = new CancellationTokenSource();
+        var input = "é\r\n𐐀\n"u8;
+        Assert.Equal(6, regex.Count(input, cancellationToken: token.Token));
+        Assert.Equal(3, regex.Count(input, 4, cancellationToken: token.Token));
+        Assert.Equal(1, regex.Count(input, input.Length, cancellationToken: token.Token));
+        Assert.Equal(2, regex.Count(input, matchOptions: Pcre2MatchOptions.NotEmpty, cancellationToken: token.Token));
+    }
+
     [Theory]
     [InlineData("[a-z]{10,}")]
     [InlineData("[a-zA-Z0-9]{10,}")]

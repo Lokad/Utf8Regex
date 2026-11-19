@@ -162,7 +162,7 @@ internal static partial class Utf8SliceRunner
             instructions[3].Kind != Utf8SliceInstructionKind.RepeatExit || instructions[3].A != 0 ||
             instructions[4].Kind != Utf8SliceInstructionKind.Accept)
             return false;
-        return CanRepeatScalarAtom(program, atom);
+        return atom.Kind == Utf8SliceInstructionKind.Dot || CanRepeatScalarAtom(program, atom);
     }
 
     private static bool CanRepeatScalarAtom(Utf8SliceProgram program, Utf8SliceInstruction atom)
@@ -178,7 +178,7 @@ internal static partial class Utf8SliceRunner
 
     internal static bool CanCountTerminalScalar(Utf8SliceProgram program)
         => TryGetTerminalCategory(program, out _, out _, out _) ||
-            TryGetCountTerminalClassRepeat(program, out _, out _);
+            TryGetCountTerminalClassRepeat(program, out _, out _, out _);
 
     private static bool TryGetTerminalCategory(Utf8SliceProgram program,
         out uint categories, out ulong asciiLow, out ulong asciiHigh)
@@ -201,11 +201,19 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool TryGetCountTerminalClassRepeat(Utf8SliceProgram program,
-        out int repeatIndex, out int atomIndex)
+        out int repeatIndex, out int atomIndex, out (byte First, byte Second)? asciiStops)
     {
         repeatIndex = 0;
         atomIndex = 1;
-        if (CanRunTerminalClassRepeat(program)) return program.Instructions[0].RepeatMinimum > 0;
+        asciiStops = null;
+        if (CanRunTerminalClassRepeat(program))
+        {
+            var terminal = program.Instructions[0];
+            if (terminal.RepeatMinimum <= 1 && terminal.RepeatMaximum == long.MaxValue &&
+                TryGetAsciiRepeatStops(program, program.Instructions[1], out var first, out var second))
+                asciiStops = (first, second);
+            return terminal.RepeatMinimum > 0 || asciiStops.HasValue;
+        }
         if (program.IsNonBacktracking || program.RightToLeft || program.RepeatCount != 1 ||
             program.GroupCount == 0 || program.HasBalancing || program.Assertions.Length != 0 ||
             program.Instructions.Length > 64) return false;
@@ -238,8 +246,9 @@ internal static partial class Utf8SliceRunner
         outcome = default;
         var repeatIndex = -1;
         var atomIndex = -1;
+        (byte First, byte Second)? asciiStops = null;
         if (!TryGetTerminalCategory(program, out var categories, out var asciiLow, out var asciiHigh) &&
-            !TryGetCountTerminalClassRepeat(program, out repeatIndex, out atomIndex)) return false;
+            !TryGetCountTerminalClassRepeat(program, out repeatIndex, out atomIndex, out asciiStops)) return false;
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)start > (uint)input.Length || start < input.Length && (input[start] & 0xc0) == 0x80) return true;
         invocation.AnchorOriginByte = start;
@@ -254,7 +263,16 @@ internal static partial class Utf8SliceRunner
             outcome = new(count, breach);
             return true;
         }
-        outcome = CountTerminalClassRepeat(program, input, start, repeatIndex, atomIndex, ref invocation);
+        if (asciiStops is { } stops)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryReserveWorking(0);
+            outcome = breach == Utf8ExecutionLimitKind.None
+                ? CountTerminalAsciiRuns(input, start, program.Instructions[atomIndex] is { Kind: Utf8SliceInstructionKind.Dot, A: not 0 },
+                    stops.First, stops.Second, program.Instructions[repeatIndex].RepeatMinimum == 0, ref invocation)
+                : new(0, breach);
+        }
+        else outcome = CountTerminalClassRepeat(program, input, start, repeatIndex, atomIndex, ref invocation);
         return true;
     }
 
@@ -340,6 +358,50 @@ internal static partial class Utf8SliceRunner
         breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
         return new(count, breach);
+    }
+
+    private static Utf8SliceCountOutcome CountTerminalAsciiRuns(ReadOnlySpan<byte> input, int position,
+        bool dotAll, byte first, byte second, bool allowsEmpty, ref Utf8SliceInvocation invocation)
+    {
+        // Every excluded scalar gives one empty match for a nullable repeat.
+        // Nonempty runs end at the stops, and EOF contributes one last empty.
+        var emptyCount = allowsEmpty ? 1 : 0;
+        var count = 0;
+        var inRun = false;
+        while (position < input.Length)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return new(count, breach);
+            var end = position + Math.Min(2048, input.Length - position);
+            while (position < end)
+            {
+                var stop = IndexOfRepeatStop(input[position..end], dotAll, first, second);
+                if (stop < 0)
+                {
+                    // A block may end inside a scalar. Only ASCII stops and
+                    // the full subject end can complete this run.
+                    inRun = true;
+                    position = end;
+                    break;
+                }
+                var matches = (inRun || stop > 0 ? 1 : 0) + emptyCount;
+                if (matches != 0)
+                {
+                    count = checked(count + matches);
+                    invocation.AnchorOriginByte = position + stop;
+                }
+                position += stop + 1;
+                inRun = false;
+            }
+        }
+        if (inRun || allowsEmpty)
+        {
+            count = checked(count + (inRun ? 1 : 0) + emptyCount);
+            invocation.AnchorOriginByte = position;
+        }
+        var final = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return new(count, final);
     }
 
     private static Utf8SliceMatchOutcome RunTerminalClassRepeat(Utf8SliceProgram program,
@@ -1095,11 +1157,9 @@ internal static partial class Utf8SliceRunner
             if (minimum != 0 && digits.EndIndex > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);
             return digits.EndIndex == start && minimum != 0 ? (-1, digits.Breach) : digits;
         }
-        byte first = (byte)'\n', second = (byte)'\n';
-        if (unbounded &&
-            (dot || atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } &&
-                TryGetAsciiMaskPair(program.SetMasks[atom.A], out first, out second)))
+        if (unbounded && TryGetAsciiRepeatStops(program, atom, out var first, out var second))
         {
+            var dotAll = dot && atom.A != 0;
             // The caller establishes validity. These fused atoms may cross a
             // block boundary inside a scalar, but their ASCII stops keep the
             // final endpoint aligned.
@@ -1108,8 +1168,7 @@ internal static partial class Utf8SliceRunner
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
                 var block = input.Slice(position, Math.Min(2048, input.Length - position));
-                var stop = dot ? atom.A == 0 ? block.IndexOf((byte)'\n') : -1
-                    : block.IndexOfAny(first, second);
+                var stop = IndexOfRepeatStop(block, dotAll, first, second);
                 if (stop >= 0) { position += stop; break; }
                 position += block.Length;
             }
@@ -1192,13 +1251,27 @@ internal static partial class Utf8SliceRunner
         return false;
     }
 
-    private static bool TryGetAsciiMaskPair(ReadOnlySpan<byte> mask, out byte first, out byte second)
+    private static int IndexOfRepeatStop(ReadOnlySpan<byte> input, bool dotAll, byte first, byte second)
+        => dotAll ? -1 : first == second ? input.IndexOf(first) : input.IndexOfAny(first, second);
+
+    private static bool TryGetAsciiRepeatStops(Utf8SliceProgram program, in Utf8SliceInstruction atom,
+        out byte first, out byte second)
+    {
+        if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 })
+            return TryGetOneOrTwoAsciiBytes(program.SetMasks[atom.A], out first, out second);
+        first = second = (byte)'\n';
+        return atom.Kind == Utf8SliceInstructionKind.Dot;
+    }
+
+    private static bool TryGetOneOrTwoAsciiBytes(ReadOnlySpan<byte> mask, out byte first, out byte second)
     {
         first = second = 0;
         var low = BinaryPrimitives.ReadUInt64LittleEndian(mask);
         var high = BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]);
-        if (BitOperations.PopCount(low) + BitOperations.PopCount(high) != 2) return false;
+        var size = BitOperations.PopCount(low) + BitOperations.PopCount(high);
+        if (size is < 1 or > 2) return false;
         first = (byte)(low != 0 ? BitOperations.TrailingZeroCount(low) : 64 + BitOperations.TrailingZeroCount(high));
+        if (size == 1) { second = first; return true; }
         if (low != 0) low &= low - 1;
         else high &= high - 1;
         second = (byte)(low != 0 ? BitOperations.TrailingZeroCount(low) : 64 + BitOperations.TrailingZeroCount(high));

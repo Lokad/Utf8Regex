@@ -425,7 +425,7 @@ internal static partial class Utf8SliceRunner
         if (directClassLiteral &&
             code[leadingClass - 1].RepeatMinimum == 1 && code[leadingClass - 1].RepeatMaximum == long.MaxValue &&
             code[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } atom &&
-            TryGetAsciiMaskPair(program.SetMasks[atom.A], out var first, out var second))
+            TryGetOneOrTwoAsciiBytes(program.SetMasks[atom.A], out var first, out var second))
         {
             // Direct unbounded class runs start after the last excluded byte.
             // ASCII cannot occur inside a wider scalar in caller-valid UTF-8.
@@ -436,7 +436,8 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var length = Math.Min(2048, position - floor);
                 var start = position - length;
-                var stop = input.Slice(start, length).LastIndexOfAny(first, second);
+                var block = input.Slice(start, length);
+                var stop = first == second ? block.LastIndexOf(first) : block.LastIndexOfAny(first, second);
                 if (stop >= 0) { position = start + stop + 1; break; }
                 position = start;
             }

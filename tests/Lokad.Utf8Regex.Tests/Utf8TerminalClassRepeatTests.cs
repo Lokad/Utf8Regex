@@ -20,6 +20,13 @@ public sealed class Utf8TerminalClassRepeatTests
     [InlineData("(?:😀)*", "😀😀é😀", 4)]
     [InlineData("é{0,2}", "ééé😀", 4)]
     [InlineData(@"\w*", "a😀", 3)]
+    [InlineData(@"[^\n]*", "", 1)]
+    [InlineData(@"[^\n]*", "a\n\n😀", 5)]
+    [InlineData(@"[^\r\n]*", "a\r\né", 5)]
+    [InlineData(@"[^!]*", "😀!é!", 5)]
+    [InlineData(@"[^\n]{0,2}", "é😀\n猫猫", 4)]
+    [InlineData(@"(?s:.)*", "😀\n", 2)]
+    [InlineData(@"([^\n]{0,2})", "é😀\n猫猫", 4)]
     public void CompleteScalarsKeepCoreClassSemantics(string pattern, string text, int expected)
     {
         var regex = Create(pattern, 256);
@@ -39,6 +46,22 @@ public sealed class Utf8TerminalClassRepeatTests
     [InlineData(@"(?=\w+)\w+Z", "abcZ", 1)]
     public void GeneralRewindCaptureLazyEmptyAndAssertionPathsRemainValid(string pattern, string text, int expected)
         => Assert.Equal(expected, Create(pattern, 256).Count(Encoding.UTF8.GetBytes(text)));
+
+    [Fact]
+    public void NullableTerminalCountKeepsRunsAcrossBlockAndScalarEdges()
+    {
+        const string pattern = @"[^\r\n]*";
+        var input = Encoding.UTF8.GetBytes(new string('a', 2047) + "😀\r\né");
+        using var token = new CancellationTokenSource();
+        using var regex = Create(pattern, 1);
+        Assert.Equal(5, regex.Count(input, token.Token));
+        using var limited = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2, MaxWorkingBytes = 1 }
+        });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input, token.Token)).ResourceKind);
+    }
 
     [Theory]
     [InlineData(RegexOptions.None)]
@@ -158,11 +181,12 @@ public sealed class Utf8TerminalClassRepeatTests
     [Theory]
     [InlineData(false, @"\p{L}+")] [InlineData(true, @"\p{L}+")]
     [InlineData(false, "x*")] [InlineData(true, "x*")]
+    [InlineData(false, @"[^\n]*")] [InlineData(true, @"[^\n]*")]
     public void OriginalInterruptionDuringTheRunReleasesScratch(bool timeout, string pattern)
     {
         var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Missing scalar program.");
-        var input = Encoding.UTF8.GetBytes(new string('é', 2048));
+        var input = Encoding.UTF8.GetBytes(new string('é', pattern == @"[^\n]*" ? 65_536 : 2048));
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
