@@ -11,6 +11,7 @@ internal sealed partial class PosixProgram
     // Core uses positive values in these fields for terminal byte bounds.
     internal const int RepeatExitWithoutRewind = -1;
     internal const int ForkTargetFirst = -1;
+    internal const int ForkSelectSingleLiteral = -2;
 
     private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool directGreedyRuns,
         bool useCaptureOffsets,
@@ -471,7 +472,7 @@ internal sealed partial class PosixProgram
         return false;
     }
 
-    private static bool CanSelectFixedAlternative(ReadOnlySpan<Utf8SliceInstruction> code, int fork,
+    private static bool CanSelectFixedAlternative(Span<Utf8SliceInstruction> code, int fork,
         Utf8ConstructionBudget budget)
     {
         var right = code[fork].A;
@@ -481,8 +482,8 @@ internal sealed partial class PosixProgram
             return false;
         var leftBody = code.Slice(fork + 1, right - fork - 2);
         var rightBody = code.Slice(right, jump.A - right);
-        var length = FixedLiteralBranchLength(leftBody, budget, out var leftTag);
-        if (length <= 0 || FixedLiteralBranchLength(rightBody, budget, out var rightTag) != length ||
+        var length = FixedLiteralBranchLength(leftBody, budget, out var leftTag, out var leftLiteral);
+        if (length <= 0 || FixedLiteralBranchLength(rightBody, budget, out var rightTag, out _) != length ||
             leftTag >= rightTag)
             return false;
         // Both successful branches consume the same scalar prefix. The earlier
@@ -492,7 +493,14 @@ internal sealed partial class PosixProgram
         {
             budget.ChargeWork(1);
             if (code[index].Kind == Utf8SliceInstructionKind.Accept)
-                return index == code.Length - 1;
+            {
+                if (index != code.Length - 1) return false;
+                // After one literal the winning arm has only capture markers
+                // left to run. A hit on the left wins, even if both arms match.
+                if (length == 1)
+                    code[fork] = new(Utf8SliceInstructionKind.Fork, right, 0, ForkSelectSingleLiteral, leftLiteral);
+                return true;
+            }
             if (code[index].Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd))
                 return false;
         }
@@ -500,9 +508,10 @@ internal sealed partial class PosixProgram
     }
 
     private static int FixedLiteralBranchLength(ReadOnlySpan<Utf8SliceInstruction> body,
-        Utf8ConstructionBudget budget, out int tag)
+        Utf8ConstructionBudget budget, out int tag, out int literal)
     {
         tag = -1;
+        literal = -1;
         if (body.Length < 3 || body[0] is not { Kind: Utf8SliceInstructionKind.CaptureStart } open ||
             body[^1] is not { Kind: Utf8SliceInstructionKind.CaptureEnd } close || open.A != close.A)
             return -1;
@@ -517,7 +526,11 @@ internal sealed partial class PosixProgram
                 // ancestor cannot masquerade as an earlier participating branch.
                 if (instruction.A < tag) return -1;
             }
-            else if (instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.B == 0) length++;
+            else if (instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.B == 0)
+            {
+                literal = instruction.A;
+                length++;
+            }
             else return -1;
         }
         return length;

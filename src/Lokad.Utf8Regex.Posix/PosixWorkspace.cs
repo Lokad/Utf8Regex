@@ -138,6 +138,12 @@ internal partial struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.Fork:
                     if (instruction.B != 0) throw new InvalidOperationException("Unsupported POSIX fork.");
+                    if (instruction.C == PosixProgram.ForkSelectSingleLiteral)
+                    {
+                        pc = Rune.DecodeFromUtf8(input[at..], out var first, out _) == OperationStatus.Done &&
+                            MatchesLiteral(first, instruction.D) ? pc + 1 : instruction.A;
+                        break;
+                    }
                     var targetFirst = instruction.C == PosixProgram.ForkTargetFirst;
                     PushFrame(new(targetFirst ? pc + 1 : instruction.A, at, _trace.Count, _undo.Count), ref invocation);
                     pc = targetFirst ? instruction.A : pc + 1;

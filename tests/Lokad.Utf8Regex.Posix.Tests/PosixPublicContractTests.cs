@@ -564,6 +564,24 @@ public sealed class PosixPublicContractTests
     }
 
     [Theory]
+    [InlineData("(a)|(a)", "a", 1, 0, 1)]
+    [InlineData("(a)|(b)", "😀b", 2, 4, 5)]
+    [InlineData("(😀)|(😀)", "é😀", 1, 2, 6)]
+    public void SingleLiteralAlternativeKeepsCapturePriorityUnderWorkingLimit(
+        string pattern, string text, int winner, int start, int end)
+    {
+        using var regex = new Utf8PosixRegex(pattern,
+            policy: new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkingBytes = 64 } });
+        var input = Encoding.UTF8.GetBytes(text);
+        var captures = new Utf8CaptureRange[3];
+        var whole = new Utf8CaptureRange(start, end);
+
+        Assert.Equal(whole, regex.Match(input, captures: captures));
+        Assert.Equal(whole, captures[winner]);
+        Assert.False(captures[3 - winner].Success);
+    }
+
+    [Theory]
     [InlineData(63)]
     [InlineData(64)]
     [InlineData(65)]
