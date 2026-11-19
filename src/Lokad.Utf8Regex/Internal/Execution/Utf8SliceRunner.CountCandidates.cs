@@ -274,10 +274,16 @@ internal static partial class Utf8SliceRunner
         gapMaximum = 0;
         directClassLiteral = false;
         var code = program.Instructions.AsSpan();
-        var index = 0;
+        var leadingBoundary = code is [{ Kind: Utf8SliceInstructionKind.Boundary, A: 1 }, ..];
+        var index = leadingBoundary ? 1 : 0;
         while (index < code.Length && index < 64 && code[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
             index++;
-        var singleLeadingSpace = index < code.Length && IsUnicodeSpace(program, code[index]);
+        // A leading boundary leaves the class at the original start. Only
+        // short direct windows use this proof, and the VM still tests every
+        // candidate's boundary in the full subject.
+        if (leadingBoundary && (index >= 64 || !IsSingleClassRepeat(code, index) || code[index].RepeatMaximum > 3))
+            return -1;
+        var singleLeadingSpace = !leadingBoundary && index < code.Length && IsUnicodeSpace(program, code[index]);
         if (singleLeadingSpace)
         {
             index++;
@@ -315,7 +321,7 @@ internal static partial class Utf8SliceRunner
             directClassLiteral = true;
             return direct.A;
         }
-        if (singleLeadingSpace || lazyDot) return -1;
+        if (leadingBoundary || singleLeadingSpace || lazyDot) return -1;
         if (index >= 64 || !IsSingleClassRepeat(code, index)) return -1;
         var repeat = code[index];
         if (repeat.RepeatMaximum != long.MaxValue ||

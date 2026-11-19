@@ -127,8 +127,11 @@ same invocation's cancellation, deadline and resource authority.
 Direct class/delimiter windows rewind the class itself, including any accepted
 whitespace. Explicit whitespace/gap prefixes keep their conservative windows;
 omitting impossible starts can lower numerical work requirements.
+After a leading positive word boundary, the same search can rewind a short
+bounded class of up to three Unicode scalars before an exact ASCII delimiter.
+The verifier still checks the boundary against the original subject.
 The first necessary ASCII-range candidate can be verified before window search
-when an excluded delimiter lies within its64-byte prefix. A proved complete
+when an excluded delimiter lies within its 64-byte prefix. A proved complete
 no-rewind capture root needs no delimiter preview: its existing metered repeat
 runner can verify that first candidate directly, including a long first run.
 A failed verification resumes the existing window search and scalar progression. Captures still come

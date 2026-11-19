@@ -27,6 +27,10 @@ public sealed class PythonReBoundaryCandidateTests
     [InlineData(@"\d{2,4}\b", "😀12 34", 4, "12", 2)]
     [InlineData(@"[a-z]{1,8}\b", "alpha beta gamma", 0, "alpha", 3)]
     [InlineData(@"[a-z ]{1,8}\b", "alpha beta gamma", 0, "alpha ", 3)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "é11/18/2019 😀١١/١٨/٢٠١٩", 0, "١١/١٨/٢٠١٩", 1)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "😀𐒡/2/٣٤ !11/18/2019", 4, "𐒡/2/٣٤", 2)]
+    [InlineData(@"\b(?P<n>\d{1,2})/X", "café11/X 22/X suffix", 0, "22/X", 1)]
+    [InlineData(@"\b[01]{1,3}1X", "prefix é01X 0011X after", 0, "0011X", 1)]
     public void SearchKeepsBoundaryPredicatesCapturesAndOffsets(string pattern, string text, int offset, string? expected, int expectedCount)
     {
         using var token = new CancellationTokenSource();
@@ -54,6 +58,17 @@ public sealed class PythonReBoundaryCandidateTests
         if (pattern.Contains("?P<")) Assert.Equal("22", System.Text.Encoding.UTF8.GetString((held.Groups[1].Success ? held.GetGroupMemory(held.Groups[1].Number).Span : ReadOnlySpan<byte>.Empty)));
         Assert.Equal(expectedCount, regex.Count(input, offset));
         if (expected is not null) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString((held.Groups[0].Success ? held.GetGroupMemory(held.Groups[0].Number).Span : ReadOnlySpan<byte>.Empty)));
+    }
+
+    [Fact]
+    public void RequiredDelimiterCanRejectTheInputUnderSmallWorkLimit()
+    {
+        using var regex = new Utf8PythonRegex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 16, MaxWorkingBytes = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.False(regex.IsMatch("Today is 11 18 2019 and tomorrow is 11 19 2019."u8, cancellationToken: source.Token));
     }
 
     [Fact]
@@ -268,6 +283,8 @@ public sealed class PythonReBoundaryCandidateTests
     [Theory]
     [InlineData(false, @"\b[0-9]+X\b")]
     [InlineData(true, @"\b[0-9]+X\b")]
+    [InlineData(false, @"\b\d{1,2}X")]
+    [InlineData(true, @"\b\d{1,2}X")]
     [InlineData(false, @"\b")]
     [InlineData(true, @"\b")]
     public void WordInteriorScanObservesOriginalInterruption(bool expire, string pattern)

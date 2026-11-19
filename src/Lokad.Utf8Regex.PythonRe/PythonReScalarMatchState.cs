@@ -108,11 +108,13 @@ internal struct PythonReScalarMatchState
                         !program.RightToLeft && !program.IgnoreCase)
                     {
                         var (delimiter, leadingClass, _, _, directClassLiteral) = program.LeadingClassDelimiter;
-                        // Only direct ASCII class/delimiter windows qualify;
-                        // whitespace/gaps and opaque prefixes keep their route.
+                        // Short direct windows after a leading boundary can
+                        // rewind Unicode scalars with the exact class predicate.
+                        // The start hint still admits all possible wider scalars.
                         if (directClassLiteral &&
-                            program.Instructions[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom &&
-                            program.SetMasks[atom.A].Length == 16)
+                            (program.Instructions[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom &&
+                                program.SetMasks[atom.A].Length == 16 ||
+                             _leadingAsciiLow >= 0 && program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 }))
                         {
                             _delimiter = delimiter;
                             _delimiterLeadingClass = leadingClass;
