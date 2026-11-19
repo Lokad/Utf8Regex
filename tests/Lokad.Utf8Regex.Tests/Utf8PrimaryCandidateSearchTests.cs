@@ -35,12 +35,16 @@ public sealed class Utf8PrimaryCandidateSearchTests
     }
 
     [Theory]
-    [InlineData("1/2/03")]
-    [InlineData("𝟡1/2/03")]
-    [InlineData("1𝟡/2/03")]
-    public void ShortRepeatDelimiterSkipsFalseStartsAndKeepsScalarCaptures(string date)
+    [InlineData(2, "1/2/03")]
+    [InlineData(2, "𝟡1/2/03")]
+    [InlineData(2, "1𝟡/2/03")]
+    [InlineData(3, "1/2/03")]
+    [InlineData(3, "12/2/03")]
+    [InlineData(3, "123/2/03")]
+    [InlineData(3, "12𝟡/2/03")]
+    public void ShortRepeatDelimiterSkipsFalseStartsAndKeepsScalarCaptures(int maximum, string date)
     {
-        const string pattern = @"(?<date>\b\d{1,2}/\d{1,2}/\d{2,4}\b)";
+        var pattern = $$"""(?<date>\b\d{1,{{maximum}}}/\d{1,2}/\d{2,4}\b)""";
         var prefix = new string('1', 512) + "x 😀 ";
         var input = Encoding.UTF8.GetBytes(prefix + date + " " + date);
         var expected = new Utf8CaptureRange(Encoding.UTF8.GetByteCount(prefix), Encoding.UTF8.GetByteCount(prefix + date));

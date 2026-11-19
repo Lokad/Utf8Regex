@@ -849,7 +849,7 @@ internal static partial class Utf8SliceRunner
     {
         var code = program.Instructions.AsSpan();
         var repeat = code[atomIndex - 1];
-        if (code.Length - atomIndex < 4 || repeat.RepeatMinimum == 0 || repeat.RepeatMaximum > 2 ||
+        if (code.Length - atomIndex < 4 || repeat.RepeatMinimum == 0 || repeat.RepeatMaximum > 3 ||
             !IsSingleClassRepeat(code, atomIndex - 1) ||
             code[atomIndex + 3] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal)
             return default;
@@ -859,11 +859,14 @@ internal static partial class Utf8SliceRunner
     private static bool MayReachShortRepeatLiteral(ReadOnlySpan<byte> input, int start,
         (int Min, int Max, byte Literal) window, bool admitsWideScalars)
     {
-        // A two-scalar repeat can leave the byte window only when one
-        // of its consumed scalars is wider than a byte. Let the VM decide.
+        var remaining = input.Length - start;
+        // The byte window covers every repeat length only when the consumed
+        // scalars are all ASCII. Leave any possible wider scalar to the VM.
         return admitsWideScalars && (input[start] >= 128 ||
-                window.Max == 2 && start + 1 < input.Length && input[start + 1] >= 128) ||
-            HasAsciiLiteralInWindow(input, start, window);
+                window.Max >= 2 && remaining > 1 && input[start + 1] >= 128 ||
+                window.Max == 3 && remaining > 2 && input[start + 2] >= 128) ||
+            HasAsciiLiteralInWindow(input, start, window) ||
+            window.Min == 1 && window.Max == 3 && remaining > 2 && input[start + 2] == window.Literal;
     }
 
     private static int CountStartsBelowRepeatMinimum(ReadOnlySpan<byte> prefix, Utf8SearchAsciiSet ascii)
