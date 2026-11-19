@@ -208,9 +208,10 @@ internal struct PythonReScalarMatchState
         _invocation.Budget.ThrowIfCancellationRequested();
     }
 
-    internal bool MoveNext(ReadOnlySpan<byte> input) => MoveNextCore(input, true);
+    internal bool MoveNext(ReadOnlySpan<byte> input, bool existenceOnly = false) =>
+        MoveNextCore(input, search: true, existenceOnly);
 
-    internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input) => MoveNextCore(input, false);
+    internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input) => MoveNextCore(input, search: false, existenceOnly: false);
 
     private static bool TryGetLaterAsciiRange(Utf8SliceProgram program, int leadingLow, int leadingHigh,
         ref Utf8SliceInvocation invocation, out int distance, out int low, out int high)
@@ -370,7 +371,7 @@ internal struct PythonReScalarMatchState
         return true;
     }
 
-    private bool MoveNextCore(ReadOnlySpan<byte> input, bool search)
+    private bool MoveNextCore(ReadOnlySpan<byte> input, bool search, bool existenceOnly)
     {
         // A scalar cursor exclusively owns this admitted scratch. Published
         // snapshots copy values; ResetAttempt never touches retained results.
@@ -495,7 +496,7 @@ internal struct PythonReScalarMatchState
                         outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
                     else
                         outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
-                            _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation);
+                            _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation, existenceOnly);
                 }
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                     throw ResourceFailure();

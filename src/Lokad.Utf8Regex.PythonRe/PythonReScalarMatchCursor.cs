@@ -29,7 +29,7 @@ internal ref struct PythonReScalarMatchCursor
     internal T[] CompleteResults<T>(ref Utf8InvocationResultBuffer<T> buffer) => _state.CompleteResults(ref buffer);
     internal void ReleaseResults<T>(ref Utf8InvocationResultBuffer<T> buffer) => _state.ReleaseResults(ref buffer);
     internal void Checkpoint() => _state.Checkpoint();
-    internal bool MoveNext() => _state.MoveNext(_input);
+    internal bool MoveNext(bool existenceOnly = false) => _state.MoveNext(_input, existenceOnly);
     internal bool MatchAtCurrentPosition() => _state.MatchAtCurrentPosition(_input);
     internal PythonReGroupData SnapshotValueData() => _state.SnapshotValueData();
     internal bool TryGetCaptureByteRange(int number, out int start, out int end) => _state.TryGetCaptureByteRange(number, out start, out end);

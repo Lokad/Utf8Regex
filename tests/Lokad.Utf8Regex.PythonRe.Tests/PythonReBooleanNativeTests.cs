@@ -113,6 +113,28 @@ public sealed class PythonReBooleanNativeTests
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text)));
     }
 
+    [Theory]
+    [InlineData(@"\d{2,}")]
+    [InlineData(@"(?P<digits>\d{2,})")]
+    public void TerminalRepeatBooleanNeedsOnlyItsMinimum(string pattern)
+    {
+        var input = Encoding.UTF8.GetBytes("😀" + string.Concat(Enumerable.Repeat("٣𐒡", 1024)));
+        using var token = new CancellationTokenSource();
+        using var limited = new Utf8PythonRegex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 32 }
+        });
+        Assert.True(limited.IsMatch(input, "😀"u8.Length, token.Token));
+        Assert.False(limited.IsMatch(input, input.Length - "𐒡"u8.Length, token.Token));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+                limited.Match(input, "😀"u8.Length, cancellationToken: token.Token, mode: Utf8PythonMatchMode.Search)).ResourceKind);
+        using var unrestricted = new Utf8PythonRegex(pattern);
+        var result = unrestricted.Match(input, "😀"u8.Length, mode: Utf8PythonMatchMode.Search);
+        Assert.True(result.Success);
+        Assert.Equal(("😀"u8.Length, input.Length), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+    }
+
     [Fact]
     public void BooleanCallsPreserveRetainedCapturesAndGenericProgramsNeedVmStorage()
     {

@@ -118,7 +118,9 @@ public sealed partial class Utf8PythonRegex
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
         try
         {
-            var found = cursor.MoveNext();
+            // This cursor is used once. The VM can stop as soon as the
+            // pattern has a match because this call publishes no ranges.
+            var found = cursor.MoveNext(existenceOnly: true);
             cursor.Checkpoint();
             return found;
         }
