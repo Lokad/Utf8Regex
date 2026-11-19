@@ -31,8 +31,10 @@ public sealed partial class Utf8Regex
     {
         cancellationToken.ThrowIfCancellationRequested();
         var output = captures[..Math.Min(captures.Length, _program.CaptureCatalog.GroupNumbers.Length)];
-        var invocation = workingMemoryAllowance is null
-            ? new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken) : new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+        // This synchronous call passes the invocation by reference through
+        // search, capture replay and publication.
+        var invocation = Utf8SliceInvocation.CreateExclusive(
+            InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
         var slots = new Utf8SliceSlots([], []);
         try
         {
