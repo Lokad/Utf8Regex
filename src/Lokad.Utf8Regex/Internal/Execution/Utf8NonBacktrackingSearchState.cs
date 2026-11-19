@@ -503,13 +503,17 @@ internal sealed class Utf8NonBacktrackingSearchState
             }
             var recordCaptures = captureStarts.Length != 0;
             var openingCount = recordCaptures ? program.NonBacktrackingCaptureOpeningCount : 0;
+            // Keep the existing working admission for either storage location.
             var bytes = Utf8ConstructionBudget.ArrayBytes<int>(openingCount);
             var admission = invocation.TryReserveWorking(bytes);
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
             reservation = bytes;
             admission = invocation.TryChargeInputStep();
             if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
-            var openings = openingCount == 0 ? [] : new int[openingCount];
+            var useStack = openingCount is > 0 and <= 32;
+            Span<int> openings = useStack ? stackalloc int[openingCount]
+                : openingCount == 0 ? [] : new int[openingCount];
+            if (useStack) openings.Clear();
             var outcome = Replay(program, _boundaries, _viability, _stride, ref boundary, captureStarts, captureEnds,
                 openings, ref invocation);
             completed = outcome.Found;
