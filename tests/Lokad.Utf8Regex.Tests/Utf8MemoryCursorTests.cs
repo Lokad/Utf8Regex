@@ -21,6 +21,10 @@ public sealed class Utf8MemoryCursorTests
     [InlineData(@"(?m)^([a-z]*)$", "ab\n\ncd", RegexOptions.None)]
     [InlineData("(?<x>é)+", "éé é", RegexOptions.None)]
     [InlineData("ab|a", "xxab a", RegexOptions.Compiled)]
+    [InlineData(@"[\w.+-]+@[\w-]+\.[\w.-]+", "é@x.y 😀a-b@z.com", RegexOptions.None)]
+    [InlineData(@"\p{L}+", "éa-β C", RegexOptions.NonBacktracking)]
+    [InlineData(@"\p{L}+", "éa-β C", RegexOptions.RightToLeft)]
+    [InlineData(@"\b", "éa-β C", RegexOptions.None)]
     public void PublicRangesPreserveGroupsAndHistories(string pattern, string subject, RegexOptions options)
     {
         var bcl = new Regex(pattern, options);
