@@ -617,7 +617,7 @@ internal sealed class Utf8SliceProgram
                 case Utf8SliceInstructionKind.Jump or Utf8SliceInstructionKind.RepeatGreedy or
                     Utf8SliceInstructionKind.RepeatLazy or Utf8SliceInstructionKind.RepeatGreedyAfterMinimum or
                     Utf8SliceInstructionKind.RepeatLazyAfterMinimum when instruction.A > index:
-                case Utf8SliceInstructionKind.RepeatEnd when instruction.A > lastCapture:
+                case Utf8SliceInstructionKind.Jump or Utf8SliceInstructionKind.RepeatEnd when instruction.A > lastCapture:
                 case Utf8SliceInstructionKind.RepeatExit or Utf8SliceInstructionKind.Accept or Utf8SliceInstructionKind.Fail or
                     Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or
                     Utf8SliceInstructionKind.Hybrid or Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.CategorySet or
@@ -692,6 +692,11 @@ internal sealed class Utf8SliceProgram
             empty[pc] = false;
             switch (instruction.Kind)
             {
+                case Utf8SliceInstructionKind.Jump when pc > 0 && instruction.A < pc - 1 &&
+                    code[pc - 1] is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } loop && loop.A == pc + 1:
+                    // A lowered delimited loop consumes before it can revisit
+                    // this fork. The forward exit accounts for the empty tail.
+                    break;
                 case Utf8SliceInstructionKind.Jump:
                 case Utf8SliceInstructionKind.Fork:
                 case Utf8SliceInstructionKind.RepeatGreedy:
@@ -1567,6 +1572,22 @@ internal static class Utf8SliceLowerer
                         request = new(repeat.Body, false, false, 0);
                         return true;
                     }
+                    if (frame.Stage == 0 && !MirrorExecute && repeat is { Minimum: 1, Maximum: long.MaxValue, Lazy: false } &&
+                        IsDelimitedAsciiRun(repeat.Body))
+                    {
+                        frame.Mark = Instructions.Count;
+                        frame.Stage = 3;
+                        request = new(repeat.Body, false, false, 0);
+                        return true;
+                    }
+                    if (frame.Stage == 3)
+                    {
+                        // Each completed body consumes a run and its separator.
+                        // A plain fork preserves greedy exits and capture undo.
+                        Emit(new(Utf8SliceInstructionKind.Fork, Instructions.Count + 2, 0, 0, 0));
+                        Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, 0, 0, 0));
+                        break;
+                    }
                     // Zero or one iteration needs a branch, not a counter or
                     // rollback journal. Preserve single-atom repeats for the
                     // existing no-rewind/terminal kernels; compound bodies keep
@@ -1845,6 +1866,16 @@ internal static class Utf8SliceLowerer
                 default:
                     return false;
             }
+        }
+
+        private static bool IsDelimitedAsciiRun(Utf8SliceNode body)
+        {
+            if (body is Utf8SliceNode.CaptureNode capture) body = capture.Body;
+            return body is Utf8SliceNode.ConcatNode { Children: [
+                Utf8SliceNode.RepeatNode { Minimum: 1, Maximum: long.MaxValue, Lazy: false, Body:
+                    Utf8SliceNode.SetNode { Mask16.Length: 16, Negated: false, Members.Length: 0, FoldCase: false } set },
+                Utf8SliceNode.LiteralNode { Value: >= 0 and < 128, FoldCase: false } delimiter] } &&
+                (set.Mask16[delimiter.Value >> 3] & (1 << (delimiter.Value & 7))) == 0;
         }
 
         private void CompleteNullableNonBacktrackingIteration(ref EmissionFrame frame, int continueAt)

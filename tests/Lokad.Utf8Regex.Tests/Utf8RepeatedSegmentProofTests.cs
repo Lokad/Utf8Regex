@@ -5,6 +5,28 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8RepeatedSegmentProofTests
 {
+    [Fact]
+    public void DelimitedRunsRetainCaptureHistoryAfterRetry()
+    {
+        const string pattern = @"\A(?<label>[a-z]+\.)+(?<tail>[a-z]+\.end)$";
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options,
+            ["a.b.c.end", "a.b.c.end\n", "a.b.end", "a.b.c.end#", "a.b.é.end", "😀a.b.c.end"], options);
+    }
+
+    [Fact]
+    public void DelimitedBooleanRunOnlyNeedsRetryStorage()
+    {
+        const string pattern = @"\A(?<label>[a-z]+\.)+[a-z]{2,12}$";
+        using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxDepth = 8, MaxWorkSteps = 1_000, MaxWorkingBytes = 800 }
+        });
+        Assert.True(regex.IsMatch("northwind.control.net"u8));
+        Assert.True(regex.IsMatch("northwind.control.net\n"u8));
+        Assert.False(regex.IsMatch("northwind.control.net#"u8));
+    }
+
     [Theory]
     [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}?", "Aa Bb Cc Dd Ee Ff Gg Hh")]
     [InlineData(@"(?:[A-Z][a-z]+?\s*){2,4}", "Aaaaa Bbbbb")]
