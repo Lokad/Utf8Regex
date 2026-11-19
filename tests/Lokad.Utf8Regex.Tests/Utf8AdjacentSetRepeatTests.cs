@@ -34,6 +34,12 @@ public sealed class Utf8AdjacentSetRepeatTests
     [InlineData(@"([\p{L}\u0085]+)\s+Z", "é\u0085Z")]
     [InlineData(@"([\p{L}\t]+)\s+Z", "é\tZ")]
     [InlineData(@"([^\p{L}]+)\s+Z", "!\u2029Z")]
+    [InlineData(@"\A(?<run>[\sA]+[^\sX]+)\z", "A")]
+    [InlineData(@"\A(?<run>[\sA]+[^\sX]+)\z", "AX")]
+    [InlineData(@"\A(?<run>[\sA]+[^\sX]+)\z", "A Z")]
+    [InlineData(@"\A(?<run>[\sA]+[^\sX]+)\z", "AZ")]
+    [InlineData(@"\A(?<run>[\sA]+[^\sX]+)\z", "AA")]
+    [InlineData(@"\A(?<run>[\sA]+[^\sX]+)\z", "Aé📍")]
     public void PublicCapturesAndDeclinedShapesKeepTheirOutcomes(string pattern, string text)
     {
         var options = RegexOptions.CultureInvariant;

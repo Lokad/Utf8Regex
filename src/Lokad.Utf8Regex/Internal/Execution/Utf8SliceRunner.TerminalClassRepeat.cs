@@ -673,6 +673,23 @@ internal static partial class Utf8SliceRunner
                 instructions[tail + 3].Kind != Utf8SliceInstructionKind.RepeatExit || instructions[tail + 3].A != following.B)
                 return false;
             following = instructions[tail + 1];
+            if (repeat.RepeatMinimum > 0 &&
+                atom is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } &&
+                following is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 })
+            {
+                // Every split between the two nonempty runs must consume two
+                // scalars. The current step covers this bounded ASCII proof.
+                if (input.Length - start < 2) return true;
+                var second = input[start + 1];
+                if (second < 128 && input[start] < 128)
+                {
+                    var octet = second >> 3;
+                    var bit = 1 << (second & 7);
+                    var ownMember = (program.SetMasks[atom.A][octet] & bit) != 0;
+                    var nextMember = (program.SetMasks[following.A][octet] & bit) != 0;
+                    if (ownMember == (atom.B != 0) && nextMember == (following.B != 0)) return true;
+                }
+            }
         }
         if (following is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
         {
