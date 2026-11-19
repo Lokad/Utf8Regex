@@ -134,7 +134,6 @@ internal static partial class AsciiSearch
         {
             0 => 0,
             1 => input.IndexOf(literal[0]),
-            2 => IndexOfExact2(input, literal[0], literal[1]),
             _ => input.IndexOf(literal),
         };
     }
@@ -270,29 +269,6 @@ internal static partial class AsciiSearch
         var letterMaskB = (((valueB + 0x3F3F_3F3F_3F3F_3F3Ful) ^ (valueB + 0x2525_2525_2525_2525ul)) & 0x8080_8080_8080_8080ul) >> 2;
         return (valueA | letterMaskA) == (valueB | letterMaskB);
     }
-    private static int IndexOfExact2(ReadOnlySpan<byte> input, byte first, byte second)
-    {
-        var index = 0;
-        while (index < input.Length - 1)
-        {
-            var relative = input[index..].IndexOf(first);
-            if (relative < 0)
-            {
-                return -1;
-            }
-
-            index += relative;
-            if (index + 1 < input.Length && input[index + 1] == second)
-            {
-                return index;
-            }
-
-            index++;
-        }
-
-        return -1;
-    }
-
     private static int LastIndexOfExact2(ReadOnlySpan<byte> input, byte first, byte second)
     {
         var end = input.Length - 1;
