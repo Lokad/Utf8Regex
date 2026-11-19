@@ -271,9 +271,13 @@ internal static class Pcre2BacktrackingRunner
             (program.Request.Options & Pcre2CompileOptions.Anchored) != 0 ||
             (matchOptions & Pcre2MatchOptions.Anchored) != 0;
         var candidate = start.Value;
+        var maximumCandidate = program.MinimumByteLength > bytes.Length
+            ? -1
+            : bytes.Length - program.MinimumByteLength;
         var useCandidateSearch = !anchored &&
             candidateSearch.HasValue &&
             matchOptions == Pcre2MatchOptions.None &&
+            (candidate < maximumCandidate || candidateSearch.Kind != Pcre2CandidateSearchKind.BranchLeadingLiterals) &&
             (budget.IsUnmetered || candidateSearch.MinimumWordRunLength > 0);
         var candidateState = new PreparedSearchScanState(
             candidate,
@@ -282,9 +286,6 @@ internal static class Pcre2BacktrackingRunner
         var lastWindowCandidate = -1;
         var windowCandidateEnd = -1;
         string? lastMark = null;
-        var maximumCandidate = program.MinimumByteLength > bytes.Length
-            ? -1
-            : bytes.Length - program.MinimumByteLength;
         var skipsCrLfContinuation = program.Request.SkipsCrLfContinuation;
         while (candidate <= maximumCandidate)
         {

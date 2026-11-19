@@ -931,7 +931,8 @@ internal static class Pcre2CandidateSearchAnalyzer
         IPcre2BacktrackingNode root,
         Pcre2CompileRequest request)
     {
-        if (request.Options != Pcre2CompileOptions.None || ContainsUnsafeCandidateSemantics(root))
+        var containsCodeUnit = false;
+        if (request.Options != Pcre2CompileOptions.None || ContainsUnsafeCandidateSemantics(root, ref containsCodeUnit))
         {
             return default;
         }
@@ -940,6 +941,11 @@ internal static class Pcre2CandidateSearchAnalyzer
         {
             return branchPlan;
         }
+
+        // A literal at the start of every branch is necessary even if a
+        // later code unit splits a scalar. Scalar-relative windows still
+        // require a pattern without byte atoms.
+        if (containsCodeUnit) return default;
 
         if (TryCompileLeadingRunThenLiteral(root, request, out var runPlan))
         {
@@ -1367,25 +1373,41 @@ internal static class Pcre2CandidateSearchAnalyzer
             Token.Options: Pcre2CharacterOptions.None,
         };
 
-    private static bool ContainsUnsafeCandidateSemantics(IPcre2BacktrackingNode node) => node switch
+    private static bool ContainsUnsafeCandidateSemantics(IPcre2BacktrackingNode node, ref bool containsCodeUnit)
     {
-        // A later backreference cannot invalidate a necessary leading-byte set.
-        // The leading-byte analyzer still rejects a backreference at the start.
-        Pcre2SubroutineCallBacktrackingNode or
-        Pcre2ConditionalBacktrackingNode or
-        Pcre2ControlVerbBacktrackingNode or
-        Pcre2MatchBoundaryResetBacktrackingNode => true,
-        Pcre2TokenBacktrackingNode token => token.Token.Kind == Pcre2CharacterTokenKind.CodeUnit,
-        Pcre2SequenceBacktrackingNode sequence => sequence.Children.Any(ContainsUnsafeCandidateSemantics),
-        Pcre2AlternationBacktrackingNode alternation => alternation.Alternatives.Any(ContainsUnsafeCandidateSemantics),
-        Pcre2RepeatBacktrackingNode repeat => ContainsUnsafeCandidateSemantics(repeat.Body),
-        Pcre2CaptureBacktrackingNode capture => ContainsUnsafeCandidateSemantics(capture.Body),
-        Pcre2AssertionBacktrackingNode assertion =>
-            assertion.AssertionKind is Pcre2AssertionKind.PositiveLookbehind or Pcre2AssertionKind.NegativeLookbehind ||
-            ContainsUnsafeCandidateSemantics(assertion.Body),
-        Pcre2AtomicBacktrackingNode atomic => ContainsUnsafeCandidateSemantics(atomic.Body),
-        _ => false,
-    };
+        switch (node)
+        {
+            // Later backreferences leave necessary leading bytes intact.
+            case Pcre2SubroutineCallBacktrackingNode or Pcre2ConditionalBacktrackingNode or
+                Pcre2ControlVerbBacktrackingNode or Pcre2MatchBoundaryResetBacktrackingNode:
+                return true;
+            case Pcre2TokenBacktrackingNode token:
+                containsCodeUnit |= token.Token.Kind == Pcre2CharacterTokenKind.CodeUnit;
+                return false;
+            case Pcre2SequenceBacktrackingNode sequence:
+                return ContainsUnsafeCandidateSemantics(sequence.Children, ref containsCodeUnit);
+            case Pcre2AlternationBacktrackingNode alternation:
+                return ContainsUnsafeCandidateSemantics(alternation.Alternatives, ref containsCodeUnit);
+            case Pcre2RepeatBacktrackingNode repeat:
+                return ContainsUnsafeCandidateSemantics(repeat.Body, ref containsCodeUnit);
+            case Pcre2CaptureBacktrackingNode capture:
+                return ContainsUnsafeCandidateSemantics(capture.Body, ref containsCodeUnit);
+            case Pcre2AssertionBacktrackingNode assertion:
+                return assertion.AssertionKind is Pcre2AssertionKind.PositiveLookbehind or Pcre2AssertionKind.NegativeLookbehind ||
+                    ContainsUnsafeCandidateSemantics(assertion.Body, ref containsCodeUnit);
+            case Pcre2AtomicBacktrackingNode atomic:
+                return ContainsUnsafeCandidateSemantics(atomic.Body, ref containsCodeUnit);
+            default:
+                return false;
+        }
+    }
+
+    private static bool ContainsUnsafeCandidateSemantics(IPcre2BacktrackingNode[] branches, ref bool containsCodeUnit)
+    {
+        foreach (var branch in branches)
+            if (ContainsUnsafeCandidateSemantics(branch, ref containsCodeUnit)) return true;
+        return false;
+    }
 }
 
 internal static partial class Pcre2Runner

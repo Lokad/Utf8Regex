@@ -94,6 +94,32 @@ public sealed class Pcre2BackslashCCompilerTests
     }
 
     [Fact]
+    public void LiteralPrefixesKeepSplitByteRangesAndFindTheNextBranch()
+    {
+        using var regex = Create(@"ab(\C)|cd(\C)");
+        ReadOnlySpan<byte> input = "axabcab😀cdéab"u8;
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+
+        Assert.True(regex.IsMatch(input, startOffsetInBytes: 5));
+        var match = regex.Match(input, startOffsetInBytes: 5, captures: captures);
+        Assert.Equal((5, 8), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.False(match.IsUtf8SliceWellFormed);
+        Assert.True(captures[1].Success);
+        Assert.Equal((7, 8), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.False(captures[2].Success);
+        Assert.Equal(3, regex.Count(input));
+
+        var cursor = regex.EnumerateMatches(input);
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((2, 5), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((5, 8), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((11, 14), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
+        Assert.False(cursor.MoveNext());
+    }
+
+    [Fact]
     public void ReplacementCanRemoveEveryCodeUnitWithoutAcceptingMalformedInput()
     {
         var regex = Create(@"\C");

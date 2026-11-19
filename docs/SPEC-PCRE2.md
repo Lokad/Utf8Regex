@@ -205,10 +205,7 @@ no-break-before-ZWJ rules where native 10.47 differs, including after a regional
 indicator. Extended replacement uppercasing of final sigma intentionally yields
 uppercase sigma, rather than the recorded native lowercase result.
 These are disclosed differences, not full Unicode/native equivalence.
-A lone default `\X` under unlimited Boolean matching can answer existence from a
-nonempty caller-valid subject and still charge the candidate. Explicit flags,
-controlled calls, hooks and range-returning operations continue to scan clusters
-under the matching budget.
+Boolean and range-returning operations share the cluster decoder.
 
 ## Reported ranges and global progress
 
