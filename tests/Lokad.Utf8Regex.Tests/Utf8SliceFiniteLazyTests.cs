@@ -95,9 +95,9 @@ public sealed class Utf8SliceFiniteLazyTests
     [InlineData(true)]
     public void AbandonedCapturedRangesRespectWorkStorageAndCancellationWithRecovery(bool compiled)
     {
-        // The empty optional branch also starts with 'a', so its pending
-        // continuation cannot be discarded by the required-literal proof.
-        const string pattern = @"\A(?<x>(?<x>a){0,24}?b)?ac";
+        // Both leading literals of the empty branch match the failing input.
+        // The fork keeps its pending continuation during the captured repeat.
+        const string pattern = @"\A(?<x>(?<x>a){0,24}?b)?aac";
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var program = Utf8SliceParser.TryParse(pattern, options);
         Assert.NotNull(program);
@@ -150,7 +150,7 @@ public sealed class Utf8SliceFiniteLazyTests
         Assert.Equal(0UL, canceled.Ledger.ReservedBytes);
         var regex = new Utf8Regex(pattern, options: options);
         Assert.False(regex.IsMatch(input));
-        var recovered = Utf8MatchSequence.First(regex.CreateMatchCursor("aaabac"u8.ToArray()));
+        var recovered = Utf8MatchSequence.First(regex.CreateMatchCursor("aaabaac"u8.ToArray()));
         Assert.Equal("aaab", System.Text.Encoding.UTF8.GetString(recovered.GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
         Assert.Equal(4, recovered.GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
