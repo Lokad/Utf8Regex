@@ -1220,6 +1220,10 @@ internal static partial class Utf8SliceRunner
         var atom = program.Instructions[repeatIndex + 1];
         var minimum = repeat.RepeatMinimum;
         var maximum = minimumOnly ? minimum : repeat.RepeatMaximum;
+        if (maximum is >= 2 and <= 4 && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
+            return RunShortAsciiSetRepeat(input, start, (int)minimum, (int)maximum, program.SetMasks[atom.A],
+                ref invocation, out minimumEnd, checkExitDeadline);
+
         minimumEnd = start;
         var position = start;
         var count = 0;
@@ -1312,6 +1316,27 @@ internal static partial class Utf8SliceRunner
         if (terminal != Utf8ExecutionLimitKind.None) return (-1, terminal);
         return count >= minimum ? (position, Utf8ExecutionLimitKind.None)
             : (-1, Utf8ExecutionLimitKind.None);
+    }
+
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunShortAsciiSetRepeat(
+        ReadOnlySpan<byte> input, int start, int minimum, int maximum, ReadOnlySpan<byte> mask,
+        ref Utf8SliceInvocation invocation, out int minimumEnd, bool checkExitDeadline)
+    {
+        minimumEnd = start;
+        // One step covers at most four bytes. This unfolded set rejects any
+        // wider scalar at its first byte, so each accepted byte is an endpoint.
+        var breach = invocation.TryChargeStep();
+        if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+        var consumed = 0;
+        foreach (var value in input.Slice(start, Math.Min(input.Length - start, maximum)))
+        {
+            if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) break;
+            consumed++;
+        }
+        breach = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
+        if (breach != Utf8ExecutionLimitKind.None || consumed < minimum) return (-1, breach);
+        minimumEnd = start + minimum;
+        return (start + consumed, Utf8ExecutionLimitKind.None);
     }
 
     private static Utf8ExecutionLimitKind ChargeRepeatBoundary(ref Utf8SliceInvocation invocation, bool checkDeadline)
