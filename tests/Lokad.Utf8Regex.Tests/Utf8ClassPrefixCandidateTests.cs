@@ -31,6 +31,26 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal((floor, floor + asciiLength - 1), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
     }
 
+    [Fact]
+    public void DisprovedDelimiterSuffixesSpendNoWorkOnTheirLongPrefixes()
+    {
+        var prefix = string.Concat(Enumerable.Repeat(new string('s', 129) + "://a ", 16));
+        const string scheme = "décor";
+        var input = Encoding.UTF8.GetBytes(prefix + scheme + "://a𐐀/");
+        using var regex = Utf8Regex.Compile(@"(?<scheme>[\w]+)://[^/\s?#]+[^\s?#]+", policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 160 }
+        });
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(1, regex.Count(input));
+
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+        var found = regex.Match(input, startOffsetInBytes: 64, captures: slots);
+        Assert.Equal((prefix.Length, input.Length), (found.StartOffsetInBytes, found.EndOffsetInBytes));
+        Assert.Equal(scheme, Encoding.UTF8.GetString(input.AsSpan(slots[1].StartOffsetInBytes,
+            slots[1].EndOffsetInBytes - slots[1].StartOffsetInBytes)));
+    }
+
     [Theory]
     [InlineData(@"(?<value>\d+(?:\.\d+)?)", "", "𝟚.٣")]
     [InlineData(@"\b(?<value>(?:\d{1,3}\.){3}\d{1,3})\b", "é1.2.3.4,", "𝟘.١.2.３")]

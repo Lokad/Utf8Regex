@@ -527,6 +527,7 @@ internal static partial class Utf8SliceRunner
         long classGapMaximum = 0;
         var directClassLiteral = false;
         var singleWindowAttempt = false;
+        var requiredClassSuffix = -1;
         var wideInput = input.Length - fromByte >= 256;
         if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
@@ -538,12 +539,14 @@ internal static partial class Utf8SliceRunner
             if (leadingClass >= 0 && literal >= 0)
             {
                 classSearch = GetAlignedDelimiterSearch(program, literalIndex, candidatePlan);
-                if (directClassLiteral && classSearch is not null)
+                if (directClassLiteral && classSearch is { } aligned)
                 {
                     var proofBreach = TryProveSingleWindowAttempt(program, leadingClass, (byte)literal,
                         ref invocation, out singleWindowAttempt);
                     if (proofBreach != Utf8ExecutionLimitKind.None)
                         return new(false, -1, -1, null, null, proofBreach);
+                    if (singleWindowAttempt)
+                        requiredClassSuffix = GetRequiredHybridSuffix(program.Instructions, literalIndex + aligned.Length);
                 }
                 // An aligned direct byte is already prepared at short starts,
                 // including the final advances of a cursor over a large input.
@@ -598,7 +601,7 @@ internal static partial class Utf8SliceRunner
             {
                 var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                     (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
-                    ref position, ref invocation, out classWindowEnd, repeatPrefixAscii, classAlternatives);
+                    ref position, ref invocation, out classWindowEnd, repeatPrefixAscii, classAlternatives, requiredClassSuffix);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
@@ -862,15 +865,18 @@ internal static partial class Utf8SliceRunner
         var classSearch = default(PreparedSubstringSearch?);
         var repeatPrefixAscii = default(Utf8SearchAsciiSet);
         var singleWindowAttempt = false;
+        var requiredClassSuffix = -1;
         if (whitespaceLiteral >= 0 && leadingClass >= 0)
         {
             classSearch = GetAlignedDelimiterSearch(program, whitespaceLiteralIndex, candidatePlan);
             if (!literalImmediatelyAfterRepeat && classSearch is null) whitespaceLiteral = -1;
-            if (directClassLiteral && classSearch is not null)
+            if (directClassLiteral && classSearch is { } aligned)
             {
                 var proofBreach = TryProveSingleWindowAttempt(program, leadingClass, (byte)whitespaceLiteral,
                     ref invocation, out singleWindowAttempt);
                 if (proofBreach != Utf8ExecutionLimitKind.None) return new(count, proofBreach);
+                if (singleWindowAttempt)
+                    requiredClassSuffix = GetRequiredHybridSuffix(program.Instructions, whitespaceLiteralIndex + aligned.Length);
             }
         }
         if (whitespaceLiteral < 0 && leadingAsciiFirst < 0 && !seekLiteral && !program.RightToLeft &&
@@ -951,7 +957,7 @@ internal static partial class Utf8SliceRunner
                     {
                         var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                             (byte)whitespaceLiteral, classSearch, whitespaceGapMaximum, directClassLiteral,
-                            ref position, ref invocation, out whitespaceWindowEnd, repeatPrefixAscii);
+                            ref position, ref invocation, out whitespaceWindowEnd, repeatPrefixAscii, requiredSuffix: requiredClassSuffix);
                         if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     }
                     else

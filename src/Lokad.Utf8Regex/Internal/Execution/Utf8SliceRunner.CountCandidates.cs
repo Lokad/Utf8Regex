@@ -364,6 +364,15 @@ internal static partial class Utf8SliceRunner
         => candidatePlan.LiteralSearch is { IgnoreCase: false } search &&
             LiteralStartsAtInstruction(program, index, search.Needle) ? search : null;
 
+    private static int GetRequiredHybridSuffix(ReadOnlySpan<Utf8SliceInstruction> code, int index)
+    {
+        if (!IsSingleClassRepeat(code, index) || !IsSingleClassRepeat(code, index + 4) ||
+            code[index].RepeatMinimum == 0 || code[index + 4].RepeatMinimum == 0 ||
+            code[index + 1] is not { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } ||
+            code[index + 5] is not { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 }) return -1;
+        return index;
+    }
+
     private static byte[][]? GetAlignedDelimiterAlternatives(Utf8SliceProgram program, int index,
         in PreparedSearcher search)
     {
@@ -595,7 +604,7 @@ internal static partial class Utf8SliceRunner
     internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
-        Utf8SearchAsciiSet prefixAscii = default, byte[][]? delimiterAlternatives = null)
+        Utf8SearchAsciiSet prefixAscii = default, byte[][]? delimiterAlternatives = null, int requiredSuffix = -1)
     {
         if (leadingClass >= 2 && !prefixAscii.HasValue && delimiterAlternatives is null)
         {
@@ -621,6 +630,20 @@ internal static partial class Utf8SliceRunner
                 : TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
         windowEnd = position;
         if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
+        if (requiredSuffix >= 0 && search is { } aligned)
+        {
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var code = program.Instructions;
+            if (RejectsAdjacentHybridRuns(program, code[requiredSuffix + 1], code[requiredSuffix + 5],
+                input, position + aligned.Length))
+            {
+                // The leading class cannot consume this ASCII delimiter byte.
+                // Search from its successor, retaining overlapping delimiters.
+                position++;
+                return Utf8ExecutionLimitKind.None;
+            }
+        }
         if (prefixAscii.HasValue)
         {
             // Even if this hit is inside a repeat and the actual delimiter is

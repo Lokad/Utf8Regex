@@ -236,6 +236,11 @@ When an unbounded prefix class excludes its direct delimiter, and matching
 does not read captures, one complete verification can cover the window.
 This includes one-byte delimiters. Successful matches retain their capture
 histories. Skipping impossible starts can reduce work and avoid local scratch.
+An aligned delimiter followed immediately by two mandatory, unfolded hybrid
+class runs can rule out a window before rewinding. The suffix needs at least
+two scalars, and its second scalar must belong to one of the runs. After a
+rejection, search resumes one byte after the delimiter's start so overlapping
+occurrences remain eligible.
 For direct unbounded classes with a complete ASCII predicate, the backward
 scan can rewind up to 64 ASCII bytes per work charge. It decodes wider scalars
 at their original right edges and retains the caller's byte floor.

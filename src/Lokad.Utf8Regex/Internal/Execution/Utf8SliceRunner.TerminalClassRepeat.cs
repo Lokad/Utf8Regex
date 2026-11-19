@@ -675,21 +675,8 @@ internal static partial class Utf8SliceRunner
             following = instructions[tail + 1];
             if (repeat.RepeatMinimum > 0 &&
                 atom is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } &&
-                following is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 })
-            {
-                // Every split between the two nonempty runs must consume two
-                // scalars. The current step covers this bounded ASCII proof.
-                if (input.Length - start < 2) return true;
-                var second = input[start + 1];
-                if (second < 128 && input[start] < 128)
-                {
-                    var octet = second >> 3;
-                    var bit = 1 << (second & 7);
-                    var ownMember = (program.SetMasks[atom.A][octet] & bit) != 0;
-                    var nextMember = (program.SetMasks[following.A][octet] & bit) != 0;
-                    if (ownMember == (atom.B != 0) && nextMember == (following.B != 0)) return true;
-                }
-            }
+                following is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } &&
+                RejectsAdjacentHybridRuns(program, atom, following, input, start)) return true;
         }
         if (following is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
         {
@@ -1249,6 +1236,21 @@ internal static partial class Utf8SliceRunner
         var breach = invocation.TryChargeStep();
         if (checkDeadline || breach != Utf8ExecutionLimitKind.None) invocation.Budget.CheckDeadline();
         return breach;
+    }
+
+    private static bool RejectsAdjacentHybridRuns(Utf8SliceProgram program, in Utf8SliceInstruction first,
+        in Utf8SliceInstruction second, ReadOnlySpan<byte> input, int start)
+    {
+        // The caller charges this bounded proof and establishes that both runs
+        // are nonempty with exact ASCII masks. The second scalar belongs to one of them.
+        if (input.Length - start < 2) return true;
+        var value = input[start + 1];
+        if (value >= 128 || input[start] >= 128) return false;
+        var octet = value >> 3;
+        var bit = 1 << (value & 7);
+        var firstMember = (program.SetMasks[first.A][octet] & bit) != 0;
+        var secondMember = (program.SetMasks[second.A][octet] & bit) != 0;
+        return firstMember == (first.B != 0) && secondMember == (second.B != 0);
     }
 
     private static bool CanAcceptEmptyTail(ReadOnlySpan<Utf8SliceInstruction> code, int index)
