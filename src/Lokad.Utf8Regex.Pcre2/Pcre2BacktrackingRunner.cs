@@ -1019,6 +1019,38 @@ internal static class Pcre2BacktrackingRunner
                         instructionIndex++;
                         continue;
 
+                    case Pcre2BacktrackingInstructionKind.CaptureToken:
+                        var tokenStart = inputIndex;
+                        if (!Pcre2CharacterRunner.TryMatchToken(instruction.Token, program.Request, input,
+                                inputIndex, firstMatchingPosition, matchOptions, ref budget, out inputIndex))
+                            break;
+                        if (!captureStarts.IsEmpty)
+                        {
+                            var slot = instruction.CaptureSlot;
+                            var depth = subroutineCalls.Count;
+                            var recordRollback = frames.Count != 0 || depth != 0;
+                            if (captureStarts[slot] >= 0 && captureOwners[slot] > depth ||
+                                captureOpenStarts[slot] >= 0 && captureOpenOwners[slot] > depth)
+                            {
+                                // The normal open would be blocked by a deeper
+                                // owner. Only an opening at this depth can close.
+                                tokenStart = captureOpenStarts[slot];
+                                if (tokenStart < 0 || captureOpenOwners[slot] != depth)
+                                {
+                                    instructionIndex++;
+                                    continue;
+                                }
+                                recordRollback = NeedsCaptureCloseRollback(slot, depth, ref frames,
+                                    ref subroutineCalls, ref captureMutations);
+                            }
+
+                            SetCapture(slot, tokenStart, inputIndex, -1, depth, -1,
+                                captureStarts, captureEnds, captureOpenStarts, captureOwners, captureOpenOwners,
+                                ref captureMutations, ref budget, recordRollback);
+                        }
+                        instructionIndex++;
+                        continue;
+
                     case Pcre2BacktrackingInstructionKind.CaptureStart:
                         if (captureStarts.IsEmpty)
                         {
@@ -1069,15 +1101,8 @@ internal static class Pcre2BacktrackingRunner
                             continue;
                         }
 
-                        // The latest entry already undoes this slot if all
-                        // live checkpoints precede it. No retry or return
-                        // can observe the intervening open capture.
-                        var mutationsBeforeClose = captureMutations.Count;
-                        var recordClose = (frames.Count != 0 || endCallDepth != 0) &&
-                            (mutationsBeforeClose == 0 ||
-                                (frames.Count != 0 && frames[frames.Count - 1].CaptureCheckpoint >= mutationsBeforeClose) ||
-                                (endCallDepth != 0 && subroutineCalls[endCallDepth - 1].CaptureCheckpoint >= mutationsBeforeClose) ||
-                                captureMutations[mutationsBeforeClose - 1].Slot != endCaptureSlot);
+                        var recordClose = NeedsCaptureCloseRollback(endCaptureSlot, endCallDepth, ref frames,
+                            ref subroutineCalls, ref captureMutations);
                         SetCapture(
                             endCaptureSlot,
                             captureOpenStarts[endCaptureSlot],
@@ -1771,7 +1796,8 @@ internal static class Pcre2BacktrackingRunner
         foreach (ref readonly var instruction in instructions)
         {
             if (instruction.Kind is Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureStart
-                or Pcre2BacktrackingInstructionKind.CaptureEnd or Pcre2BacktrackingInstructionKind.Accept)
+                or Pcre2BacktrackingInstructionKind.CaptureEnd or Pcre2BacktrackingInstructionKind.CaptureToken
+                or Pcre2BacktrackingInstructionKind.Accept)
                 continue;
             if (instruction.Kind != Pcre2BacktrackingInstructionKind.ControlAccept || instruction.ControlNameId >= 0)
                 return false;
@@ -1784,7 +1810,7 @@ internal static class Pcre2BacktrackingRunner
         foreach (ref readonly var instruction in instructions)
         {
             budget.ChargeBacktracking(instruction.Kind, instruction.Token.Kind);
-            if (instruction.Kind == Pcre2BacktrackingInstructionKind.Token)
+            if (instruction.Kind is Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureToken)
             {
                 if (!Pcre2CharacterRunner.TryMatchToken(instruction.Token, program.Request, input,
                         position, firstMatchingPosition, options, ref budget, out position))
@@ -2375,6 +2401,20 @@ internal static class Pcre2BacktrackingRunner
             counts[mutation.RepeatId] = mutation.PreviousCount;
             positions[mutation.RepeatId] = mutation.PreviousPosition;
         }
+    }
+
+    private static bool NeedsCaptureCloseRollback(int slot, int depth,
+        ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> calls,
+        ref Pcre2InvocationStateStack<Pcre2CaptureMutation> mutations)
+    {
+        // An existing mutation covers this close when no live retry or
+        // return needs the value between that write and this one.
+        var count = mutations.Count;
+        return (frames.Count != 0 || depth != 0) && (count == 0 ||
+            (frames.Count != 0 && frames[frames.Count - 1].CaptureCheckpoint >= count) ||
+            (depth != 0 && calls[depth - 1].CaptureCheckpoint >= count) ||
+            mutations[count - 1].Slot != slot);
     }
 
     private static void SetCapture(

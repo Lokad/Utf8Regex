@@ -8,6 +8,43 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2CaptureBackreferenceTests
 {
     [Fact]
+    public void CapturedScalarDoesNotLeakAcrossAnAlternative()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?:(?<edge>[a😀])z|😀)(?(edge)Q|!)\z", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 }
+        });
+        var backtracker = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        Assert.Contains(backtracker.Program.Instructions, instruction => instruction.Kind == Pcre2BacktrackingInstructionKind.CaptureToken);
+        using var source = new CancellationTokenSource();
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
+
+        var successfulCapture = regex.Match("😀zQ"u8, captures: captures, cancellationToken: source.Token);
+        Assert.True(successfulCapture.Success);
+        AssertGroup(captures[1], "😀zQ"u8, "😀", 0, 4);
+
+        var retry = regex.Match("😀!"u8, captures: captures, cancellationToken: source.Token);
+        Assert.True(retry.Success);
+        Assert.False(captures[1].Success);
+    }
+
+    [Fact]
+    public void RecursiveScalarCaptureKeepsTheCallersByteRange()
+    {
+        using var regex = new Utf8Pcre2Regex(@"^((.)(?1)\2|.?)$", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 32, MaxWorkingBytes = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        var input = "😀abba😀"u8;
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+        var match = regex.Match(input, captures: captures, cancellationToken: source.Token);
+        Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        AssertGroup(captures[2], input, "😀", 0, 4);
+        Assert.False(regex.IsMatch("😀abca😀"u8, cancellationToken: source.Token));
+    }
+
+    [Fact]
     public void FixedCapturedSequenceKeepsTheLastUnicodeCaptureForBackreference()
     {
         using var regex = new Utf8Pcre2Regex(@"(?<pair>\d{2}[- ]){3}\k<pair>\z",

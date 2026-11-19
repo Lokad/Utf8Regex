@@ -2779,6 +2779,7 @@ internal struct Pcre2ResourceBudget
                     break;
                 case Pcre2BacktrackingInstructionKind.CaptureStart:
                 case Pcre2BacktrackingInstructionKind.CaptureEnd:
+                case Pcre2BacktrackingInstructionKind.CaptureToken:
                 case Pcre2BacktrackingInstructionKind.Backreference:
                 case Pcre2BacktrackingInstructionKind.BackreferenceSlotSet:
                     diagnostics.VmCaptureSteps++;

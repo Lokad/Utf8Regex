@@ -464,6 +464,11 @@ internal sealed class Pcre2BacktrackingLowerer
                     return;
                 case Pcre2CaptureBacktrackingNode capture:
                     _hasCaptureWrites = true;
+                    if (IsSingleScalarToken(capture.Body, out var capturedToken))
+                    {
+                        _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureToken(capture.Slot, capturedToken));
+                        return;
+                    }
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureStart(capture.Slot));
                     EmitNode(capture.Body, requiredFollowingToken, followedByMatchAccept);
                     _instructions.Add(Pcre2BacktrackingInstruction.CreateCaptureEnd(capture.Slot));
@@ -626,20 +631,29 @@ internal sealed class Pcre2BacktrackingLowerer
 
     private static bool CanLowerOptionalAsFork(IPcre2BacktrackingNode body, Utf8ConstructionBudget budget)
     {
-        if (body is Pcre2SubroutineCallBacktrackingNode || IsConsumingToken(body)) return true;
+        if (body is Pcre2SubroutineCallBacktrackingNode || IsSingleScalarToken(body, out _)) return true;
         if (body is not Pcre2SequenceBacktrackingNode { Children: { Length: >= 2 and <= 16 } children }) return false;
         budget.ChargeWork((ulong)children.Length);
         foreach (var child in children)
         {
             var atom = child is Pcre2RepeatBacktrackingNode repeat ? repeat.Body : child;
-            if (!IsConsumingToken(atom)) return false;
+            if (!IsSingleScalarToken(atom, out _)) return false;
         }
         return true;
+    }
 
-        static bool IsConsumingToken(IPcre2BacktrackingNode node) => node is Pcre2TokenBacktrackingNode
+    private static bool IsSingleScalarToken(IPcre2BacktrackingNode node, out Pcre2CharacterToken token)
+    {
+        if (node is Pcre2TokenBacktrackingNode
         {
-            Token.Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass or Pcre2CharacterTokenKind.Any,
-        };
+            Token: { Kind: Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass or Pcre2CharacterTokenKind.Any } scalar,
+        })
+        {
+            token = scalar;
+            return true;
+        }
+        token = default;
+        return false;
     }
 
     private bool TryEmitSmallFixedSequence(Pcre2RepeatBacktrackingNode repeat, Utf8ConstructionBudget budget)

@@ -359,7 +359,7 @@ internal static class Pcre2SliceDriver
         var index = 0;
         while (code[index].Kind == Pcre2BacktrackingInstructionKind.CaptureStart) index++;
         ref readonly var instruction = ref code[index++];
-        if (instruction.Kind != Pcre2BacktrackingInstructionKind.Token ||
+        if (instruction.Kind is not (Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureToken) ||
             instruction.Token.Kind != Pcre2CharacterTokenKind.CharacterClass ||
             (instruction.Token.Options & Pcre2CharacterOptions.Caseless) != 0) return false;
         while (code[index].Kind == Pcre2BacktrackingInstructionKind.CaptureEnd) index++;

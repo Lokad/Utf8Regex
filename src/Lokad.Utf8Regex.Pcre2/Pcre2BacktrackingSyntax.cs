@@ -448,6 +448,7 @@ internal enum Pcre2BacktrackingInstructionKind : byte
     MatchBoundaryReset = 21,
     PossessiveTokenRepeat = 22,
     GreedyClassRepeat = 23,
+    CaptureToken = 24,
 }
 
 internal readonly struct Pcre2BacktrackingInstruction
@@ -567,6 +568,9 @@ internal readonly struct Pcre2BacktrackingInstruction
 
     internal static Pcre2BacktrackingInstruction CreateCaptureEnd(int slot) =>
         new(Pcre2BacktrackingInstructionKind.CaptureEnd, default, 0, 0, slot, 0, 0, Pcre2RepeatPreference.Greedy);
+
+    internal static Pcre2BacktrackingInstruction CreateCaptureToken(int slot, Pcre2CharacterToken token) =>
+        new(Pcre2BacktrackingInstructionKind.CaptureToken, token, 0, 0, slot, 0, 0, Pcre2RepeatPreference.Greedy);
 
     internal static Pcre2BacktrackingInstruction CreateBackreference(int slot, Pcre2CharacterOptions options) =>
         new(Pcre2BacktrackingInstructionKind.Backreference, default, 0, 0, slot, (int)options, 0, Pcre2RepeatPreference.Greedy);
