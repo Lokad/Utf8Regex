@@ -64,6 +64,41 @@ public sealed class Utf8TerminalClassRepeatTests
     }
 
     [Theory]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    public void AsciiWordRunKeepsTheScalarEndpointAndCanRewind(int length)
+    {
+        using var regex = Create(@"\A([A-Za-z0-9_]+)9😀\z", 256);
+        var bytes = Encoding.UTF8.GetBytes("!" + new string('_', length - 1) + "9😀");
+        var input = bytes.AsSpan(1);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        Assert.Equal(new Utf8CaptureRange(0, input.Length), regex.Match(input, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(0, length - 1), captures[1]);
+    }
+
+    [Fact]
+    public void AsciiWordRunIsAdmittedInBoundedWorkBlocks()
+    {
+        const string pattern = @"\AX[A-Za-z0-9_]+!";
+        var input = Encoding.UTF8.GetBytes("X" + new string('A', 12 * 2048) + "!");
+        using var admitted = RunWithWork(64);
+        Assert.Equal(1, admitted.Count(input));
+        using var limited = RunWithWork(8);
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+        Assert.Equal(8UL, error.Limit);
+
+        static Utf8Regex RunWithWork(ulong work) => Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = work, MaxWorkingBytes = 1 }
+        });
+    }
+
+    [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
     public void BooleanAcceptsBeforeAProvedOptionalTailWhileMatchKeepsItsFullExtent(RegexOptions options)
@@ -182,11 +217,17 @@ public sealed class Utf8TerminalClassRepeatTests
     [InlineData(false, @"\p{L}+")] [InlineData(true, @"\p{L}+")]
     [InlineData(false, "x*")] [InlineData(true, "x*")]
     [InlineData(false, @"[^\n]*")] [InlineData(true, @"[^\n]*")]
+    [InlineData(false, @"\AX[A-Za-z0-9_]+!")] [InlineData(true, @"\AX[A-Za-z0-9_]+!")]
     public void OriginalInterruptionDuringTheRunReleasesScratch(bool timeout, string pattern)
     {
         var regex = new Utf8Regex(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException("Missing scalar program.");
-        var input = Encoding.UTF8.GetBytes(new string('é', pattern == @"[^\n]*" ? 65_536 : 2048));
+        var input = Encoding.UTF8.GetBytes(pattern switch
+        {
+            @"\AX[A-Za-z0-9_]+!" => "X" + new string('A', 80 * 2048) + "!",
+            @"[^\n]*" => new string('é', 65_536),
+            _ => new string('é', 2048),
+        });
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);

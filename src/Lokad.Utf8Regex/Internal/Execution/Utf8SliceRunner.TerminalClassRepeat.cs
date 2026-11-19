@@ -1176,9 +1176,9 @@ internal static partial class Utf8SliceRunner
         var count = 0;
         var dot = atom.Kind == Utf8SliceInstructionKind.Dot;
         var unbounded = minimum <= 1 && maximum == long.MaxValue;
+        var unboundedAsciiSet = unbounded && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 };
         byte asciiLast = 0;
-        var asciiFirst = unbounded && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }
-            ? GetUnfoldedAsciiRange(atom, out asciiLast) : -1;
+        var asciiFirst = unboundedAsciiSet ? GetUnfoldedAsciiRange(atom, out asciiLast) : -1;
         if (asciiFirst >= 0)
         {
             var ascii = RunUnboundedAsciiRange(input, start, (byte)asciiFirst, asciiLast, ref invocation, checkExitDeadline);
@@ -1191,18 +1191,20 @@ internal static partial class Utf8SliceRunner
             if (minimum != 0 && digits.EndIndex > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);
             return digits.EndIndex == start && minimum != 0 ? (-1, digits.Breach) : digits;
         }
-        if (unbounded && TryGetAsciiRepeatStops(program, atom, out var first, out var second))
+        var asciiWord = unboundedAsciiSet && IsAsciiWordMask(program.SetMasks[atom.A]);
+        if (unbounded && (TryGetAsciiRepeatStops(program, atom, out var first, out var second) || asciiWord))
         {
             var dotAll = dot && atom.A != 0;
-            // The caller establishes validity. These fused atoms may cross a
-            // block boundary inside a scalar, but their ASCII stops keep the
-            // final endpoint aligned.
+            // The word set stops before any wider scalar. Dot and negated
+            // sets may cross a block boundary inside a scalar, but their
+            // ASCII stops still leave an aligned endpoint.
             while (position < input.Length)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
                 var block = input.Slice(position, Math.Min(2048, input.Length - position));
-                var stop = IndexOfRepeatStop(block, dotAll, first, second);
+                var stop = asciiWord ? Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(block) :
+                    IndexOfRepeatStop(block, dotAll, first, second);
                 if (stop >= 0) { position += stop; break; }
                 position += block.Length;
             }
@@ -1210,7 +1212,8 @@ internal static partial class Utf8SliceRunner
             if (terminalBreach != Utf8ExecutionLimitKind.None) return (-1, terminalBreach);
             // With no maximum and minimum at most one, nonempty byte extent
             // suffices; bounded/scalar-counted repeats keep the normal loop.
-            if (minimum != 0 && position > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);
+            if (minimum != 0 && position > start)
+                minimumEnd = asciiWord ? start + 1 : AdvancePastScalar(input, start, reverse: false);
             return position != start || minimum == 0
                 ? (position, Utf8ExecutionLimitKind.None)
                 : (-1, Utf8ExecutionLimitKind.None);
@@ -1316,6 +1319,10 @@ internal static partial class Utf8SliceRunner
         first = second = (byte)'\n';
         return atom.Kind == Utf8SliceInstructionKind.Dot;
     }
+
+    private static bool IsAsciiWordMask(ReadOnlySpan<byte> mask)
+        => BinaryPrimitives.ReadUInt64LittleEndian(mask) == Utf8AsciiBytePredicates.WordSearch.Mask0 &&
+            BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]) == Utf8AsciiBytePredicates.WordSearch.Mask1;
 
     private static bool TryGetOneOrTwoAsciiBytes(ReadOnlySpan<byte> mask, out byte first, out byte second)
     {
