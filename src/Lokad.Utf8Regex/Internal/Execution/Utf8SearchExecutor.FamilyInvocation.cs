@@ -194,8 +194,12 @@ internal static partial class Utf8SearchExecutor
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                var relative = block.IndexOf(literals[id]);
-                if (relative >= 0 && relative < starts && (best < 0 || relative < best))
+                var literal = literals[id];
+                // A later needle must start strictly before the current
+                // winner. Keep its full lookahead at that last valid start.
+                var search = best < 0 ? block : block[..Math.Min(block.Length, best + literal.Length - 1)];
+                var relative = search.IndexOf(literal);
+                if (relative >= 0 && relative < starts)
                 { best = relative; ordinal = id; }
                 if (best == 0) break;
             }

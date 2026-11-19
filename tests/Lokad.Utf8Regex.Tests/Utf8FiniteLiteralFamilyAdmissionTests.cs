@@ -12,6 +12,23 @@ public sealed class Utf8FiniteLiteralFamilyAdmissionTests
     { MaxWorkSteps = 1_000_000, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 };
 
     [Theory]
+    [InlineData(13)]
+    [InlineData(2040)]
+    [InlineData(2041)]
+    [InlineData(2042)]
+    public void EarlierNeedleCanOverlapTheCurrentWinnerAtWindowEdges(int start)
+    {
+        byte[][] needles = ["bcdef"u8.ToArray(), "abcdef"u8.ToArray(), "abcdefg"u8.ToArray()];
+        var input = Encoding.UTF8.GetBytes(new string('x', start) + "abcdefg");
+        using var token = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, token.Token);
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
+            needles, false, input, 0, input.Length, false, ref invocation, out var match, out var found));
+        Assert.True(found);
+        Assert.Equal((start, 6, 1), (match.Index, match.Length, match.LiteralId));
+    }
+
+    [Theory]
     [InlineData(4)] [InlineData(5)] [InlineData(6)] [InlineData(7)] [InlineData(8)]
     public void CompleteFamiliesNeedNoVmScratchAndValidateTheWholeSubject(int count)
     {
