@@ -402,10 +402,11 @@ inverses and additional literal partners; references compare simple lowercase
 only, under flags at the reference site. Scoped ASCII folds ASCII letters only.
 Supplementary partners remain one scalar even when byte widths differ.
 
-Predefined classes/boundaries use owned CPython 3.13.2/Unicode 15.1 predicates,
-including complements and mixed brackets. Host Unicode categories cannot replace
-them without equivalence. Shared bounded profile tables are not recharged as
-per-invocation copies. Verify derived data with CPython 3.13.2:
+Predefined classes and boundaries use owned CPython 3.13.2/Unicode 15.1
+predicates, including complements and mixed brackets. ASCII `\s` excludes
+U+001C–U+001F, and a bracket can still include them explicitly.
+Complements consume one Unicode scalar. Shared profile tables are reused
+across invocations. Verify derived data with CPython 3.13.2:
 
 ```powershell
 python tools/generate-pythonre-scalar-case-data.py --check
@@ -421,211 +422,92 @@ shipped.
 
 ## Construction and execution controls
 
-`Options` retains the flags supplied by the caller. `EffectiveOptions` reports
-validated global flags, including leading inline directives across allowed
-comment/verbose trivia. It includes implicit Unicode unless global ASCII is
-selected; scoped flags do not leak into this metadata. Hosts need not reparse
-pattern headers. These enum values are PythonRe's flags, not CPython integer bits.
+### Compile and prepare
 
-Constructors and Compile accept one immutable Utf8RegexPolicy plus compile options.
-Compile additionally accepts a construction cancellation token. The policy carries
-ResourcePolicy, MatchTimeout, ConstructionPolicy, ConstructionTimeout and optional
-ProgramMemoryAllowance; there is no subject-validation policy. Null MatchTimeout
-uses PythonRe.DefaultMatchTimeout; null ConstructionTimeout means infinite.
+Constructors and `Compile` accept PythonRe compile options and one immutable
+`Utf8RegexPolicy`. `Options` reports the supplied flags. `EffectiveOptions`
+includes validated leading global flags and implicit Unicode unless global
+ASCII is selected. Scoped flags affect matching only. The enum uses PythonRe
+values.
 
-Validate construction/execution policies, flags and timeouts before pattern
-conversion/storage. Errors in these settings name policy; options and malformed
-pattern diagnostics retain their own source/position contracts. Pre-cancellation
-on Compile wins before all argument/pattern work and allowance acquisition.
-Explicit Compile owns one construction deadline and completes FullMatch preparation
-before publication. Unfunded constructors defer the full program. A funded policy
-always prepares retained operation programs before transferring program admission,
-including through constructors. Later match deadlines remain independent.
+Settings are validated before pattern conversion and allocation. Invalid policy
+settings name `policy`. Pattern diagnostics follow the source and position
+rules above. `Compile` observes its construction token before validating
+arguments or acquiring storage.
 
-Constructors without explicit construction controls/funding borrow an existing
-internal construction owner. Explicit Compile or non-default construction controls/
-funding reject replacement of an active owner. Scope exit restores the parent and
-refunds failed acquisition; spent work is not refunded. Lazy unfunded preparation,
-cache retention, CLR/JIT metadata and host retention retain their documented scope.
-No static pattern cache or construction token becomes later invocation authority.
+`ConstructionPolicy` and `ConstructionTimeout` govern compilation independently
+of matching. Null construction timeout means infinite. Explicit compilation and
+funded constructors prepare the general FullMatch program before publication.
+An unfunded constructor can defer that preparation to a FullMatch call. Cold
+preparation then uses that call's token and deadline, and a failed preparation
+can be retried. Constructors with default construction settings and no funding
+can borrow an active construction scope. Explicit construction cannot replace it.
 
-Resolved ASCII `\w/\W/\d/\D/\s/\S` escapes lower directly to the existing
-admitted 16-byte mask and scalar-complement Set instruction. They skip rendered
-Core leaf parsing; ASCII whitespace excludes U+001C–U+001F, and complements
-still consume one complete Unicode scalar. Construction and execution work/depth
-totals can decrease with this simpler program; admission, interruption and the
-documented route-dependent nature of those totals remain unchanged.
+The Python scalar program defines the profile's semantics. Eligible literal
+operations and candidate searches can reuse Core helpers under the same input
+contract. Work and storage charges depend on the selected route and version.
 
-Positive ASCII `\w/\d/\s` operands inside resolved ASCII bracket unions use
-that same mask directly, including an outer scalar complement. Explicit literal
-U+001C–U+001F membership is retained independently of ASCII whitespace. Unicode
-and complemented predefined operands retain their existing lowering. This removes
-intermediate rendered/Core-parsed leaves; construction work/storage requirements
-can decrease while major allocation admission and interruption remain in force.
+### Invocation
 
-Nullable nonliteral programs skip optional Core pattern rendering/compilation:
-their iteration uses Python scalar progression, and Core candidate/result proofs
-require nonempty matches. Exact empty literals retain their Core value fast path;
-independent dotall FullMatch kernels also remain. Construction admission covers
-the work actually performed, so these patterns can require less work/storage.
+Null `MatchTimeout` uses `Utf8PythonRegex.DefaultMatchTimeout`, initially
+infinite. A single invocation covers discovery, capture range preparation,
+output and publication. It uses the original token and one absolute deadline.
+Construction tokens expire with construction. The four execution limits, typed
+denials and covered capacities follow the
+[shared resource contract](SPEC.md#cancellation-deadlines-and-resource-limits).
 
-A policy with non-null ProgramMemoryAllowance admits covered
-construction storage through the caller's `IUtf8MemoryAllowance`, then retain a
-conservative completed-program charge. This is neither construction peak nor
-exact heap size; coarse helper charges and shared storage can be overcounted.
-Failure/cancellation refunds that compilation's discarded reservations. An
-omitted `MaxBytes` adds no private byte cap on these entry points; an explicit byte
-limit and existing instruction/work/depth backstops still apply.
+Cancellation is synchronous and keeps the originating token. Deadline expiry
+throws `RegexMatchTimeoutException`. Timeout diagnostics from PythonRe keep the
+original pattern. A delegated Core operation can propagate its own exception.
+Shared working admission or finite working/result byte limits omit the subject
+from timeout diagnostics. An interrupted operation reports failure before
+publishing its result or reporting the end of discovery.
 
-Dispose a funded expression when finished. Disposal closes new matching uses
-with `ObjectDisposedException` and returns its program charge once already
-active operations and cursors finish. It does not wait, cancel those operations,
-or depend on a finalizer. Dispose abandoned cursors explicitly; retained range
-snapshots keep their borrowed-input contract; owned byte outputs remain valid.
-Metadata remains readable. Disposal of expressions created without a program
-allowance is a no-op. Construction tokens never become later execution authority.
+### Program and working memory
 
-Funded expressions use that same account for covered replacement preparation,
-retained cache keys/entries/plans, and detached plans still used by substitutions.
-Admission precedes acquisition; failed preparation refunds its storage without
-evicting valid entries. A warm hit borrows its existing charge. Eviction or
-disposal refunds after the last preparer/waiter/active use finishes. Concurrent
-foreign interruption receives one independently controlled, funded uncached
-preparation; cached plans never retain invocation controls. Disposal stops new
-cache retention before clearing, so in-flight operations cannot repopulate it.
-Conservative completed charges can count helper/shared storage more than once;
-neither historical allocation traffic nor the private cache maximum is charged.
+A supplied `ProgramMemoryAllowance` admits covered construction storage and
+retains a conservative charge for the completed program. A funded build without
+`MaxBytes` relies on that account for covered bytes. Explicit byte limits and
+the existing instruction, work and depth backstops still apply. Failed
+construction refunds discarded reservations. The accounting covers modeled
+capacities and can count shared storage more than once.
 
-Funded expressions also use that account by default for covered temporary
-execution storage and result staging across matching, detailed/text projections,
-global operations, template substitution and cursor creation/advances. Covered
-growth overlap is admitted before acquisition. Synchronous completion, failure
-and cursor disposal refund exclusive temporary loans; retained program/cache
-charges remain. Exact literal boolean/Count paths need no major workspace and
-keep their storage-free native routes. Numeric limits, original tokens/deadlines
-and the valid-text input contract remain independent requirements. Bound bulk
-collection remaps nested Core timeouts to the original Python pattern.
+Funded expressions default to that account for covered temporary working
+storage, including growth overlap and output staging. `Match` and
+`CreateMatchCursor` can select a separate working account. Program and cache
+charges remain on the program account. Covered storage must pass both numeric
+and shared admission. A shared refusal throws
+`Utf8MemoryAdmissionException`. Exclusive temporary loans are returned at
+completion, failure or disposal.
 
-The explicit four-argument cursor factory can select a separate working account;
-program/cache storage keeps its original account. No implicit result-traffic cap
-or private working-byte ceiling is added. Timeout diagnostics on these bound
-invocations omit subject text, preserving Pattern, type and timeout. Incidental
-objects, borrowed input and caller-retained output remain outside these scopes.
-Ordinary output is funded through staging/publication; ownership and admission
-after return remain the caller's responsibility. The retained range and UTF-8
-template substitution APIs below can instead keep their result charges on that
-account. Retained detailed text and bulk output transfer is not implemented.
-This is not exact heap/RSS or
-a process-memory bound.
+Disposing a funded expression rejects new matching uses and operations that
+borrow the program's metadata with `ObjectDisposedException`. Active calls
+and persistent cursors retain their program use until finished. Disposal
+leaves them running. Properties such as `Pattern` and `EffectiveOptions`
+remain readable. Unfunded expression disposal is a no-op.
 
-Syntax/reference/lookbehind validation precedes optional native rendering.
-The owned Python scalar program is authoritative. Optional Core preparation is
-retained only for eligible shared native operations/search hints; backend presence
-does not prove that every operation uses it. Fixed finite numeric policies omit
-unmetered preparation those instances cannot execute.
+Ordinary result storage transfers to the caller at publication. Retained range
+and UTF-8 substitution receipts can keep the covered result charge on an
+account after return. Numeric result charges are cumulative even when working
+loans refund. Borrowed input, caller retention of ordinary results, and
+host-side decoding, allocation or custom output stay outside the engine's
+modeled capacities.
 
-All four invocation limits, cancellation, failures and major-capacity exclusions
-follow the [shared resource contract](SPEC.md#cancellation-deadlines-and-resource-limits). One invocation covers
-discovery, required coordinate/capture shaping, output and
-publication. Work totals saturate; first denial is sticky. Terminal failed
-discovery checks interruption before reporting EOF. Timeout uses
-`RegexMatchTimeoutException`; owned diagnostics identify the original Python
-pattern, while nested Core exceptions propagate. Finite working/result byte caps
-omit diagnostic subject text.
+### Replacement preparation
 
-Materialized result vectors can take over an exactly filled staging array and
-its already admitted working reservation. That array is never returned to the
-scratch pool. Partial vectors keep an exact final copy. Removing the duplicate
-acquisition/copy can lower cumulative result traffic, work and peak working
-requirements. Returned arrays and children remain valid across later calls;
-execution time and allocations still depend on capacity and pooling.
+The bounded cache keeps validated template keys and plans. Warm lookups borrow
+the supplied span. A cold lookup admits the immutable key before copying and
+keeps its working charge during preparation. Cold template and FullMatch
+preparation retain their construction backstops within the original invocation
+deadline. Finite working bytes also cap additional covered preparation storage.
+A numeric working-byte denial on the template key reports
+`ExecutionWorkingBytes`. A preparation byte denial can report
+`ConstructionBytes` before matching.
 
-Unmetered native ASCII-literal substitutions reuse valid scalar extents to
-size string output. On a miss, text output decodes the input directly,
-without an intermediate byte array; byte output still acquires an independent
-owned copy. Required output allocation remains admitted before acquisition.
-Removing intermediate storage and repeated sizing can lower modeled result
-traffic, work and peak working requirements. Finite limits, cancellable tokens
-and deadlines retain their existing scalar substitution path.
-
-Native literal value operations use discovery's own bounded
-checkpoints, followed by final publication checks. Adjacent helper boundaries
-add no separate work charges. This can reduce required work units without
-changing interruption bounds or byte/depth/result admission.
-
-Unfunded constructors defer general FullMatch preparation; Compile and funded
-constructors complete it eagerly.
-Cold FullMatch copies the existing instruction program with an end constraint,
-sharing immutable tables/names. Its token/deadline is the current invocation's;
-failure is retryable and leaves no failed publication. Exact capture-free literal
-value paths can use prepared literal operations without this preparation.
-For an unfolded literal of 1-256 UTF-8 bytes without boundary or trailing-literal
-requirements, Match/FullMatch can compare directly at the required scalar start. The comparison and final publication remain charged;
-avoiding candidate discovery lowers work requirements. Other eligible literals
-retain the complete finder.
-Value FullMatch can verify capture-free positive greedy literal repeats with an
-optional fixed literal tail directly from owned scalar instructions. FullMatch's
-endpoints determine one possible repetition count, including overlapping tails.
-It compares bounded blocks under the original invocation, avoiding cold
-FullMatch preparation, VM arrays and coordinate maps.
-Proof scratch is fixed at at most 240 stack bytes, independently of subject size;
-like fixed scalar helpers, it adds no modeled major-storage reservation. These
-calls need no major temporary/result buffer; finite work is charged at comparison
-and publication checkpoints. Work/depth/byte requirements can therefore
-be lower than general matching. Captures, folding, lazy or nonliteral bodies and
-unsupported tails retain their existing verification.
-The previously rejected program-sharing prototype is not delivered.
-
-Value results and range cursors publish selected byte
-endpoints without scanning their prefix/content for coordinates or captured text.
-There is no owned-text result family: SearchDetailedData, MatchDetailedData,
-FullMatchDetailedData, FindIterDetailed and their two owned-text carriers are
-removed. SearchDetailed, MatchDetailed, FullMatchDetailed and their stack-only
-Utf8PythonMatchContext/Utf8PythonGroupContext carriers are also removed. Hosts
-use the capture cursor with the corresponding mode, then decode/copy under
-their own controls. Snapshots retain numbered groups and Python's closing order
-through `LastIndex`, including when an outer capture closes after its children.
-
-Template substitutions copy required output from encoded template literals and
-scalar-aligned captures. Capture arrays and owned byte output consume modeled
-result capacity independently. Admission precedes allocation and cumulative
-traffic is not refunded by working release. Host strings, collections and borrowed
-subject storage are excluded. The name lookup table is admitted at construction.
-Deleting owned-text publication and its string-sizing/decoding helpers does not
-change scalar matching, byte offsets, interruption or admission for retained byte
-operations. There is no invocation UTF-16 string-capacity guarantee for host work.
-LTR backtracking search reuses the shared beginning-anchor finder for an initial
-mandatory \A/^; candidate verification, RTL and NonBacktracking remain unchanged.
-Sizing, discovery and publication retain bounded original interruption and limits.
-
-Fused VM repeats need no unused counter vectors. Counter-dependent execution
-still admits its state before acquisition and retains it across candidate
-attempts. This can lower execution work/working requirements without changing
-captures, retained results or synchronous interruption and release.
-Proved unbounded repeats excluding an ASCII pair can use checked 2048-byte search
-blocks over the existing valid UTF-8 text. They retain scalar endpoints and bounded
-work/interruption checks; numeric work charges can fall.
-Ordinary class complements lower directly to scalar classes. A complement of a
-union containing standalone predicate branches retains its guard form. Removing
-unnecessary branch state can lower construction/execution work, depth and working
-requirements; captures, folding and retained-result/interruption contracts remain.
-
-Cold FullMatch/replacement preparation retains separate construction limits;
-finite working bytes cap additional covered construction capacity. Denial of
-the immutable template key reports `ExecutionWorkingBytes`. A parser byte
-denial can report `ConstructionBytes` before matching. Template lookup charges
-one invocation work step per 2,048 template bytes, rounded up. On a miss the
-key copy charges the same rate. Warm lookups borrow the supplied bytes.
-Failed preparation restores
-parent loans without refunding spent work; one caller's interruption cannot become
-another waiter's authority. These scopes do not combine invocation, preparation
-and cache retention into a total memory bound.
-
-Callback replacement, evaluator delegates and string substitution output are
-removed. Byte-template output keeps admitted copying, original interruption and
-publication checks. For custom output, hosts advance the range cursor and own
-their buffers, computation and final cancellation/publication checks. Host work
-and decoding are outside regex controls. Borrowed views expose bytes only.
+Funded cache entries charge the program account until their last use, including
+after eviction. Failure releases discarded storage. An interrupted preparer
+cannot lend its token or deadline to a different caller. Disposal stops
+retention while existing admitted calls can finish.
 
 ## Cursor and result lifetime
 
