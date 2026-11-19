@@ -1311,8 +1311,25 @@ internal static partial class Utf8SliceRunner
                         if (counts.Length == 0 || counts[repeatId] == -1 && positions[repeatId] == -1)
                         {
                             count = 0;
-                            if (TryRunClassRepeatWithoutRewind(program, programIndex, input, inputIndex, cursor.RequiredEnd,
-                                ref invocation, out var repeated, out var continuation, existenceOnly))
+                            Utf8SliceMatchOutcome repeated;
+                            int continuation;
+                            bool ranWithoutRewind;
+                            // The lowered certificate already verifies the atom and exit.
+                            // A required assertion endpoint still uses the general checks.
+                            if (cursor.RequiredEnd is null && program.SkipsTerminalRewind(programIndex))
+                            {
+                                var run = RunClassRepeat(program, programIndex, input, inputIndex, ref invocation);
+                                repeated = new(run.EndIndex >= 0, run.EndIndex, run.Breach, null, null);
+                                continuation = instruction.A + 1;
+                                ranWithoutRewind = true;
+                            }
+                            else
+                            {
+                                ranWithoutRewind = TryRunClassRepeatWithoutRewind(program, programIndex, input,
+                                    inputIndex, cursor.RequiredEnd, ref invocation, out repeated, out continuation,
+                                    existenceOnly);
+                            }
+                            if (ranWithoutRewind)
                             {
                                 if (repeated.Breach != Utf8ExecutionLimitKind.None) return repeated;
                                 if (repeated.IsMatch)

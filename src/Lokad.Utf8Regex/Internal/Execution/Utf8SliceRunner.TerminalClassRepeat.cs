@@ -544,19 +544,16 @@ internal static partial class Utf8SliceRunner
         continuation = 0;
         var instructions = program.Instructions;
         var repeat = instructions[repeatIndex];
-        // The terminal proof already verified the atom and exit. A required
-        // assertion endpoint uses the ordinary repeat checks.
-        var provedTerminal = requiredEnd is null && program.SkipsTerminalRewind(repeatIndex);
-        if (!provedTerminal && (program.RightToLeft || instructions.Length - repeatIndex < 5 ||
+        if (program.RightToLeft || instructions.Length - repeatIndex < 5 ||
             repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) ||
-            !IsSingleAtomRepeat(instructions, repeatIndex, repeat))) return false;
+            !IsSingleAtomRepeat(instructions, repeatIndex, repeat)) return false;
         var atom = instructions[repeatIndex + 1];
-        if (!provedTerminal && (atom.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or
+        if (atom.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or
                 Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid) ||
-            atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0))
+            atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0)
             return false;
         continuation = repeat.A + 1;
-        if (!provedTerminal && existenceOnly && requiredEnd is null && CanAcceptEmptyTail(instructions, continuation))
+        if (existenceOnly && requiredEnd is null && CanAcceptEmptyTail(instructions, continuation))
         {
             // An endpoint at the minimum proves existence. There is no
             // observable range or capture, and the terminal path needs no
@@ -566,8 +563,8 @@ internal static partial class Utf8SliceRunner
             continuation = instructions.Length - 1;
             return true;
         }
-        // A fixed count or a proved terminal continuation needs one endpoint.
-        if (provedTerminal || repeat.RepeatMinimum == repeat.RepeatMaximum)
+        // A fixed count needs only one endpoint.
+        if (repeat.RepeatMinimum == repeat.RepeatMaximum)
         {
             var fixedRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             outcome = new(fixedRepeat.EndIndex >= 0, fixedRepeat.EndIndex, fixedRepeat.Breach, null, null);
