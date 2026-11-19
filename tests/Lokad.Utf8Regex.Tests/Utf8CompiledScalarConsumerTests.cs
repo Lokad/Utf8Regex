@@ -16,29 +16,27 @@ public sealed class Utf8CompiledScalarConsumerTests
         => Utf8FrontEnd.Compile(pattern, options);
 
     [Theory]
-    [InlineData(".+", "é😀a", false, 1, 0, 7, 0, 4)]
-    [InlineData("(?<=é).(?=z)", "é😀z", false, 1, 2, 4, 1, 2)]
-    [InlineData("\\p{L}{1,2}", "𐐀é", false, 1, 0, 6, 0, 3)]
-    [InlineData("\\p{L}", "𐐀é", false, 2, 0, 4, 0, 2)]
-    [InlineData("\\p{L}{0,2}", "𐐀é", false, 2, 0, 6, 0, 3)]
-    [InlineData("a[0-9]{2}", "é😀 a12", false, 1, 7, 3, 4, 3)]
-    [InlineData("a.b", "é a😀b", false, 1, 3, 6, 2, 4)]
-    [InlineData("a.{0,4}b", "xa😀b tail", false, 1, 1, 6, 1, 4)]
-    [InlineData("\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", true, 1, 7, 11, 4, 11)]
-    [InlineData("\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", false, 1, 7, 11, 4, 11)]
-    public void PublicOperationsKeepScalarByteRangesAndDerivedCoordinates(string pattern,
-        string text, bool rtl, int count, int indexBytes, int lengthBytes, int indexUnits, int lengthUnits)
+    [InlineData(".+", "é😀a", false, 1, 0, 7)]
+    [InlineData("(?<=é).(?=z)", "é😀z", false, 1, 2, 4)]
+    [InlineData("\\p{L}{1,2}", "𐐀é", false, 1, 0, 6)]
+    [InlineData("\\p{L}", "𐐀é", false, 2, 0, 4)]
+    [InlineData("\\p{L}{0,2}", "𐐀é", false, 2, 0, 6)]
+    [InlineData("a[0-9]{2}", "é😀 a12", false, 1, 7, 3)]
+    [InlineData("a.b", "é a😀b", false, 1, 3, 6)]
+    [InlineData("a.{0,4}b", "xa😀b tail", false, 1, 1, 6)]
+    [InlineData("\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", true, 1, 7, 11)]
+    [InlineData("\\b(?:record|struct|class)\\s+[A-Z][A-Za-z0-9_]+", "é😀 class Bravo", false, 1, 7, 11)]
+    public void PublicOperationsKeepScalarByteRanges(string pattern,
+        string text, bool rtl, int count, int indexBytes, int lengthBytes)
     {
         var options = RegexOptions.CultureInvariant | (rtl ? RegexOptions.RightToLeft : 0);
         var input = Encoding.UTF8.GetBytes(text);
-        {
-            var regex = new Utf8Regex(pattern, options: options);
-            Assert.True(regex.IsMatch(input));
-            Assert.Equal(count, regex.Count(input));
-            var match = regex.Match(input);
-            Assert.True(match.Success); Assert.True(match.Success);
-            Assert.Equal((indexBytes, lengthBytes), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
-        }
+        using var regex = new Utf8Regex(pattern, options: options);
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(count, regex.Count(input));
+        var match = regex.Match(input);
+        Assert.True(match.Success);
+        Assert.Equal((indexBytes, indexBytes + lengthBytes), (match.StartOffsetInBytes, match.EndOffsetInBytes));
     }
 
     [Theory]

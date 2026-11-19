@@ -325,7 +325,7 @@ public sealed class Utf8NativeLiteralInvocationTests
     {
         using var source = new CancellationTokenSource();
         var regex = new Utf8Regex(pattern, options: options);
-        if ((options & RegexOptions.NonBacktracking) != 0) ;        foreach (var text in new[] { "éÉ", "éa a", "abcd ABCD", "KkK", "\U0001f600\U0001f600", "target target" })
+        foreach (var text in new[] { "éÉ", "éa a", "abcd ABCD", "KkK", "\U0001f600\U0001f600", "target target" })
         {
             var input = Encoding.UTF8.GetBytes(text);
             var actual = regex.EnumerateMatches(input, cancellationToken: source.Token);
