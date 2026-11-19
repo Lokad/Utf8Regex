@@ -789,12 +789,21 @@ internal sealed class Utf8SliceProgram
 
     internal static int FindTerminalEnd(ReadOnlySpan<Utf8SliceInstruction> code)
     {
+        var index = FindLastBeforeCaptureEnds(code);
+        return index >= 0 && IsAbsoluteEndConstraint(code[index]) ? index : -1;
+    }
+
+    internal static bool IsAbsoluteEndConstraint(in Utf8SliceInstruction instruction)
+        => instruction.Kind == Utf8SliceInstructionKind.Anchor &&
+            (instruction.A == (int)Utf8SliceAnchorKind.VeryEnd ||
+                instruction.A == (int)Utf8SliceAnchorKind.End && instruction.B == 0);
+
+    internal static int FindLastBeforeCaptureEnds(ReadOnlySpan<Utf8SliceInstruction> code)
+    {
         var index = code.Length - 1;
         while (index >= 0 && code.Length - index < 32 && code[index].Kind == Utf8SliceInstructionKind.CaptureEnd)
             index--;
-        return index >= 0 && code[index] is { Kind: Utf8SliceInstructionKind.Anchor } anchor &&
-            (anchor.A == (int)Utf8SliceAnchorKind.VeryEnd || anchor.A == (int)Utf8SliceAnchorKind.End && anchor.B == 0)
-            ? index : -1;
+        return index;
     }
 
     // The compiled .NET 10 lazy-loop defect is excluded from our semantics.

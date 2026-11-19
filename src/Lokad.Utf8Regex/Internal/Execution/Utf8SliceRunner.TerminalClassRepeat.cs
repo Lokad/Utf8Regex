@@ -418,17 +418,23 @@ internal static partial class Utf8SliceRunner
     {
         var code = program.Instructions.AsSpan();
         if (code.Length < 6 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return default;
-        var end = Utf8SliceProgram.FindTerminalEnd(code[..^1]);
+        var end = Utf8SliceProgram.FindLastBeforeCaptureEnds(code[..^1]);
         if (end < 0) return default;
-        var equivalent = program.RepeatCount >= 3 ? FindEquivalentTerminalRepeat(program, code, end, budget) : -1;
+        var terminal = code[end];
+        var wordBoundary = terminal is
+            { Kind: Utf8SliceInstructionKind.Boundary, A: 1, B: (int)Utf8SliceWordKind.Unicode, C: 0 };
+        if (!wordBoundary && !Utf8SliceProgram.IsAbsoluteEndConstraint(terminal)) return default;
+        var equivalent = !wordBoundary && program.RepeatCount >= 3
+            ? FindEquivalentTerminalRepeat(program, code, end, budget) : -1;
         var rewindFree = equivalent >= 0 ? 1UL << (end - equivalent) : 0;
 
         // Track ASCII bytes on which the suffix can start. The lax anchor can
-        // also succeed before LF without consuming it. Opaque control flow
-        // ends the walk, so every inspected skip still reaches this anchor.
-        var first = default(Utf8SearchAsciiSet);
-        if (code[end].A == (int)Utf8SliceAnchorKind.End) first = first.With((byte)'\n');
-        var firstAsciiOnly = true;
+        // also succeed before LF without consuming it. A branch that skips
+        // directly to a word boundary may place it before any scalar.
+        var first = wordBoundary ? Utf8SearchAsciiSet.FromMasks(ulong.MaxValue, ulong.MaxValue) : default;
+        if (terminal.Kind == Utf8SliceInstructionKind.Anchor && terminal.A == (int)Utf8SliceAnchorKind.End)
+            first = first.With((byte)'\n');
+        var firstAsciiOnly = !wordBoundary;
         var repeatContinuation = -1;
         var firstAtRepeatContinuation = default(Utf8SearchAsciiSet);
         var asciiOnlyAtRepeatContinuation = false;
@@ -447,10 +453,17 @@ internal static partial class Utf8SliceRunner
                     !IsSingleAtomRepeat(code, repeatIndex, repeat) ||
                     !program.TryGetUnfoldedAsciiSet(code[repeatIndex + 1], out var atom, out var asciiOnly)) break;
                 budget.ChargeWork(3);
-                // A shorter endpoint leaves an accepted scalar at the suffix
-                // start. If either side is ASCII-only, the ASCII intersection
-                // decides whether any such endpoint can work.
-                if ((asciiOnly || firstAsciiOnly) && (first.Low & atom.Low) == 0 && (first.High & atom.High) == 0)
+                if (wordBoundary)
+                {
+                    // Every shorter nonempty decimal run ends between two
+                    // Unicode word scalars. The boundary cannot succeed there.
+                    if (repeat.RepeatMinimum == 0 || !IsDecimalDigitSet(program, code[repeatIndex + 1])) break;
+                    rewindFree |= 1UL << (end - repeatIndex);
+                    wordBoundary = false;
+                }
+                // At a shorter endpoint the next scalar belongs to the repeat.
+                // An ASCII-only side makes the ASCII intersection decisive.
+                else if ((asciiOnly || firstAsciiOnly) && (first.Low & atom.Low) == 0 && (first.High & atom.High) == 0)
                     rewindFree |= 1UL << (end - repeatIndex);
 
                 // An adjacent alternative may jump over this repeat to the
@@ -463,6 +476,7 @@ internal static partial class Utf8SliceRunner
                     ? Utf8SearchAsciiSet.FromMasks(first.Low | atom.Low, first.High | atom.High) : atom;
                 pc = repeatIndex;
             }
+            else if (wordBoundary) break;
             else if (entry.Kind == Utf8SliceInstructionKind.Jump && entry.A == repeatContinuation)
             {
                 first = firstAtRepeatContinuation;

@@ -66,6 +66,36 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Theory]
+    [InlineData(@"\b(\d{1,2})/\d{1,2}/(\d{2,4})\b")]
+    [InlineData(@"\b(\d{1,2}?)/\d{1,2}?/(\d{2,4}?)\b")]
+    public void TerminalUnicodeBoundaryProvesMandatoryDecimalRuns(string pattern)
+    {
+        using var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled,
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 << 20 } });
+        using var source = new CancellationTokenSource();
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        Assert.Equal(3, Enumerable.Range(0, program.Instructions.Length).Count(program.SkipsTerminalRewind));
+        Assert.False(regex.IsMatch(" 𝟙/٢/٢٠٢٦x"u8, source.Token));
+
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[3];
+        var match = regex.Match(" 𝟙/٢/٢٠٢٦!"u8, captures: captures, cancellationToken: source.Token);
+        Assert.Equal(new Utf8CaptureRange(1, 17), match);
+        Assert.Equal(new Utf8CaptureRange(1, 5), captures[1]);
+        Assert.Equal(new Utf8CaptureRange(9, 17), captures[2]);
+    }
+
+    [Theory]
+    [InlineData(@"\A\p{Nd}{1,3}\b", "1٢!", RegexOptions.ECMAScript, 1)]
+    [InlineData(@"\A[\d!]{1,3}\b", "1!!", RegexOptions.None, 1)]
+    [InlineData(@"\A\d{0,3}\b", "12x", RegexOptions.None, 0)]
+    [InlineData(@"\A\d{1,3}\B", "12!", RegexOptions.None, 1)]
+    public void OtherWordBoundaryTailsCanStillRewind(string pattern, string text, RegexOptions options, int end)
+    {
+        using var regex = new Utf8Regex(pattern, options: options);
+        Assert.Equal(new Utf8CaptureRange(0, end), regex.Match(Encoding.UTF8.GetBytes(text)));
+    }
+
+    [Theory]
     [InlineData(@"\A(?<run>\d{1,3})٢\z", "١٢")]
     [InlineData(@"\A(?<run>\d{1,3})2\z", "١2")]
     public void TerminalDigitSuffixCanStillRewindAnOverlappingRepeat(string pattern, string text)
