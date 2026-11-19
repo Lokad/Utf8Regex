@@ -118,6 +118,28 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.True(range.GetGroupMemory(1).Span.SequenceEqual(input.AsSpan(start, end - start)));
     }
 
+    [Fact]
+    public void WholeMatchSlotsOnlyReserveCapturesIfExecutionReadsThem()
+    {
+        var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkingBytes = 1 } };
+        using var valueOnly = new Utf8Regex("([A-Z])", policy: policy);
+        var input = "é: BB!"u8.ToArray();
+        var whole = new Utf8CaptureRange[1];
+        var extent = valueOnly.Match(input, 2, whole);
+        Assert.True(extent.Success);
+        Assert.Equal((4, 5), (extent.StartOffsetInBytes, extent.EndOffsetInBytes));
+        Assert.Equal(extent, valueOnly.Match(input, 2));
+        Assert.Equal(extent, whole[0]);
+
+        var detail = new Utf8CaptureRange[2];
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => valueOnly.Match(input, 2, detail)).ResourceKind);
+        using var reference = new Utf8Regex(@"([A-Z])\1", policy: policy);
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => reference.Match(input, 2, whole)).ResourceKind);
+        Assert.False(whole[0].Success);
+    }
+
     [Theory]
     [InlineData(RegexOptions.None)] [InlineData(RegexOptions.Compiled)]
     [InlineData(RegexOptions.RightToLeft)] [InlineData(RegexOptions.NonBacktracking)]

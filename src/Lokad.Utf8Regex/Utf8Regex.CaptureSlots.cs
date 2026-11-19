@@ -76,7 +76,7 @@ public sealed partial class Utf8Regex
             }
             else
             {
-                var slotCount = program.IsNonBacktracking && output.Length <= 1 ? 0 : program.GroupCount;
+                var slotCount = output.Length <= 1 ? GetValueOperationCaptureSlotCount(program) : program.GroupCount;
                 slots = Utf8SliceRunner.RentSlots(slotCount, ref invocation);
                 var outcome = Utf8SliceRunner.TryFindFirst(program, subject, startOffsetInBytes,
                     slots.Starts, slots.Ends, false, ref invocation, _preparedRegex.SearchPlan);

@@ -71,7 +71,9 @@ does not validate the subject or change that contract when an end bound is used.
 This operation does not create coordinate maps, captured strings or capture-history
 snapshots. Use the memory cursor for capture history. Matching scratch is admitted
 before allocation against numeric and optional caller-owned working allowances,
-then refunded synchronously. Caller-owned output is outside engine-owned result
+then refunded synchronously. A whole-match-only request can omit capture scratch
+when the prepared program proves matching can proceed without it.
+Caller-owned output is outside engine-owned result
 storage, so a result-byte limit does not charge its existing capacity. Numerical
 work/storage needs can differ from the removed UTF16-start existence operation.
 It retains the existing bounded literal search for eligible families of up to eight
