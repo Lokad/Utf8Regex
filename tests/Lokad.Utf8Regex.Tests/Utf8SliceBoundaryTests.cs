@@ -133,6 +133,7 @@ public sealed class Utf8SliceBoundaryTests
     [Theory]
     [InlineData(@"\b\w{10,}\b", RegexOptions.None)]
     [InlineData(@"\b\w{10,}\b", RegexOptions.ECMAScript)]
+    [InlineData(@"\b\w{10,12}?\b", RegexOptions.None)]
     [InlineData(@"\b[!,]", RegexOptions.None)]
     [InlineData(@"\B\w{4}(?=\w)", RegexOptions.None)]
     public void LeadingBoundaryCountKeepsBothAsciiAndUnicodeNeighbors(string pattern, RegexOptions options)
@@ -149,14 +150,16 @@ public sealed class Utf8SliceBoundaryTests
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text), token.Token));
     }
 
-    [Fact]
-    public void RejectedAsciiStartsUseBoundedWorkAndObserveOriginalCancellation()
+    [Theory]
+    [InlineData(" ", 256, 320UL)]
+    [InlineData("abc ", 64, 100UL)]
+    public void RejectedAsciiStartsUseBoundedWorkAndObserveOriginalCancellation(string segment, int copies, ulong maxWork)
     {
-        var input = Encoding.UTF8.GetBytes(new string(' ', 256));
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(segment, copies)));
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(@"\b\w{10,}\b", policy: new()
         {
-            ResourcePolicy = new() { MaxWorkSteps = 320, MaxWorkingBytes = 1 }
+            ResourcePolicy = new() { MaxWorkSteps = maxWork, MaxWorkingBytes = 1 }
         });
         Assert.Equal(0, regex.Count(input, token.Token));
         var diagnostics = Utf8SearchDiagnosticsSession.Start(steps => { if (steps >= 64) token.Cancel(); });

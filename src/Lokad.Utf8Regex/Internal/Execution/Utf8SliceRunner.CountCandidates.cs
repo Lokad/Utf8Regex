@@ -752,6 +752,19 @@ internal static partial class Utf8SliceRunner
             HasAsciiLiteralInWindow(input, start, window);
     }
 
+    private static int CountStartsBelowRepeatMinimum(ReadOnlySpan<byte> prefix, Utf8SearchAsciiSet ascii)
+    {
+        // The input step covers this short probe. An excluded ASCII scalar
+        // prevents reaching the minimum from every start through that byte.
+        for (var offset = 0; offset < prefix.Length; offset++)
+        {
+            var value = prefix[offset];
+            if (value >= 128) break;
+            if (!ascii.Contains(value)) return offset + 1;
+        }
+        return 0;
+    }
+
     private static bool IsSingleAtomRepeat(ReadOnlySpan<Utf8SliceInstruction> code, int index, Utf8SliceInstruction entry)
         => entry.A == index + 3 && entry.A < code.Length &&
             code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == index &&

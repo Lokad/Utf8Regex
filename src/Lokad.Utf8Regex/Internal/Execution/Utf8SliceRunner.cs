@@ -878,10 +878,18 @@ internal static partial class Utf8SliceRunner
         var checkAsciiBoundary = first is { Kind: Utf8SliceInstructionKind.Boundary, C: 0 } &&
             !program.RightToLeft && !program.CanMatchEmpty && !seekLiteral &&
             leadingAsciiFirst < 0 && whitespaceLiteral < 0 && input.Length - fromByte >= 256;
+        var repeatMinimum = 0;
+        var repeatAscii = default(Utf8SearchAsciiSet);
         if (checkAsciiBoundary)
         {
             var admission = invocation.TryReserveWorking(0);
             if (admission != Utf8ExecutionLimitKind.None) return new(count, admission);
+            var code = program.Instructions.AsSpan();
+            if (code[1] is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
+                    RepeatMinimum: >= 2 and <= 16 } repeat &&
+                IsSingleAtomRepeat(code, 1, repeat) &&
+                program.TryGetUnfoldedAsciiSet(code[2], out repeatAscii, out _))
+                repeatMinimum = (int)repeat.RepeatMinimum;
         }
         var whitespaceWindowEnd = -1;
         var workspace = new AttemptWorkspace();
@@ -966,12 +974,25 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, breach);
                 invocation.Budget.ThrowIfCancellationRequested();
-                if (checkAsciiBoundary && Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary) &&
-                    boundary != (first.A != 0))
+                if (checkAsciiBoundary)
                 {
-                    if (position == input.Length) break;
-                    position++;
-                    continue;
+                    if (Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary) &&
+                        boundary != (first.A != 0))
+                    {
+                        if (position == input.Length) break;
+                        position++;
+                        continue;
+                    }
+                    if (repeatMinimum != 0)
+                    {
+                        if (input.Length - position < repeatMinimum) break;
+                        var rejected = CountStartsBelowRepeatMinimum(input.Slice(position, repeatMinimum), repeatAscii);
+                        if (rejected != 0)
+                        {
+                            position += rejected;
+                            continue;
+                        }
+                    }
                 }
                 var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true, ref workspace, ref invocation);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
