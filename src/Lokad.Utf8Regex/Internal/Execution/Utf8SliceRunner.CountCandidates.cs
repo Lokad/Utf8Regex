@@ -614,12 +614,12 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool MatchesStraightAsciiPrefix(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, int instructionIndex)
+        ReadOnlySpan<byte> input, int position, int instructionIndex, int instructionLimit = 64)
     {
         // Reject only a proven mandatory straight-line prefix. This bounded
         // filter accepts no match; branches, wider classes and effects stop it.
         var code = program.Instructions.AsSpan();
-        var end = Math.Min(code.Length, instructionIndex + 64);
+        var end = instructionIndex + Math.Min(code.Length - instructionIndex, instructionLimit);
         for (; instructionIndex < end; instructionIndex++)
         {
             var entry = code[instructionIndex];

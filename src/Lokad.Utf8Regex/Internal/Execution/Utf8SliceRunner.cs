@@ -1222,16 +1222,26 @@ internal static partial class Utf8SliceRunner
                                     {
                                         var end = inputIndex + width;
                                         var lazy = instruction.Kind == Utf8SliceInstructionKind.RepeatLazy;
-                                        if (!stacks.PushFrame(new Utf8SliceFrame
+                                        var preferred = lazy ? inputIndex : end;
+                                        var retry = lazy ? end : inputIndex;
+                                        // The optional's input step covers this bounded
+                                        // probe. Only the VM executes the suffix.
+                                        const int suffixProbeLimit = 4;
+                                        if (MatchesStraightAsciiPrefix(program, input, retry, continuation, suffixProbeLimit))
                                         {
-                                            ResumeKind = Utf8SliceResumeKind.Alternation,
-                                            Target = continuation,
-                                            InputIndex = lazy ? end : inputIndex,
-                                            TrailCount = stacks.TrailCount,
-                                            JournalCount = stacks.JournalCount,
-                                        }, ref invocation))
-                                        { failure = stacks.Breach; goto Failure; }
-                                        if (!lazy) inputIndex = end;
+                                            if (!MatchesStraightAsciiPrefix(program, input, preferred, continuation, suffixProbeLimit))
+                                                preferred = retry;
+                                            else if (!stacks.PushFrame(new Utf8SliceFrame
+                                            {
+                                                ResumeKind = Utf8SliceResumeKind.Alternation,
+                                                Target = continuation,
+                                                InputIndex = retry,
+                                                TrailCount = stacks.TrailCount,
+                                                JournalCount = stacks.JournalCount,
+                                            }, ref invocation))
+                                            { failure = stacks.Breach; goto Failure; }
+                                        }
+                                        inputIndex = preferred;
                                     }
                                 }
                                 programIndex = continuation;

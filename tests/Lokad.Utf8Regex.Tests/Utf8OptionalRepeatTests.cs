@@ -164,6 +164,40 @@ public sealed class Utf8OptionalRepeatTests
     }
 
     [Theory]
+    [InlineData(false, "012.")]
+    [InlineData(false, "01.")]
+    [InlineData(true, "012.")]
+    [InlineData(true, "01.")]
+    public void RequiredAsciiSuffixDisprovesOneOptionalEndpoint(bool lazy, string subject)
+    {
+        var pattern = @"\A[01]?" + (lazy ? "?" : "") + @"[0-9][0-9]\.";
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 100, MaxWorkingBytes = 1 }
+        });
+        var input = Encoding.UTF8.GetBytes(subject);
+        Assert.True(Regex.IsMatch(subject, pattern));
+        Assert.True(regex.IsMatch(input, token.Token));
+        Assert.Equal(1, regex.Count(input, token.Token));
+        Assert.Equal(input.Length, regex.Match(input, cancellationToken: token.Token).EndOffsetInBytes);
+    }
+
+    [Theory]
+    [InlineData(false, "012X")]
+    [InlineData(true, "012X")]
+    public void ViableOptionalEndpointsRetainCapturesAndAssertionRetry(bool lazy, string subject)
+    {
+        var pattern = @"\A(?<opt>[01]?" + (lazy ? "?" : "") + @")[0-9][0-9](?=X)X\z";
+        var expected = Regex.Match(subject, pattern);
+        Assert.True(expected.Success);
+        using var regex = Utf8Regex.Compile(pattern);
+        var input = Encoding.UTF8.GetBytes(subject);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(input));
+        Utf8MatchSequence.AssertCaptures(expected, actual, input, subject);
+    }
+
+    [Theory]
     [InlineData(@"(?<body>[é😀]?)[é😀]", "😀")]
     [InlineData(@"(?<body>😀??)[é😀]", "")]
     public void OptionalScalarBranchKeepsCapturePriorityAndByteBoundaries(string pattern, string body)
