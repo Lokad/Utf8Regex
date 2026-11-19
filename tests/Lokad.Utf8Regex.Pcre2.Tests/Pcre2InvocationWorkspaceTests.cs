@@ -36,9 +36,7 @@ public sealed class Pcre2InvocationWorkspaceTests
 
     private static ulong Physical(ref Pcre2BacktrackingWorkspace workspace) => checked(
         Bytes(workspace.RepeatState) + Bytes(workspace.CaptureState) +
-        Bytes(workspace.CaptureRestoreGenerations) + Bytes(workspace.CaptureRestoreSlots) +
-        Bytes(workspace.CaptureRestoreSnapshots) + Bytes(workspace.RepeatRestoreGenerations) +
-        Bytes(workspace.RepeatRestoreIds) + Bytes(workspace.RepeatRestoreSnapshots));
+        Bytes(workspace.CaptureRestoreGenerations) + Bytes(workspace.RepeatRestoreGenerations));
 
     [Theory]
     [InlineData("cancellation")]
@@ -132,10 +130,6 @@ public sealed class Pcre2InvocationWorkspaceTests
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(3)]
-    [InlineData(4)]
-    [InlineData(5)]
-    [InlineData(6)]
-    [InlineData(7)]
     public void PartialFixedAcquisitionRestoresParentAndKeepsSpentWork(ulong steps)
     {
         var budget = Budget(1UL << 20, steps);

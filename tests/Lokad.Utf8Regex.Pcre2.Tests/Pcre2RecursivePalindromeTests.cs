@@ -116,6 +116,20 @@ public sealed class Pcre2RecursivePalindromeTests
         Assert.Equal((tailStart, input.Length), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
     }
 
+    [Fact]
+    public void SubroutineRetriesRestoreCallerCapturesAfterTheJournalGrows()
+    {
+        using var regex = CreateMetered(@"\A(?<piece>(?<unit>[ab]){2,128}):(?&piece)bb\k<unit>\z", 1_000_000);
+        var input = Encoding.UTF8.GetBytes("aa:" + new string('b', 80) + "a");
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+
+        Assert.True(regex.Match(input, captures: captures).Success);
+        Assert.True(captures[1].Success);
+        Assert.True(captures[2].Success);
+        Assert.Equal((0, 2), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal((1, 2), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
+    }
+
     private static bool ScalarPalindrome(string text, bool allowsEmpty)
     {
         // Default $ may precede one terminal LF; dot cannot consume any LF.

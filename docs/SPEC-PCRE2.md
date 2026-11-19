@@ -350,6 +350,10 @@ the anchor. A greedy ASCII optional can omit its retry frame when the terminal
 suffix cannot begin with any byte it consumes. These paths still meter scanning
 and admit required capture and assertion storage. Work and heap requirements
 can fall.
+Subroutine return restores caller state from the existing mutation journals.
+The heap limit covers the retained journals and the vectors used to identify
+each changed slot. Long restoration scans check interruption and charge work
+every 64 journal entries.
 Uncontrolled compilation can also omit rewind state for positive word-only repeats
 before `\b`; explicit finite execution policies retain their established lowering.
 Original tokens and working allowances still meter/admit actual optimized work.

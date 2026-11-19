@@ -57,15 +57,6 @@ internal readonly record struct Pcre2SubroutineCallFrame(
     int AtomicCheckpoint,
     int MarkTrailCheckpoint);
 
-internal readonly record struct Pcre2SubroutineCaptureSnapshot(
-    int Start,
-    int End,
-    int OpenStart,
-    int Owner,
-    int OpenOwner);
-
-internal readonly record struct Pcre2SubroutineRepeatSnapshot(int Count, int Position);
-
 internal enum Pcre2SubroutineCallMutationKind : byte
 {
     Pushed = 0,
@@ -702,11 +693,7 @@ internal static class Pcre2BacktrackingRunner
         var rentedRepeatState = workspace.RepeatState;
         var rentedCaptureState = workspace.CaptureState;
         var rentedCaptureRestoreGenerations = workspace.CaptureRestoreGenerations;
-        var rentedCaptureRestoreSlots = workspace.CaptureRestoreSlots;
-        var rentedCaptureRestoreSnapshots = workspace.CaptureRestoreSnapshots;
         var rentedRepeatRestoreGenerations = workspace.RepeatRestoreGenerations;
-        var rentedRepeatRestoreIds = workspace.RepeatRestoreIds;
-        var rentedRepeatRestoreSnapshots = workspace.RepeatRestoreSnapshots;
         var captureState = rentedCaptureState is null ? Span<int>.Empty : rentedCaptureState.AsSpan(0, captureStateLength);
 
         var counts = rentedRepeatState is null
@@ -733,21 +720,9 @@ internal static class Pcre2BacktrackingRunner
         var captureRestoreGenerations = rentedCaptureRestoreGenerations is null
             ? Span<int>.Empty
             : rentedCaptureRestoreGenerations.AsSpan(0, program.CaptureSlotCount);
-        var captureRestoreSlots = rentedCaptureRestoreSlots is null
-            ? Span<int>.Empty
-            : rentedCaptureRestoreSlots.AsSpan(0, program.CaptureSlotCount);
-        var captureRestoreSnapshots = rentedCaptureRestoreSnapshots is null
-            ? Span<Pcre2SubroutineCaptureSnapshot>.Empty
-            : rentedCaptureRestoreSnapshots.AsSpan(0, program.CaptureSlotCount);
         var repeatRestoreGenerations = rentedRepeatRestoreGenerations is null
             ? Span<int>.Empty
             : rentedRepeatRestoreGenerations.AsSpan(0, program.RepeatCount);
-        var repeatRestoreIds = rentedRepeatRestoreIds is null
-            ? Span<int>.Empty
-            : rentedRepeatRestoreIds.AsSpan(0, program.RepeatCount);
-        var repeatRestoreSnapshots = rentedRepeatRestoreSnapshots is null
-            ? Span<Pcre2SubroutineRepeatSnapshot>.Empty
-            : rentedRepeatRestoreSnapshots.AsSpan(0, program.RepeatCount);
         counts.Fill(-1);
         positions.Fill(-1);
         captureStarts.Fill(-1);
@@ -1305,11 +1280,7 @@ internal static class Pcre2BacktrackingRunner
                             captureOwners,
                             captureOpenOwners,
                             repeatRestoreGenerations,
-                            repeatRestoreIds,
-                            repeatRestoreSnapshots,
                             captureRestoreGenerations,
-                            captureRestoreSlots,
-                            captureRestoreSnapshots,
                             ref subroutineRestoreGeneration,
                             ref repeatMutations,
                             ref captureMutations,
@@ -1463,11 +1434,7 @@ internal static class Pcre2BacktrackingRunner
                                 captureOwners,
                                 captureOpenOwners,
                                 repeatRestoreGenerations,
-                                repeatRestoreIds,
-                                repeatRestoreSnapshots,
                                 captureRestoreGenerations,
-                                captureRestoreSlots,
-                                captureRestoreSnapshots,
                                 ref subroutineRestoreGeneration,
                                 ref repeatMutations,
                                 ref captureMutations,
@@ -1680,11 +1647,7 @@ internal static class Pcre2BacktrackingRunner
             var fixedRents = !acquiredWorkspace ? 0 : (rentedRepeatState is null ? 0 : 1) +
                 (rentedCaptureState is null ? 0 : 1) +
                 (rentedCaptureRestoreGenerations is null ? 0 : 1) +
-                (rentedCaptureRestoreSlots is null ? 0 : 1) +
-                (rentedCaptureRestoreSnapshots is null ? 0 : 1) +
-                (rentedRepeatRestoreGenerations is null ? 0 : 1) +
-                (rentedRepeatRestoreIds is null ? 0 : 1) +
-                (rentedRepeatRestoreSnapshots is null ? 0 : 1);
+                (rentedRepeatRestoreGenerations is null ? 0 : 1);
             budget.RecordWorkspacePoolTraffic(
                 (ulong)fixedRents,
                 (ulong)frameRents,
@@ -2170,11 +2133,7 @@ internal static class Pcre2BacktrackingRunner
         Span<int> captureOwners,
         Span<int> captureOpenOwners,
         Span<int> repeatRestoreGenerations,
-        Span<int> repeatRestoreIds,
-        Span<Pcre2SubroutineRepeatSnapshot> repeatRestoreSnapshots,
         Span<int> captureRestoreGenerations,
-        Span<int> captureRestoreSlots,
-        Span<Pcre2SubroutineCaptureSnapshot> captureRestoreSnapshots,
         ref int restoreGeneration,
         ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
@@ -2190,10 +2149,13 @@ internal static class Pcre2BacktrackingRunner
 
         var generation = restoreGeneration;
 
-        var repeatRestoreCount = 0;
+        // The first mutation of each slot records its value at call entry.
+        // Freeze the journal ends so inverse entries appended during restoration
+        // are available for backtracking but never visited by this return.
         var repeatMutationCount = repeatMutations.Count;
         for (var index = call.RepeatCheckpoint; index < repeatMutationCount; index++)
         {
+            if (((index - call.RepeatCheckpoint) & 63) == 63) budget.ChargeWorkspaceStep();
             var mutation = repeatMutations[index];
             if (repeatRestoreGenerations[mutation.RepeatId] == generation)
             {
@@ -2201,30 +2163,20 @@ internal static class Pcre2BacktrackingRunner
             }
 
             repeatRestoreGenerations[mutation.RepeatId] = generation;
-            repeatRestoreIds[repeatRestoreCount++] = mutation.RepeatId;
-            repeatRestoreSnapshots[mutation.RepeatId] = new Pcre2SubroutineRepeatSnapshot(
-                mutation.PreviousCount,
-                mutation.PreviousPosition);
-        }
-
-        for (var index = 0; index < repeatRestoreCount; index++)
-        {
-            var repeatId = repeatRestoreIds[index];
-            var snapshot = repeatRestoreSnapshots[repeatId];
             SetRepeat(
-                repeatId,
-                snapshot.Count,
-                snapshot.Position,
+                mutation.RepeatId,
+                mutation.PreviousCount,
+                mutation.PreviousPosition,
                 counts,
                 positions,
                 ref repeatMutations,
                 ref budget);
         }
 
-        var captureRestoreCount = 0;
         var captureMutationCount = captureMutations.Count;
         for (var index = call.CaptureCheckpoint; index < captureMutationCount; index++)
         {
+            if (((index - call.CaptureCheckpoint) & 63) == 63) budget.ChargeWorkspaceStep();
             var mutation = captureMutations[index];
             if (captureRestoreGenerations[mutation.Slot] == generation)
             {
@@ -2232,28 +2184,13 @@ internal static class Pcre2BacktrackingRunner
             }
 
             captureRestoreGenerations[mutation.Slot] = generation;
-            captureRestoreSlots[captureRestoreCount++] = mutation.Slot;
-            captureRestoreSnapshots[mutation.Slot] = new Pcre2SubroutineCaptureSnapshot(
+            SetCapture(
+                mutation.Slot,
                 mutation.PreviousStart,
                 mutation.PreviousEnd,
                 mutation.PreviousOpenStart,
                 mutation.PreviousOwner,
-                mutation.PreviousOpenOwner);
-        }
-
-        // PCRE2 restores caller capture state on return, including unset slots.
-        // Non-atomic re-entry still needs the mutation trail below.
-        for (var index = 0; index < captureRestoreCount; index++)
-        {
-            var slot = captureRestoreSlots[index];
-            var snapshot = captureRestoreSnapshots[slot];
-            SetCapture(
-                slot,
-                snapshot.Start,
-                snapshot.End,
-                snapshot.OpenStart,
-                snapshot.Owner,
-                snapshot.OpenOwner,
+                mutation.PreviousOpenOwner,
                 captureStarts,
                 captureEnds,
                 captureOpenStarts,
