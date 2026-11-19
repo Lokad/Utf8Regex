@@ -278,8 +278,7 @@ internal sealed class Pcre2BacktrackingLowerer
                     // to each other, so it cannot make this boundary succeed.
                     // With minimum zero, giving back the entire run can expose
                     // a boundary at its start; retain that alternative.
-                    if (!Pcre2GlobalOperationDriver.HasUnmeteredExecution(_request) ||
-                        repeat.Minimum == 0 || repeated.Token.Options != Pcre2CharacterOptions.None) return false;
+                    if (repeat.Minimum == 0 || repeated.Token.Options != Pcre2CharacterOptions.None) return false;
                     if (repeated.Token.Kind == Pcre2CharacterTokenKind.Literal)
                         return Pcre2CharacterSemantics.IsWord(repeated.Token.Literal, ucp);
                     if (repeated.Token.Kind != Pcre2CharacterTokenKind.CharacterClass ||

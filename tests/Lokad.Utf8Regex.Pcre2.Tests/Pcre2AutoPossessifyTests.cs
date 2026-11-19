@@ -32,13 +32,14 @@ public sealed class Pcre2AutoPossessifyTests
         Assert.Equal(expected, program.Program.AutoPossessiveRepeatCount);
     }
 
-    private static void AssertMatchesBcl(string pattern, string inputText)
+    private static void AssertMatchesBcl(string pattern, string inputText, bool controlled = false)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         var oracle = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant, System.Text.RegularExpressions.Regex.InfiniteMatchTimeout);
         var regex = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
-            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout,
+            ResourcePolicy = controlled ? new() { MaxWorkSteps = 16_384, MaxDepth = 64, MaxWorkingBytes = 64 * 1024 } : new()
         });
         Assert.Equal(oracle.IsMatch(inputText), regex.IsMatch(input));
         var expected = oracle.Match(inputText);
@@ -216,25 +217,29 @@ public sealed class Pcre2AutoPossessifyTests
     }
 
     [Fact]
-    public void FundedPlansCommitTheDateDelimitersButKeepTheWordBoundaryRetry()
+    public void FundedDateOmitsImpossibleDelimiterAndBoundaryRetries()
     {
         const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";
         // Count consumes the same lowered VM program even when Boolean calls
         // have an independently proved finite-language plan.
-        var uncontrolled = new Utf8Pcre2Regex(pattern);
-        Assert.Equal(3, Assert.IsType<Pcre2BacktrackingDirectProgram>(
-            uncontrolled.DebugCompiledProgram.Operations.Count).Program.AutoPossessiveRepeatCount);
-        var controlled = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        using var controlled = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkSteps = 100_000,
-                MaxDepth = 512
+                MaxDepth = 1,
+                MaxWorkingBytes = 1
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(controlled.DebugCompiledProgram.Operations.Count);
-        Assert.Equal(2, program.Program.AutoPossessiveRepeatCount);
+        Assert.Equal(3, program.Program.AutoPossessiveRepeatCount);
+        using var source = new CancellationTokenSource();
+        Assert.False(controlled.IsMatch("😀 11/18/201A"u8, cancellationToken: source.Token));
+        Assert.Equal(1, controlled.Count("😀 11/18/2019 11/19/201A"u8, 5, cancellationToken: source.Token));
+        var match = controlled.Match("😀 11/18/2019!"u8, 5, cancellationToken: source.Token);
+        Assert.True(match.Success);
+        Assert.Equal((5, 15), (match.StartOffsetInBytes, match.EndOffsetInBytes));
     }
 
     [Theory]
@@ -289,7 +294,7 @@ public sealed class Pcre2AutoPossessifyTests
     [InlineData(@"[\w ]+\bA", "12 A")]
     [InlineData(@"\d+(?:\b|3)", "123x")]
     public void BoundaryCommitmentPreservesPublicAsciiResults(string pattern, string inputText)
-        => AssertMatchesBcl(pattern, inputText);
+        => AssertMatchesBcl(pattern, inputText, controlled: true);
 
     [Theory]
     [InlineData(Pcre2CompileOptions.Ucp, "١٢ ", "١٢")]
@@ -297,7 +302,10 @@ public sealed class Pcre2AutoPossessifyTests
     [InlineData(Pcre2CompileOptions.None, "١٢ ", "")]
     public void BoundaryWordProofUsesTheSameUnicodeMode(Pcre2CompileOptions options, string input, string expected)
     {
-        var regex = new Utf8Pcre2Regex(@"\b\d+\b", options: options);
+        using var regex = new Utf8Pcre2Regex(@"\b\d+\b", options: options, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
         var match = regex.Match(Encoding.UTF8.GetBytes(input));
         Assert.Equal(expected.Length != 0, match.Success);
         if (match.Success) Assert.Equal(expected, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));

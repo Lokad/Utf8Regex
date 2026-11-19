@@ -361,9 +361,10 @@ every 64 journal entries.
 Short straight-line lookaheads with unobserved captures can evaluate their
 existing instructions without nested VM state. They charge the same reached
 instructions and retain the assertion depth and interruption checks.
-Uncontrolled compilation can also omit rewind state for positive word-only repeats
-before `\b`; explicit finite execution policies retain their established lowering.
-Original tokens and working allowances still meter/admit actual optimized work.
+A positive word-only repeat can omit rewind state before a required `\b`,
+including under finite limits. Shortening the run would put the boundary
+between two word scalars. Scanning retains the original work, cancellation
+and deadline checks.
 Proved unbounded repeats excluding an ASCII pair can scan checked blocks of at
 most 2048 bytes on caller-valid subjects, retaining scalar endpoints and
 bounded work/interruption checks. This can reduce route-dependent work charges.
