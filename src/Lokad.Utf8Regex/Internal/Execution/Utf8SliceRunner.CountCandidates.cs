@@ -1070,6 +1070,12 @@ internal static partial class Utf8SliceRunner
                 if (proveMatch) acceptedEnd = position;
                 return true;
             }
+            if (proveMatch && entry is { Kind: Utf8SliceInstructionKind.Anchor,
+                A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd })
+            {
+                if (!MatchesEndAnchor(input, position, entry)) return false;
+                continue;
+            }
             if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
             if (entry is { Kind: Utf8SliceInstructionKind.Jump } && entry.A >= index)
             {
@@ -1088,6 +1094,35 @@ internal static partial class Utf8SliceRunner
             {
                 var minimum = entry.RepeatMinimum;
                 var singleAtom = IsSingleAtomRepeat(code, index - 1, entry);
+                if (proveMatch && singleAtom && entry.RepeatMaximum <= 4 &&
+                    program.TryGetUnfoldedAsciiSet(code[index], out var ascii, out var asciiOnly))
+                {
+                    var maximum = Math.Min(input.Length - position, (int)entry.RepeatMaximum);
+                    if (maximum > remaining) return true;
+                    remaining -= maximum;
+                    var consumed = 0;
+                    while (consumed < maximum)
+                    {
+                        var value = input[position + consumed];
+                        if (value >= 128 && !asciiOnly) return true;
+                        if (!ascii.Contains(value)) break;
+                        consumed++;
+                    }
+                    if (consumed < minimum) return false;
+                    var rewindFree = program.SkipsTerminalRewind(index - 1);
+                    index = entry.A + 1;
+                    // The Boolean witness only needs one valid endpoint.
+                    // Share the visit bound across the remaining alternatives.
+                    while (!rewindFree && consumed > minimum)
+                    {
+                        if (MayMatchBranchedAsciiPrefix(program, input, position + consumed, index,
+                            ref remaining, proveMatch, out acceptedEnd))
+                            return true;
+                        consumed--;
+                    }
+                    position += consumed;
+                    continue;
+                }
                 if (minimum == 0)
                 {
                     if (!singleAtom || entry.RepeatMaximum != 1) return true;

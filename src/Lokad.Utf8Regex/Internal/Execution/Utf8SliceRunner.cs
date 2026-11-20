@@ -504,6 +504,22 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, null, null, breach);
             invocation.Budget.ThrowIfCancellationRequested();
+            if (existenceOnly && !collectHistory && program.GroupCount == 0 && program.SkipsTerminalRewind(1) &&
+                program.Instructions[1].RepeatMaximum <= 4 && input.Length <= 32)
+            {
+                // The admitted short witness starts after the confirmed anchor.
+                // Unknown instructions still enter the original attempt.
+                var possible = MayMatchBranchedAsciiPrefix(program, input, fromByte, 1, out var acceptedEnd, proveMatch: true);
+                if (!possible || acceptedEnd >= 0)
+                {
+                    breach = invocation.TryReserveWorking(0);
+                    if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    return possible && breach == Utf8ExecutionLimitKind.None
+                        ? new(true, fromByte, acceptedEnd, null, null, breach)
+                        : new(false, -1, -1, null, null, breach);
+                }
+            }
             var outcome = TryMatchAt(program, input, fromByte, captureStarts, captureEnds,
                 collectHistory, false, true, ref workspace, ref invocation, existenceOnly);
             return outcome.IsMatch && outcome.Breach == Utf8ExecutionLimitKind.None

@@ -321,6 +321,11 @@ public sealed class LokadPublicRouteGuardrailTests
         });
         Assert.True(limited.IsMatch("A01ZZ"u8, cancellation.Token));
         Assert.Equal(new Utf8CaptureRange(0, 5), limited.Match("A01ZZ"u8, cancellationToken: cancellation.Token));
+        var proofPolicy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 8, MaxWorkingBytes = 1 } };
+        using var proof = new Utf8Regex(pattern, options: options, policy: proofPolicy);
+        using var strict = new Utf8Regex(pattern[..^1] + @"\z", options: options, policy: proofPolicy);
+        Assert.True(strict.IsMatch("SW1 1ZZ"u8, cancellation.Token));
+        Assert.False(strict.IsMatch("SW1 1ZZ\n"u8, cancellation.Token));
 
         string[] inputs =
         [
@@ -333,13 +338,17 @@ public sealed class LokadPublicRouteGuardrailTests
             "AB0Z1ZZ",
             "AB0Z 1ZZ",
             "AB0Z 1ZZ\n",
+            "AB0Z 1ZZ\r\n",
             "ABC0Z 1ZZ",
             "AB0Z 1Z9",
             "éB0Z 1ZZ",
         ];
         foreach (var input in inputs)
         {
-            Assert.Equal(Regex.IsMatch(input, pattern), regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+            var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+            var expected = Regex.IsMatch(input, pattern);
+            Assert.Equal(expected, regex.IsMatch(bytes));
+            Assert.Equal(expected, proof.IsMatch(bytes, cancellation.Token));
         }
     }
 
