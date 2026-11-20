@@ -1195,117 +1195,119 @@ internal static partial class Utf8SliceRunner
         {
             remaining--;
             var entry = code[index++];
-            if (entry.Kind == Utf8SliceInstructionKind.Accept)
-            {
-                if (proveMatch) acceptedEnd = position;
-                return true;
-            }
-            if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
-            if (entry is { Kind: Utf8SliceInstructionKind.Jump } && entry.A >= index)
-            {
-                index = entry.A;
-                continue;
-            }
-            if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index)
-            {
-                if (remaining == 0) return true;
-                // Many arms start with a fixed byte and an exact ASCII
-                // interval. Reject those mismatches before recursion.
-                if (code[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal)
-                {
-                    remaining--;
-                    if (position < input.Length && input[position] == literal.A)
-                    {
-                        var next = index + 1;
-                        var edge = position + 1;
-                        if (remaining != 0 && GetUnfoldedAsciiRange(code[next], out var last) is >= 0 and var first)
-                        {
-                            remaining--;
-                            if (edge == input.Length || (uint)(input[edge] - first) > (uint)(last - first))
-                            {
-                                index = entry.A;
-                                continue;
-                            }
-                            next++;
-                            edge++;
-                        }
-                        if (MayMatchBranchedAsciiPrefix(program, input, edge, next,
-                            ref remaining, proveMatch, out acceptedEnd)) return true;
-                    }
-                }
-                else if (MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, out acceptedEnd))
-                    return true;
-                index = entry.A;
-                continue;
-            }
-            if (entry.Kind is Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary)
-            {
-                if (!proveMatch) return true;
-                if (entry.Kind == Utf8SliceInstructionKind.Anchor)
-                {
-                    if (entry.A is not ((int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd)) return true;
-                    if (!MatchesEndAnchor(input, position, entry)) return false;
-                }
-                else
-                {
-                    if (!Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary)) return true;
-                    if (boundary != (entry.A != 0)) return false;
-                }
-                continue;
-            }
-
             var width = 1;
-            if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
+            switch (entry.Kind)
             {
-                var minimum = entry.RepeatMinimum;
-                var singleAtom = IsSingleAtomRepeat(code, index - 1, entry);
-                if (singleAtom && minimum == 0 && entry.RepeatMaximum == 1 &&
-                    GetUnfoldedAsciiRange(code[index], out var last) is >= 0 and var first)
-                {
-                    var repeatIndex = index - 1;
-                    index = entry.A + 1;
-                    if (position == input.Length) continue;
-                    if (proveMatch)
+                case Utf8SliceInstructionKind.Literal:
+                case Utf8SliceInstructionKind.Set:
+                    break;
+                case Utf8SliceInstructionKind.Accept:
+                    if (proveMatch) acceptedEnd = position;
+                    return true;
+                case Utf8SliceInstructionKind.CaptureStart:
+                case Utf8SliceInstructionKind.CaptureEnd:
+                    continue;
+                case Utf8SliceInstructionKind.Jump when entry.A >= index:
+                    index = entry.A;
+                    continue;
+                case Utf8SliceInstructionKind.Fork when entry.B == 0 && entry.A > index:
+                    if (remaining == 0) return true;
+                    // Many arms start with a fixed byte and an exact ASCII
+                    // interval. Reject those mismatches before recursion.
+                    if (code[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal)
                     {
-                        // The complete repeat proof admits one byte before testing it.
-                        if (remaining == 0) return true;
                         remaining--;
+                        if (position < input.Length && input[position] == literal.A)
+                        {
+                            var next = index + 1;
+                            var edge = position + 1;
+                            if (remaining != 0 && GetUnfoldedAsciiRange(code[next], out var last) is >= 0 and var first)
+                            {
+                                remaining--;
+                                if (edge == input.Length || (uint)(input[edge] - first) > (uint)(last - first))
+                                {
+                                    index = entry.A;
+                                    continue;
+                                }
+                                next++;
+                                edge++;
+                            }
+                            if (MayMatchBranchedAsciiPrefix(program, input, edge, next,
+                                ref remaining, proveMatch, out acceptedEnd)) return true;
+                        }
                     }
-                    if ((uint)(input[position] - first) > (uint)(last - first)) continue;
-                    if (proveMatch && program.SkipsTerminalRewind(repeatIndex))
+                    else if (MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, out acceptedEnd))
+                        return true;
+                    index = entry.A;
+                    continue;
+                case Utf8SliceInstructionKind.Anchor:
+                case Utf8SliceInstructionKind.Boundary:
+                    if (!proveMatch) return true;
+                    if (entry.Kind == Utf8SliceInstructionKind.Anchor)
                     {
-                        position++;
+                        if (entry.A is not ((int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd)) return true;
+                        if (!MatchesEndAnchor(input, position, entry)) return false;
+                    }
+                    else
+                    {
+                        if (!Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary)) return true;
+                        if (boundary != (entry.A != 0)) return false;
+                    }
+                    continue;
+                case Utf8SliceInstructionKind.RepeatGreedy:
+                case Utf8SliceInstructionKind.RepeatLazy:
+                    var minimum = entry.RepeatMinimum;
+                    var singleAtom = IsSingleAtomRepeat(code, index - 1, entry);
+                    if (singleAtom && minimum == 0 && entry.RepeatMaximum == 1 &&
+                        GetUnfoldedAsciiRange(code[index], out var optionalLast) is >= 0 and var optionalFirst)
+                    {
+                        var repeatIndex = index - 1;
+                        index = entry.A + 1;
+                        if (position == input.Length) continue;
+                        if (proveMatch)
+                        {
+                            // The complete repeat proof admits one byte before testing it.
+                            if (remaining == 0) return true;
+                            remaining--;
+                        }
+                        if ((uint)(input[position] - optionalFirst) > (uint)(optionalLast - optionalFirst)) continue;
+                        if (proveMatch && program.SkipsTerminalRewind(repeatIndex))
+                        {
+                            position++;
+                            continue;
+                        }
+                        var lazy = proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatLazy;
+                        var preferred = lazy ? position : position + 1;
+                        if (MayMatchBranchedAsciiPrefix(program, input, preferred, index, ref remaining, proveMatch, out acceptedEnd))
+                            return true;
+                        if (lazy) position++;
                         continue;
                     }
-                    var lazy = proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatLazy;
-                    var preferred = lazy ? position : position + 1;
-                    if (MayMatchBranchedAsciiPrefix(program, input, preferred, index, ref remaining, proveMatch, out acceptedEnd))
-                        return true;
-                    if (lazy) position++;
-                    continue;
-                }
-                if (proveMatch && singleAtom &&
-                    TryMatchShortPrefixRepeat(program, input, position, index, entry, ref remaining,
-                        out acceptedEnd, out var continueAt) is { } proof)
-                {
-                    if (continueAt < 0) return proof;
-                    position = continueAt;
+                    if (proveMatch && singleAtom &&
+                        TryMatchShortPrefixRepeat(program, input, position, index, entry, ref remaining,
+                            out acceptedEnd, out var continueAt) is { } proof)
+                    {
+                        if (continueAt < 0) return proof;
+                        position = continueAt;
+                        index = entry.A + 1;
+                        continue;
+                    }
+                    if (minimum == 0) return true;
+                    // A required body always starts here. After a nontrivial loop,
+                    // its end stays unknown. Skip only a proved fixed-width atom.
+                    if (minimum != entry.RepeatMaximum || minimum > remaining || !singleAtom)
+                    {
+                        proveMatch = false;
+                        continue;
+                    }
+                    width = (int)minimum;
+                    remaining -= width;
+                    var atomIndex = index;
                     index = entry.A + 1;
-                    continue;
-                }
-                if (minimum == 0) return true;
-                // A required body always starts here. After a nontrivial loop,
-                // its end stays unknown. Skip only a proved fixed-width atom.
-                if (minimum != entry.RepeatMaximum || minimum > remaining || !singleAtom)
-                {
-                    proveMatch = false;
-                    continue;
-                }
-                width = (int)minimum;
-                remaining -= width;
-                var atomIndex = index;
-                index = entry.A + 1;
-                entry = code[atomIndex];
+                    entry = code[atomIndex];
+                    break;
+                default:
+                    return true;
             }
             if (entry is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && (uint)entry.A < 128)
             {
