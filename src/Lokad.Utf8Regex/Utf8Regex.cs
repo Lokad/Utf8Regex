@@ -1101,7 +1101,13 @@ public sealed partial class Utf8Regex : IDisposable
 
         var replacementPattern = GetParsedReplacement(replacementPatternUtf8, control);
         if (UsesRightToLeft()) ownedProgram = _ownedSliceProgram;
-        return TryReplaceCore(input, ownedProgram, replacementPattern, destination, out bytesWritten, cancellationToken, deadline);
+        if (ownedProgram is null)
+            return TryReplaceCore(input, replacementPattern, destination, out bytesWritten, cancellationToken, deadline);
+
+        var result = OwnedSliceReplace(input, ownedProgram, replacementPattern, Utf8SliceReplacementResultKind.Destination,
+            destination, cancellationToken, deadline);
+        bytesWritten = result.BytesWritten;
+        return result.Status;
     }
 
     /// <summary>Attempts to apply a UTF-8 replacement template to a caller-provided destination, with cancellation during template processing, matching and output.</summary>

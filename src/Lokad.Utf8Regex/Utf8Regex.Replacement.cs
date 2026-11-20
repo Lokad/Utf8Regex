@@ -102,16 +102,9 @@ public sealed partial class Utf8Regex
     }
 
     private OperationStatus TryReplaceCore(
-        ReadOnlySpan<byte> input, Utf8SliceProgram? ownedProgram, Utf8AnalyzedReplacement replacement, Span<byte> destination,
-        out int bytesWritten, CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
+        ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, Span<byte> destination, out int bytesWritten,
+        CancellationToken cancellationToken, Utf8ExecutionDeadline deadline)
     {
-        if (ownedProgram is not null)
-        {
-            var result = OwnedSliceReplace(input, ownedProgram, replacement, Utf8SliceReplacementResultKind.Destination, destination, cancellationToken, deadline);
-            bytesWritten = result.BytesWritten;
-            return result.Status;
-        }
-
         if (TryGetExactLiteralReplacementBytes(replacement, out var exactLiteralReplacementBytes))
         {
             return TryReplaceLiteralBytesCore(
