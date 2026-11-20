@@ -137,6 +137,8 @@ public sealed class Utf8ControlledDecimalBooleanTests
     [InlineData(@"\d{1,2}[0-9]{0,2}?1", "12311!", 0, 4)]
     [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "😀11/18/2019😀", 4, 14)]
     [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "😀𝟙/٢/２０２６!", 4, 24)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "😀𝟙2/18/2019!", 4, 17)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "123/18/2019! 1𝟚/18/2019!", 13, 26)]
     public void ShortDecimalProofPreservesThePreferredWholeRange(string pattern, string text, int start, int end)
     {
         var input = Encoding.UTF8.GetBytes(text);
