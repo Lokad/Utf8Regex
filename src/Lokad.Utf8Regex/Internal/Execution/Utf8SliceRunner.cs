@@ -542,6 +542,7 @@ internal static partial class Utf8SliceRunner
         var directClassLiteral = false;
         var singleWindowAttempt = false;
         var requiredClassSuffix = -1;
+        var verifiedClassLiteralLength = 0;
         var wideInput = input.Length - fromByte >= 256;
         if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
@@ -562,7 +563,13 @@ internal static partial class Utf8SliceRunner
                     if (proofBreach != Utf8ExecutionLimitKind.None)
                         return new(false, -1, -1, null, null, proofBreach);
                     if (singleWindowAttempt)
+                    {
                         requiredClassSuffix = GetRequiredHybridSuffix(program.Instructions, literalIndex + aligned.Length);
+                        if (existenceOnly && !collectHistory && program.GroupCount == 0 &&
+                            leadingClass == 1 && literalIndex == 4 &&
+                            first is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 })
+                            verifiedClassLiteralLength = aligned.Length;
+                    }
                 }
                 // An aligned direct byte is already prepared at short starts,
                 // including the final advances of a cursor over a large input.
@@ -709,8 +716,15 @@ internal static partial class Utf8SliceRunner
                         : new(false, -1, -1, null, null, breach);
                 }
             }
+            // For an initial single-class +, a start strictly before the
+            // aligned delimiter admits at least one complete scalar. The
+            // metered rewind proved the whole run, and the class excludes
+            // the delimiter. Shorter endpoints cannot reach this literal.
+            var verifiedPrefix = verifiedClassLiteralLength != 0 && position < classWindowEnd
+                ? (4 + verifiedClassLiteralLength, classWindowEnd - position + verifiedClassLiteralLength)
+                : default;
             var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds,
-                collectHistory, false, true, ref workspace, ref invocation, existenceOnly);
+                collectHistory, false, true, ref workspace, ref invocation, existenceOnly, verifiedPrefix);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, null, null, outcome.Breach);
             if (outcome.IsMatch)

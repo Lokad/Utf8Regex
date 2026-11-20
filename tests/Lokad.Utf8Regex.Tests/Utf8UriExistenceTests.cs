@@ -36,6 +36,17 @@ public sealed class Utf8UriExistenceTests
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Match("😀x://ab"u8, 1, []).Success);
     }
 
+    [Theory]
+    [InlineData(@"[\w]{2,}://ab", "x://ab", "𐐀y://ab")]
+    [InlineData(@"[\w:]+://ab", "://ab", "x:://ab")]
+    [InlineData(@"(?<scheme>[\w]+)://\k<scheme>", "xy://x", "xy://xy")]
+    public void DelimiterSearchPreservesUnprovedRepeatAndCaptureRequirements(string pattern, string miss, string hit)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(miss)));
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(hit)));
+    }
+
     [Fact]
     public void FiniteExistenceRetainsFundedAdmissionAndScalarSemantics()
     {
