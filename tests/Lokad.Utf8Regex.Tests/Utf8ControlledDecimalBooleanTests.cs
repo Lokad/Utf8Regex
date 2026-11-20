@@ -56,6 +56,17 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Theory]
+    [InlineData("-3.14159", true)]
+    [InlineData("-1234567890123456789012345678901", true)]
+    [InlineData("-3.14x1", false)]
+    public void ShortProvedDecimalRunsKeepTheirEndpointsWithinTheWorkLimit(string text, bool expected)
+    {
+        using var source = new CancellationTokenSource();
+        using var regex = Create(true, 8, 1, 1, 1);
+        Assert.Equal(expected, regex.IsMatch(Encoding.ASCII.GetBytes(text), source.Token));
+    }
+
+    [Theory]
     [InlineData("12/12/2001")]
     [InlineData("1/2/2001\n")]
     [InlineData("12/12/20٠1")]

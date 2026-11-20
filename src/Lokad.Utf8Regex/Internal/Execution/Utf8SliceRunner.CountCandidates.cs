@@ -1156,10 +1156,9 @@ internal static partial class Utf8SliceRunner
             {
                 var minimum = entry.RepeatMinimum;
                 var singleAtom = IsSingleAtomRepeat(code, index - 1, entry);
-                if (proveMatch && singleAtom && entry.RepeatMaximum <= 4 &&
-                    program.TryGetUnfoldedAsciiSet(code[index], out var ascii, out var asciiOnly))
-                    return MayMatchShortPrefixRepeat(program, input, position, index, entry, ascii, asciiOnly,
-                        ref remaining, out acceptedEnd);
+                if (proveMatch && singleAtom &&
+                    TryMatchShortPrefixRepeat(program, input, position, index, entry, ref remaining, out acceptedEnd) is { } proof)
+                    return proof;
                 if (minimum == 0)
                 {
                     if (!singleAtom || entry.RepeatMaximum != 1) return true;
@@ -1208,23 +1207,41 @@ internal static partial class Utf8SliceRunner
     // Keep Boolean-only repeat verification out of the rejection walk used
     // for every viable Count prefix. Every continuation shares its visit allowance.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool MayMatchShortPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
-        int atomIndex, Utf8SliceInstruction repeat, Utf8SearchAsciiSet ascii, bool asciiOnly,
-        ref int remaining, out int acceptedEnd)
+    private static bool? TryMatchShortPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
+        int atomIndex, Utf8SliceInstruction repeat, ref int remaining, out int acceptedEnd)
     {
         acceptedEnd = -1;
+        var atom = program.Instructions[atomIndex];
+        var continuation = repeat.A + 1;
+        if (repeat.RepeatMaximum == long.MaxValue && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+            input.Length - position <= Math.Min(32, remaining) && program.SkipsTerminalRewind(atomIndex - 1) &&
+            IsDecimalDigitSet(program, atom))
+        {
+            // Only a proved greedy endpoint can continue. A wider scalar
+            // may still be a decimal digit and needs the original scalar VM.
+            var suffix = input[position..];
+            var digits = suffix.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            if (digits < 0) digits = suffix.Length;
+            else if (suffix[digits] >= 128) return true;
+            if (digits < repeat.RepeatMinimum) return false;
+            remaining -= Math.Min(suffix.Length, digits + 1);
+            return MayMatchBranchedAsciiPrefix(program, input, position + digits, continuation, ref remaining, true, out acceptedEnd);
+        }
+
+        if (repeat.RepeatMaximum > 4 || !program.TryGetUnfoldedAsciiSet(atom, out var ascii, out var asciiOnly))
+            return null;
+
         var minimum = (int)repeat.RepeatMinimum;
         var maximum = Math.Min(input.Length - position, (int)repeat.RepeatMaximum);
         if (maximum > remaining) return true;
         remaining -= maximum;
-        var continuation = repeat.A + 1;
         var consumed = 0;
         while (consumed < maximum)
         {
             var value = input[position + consumed];
             if (value >= 128 && !asciiOnly)
             {
-                if (minimum != repeat.RepeatMaximum || !IsDecimalDigitSet(program, program.Instructions[atomIndex]))
+                if (minimum != repeat.RepeatMaximum || !IsDecimalDigitSet(program, atom))
                     return true;
 
                 // A fixed decimal repeat has one end. Decode the remaining scalars under the same small bound.
