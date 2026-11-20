@@ -184,8 +184,7 @@ public sealed class Utf8SubstringPreparationQualificationTests
     public void FindAndSearchPlanConstructionCallersShareTheSubstringScanAdmission()
     {
         var literal = "anchor"u8.ToArray();
-        foreach (var build in new Action[] { () => PreparedAsciiFindPlan.CreateLiteral(literal),
-            () => PreparedAsciiFindPlan.CreateFixedDistanceLiteral(literal, 2),
+        foreach (var build in new Action[] { () => PreparedAsciiFindPlan.CreateFixedDistanceLiteral(literal, 2),
             () => Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral,
                 new Utf8SearchFactData { LiteralUtf8 = literal })) })
         {

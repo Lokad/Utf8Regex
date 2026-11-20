@@ -1,37 +1,10 @@
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
-using System.Buffers;
-using System.Linq;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8AsciiFindExecutor
 {
-    public static bool TryFindNextAnchor(
-        ReadOnlySpan<byte> input,
-        PreparedAsciiFindPlan plan,
-        int startIndex,
-        out int anchorIndex,
-        out int matchedLength)
-    {
-        anchorIndex = -1;
-        matchedLength = 0;
-
-        if (!plan.HasValue || (uint)startIndex > (uint)input.Length)
-        {
-            return false;
-        }
-
-        return plan.Mode switch
-        {
-            PreparedAsciiFindMode.Literal
-                => TryFindNextLiteralAnchor(input, plan.LiteralSearch, startIndex, out anchorIndex, out matchedLength),
-            PreparedAsciiFindMode.LiteralFamily
-                => TryFindNextLiteralFamilyAnchor(input, plan.LiteralFamilySearch, startIndex, out anchorIndex, out matchedLength),
-            _ => false,
-        };
-    }
-
     public static bool TryFindNextFixedDistanceCandidate(
         ReadOnlySpan<byte> input,
         PreparedAsciiFindPlan plan,
@@ -80,26 +53,6 @@ internal static class Utf8AsciiFindExecutor
 
         anchorIndex = startIndex + relative;
         matchedLength = literalSearch.Length;
-        return true;
-    }
-
-    private static bool TryFindNextLiteralFamilyAnchor(
-        ReadOnlySpan<byte> input,
-        PreparedLiteralSetSearch literalFamilySearch,
-        int startIndex,
-        out int anchorIndex,
-        out int matchedLength)
-    {
-        anchorIndex = -1;
-        matchedLength = 0;
-
-        if ((uint)startIndex > (uint)input.Length ||
-            !literalFamilySearch.TryFindFirstMatchWithLength(input[startIndex..], out var relativeIndex, out matchedLength))
-        {
-            return false;
-        }
-
-        anchorIndex = startIndex + relativeIndex;
         return true;
     }
 

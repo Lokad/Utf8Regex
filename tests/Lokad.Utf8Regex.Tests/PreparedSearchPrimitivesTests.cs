@@ -589,21 +589,6 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
-    public void PreparedAsciiFindPlanCanFindLiteralFamilyAnchors()
-    {
-        var plan = PreparedAsciiFindPlan.CreateLiteralFamily(
-        [
-            Encoding.UTF8.GetBytes("Watson"),
-            Encoding.UTF8.GetBytes("Holmes"),
-        ]);
-        var input = Encoding.UTF8.GetBytes("Inspect Holmes beside Watson");
-
-        Assert.True(Utf8AsciiFindExecutor.TryFindNextAnchor(input, plan, 0, out var anchorIndex, out var matchedLength));
-        Assert.Equal(8, anchorIndex);
-        Assert.Equal(6, matchedLength);
-    }
-
-    [Fact]
     public void PreparedAsciiFindPlanCanFindFixedDistanceLiteralCandidates()
     {
         var plan = PreparedAsciiFindPlan.CreateFixedDistanceLiteral(Encoding.UTF8.GetBytes("Holmes"), 2);
