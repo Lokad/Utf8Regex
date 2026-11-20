@@ -76,13 +76,13 @@ public sealed partial class Utf8Regex
     // Metered literal operations start their one deadline before input admission.
     // Unlimited operations keep the established specialized kernels. Semantic
     // exclusions match native token enumeration; other profiles retain their VM.
-    private bool TryStartNativeLiteralInvocation(ReadOnlySpan<byte> input, CancellationToken token,
+    private bool TryStartNativeLiteralInvocation(CancellationToken token,
         out Utf8SliceInvocation invocation, bool forCount = false)
     {
         invocation = default;
         // Unmetered Count already owns specialized counters. Trusting input
         // removes their separate validity pass, not their matching algorithm.
-        if ((forCount) &&
+        if (forCount &&
             MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
             return false;
@@ -95,9 +95,8 @@ public sealed partial class Utf8Regex
             _preparedRegex.LiteralUtf8 is { Length: 0 })
             return false;
         // Empty literals use the shared scalar program and its boundary progression.
-        invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        // These roots search caller-valid bytes and publish byte ranges.
-        // Keep bounded entry admission without deriving subject metadata.
+        invocation = Utf8SliceInvocation.CreateExclusive(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
+        // All three callers use the invocation by reference through publication.
         Utf8SliceBufferWork.Checkpoint(ref invocation);
         return true;
     }

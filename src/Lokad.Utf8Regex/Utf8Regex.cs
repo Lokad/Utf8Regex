@@ -318,7 +318,7 @@ public sealed partial class Utf8Regex : IDisposable
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         if (HasFiniteExecutionLimits) return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
-        if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation))
+        if (TryStartNativeLiteralInvocation(cancellationToken, out var invocation))
         {
             var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan, input, 0, input.Length,
                 UsesRightToLeft(), ref invocation, out _, out var found);
@@ -457,7 +457,7 @@ public sealed partial class Utf8Regex : IDisposable
         {
             return invariantCyrillicLiteralCountStrategy.Count(input);
         }
-        if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation, forCount: true))
+        if (TryStartNativeLiteralInvocation(cancellationToken, out var invocation, forCount: true))
         {
             var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
                 input, UsesRightToLeft(), ref invocation, out var count);
@@ -542,7 +542,7 @@ public sealed partial class Utf8Regex : IDisposable
     private int OwnedSliceCountFromByte(
         ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
+        var invocation = Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, token);
         try
         {
             // Count consumes bytes only, without derived coordinate metadata.
@@ -652,7 +652,7 @@ public sealed partial class Utf8Regex : IDisposable
     private Utf8CaptureRange MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         if (HasFiniteExecutionLimits) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
-        if (TryStartNativeLiteralInvocation(input, cancellationToken, out var invocation))
+        if (TryStartNativeLiteralInvocation(cancellationToken, out var invocation))
         {
             var plan = _preparedRegex.SearchPlan;
             var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input, 0, input.Length,
