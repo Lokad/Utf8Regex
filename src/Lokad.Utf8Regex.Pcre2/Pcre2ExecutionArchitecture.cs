@@ -387,7 +387,8 @@ internal readonly struct Pcre2CandidateSearchProgram
     internal Pcre2CandidateSearchKind Kind { get; }
     internal bool RequiresLeadingWordBoundary { get; }
 
-    internal PreparedSearcher Searcher { get; }
+    // Keep searches on the immutable payload instead of returning it by value.
+    internal readonly PreparedSearcher Searcher;
 
     internal Pcre2CharacterToken[] LeadingRunTokens { get; }
 
