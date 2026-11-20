@@ -450,8 +450,18 @@ internal static partial class Utf8SliceRunner
                 if (repeatIndex < floor) break;
                 var repeat = code[repeatIndex];
                 if (repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) ||
-                    !IsSingleAtomRepeat(code, repeatIndex, repeat) ||
-                    !program.TryGetUnfoldedAsciiSet(code[repeatIndex + 1], out var atom, out var asciiOnly)) break;
+                    !IsSingleAtomRepeat(code, repeatIndex, repeat)) break;
+                var instruction = code[repeatIndex + 1];
+                Utf8SearchAsciiSet atom;
+                bool asciiOnly;
+                if (instruction is { Kind: Utf8SliceInstructionKind.Dot, A: 0 })
+                {
+                    // A dot consumes every scalar except LF. Only an ASCII-only
+                    // suffix can prove that it excludes all of those scalars.
+                    atom = Utf8SearchAsciiSet.FromMasks(ulong.MaxValue & ~(1UL << '\n'), ulong.MaxValue);
+                    asciiOnly = false;
+                }
+                else if (!program.TryGetUnfoldedAsciiSet(instruction, out atom, out asciiOnly)) break;
                 budget.ChargeWork(3);
                 if (wordBoundary)
                 {
