@@ -21,8 +21,6 @@ internal static partial class Utf8SliceRunner
         {
             switch (instruction.Kind)
             {
-                case Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary:
-                    return [];
                 case Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
                     Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or Utf8SliceInstructionKind.Fail:
                     break;
@@ -70,13 +68,28 @@ internal static partial class Utf8SliceRunner
     internal static (byte First, byte Second, byte Third, bool Present) GetOrderedRegularStartBytes(
         Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
+        // For a necessary start set, assume every zero-width condition holds.
+        // An empty acceptance disqualifies skipping bytes altogether.
+        ulong reachable = 1;
+        var order = program.NonBacktrackingEpsilonOrder;
+        for (var index = order.Length - 1; index >= 0; index--)
+        {
+            budget.ChargeWork(1);
+            var pc = order[index];
+            if ((program.NonBacktrackingEpsilonAncestors[pc] & reachable) != 0)
+                reachable |= 1UL << (pc + 1);
+        }
+        if ((program.NonBacktrackingAcceptClosure & reachable) != 0) return default;
+
         Span<byte> starts = stackalloc byte[3];
         var count = 0;
         var behavior = program.CaseBehavior;
-        for (var tags = program.NonBacktrackingOrderedClosures[0]; tags != 0; tags >>= OrderedTagBits)
+        for (var candidates = program.NonBacktrackingConsumerMask; candidates != 0; candidates &= candidates - 1)
         {
             budget.ChargeWork(1);
-            var instruction = program.Instructions[(int)tags & 63];
+            var pc = BitOperations.TrailingZeroCount(candidates);
+            if ((program.NonBacktrackingEpsilonAncestors[pc] & reachable) == 0) continue;
+            var instruction = program.Instructions[pc];
             if (instruction.Kind == Utf8SliceInstructionKind.Literal)
             {
                 if (!Rune.TryCreate(instruction.A, out var literal) ||
@@ -155,6 +168,8 @@ internal static partial class Utf8SliceRunner
             table.Clear();
             var closures = program.NonBacktrackingOrderedClosures;
             var starts = input.Length - fromByte >= 64 ? program.NonBacktrackingOrderedStartBytes : default;
+            ulong conditionMask = 0;
+            foreach (var pc in program.NonBacktrackingEpsilonOrder) conditionMask |= 1UL << pc;
             var current = new OrderedRegularFrontier();
             var bestStart = -1;
             var bestEnd = -1;
@@ -174,6 +189,25 @@ internal static partial class Utf8SliceRunner
                 if (bestStart < 0)
                     for (var tags = closures[0]; tags != 0; tags >>= OrderedTagBits)
                         if (current.TryAppend(tags & OrderedTagMask)) origins[current.Count - 1] = position;
+
+                if ((current.Seen & conditionMask) != 0)
+                {
+                    // Resolve conditions before using the cache. Consumption
+                    // then depends only on the expanded order and the scalar.
+                    var expanded = new OrderedRegularFrontier();
+                    ulong seenConditions = 0;
+                    var source = 0;
+                    for (var tags = current.Order; tags != 0; tags >>= OrderedTagBits, source++)
+                    {
+                        breach = AddOrderedConditionLeaves(program, input, position, tags & OrderedTagMask,
+                            origins[source], nextOrigins, ref expanded, ref seenConditions, ref invocation);
+                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                    }
+                    var unexpanded = origins;
+                    origins = nextOrigins;
+                    nextOrigins = unexpanded;
+                    current = expanded;
+                }
 
                 var hasScalar = TryReadScalar(input, position, false, out var scalar, out var width);
                 var value = hasScalar ? scalar.Value : -1;
@@ -235,6 +269,38 @@ internal static partial class Utf8SliceRunner
         finally { invocation.Ledger.Release(reserved); }
     }
 
+    private static Utf8ExecutionLimitKind AddOrderedConditionLeaves(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, ulong tag, int start, Span<int> origins,
+        ref OrderedRegularFrontier frontier, ref ulong seenConditions, ref Utf8SliceInvocation invocation)
+    {
+        var pc = (int)tag & 63;
+        ref readonly var instruction = ref program.Instructions[pc];
+        if (instruction.Kind is not (Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary))
+        {
+            if (frontier.TryAppend(tag)) origins[frontier.Count - 1] = start;
+            return Utf8ExecutionLimitKind.None;
+        }
+        var bit = 1UL << pc;
+        if ((seenConditions & bit) != 0) return Utf8ExecutionLimitKind.None;
+        seenConditions |= bit;
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        var holds = instruction.Kind == Utf8SliceInstructionKind.Anchor
+            ? HoldsNonBacktrackingAnchor(instruction, input, position)
+            : MatchesBoundary(program, instruction, input, position);
+        if (!holds) return Utf8ExecutionLimitKind.None;
+
+        // Epsilon lowering excludes cycles. The first arrival has priority
+        // even when another start reaches the same condition at this edge.
+        for (var tags = program.NonBacktrackingOrderedClosures[pc + 1]; tags != 0; tags >>= OrderedTagBits)
+        {
+            breach = AddOrderedConditionLeaves(program, input, position, tags & OrderedTagMask,
+                start, origins, ref frontier, ref seenConditions, ref invocation);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+        }
+        return Utf8ExecutionLimitKind.None;
+    }
+
     internal static bool IsRegularStartByte(byte value, (byte First, byte Second, byte Third, bool Present) starts)
         => value == starts.First || value == starts.Second || value == starts.Third;
 
@@ -262,9 +328,9 @@ internal static partial class Utf8SliceRunner
         if (selected.EndByte - selected.StartByte <= 32)
             return Utf8NonBacktrackingSearchState.ReplayCompactRange(program, input, selected, slots, ref invocation);
 
-        // Unconditional edges make replay independent of the suffix. Clipping
-        // after the winning end removes only continuations that lost to it.
-        var replay = TryMatchAt(program, input[..selected.EndByte], selected.StartByte,
+        // Anchors and boundaries can read beyond the winning end.
+        var subject = program.NonBacktrackingEpsilonOrder.Length == 0 ? input[..selected.EndByte] : input;
+        var replay = TryMatchAt(program, subject, selected.StartByte,
             slots.Starts, slots.Ends, true, ref invocation);
         if (replay.Breach != Utf8ExecutionLimitKind.None)
             return new(false, -1, -1, null, null, replay.Breach);

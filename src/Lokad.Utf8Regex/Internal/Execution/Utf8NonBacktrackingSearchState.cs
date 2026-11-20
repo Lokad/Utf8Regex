@@ -398,7 +398,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                     finally { if (window is null) invocation.Ledger.Release(bytes); }
                 }
                 var end = AlignedEnd(input, startEnd, lookahead);
-                var build = BuildUnconditionalPackedRows(program, input, position, end, window._boundaries,
+                var build = BuildPackedRangeRows(program, input, position, end, window._boundaries,
                     window._viability, ref invocation, out boundary);
                 if (build != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, build);
                 window._windowEnd = commit;
@@ -439,7 +439,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             Span<int> openings = stackalloc int[openingCount];
             openings.Clear();
 
-            breach = BuildUnconditionalPackedRows(program, input, from, end, boundaries, rows, ref invocation,
+            breach = BuildPackedRangeRows(program, input, from, end, boundaries, rows, ref invocation,
                 out var boundary);
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
 
@@ -464,23 +464,32 @@ internal sealed class Utf8NonBacktrackingSearchState
         }
     }
 
-    private static Utf8ExecutionLimitKind BuildUnconditionalPackedRows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+    private static Utf8ExecutionLimitKind BuildPackedRangeRows(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int from, int end, Span<int> boundaries, Span<ulong> rows, ref Utf8SliceInvocation invocation, out int boundary)
     {
         // Fill backwards from the end so occupied rows are contiguous even
         // when some positions within the byte capacity are not scalar edges.
         boundary = boundaries.Length - 1;
         var scalar = default(Rune);
+        var hasConditions = program.NonBacktrackingEpsilonOrder.Length != 0;
+        // Conditions use their neighbors in the original subject. The final
+        // row still has no consuming continuation out of the selected range.
+        if (hasConditions && end < input.Length)
+            _ = Rune.DecodeFromUtf8(input[end..], out scalar, out _);
         var following = 0UL;
         for (var edge = end; ; boundary--)
         {
             boundaries[boundary] = edge;
-            var breach = TryBuildPackedRow(program, input, edge, scalar, default, following, ref invocation, out var row);
+            var width = 0;
+            var before = default(Rune);
+            if (edge > from || hasConditions && edge > 0)
+                _ = Rune.DecodeLastFromUtf8(input[..edge], out before, out width);
+            var breach = TryBuildPackedRow(program, input, edge, scalar, before, following, ref invocation, out var row);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             rows[boundary] = row;
             if (edge == from) return Utf8ExecutionLimitKind.None;
-            _ = Rune.DecodeLastFromUtf8(input[from..edge], out scalar, out var width);
             edge -= width;
+            scalar = before;
             following = row;
         }
     }

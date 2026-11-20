@@ -10,7 +10,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
     [InlineData(false)] [InlineData(true)]
     public void WorkspacePeakIncludesEveryCompleteStateVector(bool captured)
     {
-        var regex = new Utf8Regex(captured ? "(?<x>.)+b" : "^.+b", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(captured ? "(?<x>.)+b" : "^.{10}b", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
         var states = program.Instructions.Length;
         var registers = 2 * program.GroupCount + program.NonBacktrackingCaptureOpeningCount;
@@ -19,10 +19,11 @@ public sealed class Utf8ScalarNonBacktrackingTests
             + 2 * Extent(registers, 4) + Extent(states, 1);
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
-        var outcome = Utf8SliceRunner.TryFindFirst(program, "😀😀b"u8, 0,
+        var input = captured ? "😀😀b"u8 : "😀abcdefghib"u8;
+        var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0,
             new int[program.GroupCount], new int[program.GroupCount], false, ref invocation);
         Assert.True(outcome.Found);
-        Assert.Equal((0, 9), (outcome.StartByte, outcome.EndByte));
+        Assert.Equal((0, input.Length), (outcome.StartByte, outcome.EndByte));
         Assert.Equal(expected + 13, invocation.Budget.PeakWorkingBytes);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
     }
@@ -40,6 +41,36 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.Equal((4, expectedEnd), (range.StartOffsetInBytes, range.EndOffsetInBytes));
         Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
         Assert.Equal(range, regex.Match(input, 4, captures, endOffsetInBytes: 7));
+    }
+
+    [Theory]
+    [InlineData(4, false, false)]
+    [InlineData(4, true, false)]
+    [InlineData(4, false, true)]
+    [InlineData(40, false, true)]
+    public void OrderedCaptureReplayUsesOriginalWordNeighbors(int length, bool wordBefore, bool wordAfter)
+    {
+        const string pattern = @"\b([ab]+)\b|([ab]+)";
+        var prefix = wordBefore ? "é" : "!";
+        var subject = prefix + new string('a', length) + (wordAfter ? "é" : "!") + new string('!', 80);
+        var input = Encoding.UTF8.GetBytes(subject);
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var expected = new Utf8CaptureRange(start, start + length);
+        var group = wordBefore || wordAfter ? 2 : 1;
+        using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+        Assert.NotEmpty(regex.Inspection.AvailableOwnedSliceProgram!.NonBacktrackingOrderedClosures);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[3];
+        Assert.Equal(expected, regex.Match(input, start, captures));
+        Assert.Equal(expected, captures[group]);
+        Assert.False(captures[3 - group].Success);
+
+        using var cursor = regex.CreateMatchCursor(input, startOffsetInBytes: start);
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.Equal(expected, first.Value);
+        Assert.True(first.TryGetGroup(group, out var found));
+        Assert.Equal(expected, found);
+        Assert.False(first.TryGetGroup(3 - group, out var unmatched) && unmatched.Success);
+        Assert.False(cursor.MoveNext(out _));
     }
 
     [Theory]
