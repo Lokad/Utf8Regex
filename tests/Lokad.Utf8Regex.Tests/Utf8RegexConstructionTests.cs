@@ -1418,8 +1418,9 @@ public sealed class Utf8RegexConstructionTests
             count = CountSplitValues(regex, bytes);
         }
 
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.Equal(193, count);
-        Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0, 512);
+        Assert.InRange(allocated, 0, 512);
     }
 
     [Theory]
