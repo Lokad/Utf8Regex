@@ -154,13 +154,17 @@ internal static partial class Utf8SliceRunner
 
     internal static Utf8ExecutionLimitKind TryRentSlots(int groups, ref Utf8SliceInvocation invocation, out Utf8SliceSlots slots)
     {
-        slots = default;
         if (groups == 0)
         {
             slots = new Utf8SliceSlots(Array.Empty<int>(), Array.Empty<int>());
             return Utf8ExecutionLimitKind.None;
         }
+        return TryRentNonemptySlots(groups, ref invocation, out slots);
+    }
 
+    private static Utf8ExecutionLimitKind TryRentNonemptySlots(int groups, ref Utf8SliceInvocation invocation, out Utf8SliceSlots slots)
+    {
+        slots = default;
         var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(groups) * 2);
         var breach = invocation.TryReserveWorking(bytes);
         if (breach != Utf8ExecutionLimitKind.None)
