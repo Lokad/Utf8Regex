@@ -340,6 +340,9 @@ Sticky denials remain in effect across copies of a span enumerator.
 Active subroutine calls and pending retries share admitted call records. A
 retry retains the call state it can restore. Returning from a call or cutting
 retries releases the unused record slots for reuse within the invocation.
+Whole-value scalar search borrows the original invocation. It only admits
+capture slots when matching reads them. Calls that return captures still
+admit the required capture state and result storage.
 
 ### Program and working allowances
 

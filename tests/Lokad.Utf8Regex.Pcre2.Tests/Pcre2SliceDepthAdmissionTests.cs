@@ -3,8 +3,8 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2SliceDepthAdmissionTests
 {
     private static Utf8Pcre2Regex Create(uint depth)
-        // Captures inside the repeats keep actual continuation frames live.
-        => new("(😀)+(é)+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        // Two-scalar iterations retain distinct retries even without observed captures.
+        => new("(😀x)+(éy)+", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -22,8 +22,8 @@ public sealed class Pcre2SliceDepthAdmissionTests
     {
         var exact = Create(4); var denied = Create(3);
         Assert.IsType<Pcre2SliceDirectProgram>(exact.DebugCompiledProgram.Operations.Count);
-        var input = "😀😀😀éé"u8.ToArray();
-        Assert.Equal(operation == 3 ? "é😀" : "1", Run(exact, input, operation));
+        var input = "😀x😀x😀xéyéy"u8.ToArray();
+        Assert.Equal(operation == 3 ? "éy😀x" : "1", Run(exact, input, operation));
         var failure = Assert.Throws<Pcre2MatchException>(() => Run(denied, input, operation));
         Assert.Equal(Pcre2ErrorKind.DepthLimit, failure.ErrorKind);
         Assert.Equal("1", Run(Create(4), input, 0));
@@ -42,7 +42,7 @@ public sealed class Pcre2SliceDepthAdmissionTests
         var count = 0;
         var matches = regex.EnumerateMatches(input);
         while (matches.MoveNext())
-        { Assert.Equal("😀😀😀éé", System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes())); count++; }
+        { Assert.Equal("😀x😀x😀xéyéy", System.Text.Encoding.UTF8.GetString(matches.Current.GetValueBytes())); count++; }
         return count;
     }
 }

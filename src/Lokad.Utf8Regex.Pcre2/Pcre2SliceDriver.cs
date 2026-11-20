@@ -22,7 +22,7 @@ namespace Lokad.Utf8Regex.Pcre2;
 // in a finally block, so an abandoned cursor retains no ledger reservations.
 // Global progression mirrors the census driver: PCRE2 same-position
 // non-empty retry on empty matches, scalar advance otherwise, byte steps
-// on misses. IsMatch, first-match, and Count all ride this stepping loop.
+// on misses. One-shot search borrows the same candidate scan.
 internal ref struct Pcre2SliceGlobalMatchCursor
 {
     private readonly Utf8SliceProgram _program;
@@ -32,7 +32,6 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     private int _position;
     private bool _retryPending;
     private int _retryPosition;
-    private readonly byte? _leadingAsciiByte;
 
     internal Pcre2SliceGlobalMatchCursor(
         Utf8SliceProgram program,
@@ -40,7 +39,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2CompileRequest request,
         CancellationToken cancellationToken)
-        : this(program, Pcre2SliceDriver.CreateInvocation(request, cancellationToken), input, start, request, null)
+        : this(program, Pcre2SliceDriver.CreateInvocation(request, cancellationToken), input, start, request)
     {
     }
 
@@ -51,8 +50,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         Utf8SliceInvocation invocation,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
-        Pcre2CompileRequest request,
-        byte? leadingAsciiByte)
+        Pcre2CompileRequest request)
     {
         _program = program;
         _input = input;
@@ -61,8 +59,6 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         _position = start.Value;
         _retryPending = false;
         _retryPosition = start.Value;
-        _leadingAsciiByte = !program.CanMatchEmpty && !program.HasContiguousAnchor &&
-            (request.Options & Pcre2CompileOptions.Anchored) == 0 ? leadingAsciiByte : null;
         Current = Pcre2CharacterMatch.NoMatch;
     }
 
@@ -151,82 +147,38 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         try
         {
             var bytes = _input.Bytes;
-            while (true)
+            if (_retryPending)
             {
-                if (_retryPending)
+                _retryPending = false;
+                var retry = Utf8SliceRunner.TryMatchAt(
+                    _program, bytes, _retryPosition, slots.Starts, slots.Ends,
+                    false, true, Pcre2SliceDriver.IsScalarAligned(bytes, _retryPosition),
+                    ref workspace, ref _invocation);
+                Pcre2SliceDriver.ThrowIfSliceBreached(retry.Breach);
+                if (retry.IsMatch)
                 {
-                    _retryPending = false;
-                    var retry = Utf8SliceRunner.TryMatchAt(
-                        _program,
-                        bytes,
-                        _retryPosition,
-                        slots.Starts,
-                        slots.Ends,
-                        false,
-                        true,
-                        Pcre2SliceDriver.IsScalarAligned(bytes, _retryPosition),
-                        ref workspace,
-                        ref _invocation);
-                    Pcre2SliceDriver.ThrowIfSliceBreached(retry.Breach);
-                    if (retry.IsMatch)
-                    {
-                        Current = Pcre2CharacterMatch.Create(
-                            _retryPosition, retry.EndIndex);
-                        _position = retry.EndIndex;
-                        return true;
-                    }
-
-                    if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
-                            ref _input,
-                            _request, Pcre2MatchOptions.None, new Utf8BytePosition(_retryPosition),
-                            out var advanced))
-                    {
-                        return false;
-                    }
-
-                    _position = advanced.Value;
-                }
-
-                while (_position <= bytes.Length)
-                {
-                    if (_leadingAsciiByte is { } leading && _position < bytes.Length &&
-                        bytes[_position] != leading && !SeekLeadingAsciiByte(bytes, leading))
-                        return false;
-                    var outcome = Utf8SliceRunner.TryMatchAt(
-                        _program,
-                        bytes,
-                        _position,
-                        slots.Starts,
-                        slots.Ends,
-                        false,
-                        false,
-                        Pcre2SliceDriver.IsScalarAligned(bytes, _position),
-                        ref workspace,
-                        ref _invocation);
-                    Pcre2SliceDriver.ThrowIfSliceBreached(outcome.Breach);
-                    if (!outcome.IsMatch)
-                    {
-                        _position++;
-                        continue;
-                    }
-
-                    Current = Pcre2CharacterMatch.Create(
-                        _position, outcome.EndIndex);
-                    if (outcome.EndIndex == _position)
-                    {
-                        _retryPending = true;
-                        _retryPosition = _position;
-                    }
-                    else
-                    {
-                        _position = outcome.EndIndex;
-                    }
-
+                    Current = Pcre2CharacterMatch.Create(_retryPosition, retry.EndIndex);
+                    _position = retry.EndIndex;
                     return true;
                 }
 
-                return false;
+                if (!Pcre2GlobalCursorMovement.TryAdvanceAfterEmpty(
+                        ref _input, _request, Pcre2MatchOptions.None, new Utf8BytePosition(_retryPosition), out var advanced))
+                    return false;
+                _position = advanced.Value;
             }
+
+            var end = Pcre2SliceDriver.FindMatchingEnd(_program, bytes, ref _position, null, slots,
+                ref workspace, ref _invocation);
+            if (end < 0) return false;
+            Current = Pcre2CharacterMatch.Create(_position, end);
+            if (end == _position)
+            {
+                _retryPending = true;
+                _retryPosition = _position;
+            }
+            else _position = end;
+            return true;
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
@@ -241,20 +193,6 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         }
     }
 
-    // This compiler proof is a necessary first byte, never a successful match.
-    // Keep the original invocation and admit every bounded scan, including unlimited calls.
-    private bool SeekLeadingAsciiByte(ReadOnlySpan<byte> bytes, byte leading)
-    {
-        while (_position < bytes.Length)
-        {
-            Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.TryChargeInputStep());
-            var length = Math.Min(2048, bytes.Length - _position);
-            var found = bytes.Slice(_position, length).IndexOf(leading);
-            if (found >= 0) { _position += found; return true; }
-            _position += length;
-        }
-        return false;
-    }
 }
 
 internal static class Pcre2SliceDriver
@@ -292,29 +230,67 @@ internal static class Pcre2SliceDriver
         return !found;
     }
 
-    internal static bool IsMatch(
-        Utf8SliceProgram program,
-        byte? leadingAsciiByte,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2CompileRequest request,
-        scoped ref Utf8SliceInvocation invocation)
-    {
-        var cursor = new Pcre2SliceGlobalMatchCursor(
-            program, invocation, input, start, request, leadingAsciiByte);
-        return cursor.MoveNext();
-    }
-
     internal static Pcre2CharacterMatch FindFirst(
         Utf8SliceProgram program,
-        ref Utf8ValidatedInput input,
-        Utf8BytePosition start,
-        Pcre2CompileRequest request,
+        ReadOnlySpan<byte> input,
+        int start,
+        scoped ref Utf8SliceInvocation invocation,
+        byte? leadingAsciiByte = null)
+    {
+        CheckInvocation(ref invocation);
+        // Only matching dependencies can observe slots in a whole-value search.
+        var slots = program.ReadsCaptures ? RentProgramSlots(program, ref invocation) : new Utf8SliceSlots([], []);
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        var position = start;
+        invocation.AnchorOriginByte = start;
+        if (program.CanMatchEmpty || program.HasContiguousAnchor) leadingAsciiByte = null;
+        int end;
+        try { end = FindMatchingEnd(program, input, ref position, leadingAsciiByte, slots, ref workspace, ref invocation); }
+        catch (Utf8ExecutionDeadlineExpiredException)
+        {
+            throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
+        }
+        finally
+        {
+            try { workspace.Release(ref invocation); }
+            finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
+        }
+        CheckInvocation(ref invocation);
+        return end < 0 ? Pcre2CharacterMatch.NoMatch : Pcre2CharacterMatch.Create(position, end);
+    }
+
+    internal static int FindMatchingEnd(Utf8SliceProgram program, ReadOnlySpan<byte> input, ref int position,
+        byte? leadingAsciiByte, Utf8SliceSlots slots, scoped ref Utf8SliceRunner.AttemptWorkspace workspace,
         scoped ref Utf8SliceInvocation invocation)
     {
-        var cursor = new Pcre2SliceGlobalMatchCursor(
-            program, invocation, input, start, request, null);
-        return cursor.MoveNext() ? cursor.Current : Pcre2CharacterMatch.NoMatch;
+        while (position <= input.Length)
+        {
+            if (leadingAsciiByte is { } leading && position < input.Length &&
+                input[position] != leading && !SeekLeadingAsciiByte(input, leading, ref position, ref invocation))
+                return -1;
+            var outcome = Utf8SliceRunner.TryMatchAt(program, input, position, slots.Starts, slots.Ends,
+                false, false, IsScalarAligned(input, position), ref workspace, ref invocation);
+            ThrowIfSliceBreached(outcome.Breach);
+            if (outcome.IsMatch) return outcome.EndIndex;
+            position++;
+        }
+        return -1;
+    }
+
+    private static bool SeekLeadingAsciiByte(ReadOnlySpan<byte> bytes, byte leading, ref int position,
+        scoped ref Utf8SliceInvocation invocation)
+    {
+        // This compiler proof is a necessary first byte. Every bounded scan
+        // spends work under the original invocation before reading its block.
+        while (position < bytes.Length)
+        {
+            ThrowIfSliceBreached(invocation.TryChargeInputStep());
+            var length = Math.Min(2048, bytes.Length - position);
+            var found = bytes.Slice(position, length).IndexOf(leading);
+            if (found >= 0) { position += found; return true; }
+            position += length;
+        }
+        return false;
     }
 
     internal static int Count(
@@ -335,7 +311,7 @@ internal static class Pcre2SliceDriver
         }
 
         var cursor = new Pcre2SliceGlobalMatchCursor(
-            program, invocation, input, start, request, null);
+            program, invocation, input, start, request);
         var count = 0;
         while (cursor.MoveNext())
         {

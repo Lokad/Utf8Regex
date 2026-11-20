@@ -38,8 +38,8 @@ public sealed class Pcre2ProfileResourceTests
     [Fact]
     public void CapturedExecutionFramesEnforceDepthBeforeAcquisition()
     {
-        const string pattern = @"(?<open>A)+B+";
-        Assert.True(new Utf8Pcre2Regex(pattern).IsMatch("AAB"u8));
+        const string pattern = @"(?<open>AA)+B+";
+        Assert.True(new Utf8Pcre2Regex(pattern).IsMatch("AAAAB"u8));
         var limited = new Utf8Pcre2Regex(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
@@ -48,7 +48,7 @@ public sealed class Pcre2ProfileResourceTests
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        Assert.Equal(Pcre2ErrorKind.DepthLimit, Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("AAB"u8)).ErrorKind);
+        Assert.Equal(Pcre2ErrorKind.DepthLimit, Assert.Throws<Pcre2MatchException>(() => limited.IsMatch("AAAAB"u8)).ErrorKind);
     }
 
     [Theory]

@@ -1528,13 +1528,10 @@ internal static partial class Pcre2Runner
                 return true;
             }
 
-            result = Pcre2SliceDriver.IsMatch(
-                sliceProgram.SliceProgram,
-                sliceProgram.Fallback.LeadingAsciiByte,
-                ref input,
-                start,
-                compiledProgram.Request,
-                ref invocation);
+            var leadingAsciiByte = (compiledProgram.Request.Options & Pcre2CompileOptions.Anchored) != 0
+                ? null : sliceProgram.Fallback.LeadingAsciiByte;
+            result = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input.Bytes, start.Value,
+                ref invocation, leadingAsciiByte).Success;
             return true;
         }
 
@@ -1569,11 +1566,7 @@ internal static partial class Pcre2Runner
             }
             else
             {
-                directMatch = Pcre2SliceDriver.FindFirst(
-                    sliceProgram.SliceProgram,
-                    ref input,
-                    start,
-                    compiledProgram.Request,
+                directMatch = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input.Bytes, start.Value,
                     ref invocation);
                 invocation.CheckpointHook = null;
             }

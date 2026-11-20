@@ -428,7 +428,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                     invocation,
                     input,
                     start,
-                    _program.Request, null));
+                    _program.Request));
         }
 
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Slice)
@@ -1113,7 +1113,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         Pcre2ReplacementResultKind kind, Span<byte> destination,
         Pcre2ReplacementPreparation? prepared)
     {
-        var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram, invocation, validated, start, _program.Request, null);
+        var cursor = new Pcre2SliceGlobalMatchCursor(sliceProgram, invocation, validated, start, _program.Request);
         if (!cursor.MoveNext())
         {
             if ((options & Pcre2SubstitutionOptions.SubstituteReplacementOnly) != 0) return new([]);

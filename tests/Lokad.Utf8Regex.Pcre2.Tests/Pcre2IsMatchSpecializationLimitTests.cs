@@ -59,15 +59,28 @@ public sealed class Pcre2IsMatchSpecializationLimitTests
 
     [Theory]
     [InlineData("^((.)(?1)\\2|.?)$", Pcre2CompileOptions.None, "abccba")]
-    [InlineData(".*(ss)", Pcre2CompileOptions.None, "xxss")]
     [InlineData("(\\d{4}[- ]){3}\\d{3,4}[0-9]\\z", Pcre2CompileOptions.None, "4111-1111-1111-1111")]
     [InlineData("^[+-]?[+-]?[+-]?\\d*$", Pcre2CompileOptions.None, "++12")]
-    [InlineData("^([0-9]+)(\\-| |$)(.*)$", Pcre2CompileOptions.None, "200 ok")]
     public void AllocatingSearchBreachesHeap(string pattern, Pcre2CompileOptions options, string inputText)
     {
         var input = Encoding.UTF8.GetBytes(inputText);
         Assert.True(Create(pattern, options, default).IsMatch(input));
         var exception = Assert.Throws<Pcre2MatchException>(() => Create(pattern, options, new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 }).IsMatch(input));
         Assert.Equal(Pcre2ErrorKind.HeapLimit, exception.ErrorKind);
+    }
+
+    [Theory]
+    [InlineData("(a)b+", "ab abb abbb x ab")]
+    [InlineData(".*(ss)", "xxss")]
+    [InlineData(@"^([0-9]+)(\-| |$)(.*)$", "200 ok")]
+    public void WholeValueSearchOmitsUnobservedCaptureSlots(string pattern, string inputText)
+    {
+        using var regex = Create(pattern, Pcre2CompileOptions.None, new() { HeapLimitInBytes = 1 });
+        var input = Encoding.UTF8.GetBytes(inputText);
+        Assert.True(regex.IsMatch(input));
+        Assert.True(regex.Match(input).Success);
+        var captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        Assert.Equal(Pcre2ErrorKind.HeapLimit,
+            Assert.Throws<Pcre2MatchException>(() => regex.Match(input, captures: captures)).ErrorKind);
     }
 }

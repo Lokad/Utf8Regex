@@ -68,10 +68,11 @@ public sealed class Pcre2LeadingSetCountTests
     }
 
     [Theory]
-    [InlineData("(a+)(b)", 'x', "aaab", true)]
-    [InlineData("[a-z]+@[a-z]+", 'a', "foo@bar", false)]
-    [InlineData(@"[^a]+\.[^z]+", 'b', "ébc.😀tail", true)]
-    public void ImpossibleSubjectsNeedNoVmScratchWhileRealAttemptsStillAdmitIt(string pattern, char filler, string hit, bool needsStorage)
+    [InlineData("(a+)(b)", 'x', "aaab", true, false)]
+    [InlineData("[a-z]+@[a-z]+", 'a', "foo@bar", false, false)]
+    [InlineData(@"[^a]+\.[^z]+", 'b', "ébc.😀tail", true, true)]
+    public void ImpossibleSubjectsNeedNoVmScratchWhileRealAttemptsStillAdmitIt(
+        string pattern, char filler, string hit, bool countNeedsStorage, bool matchNeedsStorage)
     {
         var regex = Create(pattern, working: 1, result: 1);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
@@ -84,7 +85,7 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.True(invocation.Budget.Steps > validation);
         Assert.Equal(0UL, invocation.Budget.PeakWorkingBytes);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        if (needsStorage)
+        if (countNeedsStorage)
             Assert.Equal(Pcre2ErrorKind.HeapLimit,
                 Assert.Throws<Pcre2MatchException>(() => regex.Count(Encoding.UTF8.GetBytes(hit))).ErrorKind);
         else Assert.Equal(1, regex.Count(Encoding.UTF8.GetBytes(hit)));
@@ -100,7 +101,7 @@ public sealed class Pcre2LeadingSetCountTests
         Assert.Equal(0UL, matchInvocation.Budget.PeakWorkingBytes);
         Assert.Equal(0UL, matchInvocation.Ledger.ReservedBytes);
         Assert.False(regex.IsMatch(bytes));
-        if (needsStorage)
+        if (matchNeedsStorage)
             Assert.Equal(Pcre2ErrorKind.HeapLimit,
                 Assert.Throws<Pcre2MatchException>(() => regex.IsMatch(Encoding.UTF8.GetBytes(hit))).ErrorKind);
         else Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(hit)));

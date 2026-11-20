@@ -1,7 +1,6 @@
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
@@ -28,20 +27,18 @@ public sealed class Pcre2SliceLeadingByteTests
     {
         var regex = new Utf8Pcre2Regex(Pattern);
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(new string('x', 2048)));
+        var input = Encoding.UTF8.GetBytes(new string('x', 2048));
         using var live = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, live.Token);
-        invocation.ShareStorageForCursor(); Assert.True(invocation.Ledger.TryReserve(13));
+        Assert.True(invocation.Ledger.TryReserve(13));
         for (var i = 0; i < 63; i++) _ = invocation.TryChargeStep();
         invocation.CheckpointHook = _ => live.Cancel();
-        var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, invocation, input,
-            new(0), regex.DebugCompiledProgram.Request, direct.Fallback.LeadingAsciiByte);
         OperationCanceledException? failure = null;
-        try { _ = cursor.MoveNext(); } catch (OperationCanceledException error) { failure = error; }
+        try { _ = Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, ref invocation, direct.Fallback.LeadingAsciiByte); }
+        catch (OperationCanceledException error) { failure = error; }
         Assert.Equal(live.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Equal(64UL, invocation.Budget.Steps);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        Assert.False(cursor.Current.Success);
     }
 
     [Theory]
@@ -53,21 +50,18 @@ public sealed class Pcre2SliceLeadingByteTests
     {
         var regex = new Utf8Pcre2Regex(Pattern);
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(new string('x', length)));
+        var input = Encoding.UTF8.GetBytes(new string('x', length));
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        invocation.ShareStorageForCursor(); Assert.True(invocation.Ledger.TryReserve(13));
-        var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, invocation, input,
-            new(0), regex.DebugCompiledProgram.Request, direct.Fallback.LeadingAsciiByte);
-        Assert.False(cursor.MoveNext());
+        Assert.True(invocation.Ledger.TryReserve(13));
+        Assert.False(Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, ref invocation, direct.Fallback.LeadingAsciiByte).Success);
         Assert.Equal((ulong)(length + 2047) / 2048, invocation.Budget.Steps);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         if (length <= 2048) return;
         var limited = new Utf8SliceInvocation(new(1, 0, 0), Timeout.InfiniteTimeSpan, default);
-        limited.ShareStorageForCursor(); Assert.True(limited.Ledger.TryReserve(13));
-        var denied = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, limited, input,
-            new(0), regex.DebugCompiledProgram.Request, direct.Fallback.LeadingAsciiByte);
+        Assert.True(limited.Ledger.TryReserve(13));
         Pcre2MatchException? error = null;
-        try { _ = denied.MoveNext(); } catch (Pcre2MatchException failure) { error = failure; }
+        try { _ = Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, ref limited, direct.Fallback.LeadingAsciiByte); }
+        catch (Pcre2MatchException failure) { error = failure; }
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(error).ErrorKind);
         Assert.Equal(2UL, limited.Budget.Steps);
         Assert.Equal(13UL, limited.Ledger.ReservedBytes);
@@ -153,7 +147,7 @@ public sealed class Pcre2SliceLeadingByteTests
     [InlineData(2048)]
     [InlineData(2049)]
     [InlineData(4096)]
-    public void BoundedPublicSearchKeepsStrictValidationAndUsefulLimits(int prefix)
+    public void BoundedPublicSearchKeepsOriginalTokenAndWorkLimit(int prefix)
     {
         var regex = new Utf8Pcre2Regex(Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
@@ -181,26 +175,21 @@ public sealed class Pcre2SliceLeadingByteTests
     {
         var regex = new Utf8Pcre2Regex(Pattern);
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(new string('x', 4096) + "abc123"));
+        var input = Encoding.UTF8.GetBytes(new string('x', 4096) + "abc123");
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var live = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(100000, 256, 1 << 20), TimeSpan.FromMilliseconds(50), live.Token);
-        invocation.ShareStorageForCursor();
-        Assert.True(invocation.Ledger.TryReserve(13));
+        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
         for (var i = 0; i < 63; i++) _ = invocation.TryChargeStep();
         invocation.CheckpointHook = _ => { if (expire) ticks = 100; else live.Cancel(); };
-        var cursor = new Pcre2SliceGlobalMatchCursor(direct.SliceProgram, invocation, input,
-            new(0), regex.DebugCompiledProgram.Request, direct.Fallback.LeadingAsciiByte);
         Exception? failure = null;
-        try { _ = cursor.MoveNext(); }
+        try { _ = Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, ref invocation, direct.Fallback.LeadingAsciiByte); }
         catch (Exception error) { failure = error; }
         if (expire) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         else Assert.Equal(live.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         Assert.Equal(64UL, invocation.Budget.Steps);
-        Assert.Equal(13UL + 2 * Utf8ConstructionBudget.ArrayBytes<int>(direct.SliceProgram.GroupCount),
-            invocation.Budget.PeakWorkingBytes);
-        Assert.False(cursor.Current.Success);
+        Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
     }
 }
