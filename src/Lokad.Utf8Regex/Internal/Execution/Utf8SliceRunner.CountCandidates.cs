@@ -1216,6 +1216,18 @@ internal static partial class Utf8SliceRunner
             switch (entry.Kind)
             {
                 case Utf8SliceInstructionKind.Literal:
+                    if (entry.B != 0 || (uint)entry.A >= 128) return true;
+                    if ((uint)position >= (uint)input.Length || input[position] != entry.A) return false;
+                    position++;
+                    continue;
+                case Utf8SliceInstructionKind.Set when entry is { B: 0, C: 0, D: not 0 }:
+                    // Exact ASCII intervals already have checked endpoints in the instruction.
+                    var firstByte = (entry.D & 255) - 1;
+                    var lastByte = (byte)(entry.D >> 8);
+                    if ((uint)position >= (uint)input.Length ||
+                        (uint)(input[position] - firstByte) > (uint)(lastByte - firstByte)) return false;
+                    position++;
+                    continue;
                 case Utf8SliceInstructionKind.Set:
                     break;
                 case Utf8SliceInstructionKind.Accept:
