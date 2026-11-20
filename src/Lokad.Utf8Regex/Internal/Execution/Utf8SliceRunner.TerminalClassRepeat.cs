@@ -573,8 +573,8 @@ internal static partial class Utf8SliceRunner
             continuation = instructions.Length - 1;
             return true;
         }
-        // A fixed count needs only one endpoint.
-        if (repeat.RepeatMinimum == repeat.RepeatMaximum)
+        // The count or a disjoint branch proof excludes shorter endpoints.
+        if (repeat.RepeatMinimum == repeat.RepeatMaximum || instructions[repeat.A].RepeatExitRejectsShorterEndpoints)
         {
             var fixedRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             outcome = new(fixedRepeat.EndIndex >= 0, fixedRepeat.EndIndex, fixedRepeat.Breach, null, null);
@@ -818,24 +818,6 @@ internal static partial class Utf8SliceRunner
         int excludedScalar;
         if (suffix is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && suffix.A > tail)
         {
-            if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
-            {
-                var proofBreach = invocation.TryChargeStep();
-                if (proofBreach != Utf8ExecutionLimitKind.None)
-                {
-                    outcome = new(false, -1, proofBreach, null, null);
-                    return true;
-                }
-                program.TryGetUnfoldedAsciiSet(atom, out var ascii, out _);
-                var remaining = 12;
-                if (ExcludesShorterAsciiRepeatEnds(instructions, tail, ascii, ref remaining))
-                {
-                    var branchedRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
-                    outcome = new(branchedRepeat.EndIndex >= 0, branchedRepeat.EndIndex, branchedRepeat.Breach, null, null);
-                    return true;
-                }
-            }
-
             // Each alternative's first consuming atom must be an excluded literal.
             // Only inspect through bounded capture markers;
             // the VM still executes their effects and chooses the branch normally.
@@ -912,6 +894,36 @@ internal static partial class Utf8SliceRunner
         var finalRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
         outcome = new(finalRepeat.EndIndex >= 0, finalRepeat.EndIndex, finalRepeat.Breach, null, null);
         return true;
+    }
+
+    internal static void MarkDisjointAsciiRepeatBranches(Span<Utf8SliceInstruction> code, byte[][] setMasks,
+        int repeatIndex, Utf8ConstructionBudget budget)
+    {
+        var repeat = code[repeatIndex];
+        if (!IsSingleAtomRepeat(code, repeatIndex, repeat) || repeat.RepeatMinimum == repeat.RepeatMaximum ||
+            code[repeatIndex + 1] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom)
+            return;
+
+        var continuation = repeat.A + 1;
+        for (var remaining = 32; continuation < code.Length && remaining > 0 &&
+            code[continuation].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd; remaining--)
+        {
+            budget.ChargeWork(1);
+            continuation++;
+        }
+        if (continuation >= code.Length || code[continuation] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0 })
+            return;
+
+        var work = 12;
+        budget.ChargeWork((ulong)work + 2);
+        var mask = setMasks[atom.A].AsSpan();
+        var consumed = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
+            BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
+        if (ExcludesShorterAsciiRepeatEnds(code, continuation, consumed, ref work))
+        {
+            var exit = code[repeat.A];
+            code[repeat.A] = new(exit.Kind, exit.A, exit.B, 1, exit.D);
+        }
     }
 
     private static bool ExcludesShorterAsciiRepeatEnds(ReadOnlySpan<Utf8SliceInstruction> instructions,

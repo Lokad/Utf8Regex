@@ -215,6 +215,10 @@ internal readonly struct Utf8SliceInstruction
     // low byte is first+1, high byte is last; zero means no exact interval.
     internal int D { get; }
 
+    // On a RepeatExit, C marks a greedy ASCII run whose following arms
+    // all reject shorter endpoints.
+    internal bool RepeatExitRejectsShorterEndpoints => C != 0;
+
     // Only repeat instructions interpret C/D as unsigned bounds. Keep the
     // existing instruction layout; UINT_MAX is their distinct infinity marker.
     internal long RepeatMinimum => unchecked((uint)C);
@@ -450,6 +454,8 @@ internal sealed class Utf8SliceProgram
         for (var pc = 0; pc < instructions.Length; pc++)
         {
             var instruction = instructions[pc];
+            if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && !rightToLeft && !isNonBacktracking)
+                Utf8SliceRunner.MarkDisjointAsciiRepeatBranches(instructions, setMasks, pc, budget);
             readsCaptures |= instruction.Kind is Utf8SliceInstructionKind.Backref or Utf8SliceInstructionKind.TestGroup or
                 Utf8SliceInstructionKind.BalanceStart or Utf8SliceInstructionKind.BalancePop;
             if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart) captureIsOpen = true;
