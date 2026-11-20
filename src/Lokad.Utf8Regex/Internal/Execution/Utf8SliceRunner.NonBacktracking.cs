@@ -19,8 +19,11 @@ internal static partial class Utf8SliceRunner
         const int capacity = 32;
         var tableBytes = (ulong)(capacity * Unsafe.SizeOf<(ulong States, byte Value, ulong Next)>());
         var workingLimit = invocation.Budget.Limits.MaxWorkingBytes;
-        // A tight numeric cap can use the same state calculation without caching.
+        // A tight numeric cap uses the same state calculation without caching.
+        // For ordinary Boolean search, skip this optional scratch when the
+        // host owns admission. A refused loan would be terminal.
         var cache = input.Length - fromByte >= 64 && (program.NonBacktrackingAcceptClosure & 1) == 0 &&
+            (program.IsNonBacktracking || !invocation.Ledger.HasMemoryAllowance) &&
             (workingLimit == 0 || tableBytes <= workingLimit && invocation.Ledger.ReservedBytes <= workingLimit - tableBytes);
         var reserved = cache ? tableBytes : 0;
         var breach = invocation.TryReserveWorking(reserved);

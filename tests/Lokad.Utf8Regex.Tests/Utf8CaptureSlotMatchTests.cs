@@ -201,6 +201,23 @@ public sealed class Utf8CaptureSlotMatchTests
     }
 
     [Fact]
+    public void OrdinaryOrderedBooleanNeedsNoScratchLoanFromTheCaller()
+    {
+        var prefix = string.Concat(Enumerable.Repeat("ab", 160)) + " z! ";
+        var input = Encoding.UTF8.GetBytes(prefix + "ab😀baz");
+        var account = new Account { Maximum = 0 };
+        using var regex = new Utf8Regex("(?:ab|ba|😀)+z", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 1, MaxWorkSteps = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.True(regex.IsMatch(input, source.Token, account));
+        Assert.False(regex.IsMatch(input.AsSpan(0, prefix.Length), source.Token, account));
+        Assert.Equal(0UL, account.Peak);
+        Assert.Equal(0UL, account.Held);
+    }
+
+    [Fact]
     public void ByteBoundsAndCurrentInputPolicyAreEnforcedWithoutStaleOutput()
     {
         var regex = new Utf8Regex("(.)");

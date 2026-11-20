@@ -47,10 +47,9 @@ internal static partial class Utf8SliceRunner
 
     internal static bool CanSearchOrdinaryOrdered(Utf8SliceProgram program, int remaining,
         ref Utf8SliceInvocation invocation)
-        // Keep the ordinary execution route when the caller imposes a
-        // depth or scratch cap. Work and deadlines use the same invocation.
+        // Keep the ordinary route when the caller imposes a depth cap.
         => remaining >= 256 && program.NonBacktrackingOrderedClosures.Length != 0 &&
-            invocation.Budget.Limits.MaxDepth == 0 && invocation.HasUnlimitedWorkingMemory;
+            invocation.Budget.Limits.MaxDepth == 0;
 
     internal static (ulong[] Closures, byte[] Leaves, uint Conditions) BuildOrderedRegularClosures(
         Utf8SliceInstruction[] instructions, ReadOnlySpan<int> epsilonOrder, Utf8ConstructionBudget budget)
