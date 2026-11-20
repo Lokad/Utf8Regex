@@ -654,18 +654,12 @@ public sealed partial class Utf8Regex : IDisposable
         }
     }
 
-    // Boolean/count/value results do not expose captures. This general proof
-    // keeps dependent, alternate and unknown programs' storage.
-    // Detailed results and cursors continue to request every capture slot.
+    // Whole-match operations need slots only when execution reads them.
+    // The lowered program includes reads in nested assertions.
     internal bool CanOmitValueCaptureSlots => GetValueOperationCaptureSlotCount(_ownedSliceProgram) == 0;
 
-    private int GetValueOperationCaptureSlotCount(Utf8SliceProgram program)
-        => program.IsNonBacktracking || ReferenceEquals(program, _ownedSliceProgram) &&
-            _preparedRegex.Features is { CaptureCount: > 0, HasBackreferences: false, HasConditionals: false, HasLookarounds: false } &&
-            !program.HasBalancing &&
-            !program.HasSharedCaptureDeclarations && !program.HasExplicitCaptureNumbers &&
-            !program.HasConditionalTest && !program.SawLookaround && !program.SawCapturingLookbehind
-                ? 0 : program.GroupCount;
+    private static int GetValueOperationCaptureSlotCount(Utf8SliceProgram program)
+        => program.IsNonBacktracking || !program.ReadsCaptures ? 0 : program.GroupCount;
 
     private Utf8CaptureRange MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {

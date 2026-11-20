@@ -57,6 +57,19 @@ public sealed class Utf8SliceSparseGroupTests
         AssertOwnedOperations(pattern, options, Texts, oraclePattern, options);
     }
 
+    [Theory]
+    [InlineData(@"(?<12>α)(?<12>β)(?=γ)", true)]
+    [InlineData(@"(?<=(?<12>α))β", true)]
+    [InlineData(@"(?<12>α)(?=\k<12>)", false)]
+    [InlineData(@"(?=(?<12>α))\k<12>", false)]
+    public void WholeMatchOperationsKeepSlotsForAssertionCaptureReads(string pattern, bool omitSlots)
+    {
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        using var regex = new Utf8Regex(pattern, options);
+        Assert.Equal(omitSlots, regex.CanOmitValueCaptureSlots);
+        AssertOwnedOperations(regex, new Regex(pattern, options), ["αβγ", "😀αα", "αβ", "βα"]);
+    }
+
     internal static void AssertOwnedOperations(string pattern, RegexOptions options, string[] texts, RegexOptions oracleOptions)
         => AssertOwnedOperations(pattern, options, texts, pattern, oracleOptions);
 

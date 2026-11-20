@@ -96,27 +96,8 @@ public sealed class Utf8SliceLoweringContinuationTests
         var assertion = Assert.Single(program.Assertions);
         Assert.Equal(int.MaxValue, assertion.MinLengthBytes);
         Assert.Equal(int.MaxValue, assertion.MaxLengthBytes);
-        Assert.Equal(capture, program.SawCapturingLookbehind);
         Assert.False(program.HasNonFixedLookbehind);
         Assert.Equal(capture ? 1 : 0, program.GroupCount);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void LookbehindKeepsCaptureFactsOfAnAlreadyAnalyzedChild(bool capture)
-    {
-        var literal = new Utf8SliceNode.LiteralNode('é', false);
-        Utf8SliceNode shared = capture ? new Utf8SliceNode.CaptureNode(0, literal) : literal;
-        var behind = new Utf8SliceNode.LookbehindNode(new Utf8SliceNode.ConcatNode([shared]), true);
-        var program = Utf8SliceLowerer.Lower(new Utf8SliceNode.ConcatNode([shared, behind]),
-            null, false, false, false);
-
-        Assert.NotNull(program);
-        var assertion = Assert.Single(program.Assertions);
-        Assert.Equal(2, assertion.MinLengthBytes);
-        Assert.Equal(2, assertion.MaxLengthBytes);
-        Assert.Equal(capture, program.SawCapturingLookbehind);
     }
 
     [Theory]

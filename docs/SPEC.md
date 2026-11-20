@@ -264,11 +264,10 @@ and original token checks remain. Deadline polling keeps its existing step caden
 operation/cursor publication retains its original checks. No extra state or
 allocation is introduced. RTL, NonBacktracking and extended roots keep their paths.
 
-Boolean/count/value matching share the same conservative unobserved-capture proof.
-Eligible owned backtracking programs omit capture slots and their trails when
-captures cannot affect matching. Backreferences, conditions, lookarounds, balancing,
-shared/explicit declarations, NonBacktracking and alternate/unknown programs retain
-their capture slots. In an assertion-free latest-value run, plain capture starts
+Boolean, Count and whole-match-only operations omit capture slots and their
+trails when the backtracking program has no capture reads. Backreferences,
+capture conditions and balancing retain required slots, including reads inside
+nested assertions. In an assertion-free latest-value run, plain capture starts
 need undo entries only while a frame can restore an earlier value. Closing entries
 retain multi-group completion order; a sole slot needs them only for rollback.
 History, assertions, opening journals and balancing retain their required entries.

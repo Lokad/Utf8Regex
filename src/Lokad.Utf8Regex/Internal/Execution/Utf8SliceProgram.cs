@@ -357,7 +357,6 @@ internal sealed class Utf8SliceProgram
         bool hasContiguousAnchor,
         bool hasConditionalTest,
         bool sawLookaround,
-        bool sawCapturingLookbehind,
         bool rightToLeft,
         bool canMatchEmpty,
         bool hasUnicodePatternAtoms,
@@ -396,7 +395,6 @@ internal sealed class Utf8SliceProgram
         HasContiguousAnchor = hasContiguousAnchor;
         HasConditionalTest = hasConditionalTest;
         SawLookaround = sawLookaround;
-        SawCapturingLookbehind = sawCapturingLookbehind;
         RightToLeft = rightToLeft;
         CanMatchEmpty = canMatchEmpty;
         HasUnicodePatternAtoms = hasUnicodePatternAtoms;
@@ -436,7 +434,7 @@ internal sealed class Utf8SliceProgram
         }
     }
 
-    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool sawCapturingLookbehind, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
+    internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
         ulong[]? nonBacktrackingOrderedClosures = null)
     {
         using var construction = Utf8ConstructionScope.Enter();
@@ -554,7 +552,6 @@ internal sealed class Utf8SliceProgram
             hasContiguousAnchor,
             hasConditionalTest,
             sawLookaround,
-            sawCapturingLookbehind,
             rightToLeft,
             canMatchEmpty,
             hasUnicodePatternAtoms,
@@ -604,7 +601,6 @@ internal sealed class Utf8SliceProgram
     internal bool HasContiguousAnchor { get; }
     internal bool HasConditionalTest { get; }
     internal bool SawLookaround { get; }
-    internal bool SawCapturingLookbehind { get; }
     internal bool RightToLeft { get; }
     internal bool CanMatchEmpty { get; }
     internal bool HasUnicodePatternAtoms { get; }
@@ -923,7 +919,7 @@ internal static class Utf8SliceLowerer
         }
     }
 
-    private readonly record struct NodeFacts(bool CanMatchEmpty, bool WritesGroup, bool IsZeroWidth, int Minimum, int Maximum);
+    private readonly record struct NodeFacts(bool CanMatchEmpty, bool IsZeroWidth, int Minimum, int Maximum);
 
     private static Utf8ConstructionMap<Utf8SliceNode, NodeFacts> AnalyzeNodes(Utf8SliceNode root, bool nonBacktracking, Utf8ConstructionBudget budget)
     {
@@ -940,10 +936,8 @@ internal static class Utf8SliceLowerer
                 var frame = frames[index];
                 if (frame.NextChild(budget) is { } child)
                 {
-                    var analyzed = facts.TryGetValue(child, out var childFacts);
-                    if (analyzed) frame.WritesGroup |= childFacts.WritesGroup;
                     frames[index] = frame;
-                    if (!analyzed) frames.Push(new(child));
+                    if (!facts.TryGetValue(child, out _)) frames.Push(new(child));
                     continue;
                 }
                 frames.Pop();
@@ -975,13 +969,7 @@ internal static class Utf8SliceLowerer
                     Utf8SliceNode.ConditionalNode conditional => facts[conditional.YesBody].IsZeroWidth && facts[conditional.NoBody].IsZeroWidth,
                     _ => false,
                 });
-                facts[node] = new NodeFacts(empty, frame.WritesGroup, zeroWidth, minimum, maximum);
-                if (frame.WritesGroup && index > 0)
-                {
-                    var parent = frames[index - 1];
-                    parent.WritesGroup = true;
-                    frames[index - 1] = parent;
-                }
+                facts[node] = new NodeFacts(empty, zeroWidth, minimum, maximum);
             }
             return facts;
         }
@@ -1074,7 +1062,6 @@ internal static class Utf8SliceLowerer
     private struct AnalysisFrame(Utf8SliceNode node)
     {
         internal readonly Utf8SliceNode Node = node;
-        internal bool WritesGroup = node is Utf8SliceNode.CaptureNode or Utf8SliceNode.BalanceNode;
         private int _index, _branch;
 
         // Empty alternatives spend shared work even when they contain no child to push.
@@ -1188,7 +1175,6 @@ internal static class Utf8SliceLowerer
             requiresUnicodeCategory |= assertion.Body.RequiresUnicodeCategory;
             hasNonFixedLookbehind |= assertion.Body.HasNonFixedLookbehind;
             lowerer.HasConditionalTest |= assertion.Body.HasConditionalTest;
-            lowerer.SawCapturingLookbehind |= assertion.Body.SawCapturingLookbehind;
         }
 
         // Hand-built trees (tests, assertion bodies without renumbering
@@ -1253,7 +1239,7 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.SawCapturingLookbehind, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
             lowerer.BackreferenceLowerings.Take(), orderedClosures);
@@ -1341,7 +1327,6 @@ internal static class Utf8SliceLowerer
         internal bool SawContiguousAnchor;
         internal bool HasConditionalTest;
         internal bool SawLookaround;
-        internal bool SawCapturingLookbehind;
         internal readonly Utf8ConstructionBuffer<Utf8SliceAssertion> Assertions;
         internal readonly string[]? GroupNames;
         internal Utf8CaptureCatalog? CaptureCatalog;
@@ -1861,7 +1846,6 @@ internal static class Utf8SliceLowerer
                     return EmitLookahead(ahead.Body, ahead.Positive, ref frame, out request);
                 case Utf8SliceNode.LookbehindNode behind:
                     SawLookaround = true;
-                    SawCapturingLookbehind |= Facts[behind.Body].WritesGroup;
                     if (frame.Stage == 0)
                     {
                         frame.Stage = 1;

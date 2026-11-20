@@ -59,10 +59,9 @@ public sealed class Utf8UnobservedValueCaptureTests
     [Theory]
     [InlineData(@"abcdef(?<v>[0-9]+)\k<v>", "abcdef123123")]
     [InlineData("abcdef(?<v>[0-9]+)(?(v)X|Y)", "abcdef123X")]
-    [InlineData("abcdef(?=(?<v>[0-9]+))[0-9]+", "abcdef123")]
+    [InlineData(@"abcdef(?<v>[0-9]+)(?=\k<v>)", "abcdef123123")]
     [InlineData("abcdef(?<v>a)+(?<-v>b)+(?(v)(?!))", "abcdefaaabbb")]
-    [InlineData("abcdef(?<v>[0-9]+)(?<v>[a-z]+)", "abcdef123abc")]
-    public void OriginalConservativeExclusionsRetainTheirCaptureWorkingStorage(string pattern, string text)
+    public void CaptureReadersRetainTheirCaptureWorkingStorage(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8Regex(pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
@@ -82,7 +81,7 @@ public sealed class Utf8UnobservedValueCaptureTests
     }
 
     [Fact]
-    public void OneSparseSlotNeedsStorageAndPublishesWithoutStagingHistory()
+    public void SparseSlotUsesWorkingStorageWhenTheCallerRequestsCaptures()
     {
         const string pattern = "abcdef(?<12>[0-9]+)";
         var input = "abcdef123"u8.ToArray();
@@ -109,8 +108,12 @@ public sealed class Utf8UnobservedValueCaptureTests
                 MaxWorkSteps = 100000
             }
         });
+        Assert.True(denied.IsMatch(input));
+        Assert.Equal(1, denied.Count(input));
+        Assert.Equal(new Utf8CaptureRange(0, 9), denied.Match(input));
+        var captures = new Utf8CaptureRange[2];
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(input)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(input, captures: captures)).ResourceKind);
     }
 
     [Theory]
