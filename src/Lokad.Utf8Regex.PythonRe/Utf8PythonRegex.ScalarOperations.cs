@@ -27,8 +27,8 @@ public sealed partial class Utf8PythonRegex
     private bool IsMatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
-        // Keep capture-free unmetered calls on their established cursor.
-        // Captured booleans can discard the VM's otherwise unused capture state.
+        // The prepared literal finder can also answer a controlled Boolean query
+        // or discard captures that a value result would need.
         if ((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled ||
              MatchTimeout != Timeout.InfiniteTimeSpan || _scalarProgram.GroupCount != 0) &&
             !_scalarProgram.CanMatchEmpty &&
@@ -58,21 +58,22 @@ public sealed partial class Utf8PythonRegex
                 throw CreateMatchTimeoutException(input, Pattern);
             }
         }
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken);
+        ValidateScalarStartOffset(input, startOffsetInBytes);
+        // A one-shot search needs no cursor return or copy of its inline state.
+        var state = new PythonReScalarMatchState(input, ScalarProgram, startOffsetInBytes,
+            MatchTimeout, this, CreateInvocation(cancellationToken), _utf8Regex);
         try
         {
-            // This cursor is used once. The VM can stop as soon as the
-            // pattern has a match because this call publishes no ranges.
-            var found = cursor.MoveNext(existenceOnly: true);
-            cursor.Checkpoint();
+            var found = state.MoveNext(input, existenceOnly: true);
+            state.Checkpoint();
             return found;
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+            state.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw state.WorkingInvocation.Budget.CreateResourceFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
-        { throw cursor.TimeoutFailure(); }
-        finally { cursor.Dispose(); }
+        { throw state.TimeoutFailure(input); }
+        finally { state.Dispose(); }
     }
 
     private Utf8PythonValueMatch MatchValueScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
