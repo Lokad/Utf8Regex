@@ -54,10 +54,6 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
 
     public int ShortestLength => _searchData.ShortestLength;
 
-    public int Count(ReadOnlySpan<byte> input) => Count(input, preferFastMatch: true);
-
-    public int CountScalar(ReadOnlySpan<byte> input) => Count(input, preferFastMatch: false);
-
     public bool TryFindFirst(ReadOnlySpan<byte> input, out int index, out int matchedLength)
     {
         index = -1;
@@ -72,7 +68,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
             }
 
             var candidate = startIndex + relative;
-            if (TryMatchAt(input, candidate, out matchedLength, preferFastMatch: true))
+            if (TryMatchAt(input, candidate, out matchedLength))
             {
                 index = candidate;
                 return true;
@@ -96,7 +92,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
                 return false;
             }
 
-            if (TryMatchAt(input, candidate, out matchedLength, preferFastMatch: true))
+            if (TryMatchAt(input, candidate, out matchedLength))
             {
                 index = candidate;
                 startIndex = candidate + matchedLength;
@@ -109,7 +105,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         return false;
     }
 
-    private int Count(ReadOnlySpan<byte> input, bool preferFastMatch)
+    public int Count(ReadOnlySpan<byte> input)
     {
         var count = 0;
         var startIndex = 0;
@@ -121,7 +117,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
                 break;
             }
 
-            if (TryMatchAt(input, candidate, out var matchedLength, preferFastMatch))
+            if (TryMatchAt(input, candidate, out var matchedLength))
             {
                 count++;
                 startIndex = candidate + matchedLength;
@@ -186,17 +182,17 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         return -1;
     }
 
-    private bool TryMatchAt(ReadOnlySpan<byte> input, int index, out int matchedLength, bool preferFastMatch)
+    private bool TryMatchAt(ReadOnlySpan<byte> input, int index, out int matchedLength)
     {
         matchedLength = 0;
         if (_tripleDispatch.HasValue &&
-            TryMatchTripleDispatch(input, index, out matchedLength, preferFastMatch))
+            TryMatchTripleDispatch(input, index, out matchedLength))
         {
             return true;
         }
 
         if (_pairDispatch.HasValue &&
-            TryMatchPairDispatch(input, index, out matchedLength, preferFastMatch))
+            TryMatchPairDispatch(input, index, out matchedLength))
         {
             return true;
         }
@@ -211,7 +207,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         if (bucket.Literals.Length == 1)
         {
             var literal = bucket.Literals[0];
-            if (LiteralMatchesAt(input, index, literal, preferFastMatch))
+            if (LiteralMatchesAt(input, index, literal))
             {
                 matchedLength = literal.Length;
                 return true;
@@ -228,7 +224,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
                 map[input[discriminatorIndex]] is { } literal &&
                 // A discriminator selects a literal; it does not prove the
                 // common prefix. Anchor/filter checks may cover only part of it.
-                LiteralMatchesAt(input, index, literal, preferFastMatch))
+                LiteralMatchesAt(input, index, literal))
             {
                 matchedLength = literal.Length;
                 return true;
@@ -237,7 +233,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
 
         foreach (var literal in bucket.Literals)
         {
-            if (LiteralMatchesAt(input, index, literal, preferFastMatch))
+            if (LiteralMatchesAt(input, index, literal))
             {
                 matchedLength = literal.Length;
                 return true;
@@ -247,7 +243,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         return false;
     }
 
-    private bool TryMatchTripleDispatch(ReadOnlySpan<byte> input, int index, out int matchedLength, bool preferFastMatch)
+    private bool TryMatchTripleDispatch(ReadOnlySpan<byte> input, int index, out int matchedLength)
     {
         matchedLength = 0;
         var primaryIndex = index + _tripleDispatch.PrimaryOffset;
@@ -261,7 +257,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         var secondaryValue = input[secondaryIndex];
         if (primaryValue == _tripleDispatch.PrimaryValue0 &&
             secondaryValue == _tripleDispatch.SecondaryValue0 &&
-            LiteralMatchesAt(input, index, _tripleDispatch.Literal0, preferFastMatch))
+            LiteralMatchesAt(input, index, _tripleDispatch.Literal0))
         {
             matchedLength = _tripleDispatch.Literal0.Length;
             return true;
@@ -269,7 +265,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
 
         if (primaryValue == _tripleDispatch.PrimaryValue1 &&
             secondaryValue == _tripleDispatch.SecondaryValue1 &&
-            LiteralMatchesAt(input, index, _tripleDispatch.Literal1, preferFastMatch))
+            LiteralMatchesAt(input, index, _tripleDispatch.Literal1))
         {
             matchedLength = _tripleDispatch.Literal1.Length;
             return true;
@@ -277,7 +273,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
 
         if (primaryValue == _tripleDispatch.PrimaryValue2 &&
             secondaryValue == _tripleDispatch.SecondaryValue2 &&
-            LiteralMatchesAt(input, index, _tripleDispatch.Literal2, preferFastMatch))
+            LiteralMatchesAt(input, index, _tripleDispatch.Literal2))
         {
             matchedLength = _tripleDispatch.Literal2.Length;
             return true;
@@ -286,7 +282,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         return false;
     }
 
-    private bool TryMatchPairDispatch(ReadOnlySpan<byte> input, int index, out int matchedLength, bool preferFastMatch)
+    private bool TryMatchPairDispatch(ReadOnlySpan<byte> input, int index, out int matchedLength)
     {
         matchedLength = 0;
         var primaryIndex = index + _pairDispatch.PrimaryOffset;
@@ -302,7 +298,7 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
         {
             if (entry.PrimaryValue == primaryValue &&
                 entry.SecondaryValue == secondaryValue &&
-                LiteralMatchesAt(input, index, entry.Literal, preferFastMatch))
+                LiteralMatchesAt(input, index, entry.Literal))
             {
                 matchedLength = entry.Literal.Length;
                 return true;
@@ -313,11 +309,11 @@ internal readonly partial struct PreparedSmallAsciiLiteralFamilySearch
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool LiteralMatchesAt(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> literal, bool preferFastMatch)
+    private static bool LiteralMatchesAt(ReadOnlySpan<byte> input, int index, ReadOnlySpan<byte> literal)
         => Utf8LiteralEquality.EqualsAt(
             input,
             index,
             literal,
-            preferFastMatch ? Utf8LiteralComparisonKind.FastShort : Utf8LiteralComparisonKind.Scalar);
+            Utf8LiteralComparisonKind.FastShort);
 
 }

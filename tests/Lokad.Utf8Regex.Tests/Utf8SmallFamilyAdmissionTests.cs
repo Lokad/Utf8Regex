@@ -201,7 +201,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
                 var value = values.FirstOrDefault(v => input.AsSpan(start).StartsWith(v));
                 if (value is null) start++; else { expected.Add((start, value.Length)); start += value.Length; }
             }
-            Assert.Equal(expected.Count, search.Count(input)); Assert.Equal(expected.Count, search.CountScalar(input));
+            Assert.Equal(expected.Count, search.Count(input));
             Assert.Equal(expected.Count > 0, search.TryFindFirst(input, out var index, out var length));
             Assert.Equal(expected.Count == 0 ? (-1, 0) : expected[0], (index, length));
             var actual = new List<(int, int)>(); var cursor = 0;
@@ -216,7 +216,7 @@ public sealed class Utf8SmallFamilyAdmissionTests
         var values = Family(14); var falseCandidate = values[0].ToArray(); falseCandidate[10] = (byte)'z';
         var input = appendValid ? falseCandidate.Concat(new byte[] { 124 }).Concat(values[2]).ToArray() : falseCandidate;
         Assert.True(PreparedSmallAsciiLiteralFamilySearch.TryCreate(values, out var search));
-        Assert.Equal(appendValid ? 1 : 0, search.Count(input)); Assert.Equal(appendValid ? 1 : 0, search.CountScalar(input));
+        Assert.Equal(appendValid ? 1 : 0, search.Count(input));
         Assert.Equal(appendValid, search.TryFindFirst(input, out var index, out var length));
         Assert.Equal(appendValid ? falseCandidate.Length + 1 : -1, index); Assert.Equal(appendValid ? values[2].Length : 0, length);
         foreach (var compiled in new[] { false, true })

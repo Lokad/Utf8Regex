@@ -33,7 +33,6 @@ public sealed class Utf8LiteralEqualityTests
         foreach (var input in new[] { "ab"u8.ToArray(), "abc"u8.ToArray() })
         {
             Assert.Equal(0, search.Count(input));
-            Assert.Equal(0, search.CountScalar(input));
             Assert.False(search.TryFindFirst(input, out _, out _));
             var start = 0;
             Assert.False(search.TryFindNextNonOverlapping(input, ref start, out _, out _));

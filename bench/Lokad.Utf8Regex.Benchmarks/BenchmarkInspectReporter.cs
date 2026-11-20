@@ -766,8 +766,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"LiteralCount      : {literals.Length}");
             Console.WriteLine($"ShortestLength    : {primitive.ShortestLength}");
 
-            Measure("PrimitiveScalar", iterations, () => ExecuteSmallAsciiLiteralFamilyPrimitiveCountScalar(primitive, benchmarkCase.InputBytes));
-            Measure("PrimitiveSimd", iterations, () => ExecuteSmallAsciiLiteralFamilyPrimitiveCountSimd(primitive, benchmarkCase.InputBytes));
+            Measure("PrimitiveCount", iterations, () => primitive.Count(benchmarkCase.InputBytes));
             Measure("PreparedBoundaryCount", iterations, () => ExecutePreparedSearcherCountWithBoundaries(regex.Inspection.SearchPlan.PreparedSearcher, regex.Inspection.SearchPlan, benchmarkCase.InputBytes));
 
             Measure("Utf8Compiled", iterations, () => compiledUtf8Regex.Count(benchmarkCase.InputBytes));
@@ -804,8 +803,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"LiteralCount      : {literals.Length}");
             Console.WriteLine($"ShortestLength    : {primitive.ShortestLength}");
 
-            Measure("PrimitiveScalar", iterations, () => ExecuteSmallAsciiLiteralFamilyPrimitiveCountScalar(primitive, context.InputBytes));
-            Measure("PrimitiveSimd", iterations, () => ExecuteSmallAsciiLiteralFamilyPrimitiveCountSimd(primitive, context.InputBytes));
+            Measure("PrimitiveCount", iterations, () => primitive.Count(context.InputBytes));
             Measure("PreparedBoundaryCount", iterations, () => ExecutePreparedSearcherCountWithBoundaries(regex.Inspection.SearchPlan.PreparedSearcher, regex.Inspection.SearchPlan, context.InputBytes));
 
             Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
@@ -5163,12 +5161,6 @@ internal static partial class BenchmarkInspectReporter
         return count;
     }
 
-
-    private static int ExecuteSmallAsciiLiteralFamilyPrimitiveCountScalar(PreparedSmallAsciiLiteralFamilySearch search, byte[] input)
-        => search.CountScalar(input);
-
-    private static int ExecuteSmallAsciiLiteralFamilyPrimitiveCountSimd(PreparedSmallAsciiLiteralFamilySearch search, byte[] input)
-        => search.Count(input);
 
     private static int ExecuteSmallAsciiLiteralFamilyPrimitiveFirstMatch(PreparedSmallAsciiLiteralFamilySearch search, byte[] input)
         => search.TryFindFirst(input, out var index, out var matchedLength) ? index + matchedLength : -1;

@@ -673,7 +673,6 @@ public sealed class PreparedSearchPrimitivesTests
         var input = Encoding.UTF8.GetBytes("Sherlock Holmes xx Mary Morstan yy Mrs Hudson");
 
         Assert.True(PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out var search));
-        Assert.Equal(3, search.CountScalar(input));
         Assert.Equal(3, search.Count(input));
     }
 
@@ -691,7 +690,6 @@ public sealed class PreparedSearchPrimitivesTests
         var input = "é Professor Moriarty xx Irene Adler xx Sherlock Holmes 夏"u8;
 
         Assert.True(PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out var search));
-        Assert.Equal(3, search.CountScalar(input));
         Assert.Equal(3, search.Count(input));
     }
 
@@ -877,7 +875,7 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
-    public void PreparedSmallAsciiLiteralFamilySearchScalarAndSimdStayAlignedOnMisses()
+    public void PreparedSmallAsciiLiteralFamilySearchReturnsZeroForLongBarrenInput()
     {
         byte[][] literals =
         [
@@ -890,7 +888,7 @@ public sealed class PreparedSearchPrimitivesTests
         var input = Encoding.UTF8.GetBytes(new string('x', 4096));
 
         Assert.True(PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out var search));
-        Assert.Equal(search.CountScalar(input), search.Count(input));
+        Assert.Equal(0, search.Count(input));
     }
 
     [Fact]
@@ -907,7 +905,6 @@ public sealed class PreparedSearchPrimitivesTests
         var input = Encoding.UTF8.GetBytes(new string('x', 1024) + "Mary");
 
         Assert.True(PreparedSmallAsciiLiteralFamilySearch.TryCreate(literals, out var search));
-        Assert.Equal(0, search.CountScalar(input));
         Assert.Equal(0, search.Count(input));
     }
 
