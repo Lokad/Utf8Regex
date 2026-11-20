@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -76,9 +77,18 @@ internal sealed class DotNetPerformanceReplicaBenchmarkContext
         }
 
         var haystackPath = Path.Combine(dataRoot, benchmarkCase.HaystackRelativePath);
-        var text = benchmarkCase.HaystackUtf8Lossy
-            ? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false).GetString(File.ReadAllBytes(haystackPath))
-            : File.ReadAllText(haystackPath, Encoding.UTF8);
+        using var file = File.OpenRead(haystackPath);
+        using var decompressed = haystackPath.EndsWith(".gz", StringComparison.Ordinal)
+            ? new GZipStream(file, CompressionMode.Decompress, leaveOpen: true) : null;
+        var encoding = benchmarkCase.HaystackUtf8Lossy ? new UTF8Encoding(encoderShouldEmitUTF8Identifier: false) : Encoding.UTF8;
+        using var reader = new StreamReader(decompressed ?? (Stream)file, encoding,
+            detectEncodingFromByteOrderMarks: !benchmarkCase.HaystackUtf8Lossy);
+        if (benchmarkCase.HaystackLineStart is null or 0 && benchmarkCase.HaystackLineEnd is int prefixLines)
+        {
+            return ReadLeadingLines(reader, prefixLines);
+        }
+
+        var text = reader.ReadToEnd();
         if (benchmarkCase.HaystackLineStart is null && benchmarkCase.HaystackLineEnd is null)
         {
             return text;
@@ -93,5 +103,26 @@ internal sealed class DotNetPerformanceReplicaBenchmarkContext
         }
 
         return string.Join('\n', lines[start..endExclusive]);
+    }
+
+    private static string ReadLeadingLines(StreamReader reader, int remaining)
+    {
+        if (remaining <= 0) return string.Empty;
+
+        // Match Split('\n') exactly, including CR and a final empty line.
+        var text = new StringBuilder();
+        Span<char> buffer = stackalloc char[2048];
+        int read;
+        while ((read = reader.Read(buffer)) != 0)
+        {
+            var part = buffer[..read];
+            for (var index = 0; index < part.Length; index++)
+            {
+                if (part[index] == '\n' && --remaining == 0)
+                    return text.Append(part[..index]).ToString();
+            }
+            text.Append(part);
+        }
+        return text.ToString();
     }
 }

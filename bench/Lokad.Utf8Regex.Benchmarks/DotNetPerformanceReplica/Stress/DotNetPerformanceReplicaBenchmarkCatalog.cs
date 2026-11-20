@@ -127,23 +127,23 @@ internal static class DotNetPerformanceReplicaBenchmarkCatalog
         new("aws-keys/full", "aws-keys", DotNetPerformanceReplicaBenchmarkModel.Count,
             pattern: "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\\\")[a-zA-Z0-9+/]{40}('|\\\"))+|('|\\\")[a-zA-Z0-9+/]{40}('|\\\").*?(\\n^.*?){0,3}('|\\\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\\\"))+",
             regexRelativePath: null, regexPerLineAlternate: false,
-            haystackRelativePath: @"wild/cpython-226484e4.py", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: null, haystackLineEnd: null,
+            haystackRelativePath: @"wild/cpython-226484e4.py.gz", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: null, haystackLineEnd: null,
             options: RegexOptions.Multiline, expectedCount: 0, isDevelopmentSlice: false, origin: "curated/09-aws-keys.toml :: full"),
         // Source: dotnet-performance/benchmarks/definitions/curated/09-aws-keys.toml
         new("aws-keys/full-dev", "aws-keys", DotNetPerformanceReplicaBenchmarkModel.Count,
             pattern: "(('|\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\").*?(\\n^.*?){0,4}(('|\\\")[a-zA-Z0-9+/]{40}('|\\\"))+|('|\\\")[a-zA-Z0-9+/]{40}('|\\\").*?(\\n^.*?){0,3}('|\\\")((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))('|\\\"))+",
             regexRelativePath: null, regexPerLineAlternate: false,
-            haystackRelativePath: @"wild/cpython-226484e4.py", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: 0, haystackLineEnd: 20000,
+            haystackRelativePath: @"wild/cpython-226484e4.py.gz", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: 0, haystackLineEnd: 20000,
             options: RegexOptions.Multiline, expectedCount: null, isDevelopmentSlice: true, origin: "curated/09-aws-keys.toml :: full (dev slice)"),
         // Source: dotnet-performance/benchmarks/definitions/curated/09-aws-keys.toml
         new("aws-keys/quick", "aws-keys", DotNetPerformanceReplicaBenchmarkModel.Count,
             pattern: "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))", regexRelativePath: null, regexPerLineAlternate: false,
-            haystackRelativePath: @"wild/cpython-226484e4.py", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: null, haystackLineEnd: null,
+            haystackRelativePath: @"wild/cpython-226484e4.py.gz", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: null, haystackLineEnd: null,
             options: RegexOptions.None, expectedCount: 0, isDevelopmentSlice: false, origin: "curated/09-aws-keys.toml :: quick"),
         // Source: dotnet-performance/benchmarks/definitions/curated/09-aws-keys.toml
         new("aws-keys/quick-dev", "aws-keys", DotNetPerformanceReplicaBenchmarkModel.Count,
             pattern: "((?:ASIA|AKIA|AROA|AIDA)([A-Z0-7]{16}))", regexRelativePath: null, regexPerLineAlternate: false,
-            haystackRelativePath: @"wild/cpython-226484e4.py", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: 0, haystackLineEnd: 20000,
+            haystackRelativePath: @"wild/cpython-226484e4.py.gz", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: 0, haystackLineEnd: 20000,
             options: RegexOptions.None, expectedCount: null, isDevelopmentSlice: true, origin: "curated/09-aws-keys.toml :: quick (dev slice)"),
         // Source: dotnet-performance/benchmarks/definitions/curated/09-aws-keys.toml
         new("aws-keys/compile-full", "aws-keys", DotNetPerformanceReplicaBenchmarkModel.Compile,
@@ -160,22 +160,22 @@ internal static class DotNetPerformanceReplicaBenchmarkCatalog
         // Source: dotnet-performance/benchmarks/definitions/curated/04-ruff-noqa.toml
         new("ruff-noqa/real", "ruff-noqa", DotNetPerformanceReplicaBenchmarkModel.Count,
             pattern: "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)", regexRelativePath: null, regexPerLineAlternate: false,
-            haystackRelativePath: @"wild/cpython-226484e4.py", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: null, haystackLineEnd: null,
+            haystackRelativePath: @"wild/cpython-226484e4.py.gz", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: null, haystackLineEnd: null,
             options: RegexOptions.None, expectedCount: null, isDevelopmentSlice: false, origin: "curated/04-ruff-noqa.toml :: real"),
         // Source: dotnet-performance/benchmarks/definitions/curated/04-ruff-noqa.toml
         new("ruff-noqa/real-dev", "ruff-noqa", DotNetPerformanceReplicaBenchmarkModel.Count,
             pattern: "(\\s*)((?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?)", regexRelativePath: null, regexPerLineAlternate: false,
-            haystackRelativePath: @"wild/cpython-226484e4.py", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: 0, haystackLineEnd: 2000,
+            haystackRelativePath: @"wild/cpython-226484e4.py.gz", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: 0, haystackLineEnd: 2000,
             options: RegexOptions.None, expectedCount: null, isDevelopmentSlice: true, origin: "curated/04-ruff-noqa.toml :: real (dev slice)"),
         // Source: dotnet-performance/benchmarks/definitions/curated/04-ruff-noqa.toml
         new("ruff-noqa/tweaked", "ruff-noqa", DotNetPerformanceReplicaBenchmarkModel.Count,
             pattern: "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?", regexRelativePath: null, regexPerLineAlternate: false,
-            haystackRelativePath: @"wild/cpython-226484e4.py", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: null, haystackLineEnd: null,
+            haystackRelativePath: @"wild/cpython-226484e4.py.gz", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: null, haystackLineEnd: null,
             options: RegexOptions.None, expectedCount: null, isDevelopmentSlice: false, origin: "curated/04-ruff-noqa.toml :: tweaked"),
         // Source: dotnet-performance/benchmarks/definitions/curated/04-ruff-noqa.toml
         new("ruff-noqa/tweaked-dev", "ruff-noqa", DotNetPerformanceReplicaBenchmarkModel.Count,
             pattern: "(?:# [Nn][Oo][Qq][Aa])(?::\\s?(([A-Z]+[0-9]+(?:[,\\s]+)?)+))?", regexRelativePath: null, regexPerLineAlternate: false,
-            haystackRelativePath: @"wild/cpython-226484e4.py", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: 0, haystackLineEnd: 2000,
+            haystackRelativePath: @"wild/cpython-226484e4.py.gz", haystackInline: null, haystackUtf8Lossy: true, haystackLineStart: 0, haystackLineEnd: 2000,
             options: RegexOptions.None, expectedCount: null, isDevelopmentSlice: true, origin: "curated/04-ruff-noqa.toml :: tweaked (dev slice)"),
         // Source: dotnet-performance/benchmarks/definitions/curated/04-ruff-noqa.toml
         new("ruff-noqa/compile-real", "ruff-noqa", DotNetPerformanceReplicaBenchmarkModel.Compile,
