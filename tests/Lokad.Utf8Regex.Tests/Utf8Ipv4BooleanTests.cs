@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -15,7 +14,6 @@ public sealed class Utf8Ipv4BooleanTests
     {
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
         invocation.AnchorOriginByte = program.RightToLeft ? input.Length : 0;
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         try
@@ -154,14 +152,12 @@ public sealed class Utf8Ipv4BooleanTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void OriginalInterruptionStillAppliesAfterWholeInputValidation(bool expire)
+    public void OriginalInterruptionReachesLongCandidateSearch(bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
         var input = Encoding.UTF8.GetBytes(new string('x', 320000) + "012.200.033.199");
-        var validation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref validation);
         var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
         var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
         {
@@ -171,7 +167,7 @@ public sealed class Utf8Ipv4BooleanTests
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (entered || steps <= validation.Budget.Steps) return;
+            if (entered || steps < 128) return;
             entered = true;
             if (expire) ticks += 50; else token.Cancel();
         });
