@@ -62,14 +62,17 @@ internal partial struct PosixWorkspace
         {
             Charge(ref invocation);
             Reset(state, ref invocation);
-            // The proved first run cannot be empty. Reject its scalar before
-            // recording capture opens or counters at an impossible start. Keep
-            // the original reset, scalar progression and invocation authority.
-            var possible = firstAtomIndex < 0 ||
-                Rune.DecodeFromUtf8(input[candidate..], out var firstScalar, out _) == OperationStatus.Done &&
-                (firstAtom.Kind == Utf8SliceInstructionKind.Literal ? MatchesLiteral(firstScalar, firstAtom.A) :
-                    MatchesClass(firstScalar, firstAtom, ref invocation));
-            if (possible && MatchAt(input, state, candidate, existenceOnly, captureHistory && !generalCaptures, ref invocation, out end))
+            // The first atom is required. Its decoded width is useful both
+            // when the candidate fails and when its folded run can consume it.
+            var firstWidth = 0;
+            var possible = firstAtomIndex < 0;
+            if (!possible && Rune.DecodeFromUtf8(input[candidate..], out var firstScalar, out var width) == OperationStatus.Done)
+            {
+                firstWidth = width;
+                possible = firstAtom.Kind == Utf8SliceInstructionKind.Literal ? MatchesLiteral(firstScalar, firstAtom.A) :
+                    MatchesClass(firstScalar, firstAtom, ref invocation);
+            }
+            if (possible && MatchAt(input, state, candidate, firstWidth, existenceOnly, captureHistory && !generalCaptures, ref invocation, out end))
             {
                 start = candidate;
                 if (generalCaptures)
@@ -92,14 +95,14 @@ internal partial struct PosixWorkspace
                 return true;
             }
             if (candidate == input.Length) break;
-            candidate = Utf8SliceRunner.AdvancePastScalar(input, candidate, false);
+            candidate = firstWidth == 0 ? Utf8SliceRunner.AdvancePastScalar(input, candidate, false) : candidate + firstWidth;
         }
         start = end = -1;
         Finish(ref invocation);
         return false;
     }
 
-    private bool MatchAt(ReadOnlySpan<byte> input, scoped Span<int> state, int start, bool existenceOnly, bool captureHistory,
+    private bool MatchAt(ReadOnlySpan<byte> input, scoped Span<int> state, int start, int firstWidth, bool existenceOnly, bool captureHistory,
         ref Utf8SliceInvocation invocation, out int end)
     {
         var code = _program.Scalar.Instructions;
@@ -184,6 +187,14 @@ internal partial struct PosixWorkspace
                         }
                         else
                         {
+                            // The candidate step proved this scalar against
+                            // the same required atom at the original start.
+                            // Its run minimum precludes an earlier line exit.
+                            if (firstWidth != 0 && at == start && atomIndex == _program.FirstRequiredRunAtom)
+                            {
+                                at += firstWidth;
+                                consumed = 1;
+                            }
                             while (consumed < limit && at < input.Length)
                             {
                                 Charge(ref invocation);
