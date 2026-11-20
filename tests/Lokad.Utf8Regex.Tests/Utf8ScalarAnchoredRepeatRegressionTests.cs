@@ -25,4 +25,19 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
         Utf8SliceSparseGroupTests.AssertOwnedOperations(pattern, options,
             ["", "abxy", "abxxy", "abxxxy", "abxy\n", "abxxy\n", "abxy\r\n", "abxy\nabxxy", "\U0001f600abxy", "abxy\U0001f600"], options);
     }
+
+    [Theory]
+    [InlineData("$", "100", true)]
+    [InlineData("$", "100-😀\n", true)]
+    [InlineData("$", "100-\n\n", false)]
+    [InlineData("$", "100:\n", false)]
+    [InlineData(@"\z", "100-😀", true)]
+    [InlineData(@"\z", "100-😀\n", false)]
+    public void ShortAnchoredRepeatProvesBooleanResultWithUnobservedCaptures(string end, string text, bool expected)
+    {
+        using var regex = new Utf8Regex($@"^([0-9]+)(\-| |{end})(.*){end}", RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 3, MaxWorkingBytes = 1, MaxDepth = 1 } });
+        using var token = new CancellationTokenSource();
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text), token.Token));
+    }
 }

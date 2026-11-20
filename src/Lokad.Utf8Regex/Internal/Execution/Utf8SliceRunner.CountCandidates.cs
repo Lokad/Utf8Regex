@@ -1188,6 +1188,19 @@ internal static partial class Utf8SliceRunner
             code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == index &&
             code[entry.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == entry.B;
 
+    private static int FindAnchoredRepeatProofStart(Utf8SliceProgram program, int length)
+    {
+        if (length > BranchedPrefixInstructionLimit || program.ReadsCaptures) return -1;
+        var code = program.Instructions;
+        // An unobserved opening capture does not change the repeat. Reuse
+        // the lowered proof that all delimiter arms reject a shorter end.
+        var index = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 1);
+        return (uint)index < (uint)code.Length &&
+            code[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMaximum: long.MaxValue } repeat &&
+            code[repeat.A].RepeatExitRejectsShorterEndpoints &&
+            GetUnfoldedAsciiRange(code[index + 1], out _) >= 0 ? index : -1;
+    }
+
     // This check eliminates impossible starts. A caller without capture output
     // can also reuse an Accept reached through completely verified, ordered atoms.
     private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
@@ -1342,24 +1355,11 @@ internal static partial class Utf8SliceRunner
     {
         acceptedEnd = -1;
         continueAt = -1;
+        if (repeat.RepeatMaximum == long.MaxValue)
+            return TryMatchUnboundedPrefixRepeat(program, input, position, atomIndex - 1, ref remaining, out continueAt);
+
         var atom = program.Instructions[atomIndex];
         var continuation = repeat.A + 1;
-        if (repeat.RepeatMaximum == long.MaxValue && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
-            input.Length - position <= Math.Min(32, remaining) && program.SkipsTerminalRewind(atomIndex - 1) &&
-            IsDecimalDigitSet(program, atom))
-        {
-            // Only a proved greedy endpoint can continue. A wider scalar
-            // may still be a decimal digit and needs the original scalar VM.
-            var suffix = input[position..];
-            var digits = suffix.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
-            if (digits < 0) digits = suffix.Length;
-            else if (suffix[digits] >= 128) return true;
-            if (digits < repeat.RepeatMinimum) return false;
-            remaining -= Math.Min(suffix.Length, digits + 1);
-            continueAt = position + digits;
-            return true;
-        }
-
         if (repeat.RepeatMaximum > 4 || !program.TryGetUnfoldedAsciiSet(atom, out var ascii, out var asciiOnly))
             return null;
 
@@ -1402,6 +1402,40 @@ internal static partial class Utf8SliceRunner
                     return true;
             consumed = last;
         }
+        continueAt = position + consumed;
+        return true;
+    }
+
+    private static bool? TryMatchUnboundedPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int position, int index, ref int remaining, out int continueAt)
+    {
+        continueAt = -1;
+        var code = program.Instructions;
+        var repeat = code[index];
+        if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || input.Length - position > remaining ||
+            !(program.SkipsTerminalRewind(index) || code[repeat.A].RepeatExitRejectsShorterEndpoints))
+            return null;
+
+        var atom = code[index + 1];
+        var suffix = input[position..];
+        int stop;
+        if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMinimum <= 1)
+            stop = atom.A == 0 ? suffix.IndexOf((byte)'\n') : -1;
+        else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
+            stop = suffix.IndexOfAnyExceptInRange((byte)first, last);
+        else if (suffix.Length <= 32 && IsDecimalDigitSet(program, atom))
+        {
+            stop = suffix.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            // A wider scalar can be a decimal digit. Leave its extent to the VM.
+            if (stop >= 0 && suffix[stop] >= 128) return true;
+        }
+        else return null;
+
+        // The dot proof needs at most one scalar. A LF stop is aligned in
+        // UTF-8, and a nonempty run suffices for that minimum.
+        var consumed = stop < 0 ? suffix.Length : stop;
+        if (consumed < repeat.RepeatMinimum) return false;
+        remaining -= Math.Min(suffix.Length, consumed + 1);
         continueAt = position + consumed;
         return true;
     }

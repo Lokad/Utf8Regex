@@ -537,12 +537,20 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, null, null, breach);
             invocation.Budget.ThrowIfCancellationRequested();
-            if (seekBeginning && existenceOnly && !collectHistory && program.GroupCount == 0 && program.SkipsTerminalRewind(1) &&
-                program.Instructions[1].RepeatMaximum <= 4 && input.Length <= 32)
+            var proofStart = -1;
+            if (seekBeginning && existenceOnly && !collectHistory)
+            {
+                if (program.GroupCount == 0 && program.SkipsTerminalRewind(1) &&
+                    program.Instructions[1].RepeatMaximum <= 4 && input.Length <= 32)
+                    proofStart = 1;
+                else if (captureStarts.Length == 0)
+                    proofStart = FindAnchoredRepeatProofStart(program, input.Length);
+            }
+            if (proofStart >= 0)
             {
                 // The admitted short witness starts after the confirmed anchor.
                 // Unknown instructions still enter the original attempt.
-                var possible = MayMatchBranchedAsciiPrefix(program, input, fromByte, 1, out var acceptedEnd, proveMatch: true);
+                var possible = MayMatchBranchedAsciiPrefix(program, input, fromByte, proofStart, out var acceptedEnd, proveMatch: true);
                 if (!possible || acceptedEnd >= 0)
                 {
                     breach = invocation.TryReserveWorking(0);
