@@ -3657,7 +3657,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ComplexFeatureShapingOwnedCases))]
     public void ComplexFeatureShapingStaysOwned(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AtomicLoopOwnedCases()
@@ -4383,7 +4383,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(BackrefAsciiOwnedCases))]
     public void BackrefAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> BackrefSinglelineOwnedCases()
@@ -4406,7 +4406,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(BackrefSinglelineOwnedCases))]
     public void BackrefSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> BackrefMultilineOwnedCases()
@@ -4433,7 +4433,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(BackrefMultilineOwnedCases))]
     public void BackrefMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ExplicitBackrefMultilineOwnedCases()
@@ -4455,7 +4455,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ExplicitBackrefMultilineOwnedCases))]
     public void ExplicitBackrefMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> LookaroundAsciiOwnedCases()
@@ -4511,7 +4511,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AlternationAsciiOwnedCases))]
     public void AlternationAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryAsciiOwnedCases()
@@ -4539,7 +4539,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WordBoundaryAsciiOwnedCases))]
     public void WordBoundaryAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryMultilineOwnedCases()
@@ -4566,7 +4566,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WordBoundaryMultilineOwnedCases))]
     public void WordBoundaryMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedFamilyAsciiOwnedCases()
@@ -4596,7 +4596,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(FoldedFamilyAsciiOwnedCases))]
     public void FoldedFamilyAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> NamedAsciiOwnedCases()
@@ -4617,7 +4617,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(NamedAsciiOwnedCases))]
     public void NamedAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> NamedBackrefOwnedCases()
@@ -6130,7 +6130,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WordBoundaryExplicitMultilineOwnedCases))]
     public void WordBoundaryExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> NamedExplicitMultilineOwnedCases()
@@ -6268,7 +6268,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(LookbehindExplicitMultilineOwnedCases))]
     public void LookbehindExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SinglelineIgnoreCaseExplicitMultilineOwnedCases()
@@ -6291,7 +6291,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(SinglelineIgnoreCaseExplicitMultilineOwnedCases))]
     public void SinglelineIgnoreCaseExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> GroupedSinglelineExplicitMultilineOwnedCases()
@@ -6910,7 +6910,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AnchoredLookbehindExplicitSinglelineOwnedCases))]
     public void AnchoredLookbehindExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AtomicExplicitSinglelineOwnedCases()
@@ -7163,7 +7163,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WordBoundaryExplicitRtlMultilineOwnedCases))]
     public void WordBoundaryExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ShorthandExplicitRtlMultilineOwnedCases()
@@ -8396,7 +8396,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(LookbehindSinglelineIgnoreCaseMultilineOwnedCases))]
     public void LookbehindSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ConditionalSinglelineIgnoreCaseMultilineOwnedCases()
@@ -8469,7 +8469,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(WordBoundarySinglelineIgnoreCaseMultilineOwnedCases))]
     public void WordBoundarySinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> BackrefSinglelineIgnoreCaseMultilineOwnedCases()
@@ -8496,7 +8496,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(BackrefSinglelineIgnoreCaseMultilineOwnedCases))]
     public void BackrefSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> CategorySinglelineIgnoreCaseMultilineOwnedCases()
@@ -12090,7 +12090,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(BalancingAsciiOwnedCases))]
     public void BalancingAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SensitiveFoldAsciiOwnedCases()
@@ -12306,7 +12306,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(LazyGroupAsciiOwnedCases))]
     public void LazyGroupAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> EmptyMatchOwnedCases()
@@ -12593,7 +12593,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ExplicitOwnedCases))]
     public void ExplicitAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ExplicitNamedBackrefOwnedCases()
@@ -12643,7 +12643,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ScopedExplicitOwnedCases))]
     public void ScopedExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ExplicitFoldOwnedCases()
@@ -12665,7 +12665,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ExplicitFoldOwnedCases))]
     public void ExplicitFoldOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> RtlMultilineOwnedCases()
@@ -12861,7 +12861,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(RepeatedCaptureOwnedCases))]
     public void RepeatedCaptureOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> EmptyBranchOwnedCases()
@@ -13227,7 +13227,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(RtlExplicitOwnedCases))]
     public void RtlExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> RtlSinglelineOwnedCases()
@@ -13483,7 +13483,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(FoldedLazyOwnedCases))]
     public void FoldedLazyOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> RtlAtomicOwnedCases()
@@ -13742,7 +13742,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(TripleComboOwnedCases))]
     public void TripleComboOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldExplicitMultilineSplitOwnedCases()
@@ -13765,7 +13765,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(FoldExplicitMultilineSplitOwnedCases))]
     public void FoldExplicitMultilineSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> FoldedContiguousDeclineCases()
@@ -13787,7 +13787,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(FoldedContiguousDeclineCases))]
     public void FoldedContiguousKeepsDiscoveryAndOwnsResults(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SinglelineIgnoreCaseMultilineOwnedCases()
@@ -13810,7 +13810,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(SinglelineIgnoreCaseMultilineOwnedCases))]
     public void SinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> SinglelineIgnoreCaseExplicitOwnedCases()
@@ -13833,7 +13833,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(SinglelineIgnoreCaseExplicitOwnedCases))]
     public void SinglelineIgnoreCaseExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> LookbehindExplicitOwnedCases()
@@ -13856,7 +13856,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(LookbehindExplicitOwnedCases))]
     public void LookbehindExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> LookbehindMultilineOwnedCases()
@@ -13879,7 +13879,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(LookbehindMultilineOwnedCases))]
     public void LookbehindMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ContiguousMultilineLaneSplitCases()
@@ -13905,7 +13905,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ContiguousMultilineLaneSplitCases))]
     public void ContiguousMultilineKeepsDiscoveryAndOwnsResults(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> ScopedExplicitMultilineSplitCases()
@@ -13928,7 +13928,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(ScopedExplicitMultilineSplitCases))]
     public void ScopedExplicitMultilineSplitKeepsLaneRouting(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AnchoredMultigroupOwnedCases()
@@ -13951,7 +13951,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AnchoredMultigroupOwnedCases))]
     public void AnchoredMultigroupOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> AnchoredMultigroupMultilineSplitOwnedCases()
@@ -13973,7 +13973,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(AnchoredMultigroupMultilineSplitOwnedCases))]
     public void AnchoredMultigroupMultilineSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> DoublyAnchoredDetailedOwnedCases()
@@ -13995,7 +13995,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(DoublyAnchoredDetailedOwnedCases))]
     public void DoublyAnchoredDetailedOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> DoublyAnchoredSplitOwnedCases()
@@ -14017,7 +14017,7 @@ public sealed class AsciiSimplePatternTests
     [MemberData(nameof(DoublyAnchoredSplitOwnedCases))]
     public void DoublyAnchoredSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
     {
-        AssertOwnedOperationsWithCaptureValues(pattern, options, text, template);
+        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> MinBoundHeadedStarOwnedCases()
@@ -14716,7 +14716,8 @@ public sealed class AsciiSimplePatternTests
 
     // Keep independent cold expressions per operation and the original oracle
     // and capture expectations; the named tests/data above retain their identities.
-    private static void AssertOwnedOperations(string pattern, RegexOptions options, string text, string template)
+    private static void AssertOwnedOperations(string pattern, RegexOptions options, string text, string template,
+        int capacityFactor = 16, int capacityPadding = 128)
     {
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
@@ -14735,9 +14736,8 @@ public sealed class AsciiSimplePatternTests
             Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
         }
         var detailedRegex = new Utf8Regex(pattern, options: options);
-        var expectedDetailed = oracle.Match(text);
         var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
-        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
+        Utf8MatchSequence.AssertCaptures(expectedMatch, actualDetailed, input, text);
         var enumerateRegex = new Utf8Regex(pattern, options: options);
         var expectedPositions = new System.Collections.Generic.List<string>();
         foreach (Match m in oracle.Matches(text))
@@ -14764,80 +14764,14 @@ public sealed class AsciiSimplePatternTests
             actualSplits.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
         }
         Assert.Equal(expectedSplits, actualSplits);
-        var expected = oracle.Replace(text, template);
-        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        var templateBytes = Encoding.UTF8.GetBytes(template);
+        var expectedBytes = Encoding.UTF8.GetBytes(oracle.Replace(text, template));
         var bytesRegex = new Utf8Regex(pattern, options: options);
-        var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
+        var bytesActual = bytesRegex.Replace(input, templateBytes);
         Assert.Equal(expectedBytes, bytesActual);
-        var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, stringActual);
         var destinationRegex = new Utf8Regex(pattern, options: options);
-        Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
-        Assert.Equal(System.Buffers.OperationStatus.Done, status);
-        Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
-    }
-
-    private static void AssertOwnedOperationsWithCaptureValues(string pattern, RegexOptions options, string text, string template)
-    {
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
-        var isMatchRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Utf8AsciiScalarOperationAssertions.Owned(isMatchRegex);
-        var countRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-        var matchRegex = new Utf8Regex(pattern, options: options);
-        var expectedMatch = oracle.Match(text);
-        var actualMatch = matchRegex.Match(input);
-        Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        if (expectedMatch.Success)
-        {
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
-        }
-        var detailedRegex = new Utf8Regex(pattern, options: options);
-        var expectedDetailed = oracle.Match(text);
-        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
-        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
-        var enumerateRegex = new Utf8Regex(pattern, options: options);
-        var expectedPositions = new System.Collections.Generic.List<string>();
-        foreach (Match m in oracle.Matches(text))
-        {
-            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
-        }
-        var actualPositions = new System.Collections.Generic.List<string>();
-        foreach (var m in enumerateRegex.EnumerateMatches(input))
-        {
-            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
-        }
-        Assert.Equal(expectedPositions, actualPositions);
-        var splitRegex = new Utf8Regex(pattern, options: options);
-        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
-        {
-            var start = range.Start.Value;
-            var end = range.End.Value;
-            expectedSplits.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
-        }
-        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
-        {
-            actualSplits.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
-        }
-        Assert.Equal(expectedSplits, actualSplits);
-        var expected = oracle.Replace(text, template);
-        var expectedBytes = Encoding.UTF8.GetBytes(expected);
-        var bytesRegex = new Utf8Regex(pattern, options: options);
-        var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
-        Assert.Equal(expectedBytes, bytesActual);
-        var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, stringActual);
-        var destinationRegex = new Utf8Regex(pattern, options: options);
-        Span<byte> destination = stackalloc byte[input.Length * 16 + 128];
-        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
+        Span<byte> destination = stackalloc byte[input.Length * capacityFactor + capacityPadding];
+        var status = destinationRegex.TryReplace(input, templateBytes, destination, out var bytesWritten);
         Assert.Equal(System.Buffers.OperationStatus.Done, status);
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
     }
@@ -14893,69 +14827,9 @@ public sealed class AsciiSimplePatternTests
     private static void AssertOwnedMatchingAndOutput(string pattern, RegexOptions options, string text, string template,
         int capacityFactor, int capacityPadding)
     {
-        // These datasets share BCL/scalar results. Keep fresh engines per operation
-        // and the original caller-destination capacity for each family.
-        var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
         var sliceRegex = new Utf8Regex(pattern, options: options);
         Assert.True(sliceRegex.Inspection.DebugUsesOwnedSliceProgram);
-        var isMatchRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.IsMatch(text), isMatchRegex.IsMatch(input));
-        Utf8AsciiScalarOperationAssertions.Owned(isMatchRegex);
-        var countRegex = new Utf8Regex(pattern, options: options);
-        Assert.Equal(oracle.Matches(text).Count, countRegex.Count(input));
-        var matchRegex = new Utf8Regex(pattern, options: options);
-        var expectedMatch = oracle.Match(text);
-        var actualMatch = matchRegex.Match(input);
-        Assert.Equal(expectedMatch.Success, actualMatch.Success);
-        if (expectedMatch.Success)
-        {
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expectedMatch.Index)), actualMatch.StartOffsetInBytes);
-            Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expectedMatch.Index, expectedMatch.Length)), (actualMatch.EndOffsetInBytes - actualMatch.StartOffsetInBytes));
-        }
-        var detailedRegex = new Utf8Regex(pattern, options: options);
-        var expectedDetailed = oracle.Match(text);
-        var actualDetailed = Utf8MatchSequence.First(detailedRegex.CreateMatchCursor(input));
-        Utf8MatchSequence.AssertCaptures(expectedDetailed, actualDetailed, input, text);
-        var enumerateRegex = new Utf8Regex(pattern, options: options);
-        var expectedPositions = new System.Collections.Generic.List<string>();
-        foreach (Match m in oracle.Matches(text))
-        {
-            expectedPositions.Add(System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, m.Index)) + ":" + System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(m.Index, m.Length)));
-        }
-        var actualPositions = new System.Collections.Generic.List<string>();
-        foreach (var m in enumerateRegex.EnumerateMatches(input))
-        {
-            actualPositions.Add(m.StartOffsetInBytes + ":" + (m.EndOffsetInBytes - m.StartOffsetInBytes));
-        }
-        Assert.Equal(expectedPositions, actualPositions);
-        var splitRegex = new Utf8Regex(pattern, options: options);
-        var expectedSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var range in oracle.EnumerateSplits(text, int.MaxValue))
-        {
-            var start = range.Start.Value;
-            var end = range.End.Value;
-            expectedSplits.Add((text[start..end], global::System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, start)), global::System.Text.Encoding.UTF8.GetByteCount(text[start..end])));
-        }
-        var actualSplits = new System.Collections.Generic.List<(string Value, int Index, int Length)>();
-        foreach (var split in splitRegex.EnumerateSplits(input, int.MaxValue))
-        {
-            actualSplits.Add((Encoding.UTF8.GetString(split.GetValueBytes()), split.IndexInBytes, split.LengthInBytes));
-        }
-        Assert.Equal(expectedSplits, actualSplits);
-        var expected = oracle.Replace(text, template);
-        var expectedBytes = Encoding.UTF8.GetBytes(expected);
-        var bytesRegex = new Utf8Regex(pattern, options: options);
-        var bytesActual = bytesRegex.Replace(input, Encoding.UTF8.GetBytes(template));
-        Assert.Equal(expectedBytes, bytesActual);
-        var stringRegex = new Utf8Regex(pattern, options: options);
-        var stringActual = Encoding.UTF8.GetString(stringRegex.Replace(input, Encoding.UTF8.GetBytes(template)));
-        Assert.Equal(expected, stringActual);
-        var destinationRegex = new Utf8Regex(pattern, options: options);
-        Span<byte> destination = stackalloc byte[input.Length * capacityFactor + capacityPadding];
-        var status = destinationRegex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var bytesWritten);
-        Assert.Equal(System.Buffers.OperationStatus.Done, status);
-        Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
+        AssertOwnedOperations(pattern, options, text, template, capacityFactor, capacityPadding);
     }
 
 }
