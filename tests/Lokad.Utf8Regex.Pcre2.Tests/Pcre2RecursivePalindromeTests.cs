@@ -152,6 +152,20 @@ public sealed class Pcre2RecursivePalindromeTests
         }
     }
 
+    [Theory]
+    [InlineData("a123a", true)]
+    [InlineData("a123b", false)]
+    public void DeterministicSubroutineNeedsOnlyTheLiveCallStack(string text, bool expected)
+    {
+        using var regex = new Utf8Pcre2Regex(@"^(?1)\d{3}(a)", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new Utf8ResourcePolicy { MaxWorkingBytes = 512, MaxWorkSteps = 1000, MaxDepth = 2 }
+        });
+        using var cancellation = new CancellationTokenSource();
+
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text), cancellationToken: cancellation.Token));
+    }
+
     private static bool ScalarPalindrome(string text, bool allowsEmpty)
     {
         // Default $ may precede one terminal LF; dot cannot consume any LF.
