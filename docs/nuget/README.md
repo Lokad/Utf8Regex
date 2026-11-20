@@ -70,9 +70,10 @@ host retention after releasing a receipt is the host's responsibility.
 
 Version 0.4 introduced scalar matching over strict UTF-8 in place of the older
 UTF-16 matching behavior. Version 0.5 adds .NET 11 assets and POSIX, consolidates
-byte-only results and requires caller-valid subjects across all profiles. Remove
-`inputValidation` arguments and `InputValidation` reads when upgrading. The old
-validation option and malformed-subject rejection guarantees are removed.
+byte-only results and requires caller-valid subjects across all profiles. When
+upgrading from 0.4, move whole-subject validation to the text boundary. If you
+used a 0.5 development build with a validation option, remove `inputValidation`
+arguments and `InputValidation` property reads.
 
 NuGet's project-website link leads to the repository specifications, migration
 guide, profile examples and benchmark tables. Those tables retain their measured
