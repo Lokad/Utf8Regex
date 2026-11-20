@@ -1,8 +1,11 @@
 using System.Buffers;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Lokad.Utf8Regex.Tests;
 
+[Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8PatternMetadataTests
 {
     [Theory]
@@ -112,12 +115,21 @@ public sealed class Utf8PatternMetadataTests
     public void RepeatedCopiesAllocateNoIntermediateSourceOrStorage(bool native)
     {
         var encoded = Encoding.UTF8.GetBytes(new string('a', 128) + "😀é");
-        var regex = native ? Utf8Regex.Compile(encoded): new Utf8Regex(Encoding.UTF8.GetString(encoded));
+        using var regex = native ? Utf8Regex.Compile(encoded) : new Utf8Regex(Encoding.UTF8.GetString(encoded));
         var destination = new byte[encoded.Length];
-        for (var i = 0; i < 16; i++) regex.TryCopyPatternUtf8(destination, out _);
+        // Warm the measured call site through delayed tiering.
+        var warmup = Stopwatch.StartNew();
+        do { _ = MeasureCopies(regex, destination); }
+        while (warmup.ElapsedMilliseconds < 1_000);
+        Assert.Equal(0, MeasureCopies(regex, destination));
+        Assert.Equal(encoded, destination);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long MeasureCopies(Utf8Regex regex, byte[] destination)
+    {
         var allocated = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < 64; i++) regex.TryCopyPatternUtf8(destination, out _);
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - allocated);
-        Assert.Equal(encoded, destination);
+        return GC.GetAllocatedBytesForCurrentThread() - allocated;
     }
 }
