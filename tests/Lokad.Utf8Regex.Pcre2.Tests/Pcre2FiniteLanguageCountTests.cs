@@ -76,10 +76,11 @@ public sealed class Pcre2FiniteLanguageCountTests
     {
         foreach (var allowance in new[] { 1UL << 20, 1UL })
         {
-            // Four alternatives retain the scalar VM and its real rewind frames.
-            var regex = Create("((ab)|(a)|(c)|(d))", new() { HeapLimitInBytes = allowance });
+            // The preferred "ab" arm consumes the byte needed by the suffix.
+            // The scalar VM must keep "a" available for a real retry.
+            var regex = Create("((ab)|(a)|(c)|(d))b", new() { HeapLimitInBytes = allowance });
             var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-            var input = Pcre2Runner.PrepareInput("ab a"u8, 0, ref invocation);
+            var input = Pcre2Runner.PrepareInput("ab ab"u8, 0, ref invocation);
             if (allowance == 1)
             {
                 Pcre2MatchException? failure = null;
@@ -103,7 +104,7 @@ public sealed class Pcre2FiniteLanguageCountTests
     }
 
     [Fact]
-    public void StartOptionsMalformedTailsAndHeapAdmissionStayAuthoritative()
+    public void StartOptionsAndHeapAdmissionStayAuthoritative()
     {
         var regex = Create("(a)(b)", new() { MatchLimit = 1000000, HeapLimitInBytes = 1 << 20 });
         Assert.Equal(2, regex.Count("😀ab ab"u8, 4));
@@ -115,9 +116,11 @@ public sealed class Pcre2FiniteLanguageCountTests
         Assert.Equal(1, tinyLiteral.Count("ab"u8)); // No major scratch is acquired.
         var tinyAlternatives = Create("((ab)|(a))", new() { HeapLimitInBytes = 1 });
         Assert.Equal(2, tinyAlternatives.Count("ab a"u8)); // Native Count needs no rewind frames.
-        var tiny = Create("((ab)|(a)|(c)|(d))", new() { HeapLimitInBytes = 1 });
+        var tinyTerminal = Create("((ab)|(a)|(c)|(d))", new() { HeapLimitInBytes = 1 });
+        Assert.Equal(2, tinyTerminal.Count("ab a"u8)); // The preferred arm can accept without a retry.
+        var tiny = Create("((ab)|(a)|(c)|(d))b", new() { HeapLimitInBytes = 1 });
         Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => tiny.Count("ab a"u8)).ErrorKind);
+            Assert.Throws<Pcre2MatchException>(() => tiny.Count("ab ab"u8)).ErrorKind);
         var depth = Create("(?:(a|aa)+)b", new() { DepthLimit = 1 });
         Assert.Equal(Pcre2ErrorKind.DepthLimit,
             Assert.Throws<Pcre2MatchException>(() => depth.Count("aaaab"u8)).ErrorKind);
