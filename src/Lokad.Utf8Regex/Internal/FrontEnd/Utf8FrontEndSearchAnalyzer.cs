@@ -178,7 +178,6 @@ internal static class Utf8FrontEndSearchAnalyzer
     {
         internal Utf8TreeNode Node = node;
         internal int Index;
-        internal bool Entered;
     }
 
     public static Utf8SearchFacts AnalyzeLiteral(
@@ -275,11 +274,6 @@ internal static class Utf8FrontEndSearchAnalyzer
         trailingBoundary = Utf8BoundaryRequirement.None;
 
         var body = UnwrapStructuralNode(root);
-        if (body is null)
-        {
-            return;
-        }
-
         if (TryGetBoundaryRequirement(body.Kind, out var wholeBoundary))
         {
             leadingBoundary = wholeBoundary;
@@ -383,13 +377,7 @@ internal static class Utf8FrontEndSearchAnalyzer
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, node);
-        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && node.ChildCount == 1)
-        {
-            budget.ChargeWork(1);
-            node = node.Child(0);
-            frames.Push(node);
-        }
+        node = UnwrapStructuralNode(node);
 
         if (node.Kind != Utf8TreeNodeKind.Concatenate)
         {
@@ -426,7 +414,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         // The inverse candidate transform only walks six ASCII whitespace
         // bytes. Unicode \s also includes wider scalars; that definition cannot
         // certify distances relative to this transform's requirement base.
-        node = UnwrapStructuralNode(node) ?? node;
+        node = UnwrapStructuralNode(node);
         return node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Set &&
             Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(node.ScalarClass, out var mask) &&
             mask.ActualLowMask == 0x100003e00UL && mask.ActualHighMask == 0;
@@ -531,10 +519,6 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        using var rootFrames = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, root);
-
-        if (fallbackStartTransform.Kind == Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace &&
-            !TrySelectFallbackStartTransform(root, out _)) return false;
 
         var prefix = fallbackStartTransform.Kind == Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace
             ? SkipLeadingAsciiWhitespacePrefix(root)
@@ -596,10 +580,8 @@ internal static class Utf8FrontEndSearchAnalyzer
     private static (Utf8TreeNode? Node, int StartIndex) SkipLeadingAsciiWhitespacePrefix(Utf8TreeNode node)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, node);
-        var unwrapped = Unwrap(node);
-        if (unwrapped is null || unwrapped.Kind != Utf8TreeNodeKind.Concatenate)
+        var unwrapped = UnwrapStructuralNode(node);
+        if (unwrapped.Kind != Utf8TreeNodeKind.Concatenate)
         {
             return (unwrapped, 0);
         }
@@ -616,9 +598,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         Utf8TreeNode? firstContent = null;
         if (startIndex < node.ChildCount)
         {
-            firstContent = node.Child(startIndex);
-            frames.Push(firstContent);
-            firstContent = Unwrap(firstContent);
+            firstContent = UnwrapStructuralNode(node.Child(startIndex));
         }
         if (firstContent is null || !(IsWhitespaceLoop(firstContent) || IsLeadingAsciiWhitespaceNode(firstContent)))
         {
@@ -645,17 +625,6 @@ internal static class Utf8FrontEndSearchAnalyzer
 
         // Borrow the suffix without allocating a node/array or reparenting it.
         return (node, startIndex);
-
-        Utf8TreeNode Unwrap(Utf8TreeNode value)
-        {
-            while (value.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && value.ChildCount == 1)
-            {
-                budget.ChargeWork(1);
-                value = value.Child(0);
-                frames.Push(value);
-            }
-            return value;
-        }
     }
 
     // The tree keeps logical subject order in both execution directions. Stop
@@ -780,10 +749,9 @@ internal static class Utf8FrontEndSearchAnalyzer
             (hasWord ? 500 : 0) - (onlyWhitespace ? 2000 : 0);
     }
 
-    private static Utf8TreeNode? UnwrapStructuralNode(Utf8TreeNode? node)
+    private static Utf8TreeNode UnwrapStructuralNode(Utf8TreeNode node)
     {
-        while (node is not null &&
-               node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic &&
+        while (node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic &&
                node.ChildCount == 1)
         {
             Utf8ConstructionScope.ChargeWork(1);

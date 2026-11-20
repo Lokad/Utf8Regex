@@ -188,9 +188,12 @@ public sealed class Utf8FrontEndScanAdmissionTests
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
+        var work = owner.Budget.WorkSteps;
         var slice = Assert.IsType<ValueTuple<Utf8TreeNode, int>>(Call(typeof(Utf8FrontEndSearchAnalyzer), "SkipLeadingAsciiWhitespacePrefix", root));
         Assert.Same(root, slice.Item1);
         Assert.Equal(3, slice.Item2);
+        Assert.Equal(checkpoint, owner.Budget.PeakBytes);
+        Assert.True(owner.Budget.WorkSteps > work);
         using (var discarded = Utf8ConstructionScope.Enter())
         {
             object?[] args = [slice.Item1, slice.Item2, null];
