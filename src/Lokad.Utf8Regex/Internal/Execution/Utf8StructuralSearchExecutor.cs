@@ -61,7 +61,7 @@ internal static class Utf8StructuralSearchExecutor
     {
         candidate = default;
         var searcher = default(PreparedSearcher);
-        var asciiFindPlan = default(Execution.PreparedAsciiFindPlan);
+        Utf8FixedDistanceSet[] fixedDistanceSets = [];
         var startTransform = default(Utf8FallbackStartTransform);
 
         foreach (var stage in stages)
@@ -72,7 +72,7 @@ internal static class Utf8StructuralSearchExecutor
                     searcher = stage.Searcher;
                     break;
                 case Utf8StructuralSearchStageKind.FindAscii:
-                    asciiFindPlan = stage.AsciiFindPlan;
+                    fixedDistanceSets = stage.FixedDistanceSets;
                     break;
                 case Utf8StructuralSearchStageKind.TransformCandidateStart:
                     startTransform = stage.StartTransform;
@@ -80,7 +80,7 @@ internal static class Utf8StructuralSearchExecutor
             }
         }
 
-        if (!searcher.HasValue && !asciiFindPlan.HasValue)
+        if (!searcher.HasValue && fixedDistanceSets.Length == 0)
         {
             return false;
         }
@@ -105,17 +105,13 @@ internal static class Utf8StructuralSearchExecutor
             }
             else
             {
-                if (!Execution.Utf8AsciiFindExecutor.TryFindNextFixedDistanceCandidate(
-                        input,
-                        asciiFindPlan,
-                        searchState.NextStart,
-                        out rawStartIndex,
-                        out matchedLength))
+                if (!TryFindNextFixedDistanceCandidate(input, fixedDistanceSets, searchState.NextStart, out rawStartIndex))
                 {
                     state = new Utf8StructuralSearchState(searchState, default);
                     return false;
                 }
 
+                matchedLength = 1;
                 literalId = 0;
                 searchState = new PreparedSearchScanState(rawStartIndex + 1, default);
             }
@@ -206,7 +202,7 @@ internal static class Utf8StructuralSearchExecutor
     {
         candidate = default;
         var searcher = default(PreparedSearcher);
-        var asciiFindPlan = default(Execution.PreparedAsciiFindPlan);
+        Utf8FixedDistanceSet[] fixedDistanceSets = [];
         var startTransform = default(Utf8FallbackStartTransform);
 
         foreach (var stage in stages)
@@ -217,7 +213,7 @@ internal static class Utf8StructuralSearchExecutor
                     searcher = stage.Searcher;
                     break;
                 case Utf8StructuralSearchStageKind.FindAscii:
-                    asciiFindPlan = stage.AsciiFindPlan;
+                    fixedDistanceSets = stage.FixedDistanceSets;
                     break;
                 case Utf8StructuralSearchStageKind.TransformCandidateStart:
                     startTransform = stage.StartTransform;
@@ -225,7 +221,7 @@ internal static class Utf8StructuralSearchExecutor
             }
         }
 
-        if (!searcher.HasValue && !asciiFindPlan.HasValue)
+        if (!searcher.HasValue && fixedDistanceSets.Length == 0)
         {
             return false;
         }
@@ -252,25 +248,26 @@ internal static class Utf8StructuralSearchExecutor
                     }
                 }
 
-                searchLength = match.Index;
+                // A rejected fixed literal narrows the next start by one byte. A
+                // prefix ending at the rejected start would also exclude overlaps.
+                searchLength = searcher.Kind == PreparedSearcherKind.ExactLiteral && match.Length > 0
+                    ? match.Index + match.Length - 1 : match.Index;
             }
 
             return false;
         }
 
         var lastStart = -1;
-        var lastLength = 0;
         var searchFrom = 0;
-        while (Execution.Utf8AsciiFindExecutor.TryFindNextFixedDistanceCandidate(input[..endIndex], asciiFindPlan, searchFrom, out var candidateStart, out var matchLength))
+        while (TryFindNextFixedDistanceCandidate(input[..endIndex], fixedDistanceSets, searchFrom, out var candidateStart))
         {
             var startIndex = startTransform.Apply(input, candidateStart);
             if (startIndex >= 0)
             {
                 var requirementBaseIndex = GetRequirementBaseIndex(input, startIndex, startTransform);
-                if (SatisfiesStartRequirements(input, stages, requirementBaseIndex, matchLength))
+                if (SatisfiesStartRequirements(input, stages, requirementBaseIndex, 1))
                 {
                     lastStart = startIndex;
-                    lastLength = matchLength;
                 }
             }
 
@@ -280,11 +277,64 @@ internal static class Utf8StructuralSearchExecutor
         if (lastStart >= 0)
         {
             var candidateEndIndex = GetExactCandidateEnd(stages, lastStart, input.Length);
-            candidate = Utf8StructuralCandidate.Start(lastStart, candidateEndIndex, lastLength, 0);
+            candidate = Utf8StructuralCandidate.Start(lastStart, candidateEndIndex, 1, 0);
             return true;
         }
 
         return false;
+    }
+
+    private static bool TryFindNextFixedDistanceCandidate(
+        ReadOnlySpan<byte> input,
+        Utf8FixedDistanceSet[] sets,
+        int startIndex,
+        out int candidateIndex)
+    {
+        candidateIndex = -1;
+
+        if (sets.Length == 0 || (uint)startIndex > (uint)input.Length)
+        {
+            return false;
+        }
+
+        var primary = sets[0];
+        var anchorStart = Math.Max(0, startIndex + primary.Distance);
+        var search = primary.Search;
+        var position = anchorStart;
+        while (position < input.Length)
+        {
+            var relative = search.IndexOf(input[position..]);
+            if (relative < 0)
+            {
+                return false;
+            }
+
+            var anchorIndex = position + relative;
+            var start = anchorIndex - primary.Distance;
+            if (start >= startIndex && MatchesAllSets(input, start, sets))
+            {
+                candidateIndex = start;
+                return true;
+            }
+
+            position = anchorIndex + 1;
+        }
+
+        return false;
+    }
+
+    private static bool MatchesAllSets(ReadOnlySpan<byte> input, int startIndex, Utf8FixedDistanceSet[] sets)
+    {
+        foreach (var set in sets)
+        {
+            var index = startIndex + set.Distance;
+            if ((uint)index >= (uint)input.Length || !set.Contains(input[index]))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool SatisfiesStartRequirements(ReadOnlySpan<byte> input, Utf8StructuralSearchStage[] stages, int startIndex, int matchLength)

@@ -181,17 +181,17 @@ public sealed class Utf8SubstringPreparationQualificationTests
     }
 
     [Fact]
-    public void FindAndSearchPlanConstructionCallersShareTheSubstringScanAdmission()
+    public void LiteralSearchPlansChargeForSubstringPreparation()
     {
         var literal = "anchor"u8.ToArray();
-        foreach (var build in new Action[] { () => PreparedAsciiFindPlan.CreateFixedDistanceLiteral(literal, 2),
-            () => Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral,
-                new Utf8SearchFactData { LiteralUtf8 = literal })) })
+        foreach (var kind in new[] { Utf8SearchKind.ExactAsciiLiteral, Utf8SearchKind.FixedDistanceAsciiLiteral })
         {
-            using var denied = new Utf8ConstructionScope(0, ulong.MaxValue, 0, ulong.MaxValue);
+            var facts = Utf8SearchFacts.Create(kind, new Utf8SearchFactData { LiteralUtf8 = literal });
+            using var denied = new Utf8ConstructionScope(0, ulong.MaxValue, 1, ulong.MaxValue);
             Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps,
-                Assert.Throws<Utf8ResourceLimitExceededException>(build).ResourceKind);
-            Assert.Equal(0ul, denied.Budget.Depth); Assert.Equal(0ul, denied.Budget.ReservedBytes);
+                Assert.Throws<Utf8ResourceLimitExceededException>(() => Utf8SearchPlan.Prepare(facts)).ResourceKind);
+            Assert.Equal(0ul, denied.Budget.Depth);
+            Assert.Equal(0ul, denied.Budget.ReservedBytes);
         }
     }
 

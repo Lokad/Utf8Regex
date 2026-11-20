@@ -84,7 +84,6 @@ internal readonly struct Utf8SearchPlan
             kind,
             distance,
             canGuideFallbackStarts,
-            literalUtf8,
             PreparedSearcher,
             WindowSearch,
             fixedDistanceSets,

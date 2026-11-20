@@ -589,17 +589,6 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
-    public void PreparedAsciiFindPlanCanFindFixedDistanceLiteralCandidates()
-    {
-        var plan = PreparedAsciiFindPlan.CreateFixedDistanceLiteral(Encoding.UTF8.GetBytes("Holmes"), 2);
-        var input = Encoding.UTF8.GetBytes("aaHolmes zz");
-
-        Assert.True(Utf8AsciiFindExecutor.TryFindNextFixedDistanceCandidate(input, plan, 0, out var candidateIndex, out var matchedLength));
-        Assert.Equal(0, candidateIndex);
-        Assert.Equal(6, matchedLength);
-    }
-
-    [Fact]
     public void PreparedMultiLiteralSearchCanScanNonOverlappingMatches()
     {
         var search = new PreparedMultiLiteralSearch(

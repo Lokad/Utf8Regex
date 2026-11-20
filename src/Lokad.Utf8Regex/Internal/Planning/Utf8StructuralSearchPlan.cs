@@ -16,12 +16,14 @@ internal enum Utf8StructuralSearchStageKind : byte
 
 internal readonly struct Utf8StructuralSearchStage
 {
+    private readonly Utf8FixedDistanceSet[]? _fixedDistanceSets;
+
     private readonly record struct Data
     {
         public PreparedSearcher Searcher { get; init; }
         public PreparedWindowSearch WindowSearch { get; init; }
         public Utf8FallbackStartTransform StartTransform { get; init; }
-        public Execution.PreparedAsciiFindPlan AsciiFindPlan { get; init; }
+        public Utf8FixedDistanceSet[]? FixedDistanceSets { get; init; }
         public byte[] LiteralUtf8 { get; init; }
         public int MinLength { get; init; }
         public int MaxSpan { get; init; }
@@ -35,7 +37,7 @@ internal readonly struct Utf8StructuralSearchStage
         Searcher = data.Searcher;
         WindowSearch = data.WindowSearch;
         StartTransform = data.StartTransform;
-        AsciiFindPlan = data.AsciiFindPlan;
+        _fixedDistanceSets = data.FixedDistanceSets;
         LiteralUtf8 = data.LiteralUtf8 ?? [];
         MinLength = data.MinLength;
         MaxSpan = data.MaxSpan;
@@ -51,13 +53,7 @@ internal readonly struct Utf8StructuralSearchStage
 
     public Utf8FallbackStartTransform StartTransform { get; }
 
-    public Execution.PreparedAsciiFindPlan AsciiFindPlan { get; }
-
-
-
-
-
-
+    public Utf8FixedDistanceSet[] FixedDistanceSets => _fixedDistanceSets ?? [];
     public byte[] LiteralUtf8 { get; }
 
     public int MinLength { get; }
@@ -74,8 +70,8 @@ internal readonly struct Utf8StructuralSearchStage
     public static Utf8StructuralSearchStage FindWindow(PreparedWindowSearch windowSearch) =>
         new(Utf8StructuralSearchStageKind.FindWindow, new Data { WindowSearch = windowSearch });
 
-    public static Utf8StructuralSearchStage FindAscii(Execution.PreparedAsciiFindPlan asciiFindPlan) =>
-        new(Utf8StructuralSearchStageKind.FindAscii, new Data { AsciiFindPlan = asciiFindPlan });
+    public static Utf8StructuralSearchStage FindAscii(Utf8FixedDistanceSet[] fixedDistanceSets) =>
+        new(Utf8StructuralSearchStageKind.FindAscii, new Data { FixedDistanceSets = fixedDistanceSets });
 
     public static Utf8StructuralSearchStage TransformCandidateStart(Utf8FallbackStartTransform startTransform) =>
         new(Utf8StructuralSearchStageKind.TransformCandidateStart, new Data { StartTransform = startTransform });
@@ -125,17 +121,10 @@ internal readonly struct Utf8StructuralSearchPlan
     public bool HasValue => Stages is { Length: > 0 };
 
     public static Utf8StructuralSearchPlan Create(
-        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch, Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform)
-        => Create(kind, distance, canGuideFallbackStarts, null, preparedSearcher,
-            windowSearch, fixedDistanceSets, fallbackStartTransform);
-
-    public static Utf8StructuralSearchPlan Create(
-        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, byte[]? literalUtf8, PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch, Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform)
-        => Create(kind, distance, canGuideFallbackStarts, literalUtf8, preparedSearcher,
-            windowSearch, fixedDistanceSets, fallbackStartTransform, default, default, null, null, null);
-
-    public static Utf8StructuralSearchPlan Create(
-        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, byte[]? literalUtf8, PreparedSearcher preparedSearcher, PreparedWindowSearch windowSearch, Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform, Utf8BoundaryRequirement leadingBoundary, Utf8BoundaryRequirement trailingBoundary, byte[]? trailingLiteralUtf8, int? exactLength, int? maxLength)
+        Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, PreparedSearcher preparedSearcher,
+        PreparedWindowSearch windowSearch, Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform,
+        Utf8BoundaryRequirement leadingBoundary = default, Utf8BoundaryRequirement trailingBoundary = default,
+        byte[]? trailingLiteralUtf8 = null, int? exactLength = null, int? maxLength = null)
     {
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
@@ -148,21 +137,15 @@ internal readonly struct Utf8StructuralSearchPlan
             Utf8StructuralSearchStage first;
             Utf8StructuralSearchYieldKind yieldKind;
             if (preparedSearcher.HasValue && (canGuideFallbackStarts || transform.HasValue ||
-                kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral or
+                kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral or
                     Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.AsciiFoldedByteLiterals or Utf8SearchKind.ExactUtf8Literals))
             {
                 first = Utf8StructuralSearchStage.FindLiteralFamily(preparedSearcher);
                 yieldKind = Utf8StructuralSearchYieldKind.Start;
             }
-            else if (kind == Utf8SearchKind.FixedDistanceAsciiLiteral && literalUtf8 is { Length: > 0 })
-            {
-                first = Utf8StructuralSearchStage.FindAscii(PreparedAsciiFindPlan.CreateFixedDistanceLiteral(literalUtf8, distance));
-                transform = fallbackStartTransform;
-                yieldKind = Utf8StructuralSearchYieldKind.Start;
-            }
             else if (kind == Utf8SearchKind.FixedDistanceAsciiSets && fixedDistanceSets is { Length: > 0 })
             {
-                first = Utf8StructuralSearchStage.FindAscii(PreparedAsciiFindPlan.CreateFixedDistanceSet(fixedDistanceSets));
+                first = Utf8StructuralSearchStage.FindAscii(fixedDistanceSets);
                 transform = fallbackStartTransform;
                 yieldKind = Utf8StructuralSearchYieldKind.Start;
             }

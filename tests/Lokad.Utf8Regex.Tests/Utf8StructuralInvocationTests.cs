@@ -316,10 +316,12 @@ public sealed class Utf8StructuralInvocationTests
     [MemberData(nameof(FixedCases))]
     public void FixedDistanceSearchesKeepOffsetsAndAllSetGuards(bool set, bool reverse, int offset)
     {
-        var ascii = set ? PreparedAsciiFindPlan.CreateFixedDistanceSet([Utf8FixedDistanceSet.FromBytes(1, [(byte)'a'], false), Utf8FixedDistanceSet.FromBytes(3, [(byte)'c'], false)])
-            : PreparedAsciiFindPlan.CreateFixedDistanceLiteral("target"u8.ToArray(), 2);
-        var plan = new Utf8StructuralSearchPlan(Utf8StructuralSearchYieldKind.Start,
-            [Utf8StructuralSearchStage.FindAscii(ascii), Utf8StructuralSearchStage.YieldStart()]);
+        var sets = set
+            ? new[] { Utf8FixedDistanceSet.FromBytes(1, [(byte)'a'], false), Utf8FixedDistanceSet.FromBytes(3, [(byte)'c'], false) }
+            : null;
+        var kind = set ? Utf8SearchKind.FixedDistanceAsciiSets : Utf8SearchKind.FixedDistanceAsciiLiteral;
+        var plan = Utf8StructuralSearchPlan.Create(kind, set ? 0 : 2, canGuideFallbackStarts: false,
+            set ? default : Searcher(0), default, sets, default);
         var hit = set ? "zaQc" : "zztarget";
         var input = Encoding.UTF8.GetBytes(new string('x', offset) + hit + "xxxxx" + hit);
         var state = default(Utf8StructuralSearchState);
@@ -328,6 +330,26 @@ public sealed class Utf8StructuralInvocationTests
         var start = reverse ? offset + hit.Length + 5 : offset;
         Assert.True(found);
         Assert.Equal(Utf8StructuralCandidate.Start(start, -1, set ? 1 : 6, 0), candidate);
+    }
+
+    [Fact]
+    public void ReverseFixedLiteralCanRetryAnOverlapAfterATrailingGuardRejects()
+    {
+        var facts = Utf8SearchFacts.Create(Utf8SearchKind.FixedDistanceAsciiLiteral,
+            new Utf8SearchFactData { LiteralUtf8 = "aa"u8.ToArray(), TrailingLiteralUtf8 = "a!"u8.ToArray() });
+        var plan = Utf8SearchPlan.Prepare(facts).StructuralSearchPlan;
+        var input = "😀aaa!"u8;
+        var state = default(Utf8StructuralSearchState);
+        var expected = Utf8StructuralCandidate.Start(4, -1, 2, 0);
+
+        Assert.True(plan.TryFindNextCandidate(input, ref state, out var first));
+        Assert.Equal(expected, first);
+        Assert.False(plan.TryFindNextCandidate(input, ref state, out _));
+
+        // The search slice excludes the final punctuation. The requirement
+        // still sees the full subject, and the rejected last "aa" overlaps.
+        Assert.True(plan.TryFindLastCandidate(input, input.Length - 1, out var last));
+        Assert.Equal(expected, last);
     }
 
     [Theory]
