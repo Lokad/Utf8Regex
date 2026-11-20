@@ -1628,13 +1628,24 @@ internal static class Utf8SliceLowerer
                         request = new(repeat.Body, false, false, 0);
                         return true;
                     }
-                    if (frame.Stage == 0 && !MirrorExecute && repeat is { Minimum: 1, Maximum: long.MaxValue, Lazy: false })
+                    if (frame.Stage == 0 && !MirrorExecute && repeat is { Minimum: 0 or 1, Maximum: long.MaxValue, Lazy: false })
                     {
                         var remaining = 32;
-                        if (GetDelimitedAsciiRunByte(repeat.Body) >= 0 ||
-                            repeat.Body is Utf8SliceNode.AlternationNode && Facts[repeat.Body].Minimum > 0 &&
-                            IsSmallPureBody(repeat.Body, ref remaining))
+                        var candidateBody = repeat.Body;
+                        if (candidateBody is Utf8SliceNode.CaptureNode capture)
                         {
+                            remaining -= 2;
+                            candidateBody = capture.Body;
+                        }
+                        if (repeat.Minimum == 1 && GetDelimitedAsciiRunByte(repeat.Body) >= 0 ||
+                            candidateBody is Utf8SliceNode.AlternationNode && Facts[candidateBody].Minimum > 0 &&
+                            IsSmallPureBody(candidateBody, ref remaining))
+                        {
+                            if (repeat.Minimum == 0)
+                            {
+                                frame.Jump = Instructions.Count;
+                                Emit(new(Utf8SliceInstructionKind.Fork, 0, 0, 0, 0));
+                            }
                             frame.Mark = Instructions.Count;
                             frame.Stage = 3;
                             request = new(repeat.Body, false, false, 0);
@@ -1649,6 +1660,7 @@ internal static class Utf8SliceLowerer
                         // Jump.B carries the required delimiter plus one, or zero
                         // for a loop without a proved delimiter.
                         Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, GetDelimitedAsciiRunByte(repeat.Body) + 1, 0, 0));
+                        if (repeat.Minimum == 0) Patch(frame.Jump, Instructions.Count);
                         break;
                     }
                     // Zero or one iteration needs a branch, not a counter or

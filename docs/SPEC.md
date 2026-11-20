@@ -175,7 +175,9 @@ expansion proportional to the bound.
 
 Backtracking zero-or-one repeats of compound bodies use ordinary ordered branches
 rather than repeat counters and rollback mutations. Single-atom repeats retain
-their existing fused kernels. Greedy/lazy preference, nullable captures,
+their existing fused kernels. A bounded proof also permits a branch loop for
+small greedy unbounded alternations that consume on every iteration, including
+an enclosing capture. Greedy/lazy preference, nullable captures,
 assertions and RTL are preserved. Instructions, construction/work charges and
 major working-buffer requirements can decrease; numeric costs depend on the
 program version. Frames still require depth and working admission before growth,

@@ -60,6 +60,22 @@ public sealed class Utf8RepeatedSegmentProofTests
             .Select(range => (range.StartOffsetInBytes, range.EndOffsetInBytes)).ToArray());
     }
 
+    [Fact]
+    public void ZeroMinimumAlternationRewindsWithoutRepeatStorage()
+    {
+        const string pattern = @"(?<part>ab|a)*b";
+        var input = "abab"u8.ToArray();
+        using var source = new CancellationTokenSource();
+        using var limited = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 640 } });
+        Assert.Equal(new Utf8CaptureRange(0, 4), limited.Match(input, cancellationToken: source.Token));
+
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
+        Assert.Equal([(0, 2), (2, 3)], match.GetCaptures(1).ToArray()
+            .Select(range => (range.StartOffsetInBytes, range.EndOffsetInBytes)).ToArray());
+    }
+
     [Theory]
     [InlineData(@"(?:[A-Z][a-z]+\s*){2,4}?", "Aa Bb Cc Dd Ee Ff Gg Hh")]
     [InlineData(@"(?:[A-Z][a-z]+?\s*){2,4}", "Aaaaa Bbbbb")]
@@ -71,8 +87,11 @@ public sealed class Utf8RepeatedSegmentProofTests
     [InlineData(@"(?:[A-Z][a-z]+\s+){2,4}", "Aa Bb Cc")]
     [InlineData(@"(?<all>(?:[A-Z][a-z]+\s*){2,4}?)", "Aa Bb Cc Dd Ee Ff Gg Hh")]
     [InlineData(@"(?<all>(?:ab|a|bc)+)z", "abcz ababaz aaax")]
+    [InlineData(@"(?<part>ab|a)*b", "abab b aab")]
     [InlineData(@"(?:😀é|😀|é)+z", "😀é😀z 😀x éz")]
+    [InlineData(@"(?:😀é|😀|é)*z", "z 😀é😀z 😀x éz")]
     [InlineData(@"(?:ab|a?)+z", "z abz xz")]
+    [InlineData(@"(?:ab|a?)*z", "z abz xz")]
     [InlineData(@"(?:ab|a){1,3}z", "abababaz az aaaz")]
     [InlineData(@"(?:ab|a)+?b", "aab ab abab")]
     public void GreedinessRewindAndFailedSegmentEndpointsRemainScalar(string pattern, string subject)
