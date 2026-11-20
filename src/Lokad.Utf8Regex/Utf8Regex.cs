@@ -722,23 +722,8 @@ public sealed partial class Utf8Regex : IDisposable
         }
 
         var runtime = _compiledEngineRuntime;
-        var canUseAsciiProbe = runtime.SupportsAsciiMatchProbe && Utf8InputAnalyzer.IsAscii(input);
-        var canUseUtf8Probe = runtime.SupportsUtf8MatchProbe;
-        if (canUseAsciiProbe || canUseUtf8Probe)
-        {
-            var handled = canUseAsciiProbe
-                ? runtime.TryMatchAsciiProbe(input, out var probeMatch)
-                : runtime.TryMatchUtf8Probe(input, out probeMatch);
-
-            if (handled)
-            {
-                return probeMatch;
-            }
-            if (canUseUtf8Probe)
-            {
-                return default;
-            }
-        }
+        if (runtime.SupportsUtf8MatchProbe)
+            return runtime.TryMatchUtf8Probe(input, out var probeMatch) ? probeMatch : default;
 
         return runtime.Match(input, CreateExecutionBudget());
     }

@@ -45,8 +45,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         _compositeTrailingLiteralSearch = state.CompositeSearch;
     }
 
-    internal bool SupportsAsciiMatchProbe => _smallAsciiLiteralFamilyPrimitive is not null || SupportsAsciiDirectMatch;
-
     internal bool SupportsUtf8MatchProbe =>
         _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals ||
         CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite);
@@ -253,25 +251,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         }
 
         return new Utf8CaptureRange(indexInBytes, (indexInBytes) + (search.MatchLengthInBytes));
-    }
-
-    public bool TryMatchAsciiProbe(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
-    {
-        if (_smallAsciiLiteralFamilyPrimitive is { } primitive)
-        {
-            match = primitive.TryFindFirst(input, out var index, out var matchedLength)
-                ? new Utf8CaptureRange(index, (index) + (matchedLength))
-                : default(Utf8CaptureRange);
-            return true;
-        }
-
-        if (TryMatchAsciiDirect(input, budget: Utf8ExecutionDeadline.Infinite, out match))
-        {
-            return true;
-        }
-
-        match = default(Utf8CaptureRange);
-        return false;
     }
 
     public bool TryMatchUtf8Probe(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
