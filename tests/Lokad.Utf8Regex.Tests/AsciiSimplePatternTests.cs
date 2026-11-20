@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using static System.Text.RegularExpressions.RegexOptions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
@@ -2894,33 +2895,6 @@ public sealed class AsciiSimplePatternTests
         Assert.True(stringRegex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> AnchoredLoopAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^a[^x]*b$", RegexOptions.CultureInvariant, "axaayb", "Q"),
-            ("^a[^x]*b$", RegexOptions.CultureInvariant, "ab", "Q"),
-            ("^a[^x]+b$", RegexOptions.CultureInvariant, "axaayb", "Q"),
-            ("(?<=x)a+", RegexOptions.CultureInvariant, "xaay", "Q"),
-            ("a+(?=y)", RegexOptions.CultureInvariant, "xaay", "Q"),
-            ("\\Ba+\\B", RegexOptions.CultureInvariant, "xaay", "Q"),
-            ("\\ba+\\b", RegexOptions.CultureInvariant, "xaay", "Q"),
-            ("^a[^x]+b", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "axaayb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AnchoredLoopAsciiOwnedCases))]
-    public void AnchoredLoopAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> AnchoredLoopAstralOwnedCases()
     {
         (string pattern, string text, string template)[] rows =
@@ -4203,31 +4177,6 @@ public sealed class AsciiSimplePatternTests
         }
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> ComboAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?i)a+b", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xxAAB", "Q"),
-            ("(?m:^ab)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAB", "Q"),
-            ("(?m:ab$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\nxx", "Q"),
-            ("(?m:^ab$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "AB", "Q"),
-            ("(?i)(a)(b)", RegexOptions.CultureInvariant, "xxABxx", "<$1$2>"),
-            ("(?i)a[^x]+b", RegexOptions.CultureInvariant, "xAYZb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ComboAsciiOwnedCases))]
-    public void ComboAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> RtlFoldedLiteralShapingOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
@@ -4308,2031 +4257,6 @@ public sealed class AsciiSimplePatternTests
         Assert.Equal(expectedBytes, destination[..bytesWritten].ToArray());
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> ModeAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s)a.*b", RegexOptions.CultureInvariant, "xa\nb", "Q"),
-            ("(a)(b)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-            ("a b", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xabx", "Q"),
-            ("ab\\z", RegexOptions.CultureInvariant, "xxab", "Q"),
-            ("\\Aab", RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("a*", RegexOptions.CultureInvariant, "", "Q"),
-            ("a*", RegexOptions.CultureInvariant, "bbb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ModeAsciiOwnedCases))]
-    public void ModeAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousAnchorSplitCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Gab", RegexOptions.CultureInvariant, "abxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousAnchorSplitCases))]
-    public void ContiguousAnchorKeepsDiscoveryAndOwnsResults(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BackrefAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a+)\\1", RegexOptions.CultureInvariant, "xxaaax", "Q"),
-            ("(a+)\\1", RegexOptions.CultureInvariant, "xxabx", "Q"),
-            ("(a+)\\1", RegexOptions.CultureInvariant, "xaabbbaabbx", "Q"),
-            ("(ab)c\\1", RegexOptions.CultureInvariant, "xxabcabxx", "Q"),
-            ("(ab)c\\1", RegexOptions.CultureInvariant, "xxabx", "Q"),
-            ("(a*)(b*)\\1\\2", RegexOptions.CultureInvariant, "xxabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BackrefAsciiOwnedCases))]
-    public void BackrefAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BackrefSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+)\\1", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
-            ("(a.+)\\1", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabxab", "Q"),
-            ("(ab.+)\\1", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncab", "Q"),
-            ("(a.+)\\1$", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BackrefSinglelineOwnedCases))]
-    public void BackrefSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BackrefMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(ab)\\1$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab", "Q"),
-            ("^(ab)\\1$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxb", "Q"),
-            ("(a+)\\1$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabb", "Q"),
-            ("(a+)\\1$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naaaa", "Q"),
-            ("(a.+)\\1", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab\nzz", "Q"),
-            ("(a.+)\\1", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabcb", "Q"),
-            ("(a.+)\\1", RegexOptions.Multiline | RegexOptions.CultureInvariant, "abab", "Q"),
-            ("(a.+)\\1", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xabc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BackrefMultilineOwnedCases))]
-    public void BackrefMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ExplicitBackrefMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<w>ab)\\1$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abab", "Q"),
-            ("^(?<w>ab)\\1$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab", "Q"),
-            ("^(?<w>ab)\\1$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ExplicitBackrefMultilineOwnedCases))]
-    public void ExplicitBackrefMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaroundAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a+(?=b)", RegexOptions.CultureInvariant, "xaabx", "Q"),
-            ("a+(?=b)", RegexOptions.CultureInvariant, "xaax", "Q"),
-            ("a+(?!b)", RegexOptions.CultureInvariant, "xaax", "Q"),
-            ("a+(?!b)", RegexOptions.CultureInvariant, "xaabx", "Q"),
-            ("(?<=x)a+", RegexOptions.CultureInvariant, "xxaax", "Q"),
-            ("(?<=x)a+", RegexOptions.CultureInvariant, "xbbb", "Q"),
-            ("(?<!x)a+", RegexOptions.CultureInvariant, "bbaaa", "Q"),
-            ("(?<!x)a+", RegexOptions.CultureInvariant, "xxaax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaroundAsciiOwnedCases))]
-    public void LookaroundAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AlternationAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(ab|cd)ef", RegexOptions.CultureInvariant, "xxcdefxx", "Q"),
-            ("(ab|cd)ef", RegexOptions.CultureInvariant, "xxabefxx", "Q"),
-            ("(ab|cd)ef", RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("(a|bc)+d", RegexOptions.CultureInvariant, "xxbcdxx", "Q"),
-            ("(a|bc)+d", RegexOptions.CultureInvariant, "xxabcdxx", "Q"),
-            ("(a|bc)+d", RegexOptions.CultureInvariant, "xxabx", "Q"),
-            ("x(a|bc)?y", RegexOptions.CultureInvariant, "xxay", "Q"),
-            ("x(a|bc)?y", RegexOptions.CultureInvariant, "xxy", "Q"),
-            ("(ab|a)b", RegexOptions.CultureInvariant, "xxabb", "Q"),
-            ("(ab|a)b", RegexOptions.CultureInvariant, "xxab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AlternationAsciiOwnedCases))]
-    public void AlternationAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bword\\b", RegexOptions.CultureInvariant, "xx word xx", "Q"),
-            ("\\bword\\b", RegexOptions.CultureInvariant, "xxwordxx", "Q"),
-            ("\\bword\\b", RegexOptions.CultureInvariant, "xxwords", "Q"),
-            ("\\Bword\\B", RegexOptions.CultureInvariant, "xwordy", "Q"),
-            ("\\Bword\\B", RegexOptions.CultureInvariant, "xxwordxx", "Q"),
-            ("(\\b\\w+\\b)", RegexOptions.CultureInvariant, "xxhi therexx", "Q"),
-            ("(\\b\\w+\\b)", RegexOptions.CultureInvariant, "  ", "Q"),
-            ("\\b(a+)\\b", RegexOptions.CultureInvariant, "xx aa xx", "Q"),
-            ("\\b(a+)\\b", RegexOptions.CultureInvariant, "xxaaaxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryAsciiOwnedCases))]
-    public void WordBoundaryAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bword\\b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nword\nxx", "Q"),
-            ("\\bword", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nwordxx", "Q"),
-            ("word\\b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxxword", "Q"),
-            ("\\bword\\b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
-            ("\\b.+\\b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xabcby", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.Multiline | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryMultilineOwnedCases))]
-    public void WordBoundaryMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedFamilyAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(ab|cd)ef", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxCDefxx", "Q"),
-            ("(ab|cd)ef", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABE Fxx", "Q"),
-            ("(ab|cd)ef", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("(a+)\\1", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAaax", "Q"),
-            ("(a+)\\1", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabx", "Q"),
-            ("a+(?=B)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xaaBx", "Q"),
-            ("a+(?=B)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xaabx", "Q"),
-            ("\\bWORD\\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx word xx", "Q"),
-            ("\\bWORD\\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxwordxx", "Q"),
-            ("(?<=X)a+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xXaax", "Q"),
-            ("(?<=X)a+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedFamilyAsciiOwnedCases))]
-    public void FoldedFamilyAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<x>ab|cd)ef", RegexOptions.CultureInvariant, "xxcdefxx", "Q"),
-            ("(?<x>ab|cd)ef", RegexOptions.CultureInvariant, "xxabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedAsciiOwnedCases))]
-    public void NamedAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedBackrefOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>ab)c\\k<w>", RegexOptions.CultureInvariant, "xxabcabxx", "Q"),
-            ("(?<w>ab)c\\k<w>", RegexOptions.CultureInvariant, "xxabx", "Q"),
-            ("(?<a>a+)(?<b>b+)\\k<a>", RegexOptions.CultureInvariant, "xxaabax", "Q"),
-            ("(?<a>a+)(?<b>b+)\\k<a>", RegexOptions.CultureInvariant, "xxaabbx", "Q"),
-            ("(?'w'ab)c\\k'w'", RegexOptions.CultureInvariant, "xxabcabxx", "Q"),
-            ("(?<x>a)?b\\k<x>", RegexOptions.CultureInvariant, "xbxx", "Q"),
-            ("(?<x>A+)\\k<x>", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAAax", "Q"),
-            ("(?<w>a.+)\\k<w>", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabaab\nzz", "Q"),
-            ("(?<w>a.+)\\k<w>", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabc\nzz", "Q"),
-            ("^(?<w>a.+)\\k<w>$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabaab", "Q"),
-            ("^(?<w>a.+)\\k<w>$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedBackrefOwnedCases))]
-    public void NamedBackrefRunsOwned(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> MultilineAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^ab", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("^ab", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nxx", "Q"),
-            ("ab$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxab\nyy", "Q"),
-            ("ab$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx\nyy", "Q"),
-            ("^ab$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nab", "Q"),
-            ("^ab$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nab\nyy", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(MultilineAsciiOwnedCases))]
-    public void MultilineAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a+)b", RegexOptions.CultureInvariant, "xaab", "Q"),
-            ("(?>a+)b", RegexOptions.CultureInvariant, "xaac", "Q"),
-            ("(?>ab|a)b", RegexOptions.CultureInvariant, "xxabb", "Q"),
-            ("(?>ab|a)b", RegexOptions.CultureInvariant, "xxab", "Q"),
-            ("(?>a+)(b+)", RegexOptions.CultureInvariant, "xaabb", "Q"),
-            ("(?>a|ab)c", RegexOptions.CultureInvariant, "xabcx", "Q"),
-            ("(?>a|ab)c", RegexOptions.CultureInvariant, "xacx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicAsciiOwnedCases))]
-    public void AtomicAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicLookaheadSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?>a.+)b$", RegexOptions.Singleline | RegexOptions.CultureInvariant, "aax\nab", "Q"),
-            ("^(?>a.+)b$", RegexOptions.Singleline | RegexOptions.CultureInvariant, "aaxb", "Q"),
-            ("a(?=.+b)c", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xay\nzbc", "Q"),
-            ("a(?=.+b)c", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xayzc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicLookaheadSinglelineOwnedCases))]
-    public void AtomicLookaheadSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a)?b(?(1)c|d)", RegexOptions.CultureInvariant, "xabcd", "Q"),
-            ("(a)?b(?(1)c|d)", RegexOptions.CultureInvariant, "xbd", "Q"),
-            ("(a)?b(?(1)c|d)", RegexOptions.CultureInvariant, "xad", "Q"),
-            ("(a)(?(1)b|c)", RegexOptions.CultureInvariant, "xabx", "Q"),
-            ("(a)(?(1)b|c)", RegexOptions.CultureInvariant, "xacx", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.CultureInvariant, "xb", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.CultureInvariant, "xc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalAsciiOwnedCases))]
-    public void ConditionalAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a)?(?(1).+|b)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xay\nz", "Q"),
-            ("(a)?(?(1).+|b)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xy", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "ax\ny", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalSinglelineOwnedCases))]
-    public void ConditionalSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BalancingSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\n1", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BalancingSinglelineOwnedCases))]
-    public void BalancingSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1\n2y", "Q"),
-            ("(\\d.+\\d)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1y", "Q"),
-            ("(\\w.+\\w)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
-            ("(\\s.+\\s)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "ab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandSinglelineOwnedCases))]
-    public void ShorthandSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundarySinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\b.+\\b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.Singleline | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundarySinglelineOwnedCases))]
-    public void WordBoundarySinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AnchorSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^a.+b$", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("^a.+b$", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-            ("^a.+b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbxx", "Q"),
-            ("\\Aa.+\\z", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AnchorSinglelineOwnedCases))]
-    public void AnchorSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A.+B)", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
-            ("(A.+B)", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nBZ", "Q"),
-            ("(A.+B)", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaz", "Q"),
-            ("(a.+b)", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xA\nBz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldSinglelineOwnedCases))]
-    public void FoldSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> MultilineSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^a.+b$", RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\na\nb\nyy", "Q"),
-            ("^a.+b$", RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nab\nyy", "Q"),
-            ("^.+b", RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\na\nzb", "Q"),
-            ("\\Aa.+\\z", RegexOptions.Multiline | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(MultilineSinglelineOwnedCases))]
-    public void MultilineSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.CultureInvariant, "xa\nzb", "Q"),
-            ("(?s:a.+)b", RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?s:.+)b", RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.CultureInvariant, "xaz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedSinglelineOwnedCases))]
-    public void ScopedSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NegLookaheadSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?!b.+c)d", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabd", "Q"),
-            ("a(?!b.+c)d", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("(?!a.+)b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xbc", "Q"),
-            ("(?!a.+)b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NegLookaheadSinglelineOwnedCases))]
-    public void NegLookaheadSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-            ("(?<=a.c)b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xacb", "Q"),
-            ("(?<=a.c)b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<!a.c)b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindSinglelineOwnedCases))]
-    public void DotLookbehindSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazySinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbqb", "Q"),
-            ("(a.+?b)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabqb", "Q"),
-            ("(a.+?b)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaq", "Q"),
-            ("(a.*?b)", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazySinglelineOwnedCases))]
-    public void LazySinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbxx", "Q"),
-            ("\\Ga.+b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-            ("\\Ga.+", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousSinglelineOwnedCases))]
-    public void ContiguousSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xazq", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xA\nZ9q", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeSinglelineOwnedCases))]
-    public void CategoryRangeSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldBackrefSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+)\\1", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xA\nba\nb", "Q"),
-            ("(a.+)\\1", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabxab", "Q"),
-            ("(a.+)\\1", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabxcd", "Q"),
-            ("(a.+)\\1", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xA\nbxc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldBackrefSinglelineOwnedCases))]
-    public void FoldBackrefSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BalancingMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\n1", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BalancingMultilineOwnedCases))]
-    public void BalancingMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbq", "Q"),
-            ("(a .+ b)", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaq", "Q"),
-            ("(a .+ b)", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xayb", "Q"),
-            ("^a .+ b$", RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseSinglelineOwnedCases))]
-    public void VerboseSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ExplicitMultilineDotOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<w>a.+b)$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "aab", "Q"),
-            ("^(?<w>a.+b)$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nyy", "Q"),
-            ("^(?<w>a.+b)$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ExplicitMultilineDotOwnedCases))]
-    public void ExplicitMultilineDotOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicMultilineOwnedCases))]
-    public void AtomicMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BackrefRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabab", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nba\nb", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabxcd", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BackrefRtlSinglelineOwnedCases))]
-    public void BackrefRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbxx", "Q"),
-            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xay", "Q"),
-            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbbc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicRtlSinglelineOwnedCases))]
-    public void AtomicRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\b.+\\b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryRtlSinglelineOwnedCases))]
-    public void WordBoundaryRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xay\nzbc", "Q"),
-            ("a(?=.+b)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xbc", "Q"),
-            ("(?!a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadRtlSinglelineOwnedCases))]
-    public void LookaheadRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbqb", "Q"),
-            ("(a.+?b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabqb", "Q"),
-            ("(a.+?b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaq", "Q"),
-            ("(a.*?b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyRtlSinglelineOwnedCases))]
-    public void LazyRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xacb", "Q"),
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<!a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindRtlSinglelineOwnedCases))]
-    public void LookbehindRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a)?(?(1).+|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xay\nz", "Q"),
-            ("(a)?(?(1).+|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xy", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "ax\ny", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalRtlSinglelineOwnedCases))]
-    public void ConditionalRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\p{L}.+\\p{L}", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\n1", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRtlSinglelineOwnedCases))]
-    public void CategoryRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.IgnorePatternWhitespace | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbq", "Q"),
-            ("(a .+ b)", RegexOptions.IgnorePatternWhitespace | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaq", "Q"),
-            ("(a .+ b)", RegexOptions.IgnorePatternWhitespace | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xayb", "Q"),
-            ("^a .+ b$", RegexOptions.IgnorePatternWhitespace | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseRtlSinglelineOwnedCases))]
-    public void VerboseRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbxx", "Q"),
-            ("\\Ga.+b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-            ("\\Ga.+", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousRtlSinglelineOwnedCases))]
-    public void ContiguousRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nzb", "Q"),
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaz", "Q"),
-            ("(?s:.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedRtlSinglelineOwnedCases))]
-    public void ScopedRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<w>a.+b)$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nyy", "Q"),
-            ("^(?<w>a.+b)$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?<w>a.+b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nyy", "Q"),
-            ("(?<w>a.+b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nay", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ExplicitRtlMultilineOwnedCases))]
-    public void ExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A.+B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nyy", "Q"),
-            ("(A.+B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nay", "Q"),
-            ("(a.+b)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nAAB\nYY", "Q"),
-            ("^a.+b$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabb\nyy", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldRtlMultilineOwnedCases))]
-    public void FoldRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BackrefRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab\nzz", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabcb\nzz", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abab", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabcb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BackrefRtlMultilineOwnedCases))]
-    public void BackrefRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\b.+\\b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xabcby", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryRtlMultilineOwnedCases))]
-    public void WordBoundaryRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandRtlMultilineOwnedCases))]
-    public void ShorthandRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AlternationRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(zb|z.+)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AlternationRtlMultilineOwnedCases))]
-    public void AlternationRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb", "Q"),
-            ("(?<!a.c)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindRtlMultilineOwnedCases))]
-    public void LookbehindRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadRtlMultilineOwnedCases))]
-    public void LookaheadRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousMultilineOwnedCases))]
-    public void ContiguousMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AlternationMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(zb|z.+)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AlternationMultilineOwnedCases))]
-    public void AlternationMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a)?(?(1)b|c)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalMultilineOwnedCases))]
-    public void ConditionalMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb", "Q"),
-            ("(?<!a.c)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindMultilineOwnedCases))]
-    public void DotLookbehindMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a.*?b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyMultilineOwnedCases))]
-    public void LazyMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!a.+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadMultilineOwnedCases))]
-    public void LookaheadMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A.+B)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(A.+B)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nay", "Q"),
-            ("(a.+b)", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nAAB\nYY", "Q"),
-            ("^a.+b$", RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabb\nyy", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldMultilineOwnedCases))]
-    public void FoldMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseMultilineOwnedCases))]
-    public void VerboseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedMultilineOwnedCases))]
-    public void ScopedMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeMultilineOwnedCases))]
-    public void CategoryRangeMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabbc\nzz", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicExplicitMultilineOwnedCases))]
-    public void AtomicExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedMultilineOwnedCases))]
-    public void NamedMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AlternationExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(zb|z.+)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AlternationExplicitMultilineOwnedCases))]
-    public void AlternationExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\d+$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "12\n34", "Q"),
-            ("^\\d+$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\w+$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\w+$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab \nxy ", "Q"),
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandExplicitMultilineOwnedCases))]
-    public void ShorthandExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyExplicitMultilineOwnedCases))]
-    public void LazyExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadExplicitMultilineOwnedCases))]
-    public void LookaheadExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousExplicitMultilineOwnedCases))]
-    public void ContiguousExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalExplicitMultilineOwnedCases))]
-    public void ConditionalExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseExplicitMultilineOwnedCases))]
-    public void VerboseExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryExplicitMultilineOwnedCases))]
-    public void CategoryExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BalancingExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\n1", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BalancingExplicitMultilineOwnedCases))]
-    public void BalancingExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb", "Q"),
-            ("(?<!a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindExplicitMultilineOwnedCases))]
-    public void DotLookbehindExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bword\\b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nword\nxx", "Q"),
-            ("\\bword", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nwordxx", "Q"),
-            ("word\\b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxxword", "Q"),
-            ("\\bword\\b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
-            ("\\b.+\\b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xabcby", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryExplicitMultilineOwnedCases))]
-    public void WordBoundaryExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedExplicitMultilineOwnedCases))]
-    public void NamedExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedExplicitMultilineOwnedCases))]
-    public void ScopedExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeExplicitMultilineOwnedCases))]
-    public void CategoryRangeExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A.+B)", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(A.+B)", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nay", "Q"),
-            ("(a.+b)", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nAAB\nYY", "Q"),
-            ("^a.+b$", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabb\nyy", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldExplicitMultilineOwnedCases))]
-    public void FoldExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalAtomicExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nbxx", "Q"),
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalAtomicExplicitMultilineOwnedCases))]
-    public void ConditionalAtomicExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=^a)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?<=^a)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindExplicitMultilineOwnedCases))]
-    public void LookbehindExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineIgnoreCaseExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^a.+b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nABBB\nzz", "Q"),
-            ("^ab", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nABxx", "Q"),
-            ("ab$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAB\nyy", "Q"),
-            ("^a.+b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "qa\nb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineIgnoreCaseExplicitMultilineOwnedCases))]
-    public void SinglelineIgnoreCaseExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> GroupedSinglelineExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(a.+)b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nabb\nzz", "Q"),
-            ("^(a.+)b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\naxx\nzz", "Q"),
-            ("^(a.+)(b+)$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nabbb\nzz", "Q"),
-            ("^(a.+)(b+)$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nab\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(GroupedSinglelineExplicitMultilineOwnedCases))]
-    public void GroupedSinglelineExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandRtlExplicitMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandRtlExplicitMultilineOwnedCases))]
-    public void ShorthandRtlExplicitMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> AlternationRtlSinglelineOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
@@ -6355,283 +4279,6 @@ public sealed class AsciiSimplePatternTests
     {
         AssertOwnedOperations(pattern, options, text, template);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1\n2y", "Q"),
-            ("(\\d.+\\d)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1y", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
-            ("(\\s.+\\s)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "ab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandRtlSinglelineOwnedCases))]
-    public void ShorthandRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xacb", "Q"),
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<!a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindRtlSinglelineOwnedCases))]
-    public void DotLookbehindRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NegLookaheadRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?!b.+c)d", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabd", "Q"),
-            ("a(?!b.+c)d", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("(?!a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xbc", "Q"),
-            ("(?!a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NegLookaheadRtlSinglelineOwnedCases))]
-    public void NegLookaheadRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AnchorRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^a.+b$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("^a.+b$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-            ("^a.+b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbxx", "Q"),
-            ("\\Aa.+\\z", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AnchorRtlSinglelineOwnedCases))]
-    public void AnchorRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xazq", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xA\nZ9q", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeRtlSinglelineOwnedCases))]
-    public void CategoryRangeRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedRtlSinglelineOwnedCases))]
-    public void NamedRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineFoldRtlOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s)a.+b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\naAB\nbx", "Q"),
-            ("A.+B", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\naab\nx", "Q"),
-            ("(?s)(a+).(b+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\naA\nbBx", "Q"),
-            (".+", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nab\nx", "Q"),
-            ("(.+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nab\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineFoldRtlOwnedCases))]
-    public void SinglelineFoldRtlOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nab", "Q"),
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nab", "Q"),
-            ("\\Ga+", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\naa", "Q"),
-            ("\\Ga+", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousExplicitSinglelineOwnedCases))]
-    public void ContiguousExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicLookaheadExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?>a.+)b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "aax\nab", "Q"),
-            ("^(?>a.+)b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "aaxb", "Q"),
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xay\nzbc", "Q"),
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xayzc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicLookaheadExplicitSinglelineOwnedCases))]
-    public void AtomicLookaheadExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NegLookaheadExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?!b.+c)d", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabd", "Q"),
-            ("a(?!b.+c)d", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xbc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NegLookaheadExplicitSinglelineOwnedCases))]
-    public void NegLookaheadExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xacb", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<!a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindExplicitSinglelineOwnedCases))]
-    public void DotLookbehindExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbqb", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabqb", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaq", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyExplicitSinglelineOwnedCases))]
-    public void LazyExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> AlternationExplicitSinglelineOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
@@ -6654,873 +4301,6 @@ public sealed class AsciiSimplePatternTests
     {
         AssertOwnedOperations(pattern, options, text, template);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1\n2y", "Q"),
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1y", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
-            ("(\\s.+\\s)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "ab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandExplicitSinglelineOwnedCases))]
-    public void ShorthandExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\b.+\\b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryExplicitSinglelineOwnedCases))]
-    public void WordBoundaryExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xazq", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xA\nZ9q", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeExplicitSinglelineOwnedCases))]
-    public void CategoryRangeExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BalancingExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\n1", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BalancingExplicitSinglelineOwnedCases))]
-    public void BalancingExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineFoldExplicitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s)a.+b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\naAB\nbx", "Q"),
-            ("A.+B", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\naab\nx", "Q"),
-            ("(?s)(a+).(b+)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\naA\nbBx", "Q"),
-            (".+", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nab\nx", "Q"),
-            ("(.+)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nab\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineFoldExplicitOwnedCases))]
-    public void SinglelineFoldExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nab", "Q"),
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\nc", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedExplicitSinglelineOwnedCases))]
-    public void NamedExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbq", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaq", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xayb", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseExplicitSinglelineOwnedCases))]
-    public void VerboseExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AnchorExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^a.+b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("^a.+b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-            ("^a.+b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbxx", "Q"),
-            ("\\Aa.+\\z", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AnchorExplicitSinglelineOwnedCases))]
-    public void AnchorExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nzb", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?s:.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedExplicitSinglelineOwnedCases))]
-    public void ScopedExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "ax\ny", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalExplicitSinglelineOwnedCases))]
-    public void ConditionalExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AnchoredLookbehindExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=^a)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("(?<=^a)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "abxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AnchoredLookbehindExplicitSinglelineOwnedCases))]
-    public void AnchoredLookbehindExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "aabxx", "Q"),
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "aaxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicExplicitSinglelineOwnedCases))]
-    public void AtomicExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShortGuardExplicitSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShortGuardExplicitSinglelineOwnedCases))]
-    public void ShortGuardExplicitSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a.*?b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyRtlMultilineOwnedCases))]
-    public void LazyRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicRtlMultilineOwnedCases))]
-    public void AtomicRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedRtlMultilineOwnedCases))]
-    public void NamedRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousRtlMultilineOwnedCases))]
-    public void ContiguousRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseRtlMultilineOwnedCases))]
-    public void VerboseRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedRtlMultilineOwnedCases))]
-    public void ScopedRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRtlMultilineOwnedCases))]
-    public void CategoryRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeRtlMultilineOwnedCases))]
-    public void CategoryRangeRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bword\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nword\nxx", "Q"),
-            ("\\bword", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nwordxx", "Q"),
-            ("word\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxxword", "Q"),
-            ("\\bword\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
-            ("\\b.+\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xabcby", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryExplicitRtlMultilineOwnedCases))]
-    public void WordBoundaryExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandExplicitRtlMultilineOwnedCases))]
-    public void ShorthandExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyExplicitRtlMultilineOwnedCases))]
-    public void LazyExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicExplicitRtlMultilineOwnedCases))]
-    public void AtomicExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadExplicitRtlMultilineOwnedCases))]
-    public void LookaheadExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousExplicitRtlMultilineOwnedCases))]
-    public void ContiguousExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryExplicitRtlMultilineOwnedCases))]
-    public void CategoryExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeExplicitRtlMultilineOwnedCases))]
-    public void CategoryRangeExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseExplicitRtlMultilineOwnedCases))]
-    public void VerboseExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedExplicitRtlMultilineOwnedCases))]
-    public void ScopedExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AlternationExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(zb|z.+)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AlternationExplicitRtlMultilineOwnedCases))]
-    public void AlternationExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb", "Q"),
-            ("(?<!a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindExplicitRtlMultilineOwnedCases))]
-    public void DotLookbehindExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> GuardConditionalExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(GuardConditionalExplicitRtlMultilineOwnedCases))]
-    public void GuardConditionalExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicQuantExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicQuantExplicitRtlMultilineOwnedCases))]
-    public void AtomicQuantExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShortGuardExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShortGuardExplicitRtlMultilineOwnedCases))]
-    public void ShortGuardExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xay\nzbc", "Q"),
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xbc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadExplicitRtlSinglelineOwnedCases))]
-    public void LookaheadExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1\n2y", "Q"),
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1y", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
-            ("(\\s.+\\s)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "ab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandExplicitRtlSinglelineOwnedCases))]
-    public void ShorthandExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> AlternationExplicitRtlSinglelineOwnedCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
@@ -7543,4601 +4323,6 @@ public sealed class AsciiSimplePatternTests
     {
         AssertOwnedOperations(pattern, options, text, template);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbqb", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabqb", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaq", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyExplicitRtlSinglelineOwnedCases))]
-    public void LazyExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbxx", "Q"),
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xay", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbbc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicExplicitRtlSinglelineOwnedCases))]
-    public void AtomicExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nab", "Q"),
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nab", "Q"),
-            ("\\Ga+", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\naa", "Q"),
-            ("\\Ga+", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousExplicitRtlSinglelineOwnedCases))]
-    public void ContiguousExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryExplicitRtlSinglelineOwnedCases))]
-    public void CategoryExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xazq", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xA\nZ9q", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeExplicitRtlSinglelineOwnedCases))]
-    public void CategoryRangeExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedExplicitRtlSinglelineOwnedCases))]
-    public void NamedExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbq", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaq", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xayb", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.IgnorePatternWhitespace | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseExplicitRtlSinglelineOwnedCases))]
-    public void VerboseExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nzb", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaz", "Q"),
-            ("(?s:.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedExplicitRtlSinglelineOwnedCases))]
-    public void ScopedExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xacb", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<!a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindExplicitRtlSinglelineOwnedCases))]
-    public void LookbehindExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> GuardConditionalExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "ax\ny", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(GuardConditionalExplicitRtlSinglelineOwnedCases))]
-    public void GuardConditionalExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\b.+\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryExplicitRtlSinglelineOwnedCases))]
-    public void WordBoundaryExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xacb", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<!a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindExplicitRtlSinglelineOwnedCases))]
-    public void DotLookbehindExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NegLookaheadExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?!b.+c)d", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xabd", "Q"),
-            ("a(?!b.+c)d", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xbc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NegLookaheadExplicitRtlSinglelineOwnedCases))]
-    public void NegLookaheadExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AnchorExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^a.+b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("^a.+b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-            ("^a.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbxx", "Q"),
-            ("\\Aa.+\\z", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nbx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AnchorExplicitRtlSinglelineOwnedCases))]
-    public void AnchorExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>.+)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAB\nCDxx", "Q"),
-            ("(?<w>A.+B)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAXXBxx", "Q"),
-            ("(?<w>A.+B)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaxxbxx", "Q"),
-            ("(?<w>A.+B)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldExplicitRtlSinglelineOwnedCases))]
-    public void FoldExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldShorthandExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x1\n2y", "Q"),
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x1y", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
-            ("(\\s.+\\s)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldShorthandExplicitRtlSinglelineOwnedCases))]
-    public void FoldShorthandExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAlternationExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nzb", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xzb", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xz", "Q"),
-            ("(zb|z.+)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAlternationExplicitRtlSinglelineOwnedCases))]
-    public void FoldAlternationExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLazyExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nbqb", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xabqb", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xaq", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLazyExplicitRtlSinglelineOwnedCases))]
-    public void FoldLazyExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAtomicExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nbxx", "Q"),
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xay", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nbbc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAtomicExplicitRtlSinglelineOwnedCases))]
-    public void FoldAtomicExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLookaheadExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xay\nzbc", "Q"),
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xbc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLookaheadExplicitRtlSinglelineOwnedCases))]
-    public void FoldLookaheadExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLookbehindExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xacb", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<!a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLookbehindExplicitRtlSinglelineOwnedCases))]
-    public void FoldLookbehindExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldGuardConditionalExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ax\ny", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldGuardConditionalExplicitRtlSinglelineOwnedCases))]
-    public void FoldGuardConditionalExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldWordBoundaryExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\b.+\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldWordBoundaryExplicitRtlSinglelineOwnedCases))]
-    public void FoldWordBoundaryExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAnchorExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^a.+b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("^a.+b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-            ("^a.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\nbxx", "Q"),
-            ("\\Aa.+\\z", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\nbx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAnchorExplicitRtlSinglelineOwnedCases))]
-    public void FoldAnchorExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldContiguousExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\nbxx", "Q"),
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldContiguousExplicitRtlSinglelineOwnedCases))]
-    public void FoldContiguousExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldScopedExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nzb", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xaz", "Q"),
-            ("(?s:.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldScopedExplicitRtlSinglelineOwnedCases))]
-    public void FoldScopedExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldNamedExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldNamedExplicitRtlSinglelineOwnedCases))]
-    public void FoldNamedExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldVerboseExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xa\nbq", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xaq", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xayb", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "a\nb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldVerboseExplicitRtlSinglelineOwnedCases))]
-    public void FoldVerboseExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldCategoryExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\p{L}.+\\p{L}", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\n1", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldCategoryExplicitRtlSinglelineOwnedCases))]
-    public void FoldCategoryExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldCategoryRangeExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xaz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xazq", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xA\nZ9q", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldCategoryRangeExplicitRtlSinglelineOwnedCases))]
-    public void FoldCategoryRangeExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldNegLookaheadExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?!b.+c)d", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xabd", "Q"),
-            ("a(?!b.+c)d", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xbc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldNegLookaheadExplicitRtlSinglelineOwnedCases))]
-    public void FoldNegLookaheadExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldDotLookbehindExplicitRtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\ncb", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xacb", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<!a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldDotLookbehindExplicitRtlSinglelineOwnedCases))]
-    public void FoldDotLookbehindExplicitRtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AlternationSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAZB\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AlternationSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void AlternationSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\d+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "12\n34", "Q"),
-            ("^\\d+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\w+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\w+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab \nxy ", "Q"),
-            ("(\\d.+\\d)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void ShorthandSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazySinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a.*?b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazySinglelineIgnoreCaseMultilineOwnedCases))]
-    public void LazySinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void LookaheadSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=^a)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?<=^a)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void LookbehindSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a)?(?(1)b|c)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void ConditionalSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void AtomicSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundarySinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bword\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nword\nxx", "Q"),
-            ("\\bword", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nwordxx", "Q"),
-            ("word\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxxword", "Q"),
-            ("\\bword\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
-            ("\\b.+\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xabcby", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundarySinglelineIgnoreCaseMultilineOwnedCases))]
-    public void WordBoundarySinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BackrefSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(ab)\\1$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabab", "Q"),
-            ("^(ab)\\1$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabxb", "Q"),
-            ("(a+)\\1$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naabb", "Q"),
-            ("(a+)\\1$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naaaa", "Q"),
-            ("(a.+)\\1", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabab\nzz", "Q"),
-            ("(a.+)\\1", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabcb", "Q"),
-            ("(a.+)\\1", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "abab", "Q"),
-            ("(a.+)\\1", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xabc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BackrefSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void BackrefSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategorySinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategorySinglelineIgnoreCaseMultilineOwnedCases))]
-    public void CategorySinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void NamedSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void VerboseSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void ScopedSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void ContiguousSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void CategoryRangeSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BalancingSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab\nab", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\n1", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BalancingSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void BalancingSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nacb", "Q"),
-            ("(?<!a.c)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void DotLookbehindSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NegLookaheadSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?!b.+c)d", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xabd", "Q"),
-            ("a(?!b.+c)d", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("(?!a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xbc", "Q"),
-            ("(?!a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NegLookaheadSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void NegLookaheadSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldDotSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A.+B)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(A.+B)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nay", "Q"),
-            ("(a.+b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAAB\nYY", "Q"),
-            ("^a.+b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naabb\nyy", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldDotSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldDotSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalAtomicSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nbxx", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nax", "Q"),
-            ("^(?>a+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("^(?>a+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalAtomicSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void ConditionalAtomicSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAlternationRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(zb|z.+)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nzzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAlternationRtlMultilineOwnedCases))]
-    public void FoldAlternationRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldShorthandRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldShorthandRtlMultilineOwnedCases))]
-    public void FoldShorthandRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLazyRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a.*?b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLazyRtlMultilineOwnedCases))]
-    public void FoldLazyRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAtomicRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAtomicRtlMultilineOwnedCases))]
-    public void FoldAtomicRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLookaheadRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLookaheadRtlMultilineOwnedCases))]
-    public void FoldLookaheadRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLookbehindRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nacb", "Q"),
-            ("(?<!a.c)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLookbehindRtlMultilineOwnedCases))]
-    public void FoldLookbehindRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldNamedRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldNamedRtlMultilineOwnedCases))]
-    public void FoldNamedRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldContiguousRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldContiguousRtlMultilineOwnedCases))]
-    public void FoldContiguousRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldWordBoundaryRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\b.+\\b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xabcby", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldWordBoundaryRtlMultilineOwnedCases))]
-    public void FoldWordBoundaryRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldBackrefRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabab\nzz", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabcb\nzz", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "abab", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabcb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldBackrefRtlMultilineOwnedCases))]
-    public void FoldBackrefRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldCategoryRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldCategoryRtlMultilineOwnedCases))]
-    public void FoldCategoryRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldCategoryRangeRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldCategoryRangeRtlMultilineOwnedCases))]
-    public void FoldCategoryRangeRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldVerboseRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nABqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nAAB\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldVerboseRtlMultilineOwnedCases))]
-    public void FoldVerboseRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldScopedRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAAB\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nYB", "Q"),
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldScopedRtlMultilineOwnedCases))]
-    public void FoldScopedRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<w>a.+b)$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAAB\nyy", "Q"),
-            ("^(?<w>a.+b)$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?<w>a.+b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAAB\nyy", "Q"),
-            ("(?<w>a.+b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nay", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldExplicitRtlMultilineOwnedCases))]
-    public void FoldExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldShorthandExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1A2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAB\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldShorthandExplicitRtlMultilineOwnedCases))]
-    public void FoldShorthandExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAlternationExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAZB\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(zb|z.+)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nZZB", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAlternationExplicitRtlMultilineOwnedCases))]
-    public void FoldAlternationExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLazyExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nABqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAB", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLazyExplicitRtlMultilineOwnedCases))]
-    public void FoldLazyExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAtomicExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAABxx", "Q"),
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nABBC", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAtomicExplicitRtlMultilineOwnedCases))]
-    public void FoldAtomicExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLookaheadExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAYZBC\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nXBC", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLookaheadExplicitRtlMultilineOwnedCases))]
-    public void FoldLookaheadExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldContiguousExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "AAB\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "A\nB", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldContiguousExplicitRtlMultilineOwnedCases))]
-    public void FoldContiguousExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldCategoryExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldCategoryExplicitRtlMultilineOwnedCases))]
-    public void FoldCategoryExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldCategoryRangeExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na1B2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1Ab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldCategoryRangeExplicitRtlMultilineOwnedCases))]
-    public void FoldCategoryRangeExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldVerboseExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nABqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAAB\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldVerboseExplicitRtlMultilineOwnedCases))]
-    public void FoldVerboseExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldScopedExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAAB\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nYB", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldScopedExplicitRtlMultilineOwnedCases))]
-    public void FoldScopedExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldDotLookbehindExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nACB\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nACB", "Q"),
-            ("(?<!a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAXB\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldDotLookbehindExplicitRtlMultilineOwnedCases))]
-    public void FoldDotLookbehindExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldGuardConditionalExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAAX", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nB", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldGuardConditionalExplicitRtlMultilineOwnedCases))]
-    public void FoldGuardConditionalExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldPossessiveExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAABxx", "Q"),
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?>a+)b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAAB", "Q"),
-            ("^(?>a+)b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAAX", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldPossessiveExplicitRtlMultilineOwnedCases))]
-    public void FoldPossessiveExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldShortGuardExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ABxx", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xb", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAB", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldShortGuardExplicitRtlMultilineOwnedCases))]
-    public void FoldShortGuardExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldWordBoundaryExplicitRtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bword\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nWORD\nxx", "Q"),
-            ("\\bword", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nWORDxx", "Q"),
-            ("word\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxxWORD", "Q"),
-            ("\\bword\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldWordBoundaryExplicitRtlMultilineOwnedCases))]
-    public void FoldWordBoundaryExplicitRtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAlternationSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A.+|ZB)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(A.+|ZB)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(A.+|ZB)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(A.+|ZB)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAZB\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAlternationSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldAlternationSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldShorthandSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1A2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAB\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldShorthandSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldShorthandSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLazySinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A.+?B)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(A.+?B)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAB", "Q"),
-            ("(a.*?b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLazySinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldLazySinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAtomicSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nABBC", "Q"),
-            ("(?>ab+)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAtomicSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldAtomicSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLookaheadSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("A(?=.+B)C", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("A(?=.+B)C", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLookaheadSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldLookaheadSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLookbehindSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=^A)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?<=^A)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^A)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^A)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLookbehindSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldLookbehindSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldConditionalSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A)?(?(1)B|C)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(A)?(?(1)B|C)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nax", "Q"),
-            ("^(?(?=A.+)A|B)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=A.+)A|B)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldConditionalSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldConditionalSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldNamedSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>AB)C", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>AB)C", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldNamedSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldNamedSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldContiguousSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\GA.+B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\GA.+B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\GA.+", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "A\nB", "Q"),
-            ("\\GA.+", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldContiguousSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldContiguousSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldWordBoundarySinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bWORD\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nword\nxx", "Q"),
-            ("\\bWORD", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nwordxx", "Q"),
-            ("WORD\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nxxword", "Q"),
-            ("\\bWORD\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldWordBoundarySinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldWordBoundarySinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldBackrefSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(AB)\\1$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabab", "Q"),
-            ("^(AB)\\1$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabxb", "Q"),
-            ("(A.+)\\1", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabab\nzz", "Q"),
-            ("(A.+)\\1", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nabcb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldBackrefSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldBackrefSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldCategorySinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^AB\\p{L}+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("A\\p{L}+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("\\p{L}+CD$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\nzzCD", "Q"),
-            ("\\p{L}+CD$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ab\ncd", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldCategorySinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldCategorySinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldCategoryRangeSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([A-Z].+[0-9])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([A-Z].+[0-9])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^A-Z])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^A-Z])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldCategoryRangeSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldCategoryRangeSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldVerboseSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A .+ B)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(A .+ B)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^A .+ B$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^A .+ B$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldVerboseSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldVerboseSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldScopedSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldScopedSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldScopedSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldDotLookbehindSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=A.C)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=A.C)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=A.C)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nACB", "Q"),
-            ("(?<!A.C)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nAXB\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldDotLookbehindSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldDotLookbehindSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldNegLookaheadSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("A(?!B.+C)D", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xabd", "Q"),
-            ("A(?!B.+C)D", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("(?!A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xbc", "Q"),
-            ("(?!A.+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "a", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldNegLookaheadSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldNegLookaheadSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldConditionalAtomicSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=A)A|B)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ABxx", "Q"),
-            ("^(?(?=A)A|B)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nbxx", "Q"),
-            ("^(?>A+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("^(?>A+)B", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldConditionalAtomicSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldConditionalAtomicSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldBalancingSinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<b>A.+)(?<-b>B.+)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab\nabb", "Q"),
-            ("(?<b>A.+)(?<-b>B.+)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "A\nB", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "A\n1", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldBalancingSinglelineIgnoreCaseMultilineOwnedCases))]
-    public void FoldBalancingSinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AlternationSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(zb|z.+)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AlternationSinglelineMultilineOwnedCases))]
-    public void AlternationSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandSinglelineMultilineOwnedCases))]
-    public void ShorthandSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazySinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a.*?b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazySinglelineMultilineOwnedCases))]
-    public void LazySinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicSinglelineMultilineOwnedCases))]
-    public void AtomicSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadSinglelineMultilineOwnedCases))]
-    public void LookaheadSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=^a)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?<=^a)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindSinglelineMultilineOwnedCases))]
-    public void LookbehindSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a)?(?(1)b|c)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalSinglelineMultilineOwnedCases))]
-    public void ConditionalSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedSinglelineMultilineOwnedCases))]
-    public void NamedSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousSinglelineMultilineOwnedCases))]
-    public void ContiguousSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundarySinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bword\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nword\nxx", "Q"),
-            ("\\bword", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nwordxx", "Q"),
-            ("word\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxxword", "Q"),
-            ("\\bword\\b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundarySinglelineMultilineOwnedCases))]
-    public void WordBoundarySinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BackrefSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(ab)\\1$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab", "Q"),
-            ("^(ab)\\1$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxb", "Q"),
-            ("(a.+)\\1", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab\nzz", "Q"),
-            ("(a.+)\\1", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabcb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BackrefSinglelineMultilineOwnedCases))]
-    public void BackrefSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategorySinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategorySinglelineMultilineOwnedCases))]
-    public void CategorySinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeSinglelineMultilineOwnedCases))]
-    public void CategoryRangeSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseSinglelineMultilineOwnedCases))]
-    public void VerboseSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedSinglelineMultilineOwnedCases))]
-    public void ScopedSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb", "Q"),
-            ("(?<!a.c)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindSinglelineMultilineOwnedCases))]
-    public void DotLookbehindSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> GuardConditionalSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a.+)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nb", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(GuardConditionalSinglelineMultilineOwnedCases))]
-    public void GuardConditionalSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> PossessiveSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?>a+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("^(?>a+)b", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?>a+)b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("^(?>a+)b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(PossessiveSinglelineMultilineOwnedCases))]
-    public void PossessiveSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShortGuardSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xb", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShortGuardSinglelineMultilineOwnedCases))]
-    public void ShortGuardSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AlternationExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(zb|z.+)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AlternationExplicitSinglelineMultilineOwnedCases))]
-    public void AlternationExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandExplicitSinglelineMultilineOwnedCases))]
-    public void ShorthandExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyExplicitSinglelineMultilineOwnedCases))]
-    public void LazyExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicExplicitSinglelineMultilineOwnedCases))]
-    public void AtomicExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadExplicitSinglelineMultilineOwnedCases))]
-    public void LookaheadExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=^a)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?<=^a)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindExplicitSinglelineMultilineOwnedCases))]
-    public void LookbehindExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<g>a)?(?(g)b|c)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?<g>a)?(?(g)b|c)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalExplicitSinglelineMultilineOwnedCases))]
-    public void ConditionalExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedExplicitSinglelineMultilineOwnedCases))]
-    public void NamedExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousExplicitSinglelineMultilineOwnedCases))]
-    public void ContiguousExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bword\\b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nword\nxx", "Q"),
-            ("\\bword", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nwordxx", "Q"),
-            ("word\\b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxxword", "Q"),
-            ("\\bword\\b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryExplicitSinglelineMultilineOwnedCases))]
-    public void WordBoundaryExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryExplicitSinglelineMultilineOwnedCases))]
-    public void CategoryExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeExplicitSinglelineMultilineOwnedCases))]
-    public void CategoryRangeExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseExplicitSinglelineMultilineOwnedCases))]
-    public void VerboseExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedExplicitSinglelineMultilineOwnedCases))]
-    public void ScopedExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb", "Q"),
-            ("(?<!a.c)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindExplicitSinglelineMultilineOwnedCases))]
-    public void DotLookbehindExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> GuardConditionalExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nb", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(GuardConditionalExplicitSinglelineMultilineOwnedCases))]
-    public void GuardConditionalExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> PossessiveExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?>a+)b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("^(?>a+)b$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(PossessiveExplicitSinglelineMultilineOwnedCases))]
-    public void PossessiveExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShortGuardExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xb", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShortGuardExplicitSinglelineMultilineOwnedCases))]
-    public void ShortGuardExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AlternationRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(zb|z.+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AlternationRtlSinglelineMultilineOwnedCases))]
-    public void AlternationRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandRtlSinglelineMultilineOwnedCases))]
-    public void ShorthandRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a.*?b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyRtlSinglelineMultilineOwnedCases))]
-    public void LazyRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicRtlSinglelineMultilineOwnedCases))]
-    public void AtomicRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadRtlSinglelineMultilineOwnedCases))]
-    public void LookaheadRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=^a)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?<=^a)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindRtlSinglelineMultilineOwnedCases))]
-    public void LookbehindRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a)?(?(1)b|c)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalRtlSinglelineMultilineOwnedCases))]
-    public void ConditionalRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedRtlSinglelineMultilineOwnedCases))]
-    public void NamedRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousRtlSinglelineMultilineOwnedCases))]
-    public void ContiguousRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\b.+\\b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xab\ncd", "Q"),
-            ("\\b.+\\b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "   ", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xabcby", "Q"),
-            ("\\Ba.+b\\B", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, " ab ", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryRtlSinglelineMultilineOwnedCases))]
-    public void WordBoundaryRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BackrefRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(ab)\\1$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab", "Q"),
-            ("^(ab)\\1$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxb", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab\nzz", "Q"),
-            ("(a.+)\\1", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabcb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BackrefRtlSinglelineMultilineOwnedCases))]
-    public void BackrefRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRtlSinglelineMultilineOwnedCases))]
-    public void CategoryRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeRtlSinglelineMultilineOwnedCases))]
-    public void CategoryRangeRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseRtlSinglelineMultilineOwnedCases))]
-    public void VerboseRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedRtlSinglelineMultilineOwnedCases))]
-    public void ScopedRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb", "Q"),
-            ("(?<!a.c)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindRtlSinglelineMultilineOwnedCases))]
-    public void DotLookbehindRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> GuardConditionalRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a.+)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nb", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(GuardConditionalRtlSinglelineMultilineOwnedCases))]
-    public void GuardConditionalRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AlternationExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(a.+|zb)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(zb|z.+)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AlternationExplicitRtlSinglelineMultilineOwnedCases))]
-    public void AlternationExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandExplicitRtlSinglelineMultilineOwnedCases))]
-    public void ShorthandExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a.+?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a.*?b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyExplicitRtlSinglelineMultilineOwnedCases))]
-    public void LazyExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AtomicExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabbc", "Q"),
-            ("(?>ab+)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AtomicExplicitRtlSinglelineMultilineOwnedCases))]
-    public void AtomicExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookaheadExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("a(?=.+b)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookaheadExplicitRtlSinglelineMultilineOwnedCases))]
-    public void LookaheadExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=^a)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?<=^a)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindExplicitRtlSinglelineMultilineOwnedCases))]
-    public void LookbehindExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<g>a)?(?(g)b|c)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?<g>a)?(?(g)b|c)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalExplicitRtlSinglelineMultilineOwnedCases))]
-    public void ConditionalExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NamedExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>ab)c", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NamedExplicitRtlSinglelineMultilineOwnedCases))]
-    public void NamedExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\Ga.+b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("\\Ga.+", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousExplicitRtlSinglelineMultilineOwnedCases))]
-    public void ContiguousExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> WordBoundaryExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bword\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nword\nxx", "Q"),
-            ("\\bword", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nwordxx", "Q"),
-            ("word\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxxword", "Q"),
-            ("\\bword\\b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(WordBoundaryExplicitRtlSinglelineMultilineOwnedCases))]
-    public void WordBoundaryExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BackrefExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<w>ab)\\1$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab", "Q"),
-            ("^(?<w>ab)\\1$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxb", "Q"),
-            ("(?<w>a.+)\\1", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab\nzz", "Q"),
-            ("(?<w>a.+)\\1", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabcb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BackrefExplicitRtlSinglelineMultilineOwnedCases))]
-    public void BackrefExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryExplicitRtlSinglelineMultilineOwnedCases))]
-    public void CategoryExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryRangeExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^a-z])", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryRangeExplicitRtlSinglelineMultilineOwnedCases))]
-    public void CategoryRangeExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(a .+ b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^a .+ b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseExplicitRtlSinglelineMultilineOwnedCases))]
-    public void VerboseExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:a.+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedExplicitRtlSinglelineMultilineOwnedCases))]
-    public void ScopedExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DotLookbehindExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb", "Q"),
-            ("(?<!a.c)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DotLookbehindExplicitRtlSinglelineMultilineOwnedCases))]
-    public void DotLookbehindExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> GuardConditionalExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nb", "Q"),
-            ("^(?(?=a.+)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(GuardConditionalExplicitRtlSinglelineMultilineOwnedCases))]
-    public void GuardConditionalExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> PossessiveRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?>a+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("^(?>a+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?>a+)b$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("^(?>a+)b$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(PossessiveRtlSinglelineMultilineOwnedCases))]
-    public void PossessiveRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShortGuardRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xb", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShortGuardRtlSinglelineMultilineOwnedCases))]
-    public void ShortGuardRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> PossessiveExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("^(?>a+)b", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?>a+)b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("^(?>a+)b$", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(PossessiveExplicitRtlSinglelineMultilineOwnedCases))]
-    public void PossessiveExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShortGuardExplicitRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xb", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShortGuardExplicitRtlSinglelineMultilineOwnedCases))]
-    public void ShortGuardExplicitRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAlternationRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A.+|ZB)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nazb\nzz", "Q"),
-            ("(A.+|ZB)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzzb\nzz", "Q"),
-            ("(A.+|ZB)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nzx\nzz", "Q"),
-            ("(A.+|ZB)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nAZB\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAlternationRtlSinglelineMultilineOwnedCases))]
-    public void FoldAlternationRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldShorthandRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(\\d.+\\d)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1A2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nAB\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldShorthandRtlSinglelineMultilineOwnedCases))]
-    public void FoldShorthandRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLazyRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A.+?B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(A.+?B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("(a.*?b)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nAB", "Q"),
-            ("(a.*?b)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLazyRtlSinglelineMultilineOwnedCases))]
-    public void FoldLazyRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldAtomicRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>A.+)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>A.+)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nABBC", "Q"),
-            ("(?>ab+)c", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldAtomicRtlSinglelineMultilineOwnedCases))]
-    public void FoldAtomicRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLookaheadRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("A(?=.+B)C", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzbc\nzz", "Q"),
-            ("A(?=.+B)C", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nayzc", "Q"),
-            ("(?!A.+)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxbc", "Q"),
-            ("(?!A.+)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLookaheadRtlSinglelineMultilineOwnedCases))]
-    public void FoldLookaheadRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldLookbehindRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=^A)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?<=^A)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^A)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^A)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldLookbehindRtlSinglelineMultilineOwnedCases))]
-    public void FoldLookbehindRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldConditionalRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A)?(?(1)B|C)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(A)?(?(1)B|C)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax", "Q"),
-            ("^(?(?=A.+)A|B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=A.+)A|B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldConditionalRtlSinglelineMultilineOwnedCases))]
-    public void FoldConditionalRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldNamedRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>A.+)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<w>A.+)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb", "Q"),
-            ("(?<w>AB)C", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nababc\nzz", "Q"),
-            ("(?<w>AB)C", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldNamedRtlSinglelineMultilineOwnedCases))]
-    public void FoldNamedRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldContiguousRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\GA.+B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "aab\nzz", "Q"),
-            ("\\GA.+B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab", "Q"),
-            ("\\GA.+", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "A\nB", "Q"),
-            ("\\GA.+", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldContiguousRtlSinglelineMultilineOwnedCases))]
-    public void FoldContiguousRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldWordBoundaryRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bWORD\\b", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nword\nxx", "Q"),
-            ("\\bWORD", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nwordxx", "Q"),
-            ("WORD\\b", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxxword", "Q"),
-            ("\\bWORD\\b", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nsword\nxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldWordBoundaryRtlSinglelineMultilineOwnedCases))]
-    public void FoldWordBoundaryRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldBackrefRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(AB)\\1$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab", "Q"),
-            ("^(AB)\\1$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxb", "Q"),
-            ("(A.+)\\1", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabab\nzz", "Q"),
-            ("(A.+)\\1", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabcb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldBackrefRtlSinglelineMultilineOwnedCases))]
-    public void FoldBackrefRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldCategoryRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^AB\\p{L}+$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("A\\p{L}+$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("\\p{L}+CD$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nzzCD", "Q"),
-            ("\\p{L}+CD$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\ncd", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldCategoryRtlSinglelineMultilineOwnedCases))]
-    public void FoldCategoryRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldCategoryRangeRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("([A-Z].+[0-9])", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na1b2\nzz", "Q"),
-            ("([A-Z].+[0-9])", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("([^0-9].+[^A-Z])", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1aB\nzz", "Q"),
-            ("([^0-9].+[^A-Z])", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n12a\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldCategoryRangeRtlSinglelineMultilineOwnedCases))]
-    public void FoldCategoryRangeRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldVerboseRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A .+ B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nabqb\nzz", "Q"),
-            ("(A .+ B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naq", "Q"),
-            ("^A .+ B$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("^A .+ B$", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xx\nax\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldVerboseRtlSinglelineMultilineOwnedCases))]
-    public void FoldVerboseRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldScopedRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s:A.+)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?s:A.+)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(?s:.+)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "x\nyb", "Q"),
-            ("(?s:A.+)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldScopedRtlSinglelineMultilineOwnedCases))]
-    public void FoldScopedRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldDotLookbehindRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=A.C)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nacb\nzz", "Q"),
-            ("(?<=A.C)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxb\nzz", "Q"),
-            ("(?<=A.C)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nACB", "Q"),
-            ("(?<!A.C)B", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nAXB\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldDotLookbehindRtlSinglelineMultilineOwnedCases))]
-    public void FoldDotLookbehindRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldGuardConditionalRtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=A.+)A|B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("^(?(?=A.+)A|B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxax", "Q"),
-            ("^(?(?=A.+)A|B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nb", "Q"),
-            ("^(?(?=A.+)A|B)", RegexOptions.IgnoreCase | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldGuardConditionalRtlSinglelineMultilineOwnedCases))]
-    public void FoldGuardConditionalRtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FixedQuantifiedLookbehindOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=ab{2})c", RegexOptions.CultureInvariant, "xxabbc", "Q"),
-            ("(?<=ab{2})c", RegexOptions.CultureInvariant, "xxabc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FixedQuantifiedLookbehindOwnedCases))]
-    public void FixedQuantifiedLookbehindOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ConditionalAtomicMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("^(?(?=a)a|b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nbxx", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nax", "Q"),
-            ("^(?>a+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("^(?>a+)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ConditionalAtomicMultilineOwnedCases))]
-    public void ConditionalAtomicMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SubtractionAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("[a-z-[aeiou]]+", RegexOptions.CultureInvariant, "xbcdfx", "Q"),
-            ("[a-z-[aeiou]]+", RegexOptions.CultureInvariant, "xabeix", "Q"),
-            ("[a-z-[aeiou]]+", RegexOptions.CultureInvariant, "xaeix", "Q"),
-            ("[A-Z-[AEIOU]]+", RegexOptions.CultureInvariant, "xBCDFx", "Q"),
-            ("[0-9-[13579]]+", RegexOptions.CultureInvariant, "x246x", "Q"),
-            ("[0-9-[13579]]+", RegexOptions.CultureInvariant, "x135x", "Q"),
-            ("[\\w-[\\d_]]+", RegexOptions.CultureInvariant, "xabcx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SubtractionAsciiOwnedCases))]
-    public void SubtractionAsciiOperationsStayOwned(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BalancingAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<o><)(?<c>>)(?<-o>)(?<-c>)$", RegexOptions.CultureInvariant, "<>", "Q"),
-            ("^(?<o><)(?<c>>)(?<-o>)(?<-c>)$", RegexOptions.CultureInvariant, "<", "Q"),
-            ("(?<a>a+)(?<-a>b+)", RegexOptions.CultureInvariant, "xaabbx", "Q"),
-            ("(?<a>a+)(?<-a>b+)", RegexOptions.CultureInvariant, "xaabx", "Q"),
-            ("(?<d>[0-9])(?<-d>.)", RegexOptions.CultureInvariant, "x1ax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BalancingAsciiOwnedCases))]
-    public void BalancingAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SensitiveFoldAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(ab|cd)ef", RegexOptions.IgnoreCase, "xxCDefxx", "Q"),
-            ("(ab|cd)ef", RegexOptions.IgnoreCase, "xxABE Fxx", "Q"),
-            ("(a+)\\1", RegexOptions.IgnoreCase, "xxAaax", "Q"),
-            ("a+(?=B)", RegexOptions.IgnoreCase, "xaaBx", "Q"),
-            ("\\bWORD\\b", RegexOptions.IgnoreCase, "xx word xx", "Q"),
-            ("[a-z]+", RegexOptions.IgnoreCase, "xxabcxx", "Q"),
-            ("\\w+", RegexOptions.IgnoreCase, "xxabcxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SensitiveFoldAsciiOwnedCases))]
-    public void SensitiveFoldAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlFamilyOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(ab|cd)ef", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xxcdefxx", "Q"),
-            ("(ab|cd)ef", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("(a+)\\1", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xxaaax", "Q"),
-            ("(a+)\\1", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xxabx", "Q"),
-            ("(?<=x)a+", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xxaax", "Q"),
-            ("(?<=x)a+", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xbbb", "Q"),
-            ("a+(?=b)", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xaabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlFamilyOwnedCases))]
-    public void RtlFamilyAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> RtlWordSplitCases()
     {
         (string pattern, RegexOptions options, string text, string template)[] rows =
@@ -12179,33 +4364,6 @@ public sealed class AsciiSimplePatternTests
     {
         AssertOwnedOperations(pattern, options, text, template);
     }
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineAnchorOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^ab", RegexOptions.CultureInvariant, "ab\nxx", "Q"),
-            ("^ab", RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("ab$", RegexOptions.CultureInvariant, "xxab\nyy", "Q"),
-            ("ab$", RegexOptions.CultureInvariant, "abxx\nyy", "Q"),
-            ("\\Aab", RegexOptions.CultureInvariant, "ab\nxx", "Q"),
-            ("\\Aab", RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("ab\\z", RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("ab\\z", RegexOptions.CultureInvariant, "xxab\nyy", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineAnchorOwnedCases))]
-    public void SinglelineAnchorOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
     public static System.Collections.Generic.IEnumerable<object?[]> BoundedSplitOwnedCases()
     {
         (string pattern, RegexOptions options, string text, int count)[] rows =
@@ -12248,1769 +4406,6 @@ public sealed class AsciiSimplePatternTests
         }
         Assert.Equal(expectedSplits, actualSplits);
         Utf8AsciiScalarOperationAssertions.Owned(splitRegex);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NestedLoopAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a+)+b", RegexOptions.CultureInvariant, "xaab", "Q"),
-            ("(a+)+b", RegexOptions.CultureInvariant, "xaac", "Q"),
-            ("(a|ab)+c", RegexOptions.CultureInvariant, "xababc", "Q"),
-            ("(a|ab)+c", RegexOptions.CultureInvariant, "xabab", "Q"),
-            ("(a+)*b", RegexOptions.CultureInvariant, "xaab", "Q"),
-            ("(a+)*b", RegexOptions.CultureInvariant, "xbb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NestedLoopAsciiOwnedCases))]
-    public void NestedLoopAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LazyGroupAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a+?)b", RegexOptions.CultureInvariant, "xaab", "<$1$2>"),
-            ("(a+?)b", RegexOptions.CultureInvariant, "xbb", "<$1$2>"),
-            ("(a??)b", RegexOptions.CultureInvariant, "xab", "<$1$2>"),
-            ("(a??)b", RegexOptions.CultureInvariant, "xb", "<$1$2>"),
-            ("(a+?)(b+?)", RegexOptions.CultureInvariant, "xaabb", "<$1$2>"),
-            ("(a+?)(b+?)", RegexOptions.CultureInvariant, "xab", "<$1$2>"),
-            ("(a{2,4}?)b", RegexOptions.CultureInvariant, "xaaab", "<$1$2>"),
-            ("(a{2,4}?)b", RegexOptions.CultureInvariant, "xab", "<$1$2>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LazyGroupAsciiOwnedCases))]
-    public void LazyGroupAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> EmptyMatchOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a*", RegexOptions.CultureInvariant, "bbb", "Q"),
-            ("()", RegexOptions.CultureInvariant, "xx", "Q"),
-            ("x?", RegexOptions.CultureInvariant, "axb", "Q"),
-            ("(a)?", RegexOptions.CultureInvariant, "xab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(EmptyMatchOwnedCases))]
-    public void EmptyMatchAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> EmptyPatternSplitCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("", RegexOptions.CultureInvariant, "", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(EmptyPatternSplitCases))]
-    public void EmptyPatternOwnsScalarDiscoveryAndSplits(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedInlineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?i:ab)c", RegexOptions.CultureInvariant, "xxABcxx", "Q"),
-            ("(?i:ab)c", RegexOptions.CultureInvariant, "xxabcxx", "Q"),
-            ("(?i:ab)c", RegexOptions.CultureInvariant, "xxabCxx", "Q"),
-            ("(?m:^ab)", RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?-i:ab)", RegexOptions.CultureInvariant, "xxABxx", "Q"),
-            ("(?i:(ab|cd))ef", RegexOptions.CultureInvariant, "xxCDefxx", "Q"),
-            ("(?i:(a+))\\1", RegexOptions.CultureInvariant, "xxAaax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedInlineOwnedCases))]
-    public void ScopedInlineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BareNoneOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(ab|cd)ef", RegexOptions.None, "xxcdefxx", "Q"),
-            ("(a+)\\1", RegexOptions.None, "xxaaax", "Q"),
-            ("a+(?=b)", RegexOptions.None, "xaabx", "Q"),
-            ("(?<=x)a+", RegexOptions.None, "xxaax", "Q"),
-            ("\\bword\\b", RegexOptions.None, "xx word xx", "Q"),
-            ("[a-z]+", RegexOptions.None, "xxabcxx", "Q"),
-            ("(?>a+)b", RegexOptions.None, "xaab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BareNoneOwnedCases))]
-    public void BareNoneOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BareNoneAnchorSplitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^ab$", RegexOptions.None, "ab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BareNoneAnchorSplitOwnedCases))]
-    public void BareNoneAnchorSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> StackedComboOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(ab|cd)ef", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxCDefxx", "Q"),
-            ("(ab|cd)ef", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("(a+)\\1", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAaax", "Q"),
-            ("^ab", RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nABxx", "Q"),
-            ("ab$", RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAB\nyy", "Q"),
-            ("\\bWORD\\b", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx word xx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(StackedComboOwnedCases))]
-    public void StackedComboOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VerboseCommentOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a b", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xabx", "Q"),
-            ("a b  # tail", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xabx", "Q"),
-            ("a(?#mid)b", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xabx", "Q"),
-            ("(?#lead)a b", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xabx", "Q"),
-            ("a # c1\nb # c2", RegexOptions.IgnorePatternWhitespace | RegexOptions.CultureInvariant, "xabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VerboseCommentOwnedCases))]
-    public void VerboseCommentOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AnyClassOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("[\\s\\S]+", RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("[\\s\\S]+", RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("[^x]+", RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("[^x]+", RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("[\\D\\S]+", RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("[\\D\\S]+", RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("[\\s\\S]+", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("[\\s\\S]+", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("[^x]+", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("[^x]+", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("[\\D\\S]+", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("[\\D\\S]+", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AnyClassOwnedCases))]
-    public void AnyClassOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> EscapeAsciiOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\x41+", RegexOptions.CultureInvariant, "xxAAax", "Q"),
-            ("\\u0041+", RegexOptions.CultureInvariant, "xxAAax", "Q"),
-            ("\\t+", RegexOptions.CultureInvariant, "x\tx", "Q"),
-            ("\\n+", RegexOptions.CultureInvariant, "x\nx", "Q"),
-            ("\\x41\\x42", RegexOptions.CultureInvariant, "xxABxx", "Q"),
-            ("\\u0041\\u0042", RegexOptions.CultureInvariant, "xxABxx", "Q"),
-            ("\\a\\e", RegexOptions.CultureInvariant, "x\a\u001bx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(EscapeAsciiOwnedCases))]
-    public void EscapeAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> OctalOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\101\\102", RegexOptions.CultureInvariant, "xxABxx", "Q"),
-            ("\\0", RegexOptions.CultureInvariant, "xa\0bx", "Q"),
-            ("(a)\\101", RegexOptions.CultureInvariant, "xxaAax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(OctalOwnedCases))]
-    public void OctalOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> OctalQuantifiedDeclineCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\101+", RegexOptions.CultureInvariant, "xxAAax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(OctalQuantifiedDeclineCases))]
-    public void OctalQuantifiedAtomsRunOwned(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ExplicitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a)(b)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-            ("(ab|cd)ef", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxcdefxx", "<$1$2>"),
-            ("((a)b)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-            ("(?<x>ab)(?<y>cd)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabcdxx", "<$1$2>"),
-            ("(?<x>ab)(?<y>cd)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ExplicitOwnedCases))]
-    public void ExplicitAsciiOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ExplicitNamedBackrefOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<x>ab)(c)\\k<x>", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabcabxx", "Q"),
-            ("(?<x>AB)(c)\\k<x>", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabcabxx", "Q"),
-            ("(?<x>ab)(c)\\k<x>", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabcabxx", "Q"),
-            ("(?<x>ab)(c)\\k<x>", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xxabc\nabxx", "Q"),
-            ("(?<x>ab)(c)\\k<x>", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xxabc\naxxx", "Q"),
-            ("(?<w>a.+)\\k<w>", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabaab\nzz", "Q"),
-            ("(?<w>a.+)\\k<w>", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabc\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ExplicitNamedBackrefOwnedCases))]
-    public void ExplicitNamedBackrefRunsOwned(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedExplicitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?n:(?<x>ab)(?<y>cd))", RegexOptions.CultureInvariant, "xxabcdxx", "<$1$2>"),
-            ("(?n:(?<x>ab)(?<y>cd))", RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-            ("(?n:(a)(?<y>b))", RegexOptions.CultureInvariant, "xxabcxx", "<$1$2>"),
-            ("(?<x>(?n:a))", RegexOptions.CultureInvariant, "xxaxx", "<$1$2>"),
-            ("(?n:(?<x>a))(b)", RegexOptions.CultureInvariant, "xxabx", "<$1$2>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedExplicitOwnedCases))]
-    public void ScopedExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ExplicitFoldOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<x>AB)(?<y>CD)", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabcdxx", "<$1$2>"),
-            ("(?<x>AB)(?<y>CD)", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-            ("(a)(b)", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ExplicitFoldOwnedCases))]
-    public void ExplicitFoldOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^ab", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nxx", "Q"),
-            ("^ab", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("ab$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxab\nyy", "Q"),
-            ("ab$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx\nyy", "Q"),
-            ("^ab$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nab", "Q"),
-            ("^ab$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nyy", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlMultilineOwnedCases))]
-    public void RtlMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlMultilineDotOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a.+b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nbxx", "Q"),
-            ("a.+b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xayb", "Q"),
-            ("^a.+b$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabb\nyy", "Q"),
-            ("^ab$", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxxb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlMultilineDotOwnedCases))]
-    public void RtlMultilineDotOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a.+b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "x\naab\nx", "Q"),
-            ("^ab", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?<w>.+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxAB\nCDxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlSinglelineMultilineOwnedCases))]
-    public void RtlSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineFoldOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s)a.+b", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\naAB\nbx", "Q"),
-            ("A.+B", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\naab\nx", "Q"),
-            ("(?s)(a+).(b+)", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\naA\nbBx", "Q"),
-            (".+", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nab\nx", "Q"),
-            ("(.+)", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "x\nab\nx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineFoldOwnedCases))]
-    public void SinglelineFoldOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VarLookbehindOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=a+)b", RegexOptions.CultureInvariant, "xxaabx", "Q"),
-            ("(?<=a+)b", RegexOptions.CultureInvariant, "xxbx", "Q"),
-            ("(?<=a|bc)d", RegexOptions.CultureInvariant, "xxabcd", "Q"),
-            ("(?<=a|bc)d", RegexOptions.CultureInvariant, "xxd", "Q"),
-            ("(?<!a+)b", RegexOptions.CultureInvariant, "xaabx", "Q"),
-            ("(?<=ab+)c", RegexOptions.CultureInvariant, "xxabbc", "Q"),
-            ("(?<=a{1,3})b", RegexOptions.CultureInvariant, "xxaab", "Q"),
-            ("(?<=a{1,3})b", RegexOptions.CultureInvariant, "xxb", "Q"),
-            ("(?<=a.+)b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nzb", "Q"),
-            ("(?<=a.+)b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xzb", "Q"),
-            ("(?<!a.+)b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xb", "Q"),
-            ("(?<!a.+)b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nzb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VarLookbehindOwnedCases))]
-    public void VarLookbehindOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> VarLookaheadOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a(?=b+)", RegexOptions.CultureInvariant, "xaabx", "Q"),
-            ("a(?=b+)", RegexOptions.CultureInvariant, "xaax", "Q"),
-            ("a(?=b|cd)", RegexOptions.CultureInvariant, "xabcdx", "Q"),
-            ("a(?=b|cd)", RegexOptions.CultureInvariant, "xabx", "Q"),
-            ("(?=(ab)+)c", RegexOptions.CultureInvariant, "xxabc", "Q"),
-            ("a(?!b+)", RegexOptions.CultureInvariant, "xaabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(VarLookaheadOwnedCases))]
-    public void VarLookaheadOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> UnmatchedBackrefOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a)?b\\1", RegexOptions.CultureInvariant, "xbxx", "Q"),
-            ("(a)?b\\1", RegexOptions.CultureInvariant, "xabx", "Q"),
-            ("(a)|(b)\\1", RegexOptions.CultureInvariant, "xbcx", "Q"),
-            ("(a)?(b)?c\\1\\2", RegexOptions.CultureInvariant, "xcxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(UnmatchedBackrefOwnedCases))]
-    public void UnmatchedBackrefOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RepeatedCaptureOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a|b)+", RegexOptions.CultureInvariant, "xxabbax", "<$1>"),
-            ("(a+)+", RegexOptions.CultureInvariant, "xxaaax", "<$1>"),
-            ("(ab|cd)+", RegexOptions.CultureInvariant, "xxabcdabxx", "<$1>"),
-            ("(?<x>a|b)+", RegexOptions.CultureInvariant, "xxabax", "<$1>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RepeatedCaptureOwnedCases))]
-    public void RepeatedCaptureOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> EmptyBranchOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a|)", RegexOptions.CultureInvariant, "xxax", "Q"),
-            ("(a|)", RegexOptions.CultureInvariant, "xxbx", "Q"),
-            ("(a|b|)", RegexOptions.CultureInvariant, "xxax", "Q"),
-            ("(|a)", RegexOptions.CultureInvariant, "xxax", "Q"),
-            ("(a|)b", RegexOptions.CultureInvariant, "xxabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(EmptyBranchOwnedCases))]
-    public void EmptyBranchOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^a.+b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nabbb\nzz", "Q"),
-            ("^a.+b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "qa\nb\nzz", "Q"),
-            ("^ab", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("ab$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxab\nyy", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineMultilineOwnedCases))]
-    public void SinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineContiguousOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            (@"\Ga.+b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nab", "Q"),
-            (@"\Ga.+b", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nab", "Q"),
-            (@"\Ga+", RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\naa", "Q"),
-            (@"\Ga+", RegexOptions.Singleline | RegexOptions.CultureInvariant, "xaa", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineContiguousOwnedCases))]
-    public void SinglelineContiguousOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> GroupedSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(a.+)b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nabb\nzz", "Q"),             ("^(a.+)b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\naxx\nzz", "Q"),             ("^(a.+)(b+)$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nabbb\nzz", "Q"),             ("^(a.+)(b+)$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nab\nzz", "Q"),
-
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(GroupedSinglelineMultilineOwnedCases))]
-    public void GroupedSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> CategoryMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\p{L}+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-            ("^\\p{L}+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\p{Nd}+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\p{IsBasicLatin}+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(CategoryMultilineOwnedCases))]
-    public void CategoryMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ShorthandMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^\\d+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "12\n34", "Q"),
-            ("^\\d+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "a1\nb2", "Q"),
-            ("\\w+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab12\nxy", "Q"),
-            ("\\w+$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab \nxy ", "Q"),
-            ("(\\d.+\\d)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a2\nzz", "Q"),
-            ("(\\d.+\\d)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\n1a\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab\nzz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\na", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ShorthandMultilineOwnedCases))]
-    public void ShorthandMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> NestedLookaroundOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?=(?<=x)a)a+", RegexOptions.CultureInvariant, "xxaax", "Q"),
-            ("(a)(?=(b))", RegexOptions.CultureInvariant, "xxabbx", "Q"),
-            ("(?<=a(?=b))c", RegexOptions.CultureInvariant, "xabc", "Q"),
-            ("(?!(a)b)\\w+", RegexOptions.CultureInvariant, "xxcxxx", "Q"),
-            ("(?<=x(?=y))a", RegexOptions.CultureInvariant, "xxyax", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(NestedLookaroundOwnedCases))]
-    public void NestedLookaroundOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedLookbehindOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=X)A+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAaX", "Q"),
-            ("(?<=X)A+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxx", "Q"),
-            ("(?<!X)A+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaaX", "Q"),
-            ("(?<=AB)C", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabC", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedLookbehindOwnedCases))]
-    public void FoldedLookbehindOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ExplicitMultilineSplitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<w>ab)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "<${w}>"),
-            ("^(?<w>ab)", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nxx", "<${w}>"),
-            ("(?<w>ab)$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxab\nyy", "<${w}>"),
-            ("(?<w>ab)$", RegexOptions.ExplicitCapture | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx\nyy", "<${w}>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ExplicitMultilineSplitOwnedCases))]
-    public void ExplicitMultilineSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedVarLookbehindOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=A+)B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAABx", "Q"),
-            ("(?<=A+)B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxBx", "Q"),
-            ("(?<=A|BC)D", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABCD", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedVarLookbehindOwnedCases))]
-    public void FoldedVarLookbehindOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedVarLookaheadOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("A(?=B+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xAABx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedVarLookaheadOwnedCases))]
-    public void FoldedVarLookaheadOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedBalancingOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<a>A+)(?<-a>B+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAABbx", "Q"),
-            ("(?<a>A+)(?<-a>B+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAABx", "Q"),
-            ("^(?<o><)(?<c>>)(?<-o>)(?<-c>)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "<>", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedBalancingOwnedCases))]
-    public void FoldedBalancingOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> BalancingOptionComboOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<b>A+)(?<-b>B)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaabbxx", "Q"),
-            ("(?<b>A+)(?<-b>B)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaabxx", "Q"),
-            ("^(?<b>a+)(?<-b>b)$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "aabb", "Q"),
-            ("^(?<b>a+)(?<-b>b)$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(BalancingOptionComboOwnedCases))]
-    public void BalancingOptionComboOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedAtomicOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>A+)B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAABx", "Q"),
-            ("(?>A+)B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAACx", "Q"),
-            ("(?>AB|A)B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABBx", "Q"),
-            ("(?>A|AB)C", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABCx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedAtomicOwnedCases))]
-    public void FoldedAtomicOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedConditionalOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A)?B(?(1)C|D)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xABCD", "Q"),
-            ("(A)?B(?(1)C|D)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xBD", "Q"),
-            ("(A)(?(1)B|C)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xABx", "Q"),
-            ("(A)?(?(1)B|C)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xC", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedConditionalOwnedCases))]
-    public void FoldedConditionalOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlExplicitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<x>ab)(?<y>cd)", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabcdxx", "<$1$2>"),
-            ("(?<x>ab)(?<y>cd)", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-            ("(a)(b)", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlExplicitOwnedCases))]
-    public void RtlExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlSinglelineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("a.+b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x\naab\nx", "Q"),
-            ("a.+b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nyy", "Q"),
-            ("(a+).+(b+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x\naab\nx", "Q"),
-            ("^ab", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(a.+)b", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
-            ("\\d.+\\d", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "x1\n2y", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nbz", "Q"),
-            ("(\\w.+\\w)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa", "Q"),
-            ("^a.+b$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a\nb", "Q"),
-            ("^a.+b$", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nb", "Q"),
-            ("(\\s.+\\s)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "a \n b", "Q"),
-            ("(\\s.+\\s)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "ab", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xa\nz9q", "Q"),
-            ("([a-z].+[0-9])", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xazq", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlSinglelineOwnedCases))]
-    public void RtlSinglelineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlSinglelineExplicitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>.+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxAB\nCDxx", "Q"),
-            ("(?<w>A.+B)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxAxxBxx", "Q"),
-            ("(?<w>A.+B)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxAxx", "Q"),
-            ("(A.+)B", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxAAxxBxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlSinglelineExplicitOwnedCases))]
-    public void RtlSinglelineExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldSinglelineRtlOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>.+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAB\nCDxx", "Q"),
-            ("(?<w>A.+B)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAXXBxx", "Q"),
-            ("(?<w>A.+B)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaxxbxx", "Q"),
-            ("(?<w>A.+B)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldSinglelineRtlOwnedCases))]
-    public void FoldSinglelineRtlOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlFoldOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("[a-z]+", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABCxx", "Q"),
-            ("a+b", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaabx", "Q"),
-            ("\\w+", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaB1xx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlFoldOwnedCases))]
-    public void RtlFoldOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlFoldLiteralSplitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("ab", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlFoldLiteralSplitOwnedCases))]
-    public void RtlFoldLiteralSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineExplicitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?s)(a+)(b+)", RegexOptions.Singleline | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "x\naab\nx", "<$1$2>"),
-            ("(?<x>.+)(?<y>.+)", RegexOptions.Singleline | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "x\naab\nx", "<${x}${y}>"),
-            ("(a).+(b)", RegexOptions.Singleline | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "x\na\nb\nx", "<$1$2>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineExplicitOwnedCases))]
-    public void SinglelineExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ExplicitSinglelineMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<w>.+)$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nAB\nzz", "Q"),
-            ("^(?<w>.+)$", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xa\nax\nzz", "Q"),
-            ("(?<w>.+)", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxAB\nCDxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ExplicitSinglelineMultilineOwnedCases))]
-    public void ExplicitSinglelineMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedFoldOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?n:(?<x>AB)(?<y>CD))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabcdxx", "<$1$2>"),
-            ("(?n:(A)(?<y>B))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-            ("(?<x>(?n:A))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaxx", "<$1$2>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedFoldOwnedCases))]
-    public void ScopedFoldOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlWordFoldOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\bWORD\\b", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx word xx", "Q"),
-            ("\\bWORD\\b", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxwordxx", "Q"),
-            ("\\BWORD\\B", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xwordy", "Q"),
-            ("(\\b\\w+\\b)", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxhi therexx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlWordFoldOwnedCases))]
-    public void RtlWordFoldOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedNestedOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("((A)+)+B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAABx", "Q"),
-            ("((A)+)+B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAACx", "Q"),
-            ("((A|AB)+)C", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABABCx", "Q"),
-            ("((A)*)+B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxBx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedNestedOwnedCases))]
-    public void FoldedNestedOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedLazyOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A+?)B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAABx", "<$1$2>"),
-            ("(A+?)B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxBx", "<$1$2>"),
-            ("(A??)B", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABx", "<$1$2>"),
-            ("(A+?)(B+?)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAABBx", "<$1$2>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedLazyOwnedCases))]
-    public void FoldedLazyOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlAtomicOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>a+)b", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xaab", "Q"),
-            ("(?>a+)b", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xaac", "Q"),
-            ("(?>ab|a)b", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xxabb", "Q"),
-            ("(?>a+)(b+)", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xaabb", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlAtomicOwnedCases))]
-    public void RtlAtomicOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlConditionalOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(a)?b(?(1)c|d)", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xabcd", "Q"),
-            ("(a)?b(?(1)c|d)", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xbd", "Q"),
-            ("(a)(?(1)b|c)", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xabx", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlConditionalOwnedCases))]
-    public void RtlConditionalOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlConditionalAtomicMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?(?=a)a|b)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("(a)?(?(1)b|c)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-            ("^(?>a+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("^(?>a+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naabxx", "Q"),
-            ("(?>a.+)b", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naax", "Q"),
-            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabbc\nzz", "Q"),
-            ("(?>ab+)c", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlConditionalAtomicMultilineOwnedCases))]
-    public void RtlConditionalAtomicMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlBalancingOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<a>a+)(?<-a>b+)", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xaabbx", "Q"),
-            ("(?<a>a+)(?<-a>b+)", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "xaabx", "Q"),
-            ("^(?<o><)(?<c>>)(?<-o>)(?<-c>)$", RegexOptions.RightToLeft | RegexOptions.CultureInvariant, "<>", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab\nab", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.ExplicitCapture | RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.CultureInvariant, "xab", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naab\nzz", "Q"),
-            ("(?<b>.+)(?<-b>.+)", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlBalancingOwnedCases))]
-    public void RtlBalancingOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> RtlFoldLetterRunOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("\\p{L}.+\\p{L}", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "A\nB", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "AB", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.RightToLeft | RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "A\n1", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "A\nB", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "AB", "Q"),
-            ("\\p{L}.+\\p{L}", RegexOptions.RightToLeft | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "A\n1", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(RtlFoldLetterRunOwnedCases))]
-    public void RtlFoldLetterRunOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedRtlAtomicOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?>A+)B", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAABx", "Q"),
-            ("(?>A+)B", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAACx", "Q"),
-            ("(?>AB|A)B", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABBx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedRtlAtomicOwnedCases))]
-    public void FoldedRtlAtomicOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedRtlConditionalOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A)?B(?(1)C|D)", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xABCD", "Q"),
-            ("(A)?B(?(1)C|D)", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xBD", "Q"),
-            ("(A)(?(1)B|C)", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xABx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedRtlConditionalOwnedCases))]
-    public void FoldedRtlConditionalOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedRtlBackrefOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(A+)\\1", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAAax", "Q"),
-            ("(AB)C\\1", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABABx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedRtlBackrefOwnedCases))]
-    public void FoldedRtlBackrefOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedRtlLookaroundOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=X)A+", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAaX", "Q"),
-            ("(?<=X)A+", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxx", "Q"),
-            ("A(?=B)", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xaaBx", "Q"),
-            ("(?<!X)A+", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaaX", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedRtlLookaroundOwnedCases))]
-    public void FoldedRtlLookaroundOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedRtlLookbehindGroupOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=(?<w>AB))CD", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabcdxx", "Q"),
-            ("(?<=(?<w>AB))CD", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("(?<=AB)(?<w>CD)", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabcdxx", "Q"),
-            ("(?<=(A))B", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxaabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedRtlLookbehindGroupOwnedCases))]
-    public void FoldedRtlLookbehindGroupOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> TripleComboOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<X>AB)(?<Y>CD)", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabcdxx", "<$1$2>"),
-            ("(?<X>AB)(?<Y>CD)", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-            ("(A)(B)", RegexOptions.RightToLeft | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxabxx", "<$1$2>"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(TripleComboOwnedCases))]
-    public void TripleComboOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldExplicitMultilineSplitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<w>AB)", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("^(?<w>AB)", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\naxxx", "Q"),
-            ("(?<w>AB)$", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxab\nyy", "Q"),
-            ("(?<w>AB)$", RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxabx\nyy", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldExplicitMultilineSplitOwnedCases))]
-    public void FoldExplicitMultilineSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> FoldedContiguousDeclineCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            (@"\Gab", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "ABxx", "Q"),
-            (@"\Gab", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "abxx", "Q"),
-            (@"\Gab", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxABxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(FoldedContiguousDeclineCases))]
-    public void FoldedContiguousKeepsDiscoveryAndOwnsResults(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineIgnoreCaseMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^a.+b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xa\nABBB\nzz", "Q"),
-            ("^ab", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xx\nABxx", "Q"),
-            ("ab$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "xxAB\nyy", "Q"),
-            ("^a.+b$", RegexOptions.Singleline | RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, "qa\nb\nzz", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineIgnoreCaseMultilineOwnedCases))]
-    public void SinglelineIgnoreCaseMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> SinglelineIgnoreCaseExplicitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<w>.+)", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxABxx", "Q"),
-            ("(?<w>.+)", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xx\nABxx", "Q"),
-            ("(?<x>A+)(?<w>B+)", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxAABBxx", "Q"),
-            ("(?<x>A+)(?<w>B+)", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxAAxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(SinglelineIgnoreCaseExplicitOwnedCases))]
-    public void SinglelineIgnoreCaseExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindExplicitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=ab)(c)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabcxx", "Q"),
-            ("(?<=(?<w>ab))(c)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabcxx", "Q"),
-            ("(?<=a)(?<w>b)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("(?<=ab)(c)", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, "xxabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindExplicitOwnedCases))]
-    public void LookbehindExplicitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> LookbehindMultilineOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?<=^a)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?<=^a)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?<!^a)b", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(LookbehindMultilineOwnedCases))]
-    public void LookbehindMultilineOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ContiguousMultilineLaneSplitCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            (@"\Gab", RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            (@"\Gab", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            (@"\Gab", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nab", "Q"),
-            (@"(\Gab)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            (@"(\Gab)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "abxx", "Q"),
-            (@"(?m:\Gab)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            (@"(?m:\Gab)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ContiguousMultilineLaneSplitCases))]
-    public void ContiguousMultilineKeepsDiscoveryAndOwnsResults(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> ScopedExplicitMultilineSplitCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("(?n:^(?<w>ab))", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("(?n:^(?<w>ab))", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-            ("(?n:(?<w>ab)$)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxab\nyy", "Q"),
-            ("(?n:(?<w>ab)$)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xxabx\nyy", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(ScopedExplicitMultilineSplitCases))]
-    public void ScopedExplicitMultilineSplitKeepsLaneRouting(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AnchoredMultigroupOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<x>a)(?<w>b)", RegexOptions.CultureInvariant, "abxx", "Q"),
-            ("^(?<x>a)(?<w>b)", RegexOptions.CultureInvariant, "xxabxx", "Q"),
-            ("^(?<x>a)(?<w>b)", RegexOptions.CultureInvariant, "ab", "Q"),
-            ("^(?<x>a)(?<w>b)", RegexOptions.CultureInvariant, "xab", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AnchoredMultigroupOwnedCases))]
-    public void AnchoredMultigroupOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> AnchoredMultigroupMultilineSplitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<x>a)(?<w>b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabxx", "Q"),
-            ("^(?<x>a)(?<w>b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "ab\nxx", "Q"),
-            ("^(?<x>a)(?<w>b)", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nxabxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(AnchoredMultigroupMultilineSplitOwnedCases))]
-    public void AnchoredMultigroupMultilineSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DoublyAnchoredDetailedOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<x>ab)(?<w>cd)$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabcd", "Q"),
-            ("^(?<x>ab)(?<w>cd)$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "xx\nabcx", "Q"),
-            ("^(?<x>ab)(?<w>cd)$", RegexOptions.Multiline | RegexOptions.CultureInvariant, "abcd\nxx", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DoublyAnchoredDetailedOwnedCases))]
-    public void DoublyAnchoredDetailedOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
-    }
-
-    public static System.Collections.Generic.IEnumerable<object?[]> DoublyAnchoredSplitOwnedCases()
-    {
-        (string pattern, RegexOptions options, string text, string template)[] rows =
-        [
-            ("^(?<x>ab)(?<w>cd)$", RegexOptions.CultureInvariant, "abcd", "Q"),
-            ("^(?<x>ab)(?<w>cd)$", RegexOptions.CultureInvariant, "xabcd", "Q"),
-            ("^(?<x>ab)(?<w>cd)$", RegexOptions.CultureInvariant, "abc", "Q"),
-        ];
-        foreach (var row in rows)
-        {
-            yield return new object?[] { row.pattern, row.options, row.text, row.template };
-            yield return new object?[] { row.pattern, row.options | RegexOptions.Compiled, row.text, row.template };
-        }
-    }
-
-    [Theory]
-    [MemberData(nameof(DoublyAnchoredSplitOwnedCases))]
-    public void DoublyAnchoredSplitOwnsInput(string pattern, RegexOptions options, string text, string template)
-    {
-        AssertOwnedOperations(pattern, options, text, template);
     }
 
     public static System.Collections.Generic.IEnumerable<object?[]> MinBoundHeadedStarOwnedCases()
@@ -14707,8 +5102,2561 @@ public sealed class AsciiSimplePatternTests
         Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text);
     }
 
-    // Keep independent cold expressions per operation and the original oracle
-    // and capture expectations; the named tests/data above retain their identities.
+    public static IEnumerable<object?[]> OwnedOperationCases()
+    {
+        (string Pattern, RegexOptions Options, string Text, string Template)[] rows =
+        [
+            // AnchoredLoopAscii
+            ("^a[^x]*b$", CultureInvariant, "axaayb", "Q"),
+            ("^a[^x]*b$", CultureInvariant, "ab", "Q"),
+            ("^a[^x]+b$", CultureInvariant, "axaayb", "Q"),
+            ("(?<=x)a+", CultureInvariant, "xaay", "Q"),
+            ("a+(?=y)", CultureInvariant, "xaay", "Q"),
+            ("\\Ba+\\B", CultureInvariant, "xaay", "Q"),
+            ("\\ba+\\b", CultureInvariant, "xaay", "Q"),
+            ("^a[^x]+b", CultureInvariant | RightToLeft, "axaayb", "Q"),
+
+            // ComboAscii
+            ("(?i)a+b", CultureInvariant | RightToLeft, "xxAAB", "Q"),
+            ("(?m:^ab)", CultureInvariant | IgnoreCase, "xx\nAB", "Q"),
+            ("(?m:ab$)", CultureInvariant | IgnoreCase, "ab\nxx", "Q"),
+            ("(?m:^ab$)", CultureInvariant | IgnoreCase, "AB", "Q"),
+            ("(?i)(a)(b)", CultureInvariant, "xxABxx", "<$1$2>"),
+            ("(?i)a[^x]+b", CultureInvariant, "xAYZb", "Q"),
+
+            // ModeAscii
+            ("(?s)a.*b", CultureInvariant, "xa\nb", "Q"),
+            ("(a)(b)", CultureInvariant | ExplicitCapture, "xxabxx", "<$1$2>"),
+            ("a b", CultureInvariant | IgnorePatternWhitespace, "xabx", "Q"),
+            ("ab\\z", CultureInvariant, "xxab", "Q"),
+            ("\\Aab", CultureInvariant, "abxx", "Q"),
+            ("a*", CultureInvariant, "", "Q"),
+            ("a*", CultureInvariant, "bbb", "Q"),
+
+            // ContiguousAnchorSplit
+            ("\\Gab", CultureInvariant, "abxx", "Q"),
+
+            // BackrefAscii
+            ("(a+)\\1", CultureInvariant, "xxaaax", "Q"),
+            ("(a+)\\1", CultureInvariant, "xxabx", "Q"),
+            ("(a+)\\1", CultureInvariant, "xaabbbaabbx", "Q"),
+            ("(ab)c\\1", CultureInvariant, "xxabcabxx", "Q"),
+            ("(ab)c\\1", CultureInvariant, "xxabx", "Q"),
+            ("(a*)(b*)\\1\\2", CultureInvariant, "xxabx", "Q"),
+
+            // BackrefSingleline
+            ("(a.+)\\1", CultureInvariant | Singleline, "xab\nab", "Q"),
+            ("(a.+)\\1", CultureInvariant | Singleline, "xabxab", "Q"),
+            ("(ab.+)\\1", CultureInvariant | Singleline, "xab\ncab", "Q"),
+            ("(a.+)\\1$", CultureInvariant | Singleline, "xab\nab", "Q"),
+
+            // BackrefMultiline
+            ("^(ab)\\1$", CultureInvariant | Multiline, "xx\nabab", "Q"),
+            ("^(ab)\\1$", CultureInvariant | Multiline, "xx\nabxb", "Q"),
+            ("(a+)\\1$", CultureInvariant | Multiline, "xx\naabb", "Q"),
+            ("(a+)\\1$", CultureInvariant | Multiline, "xx\naaaa", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline, "xx\nabab\nzz", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline, "xx\nabcb", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline, "abab", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline, "xabc", "Q"),
+
+            // ExplicitBackrefMultiline
+            ("^(?<w>ab)\\1$", CultureInvariant | ExplicitCapture | Multiline, "abab", "Q"),
+            ("^(?<w>ab)\\1$", CultureInvariant | ExplicitCapture | Multiline, "xx\nabab", "Q"),
+            ("^(?<w>ab)\\1$", CultureInvariant | ExplicitCapture | Multiline, "xx\nabxb", "Q"),
+
+            // LookaroundAscii
+            ("a+(?=b)", CultureInvariant, "xaabx", "Q"),
+            ("a+(?=b)", CultureInvariant, "xaax", "Q"),
+            ("a+(?!b)", CultureInvariant, "xaax", "Q"),
+            ("a+(?!b)", CultureInvariant, "xaabx", "Q"),
+            ("(?<=x)a+", CultureInvariant, "xxaax", "Q"),
+            ("(?<=x)a+", CultureInvariant, "xbbb", "Q"),
+            ("(?<!x)a+", CultureInvariant, "bbaaa", "Q"),
+            ("(?<!x)a+", CultureInvariant, "xxaax", "Q"),
+
+            // AlternationAscii
+            ("(ab|cd)ef", CultureInvariant, "xxcdefxx", "Q"),
+            ("(ab|cd)ef", CultureInvariant, "xxabefxx", "Q"),
+            ("(ab|cd)ef", CultureInvariant, "xxabxx", "Q"),
+            ("(a|bc)+d", CultureInvariant, "xxbcdxx", "Q"),
+            ("(a|bc)+d", CultureInvariant, "xxabcdxx", "Q"),
+            ("(a|bc)+d", CultureInvariant, "xxabx", "Q"),
+            ("x(a|bc)?y", CultureInvariant, "xxay", "Q"),
+            ("x(a|bc)?y", CultureInvariant, "xxy", "Q"),
+            ("(ab|a)b", CultureInvariant, "xxabb", "Q"),
+            ("(ab|a)b", CultureInvariant, "xxab", "Q"),
+
+            // WordBoundaryAscii
+            ("\\bword\\b", CultureInvariant, "xx word xx", "Q"),
+            ("\\bword\\b", CultureInvariant, "xxwordxx", "Q"),
+            ("\\bword\\b", CultureInvariant, "xxwords", "Q"),
+            ("\\Bword\\B", CultureInvariant, "xwordy", "Q"),
+            ("\\Bword\\B", CultureInvariant, "xxwordxx", "Q"),
+            ("(\\b\\w+\\b)", CultureInvariant, "xxhi therexx", "Q"),
+            ("(\\b\\w+\\b)", CultureInvariant, "  ", "Q"),
+            ("\\b(a+)\\b", CultureInvariant, "xx aa xx", "Q"),
+            ("\\b(a+)\\b", CultureInvariant, "xxaaaxx", "Q"),
+
+            // WordBoundaryMultiline
+            ("\\bword\\b", CultureInvariant | Multiline, "xx\nword\nxx", "Q"),
+            ("\\bword", CultureInvariant | Multiline, "xx\nwordxx", "Q"),
+            ("word\\b", CultureInvariant | Multiline, "xx\nxxword", "Q"),
+            ("\\bword\\b", CultureInvariant | Multiline, "xx\nsword\nxx", "Q"),
+            ("\\b.+\\b", CultureInvariant | Multiline, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | Multiline, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | Multiline, "xabcby", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | Multiline, " ab ", "Q"),
+
+            // FoldedFamilyAscii
+            ("(ab|cd)ef", CultureInvariant | IgnoreCase, "xxCDefxx", "Q"),
+            ("(ab|cd)ef", CultureInvariant | IgnoreCase, "xxABE Fxx", "Q"),
+            ("(ab|cd)ef", CultureInvariant | IgnoreCase, "xxabxx", "Q"),
+            ("(a+)\\1", CultureInvariant | IgnoreCase, "xxAaax", "Q"),
+            ("(a+)\\1", CultureInvariant | IgnoreCase, "xxabx", "Q"),
+            ("a+(?=B)", CultureInvariant | IgnoreCase, "xaaBx", "Q"),
+            ("a+(?=B)", CultureInvariant | IgnoreCase, "xaabx", "Q"),
+            ("\\bWORD\\b", CultureInvariant | IgnoreCase, "xx word xx", "Q"),
+            ("\\bWORD\\b", CultureInvariant | IgnoreCase, "xxwordxx", "Q"),
+            ("(?<=X)a+", CultureInvariant | IgnoreCase, "xXaax", "Q"),
+            ("(?<=X)a+", CultureInvariant | IgnoreCase, "xxaax", "Q"),
+
+            // NamedAscii
+            ("(?<x>ab|cd)ef", CultureInvariant, "xxcdefxx", "Q"),
+            ("(?<x>ab|cd)ef", CultureInvariant, "xxabxx", "Q"),
+
+            // NamedBackref
+            ("(?<w>ab)c\\k<w>", CultureInvariant, "xxabcabxx", "Q"),
+            ("(?<w>ab)c\\k<w>", CultureInvariant, "xxabx", "Q"),
+            ("(?<a>a+)(?<b>b+)\\k<a>", CultureInvariant, "xxaabax", "Q"),
+            ("(?<a>a+)(?<b>b+)\\k<a>", CultureInvariant, "xxaabbx", "Q"),
+            ("(?'w'ab)c\\k'w'", CultureInvariant, "xxabcabxx", "Q"),
+            ("(?<x>a)?b\\k<x>", CultureInvariant, "xbxx", "Q"),
+            ("(?<x>A+)\\k<x>", CultureInvariant | IgnoreCase | RightToLeft, "xxAAax", "Q"),
+            ("(?<w>a.+)\\k<w>", CultureInvariant | Multiline, "xx\naabaab\nzz", "Q"),
+            ("(?<w>a.+)\\k<w>", CultureInvariant | Multiline, "xx\naabc\nzz", "Q"),
+            ("^(?<w>a.+)\\k<w>$", CultureInvariant | Multiline, "xx\naabaab", "Q"),
+            ("^(?<w>a.+)\\k<w>$", CultureInvariant | Multiline, "xx\naabc", "Q"),
+
+            // MultilineAscii
+            ("^ab", CultureInvariant | Multiline, "xx\nabxx", "Q"),
+            ("^ab", CultureInvariant | Multiline, "ab\nxx", "Q"),
+            ("ab$", CultureInvariant | Multiline, "xxab\nyy", "Q"),
+            ("ab$", CultureInvariant | Multiline, "abxx\nyy", "Q"),
+            ("^ab$", CultureInvariant | Multiline, "ab\nab", "Q"),
+            ("^ab$", CultureInvariant | Multiline, "xx\nab\nab\nyy", "Q"),
+
+            // AtomicAscii
+            ("(?>a+)b", CultureInvariant, "xaab", "Q"),
+            ("(?>a+)b", CultureInvariant, "xaac", "Q"),
+            ("(?>ab|a)b", CultureInvariant, "xxabb", "Q"),
+            ("(?>ab|a)b", CultureInvariant, "xxab", "Q"),
+            ("(?>a+)(b+)", CultureInvariant, "xaabb", "Q"),
+            ("(?>a|ab)c", CultureInvariant, "xabcx", "Q"),
+            ("(?>a|ab)c", CultureInvariant, "xacx", "Q"),
+
+            // AtomicLookaheadSingleline
+            ("^(?>a.+)b$", CultureInvariant | Singleline, "aax\nab", "Q"),
+            ("^(?>a.+)b$", CultureInvariant | Singleline, "aaxb", "Q"),
+            ("a(?=.+b)c", CultureInvariant | Singleline, "xay\nzbc", "Q"),
+            ("a(?=.+b)c", CultureInvariant | Singleline, "xayzc", "Q"),
+
+            // ConditionalAscii
+            ("(a)?b(?(1)c|d)", CultureInvariant, "xabcd", "Q"),
+            ("(a)?b(?(1)c|d)", CultureInvariant, "xbd", "Q"),
+            ("(a)?b(?(1)c|d)", CultureInvariant, "xad", "Q"),
+            ("(a)(?(1)b|c)", CultureInvariant, "xabx", "Q"),
+            ("(a)(?(1)b|c)", CultureInvariant, "xacx", "Q"),
+            ("(a)?(?(1)b|c)", CultureInvariant, "xb", "Q"),
+            ("(a)?(?(1)b|c)", CultureInvariant, "xc", "Q"),
+
+            // ConditionalSingleline
+            ("(a)?(?(1).+|b)", CultureInvariant | Singleline, "xay\nz", "Q"),
+            ("(a)?(?(1).+|b)", CultureInvariant | Singleline, "xy", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | Singleline, "ax\ny", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | Singleline, "xb", "Q"),
+
+            // BalancingSingleline
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | Singleline, "xab\nab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | Singleline, "xab", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | Singleline, "a\nb", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | Singleline, "a\n1", "Q"),
+
+            // ShorthandSingleline
+            ("(\\d.+\\d)", CultureInvariant | Singleline, "x1\n2y", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | Singleline, "x1y", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | Singleline, "xa\nbz", "Q"),
+            ("(\\s.+\\s)", CultureInvariant | Singleline, "ab", "Q"),
+
+            // WordBoundarySingleline
+            ("\\b.+\\b", CultureInvariant | Singleline, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | Singleline, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | Singleline, "xab\ncd", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | Singleline, " ab ", "Q"),
+
+            // AnchorSingleline
+            ("^a.+b$", CultureInvariant | Singleline, "a\nb", "Q"),
+            ("^a.+b$", CultureInvariant | Singleline, "xa\nb", "Q"),
+            ("^a.+b", CultureInvariant | Singleline, "a\nbxx", "Q"),
+            ("\\Aa.+\\z", CultureInvariant | Singleline, "a\nbx", "Q"),
+
+            // FoldSingleline
+            ("(A.+B)", CultureInvariant | IgnoreCase | Singleline, "xa\nbz", "Q"),
+            ("(A.+B)", CultureInvariant | IgnoreCase | Singleline, "xa\nBZ", "Q"),
+            ("(A.+B)", CultureInvariant | IgnoreCase | Singleline, "xaz", "Q"),
+            ("(a.+b)", CultureInvariant | IgnoreCase | Singleline, "xA\nBz", "Q"),
+
+            // MultilineSingleline
+            ("^a.+b$", CultureInvariant | Multiline | Singleline, "xx\na\nb\nyy", "Q"),
+            ("^a.+b$", CultureInvariant | Multiline | Singleline, "xx\nab\nyy", "Q"),
+            ("^.+b", CultureInvariant | Multiline | Singleline, "xx\na\nzb", "Q"),
+            ("\\Aa.+\\z", CultureInvariant | Multiline | Singleline, "a\nbx", "Q"),
+
+            // ScopedSingleline
+            ("(?s:a.+)b", CultureInvariant, "xa\nzb", "Q"),
+            ("(?s:a.+)b", CultureInvariant, "xab", "Q"),
+            ("(?s:.+)b", CultureInvariant, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant, "xaz", "Q"),
+
+            // NegLookaheadSingleline
+            ("a(?!b.+c)d", CultureInvariant | Singleline, "xabd", "Q"),
+            ("a(?!b.+c)d", CultureInvariant | Singleline, "xab\ncd", "Q"),
+            ("(?!a.+)b", CultureInvariant | Singleline, "xbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | Singleline, "a", "Q"),
+
+            // DotLookbehindSingleline
+            ("(?<=a.c)b", CultureInvariant | Singleline, "xa\ncb", "Q"),
+            ("(?<=a.c)b", CultureInvariant | Singleline, "xacb", "Q"),
+            ("(?<=a.c)b", CultureInvariant | Singleline, "xab", "Q"),
+            ("(?<!a.c)b", CultureInvariant | Singleline, "xab", "Q"),
+
+            // LazySingleline
+            ("(a.+?b)", CultureInvariant | Singleline, "xa\nbqb", "Q"),
+            ("(a.+?b)", CultureInvariant | Singleline, "xabqb", "Q"),
+            ("(a.+?b)", CultureInvariant | Singleline, "xaq", "Q"),
+            ("(a.*?b)", CultureInvariant | Singleline, "xa\nb", "Q"),
+
+            // ContiguousSingleline
+            ("\\Ga.+b", CultureInvariant | Singleline, "a\nbxx", "Q"),
+            ("\\Ga.+b", CultureInvariant | Singleline, "xa\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | Singleline, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | Singleline, "xa", "Q"),
+
+            // CategoryRangeSingleline
+            ("([a-z].+[0-9])", CultureInvariant | Singleline, "xa\nz9q", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | Singleline, "xaz9q", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | Singleline, "xazq", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | Singleline, "xA\nZ9q", "Q"),
+
+            // FoldBackrefSingleline
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Singleline, "xA\nba\nb", "Q"),
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Singleline, "xabxab", "Q"),
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Singleline, "xabxcd", "Q"),
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Singleline, "xA\nbxc", "Q"),
+
+            // BalancingMultiline
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | Multiline, "xab\nab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | Multiline, "xab", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | Multiline, "a\nb", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | Multiline, "a\n1", "Q"),
+
+            // VerboseSingleline
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Singleline, "xa\nbq", "Q"),
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Singleline, "xaq", "Q"),
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Singleline, "xayb", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnorePatternWhitespace | Singleline, "a\nb", "Q"),
+
+            // ExplicitMultilineDot
+            ("^(?<w>a.+b)$", CultureInvariant | ExplicitCapture | Multiline, "aab", "Q"),
+            ("^(?<w>a.+b)$", CultureInvariant | ExplicitCapture | Multiline, "xx\naab\nyy", "Q"),
+            ("^(?<w>a.+b)$", CultureInvariant | ExplicitCapture | Multiline, "xx\nab", "Q"),
+
+            // AtomicMultiline
+            ("(?>a.+)b", CultureInvariant | Multiline, "xx\naabxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | Multiline, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | Multiline, "xx\nabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | Multiline, "xx\nabx", "Q"),
+
+            // BackrefRtlSingleline
+            ("(a.+)\\1", CultureInvariant | RightToLeft | Singleline, "xabab", "Q"),
+            ("(a.+)\\1", CultureInvariant | RightToLeft | Singleline, "xab\nab", "Q"),
+            ("(a.+)\\1", CultureInvariant | RightToLeft | Singleline, "xa\nba\nb", "Q"),
+            ("(a.+)\\1", CultureInvariant | RightToLeft | Singleline, "xabxcd", "Q"),
+
+            // AtomicRtlSingleline
+            ("(?>a.+)b", CultureInvariant | RightToLeft | Singleline, "xa\nbxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | RightToLeft | Singleline, "xay", "Q"),
+            ("(?>ab+)c", CultureInvariant | RightToLeft | Singleline, "xabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | RightToLeft | Singleline, "xa\nbbc", "Q"),
+
+            // WordBoundaryRtlSingleline
+            ("\\b.+\\b", CultureInvariant | RightToLeft | Singleline, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | RightToLeft | Singleline, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | RightToLeft | Singleline, "xab\ncd", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | RightToLeft | Singleline, " ab ", "Q"),
+
+            // LookaheadRtlSingleline
+            ("a(?=.+b)c", CultureInvariant | RightToLeft | Singleline, "xay\nzbc", "Q"),
+            ("a(?=.+b)c", CultureInvariant | RightToLeft | Singleline, "xayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | RightToLeft | Singleline, "xbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | RightToLeft | Singleline, "a", "Q"),
+
+            // LazyRtlSingleline
+            ("(a.+?b)", CultureInvariant | RightToLeft | Singleline, "xa\nbqb", "Q"),
+            ("(a.+?b)", CultureInvariant | RightToLeft | Singleline, "xabqb", "Q"),
+            ("(a.+?b)", CultureInvariant | RightToLeft | Singleline, "xaq", "Q"),
+            ("(a.*?b)", CultureInvariant | RightToLeft | Singleline, "xa\nb", "Q"),
+
+            // LookbehindRtlSingleline
+            ("(?<=a.c)b", CultureInvariant | RightToLeft | Singleline, "xa\ncb", "Q"),
+            ("(?<=a.c)b", CultureInvariant | RightToLeft | Singleline, "xacb", "Q"),
+            ("(?<=a.c)b", CultureInvariant | RightToLeft | Singleline, "xab", "Q"),
+            ("(?<!a.c)b", CultureInvariant | RightToLeft | Singleline, "xa\ncb", "Q"),
+
+            // ConditionalRtlSingleline
+            ("(a)?(?(1).+|b)", CultureInvariant | RightToLeft | Singleline, "xay\nz", "Q"),
+            ("(a)?(?(1).+|b)", CultureInvariant | RightToLeft | Singleline, "xy", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | RightToLeft | Singleline, "ax\ny", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | RightToLeft | Singleline, "xb", "Q"),
+
+            // CategoryRtlSingleline
+            ("\\p{L}.+\\p{L}", CultureInvariant | RightToLeft | Singleline, "a\nb", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | RightToLeft | Singleline, "a\n1", "Q"),
+
+            // VerboseRtlSingleline
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | RightToLeft | Singleline, "xa\nbq", "Q"),
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | RightToLeft | Singleline, "xaq", "Q"),
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | RightToLeft | Singleline, "xayb", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnorePatternWhitespace | RightToLeft | Singleline, "a\nb", "Q"),
+
+            // ContiguousRtlSingleline
+            ("\\Ga.+b", CultureInvariant | RightToLeft | Singleline, "a\nbxx", "Q"),
+            ("\\Ga.+b", CultureInvariant | RightToLeft | Singleline, "xa\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | RightToLeft | Singleline, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | RightToLeft | Singleline, "xa", "Q"),
+
+            // ScopedRtlSingleline
+            ("(?s:a.+)b", CultureInvariant | RightToLeft | Singleline, "xa\nzb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | RightToLeft | Singleline, "xaz", "Q"),
+            ("(?s:.+)b", CultureInvariant | RightToLeft | Singleline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | RightToLeft | Singleline, "xab", "Q"),
+
+            // ExplicitRtlMultiline
+            ("^(?<w>a.+b)$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naab\nyy", "Q"),
+            ("^(?<w>a.+b)$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nab", "Q"),
+            ("(?<w>a.+b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naab\nyy", "Q"),
+            ("(?<w>a.+b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nay", "Q"),
+
+            // FoldRtlMultiline
+            ("(A.+B)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naab\nyy", "Q"),
+            ("(A.+B)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nay", "Q"),
+            ("(a.+b)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nAAB\nYY", "Q"),
+            ("^a.+b$", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naabb\nyy", "Q"),
+
+            // BackrefRtlMultiline
+            ("(a.+)\\1", CultureInvariant | Multiline | RightToLeft, "xx\nabab\nzz", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline | RightToLeft, "xx\nabcb\nzz", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline | RightToLeft, "abab", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline | RightToLeft, "xx\nabcb", "Q"),
+
+            // WordBoundaryRtlMultiline
+            ("\\b.+\\b", CultureInvariant | Multiline | RightToLeft, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | Multiline | RightToLeft, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | Multiline | RightToLeft, "xabcby", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | Multiline | RightToLeft, " ab ", "Q"),
+
+            // ShorthandRtlMultiline
+            ("(\\d.+\\d)", CultureInvariant | Multiline | RightToLeft, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | Multiline | RightToLeft, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | Multiline | RightToLeft, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | Multiline | RightToLeft, "xx\na", "Q"),
+
+            // AlternationRtlMultiline
+            ("(a.+|zb)", CultureInvariant | Multiline | RightToLeft, "xx\nazb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | Multiline | RightToLeft, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | Multiline | RightToLeft, "xx\nzx\nzz", "Q"),
+            ("(zb|z.+)", CultureInvariant | Multiline | RightToLeft, "xx\nzzb", "Q"),
+
+            // LookbehindRtlMultiline
+            ("(?<=a.c)b", CultureInvariant | Multiline | RightToLeft, "xx\nacb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | Multiline | RightToLeft, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | Multiline | RightToLeft, "xx\nacb", "Q"),
+            ("(?<!a.c)b", CultureInvariant | Multiline | RightToLeft, "xx\naxb\nzz", "Q"),
+
+            // LookaheadRtlMultiline
+            ("a(?=.+b)c", CultureInvariant | Multiline | RightToLeft, "xx\nayzbc\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | Multiline | RightToLeft, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | Multiline | RightToLeft, "xx\nxbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | Multiline | RightToLeft, "xx\na", "Q"),
+
+            // ContiguousMultiline
+            ("\\Ga.+b", CultureInvariant | Multiline, "aab\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | Multiline, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | Multiline, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | Multiline, "xa", "Q"),
+
+            // AlternationMultiline
+            ("(a.+|zb)", CultureInvariant | Multiline, "xx\nazb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | Multiline, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | Multiline, "xx\nzx\nzz", "Q"),
+            ("(zb|z.+)", CultureInvariant | Multiline, "xx\nzzb", "Q"),
+
+            // ConditionalMultiline
+            ("(a)?(?(1)b|c)", CultureInvariant | Multiline, "xx\nab", "Q"),
+            ("(a)?(?(1)b|c)", CultureInvariant | Multiline, "xx\nax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | Multiline, "xx\naax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | Multiline, "xx\nxax", "Q"),
+
+            // DotLookbehindMultiline
+            ("(?<=a.c)b", CultureInvariant | Multiline, "xx\nacb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | Multiline, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | Multiline, "xx\nacb", "Q"),
+            ("(?<!a.c)b", CultureInvariant | Multiline, "xx\naxb\nzz", "Q"),
+
+            // LazyMultiline
+            ("(a.+?b)", CultureInvariant | Multiline, "xx\nabqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | Multiline, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | Multiline, "xx\nab", "Q"),
+            ("(a.*?b)", CultureInvariant | Multiline, "xx\naq", "Q"),
+
+            // LookaheadMultiline
+            ("a(?=.+b)c", CultureInvariant | Multiline, "xx\nayzbc\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | Multiline, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | Multiline, "xx\nxbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | Multiline, "xx\na", "Q"),
+
+            // FoldMultiline
+            ("(A.+B)", CultureInvariant | IgnoreCase | Multiline, "xx\naab\nzz", "Q"),
+            ("(A.+B)", CultureInvariant | IgnoreCase | Multiline, "xx\nay", "Q"),
+            ("(a.+b)", CultureInvariant | IgnoreCase | Multiline, "xx\nAAB\nYY", "Q"),
+            ("^a.+b$", CultureInvariant | IgnoreCase | Multiline, "xx\naabb\nyy", "Q"),
+
+            // VerboseMultiline
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Multiline, "xx\nabqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Multiline, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnorePatternWhitespace | Multiline, "xx\naab\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnorePatternWhitespace | Multiline, "xx\nax\nzz", "Q"),
+
+            // ScopedMultiline
+            ("(?s:a.+)b", CultureInvariant | Multiline, "xx\naab\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | Multiline, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | Multiline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | Multiline, "xx\naz", "Q"),
+
+            // CategoryRangeMultiline
+            ("([a-z].+[0-9])", CultureInvariant | Multiline, "xx\na1b2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | Multiline, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | Multiline, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | Multiline, "xx\n12a\nzz", "Q"),
+
+            // AtomicExplicitMultiline
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\naabxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | Multiline, "xx\nabbc\nzz", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | Multiline, "xx\nabx", "Q"),
+
+            // NamedMultiline
+            ("(?<w>a.+)b", CultureInvariant | Multiline, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | Multiline, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | Multiline, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | Multiline, "xx\nabx", "Q"),
+
+            // AlternationExplicitMultiline
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline, "xx\nazb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline, "xx\nzx\nzz", "Q"),
+            ("(zb|z.+)", CultureInvariant | ExplicitCapture | Multiline, "xx\nzzb", "Q"),
+
+            // ShorthandExplicitMultiline
+            ("^\\d+$", CultureInvariant | ExplicitCapture | Multiline, "12\n34", "Q"),
+            ("^\\d+$", CultureInvariant | ExplicitCapture | Multiline, "a1\nb2", "Q"),
+            ("\\w+$", CultureInvariant | ExplicitCapture | Multiline, "ab12\nxy", "Q"),
+            ("\\w+$", CultureInvariant | ExplicitCapture | Multiline, "ab \nxy ", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | Multiline, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | Multiline, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | Multiline, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | Multiline, "xx\na", "Q"),
+
+            // LazyExplicitMultiline
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Multiline, "xx\nabqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Multiline, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | Multiline, "xx\nab", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | Multiline, "xx\naq", "Q"),
+
+            // LookaheadExplicitMultiline
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | Multiline, "xx\nayzbc\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | Multiline, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\nxbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\na", "Q"),
+
+            // ContiguousExplicitMultiline
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | Multiline, "aab\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | Multiline, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | Multiline, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | Multiline, "xa", "Q"),
+
+            // ConditionalExplicitMultiline
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline, "xx\naax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline, "xx\nxax", "Q"),
+
+            // VerboseExplicitMultiline
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline, "xx\nabqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline, "xx\naab\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline, "xx\nax\nzz", "Q"),
+
+            // CategoryExplicitMultiline
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | Multiline, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | Multiline, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | ExplicitCapture | Multiline, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | ExplicitCapture | Multiline, "ab\nCD", "Q"),
+
+            // BalancingExplicitMultiline
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | ExplicitCapture | Multiline, "xab\nab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | ExplicitCapture | Multiline, "xab", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | ExplicitCapture | Multiline, "a\nb", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | ExplicitCapture | Multiline, "a\n1", "Q"),
+
+            // DotLookbehindExplicitMultiline
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline, "xx\nacb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline, "xx\nacb", "Q"),
+            ("(?<!a.c)b", CultureInvariant | ExplicitCapture | Multiline, "xx\naxb\nzz", "Q"),
+
+            // WordBoundaryExplicitMultiline
+            ("\\bword\\b", CultureInvariant | ExplicitCapture | Multiline, "xx\nword\nxx", "Q"),
+            ("\\bword", CultureInvariant | ExplicitCapture | Multiline, "xx\nwordxx", "Q"),
+            ("word\\b", CultureInvariant | ExplicitCapture | Multiline, "xx\nxxword", "Q"),
+            ("\\bword\\b", CultureInvariant | ExplicitCapture | Multiline, "xx\nsword\nxx", "Q"),
+            ("\\b.+\\b", CultureInvariant | ExplicitCapture | Multiline, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | ExplicitCapture | Multiline, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | ExplicitCapture | Multiline, "xabcby", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | ExplicitCapture | Multiline, " ab ", "Q"),
+
+            // NamedExplicitMultiline
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | Multiline, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | Multiline, "xx\nabx", "Q"),
+
+            // ScopedExplicitMultiline
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\naab\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | ExplicitCapture | Multiline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\naz", "Q"),
+
+            // CategoryRangeExplicitMultiline
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Multiline, "xx\na1b2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Multiline, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | ExplicitCapture | Multiline, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | ExplicitCapture | Multiline, "xx\n12a\nzz", "Q"),
+
+            // FoldExplicitMultiline
+            ("(A.+B)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline, "xx\naab\nzz", "Q"),
+            ("(A.+B)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline, "xx\nay", "Q"),
+            ("(a.+b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline, "xx\nAAB\nYY", "Q"),
+            ("^a.+b$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline, "xx\naabb\nyy", "Q"),
+
+            // ConditionalAtomicExplicitMultiline
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline, "abxx", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline, "xx\nbxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\naabxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | Multiline, "xx\naax", "Q"),
+
+            // LookbehindExplicitMultiline
+            ("(?<=^a)b", CultureInvariant | ExplicitCapture | Multiline, "xx\nabxx", "Q"),
+            ("(?<=^a)b", CultureInvariant | ExplicitCapture | Multiline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | ExplicitCapture | Multiline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | ExplicitCapture | Multiline, "xx\nabxx", "Q"),
+
+            // SinglelineIgnoreCaseExplicitMultiline
+            ("^a.+b$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | Singleline, "xa\nABBB\nzz", "Q"),
+            ("^ab", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | Singleline, "xx\nABxx", "Q"),
+            ("ab$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | Singleline, "xxAB\nyy", "Q"),
+            ("^a.+b$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | Singleline, "qa\nb\nzz", "Q"),
+
+            // GroupedSinglelineExplicitMultiline
+            ("^(a.+)b$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xa\nabb\nzz", "Q"),
+            ("^(a.+)b$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xa\naxx\nzz", "Q"),
+            ("^(a.+)(b+)$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xa\nabbb\nzz", "Q"),
+            ("^(a.+)(b+)$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xa\nab\nzz", "Q"),
+
+            // ShorthandRtlExplicitMultiline
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\na", "Q"),
+
+            // ShorthandRtlSingleline
+            ("(\\d.+\\d)", CultureInvariant | RightToLeft | Singleline, "x1\n2y", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | RightToLeft | Singleline, "x1y", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | RightToLeft | Singleline, "xa\nbz", "Q"),
+            ("(\\s.+\\s)", CultureInvariant | RightToLeft | Singleline, "ab", "Q"),
+
+            // DotLookbehindRtlSingleline
+            ("(?<!a.c)b", CultureInvariant | RightToLeft | Singleline, "xab", "Q"),
+
+            // NegLookaheadRtlSingleline
+            ("a(?!b.+c)d", CultureInvariant | RightToLeft | Singleline, "xabd", "Q"),
+            ("a(?!b.+c)d", CultureInvariant | RightToLeft | Singleline, "xab\ncd", "Q"),
+
+            // AnchorRtlSingleline
+            ("^a.+b$", CultureInvariant | RightToLeft | Singleline, "a\nb", "Q"),
+            ("^a.+b$", CultureInvariant | RightToLeft | Singleline, "xa\nb", "Q"),
+            ("^a.+b", CultureInvariant | RightToLeft | Singleline, "a\nbxx", "Q"),
+            ("\\Aa.+\\z", CultureInvariant | RightToLeft | Singleline, "a\nbx", "Q"),
+
+            // CategoryRangeRtlSingleline
+            ("([a-z].+[0-9])", CultureInvariant | RightToLeft | Singleline, "xa\nz9q", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | RightToLeft | Singleline, "xaz9q", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | RightToLeft | Singleline, "xazq", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | RightToLeft | Singleline, "xA\nZ9q", "Q"),
+
+            // NamedRtlSingleline
+            ("(?<w>a.+)b", CultureInvariant | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | RightToLeft | Singleline, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | RightToLeft | Singleline, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | RightToLeft | Singleline, "xx\nabx", "Q"),
+
+            // SinglelineFoldRtl
+            ("(?s)a.+b", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "x\naAB\nbx", "Q"),
+            ("A.+B", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "x\naab\nx", "Q"),
+            ("(?s)(a+).(b+)", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "x\naA\nbBx", "Q"),
+            (".+", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "x\nab\nx", "Q"),
+            ("(.+)", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "x\nab\nx", "Q"),
+
+            // ContiguousExplicitSingleline
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | Singleline, "a\nab", "Q"),
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | Singleline, "xa\nab", "Q"),
+            ("\\Ga+", CultureInvariant | ExplicitCapture | Singleline, "a\naa", "Q"),
+            ("\\Ga+", CultureInvariant | ExplicitCapture | Singleline, "xaa", "Q"),
+
+            // AtomicLookaheadExplicitSingleline
+            ("^(?>a.+)b$", CultureInvariant | ExplicitCapture | Singleline, "aax\nab", "Q"),
+            ("^(?>a.+)b$", CultureInvariant | ExplicitCapture | Singleline, "aaxb", "Q"),
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | Singleline, "xay\nzbc", "Q"),
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | Singleline, "xayzc", "Q"),
+
+            // NegLookaheadExplicitSingleline
+            ("a(?!b.+c)d", CultureInvariant | ExplicitCapture | Singleline, "xabd", "Q"),
+            ("a(?!b.+c)d", CultureInvariant | ExplicitCapture | Singleline, "xab\ncd", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | Singleline, "xbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | Singleline, "a", "Q"),
+
+            // DotLookbehindExplicitSingleline
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Singleline, "xa\ncb", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Singleline, "xacb", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Singleline, "xab", "Q"),
+            ("(?<!a.c)b", CultureInvariant | ExplicitCapture | Singleline, "xab", "Q"),
+
+            // LazyExplicitSingleline
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Singleline, "xa\nbqb", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Singleline, "xabqb", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Singleline, "xaq", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | Singleline, "xa\nb", "Q"),
+
+            // ShorthandExplicitSingleline
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | Singleline, "x1\n2y", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | Singleline, "x1y", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | Singleline, "xa\nbz", "Q"),
+            ("(\\s.+\\s)", CultureInvariant | ExplicitCapture | Singleline, "ab", "Q"),
+
+            // WordBoundaryExplicitSingleline
+            ("\\b.+\\b", CultureInvariant | ExplicitCapture | Singleline, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | ExplicitCapture | Singleline, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | ExplicitCapture | Singleline, "xab\ncd", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | ExplicitCapture | Singleline, " ab ", "Q"),
+
+            // CategoryRangeExplicitSingleline
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Singleline, "xa\nz9q", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Singleline, "xaz9q", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Singleline, "xazq", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Singleline, "xA\nZ9q", "Q"),
+
+            // BalancingExplicitSingleline
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | ExplicitCapture | Singleline, "xab\nab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | ExplicitCapture | Singleline, "xab", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | ExplicitCapture | Singleline, "a\nb", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | ExplicitCapture | Singleline, "a\n1", "Q"),
+
+            // SinglelineFoldExplicit
+            ("(?s)a.+b", CultureInvariant | ExplicitCapture | IgnoreCase | Singleline, "x\naAB\nbx", "Q"),
+            ("A.+B", CultureInvariant | ExplicitCapture | IgnoreCase | Singleline, "x\naab\nx", "Q"),
+            ("(?s)(a+).(b+)", CultureInvariant | ExplicitCapture | IgnoreCase | Singleline, "x\naA\nbBx", "Q"),
+            (".+", CultureInvariant | ExplicitCapture | IgnoreCase | Singleline, "x\nab\nx", "Q"),
+            ("(.+)", CultureInvariant | ExplicitCapture | IgnoreCase | Singleline, "x\nab\nx", "Q"),
+
+            // NamedExplicitSingleline
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | Singleline, "xa\nab", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | Singleline, "xab", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | Singleline, "xab\nc", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | Singleline, "xabx", "Q"),
+
+            // VerboseExplicitSingleline
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Singleline, "xa\nbq", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Singleline, "xaq", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Singleline, "xayb", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Singleline, "a\nb", "Q"),
+
+            // AnchorExplicitSingleline
+            ("^a.+b$", CultureInvariant | ExplicitCapture | Singleline, "a\nb", "Q"),
+            ("^a.+b$", CultureInvariant | ExplicitCapture | Singleline, "xa\nb", "Q"),
+            ("^a.+b", CultureInvariant | ExplicitCapture | Singleline, "a\nbxx", "Q"),
+            ("\\Aa.+\\z", CultureInvariant | ExplicitCapture | Singleline, "a\nbx", "Q"),
+
+            // ScopedExplicitSingleline
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Singleline, "xa\nzb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Singleline, "xab", "Q"),
+            ("(?s:.+)b", CultureInvariant | ExplicitCapture | Singleline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Singleline, "xaz", "Q"),
+
+            // ConditionalExplicitSingleline
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Singleline, "ax\ny", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Singleline, "xb", "Q"),
+
+            // AnchoredLookbehindExplicitSingleline
+            ("(?<=^a)b", CultureInvariant | ExplicitCapture | Singleline, "abxx", "Q"),
+            ("(?<=^a)b", CultureInvariant | ExplicitCapture | Singleline, "xabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | ExplicitCapture | Singleline, "xabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | ExplicitCapture | Singleline, "abxx", "Q"),
+
+            // AtomicExplicitSingleline
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | Singleline, "aabxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | Singleline, "aaxx", "Q"),
+
+            // ShortGuardExplicitSingleline
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Singleline, "abxx", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Singleline, "xb", "Q"),
+
+            // LazyRtlMultiline
+            ("(a.+?b)", CultureInvariant | Multiline | RightToLeft, "xx\nabqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | Multiline | RightToLeft, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | Multiline | RightToLeft, "xx\nab", "Q"),
+            ("(a.*?b)", CultureInvariant | Multiline | RightToLeft, "xx\naq", "Q"),
+
+            // AtomicRtlMultiline
+            ("(?>a.+)b", CultureInvariant | Multiline | RightToLeft, "xx\naabxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | Multiline | RightToLeft, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | Multiline | RightToLeft, "xx\nabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | Multiline | RightToLeft, "xx\nabx", "Q"),
+
+            // NamedRtlMultiline
+            ("(?<w>a.+)b", CultureInvariant | Multiline | RightToLeft, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | Multiline | RightToLeft, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | Multiline | RightToLeft, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | Multiline | RightToLeft, "xx\nabx", "Q"),
+
+            // ContiguousRtlMultiline
+            ("\\Ga.+b", CultureInvariant | Multiline | RightToLeft, "aab\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | Multiline | RightToLeft, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | Multiline | RightToLeft, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | Multiline | RightToLeft, "xa", "Q"),
+
+            // VerboseRtlMultiline
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\nabqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\naab\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\nax\nzz", "Q"),
+
+            // ScopedRtlMultiline
+            ("(?s:a.+)b", CultureInvariant | Multiline | RightToLeft, "xx\naab\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | Multiline | RightToLeft, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | Multiline | RightToLeft, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | Multiline | RightToLeft, "xx\naz", "Q"),
+
+            // CategoryRtlMultiline
+            ("^\\p{L}+$", CultureInvariant | Multiline | RightToLeft, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | Multiline | RightToLeft, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | Multiline | RightToLeft, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | Multiline | RightToLeft, "ab\nCD", "Q"),
+
+            // CategoryRangeRtlMultiline
+            ("([a-z].+[0-9])", CultureInvariant | Multiline | RightToLeft, "xx\na1b2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | Multiline | RightToLeft, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | Multiline | RightToLeft, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | Multiline | RightToLeft, "xx\n12a\nzz", "Q"),
+
+            // WordBoundaryExplicitRtlMultiline
+            ("\\bword\\b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nword\nxx", "Q"),
+            ("\\bword", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nwordxx", "Q"),
+            ("word\\b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nxxword", "Q"),
+            ("\\bword\\b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nsword\nxx", "Q"),
+            ("\\b.+\\b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xabcby", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, " ab ", "Q"),
+
+            // LazyExplicitRtlMultiline
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nabqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nab", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naq", "Q"),
+
+            // AtomicExplicitRtlMultiline
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naabxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nabx", "Q"),
+
+            // LookaheadExplicitRtlMultiline
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nayzbc\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nxbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\na", "Q"),
+
+            // ContiguousExplicitRtlMultiline
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "aab\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xa", "Q"),
+
+            // CategoryExplicitRtlMultiline
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "ab\nCD", "Q"),
+
+            // CategoryRangeExplicitRtlMultiline
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\na1b2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\n12a\nzz", "Q"),
+
+            // VerboseExplicitRtlMultiline
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\nabqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\naab\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\nax\nzz", "Q"),
+
+            // ScopedExplicitRtlMultiline
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naab\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naz", "Q"),
+
+            // AlternationExplicitRtlMultiline
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nazb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nzx\nzz", "Q"),
+            ("(zb|z.+)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nzzb", "Q"),
+
+            // DotLookbehindExplicitRtlMultiline
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nacb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nacb", "Q"),
+            ("(?<!a.c)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naxb\nzz", "Q"),
+
+            // GuardConditionalExplicitRtlMultiline
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\nxax", "Q"),
+
+            // AtomicQuantExplicitRtlMultiline
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naabxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xx\naax", "Q"),
+
+            // ShortGuardExplicitRtlMultiline
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "abxx", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft, "xb", "Q"),
+
+            // LookaheadExplicitRtlSingleline
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xay\nzbc", "Q"),
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "a", "Q"),
+
+            // ShorthandExplicitRtlSingleline
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "x1\n2y", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "x1y", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\nbz", "Q"),
+            ("(\\s.+\\s)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "ab", "Q"),
+
+            // LazyExplicitRtlSingleline
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\nbqb", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xabqb", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xaq", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\nb", "Q"),
+
+            // AtomicExplicitRtlSingleline
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\nbxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xay", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\nbbc", "Q"),
+
+            // ContiguousExplicitRtlSingleline
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "a\nab", "Q"),
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\nab", "Q"),
+            ("\\Ga+", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "a\naa", "Q"),
+            ("\\Ga+", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xaa", "Q"),
+
+            // CategoryExplicitRtlSingleline
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "ab\nCD", "Q"),
+
+            // CategoryRangeExplicitRtlSingleline
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\nz9q", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xaz9q", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xazq", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xA\nZ9q", "Q"),
+
+            // NamedExplicitRtlSingleline
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xx\nabx", "Q"),
+
+            // VerboseExplicitRtlSingleline
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | RightToLeft | Singleline, "xa\nbq", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | RightToLeft | Singleline, "xaq", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | RightToLeft | Singleline, "xayb", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | RightToLeft | Singleline, "a\nb", "Q"),
+
+            // ScopedExplicitRtlSingleline
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\nzb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xaz", "Q"),
+            ("(?s:.+)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xab", "Q"),
+
+            // LookbehindExplicitRtlSingleline
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\ncb", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xacb", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xab", "Q"),
+            ("(?<!a.c)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\ncb", "Q"),
+
+            // GuardConditionalExplicitRtlSingleline
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "ax\ny", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xb", "Q"),
+
+            // WordBoundaryExplicitRtlSingleline
+            ("\\b.+\\b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xab\ncd", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, " ab ", "Q"),
+
+            // DotLookbehindExplicitRtlSingleline
+            ("(?<!a.c)b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xab", "Q"),
+
+            // NegLookaheadExplicitRtlSingleline
+            ("a(?!b.+c)d", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xabd", "Q"),
+            ("a(?!b.+c)d", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xab\ncd", "Q"),
+
+            // AnchorExplicitRtlSingleline
+            ("^a.+b$", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "a\nb", "Q"),
+            ("^a.+b$", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xa\nb", "Q"),
+            ("^a.+b", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "a\nbxx", "Q"),
+            ("\\Aa.+\\z", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "a\nbx", "Q"),
+
+            // FoldExplicitRtlSingleline
+            ("(?<w>.+)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xxAB\nCDxx", "Q"),
+            ("(?<w>A.+B)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xxAXXBxx", "Q"),
+            ("(?<w>A.+B)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xxaxxbxx", "Q"),
+            ("(?<w>A.+B)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xxAxx", "Q"),
+
+            // FoldShorthandExplicitRtlSingleline
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "x1\n2y", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "x1y", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\nbz", "Q"),
+            ("(\\s.+\\s)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "ab", "Q"),
+
+            // FoldAlternationExplicitRtlSingleline
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\nzb", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xzb", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xz", "Q"),
+            ("(zb|z.+)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xzb", "Q"),
+
+            // FoldLazyExplicitRtlSingleline
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\nbqb", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xabqb", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xaq", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\nb", "Q"),
+
+            // FoldAtomicExplicitRtlSingleline
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\nbxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xay", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\nbbc", "Q"),
+
+            // FoldLookaheadExplicitRtlSingleline
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xay\nzbc", "Q"),
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "a", "Q"),
+
+            // FoldLookbehindExplicitRtlSingleline
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\ncb", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xacb", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xab", "Q"),
+            ("(?<!a.c)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\ncb", "Q"),
+
+            // FoldGuardConditionalExplicitRtlSingleline
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "ax\ny", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xb", "Q"),
+
+            // FoldWordBoundaryExplicitRtlSingleline
+            ("\\b.+\\b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xab\ncd", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, " ab ", "Q"),
+
+            // FoldAnchorExplicitRtlSingleline
+            ("^a.+b$", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "a\nb", "Q"),
+            ("^a.+b$", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\nb", "Q"),
+            ("^a.+b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "a\nbxx", "Q"),
+            ("\\Aa.+\\z", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "a\nbx", "Q"),
+
+            // FoldContiguousExplicitRtlSingleline
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "a\nbxx", "Q"),
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa", "Q"),
+
+            // FoldScopedExplicitRtlSingleline
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\nzb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xaz", "Q"),
+            ("(?s:.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xab", "Q"),
+
+            // FoldNamedExplicitRtlSingleline
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xx\nabx", "Q"),
+
+            // FoldVerboseExplicitRtlSingleline
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnoreCase | IgnorePatternWhitespace | RightToLeft | Singleline, "xa\nbq", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnoreCase | IgnorePatternWhitespace | RightToLeft | Singleline, "xaq", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnoreCase | IgnorePatternWhitespace | RightToLeft | Singleline, "xayb", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnoreCase | IgnorePatternWhitespace | RightToLeft | Singleline, "a\nb", "Q"),
+
+            // FoldCategoryExplicitRtlSingleline
+            ("\\p{L}.+\\p{L}", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "a\nb", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "a\n1", "Q"),
+
+            // FoldCategoryRangeExplicitRtlSingleline
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xa\nz9q", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xaz9q", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xazq", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xA\nZ9q", "Q"),
+
+            // FoldNegLookaheadExplicitRtlSingleline
+            ("a(?!b.+c)d", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xabd", "Q"),
+            ("a(?!b.+c)d", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xab\ncd", "Q"),
+
+            // FoldDotLookbehindExplicitRtlSingleline
+            ("(?<!a.c)b", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft | Singleline, "xab", "Q"),
+
+            // AlternationSinglelineIgnoreCaseMultiline
+            ("(a.+|zb)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nazb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nzx\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nAZB\nzz", "Q"),
+
+            // ShorthandSinglelineIgnoreCaseMultiline
+            ("^\\d+$", CultureInvariant | IgnoreCase | Multiline | Singleline, "12\n34", "Q"),
+            ("^\\d+$", CultureInvariant | IgnoreCase | Multiline | Singleline, "a1\nb2", "Q"),
+            ("\\w+$", CultureInvariant | IgnoreCase | Multiline | Singleline, "ab12\nxy", "Q"),
+            ("\\w+$", CultureInvariant | IgnoreCase | Multiline | Singleline, "ab \nxy ", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\na", "Q"),
+
+            // LazySinglelineIgnoreCaseMultiline
+            ("(a.+?b)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nab", "Q"),
+            ("(a.*?b)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naq", "Q"),
+
+            // LookaheadSinglelineIgnoreCaseMultiline
+            ("a(?=.+b)c", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nayzbc\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nxbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\na", "Q"),
+
+            // LookbehindSinglelineIgnoreCaseMultiline
+            ("(?<=^a)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabxx", "Q"),
+            ("(?<=^a)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabxx", "Q"),
+
+            // ConditionalSinglelineIgnoreCaseMultiline
+            ("(a)?(?(1)b|c)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nab", "Q"),
+            ("(a)?(?(1)b|c)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nxax", "Q"),
+
+            // AtomicSinglelineIgnoreCaseMultiline
+            ("(?>a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naabxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabx", "Q"),
+
+            // WordBoundarySinglelineIgnoreCaseMultiline
+            ("\\bword\\b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nword\nxx", "Q"),
+            ("\\bword", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nwordxx", "Q"),
+            ("word\\b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nxxword", "Q"),
+            ("\\bword\\b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nsword\nxx", "Q"),
+            ("\\b.+\\b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | IgnoreCase | Multiline | Singleline, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xabcby", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | IgnoreCase | Multiline | Singleline, " ab ", "Q"),
+
+            // BackrefSinglelineIgnoreCaseMultiline
+            ("^(ab)\\1$", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabab", "Q"),
+            ("^(ab)\\1$", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabxb", "Q"),
+            ("(a+)\\1$", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naabb", "Q"),
+            ("(a+)\\1$", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naaaa", "Q"),
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabab\nzz", "Q"),
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabcb", "Q"),
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Multiline | Singleline, "abab", "Q"),
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Multiline | Singleline, "xabc", "Q"),
+
+            // CategorySinglelineIgnoreCaseMultiline
+            ("^\\p{L}+$", CultureInvariant | IgnoreCase | Multiline | Singleline, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | IgnoreCase | Multiline | Singleline, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | IgnoreCase | Multiline | Singleline, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | IgnoreCase | Multiline | Singleline, "ab\nCD", "Q"),
+
+            // NamedSinglelineIgnoreCaseMultiline
+            ("(?<w>a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabx", "Q"),
+
+            // VerboseSinglelineIgnoreCaseMultiline
+            ("(a .+ b)", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | Singleline, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | Singleline, "xx\nax\nzz", "Q"),
+
+            // ScopedSinglelineIgnoreCaseMultiline
+            ("(?s:a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naz", "Q"),
+
+            // ContiguousSinglelineIgnoreCaseMultiline
+            ("\\Ga.+b", CultureInvariant | IgnoreCase | Multiline | Singleline, "aab\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | IgnoreCase | Multiline | Singleline, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | IgnoreCase | Multiline | Singleline, "xa", "Q"),
+
+            // CategoryRangeSinglelineIgnoreCaseMultiline
+            ("([a-z].+[0-9])", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\na1b2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\n12a\nzz", "Q"),
+
+            // BalancingSinglelineIgnoreCaseMultiline
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xab\nab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xab", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | IgnoreCase | Multiline | Singleline, "a\nb", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | IgnoreCase | Multiline | Singleline, "a\n1", "Q"),
+
+            // DotLookbehindSinglelineIgnoreCaseMultiline
+            ("(?<=a.c)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nacb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nacb", "Q"),
+            ("(?<!a.c)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naxb\nzz", "Q"),
+
+            // NegLookaheadSinglelineIgnoreCaseMultiline
+            ("a(?!b.+c)d", CultureInvariant | IgnoreCase | Multiline | Singleline, "xabd", "Q"),
+            ("a(?!b.+c)d", CultureInvariant | IgnoreCase | Multiline | Singleline, "xab\ncd", "Q"),
+            ("(?!a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "a", "Q"),
+
+            // FoldDotSinglelineIgnoreCaseMultiline
+            ("(A.+B)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("(A.+B)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nay", "Q"),
+            ("(a.+b)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nAAB\nYY", "Q"),
+            ("^a.+b$", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naabb\nyy", "Q"),
+
+            // ConditionalAtomicSinglelineIgnoreCaseMultiline
+            ("^(?(?=a)a|b)", CultureInvariant | IgnoreCase | Multiline | Singleline, "abxx", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nbxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naabxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naax", "Q"),
+
+            // FoldAlternationRtlMultiline
+            ("(a.+|zb)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nazb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nzx\nzz", "Q"),
+            ("(zb|z.+)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nzzb", "Q"),
+
+            // FoldShorthandRtlMultiline
+            ("(\\d.+\\d)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\na", "Q"),
+
+            // FoldLazyRtlMultiline
+            ("(a.+?b)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nabqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nab", "Q"),
+            ("(a.*?b)", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naq", "Q"),
+
+            // FoldAtomicRtlMultiline
+            ("(?>a.+)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naabxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nabx", "Q"),
+
+            // FoldLookaheadRtlMultiline
+            ("a(?=.+b)c", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nayzbc\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nxbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\na", "Q"),
+
+            // FoldLookbehindRtlMultiline
+            ("(?<=a.c)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nacb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nacb", "Q"),
+            ("(?<!a.c)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naxb\nzz", "Q"),
+
+            // FoldNamedRtlMultiline
+            ("(?<w>a.+)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nabx", "Q"),
+
+            // FoldContiguousRtlMultiline
+            ("\\Ga.+b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "aab\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xa", "Q"),
+
+            // FoldWordBoundaryRtlMultiline
+            ("\\b.+\\b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xabcby", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | IgnoreCase | Multiline | RightToLeft, " ab ", "Q"),
+
+            // FoldBackrefRtlMultiline
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nabab\nzz", "Q"),
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nabcb\nzz", "Q"),
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "abab", "Q"),
+            ("(a.+)\\1", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nabcb", "Q"),
+
+            // FoldCategoryRtlMultiline
+            ("^\\p{L}+$", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "ab\nCD", "Q"),
+
+            // FoldCategoryRangeRtlMultiline
+            ("([a-z].+[0-9])", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\na1b2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\n12a\nzz", "Q"),
+
+            // FoldVerboseRtlMultiline
+            ("(a .+ b)", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\nABqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\nAAB\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\nax\nzz", "Q"),
+
+            // FoldScopedRtlMultiline
+            ("(?s:a.+)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nAAB\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "x\nYB", "Q"),
+            ("(?s:a.+)b", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "xx\naz", "Q"),
+
+            // FoldExplicitRtlMultiline
+            ("^(?<w>a.+b)$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAAB\nyy", "Q"),
+            ("^(?<w>a.+b)$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nab", "Q"),
+            ("(?<w>a.+b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAAB\nyy", "Q"),
+            ("(?<w>a.+b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nay", "Q"),
+
+            // FoldShorthandExplicitRtlMultiline
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\n1A2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAB\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\na", "Q"),
+
+            // FoldAlternationExplicitRtlMultiline
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAZB\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nzx\nzz", "Q"),
+            ("(zb|z.+)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nZZB", "Q"),
+
+            // FoldLazyExplicitRtlMultiline
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nABqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAB", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\naq", "Q"),
+
+            // FoldAtomicExplicitRtlMultiline
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAABxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nABBC", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nabx", "Q"),
+
+            // FoldLookaheadExplicitRtlMultiline
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAYZBC\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nXBC", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\na", "Q"),
+
+            // FoldContiguousExplicitRtlMultiline
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "AAB\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "A\nB", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xa", "Q"),
+
+            // FoldCategoryExplicitRtlMultiline
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "ab\nCD", "Q"),
+
+            // FoldCategoryRangeExplicitRtlMultiline
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\na1B2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\n1Ab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\n12a\nzz", "Q"),
+
+            // FoldVerboseExplicitRtlMultiline
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\nABqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\nAAB\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft, "xx\nax\nzz", "Q"),
+
+            // FoldScopedExplicitRtlMultiline
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAAB\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "x\nYB", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\naz", "Q"),
+
+            // FoldDotLookbehindExplicitRtlMultiline
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nACB\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nACB", "Q"),
+            ("(?<!a.c)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAXB\nzz", "Q"),
+
+            // FoldGuardConditionalExplicitRtlMultiline
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAAX", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nxax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nB", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nx", "Q"),
+
+            // FoldPossessiveExplicitRtlMultiline
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAABxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\naax", "Q"),
+            ("^(?>a+)b$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAAB", "Q"),
+            ("^(?>a+)b$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAAX", "Q"),
+
+            // FoldShortGuardExplicitRtlMultiline
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "ABxx", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xb", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nAB", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nx", "Q"),
+
+            // FoldWordBoundaryExplicitRtlMultiline
+            ("\\bword\\b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nWORD\nxx", "Q"),
+            ("\\bword", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nWORDxx", "Q"),
+            ("word\\b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nxxWORD", "Q"),
+            ("\\bword\\b", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline | RightToLeft, "xx\nsword\nxx", "Q"),
+
+            // FoldAlternationSinglelineIgnoreCaseMultiline
+            ("(A.+|ZB)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nazb\nzz", "Q"),
+            ("(A.+|ZB)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nzzb\nzz", "Q"),
+            ("(A.+|ZB)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nzx\nzz", "Q"),
+            ("(A.+|ZB)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nAZB\nzz", "Q"),
+
+            // FoldShorthandSinglelineIgnoreCaseMultiline
+            ("(\\d.+\\d)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\n1A2\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nAB\nzz", "Q"),
+
+            // FoldLazySinglelineIgnoreCaseMultiline
+            ("(A.+?B)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(A.+?B)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nAB", "Q"),
+
+            // FoldAtomicSinglelineIgnoreCaseMultiline
+            ("(?>A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naabxx", "Q"),
+            ("(?>A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nABBC", "Q"),
+
+            // FoldLookaheadSinglelineIgnoreCaseMultiline
+            ("A(?=.+B)C", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nayzbc\nzz", "Q"),
+            ("A(?=.+B)C", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nayzc", "Q"),
+            ("(?!A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nxbc", "Q"),
+            ("(?!A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\na", "Q"),
+
+            // FoldLookbehindSinglelineIgnoreCaseMultiline
+            ("(?<=^A)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabxx", "Q"),
+            ("(?<=^A)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^A)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^A)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabxx", "Q"),
+
+            // FoldConditionalSinglelineIgnoreCaseMultiline
+            ("(A)?(?(1)B|C)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nab", "Q"),
+            ("(A)?(?(1)B|C)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nax", "Q"),
+            ("^(?(?=A.+)A|B)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naax", "Q"),
+            ("^(?(?=A.+)A|B)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nxax", "Q"),
+
+            // FoldNamedSinglelineIgnoreCaseMultiline
+            ("(?<w>A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("(?<w>A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naxb", "Q"),
+            ("(?<w>AB)C", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nababc\nzz", "Q"),
+            ("(?<w>AB)C", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabx", "Q"),
+
+            // FoldContiguousSinglelineIgnoreCaseMultiline
+            ("\\GA.+B", CultureInvariant | IgnoreCase | Multiline | Singleline, "aab\nzz", "Q"),
+            ("\\GA.+B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naab", "Q"),
+            ("\\GA.+", CultureInvariant | IgnoreCase | Multiline | Singleline, "A\nB", "Q"),
+            ("\\GA.+", CultureInvariant | IgnoreCase | Multiline | Singleline, "xa", "Q"),
+
+            // FoldWordBoundarySinglelineIgnoreCaseMultiline
+            ("\\bWORD\\b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nword\nxx", "Q"),
+            ("\\bWORD", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nwordxx", "Q"),
+            ("WORD\\b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nxxword", "Q"),
+            ("\\bWORD\\b", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nsword\nxx", "Q"),
+
+            // FoldBackrefSinglelineIgnoreCaseMultiline
+            ("^(AB)\\1$", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabab", "Q"),
+            ("^(AB)\\1$", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabxb", "Q"),
+            ("(A.+)\\1", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabab\nzz", "Q"),
+            ("(A.+)\\1", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nabcb", "Q"),
+
+            // FoldCategorySinglelineIgnoreCaseMultiline
+            ("^AB\\p{L}+$", CultureInvariant | IgnoreCase | Multiline | Singleline, "ab\nCD", "Q"),
+            ("A\\p{L}+$", CultureInvariant | IgnoreCase | Multiline | Singleline, "ab\nCD", "Q"),
+            ("\\p{L}+CD$", CultureInvariant | IgnoreCase | Multiline | Singleline, "ab\nzzCD", "Q"),
+            ("\\p{L}+CD$", CultureInvariant | IgnoreCase | Multiline | Singleline, "ab\ncd", "Q"),
+
+            // FoldCategoryRangeSinglelineIgnoreCaseMultiline
+            ("([A-Z].+[0-9])", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\na1b2\nzz", "Q"),
+            ("([A-Z].+[0-9])", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^A-Z])", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^A-Z])", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\n12a\nzz", "Q"),
+
+            // FoldVerboseSinglelineIgnoreCaseMultiline
+            ("(A .+ B)", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(A .+ B)", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | Singleline, "xx\naq", "Q"),
+            ("^A .+ B$", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("^A .+ B$", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | Singleline, "xx\nax\nzz", "Q"),
+
+            // FoldScopedSinglelineIgnoreCaseMultiline
+            ("(?s:A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("(?s:A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nab", "Q"),
+            ("(?s:.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "x\nyb", "Q"),
+            ("(?s:A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naz", "Q"),
+
+            // FoldDotLookbehindSinglelineIgnoreCaseMultiline
+            ("(?<=A.C)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nacb\nzz", "Q"),
+            ("(?<=A.C)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naxb\nzz", "Q"),
+            ("(?<=A.C)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nACB", "Q"),
+            ("(?<!A.C)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nAXB\nzz", "Q"),
+
+            // FoldNegLookaheadSinglelineIgnoreCaseMultiline
+            ("A(?!B.+C)D", CultureInvariant | IgnoreCase | Multiline | Singleline, "xabd", "Q"),
+            ("A(?!B.+C)D", CultureInvariant | IgnoreCase | Multiline | Singleline, "xab\ncd", "Q"),
+            ("(?!A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xbc", "Q"),
+            ("(?!A.+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "a", "Q"),
+
+            // FoldConditionalAtomicSinglelineIgnoreCaseMultiline
+            ("^(?(?=A)A|B)", CultureInvariant | IgnoreCase | Multiline | Singleline, "ABxx", "Q"),
+            ("^(?(?=A)A|B)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nbxx", "Q"),
+            ("^(?>A+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naabxx", "Q"),
+            ("^(?>A+)B", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naax", "Q"),
+
+            // FoldBalancingSinglelineIgnoreCaseMultiline
+            ("(?<b>A.+)(?<-b>B.+)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naab\nabb", "Q"),
+            ("(?<b>A.+)(?<-b>B.+)", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\naab", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | IgnoreCase | Multiline | Singleline, "A\nB", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | IgnoreCase | Multiline | Singleline, "A\n1", "Q"),
+
+            // AlternationSinglelineMultiline
+            ("(a.+|zb)", CultureInvariant | Multiline | Singleline, "xx\nazb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | Multiline | Singleline, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | Multiline | Singleline, "xx\nzx\nzz", "Q"),
+            ("(zb|z.+)", CultureInvariant | Multiline | Singleline, "xx\nzzb", "Q"),
+
+            // ShorthandSinglelineMultiline
+            ("(\\d.+\\d)", CultureInvariant | Multiline | Singleline, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | Multiline | Singleline, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | Multiline | Singleline, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | Multiline | Singleline, "xx\na", "Q"),
+
+            // LazySinglelineMultiline
+            ("(a.+?b)", CultureInvariant | Multiline | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | Multiline | Singleline, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | Multiline | Singleline, "xx\nab", "Q"),
+            ("(a.*?b)", CultureInvariant | Multiline | Singleline, "xx\naq", "Q"),
+
+            // AtomicSinglelineMultiline
+            ("(?>a.+)b", CultureInvariant | Multiline | Singleline, "xx\naabxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | Multiline | Singleline, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | Multiline | Singleline, "xx\nabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | Multiline | Singleline, "xx\nabx", "Q"),
+
+            // LookaheadSinglelineMultiline
+            ("a(?=.+b)c", CultureInvariant | Multiline | Singleline, "xx\nayzbc\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | Multiline | Singleline, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | Multiline | Singleline, "xx\nxbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | Multiline | Singleline, "xx\na", "Q"),
+
+            // LookbehindSinglelineMultiline
+            ("(?<=^a)b", CultureInvariant | Multiline | Singleline, "xx\nabxx", "Q"),
+            ("(?<=^a)b", CultureInvariant | Multiline | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | Multiline | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | Multiline | Singleline, "xx\nabxx", "Q"),
+
+            // ConditionalSinglelineMultiline
+            ("(a)?(?(1)b|c)", CultureInvariant | Multiline | Singleline, "xx\nab", "Q"),
+            ("(a)?(?(1)b|c)", CultureInvariant | Multiline | Singleline, "xx\nax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | Multiline | Singleline, "xx\naax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | Multiline | Singleline, "xx\nxax", "Q"),
+
+            // NamedSinglelineMultiline
+            ("(?<w>a.+)b", CultureInvariant | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | Multiline | Singleline, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | Multiline | Singleline, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | Multiline | Singleline, "xx\nabx", "Q"),
+
+            // ContiguousSinglelineMultiline
+            ("\\Ga.+b", CultureInvariant | Multiline | Singleline, "aab\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | Multiline | Singleline, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | Multiline | Singleline, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | Multiline | Singleline, "xa", "Q"),
+
+            // WordBoundarySinglelineMultiline
+            ("\\bword\\b", CultureInvariant | Multiline | Singleline, "xx\nword\nxx", "Q"),
+            ("\\bword", CultureInvariant | Multiline | Singleline, "xx\nwordxx", "Q"),
+            ("word\\b", CultureInvariant | Multiline | Singleline, "xx\nxxword", "Q"),
+            ("\\bword\\b", CultureInvariant | Multiline | Singleline, "xx\nsword\nxx", "Q"),
+
+            // BackrefSinglelineMultiline
+            ("^(ab)\\1$", CultureInvariant | Multiline | Singleline, "xx\nabab", "Q"),
+            ("^(ab)\\1$", CultureInvariant | Multiline | Singleline, "xx\nabxb", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline | Singleline, "xx\nabab\nzz", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline | Singleline, "xx\nabcb", "Q"),
+
+            // CategorySinglelineMultiline
+            ("^\\p{L}+$", CultureInvariant | Multiline | Singleline, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | Multiline | Singleline, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | Multiline | Singleline, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | Multiline | Singleline, "ab\nCD", "Q"),
+
+            // CategoryRangeSinglelineMultiline
+            ("([a-z].+[0-9])", CultureInvariant | Multiline | Singleline, "xx\na1b2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | Multiline | Singleline, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | Multiline | Singleline, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | Multiline | Singleline, "xx\n12a\nzz", "Q"),
+
+            // VerboseSinglelineMultiline
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Multiline | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Multiline | Singleline, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnorePatternWhitespace | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnorePatternWhitespace | Multiline | Singleline, "xx\nax\nzz", "Q"),
+
+            // ScopedSinglelineMultiline
+            ("(?s:a.+)b", CultureInvariant | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | Multiline | Singleline, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | Multiline | Singleline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | Multiline | Singleline, "xx\naz", "Q"),
+
+            // DotLookbehindSinglelineMultiline
+            ("(?<=a.c)b", CultureInvariant | Multiline | Singleline, "xx\nacb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | Multiline | Singleline, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | Multiline | Singleline, "xx\nacb", "Q"),
+            ("(?<!a.c)b", CultureInvariant | Multiline | Singleline, "xx\naxb\nzz", "Q"),
+
+            // GuardConditionalSinglelineMultiline
+            ("^(?(?=a.+)a|b)", CultureInvariant | Multiline | Singleline, "xx\nb", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | Multiline | Singleline, "xx\nx", "Q"),
+
+            // PossessiveSinglelineMultiline
+            ("^(?>a+)b", CultureInvariant | Multiline | Singleline, "xx\naabxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | Multiline | Singleline, "xx\naax", "Q"),
+            ("^(?>a+)b$", CultureInvariant | Multiline | Singleline, "xx\naab", "Q"),
+            ("^(?>a+)b$", CultureInvariant | Multiline | Singleline, "xx\naax", "Q"),
+
+            // ShortGuardSinglelineMultiline
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline | Singleline, "abxx", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline | Singleline, "xb", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline | Singleline, "xx\nab", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline | Singleline, "xx\nx", "Q"),
+
+            // AlternationExplicitSinglelineMultiline
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nazb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nzx\nzz", "Q"),
+            ("(zb|z.+)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nzzb", "Q"),
+
+            // ShorthandExplicitSinglelineMultiline
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\na", "Q"),
+
+            // LazyExplicitSinglelineMultiline
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nab", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naq", "Q"),
+
+            // AtomicExplicitSinglelineMultiline
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naabxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nabx", "Q"),
+
+            // LookaheadExplicitSinglelineMultiline
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nayzbc\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nxbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\na", "Q"),
+
+            // LookbehindExplicitSinglelineMultiline
+            ("(?<=^a)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nabxx", "Q"),
+            ("(?<=^a)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nabxx", "Q"),
+
+            // ConditionalExplicitSinglelineMultiline
+            ("(?<g>a)?(?(g)b|c)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nab", "Q"),
+            ("(?<g>a)?(?(g)b|c)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nxax", "Q"),
+
+            // NamedExplicitSinglelineMultiline
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nabx", "Q"),
+
+            // ContiguousExplicitSinglelineMultiline
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "aab\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | Multiline | Singleline, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xa", "Q"),
+
+            // WordBoundaryExplicitSinglelineMultiline
+            ("\\bword\\b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nword\nxx", "Q"),
+            ("\\bword", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nwordxx", "Q"),
+            ("word\\b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nxxword", "Q"),
+            ("\\bword\\b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nsword\nxx", "Q"),
+
+            // CategoryExplicitSinglelineMultiline
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "ab\nCD", "Q"),
+
+            // CategoryRangeExplicitSinglelineMultiline
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\na1b2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\n12a\nzz", "Q"),
+
+            // VerboseExplicitSinglelineMultiline
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | Singleline, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | Singleline, "xx\nax\nzz", "Q"),
+
+            // ScopedExplicitSinglelineMultiline
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naab\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naz", "Q"),
+
+            // DotLookbehindExplicitSinglelineMultiline
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nacb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nacb", "Q"),
+            ("(?<!a.c)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naxb\nzz", "Q"),
+
+            // GuardConditionalExplicitSinglelineMultiline
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nb", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nx", "Q"),
+
+            // PossessiveExplicitSinglelineMultiline
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naabxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naax", "Q"),
+            ("^(?>a+)b$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naab", "Q"),
+            ("^(?>a+)b$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naax", "Q"),
+
+            // ShortGuardExplicitSinglelineMultiline
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "abxx", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xb", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nab", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\nx", "Q"),
+
+            // AlternationRtlSinglelineMultiline
+            ("(a.+|zb)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nazb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nzx\nzz", "Q"),
+            ("(zb|z.+)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nzzb", "Q"),
+
+            // ShorthandRtlSinglelineMultiline
+            ("(\\d.+\\d)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\na", "Q"),
+
+            // LazyRtlSinglelineMultiline
+            ("(a.+?b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nab", "Q"),
+            ("(a.*?b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naq", "Q"),
+
+            // AtomicRtlSinglelineMultiline
+            ("(?>a.+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naabxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabx", "Q"),
+
+            // LookaheadRtlSinglelineMultiline
+            ("a(?=.+b)c", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nayzbc\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nxbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\na", "Q"),
+
+            // LookbehindRtlSinglelineMultiline
+            ("(?<=^a)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabxx", "Q"),
+            ("(?<=^a)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabxx", "Q"),
+
+            // ConditionalRtlSinglelineMultiline
+            ("(a)?(?(1)b|c)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nab", "Q"),
+            ("(a)?(?(1)b|c)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nxax", "Q"),
+
+            // NamedRtlSinglelineMultiline
+            ("(?<w>a.+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabx", "Q"),
+
+            // ContiguousRtlSinglelineMultiline
+            ("\\Ga.+b", CultureInvariant | Multiline | RightToLeft | Singleline, "aab\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | Multiline | RightToLeft | Singleline, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | Multiline | RightToLeft | Singleline, "xa", "Q"),
+
+            // WordBoundaryRtlSinglelineMultiline
+            ("\\b.+\\b", CultureInvariant | Multiline | RightToLeft | Singleline, "xab\ncd", "Q"),
+            ("\\b.+\\b", CultureInvariant | Multiline | RightToLeft | Singleline, "   ", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | Multiline | RightToLeft | Singleline, "xabcby", "Q"),
+            ("\\Ba.+b\\B", CultureInvariant | Multiline | RightToLeft | Singleline, " ab ", "Q"),
+
+            // BackrefRtlSinglelineMultiline
+            ("^(ab)\\1$", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabab", "Q"),
+            ("^(ab)\\1$", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabxb", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabab\nzz", "Q"),
+            ("(a.+)\\1", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabcb", "Q"),
+
+            // CategoryRtlSinglelineMultiline
+            ("^\\p{L}+$", CultureInvariant | Multiline | RightToLeft | Singleline, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | Multiline | RightToLeft | Singleline, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | Multiline | RightToLeft | Singleline, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | Multiline | RightToLeft | Singleline, "ab\nCD", "Q"),
+
+            // CategoryRangeRtlSinglelineMultiline
+            ("([a-z].+[0-9])", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\na1b2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\n12a\nzz", "Q"),
+
+            // VerboseRtlSinglelineMultiline
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\nax\nzz", "Q"),
+
+            // ScopedRtlSinglelineMultiline
+            ("(?s:a.+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naz", "Q"),
+
+            // DotLookbehindRtlSinglelineMultiline
+            ("(?<=a.c)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nacb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nacb", "Q"),
+            ("(?<!a.c)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naxb\nzz", "Q"),
+
+            // GuardConditionalRtlSinglelineMultiline
+            ("^(?(?=a.+)a|b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nb", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nx", "Q"),
+
+            // AlternationExplicitRtlSinglelineMultiline
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nazb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nzzb\nzz", "Q"),
+            ("(a.+|zb)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nzx\nzz", "Q"),
+            ("(zb|z.+)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nzzb", "Q"),
+
+            // ShorthandExplicitRtlSinglelineMultiline
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\na", "Q"),
+
+            // LazyExplicitRtlSinglelineMultiline
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(a.+?b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nab", "Q"),
+            ("(a.*?b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naq", "Q"),
+
+            // AtomicExplicitRtlSinglelineMultiline
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naabxx", "Q"),
+            ("(?>a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nabbc", "Q"),
+            ("(?>ab+)c", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nabx", "Q"),
+
+            // LookaheadExplicitRtlSinglelineMultiline
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nayzbc\nzz", "Q"),
+            ("a(?=.+b)c", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nayzc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nxbc", "Q"),
+            ("(?!a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\na", "Q"),
+
+            // LookbehindExplicitRtlSinglelineMultiline
+            ("(?<=^a)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nabxx", "Q"),
+            ("(?<=^a)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nabxx", "Q"),
+
+            // ConditionalExplicitRtlSinglelineMultiline
+            ("(?<g>a)?(?(g)b|c)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nab", "Q"),
+            ("(?<g>a)?(?(g)b|c)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naax", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nxax", "Q"),
+
+            // NamedExplicitRtlSinglelineMultiline
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("(?<w>a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naxb", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nababc\nzz", "Q"),
+            ("(?<w>ab)c", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nabx", "Q"),
+
+            // ContiguousExplicitRtlSinglelineMultiline
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "aab\nzz", "Q"),
+            ("\\Ga.+b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naab", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "a\nb", "Q"),
+            ("\\Ga.+", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xa", "Q"),
+
+            // WordBoundaryExplicitRtlSinglelineMultiline
+            ("\\bword\\b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nword\nxx", "Q"),
+            ("\\bword", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nwordxx", "Q"),
+            ("word\\b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nxxword", "Q"),
+            ("\\bword\\b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nsword\nxx", "Q"),
+
+            // BackrefExplicitRtlSinglelineMultiline
+            ("^(?<w>ab)\\1$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nabab", "Q"),
+            ("^(?<w>ab)\\1$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nabxb", "Q"),
+            ("(?<w>a.+)\\1", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nabab\nzz", "Q"),
+            ("(?<w>a.+)\\1", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nabcb", "Q"),
+
+            // CategoryExplicitRtlSinglelineMultiline
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "ab\nCD", "Q"),
+
+            // CategoryRangeExplicitRtlSinglelineMultiline
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\na1b2\nzz", "Q"),
+            ("([a-z].+[0-9])", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^a-z])", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\n12a\nzz", "Q"),
+
+            // VerboseExplicitRtlSinglelineMultiline
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(a .+ b)", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\naq", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("^a .+ b$", CultureInvariant | ExplicitCapture | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\nax\nzz", "Q"),
+
+            // ScopedExplicitRtlSinglelineMultiline
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nab", "Q"),
+            ("(?s:.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "x\nyb", "Q"),
+            ("(?s:a.+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naz", "Q"),
+
+            // DotLookbehindExplicitRtlSinglelineMultiline
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nacb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naxb\nzz", "Q"),
+            ("(?<=a.c)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nacb", "Q"),
+            ("(?<!a.c)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naxb\nzz", "Q"),
+
+            // GuardConditionalExplicitRtlSinglelineMultiline
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nb", "Q"),
+            ("^(?(?=a.+)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nx", "Q"),
+
+            // PossessiveRtlSinglelineMultiline
+            ("^(?>a+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naabxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naax", "Q"),
+            ("^(?>a+)b$", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naab", "Q"),
+            ("^(?>a+)b$", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\naax", "Q"),
+
+            // ShortGuardRtlSinglelineMultiline
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline | RightToLeft | Singleline, "abxx", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xb", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nab", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nx", "Q"),
+
+            // PossessiveExplicitRtlSinglelineMultiline
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naabxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naax", "Q"),
+            ("^(?>a+)b$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naab", "Q"),
+            ("^(?>a+)b$", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\naax", "Q"),
+
+            // ShortGuardExplicitRtlSinglelineMultiline
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "abxx", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xb", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nab", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | ExplicitCapture | Multiline | RightToLeft | Singleline, "xx\nx", "Q"),
+
+            // FoldAlternationRtlSinglelineMultiline
+            ("(A.+|ZB)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nazb\nzz", "Q"),
+            ("(A.+|ZB)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nzzb\nzz", "Q"),
+            ("(A.+|ZB)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nzx\nzz", "Q"),
+            ("(A.+|ZB)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nAZB\nzz", "Q"),
+
+            // FoldShorthandRtlSinglelineMultiline
+            ("(\\d.+\\d)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\n1A2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nAB\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\na", "Q"),
+
+            // FoldLazyRtlSinglelineMultiline
+            ("(A.+?B)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(A.+?B)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naq", "Q"),
+            ("(a.*?b)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nAB", "Q"),
+            ("(a.*?b)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naq", "Q"),
+
+            // FoldAtomicRtlSinglelineMultiline
+            ("(?>A.+)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naabxx", "Q"),
+            ("(?>A.+)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nABBC", "Q"),
+            ("(?>ab+)c", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nabx", "Q"),
+
+            // FoldLookaheadRtlSinglelineMultiline
+            ("A(?=.+B)C", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nayzbc\nzz", "Q"),
+            ("A(?=.+B)C", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nayzc", "Q"),
+            ("(?!A.+)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nxbc", "Q"),
+            ("(?!A.+)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\na", "Q"),
+
+            // FoldLookbehindRtlSinglelineMultiline
+            ("(?<=^A)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nabxx", "Q"),
+            ("(?<=^A)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^A)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nxabxx", "Q"),
+            ("(?<!^A)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nabxx", "Q"),
+
+            // FoldConditionalRtlSinglelineMultiline
+            ("(A)?(?(1)B|C)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nab", "Q"),
+            ("(A)?(?(1)B|C)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nax", "Q"),
+            ("^(?(?=A.+)A|B)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naax", "Q"),
+            ("^(?(?=A.+)A|B)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nxax", "Q"),
+
+            // FoldNamedRtlSinglelineMultiline
+            ("(?<w>A.+)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("(?<w>A.+)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naxb", "Q"),
+            ("(?<w>AB)C", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nababc\nzz", "Q"),
+            ("(?<w>AB)C", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nabx", "Q"),
+
+            // FoldContiguousRtlSinglelineMultiline
+            ("\\GA.+B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "aab\nzz", "Q"),
+            ("\\GA.+B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naab", "Q"),
+            ("\\GA.+", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "A\nB", "Q"),
+            ("\\GA.+", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xa", "Q"),
+
+            // FoldWordBoundaryRtlSinglelineMultiline
+            ("\\bWORD\\b", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nword\nxx", "Q"),
+            ("\\bWORD", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nwordxx", "Q"),
+            ("WORD\\b", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nxxword", "Q"),
+            ("\\bWORD\\b", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nsword\nxx", "Q"),
+
+            // FoldBackrefRtlSinglelineMultiline
+            ("^(AB)\\1$", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nabab", "Q"),
+            ("^(AB)\\1$", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nabxb", "Q"),
+            ("(A.+)\\1", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nabab\nzz", "Q"),
+            ("(A.+)\\1", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nabcb", "Q"),
+
+            // FoldCategoryRtlSinglelineMultiline
+            ("^AB\\p{L}+$", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "ab\nCD", "Q"),
+            ("A\\p{L}+$", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "ab\nCD", "Q"),
+            ("\\p{L}+CD$", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "ab\nzzCD", "Q"),
+            ("\\p{L}+CD$", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "ab\ncd", "Q"),
+
+            // FoldCategoryRangeRtlSinglelineMultiline
+            ("([A-Z].+[0-9])", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\na1b2\nzz", "Q"),
+            ("([A-Z].+[0-9])", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nab\nzz", "Q"),
+            ("([^0-9].+[^A-Z])", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\n1aB\nzz", "Q"),
+            ("([^0-9].+[^A-Z])", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\n12a\nzz", "Q"),
+
+            // FoldVerboseRtlSinglelineMultiline
+            ("(A .+ B)", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\nabqb\nzz", "Q"),
+            ("(A .+ B)", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\naq", "Q"),
+            ("^A .+ B$", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("^A .+ B$", CultureInvariant | IgnoreCase | IgnorePatternWhitespace | Multiline | RightToLeft | Singleline, "xx\nax\nzz", "Q"),
+
+            // FoldScopedRtlSinglelineMultiline
+            ("(?s:A.+)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naab\nzz", "Q"),
+            ("(?s:A.+)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nab", "Q"),
+            ("(?s:.+)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "x\nyb", "Q"),
+            ("(?s:A.+)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naz", "Q"),
+
+            // FoldDotLookbehindRtlSinglelineMultiline
+            ("(?<=A.C)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nacb\nzz", "Q"),
+            ("(?<=A.C)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\naxb\nzz", "Q"),
+            ("(?<=A.C)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nACB", "Q"),
+            ("(?<!A.C)B", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nAXB\nzz", "Q"),
+
+            // FoldGuardConditionalRtlSinglelineMultiline
+            ("^(?(?=A.+)A|B)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nb", "Q"),
+            ("^(?(?=A.+)A|B)", CultureInvariant | IgnoreCase | Multiline | RightToLeft | Singleline, "xx\nx", "Q"),
+
+            // FixedQuantifiedLookbehind
+            ("(?<=ab{2})c", CultureInvariant, "xxabbc", "Q"),
+            ("(?<=ab{2})c", CultureInvariant, "xxabc", "Q"),
+
+            // ConditionalAtomicMultiline
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline, "abxx", "Q"),
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline, "xx\nbxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | Multiline, "xx\naabxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | Multiline, "xx\naax", "Q"),
+
+            // SubtractionAscii
+            ("[a-z-[aeiou]]+", CultureInvariant, "xbcdfx", "Q"),
+            ("[a-z-[aeiou]]+", CultureInvariant, "xabeix", "Q"),
+            ("[a-z-[aeiou]]+", CultureInvariant, "xaeix", "Q"),
+            ("[A-Z-[AEIOU]]+", CultureInvariant, "xBCDFx", "Q"),
+            ("[0-9-[13579]]+", CultureInvariant, "x246x", "Q"),
+            ("[0-9-[13579]]+", CultureInvariant, "x135x", "Q"),
+            ("[\\w-[\\d_]]+", CultureInvariant, "xabcx", "Q"),
+
+            // BalancingAscii
+            ("^(?<o><)(?<c>>)(?<-o>)(?<-c>)$", CultureInvariant, "<>", "Q"),
+            ("^(?<o><)(?<c>>)(?<-o>)(?<-c>)$", CultureInvariant, "<", "Q"),
+            ("(?<a>a+)(?<-a>b+)", CultureInvariant, "xaabbx", "Q"),
+            ("(?<a>a+)(?<-a>b+)", CultureInvariant, "xaabx", "Q"),
+            ("(?<d>[0-9])(?<-d>.)", CultureInvariant, "x1ax", "Q"),
+
+            // SensitiveFoldAscii
+            ("(ab|cd)ef", IgnoreCase, "xxCDefxx", "Q"),
+            ("(ab|cd)ef", IgnoreCase, "xxABE Fxx", "Q"),
+            ("(a+)\\1", IgnoreCase, "xxAaax", "Q"),
+            ("a+(?=B)", IgnoreCase, "xaaBx", "Q"),
+            ("\\bWORD\\b", IgnoreCase, "xx word xx", "Q"),
+            ("[a-z]+", IgnoreCase, "xxabcxx", "Q"),
+            ("\\w+", IgnoreCase, "xxabcxx", "Q"),
+
+            // RtlFamily
+            ("(ab|cd)ef", CultureInvariant | RightToLeft, "xxcdefxx", "Q"),
+            ("(ab|cd)ef", CultureInvariant | RightToLeft, "xxabxx", "Q"),
+            ("(a+)\\1", CultureInvariant | RightToLeft, "xxaaax", "Q"),
+            ("(a+)\\1", CultureInvariant | RightToLeft, "xxabx", "Q"),
+            ("(?<=x)a+", CultureInvariant | RightToLeft, "xxaax", "Q"),
+            ("(?<=x)a+", CultureInvariant | RightToLeft, "xbbb", "Q"),
+            ("a+(?=b)", CultureInvariant | RightToLeft, "xaabx", "Q"),
+
+            // SinglelineAnchor
+            ("^ab", CultureInvariant, "ab\nxx", "Q"),
+            ("^ab", CultureInvariant, "xx\nabxx", "Q"),
+            ("ab$", CultureInvariant, "xxab\nyy", "Q"),
+            ("ab$", CultureInvariant, "abxx\nyy", "Q"),
+            ("\\Aab", CultureInvariant, "ab\nxx", "Q"),
+            ("\\Aab", CultureInvariant, "xx\nab", "Q"),
+            ("ab\\z", CultureInvariant, "xx\nab", "Q"),
+            ("ab\\z", CultureInvariant, "xxab\nyy", "Q"),
+
+            // NestedLoopAscii
+            ("(a+)+b", CultureInvariant, "xaab", "Q"),
+            ("(a+)+b", CultureInvariant, "xaac", "Q"),
+            ("(a|ab)+c", CultureInvariant, "xababc", "Q"),
+            ("(a|ab)+c", CultureInvariant, "xabab", "Q"),
+            ("(a+)*b", CultureInvariant, "xaab", "Q"),
+            ("(a+)*b", CultureInvariant, "xbb", "Q"),
+
+            // LazyGroupAscii
+            ("(a+?)b", CultureInvariant, "xaab", "<$1$2>"),
+            ("(a+?)b", CultureInvariant, "xbb", "<$1$2>"),
+            ("(a??)b", CultureInvariant, "xab", "<$1$2>"),
+            ("(a??)b", CultureInvariant, "xb", "<$1$2>"),
+            ("(a+?)(b+?)", CultureInvariant, "xaabb", "<$1$2>"),
+            ("(a+?)(b+?)", CultureInvariant, "xab", "<$1$2>"),
+            ("(a{2,4}?)b", CultureInvariant, "xaaab", "<$1$2>"),
+            ("(a{2,4}?)b", CultureInvariant, "xab", "<$1$2>"),
+
+            // EmptyMatch
+            ("()", CultureInvariant, "xx", "Q"),
+            ("x?", CultureInvariant, "axb", "Q"),
+            ("(a)?", CultureInvariant, "xab", "Q"),
+
+            // EmptyPatternSplit
+            ("", CultureInvariant, "", "Q"),
+
+            // ScopedInline
+            ("(?i:ab)c", CultureInvariant, "xxABcxx", "Q"),
+            ("(?i:ab)c", CultureInvariant, "xxabcxx", "Q"),
+            ("(?i:ab)c", CultureInvariant, "xxabCxx", "Q"),
+            ("(?m:^ab)", CultureInvariant, "xx\nabxx", "Q"),
+            ("(?-i:ab)", CultureInvariant, "xxABxx", "Q"),
+            ("(?i:(ab|cd))ef", CultureInvariant, "xxCDefxx", "Q"),
+            ("(?i:(a+))\\1", CultureInvariant, "xxAaax", "Q"),
+
+            // BareNone
+            ("(ab|cd)ef", None, "xxcdefxx", "Q"),
+            ("(a+)\\1", None, "xxaaax", "Q"),
+            ("a+(?=b)", None, "xaabx", "Q"),
+            ("(?<=x)a+", None, "xxaax", "Q"),
+            ("\\bword\\b", None, "xx word xx", "Q"),
+            ("[a-z]+", None, "xxabcxx", "Q"),
+            ("(?>a+)b", None, "xaab", "Q"),
+
+            // BareNoneAnchorSplit
+            ("^ab$", None, "ab", "Q"),
+
+            // StackedCombo
+            ("(ab|cd)ef", CultureInvariant | IgnoreCase | RightToLeft, "xxCDefxx", "Q"),
+            ("(ab|cd)ef", CultureInvariant | IgnoreCase | RightToLeft, "xxabxx", "Q"),
+            ("(a+)\\1", CultureInvariant | IgnoreCase | RightToLeft, "xxAaax", "Q"),
+            ("^ab", CultureInvariant | IgnoreCase | Multiline, "xx\nABxx", "Q"),
+            ("ab$", CultureInvariant | IgnoreCase | Multiline, "xxAB\nyy", "Q"),
+            ("\\bWORD\\b", CultureInvariant | IgnoreCase | RightToLeft, "xx word xx", "Q"),
+
+            // VerboseComment
+            ("a b  # tail", CultureInvariant | IgnorePatternWhitespace, "xabx", "Q"),
+            ("a(?#mid)b", CultureInvariant | IgnorePatternWhitespace, "xabx", "Q"),
+            ("(?#lead)a b", CultureInvariant | IgnorePatternWhitespace, "xabx", "Q"),
+            ("a # c1\nb # c2", CultureInvariant | IgnorePatternWhitespace, "xabx", "Q"),
+
+            // AnyClass
+            ("[\\s\\S]+", CultureInvariant, "xxabxx", "Q"),
+            ("[\\s\\S]+", CultureInvariant, "xx\nab", "Q"),
+            ("[^x]+", CultureInvariant, "xxabxx", "Q"),
+            ("[^x]+", CultureInvariant, "xx\nab", "Q"),
+            ("[\\D\\S]+", CultureInvariant, "xxabxx", "Q"),
+            ("[\\D\\S]+", CultureInvariant, "xx\nab", "Q"),
+            ("[\\s\\S]+", CultureInvariant | Singleline, "xxabxx", "Q"),
+            ("[\\s\\S]+", CultureInvariant | Singleline, "xx\nab", "Q"),
+            ("[^x]+", CultureInvariant | Singleline, "xxabxx", "Q"),
+            ("[^x]+", CultureInvariant | Singleline, "xx\nab", "Q"),
+            ("[\\D\\S]+", CultureInvariant | Singleline, "xxabxx", "Q"),
+            ("[\\D\\S]+", CultureInvariant | Singleline, "xx\nab", "Q"),
+
+            // EscapeAscii
+            ("\\x41+", CultureInvariant, "xxAAax", "Q"),
+            ("\\u0041+", CultureInvariant, "xxAAax", "Q"),
+            ("\\t+", CultureInvariant, "x\tx", "Q"),
+            ("\\n+", CultureInvariant, "x\nx", "Q"),
+            ("\\x41\\x42", CultureInvariant, "xxABxx", "Q"),
+            ("\\u0041\\u0042", CultureInvariant, "xxABxx", "Q"),
+            ("\\a\\e", CultureInvariant, "x\a\u001bx", "Q"),
+
+            // Octal
+            ("\\101\\102", CultureInvariant, "xxABxx", "Q"),
+            ("\\0", CultureInvariant, "xa\0bx", "Q"),
+            ("(a)\\101", CultureInvariant, "xxaAax", "Q"),
+
+            // OctalQuantifiedDecline
+            ("\\101+", CultureInvariant, "xxAAax", "Q"),
+
+            // Explicit
+            ("(ab|cd)ef", CultureInvariant | ExplicitCapture, "xxcdefxx", "<$1$2>"),
+            ("((a)b)", CultureInvariant | ExplicitCapture, "xxabxx", "<$1$2>"),
+            ("(?<x>ab)(?<y>cd)", CultureInvariant | ExplicitCapture, "xxabcdxx", "<$1$2>"),
+            ("(?<x>ab)(?<y>cd)", CultureInvariant | ExplicitCapture, "xxabxx", "<$1$2>"),
+
+            // ExplicitNamedBackref
+            ("(?<x>ab)(c)\\k<x>", CultureInvariant | ExplicitCapture, "xxabcabxx", "Q"),
+            ("(?<x>AB)(c)\\k<x>", CultureInvariant | ExplicitCapture | IgnoreCase, "xxabcabxx", "Q"),
+            ("(?<x>ab)(c)\\k<x>", CultureInvariant | ExplicitCapture | RightToLeft, "xxabcabxx", "Q"),
+            ("(?<x>ab)(c)\\k<x>", CultureInvariant | ExplicitCapture | Singleline, "xxabc\nabxx", "Q"),
+            ("(?<x>ab)(c)\\k<x>", CultureInvariant | ExplicitCapture | Singleline, "xxabc\naxxx", "Q"),
+            ("(?<w>a.+)\\k<w>", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naabaab\nzz", "Q"),
+            ("(?<w>a.+)\\k<w>", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xx\naabc\nzz", "Q"),
+
+            // ScopedExplicit
+            ("(?n:(?<x>ab)(?<y>cd))", CultureInvariant, "xxabcdxx", "<$1$2>"),
+            ("(?n:(?<x>ab)(?<y>cd))", CultureInvariant, "xxabxx", "<$1$2>"),
+            ("(?n:(a)(?<y>b))", CultureInvariant, "xxabcxx", "<$1$2>"),
+            ("(?<x>(?n:a))", CultureInvariant, "xxaxx", "<$1$2>"),
+            ("(?n:(?<x>a))(b)", CultureInvariant, "xxabx", "<$1$2>"),
+
+            // ExplicitFold
+            ("(?<x>AB)(?<y>CD)", CultureInvariant | ExplicitCapture | IgnoreCase, "xxabcdxx", "<$1$2>"),
+            ("(?<x>AB)(?<y>CD)", CultureInvariant | ExplicitCapture | IgnoreCase, "xxabxx", "<$1$2>"),
+            ("(a)(b)", CultureInvariant | ExplicitCapture | IgnoreCase, "xxabxx", "<$1$2>"),
+
+            // RtlMultiline
+            ("^ab", CultureInvariant | Multiline | RightToLeft, "ab\nxx", "Q"),
+            ("^ab", CultureInvariant | Multiline | RightToLeft, "xx\nabxx", "Q"),
+            ("ab$", CultureInvariant | Multiline | RightToLeft, "xxab\nyy", "Q"),
+            ("ab$", CultureInvariant | Multiline | RightToLeft, "abxx\nyy", "Q"),
+            ("^ab$", CultureInvariant | Multiline | RightToLeft, "ab\nab", "Q"),
+            ("^ab$", CultureInvariant | Multiline | RightToLeft, "xx\nab\nyy", "Q"),
+
+            // RtlMultilineDot
+            ("a.+b", CultureInvariant | Multiline | RightToLeft, "xa\nbxx", "Q"),
+            ("a.+b", CultureInvariant | Multiline | RightToLeft, "xayb", "Q"),
+            ("^a.+b$", CultureInvariant | Multiline | RightToLeft, "xx\naabb\nyy", "Q"),
+            ("^ab$", CultureInvariant | Multiline | RightToLeft, "xx\naxxb", "Q"),
+
+            // RtlSinglelineMultiline
+            ("a.+b", CultureInvariant | Multiline | RightToLeft | Singleline, "x\naab\nx", "Q"),
+            ("^ab", CultureInvariant | Multiline | RightToLeft | Singleline, "xx\nabxx", "Q"),
+            ("(?<w>.+)", CultureInvariant | Multiline | RightToLeft | Singleline, "xxAB\nCDxx", "Q"),
+
+            // SinglelineFold
+            ("(?s)a.+b", CultureInvariant | IgnoreCase | Singleline, "x\naAB\nbx", "Q"),
+            ("A.+B", CultureInvariant | IgnoreCase | Singleline, "x\naab\nx", "Q"),
+            ("(?s)(a+).(b+)", CultureInvariant | IgnoreCase | Singleline, "x\naA\nbBx", "Q"),
+            (".+", CultureInvariant | IgnoreCase | Singleline, "x\nab\nx", "Q"),
+            ("(.+)", CultureInvariant | IgnoreCase | Singleline, "x\nab\nx", "Q"),
+
+            // VarLookbehind
+            ("(?<=a+)b", CultureInvariant, "xxaabx", "Q"),
+            ("(?<=a+)b", CultureInvariant, "xxbx", "Q"),
+            ("(?<=a|bc)d", CultureInvariant, "xxabcd", "Q"),
+            ("(?<=a|bc)d", CultureInvariant, "xxd", "Q"),
+            ("(?<!a+)b", CultureInvariant, "xaabx", "Q"),
+            ("(?<=ab+)c", CultureInvariant, "xxabbc", "Q"),
+            ("(?<=a{1,3})b", CultureInvariant, "xxaab", "Q"),
+            ("(?<=a{1,3})b", CultureInvariant, "xxb", "Q"),
+            ("(?<=a.+)b", CultureInvariant | Singleline, "xa\nzb", "Q"),
+            ("(?<=a.+)b", CultureInvariant | Singleline, "xzb", "Q"),
+            ("(?<!a.+)b", CultureInvariant | Singleline, "xb", "Q"),
+            ("(?<!a.+)b", CultureInvariant | Singleline, "xa\nzb", "Q"),
+
+            // VarLookahead
+            ("a(?=b+)", CultureInvariant, "xaabx", "Q"),
+            ("a(?=b+)", CultureInvariant, "xaax", "Q"),
+            ("a(?=b|cd)", CultureInvariant, "xabcdx", "Q"),
+            ("a(?=b|cd)", CultureInvariant, "xabx", "Q"),
+            ("(?=(ab)+)c", CultureInvariant, "xxabc", "Q"),
+            ("a(?!b+)", CultureInvariant, "xaabx", "Q"),
+
+            // UnmatchedBackref
+            ("(a)?b\\1", CultureInvariant, "xbxx", "Q"),
+            ("(a)?b\\1", CultureInvariant, "xabx", "Q"),
+            ("(a)|(b)\\1", CultureInvariant, "xbcx", "Q"),
+            ("(a)?(b)?c\\1\\2", CultureInvariant, "xcxx", "Q"),
+
+            // RepeatedCapture
+            ("(a|b)+", CultureInvariant, "xxabbax", "<$1>"),
+            ("(a+)+", CultureInvariant, "xxaaax", "<$1>"),
+            ("(ab|cd)+", CultureInvariant, "xxabcdabxx", "<$1>"),
+            ("(?<x>a|b)+", CultureInvariant, "xxabax", "<$1>"),
+
+            // EmptyBranch
+            ("(a|)", CultureInvariant, "xxax", "Q"),
+            ("(a|)", CultureInvariant, "xxbx", "Q"),
+            ("(a|b|)", CultureInvariant, "xxax", "Q"),
+            ("(|a)", CultureInvariant, "xxax", "Q"),
+            ("(a|)b", CultureInvariant, "xxabx", "Q"),
+
+            // SinglelineMultiline
+            ("^a.+b$", CultureInvariant | Multiline | Singleline, "xa\nabbb\nzz", "Q"),
+            ("^a.+b$", CultureInvariant | Multiline | Singleline, "qa\nb\nzz", "Q"),
+            ("^ab", CultureInvariant | Multiline | Singleline, "xx\nabxx", "Q"),
+            ("ab$", CultureInvariant | Multiline | Singleline, "xxab\nyy", "Q"),
+
+            // SinglelineContiguous
+            (@"\Ga.+b", CultureInvariant | Singleline, "a\nab", "Q"),
+            (@"\Ga.+b", CultureInvariant | Singleline, "xa\nab", "Q"),
+            (@"\Ga+", CultureInvariant | Singleline, "a\naa", "Q"),
+            (@"\Ga+", CultureInvariant | Singleline, "xaa", "Q"),
+
+            // GroupedSinglelineMultiline
+            ("^(a.+)b$", CultureInvariant | Multiline | Singleline, "xa\nabb\nzz", "Q"),
+            ("^(a.+)b$", CultureInvariant | Multiline | Singleline, "xa\naxx\nzz", "Q"),
+            ("^(a.+)(b+)$", CultureInvariant | Multiline | Singleline, "xa\nabbb\nzz", "Q"),
+            ("^(a.+)(b+)$", CultureInvariant | Multiline | Singleline, "xa\nab\nzz", "Q"),
+
+            // CategoryMultiline
+            ("^\\p{L}+$", CultureInvariant | Multiline, "ab\nCD", "Q"),
+            ("^\\p{L}+$", CultureInvariant | Multiline, "a1\nb2", "Q"),
+            ("\\p{Nd}+$", CultureInvariant | Multiline, "ab12\nxy", "Q"),
+            ("\\p{IsBasicLatin}+$", CultureInvariant | Multiline, "ab\nCD", "Q"),
+
+            // ShorthandMultiline
+            ("^\\d+$", CultureInvariant | Multiline, "12\n34", "Q"),
+            ("^\\d+$", CultureInvariant | Multiline, "a1\nb2", "Q"),
+            ("\\w+$", CultureInvariant | Multiline, "ab12\nxy", "Q"),
+            ("\\w+$", CultureInvariant | Multiline, "ab \nxy ", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | Multiline, "xx\n1a2\nzz", "Q"),
+            ("(\\d.+\\d)", CultureInvariant | Multiline, "xx\n1a\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | Multiline, "xx\nab\nzz", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | Multiline, "xx\na", "Q"),
+
+            // NestedLookaround
+            ("(?=(?<=x)a)a+", CultureInvariant, "xxaax", "Q"),
+            ("(a)(?=(b))", CultureInvariant, "xxabbx", "Q"),
+            ("(?<=a(?=b))c", CultureInvariant, "xabc", "Q"),
+            ("(?!(a)b)\\w+", CultureInvariant, "xxcxxx", "Q"),
+            ("(?<=x(?=y))a", CultureInvariant, "xxyax", "Q"),
+
+            // FoldedLookbehind
+            ("(?<=X)A+", CultureInvariant | IgnoreCase, "xxAaX", "Q"),
+            ("(?<=X)A+", CultureInvariant | IgnoreCase, "xxx", "Q"),
+            ("(?<!X)A+", CultureInvariant | IgnoreCase, "xxaaX", "Q"),
+            ("(?<=AB)C", CultureInvariant | IgnoreCase, "xxabC", "Q"),
+
+            // ExplicitMultilineSplit
+            ("^(?<w>ab)", CultureInvariant | ExplicitCapture | Multiline, "xx\nabxx", "<${w}>"),
+            ("^(?<w>ab)", CultureInvariant | ExplicitCapture | Multiline, "ab\nxx", "<${w}>"),
+            ("(?<w>ab)$", CultureInvariant | ExplicitCapture | Multiline, "xxab\nyy", "<${w}>"),
+            ("(?<w>ab)$", CultureInvariant | ExplicitCapture | Multiline, "abxx\nyy", "<${w}>"),
+
+            // FoldedVarLookbehind
+            ("(?<=A+)B", CultureInvariant | IgnoreCase, "xxAABx", "Q"),
+            ("(?<=A+)B", CultureInvariant | IgnoreCase, "xxBx", "Q"),
+            ("(?<=A|BC)D", CultureInvariant | IgnoreCase, "xxABCD", "Q"),
+
+            // FoldedVarLookahead
+            ("A(?=B+)", CultureInvariant | IgnoreCase, "xAABx", "Q"),
+
+            // FoldedBalancing
+            ("(?<a>A+)(?<-a>B+)", CultureInvariant | IgnoreCase, "xxAABbx", "Q"),
+            ("(?<a>A+)(?<-a>B+)", CultureInvariant | IgnoreCase, "xxAABx", "Q"),
+            ("^(?<o><)(?<c>>)(?<-o>)(?<-c>)$", CultureInvariant | IgnoreCase, "<>", "Q"),
+
+            // BalancingOptionCombo
+            ("(?<b>A+)(?<-b>B)", CultureInvariant | IgnoreCase, "xxaabbxx", "Q"),
+            ("(?<b>A+)(?<-b>B)", CultureInvariant | IgnoreCase, "xxaabxx", "Q"),
+            ("^(?<b>a+)(?<-b>b)$", CultureInvariant | Multiline, "aabb", "Q"),
+            ("^(?<b>a+)(?<-b>b)$", CultureInvariant | Multiline, "xx\naabb", "Q"),
+
+            // FoldedAtomic
+            ("(?>A+)B", CultureInvariant | IgnoreCase, "xxAABx", "Q"),
+            ("(?>A+)B", CultureInvariant | IgnoreCase, "xxAACx", "Q"),
+            ("(?>AB|A)B", CultureInvariant | IgnoreCase, "xxABBx", "Q"),
+            ("(?>A|AB)C", CultureInvariant | IgnoreCase, "xxABCx", "Q"),
+
+            // FoldedConditional
+            ("(A)?B(?(1)C|D)", CultureInvariant | IgnoreCase, "xABCD", "Q"),
+            ("(A)?B(?(1)C|D)", CultureInvariant | IgnoreCase, "xBD", "Q"),
+            ("(A)(?(1)B|C)", CultureInvariant | IgnoreCase, "xABx", "Q"),
+            ("(A)?(?(1)B|C)", CultureInvariant | IgnoreCase, "xC", "Q"),
+
+            // RtlExplicit
+            ("(?<x>ab)(?<y>cd)", CultureInvariant | ExplicitCapture | RightToLeft, "xxabcdxx", "<$1$2>"),
+            ("(?<x>ab)(?<y>cd)", CultureInvariant | ExplicitCapture | RightToLeft, "xxabxx", "<$1$2>"),
+            ("(a)(b)", CultureInvariant | ExplicitCapture | RightToLeft, "xxabxx", "<$1$2>"),
+
+            // RtlSingleline
+            ("a.+b", CultureInvariant | RightToLeft | Singleline, "x\naab\nx", "Q"),
+            ("a.+b", CultureInvariant | RightToLeft | Singleline, "xx\nyy", "Q"),
+            ("(a+).+(b+)", CultureInvariant | RightToLeft | Singleline, "x\naab\nx", "Q"),
+            ("^ab", CultureInvariant | RightToLeft | Singleline, "xx\nabxx", "Q"),
+            ("(a.+)b", CultureInvariant | RightToLeft | Singleline, "xa\nbz", "Q"),
+            ("\\d.+\\d", CultureInvariant | RightToLeft | Singleline, "x1\n2y", "Q"),
+            ("(\\w.+\\w)", CultureInvariant | RightToLeft | Singleline, "xa", "Q"),
+            ("(\\s.+\\s)", CultureInvariant | RightToLeft | Singleline, "a \n b", "Q"),
+
+            // RtlSinglelineExplicit
+            ("(?<w>.+)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xxAB\nCDxx", "Q"),
+            ("(?<w>A.+B)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xxAxxBxx", "Q"),
+            ("(?<w>A.+B)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xxAxx", "Q"),
+            ("(A.+)B", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xxAAxxBxx", "Q"),
+
+            // FoldSinglelineRtl
+            ("(?<w>.+)", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "xxAB\nCDxx", "Q"),
+            ("(?<w>A.+B)", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "xxAXXBxx", "Q"),
+            ("(?<w>A.+B)", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "xxaxxbxx", "Q"),
+            ("(?<w>A.+B)", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "xxAxx", "Q"),
+
+            // RtlFold
+            ("[a-z]+", CultureInvariant | IgnoreCase | RightToLeft, "xxABCxx", "Q"),
+            ("a+b", CultureInvariant | IgnoreCase | RightToLeft, "xxaabx", "Q"),
+            ("\\w+", CultureInvariant | IgnoreCase | RightToLeft, "xxaB1xx", "Q"),
+
+            // RtlFoldLiteralSplit
+            ("ab", CultureInvariant | IgnoreCase | RightToLeft, "xxABxx", "Q"),
+
+            // SinglelineExplicit
+            ("(?s)(a+)(b+)", CultureInvariant | ExplicitCapture | Singleline, "x\naab\nx", "<$1$2>"),
+            ("(?<x>.+)(?<y>.+)", CultureInvariant | ExplicitCapture | Singleline, "x\naab\nx", "<${x}${y}>"),
+            ("(a).+(b)", CultureInvariant | ExplicitCapture | Singleline, "x\na\nb\nx", "<$1$2>"),
+
+            // ExplicitSinglelineMultiline
+            ("^(?<w>.+)$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xa\nAB\nzz", "Q"),
+            ("^(?<w>.+)$", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xa\nax\nzz", "Q"),
+            ("(?<w>.+)", CultureInvariant | ExplicitCapture | Multiline | Singleline, "xxAB\nCDxx", "Q"),
+
+            // ScopedFold
+            ("(?n:(?<x>AB)(?<y>CD))", CultureInvariant | IgnoreCase, "xxabcdxx", "<$1$2>"),
+            ("(?n:(A)(?<y>B))", CultureInvariant | IgnoreCase, "xxabxx", "<$1$2>"),
+            ("(?<x>(?n:A))", CultureInvariant | IgnoreCase, "xxaxx", "<$1$2>"),
+
+            // RtlWordFold
+            ("\\bWORD\\b", CultureInvariant | IgnoreCase | RightToLeft, "xxwordxx", "Q"),
+            ("\\BWORD\\B", CultureInvariant | IgnoreCase | RightToLeft, "xwordy", "Q"),
+            ("(\\b\\w+\\b)", CultureInvariant | IgnoreCase | RightToLeft, "xxhi therexx", "Q"),
+
+            // FoldedNested
+            ("((A)+)+B", CultureInvariant | IgnoreCase, "xxAABx", "Q"),
+            ("((A)+)+B", CultureInvariant | IgnoreCase, "xxAACx", "Q"),
+            ("((A|AB)+)C", CultureInvariant | IgnoreCase, "xxABABCx", "Q"),
+            ("((A)*)+B", CultureInvariant | IgnoreCase, "xxBx", "Q"),
+
+            // FoldedLazy
+            ("(A+?)B", CultureInvariant | IgnoreCase, "xxAABx", "<$1$2>"),
+            ("(A+?)B", CultureInvariant | IgnoreCase, "xxBx", "<$1$2>"),
+            ("(A??)B", CultureInvariant | IgnoreCase, "xxABx", "<$1$2>"),
+            ("(A+?)(B+?)", CultureInvariant | IgnoreCase, "xxAABBx", "<$1$2>"),
+
+            // RtlAtomic
+            ("(?>a+)b", CultureInvariant | RightToLeft, "xaab", "Q"),
+            ("(?>a+)b", CultureInvariant | RightToLeft, "xaac", "Q"),
+            ("(?>ab|a)b", CultureInvariant | RightToLeft, "xxabb", "Q"),
+            ("(?>a+)(b+)", CultureInvariant | RightToLeft, "xaabb", "Q"),
+
+            // RtlConditional
+            ("(a)?b(?(1)c|d)", CultureInvariant | RightToLeft, "xabcd", "Q"),
+            ("(a)?b(?(1)c|d)", CultureInvariant | RightToLeft, "xbd", "Q"),
+            ("(a)(?(1)b|c)", CultureInvariant | RightToLeft, "xabx", "Q"),
+            ("(a)?(?(1)b|c)", CultureInvariant | RightToLeft, "xc", "Q"),
+
+            // RtlConditionalAtomicMultiline
+            ("^(?(?=a)a|b)", CultureInvariant | Multiline | RightToLeft, "abxx", "Q"),
+            ("(a)?(?(1)b|c)", CultureInvariant | Multiline | RightToLeft, "xx\nab", "Q"),
+            ("^(?>a+)b", CultureInvariant | Multiline | RightToLeft, "xx\naabxx", "Q"),
+            ("^(?>a+)b", CultureInvariant | Multiline | RightToLeft, "xx\naax", "Q"),
+            ("(?>ab+)c", CultureInvariant | Multiline | RightToLeft, "xx\nabbc\nzz", "Q"),
+
+            // RtlBalancing
+            ("(?<a>a+)(?<-a>b+)", CultureInvariant | RightToLeft, "xaabbx", "Q"),
+            ("(?<a>a+)(?<-a>b+)", CultureInvariant | RightToLeft, "xaabx", "Q"),
+            ("^(?<o><)(?<c>>)(?<-o>)(?<-c>)$", CultureInvariant | RightToLeft, "<>", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | RightToLeft | Singleline, "xab\nab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | RightToLeft | Singleline, "xab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xab\nab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | ExplicitCapture | RightToLeft | Singleline, "xab", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | Multiline | RightToLeft, "xx\naab\nzz", "Q"),
+            ("(?<b>.+)(?<-b>.+)", CultureInvariant | Multiline | RightToLeft, "xx\nab", "Q"),
+
+            // RtlFoldLetterRun
+            ("\\p{L}.+\\p{L}", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "A\nB", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "AB", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | IgnoreCase | RightToLeft | Singleline, "A\n1", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "A\nB", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "AB", "Q"),
+            ("\\p{L}.+\\p{L}", CultureInvariant | IgnoreCase | Multiline | RightToLeft, "A\n1", "Q"),
+
+            // FoldedRtlAtomic
+            ("(?>A+)B", CultureInvariant | IgnoreCase | RightToLeft, "xxAABx", "Q"),
+            ("(?>A+)B", CultureInvariant | IgnoreCase | RightToLeft, "xxAACx", "Q"),
+            ("(?>AB|A)B", CultureInvariant | IgnoreCase | RightToLeft, "xxABBx", "Q"),
+
+            // FoldedRtlConditional
+            ("(A)?B(?(1)C|D)", CultureInvariant | IgnoreCase | RightToLeft, "xABCD", "Q"),
+            ("(A)?B(?(1)C|D)", CultureInvariant | IgnoreCase | RightToLeft, "xBD", "Q"),
+            ("(A)(?(1)B|C)", CultureInvariant | IgnoreCase | RightToLeft, "xABx", "Q"),
+
+            // FoldedRtlBackref
+            ("(A+)\\1", CultureInvariant | IgnoreCase | RightToLeft, "xxAAax", "Q"),
+            ("(AB)C\\1", CultureInvariant | IgnoreCase | RightToLeft, "xxABABx", "Q"),
+
+            // FoldedRtlLookaround
+            ("(?<=X)A+", CultureInvariant | IgnoreCase | RightToLeft, "xxAaX", "Q"),
+            ("(?<=X)A+", CultureInvariant | IgnoreCase | RightToLeft, "xxx", "Q"),
+            ("A(?=B)", CultureInvariant | IgnoreCase | RightToLeft, "xaaBx", "Q"),
+            ("(?<!X)A+", CultureInvariant | IgnoreCase | RightToLeft, "xxaaX", "Q"),
+
+            // FoldedRtlLookbehindGroup
+            ("(?<=(?<w>AB))CD", CultureInvariant | IgnoreCase | RightToLeft, "xxabcdxx", "Q"),
+            ("(?<=(?<w>AB))CD", CultureInvariant | IgnoreCase | RightToLeft, "xxabxx", "Q"),
+            ("(?<=AB)(?<w>CD)", CultureInvariant | IgnoreCase | RightToLeft, "xxabcdxx", "Q"),
+            ("(?<=(A))B", CultureInvariant | IgnoreCase | RightToLeft, "xxaabxx", "Q"),
+
+            // TripleCombo
+            ("(?<X>AB)(?<Y>CD)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft, "xxabcdxx", "<$1$2>"),
+            ("(?<X>AB)(?<Y>CD)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft, "xxabxx", "<$1$2>"),
+            ("(A)(B)", CultureInvariant | ExplicitCapture | IgnoreCase | RightToLeft, "xxabxx", "<$1$2>"),
+
+            // FoldExplicitMultilineSplit
+            ("^(?<w>AB)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline, "xx\nabxx", "Q"),
+            ("^(?<w>AB)", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline, "xx\naxxx", "Q"),
+            ("(?<w>AB)$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline, "xxab\nyy", "Q"),
+            ("(?<w>AB)$", CultureInvariant | ExplicitCapture | IgnoreCase | Multiline, "xxabx\nyy", "Q"),
+
+            // FoldedContiguousDecline
+            (@"\Gab", CultureInvariant | IgnoreCase, "ABxx", "Q"),
+            (@"\Gab", CultureInvariant | IgnoreCase, "abxx", "Q"),
+            (@"\Gab", CultureInvariant | IgnoreCase, "xxABxx", "Q"),
+
+            // SinglelineIgnoreCaseMultiline
+            ("^a.+b$", CultureInvariant | IgnoreCase | Multiline | Singleline, "xa\nABBB\nzz", "Q"),
+            ("^ab", CultureInvariant | IgnoreCase | Multiline | Singleline, "xx\nABxx", "Q"),
+            ("ab$", CultureInvariant | IgnoreCase | Multiline | Singleline, "xxAB\nyy", "Q"),
+            ("^a.+b$", CultureInvariant | IgnoreCase | Multiline | Singleline, "qa\nb\nzz", "Q"),
+
+            // SinglelineIgnoreCaseExplicit
+            ("(?<w>.+)", CultureInvariant | ExplicitCapture | IgnoreCase | Singleline, "xxABxx", "Q"),
+            ("(?<w>.+)", CultureInvariant | ExplicitCapture | IgnoreCase | Singleline, "xx\nABxx", "Q"),
+            ("(?<x>A+)(?<w>B+)", CultureInvariant | ExplicitCapture | IgnoreCase | Singleline, "xxAABBxx", "Q"),
+            ("(?<x>A+)(?<w>B+)", CultureInvariant | ExplicitCapture | IgnoreCase | Singleline, "xxAAxx", "Q"),
+
+            // LookbehindExplicit
+            ("(?<=ab)(c)", CultureInvariant | ExplicitCapture, "xxabcxx", "Q"),
+            ("(?<=(?<w>ab))(c)", CultureInvariant | ExplicitCapture, "xxabcxx", "Q"),
+            ("(?<=a)(?<w>b)", CultureInvariant | ExplicitCapture, "xxabxx", "Q"),
+            ("(?<=ab)(c)", CultureInvariant | ExplicitCapture, "xxabxx", "Q"),
+
+            // LookbehindMultiline
+            ("(?<=^a)b", CultureInvariant | Multiline, "xx\nabxx", "Q"),
+            ("(?<=^a)b", CultureInvariant | Multiline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | Multiline, "xx\nxabxx", "Q"),
+            ("(?<!^a)b", CultureInvariant | Multiline, "xx\nabxx", "Q"),
+
+            // ContiguousMultilineLaneSplit
+            (@"\Gab", CultureInvariant | Multiline, "abxx", "Q"),
+            (@"\Gab", CultureInvariant | Multiline, "xx\nabxx", "Q"),
+            (@"\Gab", CultureInvariant | Multiline, "ab\nab", "Q"),
+            (@"(\Gab)", CultureInvariant | Multiline, "xxabxx", "Q"),
+            (@"(\Gab)", CultureInvariant | Multiline, "abxx", "Q"),
+            (@"(?m:\Gab)", CultureInvariant | Multiline, "xx\nabxx", "Q"),
+            (@"(?m:\Gab)", CultureInvariant | Multiline, "ab\nab", "Q"),
+
+            // ScopedExplicitMultilineSplit
+            ("(?n:^(?<w>ab))", CultureInvariant | Multiline, "xx\nabxx", "Q"),
+            ("(?n:^(?<w>ab))", CultureInvariant | Multiline, "xx\nxabxx", "Q"),
+            ("(?n:(?<w>ab)$)", CultureInvariant | Multiline, "xxab\nyy", "Q"),
+            ("(?n:(?<w>ab)$)", CultureInvariant | Multiline, "xxabx\nyy", "Q"),
+
+            // AnchoredMultigroup
+            ("^(?<x>a)(?<w>b)", CultureInvariant, "abxx", "Q"),
+            ("^(?<x>a)(?<w>b)", CultureInvariant, "xxabxx", "Q"),
+            ("^(?<x>a)(?<w>b)", CultureInvariant, "ab", "Q"),
+            ("^(?<x>a)(?<w>b)", CultureInvariant, "xab", "Q"),
+
+            // AnchoredMultigroupMultilineSplit
+            ("^(?<x>a)(?<w>b)", CultureInvariant | Multiline, "xx\nabxx", "Q"),
+            ("^(?<x>a)(?<w>b)", CultureInvariant | Multiline, "ab\nxx", "Q"),
+            ("^(?<x>a)(?<w>b)", CultureInvariant | Multiline, "xx\nxabxx", "Q"),
+
+            // DoublyAnchoredDetailed
+            ("^(?<x>ab)(?<w>cd)$", CultureInvariant | Multiline, "xx\nabcd", "Q"),
+            ("^(?<x>ab)(?<w>cd)$", CultureInvariant | Multiline, "xx\nabcx", "Q"),
+            ("^(?<x>ab)(?<w>cd)$", CultureInvariant | Multiline, "abcd\nxx", "Q"),
+
+            // DoublyAnchoredSplit
+            ("^(?<x>ab)(?<w>cd)$", CultureInvariant, "abcd", "Q"),
+            ("^(?<x>ab)(?<w>cd)$", CultureInvariant, "xabcd", "Q"),
+            ("^(?<x>ab)(?<w>cd)$", CultureInvariant, "abc", "Q"),
+        ];
+        foreach (var (pattern, options, text, template) in rows)
+        {
+            yield return [pattern, options, text, template];
+            yield return [pattern, options | Compiled, text, template];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(OwnedOperationCases))]
+    public void OwnedOperationsMatchOracle(string pattern, RegexOptions options, string text, string template)
+    {
+        AssertOwnedOperations(pattern, options, text, template);
+    }
+
+    // Compare public operations on independent cold instances. Each row
+    // keeps the original BCL comparator and expected byte coordinates.
     private static void AssertOwnedOperations(string pattern, RegexOptions options, string text, string template,
         int capacityFactor = 16, int capacityPadding = 128)
     {
