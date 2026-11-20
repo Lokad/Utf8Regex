@@ -596,13 +596,11 @@ internal static partial class Utf8SliceRunner
         var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
             IsLeadingDecimalSet(program, leadingScalarIndex);
         var canProveDecimal = existenceOnly && !collectHistory && captureStarts.Length == 0;
-        var decimalHeadBytes = canProveDecimal && seekDecimal &&
+        var shortDecimalHead = canProveDecimal && seekDecimal &&
             program.Instructions.Length <= 32 && leadingScalarIndex > 0 &&
             program.Instructions[leadingScalarIndex - 1] is
-                { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0, RepeatMaximum: <= 4 } decimalHead
-            ? (int)decimalHead.RepeatMinimum : 0;
-        var proveDecimalPrefix = decimalHeadBytes != 0 ||
-            canProveDecimal && followingWindow.Min != 0 && program.SkipsTerminalRewind(1);
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0, RepeatMaximum: <= 4 };
+        var proveDecimalWindow = canProveDecimal && followingWindow.Min != 0 && program.SkipsTerminalRewind(1);
         if (seekDecimal)
         {
             leading = '0';
@@ -690,15 +688,12 @@ internal static partial class Utf8SliceRunner
                 continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
                 continue;
-            // The short repeat's mandatory bytes can expose a wider digit
-            // before entering the ASCII walk. The scalar verifier handles it.
-            if (checkBranchedPrefix || proveDecimalPrefix && input[position] < 128 &&
-                (decimalHeadBytes == 0 || !input.Slice(position, Math.Min(decimalHeadBytes, input.Length - position))
-                    .ContainsAnyInRange((byte)128, byte.MaxValue)))
+            if (checkBranchedPrefix || shortDecimalHead || proveDecimalWindow && input[position] < 128)
             {
                 // Starts only advance in these forward searches. The
                 // input step above also covers stopping after the last one.
                 if (position > lastProbedStart) break;
+                var proveDecimalPrefix = shortDecimalHead || proveDecimalWindow;
                 var proveMatch = proveDecimalPrefix || existenceOnly && !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
                 var proofStart = proveDecimalPrefix ? 0 : leadingScalarIndex;
                 if (!MayMatchBranchedAsciiPrefix(program, input, position, proofStart, out var acceptedEnd, proveMatch))

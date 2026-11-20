@@ -128,9 +128,11 @@ public sealed class Utf8ControlledDecimalBooleanTests
             new() { ResourcePolicy = new() { MaxWorkSteps = 12, MaxWorkingBytes = 1 } });
         Assert.True(limited.IsMatch("1234-5678-1234-456"u8, token.Token));
         Assert.False(limited.IsMatch("1234-5678-1234-45X"u8, token.Token));
+        Assert.True(limited.IsMatch("1𝟚34-5678-1234-456"u8, token.Token));
+        Assert.True(limited.IsMatch("𝟙234-5678-1234-456"u8, token.Token));
+        Assert.False(limited.IsMatch("1²34-5678-1234-456"u8, token.Token));
 
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
-        Assert.True(regex.IsMatch("1𝟚34-5678-1234-456"u8));
         const string text = "😀١٢٣٤-5678 1234-456";
         var bytes = Encoding.UTF8.GetBytes(text);
         var expected = Regex.Match(text, pattern);

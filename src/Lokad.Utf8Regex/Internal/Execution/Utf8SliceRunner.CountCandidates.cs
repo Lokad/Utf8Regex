@@ -1120,7 +1120,22 @@ internal static partial class Utf8SliceRunner
                     while (consumed < maximum)
                     {
                         var value = input[position + consumed];
-                        if (value >= 128 && !asciiOnly) return true;
+                        if (value >= 128 && !asciiOnly)
+                        {
+                            if (minimum != entry.RepeatMaximum || !IsDecimalDigitSet(program, code[index])) return true;
+
+                            // A fixed decimal repeat has one end. Decode the
+                            // remaining scalars under the same small visit bound.
+                            var end = position + consumed;
+                            for (var digit = consumed; digit < minimum; digit++)
+                            {
+                                if (!TryReadScalar(input, end, false, out var scalar, out var scalarWidth) ||
+                                    !Rune.IsDigit(scalar)) return false;
+                                end += scalarWidth;
+                            }
+                            return MayMatchBranchedAsciiPrefix(program, input, end, entry.A + 1,
+                                ref remaining, proveMatch, out acceptedEnd);
+                        }
                         if (!ascii.Contains(value)) break;
                         consumed++;
                     }
@@ -1187,8 +1202,8 @@ internal static partial class Utf8SliceRunner
     private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, int index, out int acceptedEnd, bool proveMatch = false, int instructionLimit = 96)
     {
-        // Share one visit/byte allowance across both arms. Their caller meters
-        // this bounded check along with the search for each candidate byte.
+        // Share one instruction and scalar allowance across the arms. The
+        // caller meters this bounded check with each candidate search step.
         var remaining = instructionLimit;
         return MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, out acceptedEnd);
     }
