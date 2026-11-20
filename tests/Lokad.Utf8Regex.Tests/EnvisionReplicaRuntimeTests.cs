@@ -241,6 +241,17 @@ show scalar "y" with 2
     }
 
     [Fact]
+    public void IntegerLexerKeepsTheGreedyRangeBeforeOptionalTails()
+    {
+        const string pattern = @"\G-?[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)?";
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 } });
+
+        Assert.Equal(new Utf8CaptureRange(0, 5), regex.Match("12345 rest"u8, cancellationToken: source.Token));
+    }
+
+    [Fact]
     public void LexerOperatorRunStopsBeforeNonOperatorTail()
     {
         const string pattern = "\\G[=+\\-^*/.*<>~!&|?]+";

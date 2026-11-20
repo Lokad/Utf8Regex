@@ -563,14 +563,14 @@ internal static partial class Utf8SliceRunner
             atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0)
             return false;
         continuation = repeat.A + 1;
-        if (existenceOnly && requiredEnd is null && CanAcceptEmptyTail(instructions, continuation))
+        if (requiredEnd is null && (existenceOnly || repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy) &&
+            CanAcceptEmptyTail(instructions, continuation))
         {
-            // An endpoint at the minimum proves existence. There is no
-            // observable range or capture, and the terminal path needs no
-            // additional input. Retain the normal metered Accept.
-            var shortest = RunClassRepeat(program, repeatIndex, input, start, ref invocation, minimumOnly: true);
-            outcome = new(shortest.EndIndex >= 0, shortest.EndIndex, shortest.Breach, null, null);
-            continuation = instructions.Length - 1;
+            // The unconditional empty path makes shorter greedy endpoints
+            // unnecessary. Value results still run the tail in normal order.
+            var run = RunClassRepeat(program, repeatIndex, input, start, ref invocation, minimumOnly: existenceOnly);
+            outcome = new(run.EndIndex >= 0, run.EndIndex, run.Breach, null, null);
+            if (existenceOnly) continuation = instructions.Length - 1;
             return true;
         }
         // The count or a disjoint branch proof excludes shorter endpoints.
