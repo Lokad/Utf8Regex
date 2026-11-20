@@ -1468,27 +1468,40 @@ internal static partial class Utf8SliceRunner
             if (minimum != 0 && digits.EndIndex > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);
             return digits.EndIndex == start && minimum != 0 ? (-1, digits.Breach) : digits;
         }
-        ReadOnlySpan<byte> exactAsciiMask = unboundedAsciiSet ? program.SetMasks[atom.A] : [];
+        // Lowering includes every shorthand's ASCII members in an unfolded
+        // Hybrid mask. Its shorthand bits still classify non-ASCII scalars.
+        var hybrid = atom is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 };
+        var asciiNegated = hybrid && atom.B != 0;
+        ReadOnlySpan<byte> exactAsciiMask = unboundedAsciiSet || unbounded && hybrid ? program.SetMasks[atom.A] : [];
         var asciiWord = unboundedAsciiSet && IsAsciiWordMask(exactAsciiMask);
-        if (unbounded && (TryGetAsciiRepeatStops(program, atom, out var first, out var second) || unboundedAsciiSet))
+        if (unbounded && (TryGetAsciiRepeatStops(program, atom, out var first, out var second) || unboundedAsciiSet || hybrid))
         {
             var dotAll = dot && atom.A != 0;
-            var scanMask = unboundedAsciiSet && !asciiWord;
+            var scanMask = !exactAsciiMask.IsEmpty && !asciiWord;
             var blockSize = scanMask ? 64 : 2048;
-            // Positive ASCII masks stop before any wider scalar. Dot and negated
-            // sets may cross a block boundary inside a scalar, but their
-            // ASCII stops still leave an aligned endpoint. Bound the scalar
-            // mask walk more tightly than the vectorized span searches.
+            // The mask walk stops at any wider scalar. Hybrid repeats test it
+            // before resuming the next bounded block. Dot and the byte-stop
+            // searches can cross a scalar inside their block.
             while (position < input.Length)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
                 var block = input.Slice(position, Math.Min(blockSize, input.Length - position));
                 var stop = asciiWord ? Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(block) :
-                    scanMask ? ScanAsciiMask(block, exactAsciiMask, category: false) :
+                    scanMask ? ScanAsciiMask(block, exactAsciiMask, category: false, asciiNegated) :
                     IndexOfRepeatStop(block, dotAll, first, second);
-                if ((uint)stop < (uint)block.Length) { position += stop; break; }
-                position += block.Length;
+                if ((uint)stop >= (uint)block.Length)
+                {
+                    position += block.Length;
+                    continue;
+                }
+                position += stop;
+                if (!hybrid || input[position] < 128 || !TryReadScalar(input, position, false, out var scalar, out var width))
+                    break;
+                breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
+                if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+                if (!hit) break;
+                position += width;
             }
             var terminalBreach = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
             if (terminalBreach != Utf8ExecutionLimitKind.None) return (-1, terminalBreach);
@@ -1500,10 +1513,6 @@ internal static partial class Utf8SliceRunner
                 ? (position, Utf8ExecutionLimitKind.None)
                 : (-1, Utf8ExecutionLimitKind.None);
         }
-        // Lowering includes every shorthand's ASCII members in an unfolded
-        // Hybrid mask. Its shorthand bits still classify non-ASCII scalars.
-        var hybrid = atom is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 };
-        var asciiNegated = hybrid && atom.B != 0;
         var completeMask = hybrid || atom.Kind == Utf8SliceInstructionKind.Set;
         ReadOnlySpan<byte> asciiMask = hybrid ||
             atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
@@ -1546,7 +1555,7 @@ internal static partial class Utf8SliceRunner
             : (-1, Utf8ExecutionLimitKind.None);
     }
 
-    private static int ScanAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category)
+    private static int ScanAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category, bool negated = false)
     {
         var consumed = 0;
         foreach (var value in window)
@@ -1554,7 +1563,7 @@ internal static partial class Utf8SliceRunner
             // A wider candidate still needs the scalar predicate. An earlier
             // ASCII miss already ends a repeat with a complete ASCII mask.
             if (value >= 128) return category ? -1 : consumed;
-            if ((mask[value >> 3] & (1 << (value & 7))) == 0) break;
+            if (((mask[value >> 3] & (1 << (value & 7))) != 0) == negated) break;
             consumed++;
         }
         return consumed;

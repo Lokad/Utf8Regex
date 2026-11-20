@@ -80,11 +80,12 @@ public sealed class Utf8TerminalClassRepeatTests
         Assert.Equal(new Utf8CaptureRange(0, length - 1), captures[1]);
     }
 
-    [Fact]
-    public void AsciiWordRunIsAdmittedInBoundedWorkBlocks()
+    [Theory]
+    [InlineData(@"\AX[A-Za-z0-9_]+!", 2048)]
+    [InlineData(@"\AX[^\s!]+!", 64)]
+    public void AsciiClassRunIsAdmittedInBoundedWorkBlocks(string pattern, int blockLength)
     {
-        const string pattern = @"\AX[A-Za-z0-9_]+!";
-        var input = Encoding.UTF8.GetBytes("X" + new string('A', 12 * 2048) + "!");
+        var input = Encoding.UTF8.GetBytes("X" + new string('A', 12 * blockLength) + "!");
         using var admitted = RunWithWork(64);
         Assert.Equal(1, admitted.Count(input));
         using var limited = RunWithWork(8);
@@ -92,7 +93,7 @@ public sealed class Utf8TerminalClassRepeatTests
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
         Assert.Equal(8UL, error.Limit);
 
-        static Utf8Regex RunWithWork(ulong work) => Utf8Regex.Compile(pattern, policy: new()
+        Utf8Regex RunWithWork(ulong work) => Utf8Regex.Compile(pattern, policy: new()
         {
             ResourcePolicy = new() { MaxWorkSteps = work, MaxWorkingBytes = 1 }
         });
@@ -117,12 +118,14 @@ public sealed class Utf8TerminalClassRepeatTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void AsciiMaskBlocksObserveOriginalInterruption(bool deadline)
+    [InlineData(@"\AX[A-C_]+!", false)]
+    [InlineData(@"\AX[A-C_]+!", true)]
+    [InlineData(@"\AX[^\s!]+!", false)]
+    [InlineData(@"\AX[^\s!]+!", true)]
+    public void AsciiMaskBlocksObserveOriginalInterruption(string pattern, bool deadline)
     {
         var input = Encoding.ASCII.GetBytes("X" + new string('_', 64 * 130) + "!");
-        using var regex = Utf8Regex.Compile(@"\AX[A-C_]+!", policy: new()
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
         {
             MatchTimeout = deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
             ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 1 }
