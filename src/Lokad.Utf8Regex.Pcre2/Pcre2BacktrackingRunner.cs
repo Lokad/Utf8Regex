@@ -747,6 +747,8 @@ internal static class Pcre2BacktrackingRunner
         var markMutations = new Pcre2InvocationStateStack<Pcre2MarkMutation>(int.MaxValue, budget.CollectsDiagnostics);
         var markTrail = new Pcre2InvocationStateStack<Pcre2MarkTrailEntry>(int.MaxValue, budget.CollectsDiagnostics);
         var retainCaptures = captureMaterialization != Pcre2CaptureMaterialization.None || !initialCaptureStarts.IsEmpty;
+        var greedyOptionalTail = !isAssertion && matchOptions == Pcre2MatchOptions.None
+            ? program.GreedyOptionalTail : int.MaxValue;
         var needsCaptureState = program.CaptureReadSlot != 0 || retainCaptures;
         // Without output or an assertion boundary, a write to another slot
         // cannot be seen by the sole reader, even across calls and retries.
@@ -848,6 +850,13 @@ internal static class Pcre2BacktrackingRunner
                         break;
 
                     case Pcre2BacktrackingInstructionKind.Split:
+                        if (instructionIndex >= greedyOptionalTail)
+                        {
+                            var literal = program.Instructions[instruction.PrimaryTarget].Token.Literal.Value;
+                            instructionIndex = inputIndex < input.Length && input[inputIndex] == literal
+                                ? instruction.PrimaryTarget : instruction.SecondaryTarget;
+                            continue;
+                        }
                         PushFrame(
                             ref frames,
                             new Pcre2BacktrackingFrame(
@@ -1001,7 +1010,9 @@ internal static class Pcre2BacktrackingRunner
                         if (runCount < instruction.Minimum) break;
                         // Retain the visited endpoint and the number of shorter
                         // choices. The subject stays valid and unchanged.
-                        if (canRetryRun && runCount > instruction.Minimum)
+                        if (canRetryRun && runCount > instruction.Minimum && instructionIndex + 1 < greedyOptionalTail &&
+                            (instructionIndex + 2 != greedyOptionalTail ||
+                             !CanEnterRequiredClass(program.Instructions[instructionIndex + 1], input, inputIndex)))
                         {
                             PushFrame(
                                 ref frames,
@@ -1788,6 +1799,11 @@ internal static class Pcre2BacktrackingRunner
         reportedStartOffsetInBytes = -1;
         return isNegative;
     }
+
+    private static bool CanEnterRequiredClass(in Pcre2BacktrackingInstruction next, ReadOnlySpan<byte> input, int position)
+        => next is { Kind: Pcre2BacktrackingInstructionKind.GreedyClassRepeat, Minimum: 1, Maximum: > 0 } &&
+            (next.Token.Options & Pcre2CharacterOptions.Caseless) == 0 && position < input.Length &&
+            next.Token.CharacterClass.AsciiByteSet is { } ascii && ascii.Contains(input[position]);
 
     private static bool TryMatchStatelessLookahead(
         Pcre2BacktrackingProgram program,

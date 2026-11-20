@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Text;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Search;
@@ -368,9 +369,36 @@ internal sealed class Pcre2BacktrackingProgram
         LeadingAsciiByte = leadingAsciiByte;
         LeadingExtendedGraphemeCluster = leadingExtendedGraphemeCluster;
         AnchoredFinalAscii = anchoredFinalAscii;
+        GreedyOptionalTail = UsesMatchBoundaryReset || subroutineTargets.Length != 0 ||
+            (request.Options & Pcre2CompileOptions.EndAnchored) != 0
+            ? int.MaxValue : FindGreedyOptionalTail(instructions);
+    }
+
+    private static int FindGreedyOptionalTail(ReadOnlySpan<Pcre2BacktrackingInstruction> instructions)
+    {
+        var end = instructions.Length - 1;
+        if (end < 3 || instructions[end].Kind != Pcre2BacktrackingInstructionKind.Accept) return int.MaxValue;
+        var start = end;
+        for (var remaining = 4; remaining > 0 && start >= 3; remaining--)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            var split = instructions[start - 3];
+            var head = instructions[start - 2];
+            var run = instructions[start - 1];
+            if (split.Kind != Pcre2BacktrackingInstructionKind.Split ||
+                split.PrimaryTarget != start - 2 || split.SecondaryTarget != start ||
+                head is not { Kind: Pcre2BacktrackingInstructionKind.Token, Token.Kind: Pcre2CharacterTokenKind.Literal } ||
+                !head.Token.Literal.IsAscii || (head.Token.Options & Pcre2CharacterOptions.Caseless) != 0 ||
+                run is not { Kind: Pcre2BacktrackingInstructionKind.GreedyClassRepeat, Minimum: 0 }) break;
+            // Once the exact head matches, the class can consume zero or more
+            // scalars and the rest of the tail can always accept.
+            start -= 3;
+        }
+        return start == end ? int.MaxValue : start;
     }
 
     internal Pcre2BacktrackingInstruction[] Instructions { get; }
+    internal int GreedyOptionalTail { get; }
 
     private readonly Pcre2CompileRequest _request;
     internal ref readonly Pcre2CompileRequest Request => ref _request;

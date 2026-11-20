@@ -802,6 +802,26 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     }
 
     [Fact]
+    public void GreedyOptionalTailKeepsTheFullRangeAndOnlyRentsForPossibleRetries()
+    {
+        using var regex = new Utf8Pcre2Regex(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 }
+        });
+        using var token = new CancellationTokenSource();
+        var input = "😀 https://atlas.example.org/path?q=1#frag"u8;
+        Assert.True(regex.IsMatch(input, cancellationToken: token.Token));
+        var range = regex.Match(input, cancellationToken: token.Token);
+        Assert.Equal((5, input.Length), (range.StartOffsetInBytes, range.EndOffsetInBytes));
+
+        var retry = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("https://atlas.example.org"u8, cancellationToken: token.Token));
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, retry.ErrorKind);
+        var anchored = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("https://atlas.example.org/path"u8,
+            matchOptions: Pcre2MatchOptions.EndAnchored, cancellationToken: token.Token));
+        Assert.Equal(Pcre2ErrorKind.HeapLimit, anchored.ErrorKind);
+    }
+
+    [Fact]
     public void GroupZeroOnlyPatternReturnsPrimaryByteRange()
     {
         var regex = new Utf8Pcre2Regex(@"\w{10,}");
