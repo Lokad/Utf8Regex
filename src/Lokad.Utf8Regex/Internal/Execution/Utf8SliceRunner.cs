@@ -532,7 +532,7 @@ internal static partial class Utf8SliceRunner
         var seekLiteral = (leading < 0 || fromBranch) && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
         if (seekLiteral) leading = -1;
         var checkBranchedPrefix = leading >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
-        var lastBranchedStart = input.Length - candidatePlan.MinRequiredLength;
+        var lastProbedStart = input.Length - candidatePlan.MinRequiredLength;
         var leadingClass = -1;
         var classLiteral = -1;
         var classSearch = default(PreparedSubstringSearch?);
@@ -593,10 +593,16 @@ internal static partial class Utf8SliceRunner
         var followingWindow = screenDecimalWindow && directClassLiteral && classLiteral >= 0 &&
             !Utf8AsciiBytePredicates.IsDigit((byte)classLiteral)
             ? GetShortRepeatLiteralWindow(program, program.LeadingClassDelimiter.LiteralIndex + 2) : default;
-        var proveDecimalWindow = followingWindow.Min != 0 && existenceOnly && !collectHistory &&
-            program.GroupCount == 0 && program.SkipsTerminalRewind(1);
         var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
             IsLeadingDecimalSet(program, leadingScalarIndex);
+        var canProveDecimal = existenceOnly && !collectHistory && captureStarts.Length == 0;
+        var decimalHeadBytes = canProveDecimal && seekDecimal &&
+            program.Instructions.Length <= 32 && leadingScalarIndex > 0 &&
+            program.Instructions[leadingScalarIndex - 1] is
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0, RepeatMaximum: <= 4 } decimalHead
+            ? (int)decimalHead.RepeatMinimum : 0;
+        var proveDecimalPrefix = decimalHeadBytes != 0 ||
+            canProveDecimal && followingWindow.Min != 0 && program.SkipsTerminalRewind(1);
         if (seekDecimal)
         {
             leading = '0';
@@ -684,13 +690,17 @@ internal static partial class Utf8SliceRunner
                 continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
                 continue;
-            if (checkBranchedPrefix || proveDecimalWindow)
+            // The short repeat's mandatory bytes can expose a wider digit
+            // before entering the ASCII walk. The scalar verifier handles it.
+            if (checkBranchedPrefix || proveDecimalPrefix && input[position] < 128 &&
+                (decimalHeadBytes == 0 || !input.Slice(position, Math.Min(decimalHeadBytes, input.Length - position))
+                    .ContainsAnyInRange((byte)128, byte.MaxValue)))
             {
-                // Starts only advance in this forward branch search. The
+                // Starts only advance in these forward searches. The
                 // input step above also covers stopping after the last one.
-                if (checkBranchedPrefix && position > lastBranchedStart) break;
-                var proveMatch = proveDecimalWindow || existenceOnly && !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
-                var proofStart = proveDecimalWindow ? 0 : leadingScalarIndex;
+                if (position > lastProbedStart) break;
+                var proveMatch = proveDecimalPrefix || existenceOnly && !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
+                var proofStart = proveDecimalPrefix ? 0 : leadingScalarIndex;
                 if (!MayMatchBranchedAsciiPrefix(program, input, position, proofStart, out var acceptedEnd, proveMatch))
                     continue;
                 if (acceptedEnd >= 0)

@@ -120,6 +120,26 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Fact]
+    public void ShortDecimalProofKeepsRepeatedCaptureHistory()
+    {
+        const string pattern = @"(\d{4}[- ]){3}\d{3,4}";
+        using var token = new CancellationTokenSource();
+        using var limited = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 12, MaxWorkingBytes = 1 } });
+        Assert.True(limited.IsMatch("1234-5678-1234-456"u8, token.Token));
+        Assert.False(limited.IsMatch("1234-5678-1234-45X"u8, token.Token));
+
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
+        Assert.True(regex.IsMatch("1𝟚34-5678-1234-456"u8));
+        const string text = "😀١٢٣٤-5678 1234-456";
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var expected = Regex.Match(text, pattern);
+        var actual = Utf8MatchSequence.First(regex.CreateMatchCursor(bytes, cancellationToken: token.Token));
+        Utf8MatchSequence.AssertRange(regex.Match(bytes), text, expected.Index, expected.Length);
+        Utf8MatchSequence.AssertCaptures(expected, actual, bytes, text);
+    }
+
+    [Fact]
     public void DecimalWindowCanStillConsumeAnOverlappingDelimiter()
     {
         using var regex = new Utf8Regex(@"\b\d{1,2}1\d{1,2}/\d{2,4}\b", options: RegexOptions.Compiled);
