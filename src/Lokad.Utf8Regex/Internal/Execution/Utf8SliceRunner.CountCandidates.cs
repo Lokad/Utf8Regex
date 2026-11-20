@@ -1166,6 +1166,29 @@ internal static partial class Utf8SliceRunner
             {
                 var minimum = entry.RepeatMinimum;
                 var singleAtom = IsSingleAtomRepeat(code, index - 1, entry);
+                if (singleAtom && minimum == 0 && entry.RepeatMaximum == 1 &&
+                    GetUnfoldedAsciiRange(code[index], out var last) is >= 0 and var first)
+                {
+                    var repeatIndex = index - 1;
+                    index = entry.A + 1;
+                    if (position == input.Length) continue;
+                    if (proveMatch)
+                    {
+                        // The complete repeat proof admits one byte before testing it.
+                        if (remaining == 0) return true;
+                        remaining--;
+                    }
+                    if ((uint)(input[position] - first) > (uint)(last - first)) continue;
+                    if (proveMatch && program.SkipsTerminalRewind(repeatIndex))
+                    {
+                        position++;
+                        continue;
+                    }
+                    // Both prefix queries can test the same two byte endpoints.
+                    if (MayMatchBranchedAsciiPrefix(program, input, position + 1, index, ref remaining, proveMatch, out acceptedEnd))
+                        return true;
+                    continue;
+                }
                 if (proveMatch && singleAtom &&
                     TryMatchShortPrefixRepeat(program, input, position, index, entry, ref remaining,
                         out acceptedEnd, out var continueAt) is { } proof)
@@ -1175,19 +1198,7 @@ internal static partial class Utf8SliceRunner
                     index = entry.A + 1;
                     continue;
                 }
-                if (minimum == 0)
-                {
-                    if (!singleAtom || entry.RepeatMaximum != 1) return true;
-                    var first = GetUnfoldedAsciiRange(code[index], out var last);
-                    if (first < 0) return true;
-                    index = entry.A + 1;
-                    // An optional ASCII atom can consume one byte or leave the
-                    // start unchanged. Reject only if neither continuation fits.
-                    if (position < input.Length && (uint)(input[position] - first) <= (uint)(last - first) &&
-                        MayMatchBranchedAsciiPrefix(program, input, position + 1, index, ref remaining, proveMatch, out acceptedEnd))
-                        return true;
-                    continue;
-                }
+                if (minimum == 0) return true;
                 // A required body always starts here. After a nontrivial loop,
                 // its end stays unknown. Skip only a proved fixed-width atom.
                 if (minimum != entry.RepeatMaximum || minimum > remaining || !singleAtom)
