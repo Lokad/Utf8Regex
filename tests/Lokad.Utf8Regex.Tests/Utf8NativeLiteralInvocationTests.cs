@@ -278,7 +278,7 @@ public sealed class Utf8NativeLiteralInvocationTests
             MatchTimeout = TimeSpan.FromSeconds(10)
         });
         var oracle = new Regex(pattern, options, TimeSpan.FromSeconds(10));
-        Assert.Equal(Utf8ExecutionBackend.NativeLiteral, Prepared(regex).ExecutionBackend);
+        Assert.True(Prepared(regex).HasLiteralPlan);
         // Owned graph admission and verifier preparation borrow the scalar tree.
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
         if (pattern.Length == 0)
@@ -298,7 +298,7 @@ public sealed class Utf8NativeLiteralInvocationTests
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
         var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options).Match("ab");
-        Assert.Equal(Utf8ExecutionBackend.FallbackRegex, Prepared(regex).ExecutionBackend);
+        Assert.False(Prepared(regex).HasLiteralPlan);
         Assert.True(Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).TryGetGroup(1, out var actual));
         Assert.Equal(oracle.Groups["x"].Value, System.Text.Encoding.UTF8.GetString(Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).GetGroupMemory(regex.GroupNumberFromUtf8Name("x"u8)).Span));
         Assert.Equal(oracle.Groups["x"].Captures.Count, Utf8MatchSequence.First(regex.CreateMatchCursor("ab"u8.ToArray())).GetCaptures(regex.GroupNumberFromUtf8Name("x"u8)).Length);

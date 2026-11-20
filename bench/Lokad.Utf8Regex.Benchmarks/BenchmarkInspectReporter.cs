@@ -3228,7 +3228,6 @@ internal static partial class BenchmarkInspectReporter
         var prepared = Utf8RegexPreparer.Prepare(analysis);
         Console.WriteLine($"Pattern           : {pattern}");
         Console.WriteLine($"Options           : {options}");
-        Console.WriteLine($"ExecutionBackend  : {prepared.ExecutionBackend}");
         Console.WriteLine($"ExecutionKind     : {prepared.ExecutionKind}");
         Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(prepared)}");
         Console.WriteLine($"FallbackReason    : {prepared.FallbackReason ?? "<native>"}");

@@ -126,7 +126,7 @@ public sealed partial class Utf8Regex : IDisposable
             var ownedSliceProgram = preparedRegex.ScalarProgram
                 ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
             _ownedSliceProgram = ownedSliceProgram;
-            var usesLiteralEngine = preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral;
+            var usesLiteralEngine = preparedRegex.HasLiteralPlan;
             var captureRoot = usesLiteralEngine || _anchoredLiteral.HasValue ? root : null;
             _hasCaptures = ownedSliceProgram.GroupCount != 0 &&
                 (captureRoot is null || ContainsCapture(captureRoot));
@@ -284,7 +284,7 @@ public sealed partial class Utf8Regex : IDisposable
             (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals ||
              _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase && !_hasCaptures) &&
             (Options & RegexOptions.CultureInvariant) != 0;
-        if (_ownedSliceProgram.CanMatchEmpty && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ||
+        if (_ownedSliceProgram.CanMatchEmpty && _preparedRegex.HasLiteralPlan ||
              _ownedSliceProgram.UsesInterpretedLazyLoopSemantics ||
              _ownedSliceProgram.HasSharedCaptureDeclarations ||
              _ownedSliceProgram.HasExplicitCaptureNumbers ||
@@ -1077,9 +1077,9 @@ public sealed partial class Utf8Regex : IDisposable
         var control = new ReplacementPreparationControl(deadline, cancellationToken);
         ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
 
-        if ((_preparedRegex.ExecutionKind is NativeExecutionKind.FallbackRegex ? _ownedSliceProgram : GetOwnedSliceProgram(input, cancellationToken) ??
-            (input.IsEmpty || _ownedSliceProgram is { CanMatchEmpty: true } &&
-                _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral ? _ownedSliceProgram : null)) is { } ownedProgram)
+        var ownedProgram = _preparedRegex.HasLiteralPlan ? GetOwnedSliceProgram(input, cancellationToken) : _ownedSliceProgram;
+        if (ownedProgram is null && (input.IsEmpty || _ownedSliceProgram.CanMatchEmpty)) ownedProgram = _ownedSliceProgram;
+        if (ownedProgram is not null)
         {
             return OwnedSliceReplace(input, ownedProgram,
                 GetParsedReplacement(replacementPatternUtf8, control), Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
@@ -1122,9 +1122,9 @@ public sealed partial class Utf8Regex : IDisposable
         ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
 
         if (!input.Overlaps(destination) &&
-            _preparedRegex.ExecutionKind is not (NativeExecutionKind.FallbackRegex) &&
+            _preparedRegex.HasLiteralPlan &&
             GetOwnedSliceProgram(input, cancellationToken) is null && !input.IsEmpty &&
-            !(_ownedSliceProgram is { CanMatchEmpty: true } && _preparedRegex.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral) &&
+            !_ownedSliceProgram.CanMatchEmpty &&
             replacementPatternUtf8.IndexOf((byte)'$') < 0)
         {
             // The worker consumes the template synchronously. Own it only when

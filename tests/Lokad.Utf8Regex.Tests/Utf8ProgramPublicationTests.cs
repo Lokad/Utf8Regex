@@ -62,6 +62,8 @@ public sealed class Utf8ProgramPublicationTests
 
 internal static class Utf8PreparedTestPlans
 {
-
-    internal static Utf8PreparedRegex WithSearchPlan(Utf8PreparedRegex p, Utf8SearchPlan search)
-=> Utf8PreparedRegex.Create(p.SemanticRegex, p.Features, p.ExecutionPattern, p.ExecutionKind, p.ExecutionBackend, p.CompiledPatternCategory, p.ScalarProgram, Utf8OperationMatchCursorPlans.Create(search), p.LiteralUtf8, p.FallbackReason, p.AnchoredLiteral);}
+    internal static Utf8PreparedRegex WithSearchPlan(Utf8PreparedRegex prepared, Utf8SearchPlan search)
+        => Utf8PreparedRegex.Create(prepared.SemanticRegex, prepared.Features, prepared.ExecutionPattern,
+            prepared.ExecutionKind, prepared.ScalarProgram, Utf8OperationMatchCursorPlans.Create(search),
+            prepared.LiteralUtf8, prepared.FallbackReason, prepared.AnchoredLiteral);
+}

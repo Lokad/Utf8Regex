@@ -14,12 +14,10 @@ internal static class Utf8CompiledEngineSelector
         ref readonly var searchPlan = ref plan.SearchPlan;
         var single = plan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase;
         // Empty literals have no search candidate; the scalar cursor owns progress.
-        if (single && plan.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral &&
-            plan.LiteralUtf8 is { Length: 0 } && !searchPlan.HasBoundaryRequirements &&
+        if (single && plan.LiteralUtf8 is { Length: 0 } && !searchPlan.HasBoundaryRequirements &&
             !searchPlan.HasTrailingLiteralRequirement)
             return Utf8CompiledEngineKind.ExactLiteral;
-        if (plan.CompiledPatternCategory != Utf8CompiledPatternCategory.Literal ||
-            !searchPlan.HasPreparedSearcher)
+        if (!searchPlan.HasPreparedSearcher)
             return Utf8CompiledEngineKind.FallbackRegex;
         if (single)
             return searchPlan.PortfolioKind is Utf8SearchPortfolioKind.ExactLiteral or Utf8SearchPortfolioKind.IgnoreCaseLiteral

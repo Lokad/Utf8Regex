@@ -24,8 +24,6 @@ internal static class Utf8RegexPreparer
                 anchoredLiteral.HasValue && anchoredLiteral.IsExact)
                 fallbackReason = null;
 
-            var executionBackend = analyzedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex
-                ? Utf8ExecutionBackend.FallbackRegex : Utf8ExecutionBackend.NativeLiteral;
             var searchPlan = Utf8SearchPlan.Prepare(analyzedRegex.SearchFacts);
             var operationPlans = Utf8OperationMatchCursorPlans.Create(searchPlan);
             var result = Utf8PreparedRegex.Create(
@@ -35,8 +33,6 @@ internal static class Utf8RegexPreparer
                 analyzedRegex.Features,
                 analyzedRegex.ExecutionPattern,
                 analyzedRegex.ExecutionKind,
-                executionBackend,
-                Utf8CompiledPatternCategories.GetNativeCategory(analyzedRegex.ExecutionKind),
                 scalarProgram,
                 operationPlans,
                 analyzedRegex.LiteralUtf8,
