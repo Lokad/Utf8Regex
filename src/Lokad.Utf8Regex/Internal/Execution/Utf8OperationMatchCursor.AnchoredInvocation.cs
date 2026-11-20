@@ -5,8 +5,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal ref partial struct Utf8OperationMatchCursor
 {
-    private bool _hasAnchoredLiteralInvocation;
-
     internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, byte[] literal, Utf8AnchoredLiteralKind kind, Utf8SliceInvocation invocation)
         : this(input, literal, Utf8ExecutionDeadline.Infinite, kind)
     {

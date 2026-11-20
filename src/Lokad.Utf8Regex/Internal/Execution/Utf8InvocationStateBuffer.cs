@@ -84,7 +84,7 @@ internal struct Utf8InvocationStateBuffer<T>
     {
         if (_count == 0) throw new InvalidOperationException("The invocation state buffer is empty.");
         _count--;
-        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) GetItems()[_count] = default;
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>()) GetItems()[_count] = default!;
     }
 
     // Callers retain their bounded interruption checkpoints around each chunk.

@@ -43,6 +43,7 @@ internal ref partial struct Utf8OperationMatchCursor
 
     internal static int DebugSearchOperationPlanSizeInBytes => Unsafe.SizeOf<Utf8SearchOperationPlan>();
 
+    private bool _hasAnchoredLiteralInvocation;
     private readonly EnumeratorMode _mode;
     private readonly Utf8OperationMatchCursorPlans _plans;
     private readonly PreparedSmallAsciiLiteralFamilySearch _smallAsciiLiteralFamilySearch;
