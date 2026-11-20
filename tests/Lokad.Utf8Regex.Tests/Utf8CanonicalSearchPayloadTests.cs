@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
@@ -11,11 +10,6 @@ public sealed class Utf8CanonicalSearchPayloadTests
 {
     private sealed class Parent(int value) { internal readonly int Value = value; }
     private static byte[][] Bytes(params string[] values) => values.Select(Encoding.UTF8.GetBytes).ToArray();
-    private static readonly Utf8SearchAsciiSet Quoted = Utf8SearchAsciiSet.FromBytes("abcdefghijklmnopqrstuvwxyz"u8);
-    private static PreparedMultiLiteralSearch Family(PreparedSearcher search) =>
-        (PreparedMultiLiteralSearch)typeof(PreparedSearcher).GetProperty("MultiLiteralSearch", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(search)!;
-    private static PreparedWindowSearch Window(Utf8StructuralSearchPlan plan) =>
-        plan.Payload.WindowSearch;
     private static ulong FamilyBytes(byte[][] literals, out ulong peak)
     {
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
@@ -23,14 +17,11 @@ public sealed class Utf8CanonicalSearchPayloadTests
         peak = owner.Budget.PeakBytes;
         return owner.Budget.ReservedBytes;
     }
-    private static Utf8SearchFacts Fallback(byte[][] literals, byte[]? primary = null, Utf8WindowSearchFacts[]? windows = null) =>
+    private static Utf8SearchFacts Fallback(byte[][] literals, byte[]? primary = null) =>
         Utf8SearchFacts.Create(Utf8SearchKind.None, new()
         {
             RequiredPrefilterLiteralUtf8 = primary ?? [],
             RequiredPrefilterAlternateLiteralsUtf8 = literals,
-            SecondaryRequiredPrefilterQuotedAsciiSet = Quoted,
-            SecondaryRequiredPrefilterQuotedAsciiLength = 3,
-            RequiredWindowPrefilters = windows ?? []
         });
 
     [Fact]
@@ -60,7 +51,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
     }
 
     [Fact]
-    public void FallbackWindowsBorrowPrimaryFamilyAndOneCanonicalCandidateVector()
+    public void RequiredFamilyAcquiresOnlyItsPreparedSearcher()
     {
         foreach (var literals in new[] { Bytes("foo", "bar"), Bytes("alpha", "bravo", "charlie", "delta", "echo"),
             Bytes("😀tail", "😁tail", "😂tail"), Bytes("pre0", "pre1", "pre2", "pre3", "pre4", "pre5", "pre6", "pre7") })
@@ -69,58 +60,25 @@ public sealed class Utf8CanonicalSearchPayloadTests
             var facts = Fallback(literals);
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
             var plan = Utf8SearchPlan.Prepare(facts);
-            var windows = Assert.IsType<Utf8StructuralSearchPlan[]>(plan.PrefilterPlan.WindowPlans);
-            Assert.Equal(2, windows.Length);
-            var primary = Family(plan.PrefilterPlan.PrimarySearcher);
-            var first = Family(Window(windows[0]).LeadingSearcher);
-            var second = Family(Window(windows[1]).TrailingSearcher);
-            Assert.Same(primary.Literals, first.Literals);
-            Assert.Same(primary.Literals, second.Literals);
-            Assert.Same(primary.ExactSearch.SearchData.Buckets, first.ExactSearch.SearchData.Buckets);
-            Assert.Equal(primary.Kind, first.Kind);
-            Assert.Equal(PreparedSearcherKind.QuotedAsciiRun, Window(windows[0]).TrailingSearcher.Kind);
-            var expected = payload + Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchPlan>(2)
-                + (ulong)windows.Length * Utf8ConstructionBudget.ObjectBytes<Utf8StructuralSearchPlan.Data>();
-            Assert.Equal(expected, owner.Budget.ReservedBytes);
-            Assert.Equal(Math.Max(payloadPeak, expected), owner.Budget.PeakBytes);
+            ref readonly var searcher = ref plan.RequiredPrefilterSearcher;
+            Assert.Equal(PreparedSearcherKind.MultiLiteral, searcher.Kind);
+            Assert.Equal(literals.Length, searcher.ExactMultiLiterals!.Length);
+            Assert.Equal(0, searcher.FindFirst(literals[0]));
+            Assert.False(plan.HasStructuralCandidates);
+            Assert.Equal(payload, owner.Budget.ReservedBytes);
+            Assert.Equal(payloadPeak, owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
         }
     }
 
     [Fact]
-    public void DistinctPrimaryLiteralCannotReplaceTheFallbackFamilyAndInvalidWindowsDoNotAcquireChildren()
-    {
-        var literals = Bytes("foo", "bar");
-        var invalid = Utf8WindowSearchFacts.WithinLines(Utf8PreparedSearcherInfo.LiteralFamily(literals),
-            Utf8PreparedSearcherInfo.QuotedAsciiRun(default, 3), 5);
-        foreach (var primaryLiteral in new byte[]?[] { null, "needle"u8.ToArray() })
-        {
-            var facts = Fallback(literals, primaryLiteral, [invalid]);
-            using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-            var plan = Utf8SearchPlan.Prepare(facts);
-            Assert.Equal(primaryLiteral is null ? PreparedSearcherKind.MultiLiteral : PreparedSearcherKind.ExactLiteral,
-                plan.PrefilterPlan.PrimarySearcher.Kind);
-            var windows = Assert.IsType<Utf8StructuralSearchPlan[]>(plan.PrefilterPlan.WindowPlans);
-            var family = Family(Window(windows[0]).LeadingSearcher);
-            Assert.Equal(1, family.IndexOf("xbar"u8));
-            Assert.Equal(-1, family.IndexOf("needle"u8));
-            Assert.Equal(primaryLiteral is null ? -1 : 0, plan.PrefilterPlan.PrimarySearcher.FindFirst("needle"u8));
-            Assert.Equal(0ul, owner.Budget.Depth);
-        }
-    }
-
-    [Fact]
-    public void WholePreparationCutoffsRollbackParentsAndBorrowedFactsAcrossWindowShapes()
+    public void WholePreparationCutoffsRollbackParentsAndBorrowedFactsAcrossRequiredSearchShapes()
     {
         var family = Bytes("foo", "bar");
-        var valid = Utf8WindowSearchFacts.WithinLines(Utf8PreparedSearcherInfo.LiteralFamily(family),
-            Utf8PreparedSearcherInfo.QuotedAsciiRun(Quoted, 3), 5);
-        var invalid = Utf8WindowSearchFacts.WithinLines(Utf8PreparedSearcherInfo.LiteralFamily(family), default, 5);
         foreach (var facts in new[]
         {
             Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiterals, new() { AlternateLiteralsUtf8 = family }),
             Fallback(family), Fallback(family, "needle"u8.ToArray()),
-            Fallback(family, windows: [invalid, valid, invalid, valid]),
         })
         {
             ulong peak, work, depth;
@@ -129,24 +87,28 @@ public sealed class Utf8CanonicalSearchPayloadTests
                 _ = Utf8SearchPlan.Prepare(facts);
                 peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps; depth = funded.Budget.PeakDepth;
             }
-            Assert.InRange(peak, 1ul, 100000ul); Assert.InRange(work, 1ul, 100000ul); Assert.InRange(depth, 1ul, 16ul);
+            Assert.InRange(peak, 0ul, 100000ul); Assert.InRange(work, 1ul, 100000ul); Assert.InRange(depth, 1ul, 16ul);
             foreach (var bytes in new[] { true, false })
-            foreach (var cutoff in new[] { 0ul, 1ul, (bytes ? peak : work) / 2, (bytes ? peak : work) - 1, bytes ? peak : work }.Distinct())
             {
-                using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue,
-                    bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
-                var parent = owner.Budget.AllocateObject(17, static value => new Parent(value));
-                var checkpoint = owner.Budget.ReservedBytes;
-                var error = Record.Exception(() => _ = Utf8SearchPlan.Prepare(facts));
-                if (cutoff == (bytes ? peak : work)) Assert.Null(error);
-                else
+                var limit = bytes ? peak : work;
+                var belowLimit = limit == 0 ? 0 : limit - 1;
+                foreach (var cutoff in new[] { 0ul, Math.Min(1ul, limit), limit / 2, belowLimit, limit }.Distinct())
                 {
-                    var limit = Assert.IsType<Utf8ResourceLimitExceededException>(error);
-                    Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, limit.ResourceKind);
-                    Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+                    using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue,
+                        bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
+                    var parent = owner.Budget.AllocateObject(17, static value => new Parent(value));
+                    var checkpoint = owner.Budget.ReservedBytes;
+                    var error = Record.Exception(() => _ = Utf8SearchPlan.Prepare(facts));
+                    if (cutoff == limit) Assert.Null(error);
+                    else
+                    {
+                        var failure = Assert.IsType<Utf8ResourceLimitExceededException>(error);
+                        Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
+                        Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+                    }
+                    Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0ul, owner.Budget.Depth);
+                    Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
                 }
-                Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0ul, owner.Budget.Depth);
-                Assert.True(bytes ? owner.Budget.PeakBytes <= 128 + cutoff : owner.Budget.WorkSteps <= 2 + cutoff);
             }
             for (var cutoff = 0ul; cutoff <= depth; cutoff++)
             {
@@ -163,23 +125,6 @@ public sealed class Utf8CanonicalSearchPayloadTests
                 Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
             }
         }
-    }
-
-    [Fact]
-    public void RejectedWindowEndpointsNeverAcquireTheOtherwiseLargeFamily()
-    {
-        var family = Enumerable.Range(0, 128).Select(i => Encoding.UTF8.GetBytes("prefix" + i)).ToArray();
-        var invalid = new[]
-        {
-            Utf8WindowSearchFacts.WithinLines(Utf8PreparedSearcherInfo.LiteralFamily(family), default, 5),
-            Utf8WindowSearchFacts.WithinLines(default, Utf8PreparedSearcherInfo.LiteralFamily(family), 5),
-        };
-        var facts = Utf8SearchFacts.Create(Utf8SearchKind.None, new() { RequiredWindowPrefilters = invalid });
-        using var owner = new Utf8ConstructionScope(0, 0, 32, 4);
-        var plan = Utf8SearchPlan.Prepare(facts);
-        Assert.False(plan.HasFallbackCandidates); Assert.False(plan.HasRequiredPrefilter);
-        Assert.Equal(0ul, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.PeakBytes);
-        Assert.Equal(0ul, owner.Budget.Depth);
     }
 
     [Fact]

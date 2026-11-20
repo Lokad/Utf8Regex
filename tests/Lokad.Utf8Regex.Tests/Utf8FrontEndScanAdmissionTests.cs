@@ -38,24 +38,11 @@ public sealed class Utf8FrontEndScanAdmissionTests
         => new("a", RegexOptions.None, "a", RegexOptions.None,
             Utf8OwnedRegexTree.Create(root, 1, null, null, null, RegexOptions.None, CultureInfo.InvariantCulture, null, false, false));
 
-    private static Input Make(int route, int depth)
+    private static Input Make(int depth)
     {
-        var find = route switch
-        {
-            0 => Node(Utf8TreeNodeKind.Concatenate, "", Node(Utf8TreeNodeKind.Multi, "\""),
-                Node(Utf8TreeNodeKind.Setloop, Digits), Node(Utf8TreeNodeKind.Multi, "\"")),
-            1 => Node(Utf8TreeNodeKind.Multi, "\""),
-            4 => Node(Utf8TreeNodeKind.Multi, "ab\r\n"),
-            _ => Node(Utf8TreeNodeKind.Multi, "ab"),
-        };
+        var find = Node(Utf8TreeNodeKind.Multi, "ab");
         for (var index = 0; index < depth; index++)
-        {
-            find = route switch
-            {
-                1 => Node(Utf8TreeNodeKind.Alternate, "", find, Node(Utf8TreeNodeKind.Multi, "'")),
-                _ => Node(Utf8TreeNodeKind.Concatenate, "", find, Node(Utf8TreeNodeKind.Multi, "c")),
-            };
-        }
+            find = Node(Utf8TreeNodeKind.Concatenate, "", find, Node(Utf8TreeNodeKind.Multi, "c"));
         return new(find, Semantic(find));
     }
 
@@ -78,9 +65,6 @@ public sealed class Utf8FrontEndScanAdmissionTests
         var analyzer = typeof(Utf8FrontEndSearchAnalyzer);
         switch (route)
         {
-            case 0: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryFindQuotedAsciiRun", input.Find, null, 0))); break;
-            case 1: Assert.True(Assert.IsType<bool>(Call(analyzer, "IsQuoteNode", input.Find))); break;
-            case 4: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryGetFiniteLineBreakCount", input.Find, 0))); break;
             case 6: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractDeterministicPrefixSets", input.Find, 0, null))); break;
             case 9: Assert.Equal(1, Utf8RuntimeTreeFeatureAnalyzer.Analyze(input.Semantic).CaptureCount); break;
             case 10: Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input.Find)); break;
@@ -89,7 +73,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     public static IEnumerable<object[]> RootDenials()
     {
-        foreach (var route in new[] { 0, 1, 4, 6, 9, 10 })
+        foreach (var route in new[] { 6, 9, 10 })
         for (var denial = 0; denial < 3; denial++) yield return [route, denial];
     }
 
@@ -97,7 +81,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     [MemberData(nameof(RootDenials))]
     public void RootDenialPrecedesFrameAcquisition(int route, int denial)
     {
-        var input = Make(route, 0);
+        var input = Make(0);
         using var owner = new Utf8ConstructionScope(0, denial == 0 ? 128ul : ulong.MaxValue,
             denial == 2 ? 2ul : ulong.MaxValue, denial == 1 ? 0ul : ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
@@ -113,12 +97,11 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(4)]
     [InlineData(6)] [InlineData(9)] [InlineData(10)]
     public void ChildDepthDenialRestoresParentAndAllowsRecovery(int route)
     {
-        var input = Make(route, 32);
-        var recovered = Make(route, 0);
+        var input = Make(32);
+        var recovered = Make(0);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
@@ -137,11 +120,10 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(4)]
     [InlineData(6)] [InlineData(9)] [InlineData(10)]
     public void ArrayGrowthDenialReleasesEveryScratchLoan(int route)
     {
-        var input = Make(route, 128);
+        var input = Make(128);
         using var owner = new Utf8ConstructionScope(0, 2048, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
         var checkpoint = owner.Budget.ReservedBytes;
@@ -156,11 +138,10 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(4)]
     [InlineData(6)] [InlineData(9)] [InlineData(10)]
     public void EveryWorkCutoffRestoresScratchWithoutRefundingWork(int route)
     {
-        var input = Make(route, 3);
+        var input = Make(3);
         ulong work;
         using (var measure = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
@@ -233,24 +214,6 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Fact]
-    public void ArithmeticFailureReleasesWidthFramesAndAllowsRecovery()
-    {
-        var overflow = Node(Utf8TreeNodeKind.Loop, "", Node(Utf8TreeNodeKind.Multi, "\n\n"));
-        overflow.N = int.MaxValue - 1;
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value));
-        var checkpoint = owner.Budget.ReservedBytes;
-        Assert.Throws<OverflowException>(() => Call(typeof(Utf8FrontEndSearchAnalyzer), "TryGetFiniteLineBreakCount", overflow, 0));
-        Assert.Equal(128ul, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        var spent = owner.Budget.WorkSteps;
-        Run(4, Make(4, 0));
-        Assert.True(owner.Budget.WorkSteps > spent);
-        Assert.Equal(17, parent.Value);
-    }
-
-    [Fact]
     public void NonBacktrackingDiagnosticsRetainReverseSourcePrecedence()
     {
         var root = Node(Utf8TreeNodeKind.Concatenate, "", Node(Utf8TreeNodeKind.Backreference, ""), Node(Utf8TreeNodeKind.Atomic, ""));
@@ -271,25 +234,8 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Fact]
-    public void QuotedRunDiscoveryKeepsLeftmostSourceOrder()
+    public void NegatedQuotedScalarsPreserveTheByteRange()
     {
-        var first = Make(0, 0).Find;
-        first.Child(1).M = first.Child(1).N = 8;
-        var second = Make(0, 0).Find;
-        second.Child(1).M = second.Child(1).N = 3;
-        var root = Node(Utf8TreeNodeKind.Alternate, "", first, second);
-        object?[] args = [root, null, 0];
-        Assert.True(Assert.IsType<bool>(Call(typeof(Utf8FrontEndSearchAnalyzer), "TryFindQuotedAsciiRun", args)));
-        var mask = Assert.IsType<AsciiCharClass>(args[1]);
-        for (var value = 0; value < 128; value++)
-            Assert.Equal(value is >= '0' and <= '9', mask.Contains((byte)value));
-        Assert.Equal(8, args[2]);
-
-        // An ASCII intersection cannot certify a byte-sized quoted scalar run.
-        var negative = Utf8FrontEnd.Analyze("'[^a]{2}'", RegexOptions.CultureInvariant);
-        Assert.NotNull(negative.SemanticRegex.RuntimeTree);
-        object?[] declined = [negative.SemanticRegex.RuntimeTree.Root, null, 0];
-        Assert.False(Assert.IsType<bool>(Call(typeof(Utf8FrontEndSearchAnalyzer), "TryFindQuotedAsciiRun", declined)));
         var regex = new Utf8Regex("'[^a]{2}'", options: RegexOptions.CultureInvariant);
         var match = regex.Match("'😀b'"u8);
         Assert.True(match.Success);

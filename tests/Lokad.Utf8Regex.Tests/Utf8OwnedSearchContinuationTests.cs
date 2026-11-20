@@ -49,9 +49,8 @@ public sealed class Utf8OwnedSearchContinuationTests
     {
         facts.Kind, facts.LiteralUtf8, facts.AlternateLiteralsUtf8, facts.CanGuideFallbackStarts,
         facts.RequiredPrefilterLiteralUtf8, facts.RequiredPrefilterAlternateLiteralsUtf8,
-        facts.SecondaryRequiredPrefilterQuotedAsciiSet, facts.SecondaryRequiredPrefilterQuotedAsciiLength,
         Sets = facts.FixedDistanceSets.Select(static set => new { set.Distance, Bytes = set.ByteSet.GetMatchBytes() }),
-        facts.TrailingLiteralUtf8, facts.RequiredWindowPrefilters,
+        facts.TrailingLiteralUtf8,
         facts.FallbackStartTransform, facts.Distance, facts.MinRequiredLength, facts.ExactRequiredLength,
         facts.MaxPossibleLength, facts.LeadingBoundary, facts.TrailingBoundary,
     });
@@ -69,44 +68,6 @@ public sealed class Utf8OwnedSearchContinuationTests
         var method = typeof(Utf8FrontEndSearchAnalyzer).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(method);
         return method.Invoke(null, args);
-    }
-
-    [Theory]
-    [InlineData(65, 0)]
-    [InlineData(16385, 0)]
-    [InlineData(65, 1)]
-    [InlineData(16385, 1)]
-    [InlineData(65, 2)]
-    [InlineData(16385, 2)]
-    [InlineData(65, 3)]
-    [InlineData(16385, 3)]
-    public void DeepLineFactsUseSequenceSumBranchMaximumAndFiniteRepeat(int depth, int shape)
-    {
-        var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "a\r\né");
-        for (var index = 0; index < depth; index++)
-            node = shape switch
-            {
-                0 => Parent(Utf8TreeNodeKind.Concatenate, node),
-                1 => Parent(Utf8TreeNodeKind.Concatenate, node, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x')),
-                2 => Parent(Utf8TreeNodeKind.Alternate, node, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x')),
-                _ => Parent(Utf8TreeNodeKind.Loop, node),
-            };
-        object?[] lines = [node, 0];
-        Assert.True(Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", lines)));
-        Assert.Equal(2, Assert.IsType<int>(lines[1]));
-    }
-
-    [Fact]
-    public void FailedFirstChildDoesNotEvaluateLaterOverflowingLineBranch()
-    {
-        var overflow = Parent(Utf8TreeNodeKind.Loop, Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "\n\n"));
-        overflow.N = int.MaxValue - 1;
-        var root = Parent(Utf8TreeNodeKind.Concatenate, Utf8TreeNode.Create(Utf8TreeNodeKind.Backreference, RegexOptions.CultureInvariant), overflow);
-        object?[] lines = [root, 0];
-        Assert.False(Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", lines)));
-        Assert.Equal(0, Assert.IsType<int>(lines[1]));
-        var thrown = Assert.Throws<TargetInvocationException>(() => Call("TryGetFiniteLineBreakCount", overflow, 0));
-        Assert.IsType<OverflowException>(thrown.InnerException);
     }
 
     [Theory]

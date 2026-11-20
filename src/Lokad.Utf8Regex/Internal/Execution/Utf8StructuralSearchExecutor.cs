@@ -1,29 +1,10 @@
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
-using System.Buffers;
-using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static class Utf8StructuralSearchExecutor
 {
-    public static bool TryFindNextCandidate(
-        this Utf8StructuralSearchPlan plan,
-        ReadOnlySpan<byte> input,
-        ref Utf8StructuralSearchState state,
-        out Utf8StructuralCandidate candidate)
-    {
-        candidate = default;
-
-        ref readonly var data = ref plan.Payload;
-        return data.YieldKind switch
-        {
-            Utf8StructuralSearchYieldKind.Start => TryFindNextStartCandidate(input, in data, ref state, out candidate),
-            Utf8StructuralSearchYieldKind.Window => TryFindNextWindowCandidate(input, in data, ref state, out candidate),
-            _ => false,
-        };
-    }
-
     public static bool TryFindLastCandidate(
         this Utf8StructuralSearchPlan plan,
         ReadOnlySpan<byte> input,
@@ -38,24 +19,24 @@ internal static class Utf8StructuralSearchExecutor
         }
 
         ref readonly var data = ref plan.Payload;
-        return data.YieldKind switch
-        {
-            Utf8StructuralSearchYieldKind.Start => TryFindLastStartCandidate(input, in data, endIndex, out candidate),
-            _ => false,
-        };
+        return plan.HasValue && TryFindLastStartCandidate(input, in data, endIndex, out candidate);
     }
 
-    private static bool TryFindNextStartCandidate(
+    public static bool TryFindNextCandidate(
+        this Utf8StructuralSearchPlan plan,
         ReadOnlySpan<byte> input,
-        in Utf8StructuralSearchPlan.Data plan,
-        ref Utf8StructuralSearchState state,
+        ref PreparedSearchScanState searchState,
         out Utf8StructuralCandidate candidate)
     {
         candidate = default;
-        ref readonly var searcher = ref plan.Searcher;
-        var startTransform = plan.StartTransform;
+        if (!plan.HasValue)
+        {
+            return false;
+        }
 
-        var searchState = state.SearchState;
+        ref readonly var data = ref plan.Payload;
+        ref readonly var searcher = ref data.Searcher;
+        var startTransform = data.StartTransform;
         while (true)
         {
             int rawStartIndex;
@@ -65,7 +46,6 @@ internal static class Utf8StructuralSearchExecutor
             {
                 if (!searcher.TryFindNextOverlappingMatch(input, ref searchState, out var match))
                 {
-                    state = new Utf8StructuralSearchState(searchState, default);
                     return false;
                 }
 
@@ -75,9 +55,8 @@ internal static class Utf8StructuralSearchExecutor
             }
             else
             {
-                if (!TryFindNextFixedDistanceCandidate(input, plan.FixedDistanceSets!, searchState.NextStart, out rawStartIndex))
+                if (!TryFindNextFixedDistanceCandidate(input, data.FixedDistanceSets!, searchState.NextStart, out rawStartIndex))
                 {
-                    state = new Utf8StructuralSearchState(searchState, default);
                     return false;
                 }
 
@@ -93,57 +72,15 @@ internal static class Utf8StructuralSearchExecutor
             }
 
             var requirementBaseIndex = GetRequirementBaseIndex(input, startIndex, startTransform);
-            if (!SatisfiesStartRequirements(input, in plan, requirementBaseIndex, matchedLength))
+            if (!SatisfiesStartRequirements(input, in data, requirementBaseIndex, matchedLength))
             {
                 continue;
             }
 
-            state = new Utf8StructuralSearchState(searchState, default);
-            var endIndex = GetCandidateEnd(in plan, startIndex, input.Length);
-            candidate = Utf8StructuralCandidate.Start(startIndex, endIndex, matchedLength, literalId);
+            var endIndex = GetCandidateEnd(in data, startIndex, input.Length);
+            candidate = new(startIndex, endIndex, matchedLength, literalId);
             return true;
         }
-    }
-
-    private static bool TryFindNextWindowCandidate(
-        ReadOnlySpan<byte> input,
-        in Utf8StructuralSearchPlan.Data plan,
-        ref Utf8StructuralSearchState state,
-        out Utf8StructuralCandidate candidate)
-    {
-        candidate = default;
-        ref readonly var windowSearch = ref plan.WindowSearch;
-        var startTransform = plan.StartTransform;
-
-        var windowState = state.WindowState;
-        while (windowSearch.TryFindNextWindow(input, ref windowState, out var window))
-        {
-            if (plan.MaxLines > 0 &&
-                !SatisfiesLineSpan(input, window.Leading.Index, window.Trailing.Index, plan.MaxLines))
-            {
-                continue;
-            }
-
-            var startIndex = startTransform.Apply(input, window.Leading.Index);
-            if (startIndex < 0)
-            {
-                continue;
-            }
-
-            state = new Utf8StructuralSearchState(default, windowState);
-            candidate = Utf8StructuralCandidate.Window(
-                startIndex,
-                window.Trailing.Index + window.Trailing.Length,
-                window.Leading.Length,
-                window.Leading.LiteralId,
-                window.Trailing.Index,
-                window.Trailing.Length,
-                window.Trailing.LiteralId);
-            return true;
-        }
-
-        state = new Utf8StructuralSearchState(default, windowState);
-        return false;
     }
 
     private static bool TryFindLastStartCandidate(
@@ -173,7 +110,7 @@ internal static class Utf8StructuralSearchExecutor
                     if (SatisfiesStartRequirements(input, in plan, requirementBaseIndex, match.Length))
                     {
                         var candidateEndIndex = GetCandidateEnd(in plan, startIndex, input.Length);
-                        candidate = Utf8StructuralCandidate.Start(startIndex, candidateEndIndex, match.Length, match.LiteralId);
+                        candidate = new(startIndex, candidateEndIndex, match.Length, match.LiteralId);
                         return true;
                     }
                 }
@@ -207,7 +144,7 @@ internal static class Utf8StructuralSearchExecutor
         if (lastStart >= 0)
         {
             var candidateEndIndex = GetCandidateEnd(in plan, lastStart, input.Length);
-            candidate = Utf8StructuralCandidate.Start(lastStart, candidateEndIndex, 1, 0);
+            candidate = new(lastStart, candidateEndIndex, 1, 0);
             return true;
         }
 
@@ -291,31 +228,6 @@ internal static class Utf8StructuralSearchExecutor
         }
 
         return plan.ExactLength == 0 || startIndex <= input.Length - plan.ExactLength;
-    }
-
-    private static bool SatisfiesLineSpan(ReadOnlySpan<byte> input, int startIndex, int endIndex, int maxLines)
-    {
-        var lineCount = 1;
-        for (var i = startIndex; i < endIndex; i++)
-        {
-            if (input[i] is (byte)'\r' or (byte)'\n')
-            {
-                lineCount++;
-                if (lineCount > maxLines)
-                {
-                    return false;
-                }
-
-                if (input[i] == (byte)'\r' &&
-                    i + 1 < endIndex &&
-                    input[i + 1] == (byte)'\n')
-                {
-                    i++;
-                }
-            }
-        }
-
-        return true;
     }
 
     private static int GetRequirementBaseIndex(ReadOnlySpan<byte> input, int startIndex, Utf8FallbackStartTransform startTransform)

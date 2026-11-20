@@ -64,7 +64,7 @@ internal static partial class PythonReBenchmarkReporter
             RequireSearchAttributionOutcome("KernelVsCore", coreOutcome, kernelOutcome);
         }
 
-        var prefilterRejects = Utf8PrefilterReplay.Rejects(core.Inspection.PreparedRegex.SearchPlan.PrefilterPlan, input);
+        var prefilterRejects = Utf8PrefilterReplay.Rejects(core.Inspection.PreparedRegex.SearchPlan, input);
         if (prefilterRejects && adapterOutcome.Success)
         {
             throw new InvalidOperationException($"Search attribution prefilter rejects {caseId} but the adapter matched.");
@@ -244,7 +244,7 @@ internal static partial class PythonReBenchmarkReporter
 
     private static int ExecutePrefilterOnly(Utf8Regex core, byte[] input)
     {
-        return Utf8PrefilterReplay.Rejects(core.Inspection.PreparedRegex.SearchPlan.PrefilterPlan, input) ? 1 : 0;
+        return Utf8PrefilterReplay.Rejects(core.Inspection.PreparedRegex.SearchPlan, input) ? 1 : 0;
     }
 
     private static int EncodeSearchAttributionOutcome((bool Success, int Start, int End) outcome)

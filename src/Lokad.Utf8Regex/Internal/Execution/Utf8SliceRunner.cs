@@ -529,7 +529,7 @@ internal static partial class Utf8SliceRunner
         if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
             (wideInput || candidatePlan.LiteralSearch is { Length: > 0, IgnoreCase: false } ||
-                candidatePlan.PrefilterPlan.PrimarySearcher.Kind == PreparedSearcherKind.MultiLiteral))
+                candidatePlan.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral))
         {
             var (literal, windowClass, literalIndex, gapMaximum, direct) = program.LeadingClassDelimiter;
             leadingClass = windowClass;
@@ -554,12 +554,12 @@ internal static partial class Utf8SliceRunner
                     classLiteral = literal;
             }
             else if (leadingClass >= 0 && literalIndex >= 0 &&
-                candidatePlan.PrefilterPlan.PrimarySearcher.Kind == PreparedSearcherKind.MultiLiteral)
+                candidatePlan.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral)
             {
                 var proofBreach = invocation.TryChargeInputStep();
                 if (proofBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, proofBreach);
-                classAlternatives = GetAlignedDelimiterAlternatives(program, literalIndex, candidatePlan.PrefilterPlan.PrimarySearcher);
+                classAlternatives = GetAlignedDelimiterAlternatives(program, literalIndex, candidatePlan.RequiredPrefilterSearcher);
             }
             if (classLiteral < 0 && classAlternatives is null &&
                 GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefixAscii) is { } prefixSearch)

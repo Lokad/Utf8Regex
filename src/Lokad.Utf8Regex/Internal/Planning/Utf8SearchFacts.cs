@@ -19,11 +19,8 @@ internal readonly struct Utf8SearchFactData
     public bool CanGuideFallbackStarts { get; init; }
     public byte[] RequiredPrefilterLiteralUtf8 { get; init; } = [];
     public byte[][] RequiredPrefilterAlternateLiteralsUtf8 { get; init; } = [];
-    public Utf8SearchAsciiSet SecondaryRequiredPrefilterQuotedAsciiSet { get; init; }
-    public int SecondaryRequiredPrefilterQuotedAsciiLength { get; init; }
     public Utf8FixedDistanceSet[] FixedDistanceSets { get; init; } = [];
     public byte[] TrailingLiteralUtf8 { get; init; } = [];
-    public Utf8WindowSearchFacts[] RequiredWindowPrefilters { get; init; } = [];
     public Utf8FallbackStartTransform FallbackStartTransform { get; init; }
     public int Distance { get; init; }
     public int MinRequiredLength { get; init; }
@@ -54,11 +51,8 @@ internal readonly struct Utf8SearchFacts
     public bool CanGuideFallbackStarts => Data.CanGuideFallbackStarts;
     public byte[] RequiredPrefilterLiteralUtf8 => Data.RequiredPrefilterLiteralUtf8;
     public byte[][] RequiredPrefilterAlternateLiteralsUtf8 => Data.RequiredPrefilterAlternateLiteralsUtf8;
-    public Utf8SearchAsciiSet SecondaryRequiredPrefilterQuotedAsciiSet => Data.SecondaryRequiredPrefilterQuotedAsciiSet;
-    public int SecondaryRequiredPrefilterQuotedAsciiLength => Data.SecondaryRequiredPrefilterQuotedAsciiLength;
     public Utf8FixedDistanceSet[] FixedDistanceSets => Data.FixedDistanceSets;
     public byte[] TrailingLiteralUtf8 => Data.TrailingLiteralUtf8;
-    public Utf8WindowSearchFacts[] RequiredWindowPrefilters => Data.RequiredWindowPrefilters;
     public Utf8FallbackStartTransform FallbackStartTransform => Data.FallbackStartTransform;
     public int Distance => Data.Distance;
     public int MinRequiredLength => Data.MinRequiredLength;

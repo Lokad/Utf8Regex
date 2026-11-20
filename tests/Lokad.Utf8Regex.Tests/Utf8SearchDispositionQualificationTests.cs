@@ -35,10 +35,8 @@ public sealed class Utf8SearchDispositionQualificationTests
             {
                 var operation = plan.SearchOperation;
                 var native = plan.HasPreparedSearcher || plan.HasStructuralCandidates;
-                var hasWindows = plan.RequiredWindowPrefilterPlans is { Length: > 0 };
                 var confirm = plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement;
-                var expected = !native && !hasWindows ? Utf8SearchOperationKind.None :
-                    !native ? Utf8SearchOperationKind.PrefilterThenConfirm :
+                var expected = !native ? Utf8SearchOperationKind.None :
                     plan.HasRequiredPrefilter ? confirm ? Utf8SearchOperationKind.PrefilterThenConfirm : Utf8SearchOperationKind.PrefilterThenSearch :
                     confirm ? Utf8SearchOperationKind.SearchThenConfirm :
                     plan.MultiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactAutomaton ? Utf8SearchOperationKind.HybridSearch : Utf8SearchOperationKind.DirectSearch;
@@ -61,7 +59,7 @@ public sealed class Utf8SearchDispositionQualificationTests
         foreach (var plan in new[] { empty, prepared })
         {
             Assert.False(plan.SearchOperation.HasValue); Assert.False(plan.ConfirmationPlan.HasValue);
-            Assert.False(plan.HasFallbackCandidates); Assert.False(plan.HasPreparedSearcher);
+            Assert.False(plan.HasStructuralCandidates); Assert.False(plan.HasPreparedSearcher);
         }
         Assert.Equal(0ul, zero.Budget.WorkSteps);
     }

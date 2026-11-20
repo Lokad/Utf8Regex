@@ -20,12 +20,11 @@ public sealed class Utf8StructuralInvocationTests
         2 => new(new PreparedMultiLiteralSearch(["target"u8.ToArray(), "needle"u8.ToArray(), "absent"u8.ToArray()], false)),
         3 => new(new PreparedMultiLiteralSearch(["TARGET"u8.ToArray(), "NEEDLE"u8.ToArray()], true)),
         4 => new(PreparedByteSearch.Create((byte)'t', (byte)'n')),
-        5 => new(new PreparedQuotedAsciiRunSearch(Utf8SearchAsciiSet.FromBytes("ab"u8), 8193)),
         _ => throw new ArgumentOutOfRangeException(nameof(kind)) };
 
     public static IEnumerable<object[]> SearchCases()
     {
-        foreach (var kind in Enumerable.Range(0, 6))
+        foreach (var kind in Enumerable.Range(0, 5))
         foreach (var offset in new[] { 2047, 2048, 2049 })
         foreach (var reverse in new[] { false, true }) yield return [kind, offset, reverse];
     }
@@ -35,7 +34,7 @@ public sealed class Utf8StructuralInvocationTests
     public void BoundedPreparedSearchKeepsCrossBlockCandidatesAndLegacyReverseStartOrder(int kind, int offset, bool reverse)
     {
         var searcher = Searcher(kind);
-        var hit = kind == 5 ? "\"" + new string('a', 8193) + "\"" : "target needle TARGET";
+        var hit = "target needle TARGET";
         var input = Encoding.UTF8.GetBytes(new string('x', offset) + hit + new string('x', 2200) + hit);
         var expectedFound = reverse ? searcher.TryFindLastMatch(input, out var expected) : searcher.TryFindFirstMatch(input, out expected);
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
@@ -71,11 +70,10 @@ public sealed class Utf8StructuralInvocationTests
     [InlineData(0)]
     [InlineData(2)]
     [InlineData(4)]
-    [InlineData(5)]
     public void BoundedPreparedSearchDenialLeavesCoordinatesUnpublished(int kind)
     {
         var searcher = Searcher(kind);
-        var hit = kind == 5 ? "\"" + new string('a', 8193) + "\"" : "target";
+        var hit = "target";
         var input = Encoding.UTF8.GetBytes(new string('x', 10000) + hit);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         Assert.Equal(Utf8ExecutionLimitKind.None, searcher.TryFindMatch(input, 1, input.Length,
@@ -91,24 +89,6 @@ public sealed class Utf8StructuralInvocationTests
             Assert.Equal(default, denied);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         }
-    }
-
-    private static Utf8StructuralSearchPlan WindowPlan(int maxLines = int.MaxValue) =>
-        Utf8StructuralSearchPlan.CreateWindowPlan(new PreparedWindowSearch(Searcher(0),
-            new PreparedSearcher(new PreparedSubstringSearch("end"u8.ToArray(), false), false)), maxLines);
-
-    [Fact]
-    public void PairedWindowsReuseTrailingProgressAndKeepCandidateFacts()
-    {
-        var plan = WindowPlan(3);
-        var input = "target x target\r\nend target\n\n\nend target end"u8;
-        var state = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
-        foreach (var (start, trailing) in new[] { (0, 17), (9, 17), (34, 41) })
-        {
-            Assert.True(plan.TryFindNextCandidate(input, ref state, out var candidate));
-            Assert.Equal(Utf8StructuralCandidate.Window(start, trailing + 3, 6, 0, trailing, 3, 0), candidate);
-        }
-        Assert.False(plan.TryFindNextCandidate(input, ref state, out _));
     }
 
     public static IEnumerable<object[]> PublicCases()
@@ -293,11 +273,11 @@ public sealed class Utf8StructuralInvocationTests
             Searcher(0), null, new Utf8FallbackStartTransform(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace),
             Utf8BoundaryRequirement.Boundary, Utf8BoundaryRequirement.Boundary, trailingLiteralUtf8: "!"u8.ToArray());
         var input = Encoding.UTF8.GetBytes("xtarget! " + new string(' ', 140000) + "target! targetx");
-        var state = default(Utf8StructuralSearchState);
+        var state = default(PreparedSearchScanState);
         var found = reverse ? plan.TryFindLastCandidate(input, input.Length, out var candidate)
             : plan.TryFindNextCandidate(input, ref state, out candidate);
         Assert.True(found);
-        Assert.Equal(Utf8StructuralCandidate.Start(8, -1, 6, 0), candidate);
+        Assert.Equal(new Utf8StructuralCandidate(8, -1, 6, 0), candidate);
     }
 
     public static IEnumerable<object[]> FixedCases()
@@ -319,12 +299,12 @@ public sealed class Utf8StructuralInvocationTests
             set ? default : Searcher(0), sets, default);
         var hit = set ? "zaQc" : "zztarget";
         var input = Encoding.UTF8.GetBytes(new string('x', offset) + hit + "xxxxx" + hit);
-        var state = default(Utf8StructuralSearchState);
+        var state = default(PreparedSearchScanState);
         var found = reverse ? plan.TryFindLastCandidate(input, input.Length, out var candidate)
             : plan.TryFindNextCandidate(input, ref state, out candidate);
         var start = reverse ? offset + hit.Length + 5 : offset;
         Assert.True(found);
-        Assert.Equal(Utf8StructuralCandidate.Start(start, -1, set ? 1 : 6, 0), candidate);
+        Assert.Equal(new Utf8StructuralCandidate(start, -1, set ? 1 : 6, 0), candidate);
     }
 
     [Fact]
@@ -334,8 +314,8 @@ public sealed class Utf8StructuralInvocationTests
             new Utf8SearchFactData { LiteralUtf8 = "aa"u8.ToArray(), TrailingLiteralUtf8 = "a!"u8.ToArray() });
         var plan = Utf8SearchPlan.Prepare(facts).StructuralSearchPlan;
         var input = "😀aaa!"u8;
-        var state = default(Utf8StructuralSearchState);
-        var expected = Utf8StructuralCandidate.Start(4, -1, 2, 0);
+        var state = default(PreparedSearchScanState);
+        var expected = new Utf8StructuralCandidate(4, -1, 2, 0);
 
         Assert.True(plan.TryFindNextCandidate(input, ref state, out var first));
         Assert.Equal(expected, first);
@@ -369,46 +349,5 @@ public sealed class Utf8StructuralInvocationTests
         }
         finally { session.Complete(); }
         Assert.Equal(4000, regex.Count(input));
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void PairedWindowsReuseTheTrailingMatchOrExhaustion(bool trailingHit)
-    {
-        var search = new PreparedWindowSearch(Searcher(0),
-            new PreparedSearcher(new PreparedSubstringSearch("end"u8.ToArray(), false), false));
-        foreach (var repeats in new[] { 128, 256 })
-        {
-            var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("target x ", repeats)) +
-                new string('x', 4096) + (trailingHit ? "end" : ""));
-            var state = PreparedWindowScanState.Create(0);
-            var count = 0;
-            while (search.TryFindNextWindow(input, ref state, out var window))
-            {
-                Assert.Equal(count * 9, window.Leading.Index);
-                Assert.Equal(input.Length - 3, window.Trailing.Index);
-                Assert.Equal(window.Trailing.Index + 1, state.TrailingState.NextStart);
-                count++;
-            }
-            Assert.Equal(trailingHit ? repeats : 0, count);
-            Assert.Equal(!trailingHit, state.TrailingExhausted);
-            var terminal = state;
-            Assert.False(search.TryFindNextWindow(input, ref state, out _));
-            Assert.Equal(terminal, state);
-        }
-    }
-
-    [Theory]
-    [InlineData(200, false)]
-    [InlineData(201, true)]
-    public void PairedWindowCountsEachCrLfAsOneLine(int maxLines, bool accepted)
-    {
-        var gap = string.Concat(Enumerable.Repeat(new string('x', 2047) + "\r\n", 200));
-        var input = Encoding.UTF8.GetBytes("target" + gap + "end");
-        var state = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
-        Assert.Equal(accepted, WindowPlan(maxLines).TryFindNextCandidate(input, ref state, out var candidate));
-        if (accepted)
-            Assert.Equal(Utf8StructuralCandidate.Window(0, input.Length, 6, 0, input.Length - 3, 3, 0), candidate);
     }
 }

@@ -9,7 +9,6 @@ internal enum PreparedSearcherKind : byte
     IgnoreCaseLiteral = 2,
     MultiLiteral = 3,
     ByteSet = 4,
-    QuotedAsciiRun = 5,
 }
 
 internal readonly partial struct PreparedSearcher
@@ -34,17 +33,7 @@ internal readonly partial struct PreparedSearcher
         LiteralSearch = default;
         ByteSearch = byteSearch;
         MultiLiteralSearch = default;
-        QuotedAsciiRunSearch = default;
         Kind = PreparedSearcherKind.ByteSet;
-    }
-
-    public PreparedSearcher(PreparedQuotedAsciiRunSearch quotedAsciiRunSearch)
-    {
-        LiteralSearch = default;
-        ByteSearch = default;
-        MultiLiteralSearch = default;
-        QuotedAsciiRunSearch = quotedAsciiRunSearch;
-        Kind = PreparedSearcherKind.QuotedAsciiRun;
     }
 
     internal PreparedSubstringSearch LiteralSearch { get; }
@@ -54,8 +43,6 @@ internal readonly partial struct PreparedSearcher
     private PreparedByteSearch ByteSearch { get; }
 
     private PreparedMultiLiteralSearch MultiLiteralSearch { get; }
-
-    private PreparedQuotedAsciiRunSearch QuotedAsciiRunSearch { get; }
 
     public PreparedSearcherKind Kind { get; }
 
@@ -68,7 +55,6 @@ internal readonly partial struct PreparedSearcher
             PreparedSearcherKind.ExactLiteral or PreparedSearcherKind.IgnoreCaseLiteral => LiteralSearch.IndexOf(input),
             PreparedSearcherKind.MultiLiteral => MultiLiteralSearch.IndexOf(input),
             PreparedSearcherKind.ByteSet => ByteSearch.IndexOf(input),
-            PreparedSearcherKind.QuotedAsciiRun => QuotedAsciiRunSearch.IndexOf(input),
             _ => -1,
         };
     }
@@ -173,7 +159,6 @@ internal readonly partial struct PreparedSearcher
 
             case PreparedSearcherKind.ExactLiteral:
             case PreparedSearcherKind.IgnoreCaseLiteral:
-            case PreparedSearcherKind.QuotedAsciiRun:
                 if (!TryFindFirstMatch(input[state.NextStart..], out var relative))
                 {
                     state = new PreparedSearchScanState(input.Length, default);
@@ -228,19 +213,6 @@ internal readonly partial struct PreparedSearcher
                 nextStart = index + matchedLength;
                 return true;
 
-            case PreparedSearcherKind.QuotedAsciiRun:
-                var quotedRelative = QuotedAsciiRunSearch.IndexOf(input[nextStart..]);
-                if (quotedRelative < 0)
-                {
-                    nextStart = input.Length;
-                    return false;
-                }
-
-                index = nextStart + quotedRelative;
-                matchedLength = QuotedAsciiRunSearch.MatchLength;
-                nextStart = index + matchedLength;
-                return true;
-
             default:
                 return false;
         }
@@ -253,7 +225,6 @@ internal readonly partial struct PreparedSearcher
             PreparedSearcherKind.ExactLiteral or PreparedSearcherKind.IgnoreCaseLiteral => LiteralSearch.LastIndexOf(input),
             PreparedSearcherKind.MultiLiteral => MultiLiteralSearch.LastIndexOf(input),
             PreparedSearcherKind.ByteSet => ByteSearch.LastIndexOf(input),
-            PreparedSearcherKind.QuotedAsciiRun => QuotedAsciiRunSearch.LastIndexOf(input),
             _ => -1,
         };
     }
@@ -293,15 +264,6 @@ internal readonly partial struct PreparedSearcher
                 if ((uint)index < (uint)input.Length)
                 {
                     matchedLength = 1;
-                    return true;
-                }
-
-                return false;
-
-            case PreparedSearcherKind.QuotedAsciiRun:
-                if (QuotedAsciiRunSearch.IsMatchAt(input, index))
-                {
-                    matchedLength = QuotedAsciiRunSearch.MatchLength;
                     return true;
                 }
 

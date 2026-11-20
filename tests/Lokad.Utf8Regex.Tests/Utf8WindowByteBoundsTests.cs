@@ -1,8 +1,5 @@
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.FrontEnd;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -54,50 +51,6 @@ public sealed class Utf8WindowByteBoundsTests
             Assert.False(regex.IsMatch("firstlast"u8));
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
             Assert.True(ReferenceEquals(regex.Inspection.PreparedRegex.SemanticRegex.CaptureCatalog, regex.Inspection.PreparedRegex.ScalarProgram!.CaptureCatalog));
-        }
-    }
-
-    [Fact]
-    public void LongPlainClassLineProofIsAdmittedBeforeMembershipScanning()
-    {
-        Utf8TreeNode node;
-        using (var construction = Utf8ConstructionScope.Enter())
-        {
-            using var data = Utf8ConstructionBuffer<int>.Create(construction.Budget);
-            data.AddRange([0, 32000, 0]);
-            for (var index = 0; index < 16000; index++) data.AddRange(['a', 'b']);
-            node = Utf8TreeNode.Create(Utf8TreeNodeKind.Set, RegexOptions.CultureInvariant, Utf8ScalarClass.Create(data));
-            construction.Complete();
-        }
-        using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, 24_000, ulong.MaxValue);
-        var parent = owner.Budget.AllocateArray<byte>(1, false);
-        var checkpoint = owner.Budget.ReservedBytes;
-        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => LineBreakCount(node));
-        Assert.Equal(Utf8ResourceLimitKind.ConstructionWorkSteps, error.ResourceKind);
-        Assert.True(error.Requested > 24_000);
-        Assert.Equal(48ul, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Equal(0ul, owner.Budget.Reserved);
-        Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-        Assert.Equal(0, parent[0]);
-        Assert.Throws<Utf8ResourceLimitExceededException>(() => LineBreakCount(node));
-        owner.Budget.ReleaseArray(parent, false);
-    }
-
-    private static int LineBreakCount(Utf8TreeNode node)
-    {
-        var method = typeof(Utf8FrontEndSearchAnalyzer).GetMethod("TryGetFiniteLineBreakCount", BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(method);
-        object?[] args = [node, 0];
-        try
-        {
-            Assert.True(Assert.IsType<bool>(method.Invoke(null, args)));
-            return Assert.IsType<int>(args[1]);
-        }
-        catch (TargetInvocationException error) when (error.InnerException is { } inner)
-        {
-            ExceptionDispatchInfo.Capture(inner).Throw();
-            throw;
         }
     }
 }

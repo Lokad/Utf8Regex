@@ -141,7 +141,7 @@ internal sealed class LokadPublicBenchmarkContext
         return InputBytes.Length;
     }
 
-    public int ExecuteUtf8PrefilterOnly() => Utf8PrefilterReplay.Rejects(Utf8Regex.Inspection.SearchPlan.PrefilterPlan, InputBytes) ? 0 : 1;
+    public int ExecuteUtf8PrefilterOnly() => Utf8PrefilterReplay.Rejects(Utf8Regex.Inspection.SearchPlan, InputBytes) ? 0 : 1;
 
     public int ExecuteUtf8DirectHookOnly()
     {
@@ -158,7 +158,7 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecuteUtf8FallbackSearchStartsOnly()
     {
-        if (Operation != LokadPublicBenchmarkOperation.IsMatch || !Utf8Regex.Inspection.SearchPlan.HasFallbackCandidates)
+        if (Operation != LokadPublicBenchmarkOperation.IsMatch || !Utf8Regex.Inspection.SearchPlan.HasStructuralCandidates)
         {
             return 0;
         }

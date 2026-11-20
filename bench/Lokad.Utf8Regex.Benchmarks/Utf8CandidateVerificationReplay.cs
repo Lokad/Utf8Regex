@@ -50,14 +50,6 @@ internal static class Utf8CandidateVerificationReplay
             var plan = prepared.SearchPlan.StructuralSearchPlan;
             if (plan.RequiresCandidateEndCoverage && candidate.EndIndex >= 0 && high < candidate.EndIndex)
                 return Utf8ExecutionLimitKind.None;
-            if (plan.YieldKind == Utf8StructuralSearchYieldKind.Window)
-            {
-                var trailingEnd = (long)candidate.TrailingIndex + candidate.TrailingMatchLength;
-                if (candidate.TrailingMatchLength <= 0 || candidate.TrailingIndex < low ||
-                    trailingEnd > high || !IsBoundary(input, candidate.TrailingIndex) ||
-                    !IsBoundary(input, (int)trailingEnd)) return Utf8ExecutionLimitKind.None;
-            }
-
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             result = new(true, low, high - low);
@@ -71,7 +63,7 @@ internal static class Utf8CandidateVerificationReplay
         }
     }
 
-    private static bool IsBoundary(ReadOnlySpan<byte> input, int offset)
+    internal static bool IsBoundary(ReadOnlySpan<byte> input, int offset)
         => (uint)offset <= (uint)input.Length &&
             (offset == input.Length || (input[offset] & 0xC0) != 0x80);
 }

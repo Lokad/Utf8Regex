@@ -946,67 +946,6 @@ public sealed class PreparedSearchPrimitivesTests
     }
 
     [Fact]
-    public void PreparedWindowSearchCanScanStatefully()
-    {
-        var window = new PreparedWindowSearch(
-            new PreparedSearcher(new PreparedMultiLiteralSearch(
-            [
-                Encoding.UTF8.GetBytes("using var"),
-                Encoding.UTF8.GetBytes("await using var"),
-            ], ignoreCase: false)),
-            new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false));
-        var input = Encoding.UTF8.GetBytes("using var x = await;\nawait using var y = await;");
-        var state = PreparedWindowScanState.Create(0);
-
-        Assert.True(window.TryFindNextWindow(input, ref state, out var first));
-        Assert.Equal("using var", Encoding.UTF8.GetString(input[first.Leading.Index..(first.Leading.Index + first.Leading.Length)]));
-        Assert.Equal("await", Encoding.UTF8.GetString(input[first.Trailing.Index..(first.Trailing.Index + first.Trailing.Length)]));
-
-        Assert.True(window.TryFindNextWindow(input, ref state, out var second));
-        Assert.Equal("await using var", Encoding.UTF8.GetString(input[second.Leading.Index..(second.Leading.Index + second.Leading.Length)]));
-        Assert.Equal("await", Encoding.UTF8.GetString(input[second.Trailing.Index..(second.Trailing.Index + second.Trailing.Length)]));
-
-        Assert.True(window.TryFindNextWindow(input, ref state, out var third));
-        Assert.Equal("using var", Encoding.UTF8.GetString(input[third.Leading.Index..(third.Leading.Index + third.Leading.Length)]));
-        Assert.Equal("await", Encoding.UTF8.GetString(input[third.Trailing.Index..(third.Trailing.Index + third.Trailing.Length)]));
-
-        Assert.False(window.TryFindNextWindow(input, ref state, out _));
-    }
-
-    [Fact]
-    public void PreparedFallbackWindowCandidatesCarryTrailingEnd()
-    {
-        var source = Utf8StructuralSearchPlan.CreateWindowPlan(
-            new PreparedWindowSearch(
-                new PreparedSearcher(new PreparedMultiLiteralSearch(
-                [
-                    Encoding.UTF8.GetBytes("using var"),
-                    Encoding.UTF8.GetBytes("await using var"),
-                ], ignoreCase: false)),
-                new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false)));
-        var input = Encoding.UTF8.GetBytes("using var x = await;");
-        var state = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
-
-        Assert.True(source.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal(0, candidate.StartIndex);
-        Assert.Equal(19, candidate.EndIndex);
-    }
-
-    [Fact]
-    public void PreparedWindowSearchFindsAnchorsWithoutApplyingLineConstraints()
-    {
-        var window = new PreparedWindowSearch(
-            new PreparedSearcher(new PreparedMultiLiteralSearch([Encoding.UTF8.GetBytes("using var")], ignoreCase: false)),
-            new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false));
-        var input = Encoding.UTF8.GetBytes("using var value =\nawait");
-        var state = PreparedWindowScanState.Create(0);
-
-        Assert.True(window.TryFindNextWindow(input, ref state, out var match));
-        Assert.Equal(0, match.Leading.Index);
-        Assert.Equal(input.Length - "await".Length, match.Trailing.Index);
-    }
-
-    [Fact]
     public void PreparedByteSetSearcherCanScanOverlappingMatchesFromANonzeroStart()
     {
         var searcher = new PreparedSearcher(PreparedByteSearch.Create((byte)'0', (byte)'1', (byte)'2'));
@@ -1017,67 +956,6 @@ public sealed class PreparedSearchPrimitivesTests
         Assert.True(searcher.TryFindNextOverlappingMatch("0x1y2"u8, ref state, out var second));
         Assert.Equal(4, second.Index);
         Assert.False(searcher.TryFindNextOverlappingMatch("0x1y2"u8, ref state, out _));
-    }
-
-    [Theory]
-    [InlineData(256)]
-    [InlineData(1024)]
-    [InlineData(4096)]
-    public void PreparedWindowSearchExhaustsAnAbsentTrailingAnchorOnce(int leadingCount)
-    {
-        var window = new PreparedWindowSearch(
-            new PreparedSearcher(new PreparedSubstringSearch("a"u8.ToArray(), ignoreCase: false), ignoreCase: false),
-            new PreparedSearcher(new PreparedSubstringSearch("z"u8.ToArray(), ignoreCase: false), ignoreCase: false));
-        var input = new byte[leadingCount];
-        input.AsSpan().Fill((byte)'a');
-        var state = PreparedWindowScanState.Create(0);
-
-        Assert.False(window.TryFindNextWindow(input, ref state, out _));
-        Assert.True(state.TrailingExhausted);
-        Assert.Equal(1, state.LeadingState.NextStart);
-        Assert.Equal(input.Length, state.TrailingState.NextStart);
-
-        var exhaustedState = state;
-        Assert.False(window.TryFindNextWindow(input, ref state, out _));
-        Assert.Equal(exhaustedState, state);
-    }
-
-    [Fact]
-    public void StructuralWindowCandidatesApplyLineConstraints()
-    {
-        var source = Utf8StructuralSearchPlan.CreateWindowPlan(
-            new PreparedWindowSearch(
-                new PreparedSearcher(new PreparedMultiLiteralSearch([Encoding.UTF8.GetBytes("using var")], ignoreCase: false)),
-                new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false)),
-            maxLines: 1);
-        var input = Encoding.UTF8.GetBytes("using var value =\nawait");
-        var state = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
-
-        Assert.False(source.TryFindNextCandidate(input, ref state, out _));
-    }
-
-    [Fact]
-    public void PreparedQuotedAsciiRunSearchCanFindQuotedRun()
-    {
-        var search = new PreparedQuotedAsciiRunSearch(
-            Utf8SearchAsciiSet.FromBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"u8),
-            4);
-        var input = Encoding.UTF8.GetBytes("xx \"ab12\" yy");
-
-        Assert.Equal(3, search.IndexOf(input));
-        Assert.True(search.IsMatchAt(input, 3));
-        Assert.Equal(6, search.MatchLength);
-    }
-
-    [Fact]
-    public void PreparedQuotedAsciiRunSearchCanFindLastQuotedRun()
-    {
-        var search = new PreparedQuotedAsciiRunSearch(
-            Utf8SearchAsciiSet.FromBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"u8),
-            4);
-        var input = Encoding.UTF8.GetBytes("'ab12' xx \"xy99\"");
-
-        Assert.Equal(10, search.LastIndexOf(input));
     }
 
     private static PreparedMultiLiteralPackedNibbleSimdPrefilter CreatePackedIgnoreCasePrefilter()

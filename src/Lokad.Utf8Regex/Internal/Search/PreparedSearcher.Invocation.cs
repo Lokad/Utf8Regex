@@ -69,9 +69,9 @@ internal readonly partial struct PreparedSearcher
                 if (reverse ? position == start : position == end) break;
             }
         }
-        else if (Kind is PreparedSearcherKind.ByteSet or PreparedSearcherKind.QuotedAsciiRun)
+        else if (Kind == PreparedSearcherKind.ByteSet)
         {
-            length = Kind == PreparedSearcherKind.ByteSet ? 1 : QuotedAsciiRunSearch.MatchLength;
+            length = 1;
             var low = start;
             var high = end - length;
             while (low <= high)
@@ -81,33 +81,15 @@ internal readonly partial struct PreparedSearcher
                 var count = Math.Min(2048, high - low + 1);
                 var blockStart = reverse ? high - count + 1 : low;
                 var block = input.Slice(blockStart, count);
-                var relative = Kind == PreparedSearcherKind.ByteSet
-                    ? (reverse ? ByteSearch.LastIndexOf(block) : ByteSearch.IndexOf(block))
-                    : (reverse ? block.LastIndexOfAny((byte)'\'', (byte)'"') : block.IndexOfAny((byte)'\'', (byte)'"'));
+                var relative = reverse ? ByteSearch.LastIndexOf(block) : ByteSearch.IndexOf(block);
                 if (relative < 0)
                 {
                     if (reverse) high -= count;
                     else low += count;
                     continue;
                 }
-                var index = blockStart + relative;
-                var equal = true;
-                if (Kind == PreparedSearcherKind.QuotedAsciiRun)
-                {
-                    equal = input[index] == input[index + length - 1];
-                    for (var offset = 0; equal && offset < QuotedAsciiRunSearch.RunLength;)
-                    {
-                        breach = invocation.TryChargeInputStep();
-                        if (breach != Utf8ExecutionLimitKind.None) return breach;
-                        var size = Math.Min(2048, QuotedAsciiRunSearch.RunLength - offset);
-                        for (var i = 0; i < size; i++)
-                            if (!QuotedAsciiRunSearch.AsciiSet.Contains(input[index + 1 + offset + i])) { equal = false; break; }
-                        offset += size;
-                    }
-                }
-                if (equal) { candidate = index; break; }
-                if (reverse) high = index - 1;
-                else low = index + 1;
+                candidate = blockStart + relative;
+                break;
             }
         }
         breach = invocation.TryChargeInputStep();

@@ -139,12 +139,9 @@ internal static partial class Utf8SearchExecutor
         }
 
         if (plan.HasStructuralCandidates &&
-            plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
-            var state = new Utf8StructuralSearchState(
-                new PreparedSearchScanState(startIndex, default),
-                PreparedWindowScanState.Create(0));
+            var state = new PreparedSearchScanState(startIndex, default);
             while (plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate))
             {
                 if (candidate.StartIndex >= startIndex)
@@ -190,7 +187,6 @@ internal static partial class Utf8SearchExecutor
         }
 
         if (plan.HasStructuralCandidates &&
-            plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
             if (plan.StructuralSearchPlan.TryFindLastCandidate(input, startIndex, out var candidate))
@@ -217,12 +213,9 @@ internal static partial class Utf8SearchExecutor
 
         if (plan.HasStructuralCandidates &&
             !plan.HasAlternateLiteralPrefixOverlap &&
-            plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
-            var candidateState = new Utf8StructuralSearchState(
-                new PreparedSearchScanState(startIndex, default),
-                PreparedWindowScanState.Create(0));
+            var candidateState = new PreparedSearchScanState(startIndex, default);
             while (plan.StructuralSearchPlan.TryFindNextCandidate(input, ref candidateState, out var candidate))
             {
                 if (candidate.StartIndex < startIndex)
@@ -310,7 +303,6 @@ internal static partial class Utf8SearchExecutor
 
         if (plan.HasStructuralCandidates &&
             !plan.HasAlternateLiteralPrefixOverlap &&
-            plan.StructuralSearchPlan.YieldKind == Utf8StructuralSearchYieldKind.Start &&
             (plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement))
         {
             if (plan.StructuralSearchPlan.TryFindLastCandidate(input, startIndex, out var candidate))

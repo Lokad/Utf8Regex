@@ -27,11 +27,8 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         CanGuideFallbackStarts = true,
         RequiredPrefilterLiteralUtf8 = "three"u8.ToArray(),
         RequiredPrefilterAlternateLiteralsUtf8 = ["four"u8.ToArray()],
-        SecondaryRequiredPrefilterQuotedAsciiSet = Utf8SearchAsciiSet.FromBytes("AB"u8),
-        SecondaryRequiredPrefilterQuotedAsciiLength = 5,
         FixedDistanceSets = [default],
         TrailingLiteralUtf8 = "five"u8.ToArray(),
-        RequiredWindowPrefilters = [default],
         FallbackStartTransform = new(11, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace),
         Distance = 19,
         MinRequiredLength = 23,
@@ -132,7 +129,7 @@ public sealed class Utf8SimpleLiteralAndFactAdmissionTests
         using var owner = new Utf8ConstructionScope(0, bytes, 2, ulong.MaxValue);
         var facts = Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiteral, data);
         Assert.Equal(bytes, owner.Budget.ReservedBytes); Assert.Equal(2ul, owner.Budget.WorkSteps);
-        Assert.Same(data.LiteralUtf8, facts.LiteralUtf8); Assert.Same(data.RequiredWindowPrefilters, facts.RequiredWindowPrefilters);
+        Assert.Same(data.LiteralUtf8, facts.LiteralUtf8);
         Assert.True(owner.Budget.ReservedBytes > 0);
         Assert.Equal(bytes, owner.Budget.ReservedBytes);
     }

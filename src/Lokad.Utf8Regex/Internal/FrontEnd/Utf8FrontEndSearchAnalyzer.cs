@@ -17,19 +17,10 @@ internal static class Utf8FrontEndSearchAnalyzer
         }
 
         TrySelectRequiredLiteralPrefilter(runtimeTree.Root, out var requiredPrefilterLiteral, out var requiredPrefilterAlternateLiterals);
-        TrySelectQuotedAsciiRunPrefilter(runtimeTree.Root, out var secondaryRequiredPrefilterQuotedAsciiClass, out var secondaryRequiredPrefilterQuotedAsciiLength);
-        var secondaryRequiredPrefilterQuotedAsciiSet = CreateAsciiByteSet(secondaryRequiredPrefilterQuotedAsciiClass);
-        TrySelectRequiredWindowPrefilters(
-            runtimeTree.Root,
-            requiredPrefilterAlternateLiterals,
-            secondaryRequiredPrefilterQuotedAsciiSet,
-            secondaryRequiredPrefilterQuotedAsciiLength,
-            out var requiredWindowPrefilters);
         TrySelectFallbackStartTransform(runtimeTree.Root, out var fallbackStartTransform);
         TrySelectBoundaryRequirements(runtimeTree.Root, out var leadingBoundary, out var trailingBoundary);
         requiredPrefilterLiteral ??= [];
         requiredPrefilterAlternateLiterals ??= [];
-        requiredWindowPrefilters ??= [];
         int? exactRequiredLength = findOptimizations.IsFixedLength ? findOptimizations.MinRequiredLength : null;
         var maxPossibleLength = findOptimizations.IsFixedLength ? null : findOptimizations.MaxPossibleLength;
 
@@ -41,9 +32,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                        {
                            RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
                            RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
-                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
-                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
                            FallbackStartTransform = fallbackStartTransform,
                            MinRequiredLength = trailingLength,
                            ExactRequiredLength = exactRequiredLength,
@@ -61,9 +49,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                        {
                            RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
                            RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
-                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
-                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
                            FallbackStartTransform = fallbackStartTransform,
                            FixedDistanceSets = fixedDistanceSets,
                            MinRequiredLength = fixedDistanceMinRequiredLength,
@@ -82,9 +67,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                        {
                            RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
                            RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
-                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
-                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
                            FallbackStartTransform = fallbackStartTransform,
                            FixedDistanceSets = deterministicPrefixSets,
                            MinRequiredLength = deterministicPrefixMinRequiredLength,
@@ -104,9 +86,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            LiteralUtf8 = fixedLiteral,
                            RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
                            RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
-                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
-                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
                            FallbackStartTransform = fallbackStartTransform,
                            Distance = distance,
                            MinRequiredLength = minRequiredLength,
@@ -130,9 +109,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            CanGuideFallbackStarts = CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
                            RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
                            RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
-                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
-                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
                            FallbackStartTransform = fallbackStartTransform,
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
@@ -155,9 +131,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            CanGuideFallbackStarts = CanGuideFallbackStarts(semanticRegex.ExecutionOptions),
                            RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
                            RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
-                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
-                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
                            FallbackStartTransform = fallbackStartTransform,
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
@@ -179,28 +152,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            LiteralUtf8 = candidate,
                            RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
                            RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
-                           FallbackStartTransform = fallbackStartTransform,
-                           ExactRequiredLength = exactRequiredLength,
-                           MaxPossibleLength = maxPossibleLength,
-                           LeadingBoundary = leadingBoundary,
-                           TrailingBoundary = trailingBoundary
-                       });
-        }
-
-        if (requiredPrefilterLiteral is not null ||
-            requiredPrefilterAlternateLiterals is not null ||
-            secondaryRequiredPrefilterQuotedAsciiSet.HasValue)
-        {
-            return Utf8SearchFacts.Create(
-                       Utf8SearchKind.None,
-                       new Utf8SearchFactData
-                       {
-                           RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
-                           RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
-                           SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
-                           SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
-                           RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
                            FallbackStartTransform = fallbackStartTransform,
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
@@ -213,9 +164,8 @@ internal static class Utf8FrontEndSearchAnalyzer
                    Utf8SearchKind.None,
                    new Utf8SearchFactData
                    {
-                       SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
-                       SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
-                       RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
+                       RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral,
+                       RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals,
                        FallbackStartTransform = fallbackStartTransform,
                        ExactRequiredLength = exactRequiredLength,
                        MaxPossibleLength = maxPossibleLength,
@@ -224,161 +174,11 @@ internal static class Utf8FrontEndSearchAnalyzer
                    });
     }
 
-    private static bool TrySelectQuotedAsciiRunPrefilter(Utf8TreeNode root, out AsciiCharClass? asciiSet, out int runLength)
-    {
-        asciiSet = null;
-        runLength = 0;
-        return TryFindQuotedAsciiRun(root, out asciiSet, out runLength);
-    }
-
-    private static void TrySelectRequiredWindowPrefilters(
-        Utf8TreeNode root,
-        byte[][]? requiredPrefilterAlternateLiteralsUtf8,
-        Utf8SearchAsciiSet quotedAsciiSet,
-        int quotedAsciiLength,
-        out Utf8WindowSearchFacts[]? requiredWindowPrefilters)
-    {
-        requiredWindowPrefilters = null;
-
-        if (requiredPrefilterAlternateLiteralsUtf8 is not { Length: > 0 } literalFamily ||
-            !quotedAsciiSet.HasValue ||
-            quotedAsciiLength <= 0)
-        {
-            return;
-        }
-
-        root = UnwrapStructuralNode(root) ?? root;
-        var maxLines = TryGetFiniteLineBreakCount(root, out var totalLineBreaks) && totalLineBreaks > 0
-            ? totalLineBreaks + 1
-            : root.Kind == Utf8TreeNodeKind.Alternate && root.ChildCount > 1 ? 5 : 0;
-
-        if (maxLines > 0)
-        {
-            var family = Utf8PreparedSearcherInfo.LiteralFamily(literalFamily);
-            var quoted = Utf8PreparedSearcherInfo.QuotedAsciiRun(quotedAsciiSet, quotedAsciiLength);
-            requiredWindowPrefilters =
-            [
-                Utf8WindowSearchFacts.WithinLines(family, quoted, maxLines),
-                Utf8WindowSearchFacts.WithinLines(quoted, family, maxLines),
-            ];
-        }
-    }
-
     private struct ScanFrame(Utf8TreeNode node)
     {
         internal Utf8TreeNode Node = node;
         internal int Index;
         internal bool Entered;
-    }
-
-    private static bool TryFindQuotedAsciiRun(Utf8TreeNode node, out AsciiCharClass? asciiSet, out int runLength)
-    {
-        asciiSet = null;
-        runLength = 0;
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(node));
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            if (!frame.Entered)
-            {
-                frame.Node = UnwrapStructuralNode(frame.Node) ?? frame.Node;
-                frame.Entered = true;
-                node = frame.Node;
-                if (node.Kind == Utf8TreeNodeKind.Concatenate && node.ChildCount >= 3)
-                {
-                    for (var i = 0; i <= node.ChildCount - 3; i++)
-                    {
-                        budget.ChargeWork(1);
-                        if (IsQuoteNode(node.Child(i)) &&
-                            TryGetExactAsciiSetLength(node.Child(i + 1), out var set, out var length) &&
-                            IsQuoteNode(node.Child(i + 2)))
-                        {
-                            asciiSet = set;
-                            runLength = length;
-                            return true;
-                        }
-                    }
-                }
-            }
-            node = frame.Node;
-            if (frame.Index == node.ChildCount) { frames.Pop(); continue; }
-            var child = node.Child(frame.Index++);
-            frames[index] = frame;
-            frames.Push(new(child));
-        }
-        return false;
-    }
-
-    private static Utf8SearchAsciiSet CreateAsciiByteSet(AsciiCharClass? charClass) =>
-        charClass is { } mask ? Utf8SearchAsciiSet.FromMasks(mask.ActualLowMask, mask.ActualHighMask) : default;
-
-    private static bool IsQuoteNode(Utf8TreeNode node)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(node));
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            var current = UnwrapStructuralNode(frame.Node) ?? frame.Node;
-            if (TryGetLiteralText(current, out var literal))
-            {
-                if (literal is not ("\"" or "'")) return false;
-                frames.Pop();
-            }
-            else if (current.Kind == Utf8TreeNodeKind.Alternate && current.ChildCount > 0)
-            {
-                if (frame.Index == current.ChildCount) { frames.Pop(); continue; }
-                frame.Node = current;
-                var child = current.Child(frame.Index++);
-                frames[index] = frame;
-                frames.Push(new(child));
-            }
-            else return false;
-        }
-        return true;
-    }
-
-    private static bool TryGetExactAsciiSetLength(Utf8TreeNode node, out AsciiCharClass? asciiSet, out int runLength)
-    {
-        node = UnwrapStructuralNode(node) ?? node;
-        asciiSet = null;
-        runLength = 0;
-
-        if (node.Kind is Utf8TreeNodeKind.Setloop &&
-            node.M > 0 &&
-            !node.IsUnboundedRepeat &&
-            node.M == node.N &&
-            Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(node.ScalarClass, out var set))
-        {
-            asciiSet = set;
-            runLength = node.M;
-            return true;
-        }
-
-        if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop &&
-            node.ChildCount == 1 &&
-            node.M > 0 &&
-            !node.IsUnboundedRepeat &&
-            node.M == node.N)
-        {
-            var child = UnwrapStructuralNode(node.Child(0)) ?? node.Child(0);
-            if (child.Kind == Utf8TreeNodeKind.Set &&
-                Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(child.ScalarClass, out var childSet))
-            {
-                asciiSet = childSet;
-                runLength = node.M;
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public static Utf8SearchFacts AnalyzeLiteral(
@@ -621,141 +421,6 @@ internal static class Utf8FrontEndSearchAnalyzer
         return Utf8ScalarAsciiProjector.IsPositiveWhitespace(node.ScalarClass);
     }
 
-    private struct LineBreakFrame(Utf8TreeNode node)
-    {
-        internal Utf8TreeNode Node = node;
-        internal int Index;
-        internal int Total;
-        internal bool Waiting;
-    }
-
-    private static bool TryGetFiniteLineBreakCount(Utf8TreeNode node, out int maxLineBreaks)
-    {
-        maxLineBreaks = 0;
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<LineBreakFrame>.Create(budget, new(node));
-        var result = false;
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            var unwrapped = UnwrapStructuralNode(frame.Node);
-            if (unwrapped is null)
-            {
-                maxLineBreaks = 0;
-                result = true;
-                frames.Pop();
-                continue;
-            }
-            node = unwrapped;
-            if ((node.Kind is Utf8TreeNodeKind.Concatenate or Utf8TreeNodeKind.Alternate && node.ChildCount > 0) ||
-                (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop && node.ChildCount == 1 && node.N >= 0 && node.N != int.MaxValue))
-            {
-                if (frame.Waiting)
-                {
-                    if (!result)
-                    {
-                        maxLineBreaks = 0;
-                        frames.Pop();
-                        continue;
-                    }
-                    if (node.Kind is Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop)
-                    {
-                        maxLineBreaks = checked(node.N * maxLineBreaks);
-                        frames.Pop();
-                        continue;
-                    }
-                    frame.Total = node.Kind == Utf8TreeNodeKind.Concatenate
-                        ? frame.Total + maxLineBreaks : Math.Max(frame.Total, maxLineBreaks);
-                    if (frame.Index == node.ChildCount)
-                    {
-                        maxLineBreaks = frame.Total;
-                        frames.Pop();
-                        continue;
-                    }
-                }
-                frame.Node = node;
-                frame.Waiting = true;
-                var child = node.Child(frame.Index++);
-                frames[index] = frame;
-                frames.Push(new(child));
-                continue;
-            }
-            result = ReadScalar(node, out maxLineBreaks);
-            frames.Pop();
-        }
-        return result;
-
-        static bool ExcludesLineBreaks(Utf8ScalarClass? scalarClass) =>
-            Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var mask) &&
-            !mask.Contains((byte)'\r') && !mask.Contains((byte)'\n');
-
-        static bool ReadScalar(Utf8TreeNode node, out int maxLineBreaks)
-        {
-            switch (node.Kind)
-            {
-                case Utf8TreeNodeKind.Empty:
-                case Utf8TreeNodeKind.Bol:
-                case Utf8TreeNodeKind.Beginning:
-                case Utf8TreeNodeKind.Start:
-                case Utf8TreeNodeKind.Eol:
-                case Utf8TreeNodeKind.End:
-                case Utf8TreeNodeKind.EndZ:
-                case Utf8TreeNodeKind.Boundary:
-                case Utf8TreeNodeKind.NonBoundary:
-                    maxLineBreaks = 0;
-                    return true;
-
-                case Utf8TreeNodeKind.One:
-                    maxLineBreaks = node.Ch is '\r' or '\n' ? 1 : 0;
-                    return true;
-
-                case Utf8TreeNodeKind.Multi when node.Str is { Length: > 0 } literal:
-                    Utf8ConstructionScope.ChargeWork((ulong)literal.Length);
-                    maxLineBreaks = 0;
-                    foreach (var ch in literal) if (ch is '\r' or '\n') maxLineBreaks++;
-                    return true;
-
-                case Utf8TreeNodeKind.Set:
-                    if (ExcludesLineBreaks(node.ScalarClass))
-                    {
-                        maxLineBreaks = 0;
-                        return true;
-                    }
-
-                    break;
-
-                case Utf8TreeNodeKind.Oneloop:
-                case Utf8TreeNodeKind.Onelazy:
-                    if (node.N >= 0 && node.N != int.MaxValue)
-                    {
-                        maxLineBreaks = node.Ch is '\r' or '\n' ? node.N : 0;
-                        return true;
-                    }
-
-                    break;
-
-                case Utf8TreeNodeKind.Setloop:
-                case Utf8TreeNodeKind.Setlazy:
-                    if (node.N >= 0 &&
-                        node.N != int.MaxValue &&
-                        ExcludesLineBreaks(node.ScalarClass))
-                    {
-                        maxLineBreaks = 0;
-                        return true;
-                    }
-
-                    break;
-
-            }
-
-            maxLineBreaks = 0;
-            return false;
-        }
-    }
-
     private static bool IsLeadingAsciiWhitespaceNode(Utf8TreeNode node)
     {
         // The inverse candidate transform only walks six ASCII whitespace
@@ -765,22 +430,6 @@ internal static class Utf8FrontEndSearchAnalyzer
         return node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Set &&
             Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(node.ScalarClass, out var mask) &&
             mask.ActualLowMask == 0x100003e00UL && mask.ActualHighMask == 0;
-    }
-
-    private static bool TryGetLiteralText(Utf8TreeNode node, out string literal)
-    {
-        switch (node.Kind)
-        {
-            case Utf8TreeNodeKind.One when Utf8OwnedFindOptimizations.IsExactLiteral(node):
-                literal = Utf8ConstructionScope.CurrentBudget.CopyText([node.Ch]);
-                return true;
-            case Utf8TreeNodeKind.Multi when node.Str is { } text && Utf8OwnedFindOptimizations.IsExactLiteral(node):
-                literal = text;
-                return true;
-            default:
-                literal = string.Empty;
-                return false;
-        }
     }
 
     private static bool TrySelectAlternatePrefixes(Utf8OwnedFindFacts findOptimizations, bool ignoreCase, out byte[][] alternateLiterals)

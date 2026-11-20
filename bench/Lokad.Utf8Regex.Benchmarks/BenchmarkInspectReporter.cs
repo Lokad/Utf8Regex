@@ -651,7 +651,7 @@ internal static partial class BenchmarkInspectReporter
             Utf8Validation.ThrowIfInvalidOnly(benchmarkCase.InputBytes);
             return benchmarkCase.InputBytes.Length;
         });
-        Measure("RequiredPrefilterOnly", iterations, () => Utf8PrefilterReplay.Rejects(benchmarkCase.Utf8Regex.Inspection.SearchPlan.PrefilterPlan, benchmarkCase.InputBytes) ? 1 : 0);
+        Measure("RequiredPrefilterOnly", iterations, () => Utf8PrefilterReplay.Rejects(benchmarkCase.Utf8Regex.Inspection.SearchPlan, benchmarkCase.InputBytes) ? 1 : 0);
 
         Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
         Measure(benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? "DotNetRegex" : "DecodeThenRegex", iterations, benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? benchmarkCase.CountPredecodedRegex : benchmarkCase.CountDecodeThenRegex);
@@ -2606,7 +2606,7 @@ internal static partial class BenchmarkInspectReporter
         Measure("WellFormedOnly", iterations, context.ExecuteUtf8WellFormedOnly);
         Measure("PrefilterOnly", iterations, context.ExecuteUtf8PrefilterOnly);
         Measure("DirectHook", iterations, context.ExecuteUtf8DirectHookOnly);
-        if (context.Utf8Regex.Inspection.SearchPlan.HasFallbackCandidates)
+        if (context.Utf8Regex.Inspection.SearchPlan.HasStructuralCandidates)
         {
             Measure("FallbackSearchStartsOnly", iterations, context.ExecuteUtf8FallbackSearchStartsOnly);
         }
@@ -2693,7 +2693,7 @@ internal static partial class BenchmarkInspectReporter
         });
         Measure("TryMatchNoValidation", iterations, () => context.Utf8Regex.TryMatchDirectWithoutValidation(context.InputBytes, out _) ? 1 : 0);
         Measure("CompiledTryMatchNoValidation", iterations, () => context.CompiledUtf8Regex.TryMatchDirectWithoutValidation(context.InputBytes, out _) ? 1 : 0);
-        if (context.Utf8Regex.Inspection.SearchPlan.HasFallbackCandidates)
+        if (context.Utf8Regex.Inspection.SearchPlan.HasStructuralCandidates)
         {
             Measure("FallbackSearchStartsOnly", iterations, context.ExecuteUtf8FallbackSearchStartsOnly);
         }
@@ -3630,15 +3630,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"PortfolioKind     : {regex.Inspection.SearchPortfolioKind}");
         Console.WriteLine($"PreparedSearcher  : {regex.Inspection.SearchPlan.PreparedSearcher.Kind}");
         Console.WriteLine($"RequiredPrefilter : {(regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")}");
-        Console.WriteLine($"WindowPrefilters  : {regex.Inspection.SearchPlan.RequiredWindowPrefilterPlans?.Length ?? 0}");
         WriteStructuralSearchPlan(regex.Inspection.StructuralSearchPlan);
-        var fallbackPlans = Utf8FallbackReplay.GetCandidatePlans(regex.Inspection.SearchPlan);
-        Console.WriteLine($"FallbackPlans     : {fallbackPlans.Length}");
-        for (var i = 0; i < fallbackPlans.Length; i++)
-        {
-            var plan = fallbackPlans[i];
-            Console.WriteLine($"FallbackPlan[{i}]  : Yield={plan.YieldKind}, Source={DescribeStructuralSource(plan)}");
-        }
         Console.WriteLine($"FallbackReason    : {regex.Inspection.FallbackReason ?? "<native>"}");
     }
 
@@ -3663,15 +3655,10 @@ internal static partial class BenchmarkInspectReporter
     private static void WriteStructuralSearchPlan(Utf8StructuralSearchPlan plan)
     {
         ref readonly var data = ref plan.Payload;
-        Console.WriteLine($"StructuralYield   : {plan.YieldKind}");
         Console.WriteLine($"StructuralSource  : {DescribeStructuralSource(plan)}");
         if (data.StartTransform.HasValue)
         {
             Console.WriteLine($"StartTransform    : {data.StartTransform.Kind}, offset {data.StartTransform.Offset}");
-        }
-        if (data.MaxLines > 0)
-        {
-            Console.WriteLine($"MaximumLines      : {data.MaxLines}");
         }
         if (data.LeadingBoundary != Utf8BoundaryRequirement.None || data.TrailingBoundary != Utf8BoundaryRequirement.None)
         {
@@ -3694,13 +3681,9 @@ internal static partial class BenchmarkInspectReporter
     private static string DescribeStructuralSource(Utf8StructuralSearchPlan plan)
     {
         ref readonly var data = ref plan.Payload;
-        return data.YieldKind switch
-        {
-            Utf8StructuralSearchYieldKind.Window => $"{data.WindowSearch.LeadingSearcher.Kind}, {data.WindowSearch.TrailingSearcher.Kind}",
-            Utf8StructuralSearchYieldKind.Start when data.Searcher.HasValue => data.Searcher.Kind.ToString(),
-            Utf8StructuralSearchYieldKind.Start => $"{data.FixedDistanceSets!.Length} fixed-distance sets",
-            _ => "None",
-        };
+        return !plan.HasValue ? "None" : data.Searcher.HasValue
+            ? data.Searcher.Kind.ToString()
+            : $"{data.FixedDistanceSets!.Length} fixed-distance sets";
     }
 
     private static string DumpNode(Utf8TreeNode node, int depth = 0)

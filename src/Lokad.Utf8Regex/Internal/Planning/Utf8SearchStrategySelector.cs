@@ -8,10 +8,7 @@ internal static class Utf8SearchStrategySelector
     {
         if (!plan.HasPreparedSearcher && !plan.HasStructuralCandidates)
         {
-            return plan.RequiredWindowPrefilterPlans is { Length: > 0 }
-                ? new Utf8SearchOperationPlan(Utf8SearchOperationKind.PrefilterThenConfirm,
-                    confirmation, Utf8SearchObservabilityKind.CandidateCounts)
-                : default;
+            return default;
         }
 
         var requiresConfirmation = plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement;
