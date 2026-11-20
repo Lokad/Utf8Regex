@@ -494,18 +494,23 @@ internal static partial class Utf8SliceRunner
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
-        if (seekBeginning && first.B == 0)
+        var atContiguousOrigin = first is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Contiguous } &&
+            !program.RightToLeft && invocation.AnchorOriginByte == fromByte;
+        if (seekBeginning && first.B == 0 || atContiguousOrigin)
         {
-            // An absolute beginning admits at most one start. Keep the same
-            // literal screen and attempt charges without preparing a search.
-            var breach = TrySeekBeginning(program, input, ref fromByte, ref invocation);
-            if (breach != Utf8ExecutionLimitKind.None || fromByte < 0)
-                return new(false, -1, -1, null, null, breach);
-            breach = invocation.TryChargeInputStep();
+            // An absolute beginning or an explicit contiguous origin admits
+            // one start. Keep its normal attempt and interruption checks.
+            if (seekBeginning)
+            {
+                var seekBreach = TrySeekBeginning(program, input, ref fromByte, ref invocation);
+                if (seekBreach != Utf8ExecutionLimitKind.None || fromByte < 0)
+                    return new(false, -1, -1, null, null, seekBreach);
+            }
+            var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, null, null, breach);
             invocation.Budget.ThrowIfCancellationRequested();
-            if (existenceOnly && !collectHistory && program.GroupCount == 0 && program.SkipsTerminalRewind(1) &&
+            if (seekBeginning && existenceOnly && !collectHistory && program.GroupCount == 0 && program.SkipsTerminalRewind(1) &&
                 program.Instructions[1].RepeatMaximum <= 4 && input.Length <= 32)
             {
                 // The admitted short witness starts after the confirmed anchor.

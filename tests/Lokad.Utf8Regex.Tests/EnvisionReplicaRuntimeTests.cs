@@ -309,6 +309,22 @@ show scalar "y" with 2
     }
 
     [Fact]
+    public void LexerStringOnlyAttemptsTheExplicitContiguousOrigin()
+    {
+        const string pattern = "\\G\"([^\"\\\\]|\\\\.)*\"";
+        const string quoted = "\"ok\"";
+        var input = Encoding.UTF8.GetBytes("😀" + new string('x', 4096) + quoted);
+        var start = input.Length - quoted.Length;
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 64, MaxWorkingBytes = 8 << 10 } });
+
+        Assert.False(regex.Match(input, cancellationToken: source.Token).Success);
+        Assert.Equal(new Utf8CaptureRange(start, input.Length),
+            regex.Match(input, start, cancellationToken: source.Token));
+    }
+
+    [Fact]
     public void LexerStringFamilyHandlesNonCapturingAlternation()
     {
         const string pattern = "\\G\"(?:[^\"\\\\]|\\\\.)*\"";
