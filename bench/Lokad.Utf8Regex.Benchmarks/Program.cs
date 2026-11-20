@@ -103,21 +103,9 @@ if (args.Length >= 2 && args[0].Equals("--measure-case-deep", StringComparison.O
     return BenchmarkInspectReporter.RunMeasureReplicaCaseDeep(args[1], args.Length >= 3 ? args[2] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--measure-compiled-microcost-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureCompiledMicrocostCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 1 && args[0].Equals("--measure-slice-policy-lanes", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureSlicePolicyLanes(
-        args.Length >= 2 ? args[1] : null,
-        args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 1 && args[0].Equals("--measure-pythonre-handoff-bulk", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasurePythonReHandoffBulk(
         args.Length >= 2 ? args[1] : null,
         args.Length >= 3 ? args[2] : null);
 }

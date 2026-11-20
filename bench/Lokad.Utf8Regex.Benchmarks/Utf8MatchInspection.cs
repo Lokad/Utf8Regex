@@ -179,15 +179,4 @@ internal static class Utf8MatchInspection
         return false;
     }
 
-    public static int ProjectWholeMatchOnly(int matchedLength)
-    {
-        var match = new Utf8CaptureRange(0, 0 + (matchedLength));
-        return match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes);
-    }
-
-    public static int ProjectByteAlignedMatchOnly(int index, int matchedLength)
-    {
-        var match = new Utf8CaptureRange(index, (index) + (matchedLength));
-        return match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes);
-    }
 }

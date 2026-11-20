@@ -76,12 +76,8 @@ internal sealed class LokadPublicBenchmarkContext
         CompiledUtf8Regex = new Utf8Regex(Pattern, options: Options | RegexOptions.Compiled);
         Regex = new Regex(Pattern, Options, Regex.InfiniteMatchTimeout);
         CompiledRegex = new Regex(Pattern, Options | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
-        HasCompiledLiteralFamilyRawMatch = CompiledUtf8Regex.Inspection.DebugTryMatchCompiledAsciiLiteralFamilyRaw(InputBytes, out _compiledLiteralFamilyRawIndex, out _compiledLiteralFamilyRawLength);
     }
 
-    private readonly bool HasCompiledLiteralFamilyRawMatch;
-    private readonly int _compiledLiteralFamilyRawIndex;
-    private readonly int _compiledLiteralFamilyRawLength;
     private readonly byte[] _replacementUtf8;
 
     public string CaseId { get; }
@@ -183,38 +179,6 @@ internal sealed class LokadPublicBenchmarkContext
             LokadPublicBenchmarkOperation.IsMatch or LokadPublicBenchmarkOperation.Match => Utf8MatchInspection.IsMatchCompiled(CompiledUtf8Regex, InputBytes) ? 1 : 0,
             _ => 0,
         };
-    }
-
-    public int ExecuteUtf8CompiledDirectNoValidationOnly()
-    {
-        return Operation switch
-        {
-            LokadPublicBenchmarkOperation.IsMatch => CompiledUtf8Regex.TryMatchDirectWithoutValidation(InputBytes, out var match) && match.Success ? 1 : 0,
-            LokadPublicBenchmarkOperation.Match => MeasureMatch(CompiledUtf8Regex.TryMatchDirectWithoutValidation(InputBytes, out var match) ? match : default(Utf8CaptureRange)),
-            _ => 0,
-        };
-    }
-
-    public int ExecuteUtf8CompiledLiteralFamilyRawMatchOnly()
-    {
-        if (Operation != LokadPublicBenchmarkOperation.Match)
-        {
-            return 0;
-        }
-
-        return CompiledUtf8Regex.Inspection.DebugTryMatchCompiledAsciiLiteralFamilyRaw(InputBytes, out var index, out var matchedLength)
-            ? index + matchedLength
-            : -1;
-    }
-
-    public int ExecuteUtf8CompiledLiteralFamilyProjectionOnly()
-    {
-        if (Operation != LokadPublicBenchmarkOperation.Match || !HasCompiledLiteralFamilyRawMatch)
-        {
-            return 0;
-        }
-
-        return Utf8MatchInspection.ProjectByteAlignedMatchOnly(_compiledLiteralFamilyRawIndex, _compiledLiteralFamilyRawLength);
     }
 
     private int Execute(Utf8Regex regex)
