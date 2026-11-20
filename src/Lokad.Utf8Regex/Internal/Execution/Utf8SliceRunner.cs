@@ -912,6 +912,8 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
             familyContinuation = FindExactFamilyContinuation(program.Instructions, literals);
         }
+        var (familyRepeatAscii, familyRepeatLiteral) = familyContinuation == 0
+            ? default : GetExactFamilyRepeatHead(program, familyContinuation);
         // A direct beginning anchor already owns bounded line/prefix discovery.
         // Keep one candidate search rather than scanning its prefix twice.
         var (leadingAsciiFirst, leadingAsciiLast, leadingAsciiSecond, leadingAsciiSecondLast, leadingScalarIndex, _) = seekLiteral
@@ -1111,6 +1113,18 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
                 var verifiedPrefix = familyContinuation == 0 ? default : (familyContinuation, familyLength);
+                if (familyRepeatAscii.HasValue)
+                {
+                    var extra = ScanExactFamilyRepeatHead(input[(position + familyLength)..],
+                        familyRepeatAscii, familyRepeatLiteral);
+                    if (extra < 0)
+                    {
+                        position++;
+                        continue;
+                    }
+                    if (extra != 0)
+                        verifiedPrefix = (familyContinuation + 5, familyLength + extra);
+                }
                 var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true,
                     ref workspace, ref invocation, verifiedPrefix: verifiedPrefix);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)

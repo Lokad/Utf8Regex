@@ -55,6 +55,8 @@ public sealed class Utf8PlainForkViabilityTests
 
     [Theory]
     [InlineData(@"\b(?:public|private|internal)\s+class\b", "épublic class public\tclass private\u00a0class 😀internal class internal classX")]
+    [InlineData(@"\b(?:public|private|internal)\s+class\b", "public               class private                class internal                \u00a0class public classX public ")]
+    [InlineData(@"\b(?:public|private|internal)[ c]+class\b", "public cclass private class internal ccclass public classX")]
     [InlineData(@"\b(?:pub|public|private)\s+class\b", "épublic class public class pub\u00a0class private class")]
     public void LiteralFamilyCountKeepsBoundariesAndOverlappingArms(string pattern, string tail)
     {
