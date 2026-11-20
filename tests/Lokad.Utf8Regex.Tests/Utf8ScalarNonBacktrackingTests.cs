@@ -42,6 +42,24 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.Equal(range, regex.Match(input, 4, captures, endOffsetInBytes: 7));
     }
 
+    [Theory]
+    [InlineData("[α-ω][α-ω]|[ࠀ-ࠇ][ࠀ-ࠇ]", "Ͽ", "λω")]
+    [InlineData("[😀-😇][😀-😇]|[ࠀ-ࠇ][ࠀ-ࠇ]", "😈", "😀😇")]
+    public void CompactOrderedRangeSkipsToPossibleUnicodeStarters(string pattern, string near, string value)
+    {
+        var prefix = new string('!', 6143) + near + near + new string('!', 2048);
+        var input = Encoding.UTF8.GetBytes(prefix + value + "!");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 }
+        });
+        using var tokenSource = new CancellationTokenSource();
+        Assert.True(regex.IsMatch(input, tokenSource.Token));
+        var range = regex.Match(input, startOffsetInBytes: 257, cancellationToken: tokenSource.Token);
+        Assert.Equal(new Utf8CaptureRange(start, input.Length - 1), range);
+    }
+
     public static IEnumerable<object[]> OverlapCases()
     {
         (string Pattern, string Text)[] cases =

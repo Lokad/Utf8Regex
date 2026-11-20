@@ -151,7 +151,7 @@ internal static partial class Utf8SliceRunner
     {
         last = 0;
         if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 128 } && Rune.IsValid(atom.A))
-            return last = Lead(atom.A);
+            return last = Utf8StarterByte(atom.A);
         if (atom is not { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } ||
             program.CategorySetMembers[atom.D] is not [{ Negated: false, Table: { Mask: 0, ClassProgram: null,
                 ScalarPredicate: null, Ranges: { Length: >= 2 and <= 32 } ranges } }] ||
@@ -164,16 +164,16 @@ internal static partial class Utf8SliceRunner
             var low = ranges[index];
             var high = ranges[index + 1] - 1;
             if (low < 128 || !Rune.IsValid(low) || !Rune.IsValid(high)) return -1;
-            first = Math.Min(first, Lead(low));
-            last = Math.Max(last, Lead(high));
+            first = Math.Min(first, Utf8StarterByte(low));
+            last = Math.Max(last, Utf8StarterByte(high));
         }
         // Every value in this interval is a UTF-8 starter. Holes in the
         // original scalar ranges still need the normal VM class check.
         return first;
-
-        static byte Lead(int scalar) => (byte)(scalar < 0x800 ? 0xc0 | scalar >> 6 :
-            scalar < 0x10000 ? 0xe0 | scalar >> 12 : 0xf0 | scalar >> 18);
     }
+
+    private static byte Utf8StarterByte(int scalar) => (byte)(scalar < 0x80 ? scalar :
+        scalar < 0x800 ? 0xc0 | scalar >> 6 : scalar < 0x10000 ? 0xe0 | scalar >> 12 : 0xf0 | scalar >> 18);
 
     // Every reachable arm must prove its first consuming byte. Stop on
     // unknown effects, an empty completion or backwards control flow. The

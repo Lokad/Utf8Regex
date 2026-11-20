@@ -84,6 +84,15 @@ internal static partial class Utf8SliceRunner
                 continue;
             }
 
+            if (GetUnfoldedUnicodeLeadRange(program, instruction, budget, out var last) is >= 0 and var first)
+            {
+                // The same necessary starter interval as the backtracker.
+                // A fourth distinct byte declines the small ordered searcher.
+                for (var starter = first; starter <= last; starter++)
+                    if (!TryAddOrderedRegularStartByte((byte)starter, starts, ref count)) return default;
+                continue;
+            }
+
             // Acceptance, complements and general class predicates lack a
             // complete list of scalar starts here.
             if (instruction is not { Kind: Utf8SliceInstructionKind.Set, B: 0 }) return default;
@@ -102,26 +111,23 @@ internal static partial class Utf8SliceRunner
     private static bool TryAddOrderedRegularStarts(Rune scalar, bool folded, Utf8ScalarCaseBehavior behavior,
         Span<byte> starts, ref int count)
     {
-        if (!TryAddOrderedRegularStartByte(scalar, starts, ref count)) return false;
+        if (!TryAddOrderedRegularStartByte(Utf8StarterByte(scalar.Value), starts, ref count)) return false;
         if (!folded) return true;
         if (!scalar.IsBmp)
         {
             // Supplementary equivalence uses simple lowercase. Its table
             // consists of reversible pairs contained in the supplementary planes.
             var lower = Utf8SupplementaryCase.Lower(scalar.Value);
-            return TryAddOrderedRegularStartByte(new Rune(lower), starts, ref count) &&
-                TryAddOrderedRegularStartByte(new Rune(Utf8SupplementaryCase.Upper(lower)), starts, ref count);
+            return TryAddOrderedRegularStartByte(Utf8StarterByte(lower), starts, ref count) &&
+                TryAddOrderedRegularStartByte(Utf8StarterByte(Utf8SupplementaryCase.Upper(lower)), starts, ref count);
         }
         foreach (var equivalent in Utf8SliceCaseEquivalences.GetEquivalents((char)scalar.Value, behavior))
-            if (!TryAddOrderedRegularStartByte(new Rune(equivalent), starts, ref count)) return false;
+            if (!TryAddOrderedRegularStartByte(Utf8StarterByte(equivalent), starts, ref count)) return false;
         return true;
     }
 
-    private static bool TryAddOrderedRegularStartByte(Rune scalar, Span<byte> starts, ref int count)
+    private static bool TryAddOrderedRegularStartByte(byte first, Span<byte> starts, ref int count)
     {
-        Span<byte> encoded = stackalloc byte[4];
-        _ = scalar.EncodeToUtf8(encoded);
-        var first = encoded[0];
         if (starts[..count].Contains(first)) return true;
         if (count == starts.Length) return false;
         starts[count++] = first;
