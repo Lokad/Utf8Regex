@@ -1419,9 +1419,10 @@ internal static partial class Utf8SliceRunner
                             Utf8SliceMatchOutcome repeated;
                             int continuation;
                             bool ranWithoutRewind;
-                            // The lowered certificate already verifies the atom and exit.
-                            // A required assertion endpoint still uses the general checks.
-                            if (cursor.RequiredEnd is null && program.SkipsTerminalRewind(programIndex))
+                            // Both proofs verify the atom and exit during preparation.
+                            // Only the terminal proof depends on the absence of a required endpoint.
+                            if ((cursor.RequiredEnd is null && program.SkipsTerminalRewind(programIndex)) ||
+                                instructions[instruction.A].RepeatExitRejectsShorterEndpoints)
                             {
                                 var run = RunClassRepeat(program, programIndex, input, inputIndex, ref invocation);
                                 repeated = new(run.EndIndex >= 0, run.EndIndex, run.Breach, null, null);

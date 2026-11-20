@@ -603,8 +603,8 @@ internal static partial class Utf8SliceRunner
             if (existenceOnly) continuation = instructions.Length - 1;
             return true;
         }
-        // The count or a disjoint branch proof excludes shorter endpoints.
-        if (repeat.RepeatMinimum == repeat.RepeatMaximum || instructions[repeat.A].RepeatExitRejectsShorterEndpoints)
+        // A fixed count excludes shorter endpoints.
+        if (repeat.RepeatMinimum == repeat.RepeatMaximum)
         {
             var fixedRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             outcome = new(fixedRepeat.EndIndex >= 0, fixedRepeat.EndIndex, fixedRepeat.Breach, null, null);
