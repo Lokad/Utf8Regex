@@ -324,6 +324,22 @@ show scalar "y" with 2
             regex.Match(input, start, cancellationToken: source.Token));
     }
 
+    [Theory]
+    [InlineData("\"\"")]
+    [InlineData("\"alpha\"")]
+    [InlineData("\"alpha\\\"β\\😀\"")]
+    public void LexerDisjointBranchesNeedNoRepeatFrame(string quoted)
+    {
+        const string pattern = "\\G\"([^\"\\\\]|\\\\.)*\"";
+        var input = Encoding.UTF8.GetBytes(quoted + " tail");
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 1 } });
+
+        Assert.Equal(new Utf8CaptureRange(0, Encoding.UTF8.GetByteCount(quoted)),
+            regex.Match(input, cancellationToken: source.Token));
+    }
+
     [Fact]
     public void LexerStringFamilyHandlesNonCapturingAlternation()
     {

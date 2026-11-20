@@ -926,6 +926,52 @@ internal static partial class Utf8SliceRunner
         }
     }
 
+    internal static void MarkExcludedLoopStart(Span<Utf8SliceInstruction> code, byte[][] setMasks,
+        int jumpIndex, Utf8ConstructionBudget budget)
+    {
+        var jump = code[jumpIndex];
+        if (jump.A < 0 || jump.A >= jumpIndex - 1 || jumpIndex + 1 >= code.Length ||
+            code[jumpIndex - 1] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0 } fork ||
+            fork.A != jumpIndex + 1 ||
+            code[fork.A] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } exit)
+            return;
+
+        // A loop exit competes with one more iteration. Mark its ASCII
+        // literal when every body arm rejects that byte at its first atom.
+        var remaining = 12;
+        budget.ChargeWork((ulong)remaining);
+        if (RejectsLoopStart(code[..(jumpIndex - 1)], setMasks, jump.A, exit.A, ref remaining))
+            code[jumpIndex] = new(jump.Kind, jump.A, jump.B, exit.A + 1, jump.D);
+
+        static bool RejectsLoopStart(ReadOnlySpan<Utf8SliceInstruction> body, byte[][] masks,
+            int index, int value, ref int remaining)
+        {
+            for (; index < body.Length && remaining > 0; index++)
+            {
+                remaining--;
+                var entry = body[index];
+                switch (entry)
+                {
+                    case { Kind: Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd }:
+                        continue;
+                    case { Kind: Utf8SliceInstructionKind.Fork, B: 0 } when entry.A > index:
+                        if (!RejectsLoopStart(body, masks, entry.A, value, ref remaining)) return false;
+                        continue;
+                    case { Kind: Utf8SliceInstructionKind.Literal, B: 0 }:
+                        return entry.A != value;
+                    case { Kind: Utf8SliceInstructionKind.Set, C: 0 } when masks[entry.A].Length == 16:
+                        var contains = (masks[entry.A][value >> 3] & (1 << (value & 7))) != 0;
+                        return contains == (entry.B != 0);
+                    case { Kind: Utf8SliceInstructionKind.Dot, A: 0 }:
+                        return value == '\n';
+                    default:
+                        return false;
+                }
+            }
+            return false;
+        }
+    }
+
     private static bool ExcludesShorterAsciiRepeatEnds(ReadOnlySpan<Utf8SliceInstruction> instructions,
         int index, Utf8SearchAsciiSet consumed, ref int remaining)
     {

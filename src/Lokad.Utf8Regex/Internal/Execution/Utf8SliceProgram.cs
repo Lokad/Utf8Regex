@@ -208,6 +208,7 @@ internal readonly struct Utf8SliceInstruction
     // RepeatExit uses a positive B as an exclusive byte bound to the input end.
     // A nonzero RepeatEnd B packs three ASCII stop bytes for its guarded fallback.
     internal int B { get; }
+    // A backward Jump can carry an excluded starting ASCII byte plus one in C.
     // A normal Fork can carry exclusive remaining byte bounds in C and D
     // for the fall-through and target respectively. Zero leaves an arm unknown.
     internal int C { get; }
@@ -456,6 +457,8 @@ internal sealed class Utf8SliceProgram
             var instruction = instructions[pc];
             if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && !rightToLeft && !isNonBacktracking)
                 Utf8SliceRunner.MarkDisjointAsciiRepeatBranches(instructions, setMasks, pc, budget);
+            else if (instruction.Kind == Utf8SliceInstructionKind.Jump && !rightToLeft && !isNonBacktracking)
+                Utf8SliceRunner.MarkExcludedLoopStart(instructions, setMasks, pc, budget);
             readsCaptures |= instruction.Kind is Utf8SliceInstructionKind.Backref or Utf8SliceInstructionKind.TestGroup or
                 Utf8SliceInstructionKind.BalanceStart or Utf8SliceInstructionKind.BalancePop;
             if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart) captureIsOpen = true;

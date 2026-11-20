@@ -940,6 +940,12 @@ internal static partial class Utf8SliceRunner
             }
             else
             {
+                // A negated ASCII mask can disprove its excluded bytes.
+                // Its successful path still needs the scalar VM.
+                if (!program.RightToLeft && entry is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } && position < input.Length &&
+                    input[position] is < 128 and var value && program.SetMasks[entry.A] is { Length: 16 } excluded &&
+                    (excluded[value >> 3] & (1 << (value & 7))) != 0)
+                    return false;
                 if (!program.RightToLeft && entry is
                     { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd } &&
                     !MatchesEndAnchor(input, position, entry))
@@ -964,10 +970,14 @@ internal static partial class Utf8SliceRunner
         var probe = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, index);
         if ((uint)probe >= (uint)code.Length) return 0;
         var entry = code[probe];
-        // A lowered delimited repeat cannot complete another iteration without
-        // its exact delimiter. The fork step covers this bounded byte search.
-        if (entry is { Kind: Utf8SliceInstructionKind.Jump, B: > 0 } && input.Length - position <= 32)
-            return input[position..].Contains((byte)(entry.B - 1)) ? 0 : -1;
+        if (entry.Kind == Utf8SliceInstructionKind.Jump)
+        {
+            if (entry.C > 0 && position < input.Length && input[position] == entry.C - 1) return -1;
+            // A lowered delimited repeat cannot complete another iteration without
+            // its exact delimiter. The fork step covers this bounded byte search.
+            return entry.B > 0 && input.Length - position <= 32 && !input[position..].Contains((byte)(entry.B - 1))
+                ? -1 : 0;
+        }
         // Nested forks prove viability without selecting an inner path.
         if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > probe + 1)
             return MatchesStraightAsciiPrefix(program, input, position, entry.A, 2) ||
