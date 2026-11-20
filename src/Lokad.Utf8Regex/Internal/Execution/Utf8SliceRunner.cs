@@ -1513,17 +1513,18 @@ internal static partial class Utf8SliceRunner
                                 programIndex = continuation + suffixLength;
                                 break;
                             }
-                            var guardedAtom = continuation == 0 && instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy
-                                ? GetGuardedRepeatAtom(program, programIndex) : -1;
-                            if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && (continuation > programIndex || guardedAtom >= 0))
+                            var (atomIndex, guarded) = continuation == 0 && instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy
+                                ? GetCompoundRepeatAtom(program, programIndex, captureStarts.Length == 0) : (-1, false);
+                            if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && (continuation > programIndex || atomIndex >= 0))
                             {
                                 // A pure scalar run has no intermediate state to restore.
                                 // One frame can revisit its earlier endpoints in greedy order.
-                                var run = guardedAtom < 0
-                                    ? RunClassRepeat(program, programIndex, input, inputIndex, ref invocation, out var minimumEnd)
-                                    : RunGuardedClassRepeat(program, programIndex, guardedAtom, input, inputIndex,
-                                        (uint)stacks.FrameCount + 1, ref invocation, out minimumEnd);
-                                if (guardedAtom >= 0) continuation = instruction.A + 1;
+                                var run = guarded
+                                    ? RunGuardedClassRepeat(program, programIndex, atomIndex, input, inputIndex,
+                                        (uint)stacks.FrameCount + 1, ref invocation, out var minimumEnd)
+                                    : RunClassRepeat(program, instruction, instructions[atomIndex < 0 ? programIndex + 1 : atomIndex],
+                                        input, inputIndex, ref invocation, out minimumEnd);
+                                if (atomIndex >= 0) continuation = instruction.A + 1;
                                 if (run.Breach != Utf8ExecutionLimitKind.None)
                                 { failure = run.Breach; goto Failure; }
                                 if (run.EndIndex < 0) { failed = true; break; }

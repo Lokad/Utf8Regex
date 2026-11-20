@@ -625,7 +625,8 @@ public sealed class PythonReSliceOwnershipTests
         {
             MatchTimeout = Regex.InfiniteMatchTimeout
         });
-        var input = Utf8(string.Concat(Enumerable.Repeat("\U0001f600", 256)));
+        // Cross the diagnostic checkpoint even when the repeat scans 2 KiB per step.
+        var input = Utf8(string.Concat(Enumerable.Repeat("\U0001f600", 65_536)));
         using var source = new CancellationTokenSource();
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>

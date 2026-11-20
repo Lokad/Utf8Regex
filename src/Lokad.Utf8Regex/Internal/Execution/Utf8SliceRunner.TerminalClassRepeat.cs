@@ -1256,7 +1256,8 @@ internal static partial class Utf8SliceRunner
         return terminal == Utf8ExecutionLimitKind.None ? (position, terminal) : (-1, terminal);
     }
 
-    private static int GetGuardedRepeatAtom(Utf8SliceProgram program, int repeatIndex)
+    private static (int AtomIndex, bool Guarded) GetCompoundRepeatAtom(Utf8SliceProgram program, int repeatIndex,
+        bool omitCaptures)
     {
         var code = program.Instructions;
         var repeat = code[repeatIndex];
@@ -1264,17 +1265,27 @@ internal static partial class Utf8SliceRunner
         if (program.RightToLeft || exit <= repeatIndex + 3 || exit >= code.Length - 1 ||
             code[exit] is not { Kind: Utf8SliceInstructionKind.RepeatExit } clear || clear.A != repeat.B ||
             code[exit - 1] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } loop || loop.A != repeatIndex)
-            return -1;
+            return (-1, false);
+
+        var atomIndex = exit - 2;
+        var guard = code[repeatIndex + 1];
+        if (omitCaptures && exit - repeatIndex == 5 && guard.Kind == Utf8SliceInstructionKind.CaptureStart &&
+            code[exit - 2] is { Kind: Utf8SliceInstructionKind.CaptureEnd } close && close.A == guard.A)
+        {
+            // Empty capture slots mean these ordinary markers have no observer.
+            // The body consumes one scalar, with no other effects or alternatives.
+            var atom = code[repeatIndex + 2];
+            if (atom.Kind == Utf8SliceInstructionKind.Dot || CanRepeatScalarAtom(program, atom))
+                return (repeatIndex + 2, false);
+        }
 
         // The prepared lookahead has no capture or rollback effects. A
         // successful iteration advances by exactly the following scalar.
-        var atomIndex = exit - 2;
-        var guard = code[repeatIndex + 1];
         if (guard is not { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: > 0 } || guard.A + guard.D != atomIndex)
-            return -1;
+            return (-1, false);
         return code[atomIndex].Kind is Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or
             Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid ||
-            code[atomIndex] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } ? atomIndex : -1;
+            code[atomIndex] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } ? (atomIndex, true) : (-1, false);
     }
 
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunGuardedClassRepeat(Utf8SliceProgram program,
@@ -1323,8 +1334,15 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation, out int minimumEnd,
         bool minimumOnly = false, bool checkExitDeadline = true)
     {
-        var repeat = program.Instructions[repeatIndex];
-        var atom = program.Instructions[repeatIndex + 1];
+        var code = program.Instructions;
+        return RunClassRepeat(program, code[repeatIndex], code[repeatIndex + 1], input, start, ref invocation,
+            out minimumEnd, minimumOnly, checkExitDeadline);
+    }
+
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunClassRepeat(Utf8SliceProgram program,
+        in Utf8SliceInstruction repeat, in Utf8SliceInstruction atom, ReadOnlySpan<byte> input, int start,
+        ref Utf8SliceInvocation invocation, out int minimumEnd, bool minimumOnly = false, bool checkExitDeadline = true)
+    {
         var minimum = repeat.RepeatMinimum;
         var maximum = minimumOnly ? minimum : repeat.RepeatMaximum;
         if (maximum is >= 2 and <= 4 &&

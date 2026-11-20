@@ -26,8 +26,9 @@ public sealed class Utf8CoreDepthPolicyTests
     [MemberData(nameof(OperationModes), MemberType = typeof(Utf8CoreWorkPolicyTests))]
     public void AllPublicOperationsHaveExactDepthSuccessAndOneUnderDenial(string operation, bool compiled, bool live)
     {
-        const string pattern = "(?<x>😀)+(?<y>😀ab)";
-        var input = "😀😀😀ab"u8.ToArray();
+        // Keep distinct retries even in operations that omit capture slots.
+        const string pattern = "(?<x>😀a)+(?<y>😀aab)";
+        var input = "😀a😀a😀aab"u8.ToArray();
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         using var source = new CancellationTokenSource(); var token = live ? source.Token : default;
         var baseline = Utf8CoreWorkPolicyTests.Run(new Utf8Regex(pattern, options: options), operation, input, token, 0);
@@ -61,7 +62,8 @@ public sealed class Utf8CoreDepthPolicyTests
     [Fact]
     public void CopiedCursorDenialIsStickyAndRetainedRangesStayValid()
     {
-        var input = "ab 😀😀ab"u8.ToArray(); var regex = Create("(?<x>ab)|(?<unit>😀)+😀ab", 1, RegexOptions.CultureInvariant);
+        var input = "ab 😀a😀a😀aab"u8.ToArray();
+        var regex = Create("(?<x>ab)|(?<unit>😀a)+😀aab", 1, RegexOptions.CultureInvariant);
         var cursor = regex.EnumerateMatches(input); Assert.True(cursor.MoveNext()); var retained = cursor.Current; var alias = cursor;
         try { alias.MoveNext(); Assert.Fail("Depth denial must remain an exception."); } catch (Utf8ResourceLimitExceededException error) { Denied(error, 1); }
         try { cursor.MoveNext(); Assert.Fail("Aliases must share the first denial."); } catch (Utf8ResourceLimitExceededException error) { Denied(error, 1); }

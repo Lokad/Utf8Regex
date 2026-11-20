@@ -281,8 +281,8 @@ public sealed class Utf8ScalarSubjectTests
     [InlineData("split-count")]
     public void CancellationDuringScalarVmReachesEveryOwnedOperation(string operation)
     {
-        // Cancellation occurs during owned scalar matching, after input admission.
-        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\U0001f600", 256)));
+        // Cross the diagnostic checkpoint even when the repeat scans 2 KiB per step.
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("\U0001f600", 65_536)));
         foreach (var compiled in new[] { false, true })
         {
             var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);

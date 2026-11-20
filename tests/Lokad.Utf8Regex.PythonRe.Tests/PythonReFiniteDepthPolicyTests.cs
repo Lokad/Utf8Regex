@@ -33,7 +33,8 @@ public sealed class PythonReFiniteDepthPolicyTests
     [MemberData(nameof(Operations))]
     public void EveryPublicOperationHasFiniteDepthAndExactCutoff(int operation, bool bytes)
     {
-        const string pattern = "(?P<x>😀)+(?P<y>😀ab)"; var input = "😀😀😀ab"u8.ToArray();
+        // A two-scalar body retains distinct retries even when Count does not read its captures.
+        const string pattern = "(?P<x>😀a)+(?P<y>😀aab)"; var input = "😀a😀a😀aab"u8.ToArray();
         var expected = PythonReFiniteWorkPolicyTests.Run(new(pattern), input, operation);
         Assert.Equal(expected, PythonReFiniteWorkPolicyTests.Run(Create(pattern, uint.MaxValue, bytes), input, operation));
         Denied(Assert.Throws<Utf8ResourceLimitExceededException>(() => PythonReFiniteWorkPolicyTests.Run(Create(pattern, 1, bytes), input, operation)), 1);

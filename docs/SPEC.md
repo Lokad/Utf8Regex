@@ -513,8 +513,10 @@ without allocating a continuation. Its logical depth, directional edge and
 interruption checks still apply.
 
 A forward greedy repeat of one side-effect-free scalar atom can keep its
-remaining endpoints in a single live frame. The run scan and each retry are
-metered. Unbounded positive ASCII mask scans charge work and check interruption
+remaining endpoints in a single live frame. A capture around that atom may be
+omitted when execution has no capture slots because neither the pattern nor the
+operation observes it. The run scan and each retry are metered. Unbounded
+positive ASCII mask scans charge work and check interruption
 before each bounded block. Depth and working admission cover the frame, while
 capture and assertion state retain their own admission. When the remaining instructions
 prove an exact terminal literal, the engine can find the last reachable

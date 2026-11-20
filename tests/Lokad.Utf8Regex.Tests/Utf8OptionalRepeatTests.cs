@@ -84,6 +84,40 @@ public sealed class Utf8OptionalRepeatTests
     }
 
     [Theory]
+    [InlineData(@"\A(?<unit>\d)+\d\z", "1١3")]
+    [InlineData(@"\A(?<unit>\d)+\k<unit>\z", "1١١")]
+    [InlineData(@"\A(?<unit>[a-z]){2,4}b\z", "Abbb")]
+    public void ScalarRepeatPreservesEndpointsAndObservedCaptures(string pattern, string text)
+    {
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        using var regex = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1_000, MaxDepth = 64, MaxWorkingBytes = 1 << 16 }
+        });
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern, options).Match(text);
+        Assert.True(expected.Success);
+        using var source = new CancellationTokenSource();
+        Utf8MatchSequence.AssertRange(regex.Match(input, cancellationToken: source.Token), text, expected.Index, expected.Length);
+        Assert.Equal(1, regex.Count(input, cancellationToken: source.Token));
+        Utf8MatchSequence.AssertCaptures(expected,
+            Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)), input, text);
+    }
+
+    [Fact]
+    public void UnobservedScalarRepeatCanRewindWithinOneFrame()
+    {
+        using var regex = new Utf8Regex(@"\A(?<unit>\d)+\d\z", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2_000, MaxDepth = 1, MaxWorkingBytes = 1 << 10 }
+        });
+        var input = Encoding.UTF8.GetBytes(new string('١', 128) + "5");
+        using var source = new CancellationTokenSource();
+        var match = regex.Match(input, cancellationToken: source.Token);
+        Assert.Equal(new Utf8CaptureRange(0, input.Length), match);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void ScalarOptionalCapturesRetainByteBoundariesAndBorrowedResults(bool lazy)
