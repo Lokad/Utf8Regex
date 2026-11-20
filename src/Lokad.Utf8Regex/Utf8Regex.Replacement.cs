@@ -130,6 +130,13 @@ public sealed partial class Utf8Regex
                 out bytesWritten, deadline);
         }
 
+        if (TryGetNativeReplacementPlan(replacement, out var plan))
+        {
+            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursor(_preparedRegex, input, deadline);
+            return Utf8NativeReplacementExecutor.TryReplace(input, plan, destination, ref cursor, out bytesWritten)
+                ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
+        }
+
         var scalarResult = OwnedSliceReplace(input, _ownedSliceProgram, replacement, Utf8SliceReplacementResultKind.Destination,
             destination, cancellationToken, deadline);
         bytesWritten = scalarResult.BytesWritten;
@@ -188,9 +195,7 @@ public sealed partial class Utf8Regex
     private bool TryReplaceViaNativePlan(
         ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, Utf8ExecutionDeadline budget, out byte[] replaced)
     {
-        var plan = RewriteWholeLiteralCapturePlan(replacement.Plan);
-        if (replacement.IsLiteral ||
-            !Utf8NativeReplacementExecutor.CanExecute(plan))
+        if (!TryGetNativeReplacementPlan(replacement, out var plan))
         {
             replaced = [];
             return false;
@@ -202,6 +207,12 @@ public sealed partial class Utf8Regex
             budget);
         replaced = Utf8NativeReplacementExecutor.Replace(input, plan, ref cursor);
         return true;
+    }
+
+    private bool TryGetNativeReplacementPlan(Utf8AnalyzedReplacement replacement, out Utf8ReplacementPlan plan)
+    {
+        plan = RewriteWholeLiteralCapturePlan(replacement.Plan);
+        return !replacement.IsLiteral && Utf8NativeReplacementExecutor.CanExecute(plan);
     }
 
     private Utf8ReplacementPlan RewriteWholeLiteralCapturePlan(Utf8ReplacementPlan plan)

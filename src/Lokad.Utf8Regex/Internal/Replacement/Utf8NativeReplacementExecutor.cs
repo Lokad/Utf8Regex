@@ -24,12 +24,31 @@ internal static class Utf8NativeReplacementExecutor
         try
         {
             var outputLength = BuildRanges(input, plan, ref cursor, ref ledger);
-            return EmitAllocated(input, plan, outputLength, ref ledger, cursor.WorkingBufferControl);
+            return EmitAllocated(input, plan, checked((int)outputLength), ref ledger, cursor.WorkingBufferControl);
         }
         finally
         {
             ledger.Dispose(cursor.WorkingBufferControl);
         }
+    }
+
+    internal static bool TryReplace(ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, Span<byte> destination,
+        ref Utf8OperationMatchCursor cursor, out int written)
+    {
+        written = 0;
+        var ledger = new Utf8ReplacementRangeLedger();
+        try
+        {
+            var outputLength = BuildRanges(input, plan, ref cursor, ref ledger);
+            if (outputLength > destination.Length) return false;
+
+            // Validated template literals and scalar-aligned source slices
+            // can be copied directly once the entire result fits.
+            Emit(input, plan, destination, ledger.WrittenRanges, cursor.WorkingBufferControl);
+            written = (int)outputLength;
+            return true;
+        }
+        finally { ledger.Dispose(cursor.WorkingBufferControl); }
     }
 
     private static bool CanExecute(Utf8ReplacementInstruction instruction)
@@ -46,26 +65,25 @@ internal static class Utf8NativeReplacementExecutor
         };
     }
 
-    private static Utf8ReplacementOutputLength BuildRanges(
+    private static long BuildRanges(
         ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, ref Utf8OperationMatchCursor cursor, ref Utf8ReplacementRangeLedger ledger)
     {
-        var outputLength = new Utf8ReplacementOutputLength(input.Length);
+        var outputLength = (long)input.Length;
         while (cursor.MoveNext())
         {
             var current = cursor.CurrentValueMatch;
             ledger.Add(new Utf8ReplacementRange(current.StartOffsetInBytes, (current.EndOffsetInBytes - current.StartOffsetInBytes)), cursor.WorkingBufferControl);
-            outputLength.ReplaceRange(
-                (current.EndOffsetInBytes - current.StartOffsetInBytes),
+            outputLength = checked(outputLength - (current.EndOffsetInBytes - current.StartOffsetInBytes) +
                 GetReplacementLength(input, plan, current));
         }
 
         return outputLength;
     }
 
-    private static int GetReplacementLength(
+    private static long GetReplacementLength(
         ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, Utf8CaptureRange match)
     {
-        var length = 0;
+        var length = 0L;
         foreach (var instruction in plan.Instructions)
         {
             checked
@@ -87,9 +105,9 @@ internal static class Utf8NativeReplacementExecutor
     }
 
     private static byte[] EmitAllocated(
-        ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, Utf8ReplacementOutputLength outputLength, ref Utf8ReplacementRangeLedger ledger, scoped Utf8InvocationBufferControl control)
+        ReadOnlySpan<byte> input, Utf8ReplacementPlan plan, int outputLength, ref Utf8ReplacementRangeLedger ledger, scoped Utf8InvocationBufferControl control)
     {
-        var output = Utf8InvocationOutput.AllocateBytes(outputLength.Value, control, out var reservation);
+        var output = Utf8InvocationOutput.AllocateBytes(outputLength, control, out var reservation);
         try
         {
             if (ledger.Count == 0) Utf8InvocationOutput.Copy(input, output, control);

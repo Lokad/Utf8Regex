@@ -72,6 +72,28 @@ public sealed class Utf8ReplacementAliasingTests
         Assert.Equal(original, storage);
     }
 
+    [Fact]
+    public void StructuredTemplateAliasedToDestinationIsPreservedUntilOutputFits()
+    {
+        var regex = new Utf8Regex("kilo", options: RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        var subject = "é KIlo 😀"u8;
+        var template = "<$&>"u8;
+        var expected = "é <KIlo> 😀"u8;
+        var storage = new byte[expected.Length];
+        template.CopyTo(storage);
+        var original = storage.ToArray();
+
+        var status = regex.TryReplace(subject, storage.AsSpan(0, template.Length), storage.AsSpan(0, storage.Length - 1), out var written);
+        Assert.Equal(OperationStatus.DestinationTooSmall, status);
+        Assert.Equal(0, written);
+        Assert.Equal(original, storage);
+
+        status = regex.TryReplace(subject, storage.AsSpan(0, template.Length), storage, out written);
+        Assert.Equal(OperationStatus.Done, status);
+        Assert.Equal(expected.Length, written);
+        Assert.True(expected.SequenceEqual(storage));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
