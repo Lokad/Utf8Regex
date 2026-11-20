@@ -291,8 +291,8 @@ public sealed partial class Utf8Regex : IDisposable
              _ownedSliceProgram.HasBalancing ||
              _ownedSliceProgram.HasContiguousAnchor ||
              _ownedSliceProgram.IgnoreCase &&
-                (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals ||
-                 ShouldUseKelvinSignFallback(input)) ||
+                _preparedRegex.ExecutionKind is (NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals) ||
+             ShouldUseKelvinSignFallback(input) ||
              _hasCaptures && _ownedSliceProgram.HasUnicodePatternAtoms ||
              // Exact byte literals already preserve scalar endpoints. Native
              // boundary/class predicates need scalar qualification before they
@@ -339,16 +339,6 @@ public sealed partial class Utf8Regex : IDisposable
             return OwnedSliceIsMatch(input, ownedProgram, cancellationToken);
         }
 
-        if (ShouldUseKelvinSignFallback(input))
-        {
-            return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
-        }
-
-        if (ShouldUseRightToLeftScalarFallback())
-        {
-            return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
-        }
-
         if (TryIsMatchAnchoredLiteral(input, out var directIsMatch))
         {
             return directIsMatch;
@@ -357,11 +347,6 @@ public sealed partial class Utf8Regex : IDisposable
         if (TryMatchDirectWithoutValidation(input, out var directMatch))
         {
             return directMatch.Success;
-        }
-
-        if (RequiresScalarValueExecution())
-        {
-            return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
         }
 
         return _compiledEngineRuntime.IsMatch(input, CreateExecutionBudget());
@@ -519,21 +504,6 @@ public sealed partial class Utf8Regex : IDisposable
         {
 
             return _compiledEngineRuntime.Count(input, CreateExecutionBudget());
-        }
-
-        if (ShouldUseKelvinSignFallback(input))
-        {
-            return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
-        }
-
-        if (ShouldUseRightToLeftScalarFallback())
-        {
-            return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
-        }
-
-        if (RequiresScalarValueExecution())
-        {
-            return OwnedSliceCount(input, _ownedSliceProgram, cancellationToken);
         }
 
         if (CanUseFusedCompiledAsciiLiteralFamilyCount())
@@ -704,16 +674,6 @@ public sealed partial class Utf8Regex : IDisposable
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceMatch(input, ownedProgram, cancellationToken);
-        }
-
-        if (ShouldUseKelvinSignFallback(input))
-        {
-            return MatchScalarProgram(input, cancellationToken);
-        }
-
-        if (ShouldUseRightToLeftScalarFallback())
-        {
-            return MatchScalarProgram(input, cancellationToken);
         }
 
         if (TryMatchDirectWithoutValidation(input, out var directMatch))
@@ -974,15 +934,14 @@ public sealed partial class Utf8Regex : IDisposable
         // R05: right-to-left literal shapes split owned through the reverse-search
         // cursor (the same cursor backing owned RTL enumeration), projecting segments
         // descending from the input end exactly like the oracle encounter order.
-        // Mirrors the RTL enumeration gate: boundary/trailing requirements, culture,
-        // and Kelvin-folded inputs keep their existing routes.
+        // The selector above handles Kelvin partners and culture. Boundary and
+        // trailing requirements still use the scalar cursor.
         if ((count == 0 || count > 1) &&
             UsesRightToLeft() &&
             _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
             _preparedRegex.LiteralUtf8 is { Length: > 0 } rtlSplitLiteral &&
             !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
-            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement &&
-            (_preparedRegex.ExecutionKind != NativeExecutionKind.AsciiLiteralIgnoreCase || !ShouldUseKelvinSignFallback(input)))
+            !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
         {
             var rtlBudget = CreateExecutionBudget();
             return new Utf8ValueSplitEnumerator(
@@ -993,7 +952,7 @@ public sealed partial class Utf8Regex : IDisposable
                 .WithTimeoutMapping(this);
         }
 
-        if (UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
+        if (UsesRightToLeft())
             return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
 
         if (count > 0 && TryGetSmallAsciiLiteralFamilySearch(out var smallAsciiLiteralFamilySearch))
@@ -1214,9 +1173,4 @@ public sealed partial class Utf8Regex : IDisposable
         return (Options & RegexOptions.RightToLeft) != 0;
     }
 
-    private bool ShouldUseRightToLeftScalarFallback()
-    {
-        return UsesRightToLeft() &&
-            _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex;
-    }
 }

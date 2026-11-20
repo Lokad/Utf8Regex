@@ -15,9 +15,6 @@ namespace Lokad.Utf8Regex;
 /// <summary>Scalar fallback execution and native verification for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    private Utf8CaptureRange MatchScalarProgram(ReadOnlySpan<byte> input, CancellationToken token)
-        => OwnedSliceMatch(input, _ownedSliceProgram, token);
-
     private bool TryMatchAnchoredLiteral(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
         match = default(Utf8CaptureRange);
@@ -76,20 +73,6 @@ public sealed partial class Utf8Regex
             return true;
         }
         return false;
-    }
-
-    private bool RequiresScalarValueExecution()
-    {
-        var features = _preparedRegex.Features;
-        return _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex &&
-            _preparedRegex.SearchPlan.Kind == Utf8SearchKind.AsciiFoldedByteLiteral &&
-            _preparedRegex.SearchPlan.MaxPossibleLength != int.MaxValue &&
-            features.CaptureCount <= 1 &&
-            !features.HasBackreferences &&
-            !features.HasLookarounds &&
-            !features.HasAtomicGroups &&
-            !features.HasConditionals &&
-            !features.HasLoops;
     }
 
     private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
