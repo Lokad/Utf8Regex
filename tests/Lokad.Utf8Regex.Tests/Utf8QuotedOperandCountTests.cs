@@ -80,7 +80,9 @@ public sealed class Utf8QuotedOperandCountTests
         if (count) Assert.Equal(0, denied.Count(missingRequiredStart));
         else Assert.False(denied.IsMatch(missingRequiredStart));
 
-        foreach (var text in new[] { "\"ABxx\" \"abc\"", "\"AB12\" \"abc\"" })
+        if (!count) Assert.False(denied.IsMatch("\"ABxx\" \"abc\""u8));
+        // Give the miss enough remaining bytes to reach the verifier.
+        foreach (var text in new[] { "\"ABxx\" \"abc\" .............", "\"AB12\" \"abc\"" })
         {
             var bytes = Encoding.UTF8.GetBytes(text);
             var expected = new Regex(Pattern, RegexOptions.Multiline).Count(text);

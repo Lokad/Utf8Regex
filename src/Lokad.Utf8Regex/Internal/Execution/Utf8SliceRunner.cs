@@ -532,6 +532,7 @@ internal static partial class Utf8SliceRunner
         var seekLiteral = (leading < 0 || fromBranch) && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
         if (seekLiteral) leading = -1;
         var checkBranchedPrefix = leading >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
+        var lastBranchedStart = input.Length - candidatePlan.MinRequiredLength;
         var leadingClass = -1;
         var classLiteral = -1;
         var classSearch = default(PreparedSubstringSearch?);
@@ -685,6 +686,9 @@ internal static partial class Utf8SliceRunner
                 continue;
             if (checkBranchedPrefix || proveDecimalWindow)
             {
+                // Starts only advance in this forward branch search. The
+                // input step above also covers stopping after the last one.
+                if (checkBranchedPrefix && position > lastBranchedStart) break;
                 var proveMatch = proveDecimalWindow || existenceOnly && !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
                 var proofStart = proveDecimalWindow ? 0 : leadingScalarIndex;
                 if (!MayMatchBranchedAsciiPrefix(program, input, position, proofStart, out var acceptedEnd, proveMatch))

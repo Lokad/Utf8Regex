@@ -167,6 +167,7 @@ internal static class Utf8FrontEndSearchAnalyzer
                        RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral,
                        RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals,
                        FallbackStartTransform = fallbackStartTransform,
+                       MinRequiredLength = findOptimizations.MinRequiredLength,
                        ExactRequiredLength = exactRequiredLength,
                        MaxPossibleLength = maxPossibleLength,
                        LeadingBoundary = leadingBoundary,
