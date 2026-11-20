@@ -324,7 +324,7 @@ accepts a positive value or null for unlimited. Null projects to zero.
 | Policy | Projected limit | Covered scope | Error kind |
 | --- | --- | --- | --- |
 | `MaxWorkSteps` | `MatchLimit` | Cumulative modeled work, including scanning, retries and publication | `MatchLimit` |
-| `MaxDepth` | `DepthLimit` | Live backtracking and assertion depth | `DepthLimit` |
+| `MaxDepth` | `DepthLimit` | Live backtracking, subroutine and assertion depth | `DepthLimit` |
 | `MaxWorkingBytes` | `HeapLimitInBytes` | Live major workspace and output buffers, including growth overlap | `HeapLimit` |
 | `MaxResultBytes` | `ResultLimitInBytes` | Cumulative covered result and staging storage | `ResultLimit` |
 
@@ -336,6 +336,10 @@ work steps even when the slots are inactive. Which storage and work an operation
 needs depends on the pattern, route and library version. Exact thresholds can
 differ from native PCRE2. Failed admission leaves existing reservations unchanged.
 Sticky denials remain in effect across copies of a span enumerator.
+
+Active subroutine calls and pending retries share admitted call records. A
+retry retains the call state it can restore. Returning from a call or cutting
+retries releases the unused record slots for reuse within the invocation.
 
 ### Program and working allowances
 

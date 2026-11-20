@@ -55,7 +55,7 @@ internal static class Utf8ExactStatePool
 
     internal static T[] Rent<T>(int capacity, bool retain)
     {
-        if (Bucket(capacity) >= 0)
+        if (CanPool(capacity))
         {
             var taken = false;
             try
@@ -89,7 +89,7 @@ internal static class Utf8ExactStatePool
         // Reference arrays are covariant. A pooled leaf must have the exact
         // requested element type so later borrowers can write any T safely.
         if (items.GetType() != typeof(T[])) return;
-        if (!retain || Bucket(items.Length) < 0) return;
+        if (!retain || !CanPool(items.Length)) return;
         var extent = Utf8ConstructionBudget.ArrayBytes<T>(items.Length);
         if (extent > (ulong)Utf8ExactStatePool<T>.MaximumRetainedBytes) return;
         var bytes = (int)extent;
@@ -150,7 +150,6 @@ internal static class Utf8ExactStatePool
         finally { if (taken) s_gate.Exit(); }
     }
 
-    private static int Bucket(int capacity)
-        => capacity is >= 16 and <= 256 && BitOperations.IsPow2((uint)capacity)
-            ? BitOperations.Log2((uint)capacity) - 4 : -1;
+    private static bool CanPool(int capacity)
+        => capacity is >= 8 and <= 256 && BitOperations.IsPow2((uint)capacity);
 }

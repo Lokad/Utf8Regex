@@ -9,16 +9,18 @@ namespace Lokad.Utf8Regex.Pcre2;
 internal ref struct Pcre2InvocationStateStack<T> where T : struct
 {
     private readonly int _maximumCount;
+    private readonly int _initialCapacity;
     private readonly bool _trackRents;
     private T[]? _items;
     private int _count;
     private int _rentCount;
     private ulong _reservedBytes;
 
-    internal Pcre2InvocationStateStack(int maximumCount, bool trackRents)
+    internal Pcre2InvocationStateStack(int maximumCount, bool trackRents, int initialCapacity = 16)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(maximumCount);
         _maximumCount = maximumCount;
+        _initialCapacity = initialCapacity;
         _trackRents = trackRents;
     }
 
@@ -33,7 +35,7 @@ internal ref struct Pcre2InvocationStateStack<T> where T : struct
         if (_items is null || _count == _items.Length)
         {
             var old = _items;
-            var capacity = old is null ? Math.Min(16, _maximumCount)
+            var capacity = old is null ? Math.Min(_initialCapacity, _maximumCount)
                 : Math.Min(old.Length <= Array.MaxLength / 2 ? old.Length * 2 : Array.MaxLength, _maximumCount);
             if (capacity <= _count) budget.ThrowWorkingLimit();
             var bytes = Utf8ConstructionBudget.ArrayBytes<T>(capacity);

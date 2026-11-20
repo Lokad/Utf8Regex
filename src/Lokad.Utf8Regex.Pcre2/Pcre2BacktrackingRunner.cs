@@ -26,7 +26,7 @@ internal readonly record struct Pcre2BacktrackingFrame(
     int ReportedStartOffsetInBytes,
     int RepeatCheckpoint,
     int CaptureCheckpoint,
-    int CallCheckpoint,
+    (int Head, int Extent) CallCheckpoint,
     int AtomicCheckpoint,
     int MarkMutationCheckpoint,
     int MarkTrailCheckpoint,
@@ -57,12 +57,7 @@ internal readonly record struct Pcre2SubroutineCallFrame(
     int CaptureCheckpoint,
     int BacktrackingCheckpoint,
     int AtomicCheckpoint,
-    int MarkTrailCheckpoint)
-{
-    // Undoing a push only pops the current call. Every real return address
-    // is nonnegative, so this entry needs no second tag beside the frame.
-    internal static Pcre2SubroutineCallFrame UndoPush => new(-1, 0, 0, 0, 0, 0, 0);
-}
+    int MarkTrailCheckpoint);
 
 internal readonly record struct Pcre2AtomicCheckpoint(int BacktrackingCheckpoint, int MarkTrailCheckpoint);
 
@@ -744,8 +739,7 @@ internal static class Pcre2BacktrackingRunner
         var initialFrameRents = frames.RentCount;
         var initialRepeatRents = repeatMutations.RentCount;
         var captureMutations = new Pcre2InvocationStateStack<Pcre2CaptureMutation>(int.MaxValue, budget.CollectsDiagnostics);
-        var subroutineCalls = new Pcre2InvocationStateStack<Pcre2SubroutineCallFrame>(frameLimit, budget.CollectsDiagnostics);
-        var subroutineCallMutations = new Pcre2InvocationStateStack<Pcre2SubroutineCallFrame>(int.MaxValue, budget.CollectsDiagnostics);
+        var subroutineCalls = new Pcre2SubroutineCalls(frameLimit, budget.CollectsDiagnostics);
         var atomicCheckpoints = new Pcre2InvocationStateStack<Pcre2AtomicCheckpoint>(frameLimit, budget.CollectsDiagnostics);
         var markMutations = new Pcre2InvocationStateStack<Pcre2MarkMutation>(int.MaxValue, budget.CollectsDiagnostics);
         var markTrail = new Pcre2InvocationStateStack<Pcre2MarkTrailEntry>(int.MaxValue, budget.CollectsDiagnostics);
@@ -868,7 +862,7 @@ internal static class Pcre2BacktrackingRunner
                                 reportedStartOffsetInBytes,
                                 repeatMutations.Count,
                                 captureMutations.Count,
-                                subroutineCallMutations.Count,
+                                subroutineCalls.Checkpoint,
                                 atomicCheckpoints.Count,
                                 markMutations.Count,
                                 markTrail.Count,
@@ -907,7 +901,7 @@ internal static class Pcre2BacktrackingRunner
                                             reportedStartOffsetInBytes,
                                             repeatMutations.Count,
                                             captureMutations.Count,
-                                            subroutineCallMutations.Count,
+                                            subroutineCalls.Checkpoint,
                                             atomicCheckpoints.Count,
                                             markMutations.Count,
                                             markTrail.Count,
@@ -926,7 +920,7 @@ internal static class Pcre2BacktrackingRunner
                                             reportedStartOffsetInBytes,
                                             repeatMutations.Count,
                                             captureMutations.Count,
-                                            subroutineCallMutations.Count,
+                                            subroutineCalls.Checkpoint,
                                             atomicCheckpoints.Count,
                                             markMutations.Count,
                                             markTrail.Count,
@@ -1025,7 +1019,7 @@ internal static class Pcre2BacktrackingRunner
                                     reportedStartOffsetInBytes,
                                     repeatMutations.Count,
                                     captureMutations.Count,
-                                    subroutineCallMutations.Count,
+                                    subroutineCalls.Checkpoint,
                                     atomicCheckpoints.Count,
                                     markMutations.Count,
                                     markTrail.Count,
@@ -1249,7 +1243,7 @@ internal static class Pcre2BacktrackingRunner
                             break;
                         }
 
-                        PushSubroutineCall(
+                        subroutineCalls.Push(
                             new Pcre2SubroutineCallFrame(
                                 instructionIndex + 1,
                                 subroutineSlot,
@@ -1258,14 +1252,8 @@ internal static class Pcre2BacktrackingRunner
                                 frames.Count,
                                 atomicCheckpoints.Count,
                                 markTrail.Count),
-                            ref subroutineCalls,
-                            depthBase + frames.Count,
+                            checked(depthBase + frames.Count),
                             ref budget);
-                        // Only a live retry can need the call stack before this push.
-                        // A later frame checkpoints the calls in effect when it is created.
-                        if (frames.Count != 0)
-                            RecordSubroutineUndo(Pcre2SubroutineCallFrame.UndoPush,
-                                ref subroutineCallMutations, ref budget);
                         for (var resetStart = 0; resetStart < counts.Length;)
                         {
                             // The call's instruction step admits the first
@@ -1297,7 +1285,7 @@ internal static class Pcre2BacktrackingRunner
                             break;
                         }
 
-                        var returnCall = subroutineCalls[subroutineCalls.Count - 1];
+                        var returnCall = subroutineCalls.Current;
                         RestoreSubroutineState(
                             returnCall,
                             counts,
@@ -1313,10 +1301,8 @@ internal static class Pcre2BacktrackingRunner
                             ref repeatMutations,
                             ref captureMutations,
                             ref budget);
-                        var completedCall = subroutineCalls.Pop();
-                        if (frames.Count != 0)
-                            RecordSubroutineUndo(completedCall, ref subroutineCallMutations, ref budget);
-                        instructionIndex = completedCall.ReturnInstruction;
+                        subroutineCalls.Return(RetainedCallExtent(in frames));
+                        instructionIndex = returnCall.ReturnInstruction;
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.Conditional:
@@ -1327,7 +1313,7 @@ internal static class Pcre2BacktrackingRunner
                                 IsAnyCaptureSet(condition.CaptureSlots, captureStarts, captureEnds),
                             Pcre2BacktrackingConditionKind.RecursionAny => subroutineCalls.Count != 0,
                             Pcre2BacktrackingConditionKind.RecursionSlot =>
-                                IsSubroutineActive(condition.SubroutineSlot, subroutineCalls),
+                                subroutineCalls.Contains(condition.SubroutineSlot, ref budget),
                             _ => false,
                         };
                         Pcre2CaptureByteRange[] conditionalCaptures = [];
@@ -1404,6 +1390,7 @@ internal static class Pcre2BacktrackingRunner
 
                         var atomic = atomicCheckpoints.Pop();
                         frames.Truncate(atomic.BacktrackingCheckpoint);
+                        subroutineCalls.Trim(RetainedCallExtent(in frames));
                         markTrail.Truncate(atomic.MarkTrailCheckpoint);
                         instructionIndex++;
                         continue;
@@ -1445,7 +1432,7 @@ internal static class Pcre2BacktrackingRunner
                             ref budget);
                         if (subroutineCalls.Count != 0)
                         {
-                            var acceptedCall = subroutineCalls[subroutineCalls.Count - 1];
+                            var acceptedCall = subroutineCalls.Current;
                             frames.Truncate(acceptedCall.BacktrackingCheckpoint);
                             atomicCheckpoints.Truncate(acceptedCall.AtomicCheckpoint);
                             markTrail.Truncate(acceptedCall.MarkTrailCheckpoint);
@@ -1464,10 +1451,8 @@ internal static class Pcre2BacktrackingRunner
                                 ref repeatMutations,
                                 ref captureMutations,
                                 ref budget);
-                            var completedAcceptedCall = subroutineCalls.Pop();
-                            if (frames.Count != 0)
-                                RecordSubroutineUndo(completedAcceptedCall, ref subroutineCallMutations, ref budget);
-                            instructionIndex = completedAcceptedCall.ReturnInstruction;
+                            subroutineCalls.Return(RetainedCallExtent(in frames));
+                            instructionIndex = acceptedCall.ReturnInstruction;
                             continue;
                         }
 
@@ -1541,7 +1526,7 @@ internal static class Pcre2BacktrackingRunner
                                 reportedStartOffsetInBytes,
                                 repeatMutations.Count,
                                 captureMutations.Count,
-                                subroutineCallMutations.Count,
+                                subroutineCalls.Checkpoint,
                                 atomicCheckpoints.Count,
                                 markMutations.Count,
                                 markTrail.Count,
@@ -1607,7 +1592,6 @@ internal static class Pcre2BacktrackingRunner
                         ref repeatMutations,
                         ref captureMutations,
                         ref subroutineCalls,
-                        ref subroutineCallMutations,
                         ref atomicCheckpoints,
                         ref markMutations,
                         ref markTrail,
@@ -1650,7 +1634,6 @@ internal static class Pcre2BacktrackingRunner
                 repeatRents +
                 captureMutations.RentCount +
                 subroutineCalls.RentCount +
-                subroutineCallMutations.RentCount +
                 atomicCheckpoints.RentCount +
                 markMutations.RentCount +
                 markTrail.RentCount;
@@ -1658,7 +1641,6 @@ internal static class Pcre2BacktrackingRunner
                 repeatGrowths +
                 Math.Max(0, captureMutations.RentCount - 1) +
                 Math.Max(0, subroutineCalls.RentCount - 1) +
-                Math.Max(0, subroutineCallMutations.RentCount - 1) +
                 Math.Max(0, atomicCheckpoints.RentCount - 1) +
                 Math.Max(0, markMutations.RentCount - 1) +
                 Math.Max(0, markTrail.RentCount - 1);
@@ -1676,7 +1658,6 @@ internal static class Pcre2BacktrackingRunner
             markTrail.Dispose(ref budget);
             markMutations.Dispose(ref budget);
             atomicCheckpoints.Dispose(ref budget);
-            subroutineCallMutations.Dispose(ref budget);
             subroutineCalls.Dispose(ref budget);
             captureMutations.Dispose(ref budget);
             // The caller owns both capacities across top-level attempts. No
@@ -1898,20 +1879,8 @@ internal static class Pcre2BacktrackingRunner
         return false;
     }
 
-    private static bool IsSubroutineActive(
-        int slot,
-        Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> calls)
-    {
-        for (var index = calls.Count - 1; index >= 0; index--)
-        {
-            if (calls[index].SubroutineSlot == slot)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    private static int RetainedCallExtent(scoped in Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)
+        => frames.Count == 0 ? 0 : frames[frames.Count - 1].CallCheckpoint.Extent;
 
     private static void MergeAssertionCaptures(
         ReadOnlySpan<Pcre2CaptureByteRange> assertionCaptures,
@@ -2047,8 +2016,7 @@ internal static class Pcre2BacktrackingRunner
         scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
         ref Pcre2InvocationStateStack<Pcre2RepeatMutation> repeatMutations,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> subroutineCalls,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> subroutineCallMutations,
+        ref Pcre2SubroutineCalls subroutineCalls,
         ref Pcre2InvocationStateStack<Pcre2AtomicCheckpoint> atomicCheckpoints,
         ref Pcre2InvocationStateStack<Pcre2MarkMutation> markMutations,
         ref Pcre2InvocationStateStack<Pcre2MarkTrailEntry> markTrail,
@@ -2085,10 +2053,7 @@ internal static class Pcre2BacktrackingRunner
                 captureOwners,
                 captureOpenOwners,
                 ref budget);
-            RollbackSubroutineCalls(
-                frame.CallCheckpoint,
-                ref subroutineCalls,
-                ref subroutineCallMutations, ref budget);
+            subroutineCalls.Restore(frame.CallCheckpoint);
             atomicCheckpoints.Truncate(frame.AtomicCheckpoint);
             RollbackMarks(
                 frame.MarkMutationCheckpoint,
@@ -2127,6 +2092,7 @@ internal static class Pcre2BacktrackingRunner
 
             if (frame.ResumeAction != Pcre2BacktrackingResumeAction.ControlVerb)
             {
+                subroutineCalls.Trim(RetainedCallExtent(in frames));
                 instructionIndex = frame.Instruction;
                 inputIndex = resumeOffset;
                 failure = default;
@@ -2135,7 +2101,7 @@ internal static class Pcre2BacktrackingRunner
 
             if (subroutineCalls.Count != 0)
             {
-                var call = subroutineCalls[subroutineCalls.Count - 1];
+                var call = subroutineCalls.Current;
                 frames.Truncate(Math.Min(frames.Count, call.BacktrackingCheckpoint));
                 continue;
             }
@@ -2199,20 +2165,6 @@ internal static class Pcre2BacktrackingRunner
         inputIndex = 0;
         failure = default;
         return false;
-    }
-
-    private static void PushSubroutineCall(
-        Pcre2SubroutineCallFrame frame,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> calls,
-        int depthBase,
-        ref Pcre2ResourceBudget budget)
-    {
-        var nextDepth = checked(depthBase + calls.Count + 1);
-        budget.ChargeFrame((uint)nextDepth);
-        if (!calls.TryPush(frame, ref budget))
-        {
-            throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
-        }
     }
 
     private static void RestoreSubroutineState(
@@ -2296,38 +2248,6 @@ internal static class Pcre2BacktrackingRunner
                 captureOpenOwners,
                 ref captureMutations,
                 ref budget, recordRollback: true);
-        }
-    }
-
-    private static void RecordSubroutineUndo(
-        Pcre2SubroutineCallFrame frame,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> mutations,
-        ref Pcre2ResourceBudget budget)
-    {
-        if (!mutations.TryPush(frame, ref budget))
-        {
-            throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
-        }
-    }
-
-    private static void RollbackSubroutineCalls(
-        int checkpoint,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> calls,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> mutations,
-        ref Pcre2ResourceBudget budget)
-    {
-        for (var remaining = mutations.Count - checkpoint; remaining > 0; remaining--)
-        {
-            if ((remaining & 63) == 0) budget.ChargeWorkspaceStep();
-            var mutation = mutations.Pop();
-            if (mutation.ReturnInstruction < 0)
-            {
-                _ = calls.Pop();
-            }
-            else if (!calls.TryPush(mutation, ref budget))
-            {
-                throw new Pcre2MatchException("The PCRE2 depth limit was exceeded.", Pcre2ErrorKind.DepthLimit);
-            }
         }
     }
 
@@ -2440,7 +2360,7 @@ internal static class Pcre2BacktrackingRunner
 
     private static bool NeedsCaptureCloseRollback(int slot, int depth,
         ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
-        ref Pcre2InvocationStateStack<Pcre2SubroutineCallFrame> calls,
+        scoped ref Pcre2SubroutineCalls calls,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> mutations)
     {
         // An existing mutation covers this close when no live retry or
@@ -2448,7 +2368,7 @@ internal static class Pcre2BacktrackingRunner
         var count = mutations.Count;
         return (frames.Count != 0 || depth != 0) && (count == 0 ||
             (frames.Count != 0 && frames[frames.Count - 1].CaptureCheckpoint >= count) ||
-            (depth != 0 && calls[depth - 1].CaptureCheckpoint >= count) ||
+            (depth != 0 && calls.Current.CaptureCheckpoint >= count) ||
             mutations[count - 1].Slot != slot);
     }
 

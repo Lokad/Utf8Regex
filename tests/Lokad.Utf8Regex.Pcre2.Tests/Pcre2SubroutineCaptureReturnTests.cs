@@ -27,6 +27,25 @@ public sealed class Pcre2SubroutineCaptureReturnTests
         Assert.False(captures[2].Success);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SiblingCallRetriesKeepTheRequiredHistoryAfterGrowth(bool retryFirst)
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?<first>(?&unit))(?<rest>(?&unit){12})c\z(?(DEFINE)(?<unit>a|ab))",
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 20_000, MaxDepth = 256, MaxWorkingBytes = 1 << 20 } });
+        var tail = new string('a', 12);
+        var input = Encoding.UTF8.GetBytes(retryFirst ? "ab" + tail + "c" : tail + "abc");
+        var firstEnd = retryFirst ? 2 : 1;
+        using var cancellation = new CancellationTokenSource();
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[4];
+        var match = regex.Match(input, captures: captures, cancellationToken: cancellation.Token);
+        Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal((0, firstEnd), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal((firstEnd, input.Length - 1), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
+        Assert.False(captures[3].Success);
+    }
+
     // Native PCRE2 10.47 witnesses: captures are caller state after a return,
     // even when a different value was set in a deeper recursion level.
     [Theory]
