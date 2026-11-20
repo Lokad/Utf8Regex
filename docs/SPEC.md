@@ -522,6 +522,10 @@ capture and assertion state retain their own admission. When the remaining instr
 prove an exact terminal literal, the engine can find the last reachable
 occurrence in bounded, metered blocks and execute the tail without a rewind
 frame. The usual capture and result admission applies at that endpoint.
+A greedy dot can also search its saved endpoints backwards in bounded blocks
+when every continuation arm has a proved starter among at most three ASCII
+bytes. Each surviving endpoint runs the continuation and capture effects in
+normal order. The same frame owns rollback and remains subject to admission.
 A forward repeat that consumes only ASCII can also use the longest endpoint
 when every possible first byte of its terminal continuation is disjoint from
 the repeated atom. The proof includes final LF for a lax end anchor and can

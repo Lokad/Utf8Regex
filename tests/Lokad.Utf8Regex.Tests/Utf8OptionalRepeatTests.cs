@@ -118,6 +118,49 @@ public sealed class Utf8OptionalRepeatTests
     }
 
     [Theory]
+    [InlineData("http/x")]
+    [InlineData("😀Http/x é ~bad")]
+    [InlineData("😀http/x é ~/x then")]
+    [InlineData("😀http/x é ~/x", 3073)]
+    [InlineData("😀http/x \n~/x")]
+    public void GreedyDotRewindKeepsStarterOrderAndCaptures(string text, int trailingScalars = 0)
+    {
+        const string pattern = @"\A(?<before>.*)(?<marker>(?:[hH]ttp|~)/x)(?<rest>.*)\z";
+        const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
+        text += new string('é', trailingScalars);
+        using var regex = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 16, MaxWorkingBytes = 1 << 14 }
+        });
+        var exit = Assert.Single(regex.Inspection.AvailableOwnedSliceProgram!.Instructions.Where(instruction =>
+            instruction.Kind == Utf8SliceInstructionKind.RepeatExit && instruction.RepeatExitRewindStarts != 0));
+        Assert.Equal(1 << 24 | 'H' << 8 | 'h' << 16 | '~', exit.RepeatExitRewindStarts);
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern, options).Match(text);
+        using var token = new CancellationTokenSource();
+        var actual = regex.Match(input, cancellationToken: token.Token);
+        Assert.Equal(expected.Success, actual.Success);
+        if (expected.Success)
+            Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
+        Utf8MatchSequence.AssertCaptures(expected,
+            Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: token.Token)), input, text);
+    }
+
+    [Theory]
+    [InlineData(@"\A(.*)(x|é)\z", "😀é")]
+    [InlineData(@"\A(.*)(x|(?=é))é\z", "😀é")]
+    public void WiderAndNullableAlternativesKeepScalarRewind(string pattern, string text)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        Assert.DoesNotContain(regex.Inspection.AvailableOwnedSliceProgram!.Instructions, instruction =>
+            instruction.Kind == Utf8SliceInstructionKind.RepeatExit && instruction.RepeatExitRewindStarts != 0);
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern, RegexOptions.CultureInvariant).Match(text);
+        Assert.True(expected.Success);
+        Utf8MatchSequence.AssertCaptures(expected, Utf8MatchSequence.First(regex.CreateMatchCursor(input)), input, text);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void ScalarOptionalCapturesRetainByteBoundariesAndBorrowedResults(bool lazy)

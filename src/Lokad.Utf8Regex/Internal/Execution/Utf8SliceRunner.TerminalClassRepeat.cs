@@ -927,14 +927,15 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    internal static void MarkDisjointAsciiRepeatContinuation(Span<Utf8SliceInstruction> code, byte[][] setMasks,
+    internal static void PrepareScalarRepeatContinuation(Span<Utf8SliceInstruction> code, byte[][] setMasks,
         int repeatIndex, Utf8ConstructionBudget budget)
     {
         var repeat = code[repeatIndex];
         if (!IsSingleAtomRepeat(code, repeatIndex, repeat) || repeat.RepeatMinimum == repeat.RepeatMaximum)
             return;
         var atom = code[repeatIndex + 1];
-        if (atom is not ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+        if (atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
+                         { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
                          { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
 
@@ -949,6 +950,15 @@ internal static partial class Utf8SliceRunner
             { Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Literal, B: 0 })
             return;
 
+        var exit = code[repeat.A];
+        if (atom.Kind == Utf8SliceInstructionKind.Dot)
+        {
+            if (code[continuation].Kind != Utf8SliceInstructionKind.Fork) return;
+            var starts = FindRepeatRewindStarts(code, setMasks, continuation, budget);
+            if (starts != 0) code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C, starts);
+            return;
+        }
+
         // A direct literal needs one visit. A fork shares a bounded allowance
         // among its arms. Both tests use the same repeat-exit certificate.
         var work = code[continuation].Kind == Utf8SliceInstructionKind.Literal ? 1 : 12;
@@ -957,10 +967,74 @@ internal static partial class Utf8SliceRunner
         var consumed = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
             BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
         if (ExcludesShorterRepeatEnds(code, continuation, consumed, atom.Kind == Utf8SliceInstructionKind.Set, ref work))
-        {
-            var exit = code[repeat.A];
             code[repeat.A] = new(exit.Kind, exit.A, exit.B, 1, exit.D);
+    }
+
+    private static int FindRepeatRewindStarts(ReadOnlySpan<Utf8SliceInstruction> code, byte[][] setMasks,
+        int continuation, Utf8ConstructionBudget budget)
+    {
+        var remaining = 12;
+        budget.ChargeWork((ulong)(remaining * 3));
+        Span<byte> starts = stackalloc byte[3];
+        var count = 0;
+        if (!CollectStarts(code, setMasks, continuation, starts, ref count, ref remaining) || count == 0) return 0;
+        starts[count..].Fill(starts[count - 1]);
+        return (1 << 24) | starts[0] | (starts[1] << 8) | (starts[2] << 16);
+
+        static bool CollectStarts(ReadOnlySpan<Utf8SliceInstruction> code, byte[][] masks, int index,
+            Span<byte> starts, ref int count, ref int remaining)
+        {
+            // Every arm must consume one of these ASCII bytes first. Unresolved
+            // effects, nullable arms and wider or folded classes keep scalar rewind.
+            for (; remaining > 0 && (uint)index < (uint)code.Length; index++)
+            {
+                remaining--;
+                switch (code[index])
+                {
+                    case { Kind: Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd }:
+                        continue;
+                    case { Kind: Utf8SliceInstructionKind.Fork, B: 0 } fork when fork.A > index:
+                        if (!CollectStarts(code, masks, fork.A, starts, ref count, ref remaining)) return false;
+                        continue;
+                    case { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal:
+                        return TryAddStartByte((byte)literal.A, starts, ref count);
+                    case { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set when masks[set.A].Length == 16:
+                        var mask = masks[set.A].AsSpan();
+                        for (var part = 0; part < 2; part++)
+                        {
+                            var bits = BinaryPrimitives.ReadUInt64LittleEndian(mask[(part * 8)..]);
+                            while (bits != 0)
+                            {
+                                var value = (byte)(part * 64 + BitOperations.TrailingZeroCount(bits));
+                                if (!TryAddStartByte(value, starts, ref count)) return false;
+                                bits &= bits - 1;
+                            }
+                        }
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            return false;
         }
+    }
+
+    private static Utf8ExecutionLimitKind FindPreviousRepeatStart(ReadOnlySpan<byte> input, int lower,
+        int upper, int starts, ref Utf8SliceInvocation invocation, out int position)
+    {
+        // ASCII bytes are scalar boundaries. Exclude the endpoint already tried
+        // and keep the same descending order within the admitted scalar run.
+        while (upper > lower)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) { position = -1; return breach; }
+            var blockStart = Math.Max(lower, upper - 2048);
+            var found = input[blockStart..upper].LastIndexOfAny((byte)starts, (byte)(starts >> 8), (byte)(starts >> 16));
+            if (found >= 0) { position = blockStart + found; return Utf8ExecutionLimitKind.None; }
+            upper = blockStart;
+        }
+        position = -1;
+        return Utf8ExecutionLimitKind.None;
     }
 
     internal static void MarkExcludedLoopStart(Span<Utf8SliceInstruction> code, byte[][] setMasks,

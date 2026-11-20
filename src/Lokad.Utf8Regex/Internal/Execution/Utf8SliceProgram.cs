@@ -220,6 +220,9 @@ internal readonly struct Utf8SliceInstruction
     // all reject shorter endpoints.
     internal bool RepeatExitRejectsShorterEndpoints => C != 0;
 
+    // A RepeatExit can pack up to three required ASCII starters for rewind.
+    internal int RepeatExitRewindStarts => D;
+
     // Only repeat instructions interpret C/D as unsigned bounds. Keep the
     // existing instruction layout; UINT_MAX is their distinct infinity marker.
     internal long RepeatMinimum => unchecked((uint)C);
@@ -454,7 +457,7 @@ internal sealed class Utf8SliceProgram
         {
             var instruction = instructions[pc];
             if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && !rightToLeft && !isNonBacktracking)
-                Utf8SliceRunner.MarkDisjointAsciiRepeatContinuation(instructions, setMasks, pc, budget);
+                Utf8SliceRunner.PrepareScalarRepeatContinuation(instructions, setMasks, pc, budget);
             else if (instruction.Kind == Utf8SliceInstructionKind.Jump && !rightToLeft && !isNonBacktracking)
                 Utf8SliceRunner.MarkExcludedLoopStart(instructions, setMasks, pc, budget);
             readsCaptures |= instruction.Kind is Utf8SliceInstructionKind.Backref or Utf8SliceInstructionKind.TestGroup or

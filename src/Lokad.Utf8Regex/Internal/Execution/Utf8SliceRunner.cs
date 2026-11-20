@@ -25,6 +25,7 @@ internal struct Utf8SliceFrame
     internal int InputIndex;
     internal int TrailCount;
     internal int Aux;
+    // RepeatUnwind stores the iteration count. ScalarRepeatRewind can store ASCII starters.
     internal int Count;
     internal int JournalCount;
 }
@@ -1548,6 +1549,7 @@ internal static partial class Utf8SliceRunner
                                     InputIndex = run.EndIndex,
                                     TrailCount = stacks.TrailCount,
                                     Aux = minimumEnd,
+                                    Count = instructions[instruction.A].RepeatExitRewindStarts,
                                     JournalCount = stacks.JournalCount,
                                 }, ref invocation))
                                 { failure = stacks.Breach; goto Failure; }
@@ -2108,10 +2110,20 @@ internal static partial class Utf8SliceRunner
                         programIndex = popped.Target;
                         break;
                     case Utf8SliceResumeKind.ScalarRepeatRewind:
-                        var breach = invocation.TryChargeStep();
-                        if (breach != Utf8ExecutionLimitKind.None) { failure = breach; goto Failure; }
-                        if (!TryGetScalarWidthEndingAt(input, popped.InputIndex, out var width)) goto Backtrack;
-                        inputIndex = popped.InputIndex - width;
+                        if (popped.Count != 0)
+                        {
+                            failure = FindPreviousRepeatStart(input, popped.Aux, popped.InputIndex, popped.Count,
+                                ref invocation, out inputIndex);
+                            if (failure != Utf8ExecutionLimitKind.None) goto Failure;
+                            if (inputIndex < 0) goto Backtrack;
+                        }
+                        else
+                        {
+                            failure = invocation.TryChargeStep();
+                            if (failure != Utf8ExecutionLimitKind.None) goto Failure;
+                            if (!TryGetScalarWidthEndingAt(input, popped.InputIndex, out var width)) goto Backtrack;
+                            inputIndex = popped.InputIndex - width;
+                        }
                         programIndex = popped.Target;
                         if (inputIndex > popped.Aux)
                         {
@@ -2341,6 +2353,7 @@ internal static partial class Utf8SliceRunner
 
             latest.ResumeKind = Utf8SliceResumeKind.ScalarRepeatRewind;
             latest.Aux = start;
+            latest.Count = 0;
             latest.InputIndex = end;
             return true;
         }
