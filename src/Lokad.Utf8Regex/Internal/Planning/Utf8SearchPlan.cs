@@ -52,7 +52,12 @@ internal readonly struct Utf8SearchPlan
             : null;
         PreparedSearcher = CreatePreparedSearcher(kind, LiteralSearch, MultiLiteralSearch);
         PortfolioKind = DeterminePortfolioKind(kind, PreparedSearcher, MultiLiteralSearch);
-        _requiredPrefilterSearcher = CreateRequiredPrefilter(requiredPrefilterLiteralUtf8, requiredPrefilterAlternateLiteralsUtf8);
+        // A short exact prefilter can share the same prepared needle as
+        // candidate discovery. The runner can then reuse its first occurrence.
+        _requiredPrefilterSearcher = requiredPrefilterLiteralUtf8 is { Length: <= 64 } &&
+            LiteralSearch is { IgnoreCase: false } exact && exact.Needle.AsSpan().SequenceEqual(requiredPrefilterLiteralUtf8)
+            ? new PreparedSearcher(exact, ignoreCase: false)
+            : CreateRequiredPrefilter(requiredPrefilterLiteralUtf8, requiredPrefilterAlternateLiteralsUtf8);
         FixedDistanceSets = fixedDistanceSets;
         TrailingLiteralUtf8 = trailingLiteralUtf8;
         FallbackStartTransform = fallbackStartTransform;

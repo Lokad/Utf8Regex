@@ -19,7 +19,8 @@ public sealed class Utf8UriExistenceTests
         var regex = new Utf8Regex(Pattern, options: options);
         var captured = new Utf8Regex("(?<uri>" + Pattern + ")", options: options);
         foreach (var text in new[] { "", "x://a?query", "x://host?query", "x://😀", "𐐀://😀😀", "é://ab", "١://ab",
-            "x://😀/", "x:///😀😀", "😀://ab", "x://a x://ab", "x://ab?#tail x://cd" })
+            "x://😀/", "x:///😀😀", "😀://ab", "://ab é://ab", "x://a x://ab",
+            "://a" + new string(' ', 2041) + "𐐀://ab", "x://ab?#tail x://cd" })
         {
             var input = Encoding.UTF8.GetBytes(text);
             Assert.Equal(captured.IsMatch(input), regex.IsMatch(input));

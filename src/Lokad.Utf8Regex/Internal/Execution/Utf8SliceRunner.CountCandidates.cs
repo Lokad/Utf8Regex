@@ -681,7 +681,7 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
         in (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default,
-        byte[][]? delimiterAlternatives = null, int requiredSuffix = -1)
+        byte[][]? delimiterAlternatives = null, int requiredSuffix = -1, int screenedDelimiter = -1)
     {
         if (leadingClass >= 2 && !repeatPrefix.Any.HasValue && delimiterAlternatives is null)
         {
@@ -695,7 +695,12 @@ internal static partial class Utf8SliceRunner
         var floor = position;
         var earliest = -1;
         Utf8ExecutionLimitKind breach;
-        if (delimiterAlternatives is not null)
+        if (screenedDelimiter >= floor)
+        {
+            position = screenedDelimiter;
+            breach = Utf8ExecutionLimitKind.None;
+        }
+        else if (delimiterAlternatives is not null)
         {
             breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(delimiterAlternatives, false,
                 input, position, input.Length, false, ref invocation, out var candidate, out var found);

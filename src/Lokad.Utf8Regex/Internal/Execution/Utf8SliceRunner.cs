@@ -460,13 +460,14 @@ internal static partial class Utf8SliceRunner
     internal static Utf8SliceSearchOutcome TryFindFirst(
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         int[] captureStarts, int[] captureEnds, bool collectHistory,
-        ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default, bool existenceOnly = false)
+        ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
+        bool existenceOnly = false, int screenedLiteral = -1)
     {
         var workspace = new AttemptWorkspace();
         try
         {
             return TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
-                collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly);
+                collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral);
         }
         finally { workspace.Release(ref invocation); }
     }
@@ -477,7 +478,7 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         int[] captureStarts, int[] captureEnds, bool collectHistory,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan = default,
-        bool existenceOnly = false)
+        bool existenceOnly = false, int screenedLiteral = -1)
     {
         invocation.Budget.ThrowIfCancellationRequested();
         if ((uint)fromByte > (uint)input.Length ||
@@ -543,6 +544,7 @@ internal static partial class Utf8SliceRunner
         var singleWindowAttempt = false;
         var requiredClassSuffix = -1;
         var verifiedClassLiteralLength = 0;
+        var screenedDelimiter = -1;
         var wideInput = input.Length - fromByte >= 256;
         if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
@@ -568,7 +570,13 @@ internal static partial class Utf8SliceRunner
                         if (existenceOnly && !collectHistory && program.GroupCount == 0 &&
                             leadingClass == 1 && literalIndex == 4 &&
                             first is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 })
+                        {
                             verifiedClassLiteralLength = aligned.Length;
+                            // The prefilter already searched this exact needle
+                            // from byte zero. A later floor may exclude its hit.
+                            if (aligned.Length > 1 && screenedLiteral >= fromByte)
+                                screenedDelimiter = screenedLiteral;
+                        }
                     }
                 }
                 // An aligned direct byte is already prepared at short starts,
@@ -635,7 +643,9 @@ internal static partial class Utf8SliceRunner
             {
                 var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                     (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
-                    ref position, ref invocation, out classWindowEnd, repeatPrefix, classAlternatives, requiredClassSuffix);
+                    ref position, ref invocation, out classWindowEnd, repeatPrefix, classAlternatives,
+                    requiredClassSuffix, screenedDelimiter);
+                screenedDelimiter = -1;
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
