@@ -193,16 +193,17 @@ public sealed class Utf8PosixRegex : IDisposable
     internal Utf8CaptureRange Publish(int start, int end,
         in PosixWorkspace workspace, scoped ReadOnlySpan<int> state, Span<Utf8CaptureRange> output, ref Utf8SliceInvocation invocation)
     {
-        ClearOutput(output, ref invocation);
         var whole = new Utf8CaptureRange(start, end);
-        if (!output.IsEmpty) output[0] = whole;
+        if (!output.IsEmpty)
+        {
+            PosixWorkspace.Charge(ref invocation);
+            output[0] = whole;
+        }
         for (var slot = 1; slot < output.Length; slot++)
         {
             PosixWorkspace.Charge(ref invocation);
-            if (workspace.GetCapture(state, slot, ref invocation, out var from, out var to))
-            {
-                output[slot] = new Utf8CaptureRange(from, to);
-            }
+            output[slot] = workspace.GetCapture(state, slot, ref invocation, out var from, out var to)
+                ? new Utf8CaptureRange(from, to) : default;
         }
         PosixWorkspace.Finish(ref invocation);
         return whole;
