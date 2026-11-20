@@ -546,7 +546,7 @@ internal static partial class Utf8SliceRunner
         // selective than a branch interval or the lead of a wider scalar.
         var seekLiteral = (leading is < 0 or >= 128 || fromBranch) && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
         if (seekLiteral) leading = -1;
-        var checkBranchedPrefix = leading >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
+        var checkBranchedPrefix = leading is >= 0 and < 128 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
         var lastProbedStart = input.Length - candidatePlan.MinRequiredLength;
         var leadingClass = -1;
         var classLiteral = -1;
@@ -943,7 +943,7 @@ internal static partial class Utf8SliceRunner
         var (leadingFirst, leadingLast, leadingSecond, leadingSecondLast, leadingScalarIndex, _) = seekLiteral
             ? (-1, (byte)0, -1, (byte)0, -1, false)
             : program.LeadingByteCandidate;
-        var checkBranchedPrefix = leadingFirst >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
+        var checkBranchedPrefix = leadingFirst is >= 0 and < 128 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
         if (checkBranchedPrefix && input.Length - fromByte >= 256 && program.RequiredUnanchoredFinalByte is { } finalByte)
         {
             // One bounded required-byte search can reject a whole Count before

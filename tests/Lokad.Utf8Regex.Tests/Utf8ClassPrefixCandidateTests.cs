@@ -10,10 +10,13 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ClassPrefixCandidateTests
 {
     [Theory]
-    [InlineData("α-ω", "Ͽ", "λω")]
-    [InlineData("ࠀ-ࠇ", "ࠈ", "ࠀࠇ")]
-    [InlineData("😀-😇", "😈", "😀😇")]
-    public void UnicodeRangeCandidatesSkipOtherStartsAndVerifyTheCompleteScalar(string range, string near, string value)
+    [InlineData("[α-ω]{2}", "Ͽ", "λω")]
+    [InlineData("[ࠀ-ࠇ]{2}", "ࠈ", "ࠀࠇ")]
+    [InlineData("[😀-😇]{2}", "😈", "😀😇")]
+    [InlineData("[α-ω]{2}|[😀-😇]{2}", "😈", "λω")]
+    [InlineData("βλ|[😀-😇]{2}", "😈", "😀😇")]
+    [InlineData("β?[😀-😇]{2}", "😈", "β😀😇")]
+    public void UnicodeCandidatesSkipOtherStartsAndVerifyTheCompleteScalar(string pattern, string near, string value)
     {
         var prefix = new string('!', 2047) + near + near + new string('!', 4094);
         var input = Encoding.UTF8.GetBytes(prefix + value + "#" + value + "#");
@@ -21,7 +24,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var length = Encoding.UTF8.GetByteCount(value);
         var secondStart = firstStart + length + 1;
         using var source = new CancellationTokenSource();
-        using var regex = Utf8Regex.Compile($"(?<value>[{range}]{{2}})(?![!?])", policy: new()
+        using var regex = Utf8Regex.Compile($"(?<value>{pattern})(?![!?])", policy: new()
         {
             ResourcePolicy = Funded with { MaxWorkSteps = 256 }
         });

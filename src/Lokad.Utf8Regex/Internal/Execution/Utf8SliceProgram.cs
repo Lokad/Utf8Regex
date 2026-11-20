@@ -707,7 +707,7 @@ internal sealed class Utf8SliceProgram
         var unanchored = end < 0;
         if (unanchored)
         {
-            if (CanMatchEmpty || LeadingByteCandidate is not { FromBranch: true, First: >= 0 } ||
+            if (CanMatchEmpty || LeadingByteCandidate is not { FromBranch: true, First: >= 0 and < 128 } ||
                 code[^2] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) return default;
             end = code.Length - 1;
         }

@@ -126,7 +126,7 @@ internal static partial class Utf8SliceRunner
             if (code[index].Kind is not (Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.RepeatGreedy or
                 Utf8SliceInstructionKind.RepeatLazy)) return (-1, 0, -1, 0, firstScalarIndex, false);
             var remaining = 64;
-            first = GetBranchedAsciiStart(code, index, budget, ref remaining, out last);
+            first = GetBranchedStartBytes(program, index, budget, ref remaining, out last);
             return (first, last, -1, 0, firstScalarIndex, true);
         }
         // Only straight-line mandatory entries can precede the next scalar.
@@ -150,6 +150,8 @@ internal static partial class Utf8SliceRunner
         Utf8ConstructionBudget budget, out byte last)
     {
         last = 0;
+        if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 128 } && Rune.IsValid(atom.A))
+            return last = Lead(atom.A);
         if (atom is not { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } ||
             program.CategorySetMembers[atom.D] is not [{ Negated: false, Table: { Mask: 0, ClassProgram: null,
                 ScalarPredicate: null, Ranges: { Length: >= 2 and <= 32 } ranges } }] ||
@@ -176,9 +178,10 @@ internal static partial class Utf8SliceRunner
     // Every reachable arm must prove its first consuming byte. Stop on
     // unknown effects, an empty completion or backwards control flow. The
     // two arms share a fixed visit budget, including when paths reconverge.
-    private static int GetBranchedAsciiStart(ReadOnlySpan<Utf8SliceInstruction> code, int index, Utf8ConstructionBudget budget,
+    private static int GetBranchedStartBytes(Utf8SliceProgram program, int index, Utf8ConstructionBudget budget,
         ref int remaining, out byte last)
     {
+        var code = program.Instructions.AsSpan();
         last = 0;
         while ((uint)index < (uint)code.Length && remaining > 0)
         {
@@ -191,7 +194,7 @@ internal static partial class Utf8SliceRunner
             int first, next;
             if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index + 1)
             {
-                first = GetBranchedAsciiStart(code, index + 1, budget, ref remaining, out last);
+                first = GetBranchedStartBytes(program, index + 1, budget, ref remaining, out last);
                 next = entry.A;
             }
             else if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy &&
@@ -199,19 +202,26 @@ internal static partial class Utf8SliceRunner
             {
                 // The one-atom optional can consume its byte or skip directly
                 // through the zero-width repeat exit into the continuation.
-                first = GetUnfoldedAsciiRange(code[index + 1], out last);
+                first = GetStartRange(program, code[index + 1], budget, out last);
                 next = entry.A + 1;
             }
-            else return GetUnfoldedAsciiRange(entry, out last);
+            else return GetStartRange(program, entry, budget, out last);
 
             if (first < 0) return -1;
-            var other = GetBranchedAsciiStart(code, next, budget, ref remaining, out var otherLast);
-            if (other < 0) return -1;
+            var other = GetBranchedStartBytes(program, next, budget, ref remaining, out var otherLast);
+            // A single interval joining ASCII and wide starters would also
+            // include UTF-8 continuation bytes.
+            if (other < 0 || (first < 128) != (other < 128)) return -1;
             last = Math.Max(last, otherLast);
             return Math.Min(first, other);
         }
         return -1;
     }
+
+    private static int GetStartRange(Utf8SliceProgram program, Utf8SliceInstruction atom,
+        Utf8ConstructionBudget budget, out byte last)
+        => GetUnfoldedAsciiRange(atom, out last) is >= 0 and var ascii ? ascii :
+            GetUnfoldedUnicodeLeadRange(program, atom, budget, out last);
 
     private static int GetUnfoldedAsciiRange(Utf8SliceInstruction instruction, out byte last)
     {
