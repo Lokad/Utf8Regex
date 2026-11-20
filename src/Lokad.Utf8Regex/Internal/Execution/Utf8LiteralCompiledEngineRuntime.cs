@@ -14,7 +14,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
 {
     private const int PreparedSearcherLiteralFamilyCountThresholdBytes = 4096;
     internal const int CorrelatedTwoByteLiteralCountThresholdBytes = 128 * 1024;
-    private readonly Utf8CompiledEngine _compiledEngine;
     private readonly Utf8PreparedRegex _regexPlan;
     internal readonly bool _usesRightToLeft;
     private readonly Utf8SearchOperationPlan _search;
@@ -32,7 +31,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
 
     private Utf8LiteralCompiledEngineRuntime(ConstructionState state)
     {
-        _compiledEngine = state.CompiledEngine;
         _regexPlan = state.RegexPlan;
         _usesRightToLeft = state.UsesRightToLeft;
         _search = state.Search;
@@ -1471,7 +1469,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
 
     private InvalidOperationException UnexpectedExecutionKind()
     {
-        return new InvalidOperationException($"Unexpected execution kind '{_regexPlan.ExecutionKind}' for compiled engine '{_compiledEngine.Kind}'.");
+        return new InvalidOperationException($"Unexpected execution kind '{_regexPlan.ExecutionKind}' for the literal runtime.");
     }
 }
 

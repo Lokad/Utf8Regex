@@ -19,7 +19,7 @@ public sealed partial class Utf8Regex
 {
     private bool CanUseFusedCompiledUtf8LiteralCount()
     {
-        if (_compiledEngine.Kind != Utf8CompiledEngineKind.ExactLiteral ||
+        if (CompiledEngineKind != Utf8CompiledEngineKind.ExactLiteral ||
             _preparedRegex.ExecutionKind != NativeExecutionKind.ExactUtf8Literal ||
             UsesRightToLeft() ||
             _preparedRegex.SearchPlan.HasBoundaryRequirements ||
@@ -56,7 +56,7 @@ public sealed partial class Utf8Regex
             return false;
         }
 
-        if (_compiledEngine.Kind != Utf8CompiledEngineKind.LiteralFamily ||
+        if (CompiledEngineKind != Utf8CompiledEngineKind.LiteralFamily ||
             _preparedRegex.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
             UsesRightToLeft() ||
             _preparedRegex.SearchPlan.HasBoundaryRequirements ||
@@ -89,7 +89,7 @@ public sealed partial class Utf8Regex
 
     private bool CanUseFusedCompiledAsciiLiteralFamilyCount()
     {
-        if (_compiledEngine.Kind != Utf8CompiledEngineKind.LiteralFamily ||
+        if (CompiledEngineKind != Utf8CompiledEngineKind.LiteralFamily ||
             _preparedRegex.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
             UsesRightToLeft() ||
             _preparedRegex.SearchPlan.HasBoundaryRequirements ||

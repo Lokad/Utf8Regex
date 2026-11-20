@@ -13,8 +13,21 @@ public sealed class LokadCodeRouteGuardrailTests
 
         Assert.Equal(NativeExecutionKind.ExactUtf8Literals, regex.Inspection.ExecutionKind);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
-        Assert.Equal(Utf8CompiledExecutionBackend.EmittedInstruction, regex.Inspection.CompiledExecutionBackend);
+        Assert.True(regex.Inspection.HasEmittedLiteralFamily);
         Assert.True(regex.Inspection.DebugPrioritizesBoundaryLiteralFamilyCount);
+    }
+
+    [Fact]
+    public void FinitePolicyRetainsLiteralFamilyWithoutAnEmittedCounter()
+    {
+        using var regex = Utf8Regex.Compile(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 10_000 }
+        });
+
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, regex.Inspection.CompiledEngineKind);
+        Assert.False(regex.Inspection.HasEmittedLiteralFamily);
+        Assert.Equal(2, regex.Count("Task ValueTask"u8));
     }
 
     [Fact]
@@ -35,7 +48,7 @@ public sealed class LokadCodeRouteGuardrailTests
         var bytes = System.Text.Encoding.UTF8.GetBytes(input);
         var expected = Regex.Count(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        Assert.Equal(Utf8CompiledExecutionBackend.EmittedInstruction, regex.Inspection.CompiledExecutionBackend);
+        Assert.True(regex.Inspection.HasEmittedLiteralFamily);
         Assert.Equal(expected, regex.Count(bytes));
         Assert.Equal(expected > 0, regex.IsMatch(bytes));
         // Mixed subjects preserve scalar word boundaries and byte coordinates.

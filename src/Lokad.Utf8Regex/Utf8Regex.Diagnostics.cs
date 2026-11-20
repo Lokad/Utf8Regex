@@ -44,7 +44,7 @@ public sealed partial class Utf8Regex
         // is retained in the shipped matcher.
         internal Utf8LiteralCompiledEngineRuntime? CompiledRuntime => _owner._program.CompiledEngineRuntime;
 
-        public Utf8CompiledExecutionBackend CompiledExecutionBackend => _owner.CompiledExecutionBackend;
+        public bool HasEmittedLiteralFamily => CompiledRuntime?._emittedLiteralFamilyCounter is not null;
 
         public string DebugCompiledEngineRuntimeType => CompiledRuntime?.GetType().Name ?? "None";
 

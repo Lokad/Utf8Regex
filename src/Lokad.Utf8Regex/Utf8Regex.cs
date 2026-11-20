@@ -225,7 +225,6 @@ public sealed partial class Utf8Regex : IDisposable
 
     private Utf8PreparedRegex _preparedRegex => _program.PreparedRegex;
 
-    private Utf8CompiledEngine _compiledEngine => _program.CompiledEngine;
 
     private Utf8LiteralCompiledEngineRuntime _compiledEngineRuntime => _program.CompiledEngineRuntime ??
         throw new InvalidOperationException("This expression executes without an unmetered specialized runtime.");
@@ -251,9 +250,7 @@ public sealed partial class Utf8Regex : IDisposable
 
     private Utf8SearchPortfolioKind SearchPortfolioKind => _preparedRegex.SearchPlan.PortfolioKind;
 
-    private Utf8CompiledEngineKind CompiledEngineKind => _compiledEngine.Kind;
-
-    private Utf8CompiledExecutionBackend CompiledExecutionBackend => _compiledEngine.Backend;
+    private Utf8CompiledEngineKind CompiledEngineKind => _program.CompiledEngineKind;
 
     private string? FallbackReason => _preparedRegex.FallbackReason;
 
@@ -278,7 +275,7 @@ public sealed partial class Utf8Regex : IDisposable
         // Qualified native invocation routes run before this selector. Other
         // shortcuts must not bypass a finite deadline or restart it after work.
         if (HasFiniteExecutionLimits || MatchTimeout != Regex.InfiniteMatchTimeout) return _ownedSliceProgram;
-        if (_compiledEngine.Kind == Utf8CompiledEngineKind.FallbackRegex) return _ownedSliceProgram;
+        if (CompiledEngineKind == Utf8CompiledEngineKind.FallbackRegex) return _ownedSliceProgram;
         // ASCII folded literals cannot start or end inside a UTF-8 scalar.
         // Their non-ASCII fold partner (Kelvin sign) is checked below; unrelated
         // Unicode elsewhere in the subject does not require scalar discovery.
@@ -1172,7 +1169,7 @@ public sealed partial class Utf8Regex : IDisposable
     {
         // Split segments are match-delimited gaps. Grouped literal shapes use
         // the same group-agnostic cursors as ungrouped literals.
-        return _compiledEngine.Kind switch
+        return CompiledEngineKind switch
         {
             Utf8CompiledEngineKind.ExactLiteral => true,
             Utf8CompiledEngineKind.LiteralFamily => true,

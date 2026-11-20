@@ -125,7 +125,7 @@ public sealed partial class Utf8Regex
     private int CountPreparedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
         var remaining = input.Bytes[start.Value..];
-        if (_compiledEngine.Kind == Utf8CompiledEngineKind.FallbackRegex || ShouldUseKelvinSignFallback(remaining))
+        if (CompiledEngineKind == Utf8CompiledEngineKind.FallbackRegex || ShouldUseKelvinSignFallback(remaining))
         {
             return CountAtByteOffset(input, start);
         }
@@ -298,7 +298,7 @@ public sealed partial class Utf8Regex
         // PCRE2-INTEGRATION-POINT: flavor-neutral definitive prepared boolean kernels.
         public bool IsMatchPrepared(ReadOnlySpan<byte> bytes)
         {
-            if (_owner._compiledEngine.Kind == Utf8CompiledEngineKind.FallbackRegex)
+            if (_owner.CompiledEngineKind == Utf8CompiledEngineKind.FallbackRegex)
             {
                 return _owner.IsMatchAtByteOffset(Utf8ValidatedInput.BorrowBytes(bytes), new Utf8BytePosition(0));
             }

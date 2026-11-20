@@ -105,18 +105,15 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         in Utf8SearchOperationPlan search,
         out Utf8EmittedLiteralFamilyCounter? counter)
     {
+        counter = null;
+        if (!CanCreate(plan, search)) return false;
+
         using var scope = Utf8ConstructionScope.Enter();
         var budget = scope.Budget;
         budget.EnterDepth();
         byte[][]? singleLiteralBuckets = null;
         try
         {
-            counter = null;
-            if (!CanCreate(plan, search))
-            {
-                return false;
-            }
-
             var canUseFastConfirmation = CanUseAsciiBoundaryOnlyFastConfirmation(plan, search.Confirmation);
             singleLiteralBuckets = TryGetSmallSingleLiteralBuckets(plan, out var loweredLiterals) ? loweredLiterals : null;
             var singleBucketPrefixFamily = TryGetSmallSingleBucketPrefixFamily(plan, out var commonPrefix, out var prefixLiterals)

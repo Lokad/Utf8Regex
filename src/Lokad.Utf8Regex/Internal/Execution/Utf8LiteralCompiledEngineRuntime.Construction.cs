@@ -9,7 +9,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     // One field per acquired runtime field. Borrowed referenced payloads keep
     // their parent's admission; the wrapper has its own conservative charge.
     private readonly record struct ConstructionState(
-        Utf8CompiledEngine CompiledEngine, Utf8PreparedRegex RegexPlan, bool UsesRightToLeft,
+        Utf8PreparedRegex RegexPlan, bool UsesRightToLeft,
         Utf8SearchOperationPlan Search, Utf8EmittedLiteralFamilyCounter? EmittedCounter,
         byte[][]? SmallFamily, PreparedByteSearch FirstBytes,
         PreparedMultiLiteralCandidatePrefilter LeadingPrefilter,
@@ -17,7 +17,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         PreparedShortAsciiLiteralFamilyCounter ShortCounter, PreparedBmpThreeByteLiteralFamilySearch BmpSearch,
         CompositeTrailingLiteralSearch? CompositeSearch);
 
-    internal static Utf8LiteralCompiledEngineRuntime Create(Utf8CompiledEngine compiledEngine,
+    internal static Utf8LiteralCompiledEngineRuntime Create(Utf8CompiledEngineKind compiledEngineKind,
         Utf8PreparedRegex regexPlan, bool usesRightToLeft)
     {
         using var scope = Utf8ConstructionScope.Enter();
@@ -25,12 +25,13 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         budget.EnterDepth();
         try
         {
-            if (compiledEngine.Kind is not (Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily))
-                throw new ArgumentOutOfRangeException(nameof(compiledEngine), "Only literal engines have a separate runtime.");
+            if (compiledEngineKind is not (Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily))
+                throw new ArgumentOutOfRangeException(nameof(compiledEngineKind), "Only literal engines have a separate runtime.");
             var search = regexPlan.SearchPlan.SearchOperation;
             // Emitted buffers and final managed copies retain their independent
             // construction admission; opaque CLR/JIT metadata stays excluded.
-            var emitted = compiledEngine.Backend == Utf8CompiledExecutionBackend.EmittedInstruction &&
+            var emitted = compiledEngineKind == Utf8CompiledEngineKind.LiteralFamily &&
+                search.Kind != Utf8SearchOperationKind.HybridSearch &&
                 Utf8EmittedLiteralFamilyCounter.TryCreate(regexPlan.SearchPlan, search, out var counter)
                 ? counter : null;
             _ = TryCreateSmallAsciiLiteralFamily(regexPlan, usesRightToLeft, out var small, out var firstBytes);
@@ -40,7 +41,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
                 ? (PreparedSmallAsciiLiteralFamilySearch?)prepared : null;
             _ = TryCreateShortAsciiLiteralFamilyCounter(regexPlan, usesRightToLeft, out var shortCounter);
             var composite = CreateCompositeTrailingLiteralSearch(regexPlan, usesRightToLeft);
-            var result = budget.AllocateObject(new ConstructionState(compiledEngine, regexPlan, usesRightToLeft,
+            var result = budget.AllocateObject(new ConstructionState(regexPlan, usesRightToLeft,
                 search, emitted, small, firstBytes, prefilter, automaton,
                 primitive, shortCounter, bmp, composite), static state => new Utf8LiteralCompiledEngineRuntime(state));
             budget.ChargeWork(0); // Check the original interruption authority before publication.

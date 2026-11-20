@@ -278,8 +278,8 @@ public sealed class Utf8SearchPlanTests
 
         Assert.True(literalFamily.Inspection.SearchPlan.HasPreparedSearcher);
         Assert.True(fallback.SearchPlan.HasStructuralCandidates);
-        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, Utf8CompiledEngineSelector.Select(literalFamily.Inspection.PreparedRegex).Kind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(fallback).Kind);
+        Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, Utf8CompiledEngineSelector.Select(literalFamily.Inspection.PreparedRegex));
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(fallback));
     }
 
     [Fact]
@@ -378,7 +378,8 @@ public sealed class Utf8SearchPlanTests
         var plan = regex.Inspection.SearchPlan;
 
         Assert.Equal(Utf8ConfirmationKind.None, plan.SearchOperation.Confirmation.Kind);
-        Assert.Equal(Utf8CompiledExecutionBackend.InterpretedInstruction, regex.Inspection.CompiledExecutionBackend);
+        Assert.NotNull(regex.Inspection.CompiledRuntime);
+        Assert.False(regex.Inspection.HasEmittedLiteralFamily);
         Assert.False(Utf8EmittedLiteralFamilyCounter.TryCreate(plan, plan.SearchOperation, out _));
     }
 
@@ -441,7 +442,7 @@ public sealed class Utf8SearchPlanTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
         Assert.Equal(Utf8SearchKind.FixedDistanceAsciiSets, analysis.SearchPlan.Kind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(analysis).Kind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(analysis));
         Assert.True(analysis.SearchPlan.HasStructuralCandidates);
         Assert.NotEmpty(analysis.SearchPlan.StructuralSearchPlan.Payload.FixedDistanceSets!);
         Assert.True(analysis.SearchPlan.StructuralSearchPlan.Payload.StartTransform.HasValue);
@@ -460,7 +461,7 @@ public sealed class Utf8SearchPlanTests
         var analysis = Utf8FrontEnd.Compile(pattern, RegexOptions.None);
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
-        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(analysis).Kind);
+        Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(analysis));
     }
 
     [Fact]

@@ -2330,7 +2330,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"InputBytes        : {context.InputBytes.Length}");
             Console.WriteLine($"ExecutionKind     : {context.CompiledUtf8Regex.Inspection.ExecutionKind}");
             Console.WriteLine($"CompiledEngine    : {context.CompiledUtf8Regex.Inspection.CompiledEngineKind}");
-            Console.WriteLine($"CompiledBackend   : {context.CompiledUtf8Regex.Inspection.CompiledExecutionBackend}");
+            Console.WriteLine($"EmittedFamily     : {context.CompiledUtf8Regex.Inspection.HasEmittedLiteralFamily}");
             Console.WriteLine($"CompiledRuntime   : {context.CompiledUtf8Regex.Inspection.DebugCompiledEngineRuntimeType}");
 
             Measure("WellFormedOnly", iterations, context.ExecuteUtf8WellFormedOnly);
@@ -2421,7 +2421,7 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"InputIsAscii      : {Utf8InputAnalyzer.IsAscii(context.InputBytes)}");
             Console.WriteLine($"ExecutionKind     : {context.CompiledUtf8Regex.Inspection.ExecutionKind}");
             Console.WriteLine($"CompiledEngine    : {context.CompiledUtf8Regex.Inspection.CompiledEngineKind}");
-            Console.WriteLine($"CompiledBackend   : {context.CompiledUtf8Regex.Inspection.CompiledExecutionBackend}");
+            Console.WriteLine($"EmittedFamily     : {context.CompiledUtf8Regex.Inspection.HasEmittedLiteralFamily}");
             Console.WriteLine($"CompiledRuntime   : {context.CompiledUtf8Regex.Inspection.DebugCompiledEngineRuntimeType}");
 
             if (lokadScriptCase.Model == LokadReplicaScriptBenchmarkModel.Count)
@@ -2454,7 +2454,7 @@ internal static partial class BenchmarkInspectReporter
         WriteReplicaCaseHeader(replicaCase, compiledIterations);
         Console.WriteLine($"InputIsAscii      : {Utf8InputAnalyzer.IsAscii(replicaCase.InputBytes)}");
         Console.WriteLine($"CompiledEngine    : {compiledUtf8Regex.Inspection.CompiledEngineKind}");
-        Console.WriteLine($"CompiledBackend   : {compiledUtf8Regex.Inspection.CompiledExecutionBackend}");
+        Console.WriteLine($"EmittedFamily     : {compiledUtf8Regex.Inspection.HasEmittedLiteralFamily}");
         Console.WriteLine($"CompiledRuntime   : {compiledUtf8Regex.Inspection.DebugCompiledEngineRuntimeType}");
         WriteCountDiagnostics("Compiled", compiledUtf8Regex.CollectCountDiagnostics(replicaCase.InputBytes));
         Console.WriteLine($"CompiledGateUtf8Literal      : {compiledUtf8Regex.Inspection.DebugCanUseFusedCompiledUtf8LiteralCount}");
@@ -3426,7 +3426,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"Options           : {options}");
         Console.WriteLine($"ExecutionBackend  : {prepared.ExecutionBackend}");
         Console.WriteLine($"ExecutionKind     : {prepared.ExecutionKind}");
-        Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(prepared).Kind}");
+        Console.WriteLine($"CompiledEngine    : {Utf8CompiledEngineSelector.Select(prepared)}");
         Console.WriteLine($"FallbackReason    : {prepared.FallbackReason ?? "<native>"}");
         Console.WriteLine("RuntimeTree       :");
         Console.WriteLine(DumpNode(analysis.SemanticRegex.RuntimeTree!.Root));

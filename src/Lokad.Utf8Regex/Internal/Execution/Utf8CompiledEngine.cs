@@ -7,51 +7,9 @@ internal enum Utf8CompiledEngineKind : byte
     FallbackRegex = 0, ExactLiteral = 3, LiteralFamily = 4
 }
 
-internal enum Utf8CompiledExecutionBackend : byte
-{
-    Legacy = 0, InterpretedInstruction = 1, EmittedInstruction = 2
-}
-
-internal readonly struct Utf8CompiledEngine
-{
-    public Utf8CompiledEngine(Utf8CompiledEngineKind kind)
-        : this(kind, Utf8CompiledExecutionBackend.Legacy)
-    {
-    }
-
-    public Utf8CompiledEngine(Utf8CompiledEngineKind kind, Utf8CompiledExecutionBackend backend)
-    {
-        Kind = kind;
-        Backend = backend;
-    }
-
-    public Utf8CompiledEngineKind Kind { get; }
-
-    public Utf8CompiledExecutionBackend Backend { get; }
-
-}
-
 internal static class Utf8CompiledEngineSelector
 {
-    public static Utf8CompiledEngine Select(Utf8PreparedRegex regexPlan)
-    {
-        if (IsLiteral(regexPlan))
-        {
-            if (regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase)
-                return new(Utf8CompiledEngineKind.ExactLiteral);
-
-            var search = regexPlan.SearchPlan.SearchOperation;
-            var canEmit = search.Kind != Utf8SearchOperationKind.HybridSearch &&
-                Utf8EmittedLiteralFamilyCounter.CanCreate(regexPlan.SearchPlan, search);
-            return new(Utf8CompiledEngineKind.LiteralFamily, canEmit
-                ? Utf8CompiledExecutionBackend.EmittedInstruction
-                : Utf8CompiledExecutionBackend.InterpretedInstruction);
-        }
-
-        return new(Utf8CompiledEngineKind.FallbackRegex);
-    }
-
-    private static bool IsLiteral(Utf8PreparedRegex plan)
+    public static Utf8CompiledEngineKind Select(Utf8PreparedRegex plan)
     {
         ref readonly var searchPlan = ref plan.SearchPlan;
         var single = plan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase;
@@ -59,15 +17,17 @@ internal static class Utf8CompiledEngineSelector
         if (single && plan.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral &&
             plan.LiteralUtf8 is { Length: 0 } && !searchPlan.HasBoundaryRequirements &&
             !searchPlan.HasTrailingLiteralRequirement)
-            return true;
+            return Utf8CompiledEngineKind.ExactLiteral;
         if (plan.CompiledPatternCategory != Utf8CompiledPatternCategory.Literal ||
             !searchPlan.HasPreparedSearcher)
-            return false;
-        return single
-            ? searchPlan.PortfolioKind is Utf8SearchPortfolioKind.ExactLiteral or Utf8SearchPortfolioKind.IgnoreCaseLiteral
-            : (plan.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&
-                (searchPlan.PortfolioKind is Utf8SearchPortfolioKind.ExactDirectFamily or Utf8SearchPortfolioKind.ExactTrieFamily or
-                    Utf8SearchPortfolioKind.ExactAutomatonFamily or Utf8SearchPortfolioKind.ExactPackedFamily or
-                    Utf8SearchPortfolioKind.ExactEarliestFamily or Utf8SearchPortfolioKind.AsciiIgnoreCaseFamily);
+            return Utf8CompiledEngineKind.FallbackRegex;
+        if (single)
+            return searchPlan.PortfolioKind is Utf8SearchPortfolioKind.ExactLiteral or Utf8SearchPortfolioKind.IgnoreCaseLiteral
+                ? Utf8CompiledEngineKind.ExactLiteral : Utf8CompiledEngineKind.FallbackRegex;
+        return (plan.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&
+            (searchPlan.PortfolioKind is Utf8SearchPortfolioKind.ExactDirectFamily or Utf8SearchPortfolioKind.ExactTrieFamily or
+                Utf8SearchPortfolioKind.ExactAutomatonFamily or Utf8SearchPortfolioKind.ExactPackedFamily or
+                Utf8SearchPortfolioKind.ExactEarliestFamily or Utf8SearchPortfolioKind.AsciiIgnoreCaseFamily)
+            ? Utf8CompiledEngineKind.LiteralFamily : Utf8CompiledEngineKind.FallbackRegex;
     }
 }
