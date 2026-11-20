@@ -1,8 +1,11 @@
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
+[Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8MultiLiteralAutomatonAdmissionTests
 {
     public static IEnumerable<object[]> NonemptyFamilies() => Enumerable.Range(1, 9).Select(value => new object[] { value });
@@ -158,21 +161,27 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
     {
         var literals = Literals(4); var search = PreparedMultiLiteralAutomatonSearch.Create(literals);
         foreach (var literal in literals) Array.Fill(literal, (byte)'z'); Array.Fill(literals, Array.Empty<byte>());
-        // Warm the same three operations measured below.
-        for (var warm = 0; warm < 1000; warm++)
-        {
-            _ = search.IndexOf("ushers"u8);
-            _ = search.LastIndexOf("ushers"u8);
-            _ = search.TryFindFirstMatch("ushers"u8, out _, out _, out _);
-        }
-        var before = GC.GetAllocatedBytesForCurrentThread(); var sum = 0;
+        // Warm the measured call site through delayed tiering.
+        var warmup = Stopwatch.StartNew();
+        do { _ = MeasureMatching(search, out _); }
+        while (warmup.ElapsedMilliseconds < 1_000);
+
+        Assert.Equal(0, MeasureMatching(search, out var sum));
+        Assert.Equal(6000, sum);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long MeasureMatching(PreparedMultiLiteralAutomatonSearch search, out int sum)
+    {
+        sum = 0;
+        var before = GC.GetAllocatedBytesForCurrentThread();
         for (var iteration = 0; iteration < 1000; iteration++)
         {
             sum += search.IndexOf("ushers"u8) + search.LastIndexOf("ushers"u8);
-            _ = search.TryFindFirstMatch("ushers"u8, out _, out var length, out var id); sum += length + id;
+            _ = search.TryFindFirstMatch("ushers"u8, out _, out var length, out var id);
+            sum += length + id;
         }
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(6000, sum); Assert.Equal(0, allocated);
+        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
     private sealed class Box(int value) { public readonly int Value = value; }
