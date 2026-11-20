@@ -109,6 +109,31 @@ public sealed class Utf8NativeFamilyInvocationTests
     }
 
     [Theory]
+    [InlineData(2040)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    public void RejectedCompleteNeedleKeepsOverlapsAndWholeSubjectBoundaries(int padding)
+    {
+        using var regex = new Utf8Regex(@"\b(?:abc-cde|noise|cded)\b");
+        var plan = regex.Inspection.SearchPlan;
+        var input = Encoding.UTF8.GetBytes(new string('x', padding) + "abc-cded! abc-cdedx");
+        var invocation = new Utf8SliceInvocation(new(1024, 1, 7), Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(7));
+
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0,
+            input.Length, false, ref invocation, out var first, out var found));
+        Assert.True(found);
+        Assert.Equal((padding + 4, 4, 2), (first.Index, first.Length, first.LiteralId));
+
+        // An exclusive end before the final x bounds discovery. The trailing
+        // boundary still sees that x on the original subject.
+        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamily(plan, input,
+            first.Index + first.Length, input.Length - 1, false, ref invocation, out _, out found));
+        Assert.False(found);
+        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]

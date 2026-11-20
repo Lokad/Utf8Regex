@@ -18,13 +18,15 @@ internal static partial class Utf8SearchExecutor
         out bool found)
     {
         var folded = plan.Kind == Utf8SearchKind.AsciiFoldedByteLiterals;
-        // With no confirmation predicates, complete-needle discovery already
-        // proves this search language. Borrow its existing bounded windows and
-        // original invocation; callers retain any enclosing regex verification.
-        if (!folded && !reverse && !plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement &&
-            plan.AlternateLiteralsUtf8 is { Length: >= 3 and <= 8 } literals)
+        // A small exact family can discover complete needles in bounded
+        // windows. Only short distinct heads can carry that proof through
+        // boundary rejection without hiding another branch at the same start.
+        if (!folded && !reverse && !plan.HasTrailingLiteralRequirement &&
+            plan.AlternateLiteralsUtf8 is { Length: >= 3 and <= 8 } literals &&
+            (!plan.HasBoundaryRequirements || literals.Length <= 4))
             return TryFindSmallExactFamilyCandidate(literals, input, start, end,
-                ref invocation, out match, out found, plan.AlternateLiteralSearch?.SearchData ?? default);
+                ref invocation, out match, out found, plan.AlternateLiteralSearch?.SearchData ?? default,
+                plan.LeadingBoundary, plan.TrailingBoundary);
         PreparedByteSearch? firstByteSearch = null;
         if (folded && plan.AlternateIgnoreCaseLiteralSearch is
             { ShortestLength: > 0 and < int.MaxValue } foldedSearch)
@@ -144,28 +146,43 @@ internal static partial class Utf8SearchExecutor
     // per-byte false-candidate replay. The caller still verifies the full regex.
     private static Utf8ExecutionLimitKind TryFindSmallExactFamilyCandidate(byte[][] literals,
         ReadOnlySpan<byte> input, int start, int end, ref Utf8SliceInvocation invocation,
-        out PreparedSearchMatch match, out bool found, in AsciiExactLiteralSearchData prepared = default)
+        out PreparedSearchMatch match, out bool found, in AsciiExactLiteralSearchData prepared = default,
+        Utf8BoundaryRequirement leadingBoundary = Utf8BoundaryRequirement.None,
+        Utf8BoundaryRequirement trailingBoundary = Utf8BoundaryRequirement.None)
     {
         match = default; found = false;
         ArgumentOutOfRangeException.ThrowIfNegative(start);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(end, input.Length);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(start, end);
+        var confirmBoundaries = leadingBoundary != Utf8BoundaryRequirement.None ||
+            trailingBoundary != Utf8BoundaryRequirement.None;
         var longest = 0;
         foreach (var literal in literals)
         {
-            var eligibility = invocation.TryChargeInputStep();
-            if (eligibility != Utf8ExecutionLimitKind.None) return eligibility;
+            if (!confirmBoundaries)
+            {
+                var eligibility = invocation.TryChargeInputStep();
+                if (eligibility != Utf8ExecutionLimitKind.None) return eligibility;
+            }
             if (literal.Length is 0 or > 1024)
-                return TryFindLiteralFamilyCore(literals, false, false, null,
-                    Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, null,
-                    input, start, end, false, ref invocation, out match, out found);
+            {
+                longest = 0;
+                break;
+            }
             longest = Math.Max(longest, literal.Length);
         }
         // One bucket per original needle proves distinct heads. Borrow only
         // short prepared families; raw/overlapping/other families keep the
         // complete per-needle primitive below, without new preparation.
         var usePrepared = prepared.Buckets is { Length: 3 or 4 } buckets &&
-            buckets.Length == literals.Length && prepared.ShortestLength >= 3 && longest <= 16;
+            buckets.Length == literals.Length && prepared.ShortestLength >= 3 && longest is > 0 and <= 16;
+        if (longest == 0 || confirmBoundaries && !usePrepared)
+        {
+            PreparedByteSearch? firstBytes = confirmBoundaries && prepared.ShortestLength is > 0 and < int.MaxValue
+                ? prepared.FirstByteSearch : null;
+            return TryFindLiteralFamilyCore(literals, false, confirmBoundaries, firstBytes,
+                leadingBoundary, trailingBoundary, null, input, start, end, false, ref invocation, out match, out found);
+        }
         for (var low = start; low < end;)
         {
             // Complete-needle lookahead fits in 2048 bytes. Later starts belong
@@ -205,11 +222,28 @@ internal static partial class Utf8SearchExecutor
             }
             if (best >= 0)
             {
+                var index = low + best;
+                var length = literals[ordinal].Length;
+                if (confirmBoundaries)
+                {
+                    var confirmation = TryConfirmLiteral(leadingBoundary, trailingBoundary, null,
+                        input, index, length, ref invocation, out var accepted);
+                    if (confirmation != Utf8ExecutionLimitKind.None) return confirmation;
+                    if (!accepted)
+                    {
+                        // Check the boundaries before comparing more literals.
+                        // Other branches may still start inside the rejected match.
+                        return TryFindLiteralFamilyCore(literals, false, true, prepared.FirstByteSearch,
+                            leadingBoundary, trailingBoundary, null, input, index + 1, end, false,
+                            ref invocation, out match, out found);
+                    }
+                }
                 var publication = invocation.TryChargeInputStep();
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (publication != Utf8ExecutionLimitKind.None) return publication;
-                match = new PreparedSearchMatch(low + best, literals[ordinal].Length, ordinal);
+                match = new PreparedSearchMatch(index, length, ordinal);
                 found = true;
+                if (confirmBoundaries) Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
                 return Utf8ExecutionLimitKind.None;
             }
             low += starts;
