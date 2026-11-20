@@ -592,6 +592,8 @@ internal static partial class Utf8SliceRunner
         var followingWindow = screenDecimalWindow && directClassLiteral && classLiteral >= 0 &&
             !Utf8AsciiBytePredicates.IsDigit((byte)classLiteral)
             ? GetShortRepeatLiteralWindow(program, program.LeadingClassDelimiter.LiteralIndex + 2) : default;
+        var proveDecimalWindow = followingWindow.Min != 0 && existenceOnly && !collectHistory &&
+            program.GroupCount == 0 && program.SkipsTerminalRewind(1);
         var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
             IsLeadingDecimalSet(program, leadingScalarIndex);
         if (seekDecimal)
@@ -681,10 +683,11 @@ internal static partial class Utf8SliceRunner
                 continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
                 continue;
-            if (checkBranchedPrefix)
+            if (checkBranchedPrefix || proveDecimalWindow)
             {
-                var proveMatch = existenceOnly && !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
-                if (!MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex, out var acceptedEnd, proveMatch))
+                var proveMatch = proveDecimalWindow || existenceOnly && !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
+                var proofStart = proveDecimalWindow ? 0 : leadingScalarIndex;
+                if (!MayMatchBranchedAsciiPrefix(program, input, position, proofStart, out var acceptedEnd, proveMatch))
                     continue;
                 if (acceptedEnd >= 0)
                 {

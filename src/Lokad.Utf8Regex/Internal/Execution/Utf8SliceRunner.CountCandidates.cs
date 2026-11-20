@@ -1076,6 +1076,12 @@ internal static partial class Utf8SliceRunner
                 if (!MatchesEndAnchor(input, position, entry)) return false;
                 continue;
             }
+            if (proveMatch && entry.Kind == Utf8SliceInstructionKind.Boundary)
+            {
+                if (!Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary)) return true;
+                if (boundary != (entry.A != 0)) return false;
+                continue;
+            }
             if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
             if (entry is { Kind: Utf8SliceInstructionKind.Jump } && entry.A >= index)
             {

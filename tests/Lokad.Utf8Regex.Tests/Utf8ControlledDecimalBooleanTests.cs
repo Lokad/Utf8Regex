@@ -103,6 +103,23 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Fact]
+    public void ShortDecimalWindowReusesACompleteBooleanProof()
+    {
+        const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";
+        using var source = new CancellationTokenSource();
+        using var limited = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 8, MaxWorkingBytes = 1 } });
+        Assert.True(limited.IsMatch("Today is 11/18/2019 and tomorrow is 11/19/2019."u8, source.Token));
+
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
+        Assert.False(regex.IsMatch("11/18/2019A"u8));
+        Assert.False(regex.IsMatch("é11/18/2019"u8));
+        Assert.True(regex.IsMatch("😀11/18/2019😀"u8));
+        Assert.True(regex.IsMatch(" 1/𝟙/٢٠٢٦!"u8));
+        Assert.Equal(new Utf8CaptureRange(4, 14), regex.Match("😀11/18/2019😀"u8));
+    }
+
+    [Fact]
     public void DecimalWindowCanStillConsumeAnOverlappingDelimiter()
     {
         using var regex = new Utf8Regex(@"\b\d{1,2}1\d{1,2}/\d{2,4}\b", options: RegexOptions.Compiled);
