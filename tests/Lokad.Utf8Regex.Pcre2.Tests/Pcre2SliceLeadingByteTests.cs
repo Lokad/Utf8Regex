@@ -19,6 +19,14 @@ public sealed class Pcre2SliceLeadingByteTests
         var regex = new Utf8Pcre2Regex(Pattern);
         var input = "abc123éabc123"u8.ToArray();
         Assert.Equal(expected, regex.IsMatch(input, start));
+        ReadOnlySpan<byte> bytes = input;
+        var match = regex.Match(bytes, start);
+        Assert.Equal(expected, match.Success);
+        if (match.Success)
+        {
+            Assert.Equal(start == 0 ? 0 : 8, match.StartOffsetInBytes);
+            Assert.Equal(start == 0 ? 6 : 14, match.EndOffsetInBytes);
+        }
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.IsMatch(input, 7));
     }
 
@@ -34,7 +42,7 @@ public sealed class Pcre2SliceLeadingByteTests
         for (var i = 0; i < 63; i++) _ = invocation.TryChargeStep();
         invocation.CheckpointHook = _ => live.Cancel();
         OperationCanceledException? failure = null;
-        try { _ = Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, ref invocation, direct.Fallback.LeadingAsciiByte); }
+        try { _ = Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, direct.Fallback.MinimumByteLength, ref invocation, direct.Fallback.LeadingAsciiByte); }
         catch (OperationCanceledException error) { failure = error; }
         Assert.Equal(live.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
         Assert.Equal(64UL, invocation.Budget.Steps);
@@ -46,21 +54,22 @@ public sealed class Pcre2SliceLeadingByteTests
     [InlineData(2048)]
     [InlineData(2049)]
     [InlineData(4096)]
-    public void MissingLeadingByteAdmitsBoundedScansEvenWithoutPublicLimits(int length)
+    public void MissingLeadingByteAdmitsBoundedScansEvenWithoutPublicLimits(int candidateCount)
     {
         var regex = new Utf8Pcre2Regex(Pattern);
         var direct = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-        var input = Encoding.UTF8.GetBytes(new string('x', length));
+        var minimum = direct.Fallback.MinimumByteLength;
+        var input = Encoding.UTF8.GetBytes(new string('x', candidateCount + minimum - 1));
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         Assert.True(invocation.Ledger.TryReserve(13));
-        Assert.False(Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, ref invocation, direct.Fallback.LeadingAsciiByte).Success);
-        Assert.Equal((ulong)(length + 2047) / 2048, invocation.Budget.Steps);
+        Assert.False(Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, minimum, ref invocation, direct.Fallback.LeadingAsciiByte).Success);
+        Assert.Equal((ulong)(candidateCount + 2047) / 2048, invocation.Budget.Steps);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        if (length <= 2048) return;
+        if (candidateCount <= 2048) return;
         var limited = new Utf8SliceInvocation(new(1, 0, 0), Timeout.InfiniteTimeSpan, default);
         Assert.True(limited.Ledger.TryReserve(13));
         Pcre2MatchException? error = null;
-        try { _ = Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, ref limited, direct.Fallback.LeadingAsciiByte); }
+        try { _ = Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, minimum, ref limited, direct.Fallback.LeadingAsciiByte); }
         catch (Pcre2MatchException failure) { error = failure; }
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(error).ErrorKind);
         Assert.Equal(2UL, limited.Budget.Steps);
@@ -184,7 +193,7 @@ public sealed class Pcre2SliceLeadingByteTests
         for (var i = 0; i < 63; i++) _ = invocation.TryChargeStep();
         invocation.CheckpointHook = _ => { if (expire) ticks = 100; else live.Cancel(); };
         Exception? failure = null;
-        try { _ = Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, ref invocation, direct.Fallback.LeadingAsciiByte); }
+        try { _ = Pcre2SliceDriver.FindFirst(direct.SliceProgram, input, 0, direct.Fallback.MinimumByteLength, ref invocation, direct.Fallback.LeadingAsciiByte); }
         catch (Exception error) { failure = error; }
         if (expire) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
         else Assert.Equal(live.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);

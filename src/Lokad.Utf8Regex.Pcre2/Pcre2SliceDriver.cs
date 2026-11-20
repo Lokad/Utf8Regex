@@ -168,7 +168,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                 _position = advanced.Value;
             }
 
-            var end = Pcre2SliceDriver.FindMatchingEnd(_program, bytes, ref _position, null, slots,
+            var end = Pcre2SliceDriver.FindMatchingEnd(_program, bytes, ref _position, bytes.Length, null, slots,
                 ref workspace, ref _invocation);
             if (end < 0) return false;
             Current = Pcre2CharacterMatch.Create(_position, end);
@@ -234,10 +234,14 @@ internal static class Pcre2SliceDriver
         Utf8SliceProgram program,
         ReadOnlySpan<byte> input,
         int start,
+        int minimumByteLength,
         scoped ref Utf8SliceInvocation invocation,
         byte? leadingAsciiByte = null)
     {
         CheckInvocation(ref invocation);
+        // Bound candidate starts; the matcher still sees the full subject.
+        var lastStart = input.Length - minimumByteLength;
+        if (start > lastStart) return Pcre2CharacterMatch.NoMatch;
         // Only matching dependencies can observe slots in a whole-value search.
         var slots = program.ReadsCaptures ? RentProgramSlots(program, ref invocation) : new Utf8SliceSlots([], []);
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
@@ -245,7 +249,7 @@ internal static class Pcre2SliceDriver
         invocation.AnchorOriginByte = start;
         if (program.CanMatchEmpty || program.HasContiguousAnchor) leadingAsciiByte = null;
         int end;
-        try { end = FindMatchingEnd(program, input, ref position, leadingAsciiByte, slots, ref workspace, ref invocation); }
+        try { end = FindMatchingEnd(program, input, ref position, lastStart, leadingAsciiByte, slots, ref workspace, ref invocation); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
@@ -260,13 +264,14 @@ internal static class Pcre2SliceDriver
     }
 
     internal static int FindMatchingEnd(Utf8SliceProgram program, ReadOnlySpan<byte> input, ref int position,
-        byte? leadingAsciiByte, Utf8SliceSlots slots, scoped ref Utf8SliceRunner.AttemptWorkspace workspace,
+        int lastStart, byte? leadingAsciiByte, Utf8SliceSlots slots, scoped ref Utf8SliceRunner.AttemptWorkspace workspace,
         scoped ref Utf8SliceInvocation invocation)
     {
-        while (position <= input.Length)
+        while (position <= lastStart)
         {
             if (leadingAsciiByte is { } leading && position < input.Length &&
-                input[position] != leading && !SeekLeadingAsciiByte(input, leading, ref position, ref invocation))
+                input[position] != leading && !SeekLeadingAsciiByte(
+                    lastStart < input.Length ? input[..(lastStart + 1)] : input, leading, ref position, ref invocation))
                 return -1;
             var outcome = Utf8SliceRunner.TryMatchAt(program, input, position, slots.Starts, slots.Ends,
                 false, false, IsScalarAligned(input, position), ref workspace, ref invocation);
