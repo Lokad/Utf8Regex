@@ -103,11 +103,12 @@ internal static partial class Utf8SliceRunner
             Utf8SliceInstructionKind.Lookahead or Utf8SliceInstructionKind.Lookbehind ||
         entry.Kind == Utf8SliceInstructionKind.RepeatGreedy && entry.RepeatMinimum > 0;
 
-    // An unfolded ASCII literal or positive range proves possible starts.
+    // An unfolded literal or positive range can prove possible first bytes.
     // This bounded instruction proof is independent of the subject.
-    internal static (int, byte, int, byte, int, bool) FindLeadingAsciiCandidate(
-        ReadOnlySpan<Utf8SliceInstruction> code, Utf8ConstructionBudget budget)
+    internal static (int, byte, int, byte, int, bool) FindLeadingByteCandidate(
+        Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
+        var code = program.Instructions.AsSpan();
         var index = 0;
         while (index < code.Length && index < 64)
         {
@@ -120,6 +121,8 @@ internal static partial class Utf8SliceRunner
         var first = GetUnfoldedAsciiRange(code[index], out var last);
         if (first < 0)
         {
+            if (GetUnfoldedUnicodeLeadRange(program, code[index], budget, out last) is >= 0 and var wide)
+                return (wide, last, -1, 0, firstScalarIndex, false);
             if (code[index].Kind is not (Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.RepeatGreedy or
                 Utf8SliceInstructionKind.RepeatLazy)) return (-1, 0, -1, 0, firstScalarIndex, false);
             var remaining = 64;
@@ -141,6 +144,33 @@ internal static partial class Utf8SliceRunner
         if (index < code.Length && index < 64)
             second = GetUnfoldedAsciiRange(code[index], out secondLast);
         return (first, last, second, secondLast, firstScalarIndex, false);
+    }
+
+    private static int GetUnfoldedUnicodeLeadRange(Utf8SliceProgram program, Utf8SliceInstruction atom,
+        Utf8ConstructionBudget budget, out byte last)
+    {
+        last = 0;
+        if (atom is not { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } ||
+            program.CategorySetMembers[atom.D] is not [{ Negated: false, Table: { Mask: 0, ClassProgram: null,
+                ScalarPredicate: null, Ranges: { Length: >= 2 and <= 32 } ranges } }] ||
+            program.SetMasks[atom.A].AsSpan().ContainsAnyExcept((byte)0)) return -1;
+
+        var first = byte.MaxValue;
+        for (var index = 0; index < ranges.Length; index += 2)
+        {
+            budget.ChargeWork(1);
+            var low = ranges[index];
+            var high = ranges[index + 1] - 1;
+            if (low < 128 || !Rune.IsValid(low) || !Rune.IsValid(high)) return -1;
+            first = Math.Min(first, Lead(low));
+            last = Math.Max(last, Lead(high));
+        }
+        // Every value in this interval is a UTF-8 starter. Holes in the
+        // original scalar ranges still need the normal VM class check.
+        return first;
+
+        static byte Lead(int scalar) => (byte)(scalar < 0x800 ? 0xc0 | scalar >> 6 :
+            scalar < 0x10000 ? 0xe0 | scalar >> 12 : 0xf0 | scalar >> 18);
     }
 
     // Every reachable arm must prove its first consuming byte. Stop on

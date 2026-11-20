@@ -412,7 +412,7 @@ internal sealed class Utf8SliceProgram
         HasSingleCapturePerGroup = CanReadCapturesFromSlots();
         if (!rightToLeft && !isNonBacktracking && !ignoreCase && !canMatchEmpty && !hasContiguousAnchor &&
             instructions is not [{ Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning }, ..])
-            LeadingAsciiCandidate = Utf8SliceRunner.FindLeadingAsciiCandidate(instructions, Utf8ConstructionScope.CurrentBudget);
+            LeadingByteCandidate = Utf8SliceRunner.FindLeadingByteCandidate(this, Utf8ConstructionScope.CurrentBudget);
         if (!rightToLeft && !isNonBacktracking && !ignoreCase && !hasContiguousAnchor && repeatCount != 0)
         {
             // The class/delimiter shape is independent of the subject and its
@@ -610,7 +610,7 @@ internal sealed class Utf8SliceProgram
     internal bool HasUnicodePatternAtoms { get; }
     internal bool HasTerminalCaptureRoot { get; }
     internal bool HasSingleCapturePerGroup { get; }
-    internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch) LeadingAsciiCandidate { get; }
+    internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch) LeadingByteCandidate { get; }
         = (-1, 0, -1, 0, -1, false);
     internal (int Literal, int LeadingClass, int LiteralIndex, long GapMaximum, bool Direct) LeadingClassDelimiter { get; }
         = (-1, -1, -1, 0, false);
@@ -711,7 +711,7 @@ internal sealed class Utf8SliceProgram
         var unanchored = end < 0;
         if (unanchored)
         {
-            if (CanMatchEmpty || LeadingAsciiCandidate is not { FromBranch: true, First: >= 0 } ||
+            if (CanMatchEmpty || LeadingByteCandidate is not { FromBranch: true, First: >= 0 } ||
                 code[^2] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 }) return default;
             end = code.Length - 1;
         }

@@ -541,10 +541,10 @@ internal static partial class Utf8SliceRunner
                 ? new(true, fromByte, outcome.EndIndex, outcome.CaptureStarts, outcome.CaptureLengths, Utf8ExecutionLimitKind.None)
                 : new(false, -1, -1, null, null, outcome.Breach);
         }
-        var (leading, leadingLast, second, secondLast, leadingScalarIndex, fromBranch) = program.LeadingAsciiCandidate;
-        // Prefer a straight leading byte proof. Prepared literal search takes
-        // priority over the broader range inferred from a branch.
-        var seekLiteral = (leading < 0 || fromBranch) && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
+        var (leading, leadingLast, second, secondLast, leadingScalarIndex, fromBranch) = program.LeadingByteCandidate;
+        // Prefer a straight ASCII proof. Prepared literal search can be more
+        // selective than a branch interval or the lead of a wider scalar.
+        var seekLiteral = (leading is < 0 or >= 128 || fromBranch) && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
         if (seekLiteral) leading = -1;
         var checkBranchedPrefix = leading >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
         var lastProbedStart = input.Length - candidatePlan.MinRequiredLength;
@@ -560,7 +560,7 @@ internal static partial class Utf8SliceRunner
         var verifiedClassLiteralLength = 0;
         var screenedDelimiter = -1;
         var wideInput = input.Length - fromByte >= 256;
-        if (leading < 0 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
+        if (leading is < 0 or >= 128 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
             (wideInput || candidatePlan.LiteralSearch is { Length: > 0, IgnoreCase: false } ||
                 candidatePlan.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral))
@@ -617,6 +617,7 @@ internal static partial class Utf8SliceRunner
         // Keep existing literal guidance when available. The decimal scan
         // lands at an ASCII digit or a wider scalar to classify below.
         var hasClassWindow = classLiteral >= 0 || classAlternatives is not null;
+        if (hasClassWindow && leading >= 128) leading = -1;
         var screenDecimalWindow = hasClassWindow && first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
             leadingClass == leadingScalarIndex && IsLeadingDecimalSet(program, leadingScalarIndex);
         var followingWindow = screenDecimalWindow && directClassLiteral && classLiteral >= 0 &&
@@ -636,7 +637,7 @@ internal static partial class Utf8SliceRunner
             leading = '0';
             leadingLast = (byte)'9';
         }
-        var shortRepeatWindow = leadingScalarIndex > 0 && leading >= 0
+        var shortRepeatWindow = leadingScalarIndex > 0 && leading is >= 0 and < 128
             ? GetShortRepeatLiteralWindow(program, leadingScalarIndex) : default;
         Span<byte> prefixStorage = stackalloc byte[16];
         var leadingPrefix = wideInput && second >= 0 && !candidatePlan.CanGuideFallbackStarts
@@ -939,10 +940,10 @@ internal static partial class Utf8SliceRunner
         }
         // A direct beginning anchor already owns bounded line/prefix discovery.
         // Keep one candidate search rather than scanning its prefix twice.
-        var (leadingAsciiFirst, leadingAsciiLast, leadingAsciiSecond, leadingAsciiSecondLast, leadingScalarIndex, _) = seekLiteral
+        var (leadingFirst, leadingLast, leadingSecond, leadingSecondLast, leadingScalarIndex, _) = seekLiteral
             ? (-1, (byte)0, -1, (byte)0, -1, false)
-            : program.LeadingAsciiCandidate;
-        var checkBranchedPrefix = leadingAsciiFirst >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
+            : program.LeadingByteCandidate;
+        var checkBranchedPrefix = leadingFirst >= 0 && program.Instructions[leadingScalarIndex].Kind == Utf8SliceInstructionKind.Fork;
         if (checkBranchedPrefix && input.Length - fromByte >= 256 && program.RequiredUnanchoredFinalByte is { } finalByte)
         {
             // One bounded required-byte search can reject a whole Count before
@@ -954,7 +955,7 @@ internal static partial class Utf8SliceRunner
         }
         var branchWindow = checkBranchedPrefix && input.Length - fromByte >= 256
             ? FindBranchedAsciiLiteralWindow(program.Instructions, leadingScalarIndex) : default;
-        var checkRepeatChain = leadingAsciiFirst >= 0 && leadingScalarIndex == 1 && CanSkipShortRepeatChain(program);
+        var checkRepeatChain = leadingFirst is >= 0 and < 128 && leadingScalarIndex == 1 && CanSkipShortRepeatChain(program);
         var (whitespaceLiteral, leadingClass, whitespaceLiteralIndex, whitespaceGapMaximum, directClassLiteral) =
             !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
             !program.HasContiguousAnchor && input.Length - fromByte >= 256
@@ -979,7 +980,7 @@ internal static partial class Utf8SliceRunner
                     requiredClassSuffix = GetRequiredHybridSuffix(program.Instructions, whitespaceLiteralIndex + aligned.Length);
             }
         }
-        if (whitespaceLiteral < 0 && leadingAsciiFirst < 0 && !seekLiteral && !program.RightToLeft &&
+        if (whitespaceLiteral < 0 && leadingFirst is < 0 or >= 128 && !seekLiteral && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor && input.Length - fromByte >= 256 &&
             GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefix) is { } prefixSearch)
         {
@@ -988,16 +989,17 @@ internal static partial class Utf8SliceRunner
         }
         // Keep the existing wide delimiter search when it applies. Otherwise
         // the short window also makes decimal-or-wide-scalar seeking worthwhile.
-        var shortRepeatWindow = whitespaceLiteral < 0 && leadingScalarIndex > 0
+        if (whitespaceLiteral >= 0 && leadingFirst >= 128) leadingFirst = -1;
+        var shortRepeatWindow = whitespaceLiteral < 0 && leadingScalarIndex > 0 && leadingFirst < 128
             ? GetShortRepeatLiteralWindow(program, leadingScalarIndex) : default;
-        var seekDecimal = shortRepeatWindow.Min != 0 && leadingAsciiFirst < 0 && IsLeadingDecimalSet(program, leadingScalarIndex);
+        var seekDecimal = shortRepeatWindow.Min != 0 && leadingFirst < 0 && IsLeadingDecimalSet(program, leadingScalarIndex);
         if (seekDecimal)
         {
-            leadingAsciiFirst = '0';
-            leadingAsciiLast = (byte)'9';
+            leadingFirst = '0';
+            leadingLast = (byte)'9';
         }
         Span<byte> prefixStorage = stackalloc byte[16];
-        var leadingPrefix = input.Length - fromByte >= 256 && whitespaceLiteral < 0 && leadingAsciiSecond >= 0
+        var leadingPrefix = input.Length - fromByte >= 256 && whitespaceLiteral < 0 && leadingSecond >= 0
             ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage)
             : default;
         var (prefixRepeatAscii, prefixRepeatLiteral) = GetExactPrefixRepeatHead(program, prefixContinuation);
@@ -1015,7 +1017,7 @@ internal static partial class Utf8SliceRunner
         // neighbors keep the complete scalar check inside the VM.
         var checkAsciiBoundary = first is { Kind: Utf8SliceInstructionKind.Boundary, C: 0 } &&
             !program.RightToLeft && !program.CanMatchEmpty && !seekLiteral &&
-            leadingAsciiFirst < 0 && whitespaceLiteral < 0 && input.Length - fromByte >= 256;
+            leadingFirst < 0 && whitespaceLiteral < 0 && input.Length - fromByte >= 256;
         var repeatMinimum = 0;
         var repeatAscii = default(Utf8SearchAsciiSet);
         if (checkAsciiBoundary)
@@ -1035,9 +1037,9 @@ internal static partial class Utf8SliceRunner
         {
             while (true)
             {
-                if (leadingAsciiFirst >= 0)
+                if (leadingFirst >= 0)
                 {
-                    var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leadingAsciiFirst, leadingAsciiLast, seekDecimal, ref invocation, leadingPrefix);
+                    var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leadingFirst, leadingLast, seekDecimal, ref invocation, leadingPrefix);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
@@ -1046,12 +1048,12 @@ internal static partial class Utf8SliceRunner
                         position = AdvancePastScalar(input, position, false);
                         continue;
                     }
-                    if (shortRepeatWindow.Min != 0 ? !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal) :
-                        (leadingPrefix.IsEmpty && leadingAsciiSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
-                        (uint)(input[position + 1] - leadingAsciiSecond) > (uint)(leadingAsciiSecondLast - leadingAsciiSecond))) ||
+                    if (leadingFirst < 128 && (shortRepeatWindow.Min != 0 ? !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal) :
+                        (leadingPrefix.IsEmpty && leadingSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
+                        (uint)(input[position + 1] - leadingSecond) > (uint)(leadingSecondLast - leadingSecond))) ||
                         (branchWindow.Min != 0 && !HasAsciiLiteralInWindow(input, position, branchWindow)) ||
                         !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex, out _) :
-                            MatchesStraightAsciiPrefix(program, input, position, 0)))
+                            MatchesStraightAsciiPrefix(program, input, position, 0))))
                     {
                         // The delimiter window retains wider decimals. Each
                         // rejection here is at an admitted ASCII scalar.
@@ -1060,7 +1062,7 @@ internal static partial class Utf8SliceRunner
                     }
                     if (checkRepeatChain)
                     {
-                        var chainBreach = CheckRepeatChain(program, input, (byte)leadingAsciiFirst, leadingAsciiLast,
+                        var chainBreach = CheckRepeatChain(program, input, (byte)leadingFirst, leadingLast,
                             ref position, ref invocation, out var possible);
                         if (chainBreach != Utf8ExecutionLimitKind.None) return new(count, chainBreach);
                         if (!possible) continue;

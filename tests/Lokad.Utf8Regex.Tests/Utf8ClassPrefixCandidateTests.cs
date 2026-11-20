@@ -10,6 +10,37 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ClassPrefixCandidateTests
 {
     [Theory]
+    [InlineData("α-ω", "Ͽ", "λω")]
+    [InlineData("ࠀ-ࠇ", "ࠈ", "ࠀࠇ")]
+    [InlineData("😀-😇", "😈", "😀😇")]
+    public void UnicodeRangeCandidatesSkipOtherStartsAndVerifyTheCompleteScalar(string range, string near, string value)
+    {
+        var prefix = new string('!', 2047) + near + near + new string('!', 4094);
+        var input = Encoding.UTF8.GetBytes(prefix + value + "#" + value + "#");
+        var firstStart = Encoding.UTF8.GetByteCount(prefix);
+        var length = Encoding.UTF8.GetByteCount(value);
+        var secondStart = firstStart + length + 1;
+        using var source = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile($"(?<value>[{range}]{{2}})(?![!?])", policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 256 }
+        });
+
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(2, regex.Count(input, source.Token));
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        var match = regex.Match(input, 0, captures, source.Token);
+        Assert.Equal(new Utf8CaptureRange(firstStart, firstStart + length), match);
+        Assert.Equal(match, captures[1]);
+
+        using var cursor = regex.CreateMatchCursor(input, firstStart + length, source.Token);
+        Assert.True(cursor.MoveNext(out var retained));
+        Assert.Equal(new Utf8CaptureRange(secondStart, secondStart + length), retained.Value);
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(value, Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
+    }
+
+    [Theory]
     [InlineData(63)] [InlineData(64)] [InlineData(65)]
     public void AlignedDelimiterRewindKeepsWideMembersAndTheRequestedFloor(int asciiLength)
     {
