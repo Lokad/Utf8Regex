@@ -1557,13 +1557,15 @@ internal static partial class Utf8SliceRunner
 
     private static int ScanAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category, bool negated = false)
     {
+        var membership = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
+            BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
         var consumed = 0;
         foreach (var value in window)
         {
             // A wider candidate still needs the scalar predicate. An earlier
             // ASCII miss already ends a repeat with a complete ASCII mask.
             if (value >= 128) return category ? -1 : consumed;
-            if (((mask[value >> 3] & (1 << (value & 7))) != 0) == negated) break;
+            if (membership.Contains(value) == negated) break;
             consumed++;
         }
         return consumed;
