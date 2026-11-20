@@ -620,6 +620,9 @@ internal static class Pcre2BacktrackingRunner
                     (current == input.Length || (input[current] & 0xC0) != 0x80))
                 {
                     lastWindowCandidate = current;
+                    if (candidateSearch.RequiresLeadingWordBoundary &&
+                        !Pcre2CharacterSemantics.IsWordBoundary(input, current, ucp: false))
+                        continue;
                     candidate = current;
                     return true;
                 }

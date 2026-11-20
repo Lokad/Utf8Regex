@@ -372,9 +372,11 @@ internal readonly struct Pcre2CandidateSearchProgram
         Pcre2CharacterToken[] leadingRunTokens,
         Pcre2CandidateWindowConstraint windowConstraint,
         int minimumWordRunLength,
-        int maximumBranchPrefixLength = 0)
+        int maximumBranchPrefixLength = 0,
+        bool requiresLeadingWordBoundary = false)
     {
         Kind = kind;
+        RequiresLeadingWordBoundary = requiresLeadingWordBoundary;
         Searcher = searcher;
         LeadingRunTokens = leadingRunTokens;
         WindowConstraint = windowConstraint;
@@ -383,6 +385,7 @@ internal readonly struct Pcre2CandidateSearchProgram
     }
 
     internal Pcre2CandidateSearchKind Kind { get; }
+    internal bool RequiresLeadingWordBoundary { get; }
 
     internal PreparedSearcher Searcher { get; }
 
@@ -429,7 +432,7 @@ internal readonly struct Pcre2CandidateSearchProgram
             0);
 
     internal static Pcre2CandidateSearchProgram FromBoundedLiteralWindow(
-        Pcre2CandidateWindowConstraint windowConstraint) =>
+        Pcre2CandidateWindowConstraint windowConstraint, bool requiresLeadingWordBoundary) =>
         new(
             Pcre2CandidateSearchKind.BoundedLiteralWindow,
             new PreparedSearcher(
@@ -437,7 +440,8 @@ internal readonly struct Pcre2CandidateSearchProgram
                 ignoreCase: false),
             [],
             windowConstraint,
-            0);
+            0,
+            requiresLeadingWordBoundary: requiresLeadingWordBoundary);
 
     internal static Pcre2CandidateSearchProgram FromLeadingAsciiWordRun(int minimumWordRunLength, bool requiresBoundary) =>
         new(
@@ -971,9 +975,15 @@ internal static class Pcre2CandidateSearchAnalyzer
             return asciiSetPlan;
         }
 
-        return TryGetInitialBoundedLiteralConstraint(root, out var windowConstraint)
-            ? Pcre2CandidateSearchProgram.FromBoundedLiteralWindow(windowConstraint)
-            : default;
+        if (!TryGetInitialBoundedLiteralConstraint(root, out var windowConstraint)) return default;
+        // A mandatory root boundary can screen each scalar-aligned window start.
+        // Nondefault request options, including UCP, were excluded above.
+        var requiresLeadingWordBoundary = root is Pcre2SequenceBacktrackingNode
+        {
+            Children: [Pcre2TokenBacktrackingNode
+                { Token: { Kind: Pcre2CharacterTokenKind.WordBoundary, Options: Pcre2CharacterOptions.None } }, ..],
+        };
+        return Pcre2CandidateSearchProgram.FromBoundedLiteralWindow(windowConstraint, requiresLeadingWordBoundary);
     }
 
     private static bool TryCompileBranchLeadingLiterals(

@@ -9,6 +9,7 @@ public sealed class Pcre2BoundedLiteralBoundaryTests
 
     [Theory]
     [InlineData(Date, "😀1/2/2024é 11/18/201A 12/3/2025😀")]
+    [InlineData(@"\b\d{1,2}/", "x12/ é12/ 😀12/")]
     [InlineData(@"\B\d{1,2}/", "a1/ 2/ _12/ 😀34/")]
     [InlineData(@"\b([0-9]{1,2})/(?<tail>[0-9]{1,2})", "é1/2😀 123/45 6/78")]
     [InlineData(@"\b[\x00-\x7f]{1,3}foo", "😀xfoo\0afooé abfoo")]
