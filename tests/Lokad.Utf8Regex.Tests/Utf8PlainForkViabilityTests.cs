@@ -53,6 +53,22 @@ public sealed class Utf8PlainForkViabilityTests
         Assert.Equal(count != 0, regex.Match(input, cancellationToken: token.Token).Success);
     }
 
+    [Theory]
+    [InlineData(@"\b(?:public|private|internal)\s+class\b", "épublic class public\tclass private\u00a0class 😀internal class internal classX")]
+    [InlineData(@"\b(?:pub|public|private)\s+class\b", "épublic class public class pub\u00a0class private class")]
+    public void LiteralFamilyCountKeepsBoundariesAndOverlappingArms(string pattern, string tail)
+    {
+        var text = new string('.', 256) + tail;
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 16, MaxWorkingBytes = 1024 }
+        });
+        Assert.Equal(3, new Regex(pattern).Count(text));
+        Assert.Equal(3, regex.Count(input, token.Token));
+    }
+
     [Fact]
     public void ImportsWithoutPendingAlternativesFitSmallWorkingCapacity()
     {

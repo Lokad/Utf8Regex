@@ -11,7 +11,7 @@ internal static partial class Utf8SliceRunner
     private static int FindExactFamilyContinuation(ReadOnlySpan<Utf8SliceInstruction> code, byte[][] literals)
     {
         // Prove that the discovery plan covers every arm of one leading fork
-        // family. Distinct first bytes leave no priority or retry to preserve.
+        // family. Only one exact arm may match at the same start.
         // The caller checks a leading boundary before entering the shared tail.
         var index = code[0].Kind == Utf8SliceInstructionKind.Boundary ? 1 : 0;
         var continuation = 0;
@@ -19,7 +19,17 @@ internal static partial class Utf8SliceRunner
         for (var arm = 0; arm < literals.Length; arm++)
         {
             var literal = literals[arm];
-            if (literal.Length is 0 or > 16 || literal[0] >= 128 || heads.Contains(literal[0])) return 0;
+            if (literal.Length is 0 or > 16 || literal[0] >= 128) return 0;
+            if (heads.Contains(literal[0]))
+            {
+                for (var earlier = 0; earlier < arm; earlier++)
+                {
+                    var alternate = literals[earlier];
+                    var commonLength = Math.Min(literal.Length, alternate.Length);
+                    if (literal.AsSpan(0, commonLength).SequenceEqual(alternate.AsSpan(0, commonLength)))
+                        return 0;
+                }
+            }
             heads = heads.With(literal[0]);
 
             var last = arm == literals.Length - 1;
