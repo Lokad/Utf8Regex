@@ -456,7 +456,7 @@ internal sealed class Utf8SliceProgram
         {
             var instruction = instructions[pc];
             if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && !rightToLeft && !isNonBacktracking)
-                Utf8SliceRunner.MarkDisjointAsciiRepeatBranches(instructions, setMasks, pc, budget);
+                Utf8SliceRunner.MarkDisjointAsciiRepeatContinuation(instructions, setMasks, pc, budget);
             else if (instruction.Kind == Utf8SliceInstructionKind.Jump && !rightToLeft && !isNonBacktracking)
                 Utf8SliceRunner.MarkExcludedLoopStart(instructions, setMasks, pc, budget);
             readsCaptures |= instruction.Kind is Utf8SliceInstructionKind.Backref or Utf8SliceInstructionKind.TestGroup or

@@ -927,7 +927,7 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    internal static void MarkDisjointAsciiRepeatBranches(Span<Utf8SliceInstruction> code, byte[][] setMasks,
+    internal static void MarkDisjointAsciiRepeatContinuation(Span<Utf8SliceInstruction> code, byte[][] setMasks,
         int repeatIndex, Utf8ConstructionBudget budget)
     {
         var repeat = code[repeatIndex];
@@ -942,10 +942,13 @@ internal static partial class Utf8SliceRunner
             budget.ChargeWork(1);
             continuation++;
         }
-        if (continuation >= code.Length || code[continuation] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0 })
+        if (continuation >= code.Length || code[continuation] is not
+            { Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Literal, B: 0 })
             return;
 
-        var work = 12;
+        // A direct literal needs one visit. A fork shares a bounded allowance
+        // among its arms. Both tests use the same repeat-exit certificate.
+        var work = code[continuation].Kind == Utf8SliceInstructionKind.Literal ? 1 : 12;
         budget.ChargeWork((ulong)work + 2);
         var mask = setMasks[atom.A].AsSpan();
         var consumed = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
