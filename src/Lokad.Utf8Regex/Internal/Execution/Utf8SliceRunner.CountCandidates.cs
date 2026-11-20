@@ -1167,8 +1167,14 @@ internal static partial class Utf8SliceRunner
                 var minimum = entry.RepeatMinimum;
                 var singleAtom = IsSingleAtomRepeat(code, index - 1, entry);
                 if (proveMatch && singleAtom &&
-                    TryMatchShortPrefixRepeat(program, input, position, index, entry, ref remaining, out acceptedEnd) is { } proof)
-                    return proof;
+                    TryMatchShortPrefixRepeat(program, input, position, index, entry, ref remaining,
+                        out acceptedEnd, out var continueAt) is { } proof)
+                {
+                    if (continueAt < 0) return proof;
+                    position = continueAt;
+                    index = entry.A + 1;
+                    continue;
+                }
                 if (minimum == 0)
                 {
                     if (!singleAtom || entry.RepeatMaximum != 1) return true;
@@ -1216,11 +1222,14 @@ internal static partial class Utf8SliceRunner
 
     // Keep Boolean-only repeat verification out of the rejection walk used
     // for every viable Count prefix. Every continuation shares its visit allowance.
+    // Leave the final endpoint for the caller's loop. Competing endpoints
+    // still try their continuations before choosing the next one.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool? TryMatchShortPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
-        int atomIndex, Utf8SliceInstruction repeat, ref int remaining, out int acceptedEnd)
+        int atomIndex, Utf8SliceInstruction repeat, ref int remaining, out int acceptedEnd, out int continueAt)
     {
         acceptedEnd = -1;
+        continueAt = -1;
         var atom = program.Instructions[atomIndex];
         var continuation = repeat.A + 1;
         if (repeat.RepeatMaximum == long.MaxValue && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
@@ -1235,7 +1244,8 @@ internal static partial class Utf8SliceRunner
             else if (suffix[digits] >= 128) return true;
             if (digits < repeat.RepeatMinimum) return false;
             remaining -= Math.Min(suffix.Length, digits + 1);
-            return MayMatchBranchedAsciiPrefix(program, input, position + digits, continuation, ref remaining, true, out acceptedEnd);
+            continueAt = position + digits;
+            return true;
         }
 
         if (repeat.RepeatMaximum > 4 || !program.TryGetUnfoldedAsciiSet(atom, out var ascii, out var asciiOnly))
@@ -1262,7 +1272,8 @@ internal static partial class Utf8SliceRunner
                         !Rune.IsDigit(scalar)) return false;
                     end += scalarWidth;
                 }
-                return MayMatchBranchedAsciiPrefix(program, input, end, continuation, ref remaining, true, out acceptedEnd);
+                continueAt = end;
+                return true;
             }
             if (!ascii.Contains(value)) break;
             consumed++;
@@ -1276,7 +1287,8 @@ internal static partial class Utf8SliceRunner
                 return true;
             consumed--;
         }
-        return MayMatchBranchedAsciiPrefix(program, input, position + consumed, continuation, ref remaining, true, out acceptedEnd);
+        continueAt = position + consumed;
+        return true;
     }
 
     private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
