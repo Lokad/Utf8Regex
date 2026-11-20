@@ -88,15 +88,8 @@ public sealed partial class Utf8Regex
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
         try
         {
-            int result;
             Utf8SliceBufferWork.Checkpoint(ref invocation);
-            if (CanUseNativeLiteralSearch(_ownedSliceProgram, maximumAlternatives: 8))
-            {
-                var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
-                    input, false, ref invocation, out result);
-                if (breach != Utf8ExecutionLimitKind.None) throw CreateExecutionResourceFailure(ref invocation);
-            }
-            else result = OwnedSliceCountFromByte(input, _ownedSliceProgram,
+            var result = OwnedSliceCountFromByte(input, _ownedSliceProgram,
                 _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
             FinishFundedInvocation(ref invocation);
             return result;

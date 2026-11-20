@@ -67,6 +67,7 @@ public sealed class Utf8FiniteLiteralCountTests
     [InlineData("中文語|夏洛克|约翰华", "中文語 夏洛克 约翰华")]
     [InlineData("Tom|Sawyer|Huckleberry|Finn", "Tom 😀Finn Sawyer Huckleberry")]
     [InlineData("aa|bb|cc|dd|ee", "aa😀bb cc ee dd")]
+    [InlineData(@"\b(?:aa|bb|cc)\b", "xaa aa bb ccé cc")]
     public void SmallFamilyWorkDenialIsCumulativeAndNeverPublishesPartialCount(string pattern, string text)
     {
         var input = Encoding.UTF8.GetBytes(text);
@@ -249,6 +250,8 @@ public sealed class Utf8FiniteLiteralCountTests
     [InlineData("夏洛克·福尔摩斯", true)]
     [InlineData("ab|cd|ef", false)]
     [InlineData("ab|cd|ef", true)]
+    [InlineData(@"\b(?:ab|cd|ef)\b", false)]
+    [InlineData(@"\b(?:ab|cd|ef)\b", true)]
     public void NativeSearchKeepsTheOriginalInterruption(string pattern, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();

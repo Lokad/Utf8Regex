@@ -565,10 +565,10 @@ public sealed partial class Utf8Regex : IDisposable
                 throw new InvalidOperationException("Terminal class count breached the invocation budget.");
             return terminal.Count;
         }
-        // A pure literal/family Count needs no capture slots or continuation frames.
-        // Borrow the validated invocation instead of dropping finite callers
-        // into the VM solely because they selected an enforceable policy.
-        if (HasFiniteExecutionLimits && CanUseNativeLiteralSearch(program, maximumAlternatives: 8))
+        // Literal search needs no capture slots or continuation frames. A
+        // boundary can use this sliced-input path only at the subject origin.
+        if ((HasFiniteExecutionLimits || invocation.Ledger.HasMemoryAllowance) &&
+            CanUseNativeLiteralSearch(program, maximumAlternatives: 8, allowBoundaries: startByte == 0))
         {
             var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(
                 _preparedRegex.SearchPlan, input[startByte..], false, ref invocation, out var count);

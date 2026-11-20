@@ -135,6 +135,40 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         }
     }
 
+    [Theory]
+    [InlineData(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", "𐐀Task Taské 😀Task😀 ValueTask", RegexOptions.None, 2)]
+    [InlineData(@"\b(?:a-b|a|b)\b", "a-b", RegexOptions.None, 1)]
+    [InlineData(@"\b(?:a|b|a-b)\b", "a-b", RegexOptions.None, 2)]
+    [InlineData(@"\B(?:cat|dog)\b", "cat écat caté xdog", RegexOptions.None, 2)]
+    [InlineData(@"\b(?:cat|dog)\b", "écat caté xdog", RegexOptions.ECMAScript, 2)]
+    public void ControlledLiteralCountPreservesBoundariesAndBranchPriority(
+        string pattern, string text, RegexOptions mode, int expected)
+    {
+        var options = mode | RegexOptions.CultureInvariant | RegexOptions.Compiled;
+        var input = Encoding.UTF8.GetBytes(text);
+        using var ordinary = new Utf8Regex(pattern, options);
+        using var finite = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+        });
+        using var token = new CancellationTokenSource();
+        var allowance = new NoWorkingStorage();
+        Assert.Equal(expected, finite.Count(input, token.Token));
+        Assert.Equal(expected, ordinary.Count(input, token.Token, allowance));
+        Assert.Equal(expected, finite.Count(input, token.Token, allowance));
+    }
+
+    [Fact]
+    public void BorrowedCountAtAnOffsetKeepsThePrecedingScalar()
+    {
+        using var regex = new Utf8Regex(@"\b(?:Task|ValueTask)\b", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096 }
+        });
+        var invocation = new Utf8SliceInvocation(new(4096, 1, 1024), Regex.InfiniteMatchTimeout, default);
+        Assert.Equal(1, regex.CountForResult("éTask Task"u8, 2, ref invocation));
+    }
+
     [Fact]
     public void SharedLeadingBoundaryRejectsInteriorHeadsBeforeBranchWork()
     {
