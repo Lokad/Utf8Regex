@@ -1300,14 +1300,19 @@ internal static partial class Utf8SliceRunner
                         if (lazy) position++;
                         continue;
                     }
-                    if (proveMatch && singleAtom &&
-                        TryMatchShortPrefixRepeat(program, input, position, index, entry, ref remaining,
-                            out acceptedEnd, out var continueAt) is { } proof)
+                    if (proveMatch && singleAtom)
                     {
-                        if (continueAt < 0) return proof;
-                        position = continueAt;
-                        index = entry.A + 1;
-                        continue;
+                        var proof = TryMatchShortPrefixRepeat(program, input, position, index, entry, ref remaining,
+                            out acceptedEnd, out var continueAt);
+                        if (!proof.HasValue && entry.RepeatMaximum == long.MaxValue)
+                            proof = TryMatchUnboundedPrefixRepeat(program, input, position, index - 1, ref remaining, out continueAt);
+                        if (proof.HasValue)
+                        {
+                            if (continueAt < 0) return proof.Value;
+                            position = continueAt;
+                            index = entry.A + 1;
+                            continue;
+                        }
                     }
                     if (minimum == 0) return true;
                     // A required body always starts here. After a nontrivial loop,
@@ -1355,11 +1360,24 @@ internal static partial class Utf8SliceRunner
     {
         acceptedEnd = -1;
         continueAt = -1;
-        if (repeat.RepeatMaximum == long.MaxValue)
-            return TryMatchUnboundedPrefixRepeat(program, input, position, atomIndex - 1, ref remaining, out continueAt);
-
         var atom = program.Instructions[atomIndex];
         var continuation = repeat.A + 1;
+        if (repeat.RepeatMaximum == long.MaxValue && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+            input.Length - position <= Math.Min(32, remaining) && program.SkipsTerminalRewind(atomIndex - 1) &&
+            IsDecimalDigitSet(program, atom))
+        {
+            // Only a proved greedy endpoint can continue. A wider scalar
+            // may still be a decimal digit and needs the original scalar VM.
+            var suffix = input[position..];
+            var digits = suffix.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            if (digits < 0) digits = suffix.Length;
+            else if (suffix[digits] >= 128) return true;
+            if (digits < repeat.RepeatMinimum) return false;
+            remaining -= Math.Min(suffix.Length, digits + 1);
+            continueAt = position + digits;
+            return true;
+        }
+
         if (repeat.RepeatMaximum > 4 || !program.TryGetUnfoldedAsciiSet(atom, out var ascii, out var asciiOnly))
             return null;
 
@@ -1423,12 +1441,6 @@ internal static partial class Utf8SliceRunner
             stop = atom.A == 0 ? suffix.IndexOf((byte)'\n') : -1;
         else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
             stop = suffix.IndexOfAnyExceptInRange((byte)first, last);
-        else if (suffix.Length <= 32 && IsDecimalDigitSet(program, atom))
-        {
-            stop = suffix.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
-            // A wider scalar can be a decimal digit. Leave its extent to the VM.
-            if (stop >= 0 && suffix[stop] >= 128) return true;
-        }
         else return null;
 
         // The dot proof needs at most one scalar. A LF stop is aligned in
