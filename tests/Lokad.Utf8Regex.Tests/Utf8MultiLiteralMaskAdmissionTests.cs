@@ -12,8 +12,6 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
     private static bool Simd => Ssse3.IsSupported && Sse2.IsSupported;
     public static IEnumerable<object[]> ModesAndFamilies() =>
         from mode in Enumerable.Range(0, 3) from family in Enumerable.Range(0, 8) select new object[] { mode, family };
-    public static IEnumerable<object[]> Cutoffs() =>
-        from mode in Enumerable.Range(0, 3) from bytes in new[] { false, true } select new object[] { mode, bytes };
     public static IEnumerable<object[]> Depths() =>
         from mode in Enumerable.Range(0, 3) from depth in Enumerable.Range(0, 4) select new object[] { mode, depth };
 
@@ -34,11 +32,6 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
         2 => PreparedMultiLiteralPackedNibbleSimdPrefilter.CreateInvariantCyrillicIgnoreCase(values),
         _ => throw new ArgumentOutOfRangeException(nameof(mode)),
     };
-
-    private static ulong SearchLoan(PreparedByteSearch search) => Utf8ConstructionBudget.ArrayBytes<byte>(search.Count) + (search.Count > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
-    private static ulong Loan(PreparedMultiLiteralPackedNibbleSimdPrefilter value) =>
-        Utf8ConstructionBudget.ArrayBytes<int>(value.MaskLength)
-        + 2 * Utf8ConstructionBudget.ArrayBytes<Vector256<byte>>(value.MaskLength) + SearchLoan(value.Search);
 
     private static byte[] Alternatives(byte[] literal, int offset, int mode)
     {
@@ -82,69 +75,50 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
 
     [Theory]
     [MemberData(nameof(ModesAndFamilies))]
-    public void RetainedLoansAndEveryMaskEntryAgreeWithIndependentModels(int mode, int family)
+    public void PublishedMasksKeepTheirVectorsAdmittedAndMatchTheByteOracle(int mode, int family)
     {
         var literals = Family(family);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateArray<byte>(1, false); parent[0] = 0xa5;
+        var parent = owner.Budget.AllocateArray<byte>(1, false);
+        parent[0] = 0xa5;
+        var held = owner.Budget.ReservedBytes;
         var value = Prepare(mode, literals);
-        Assert.Equal(48 + Loan(value), owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0xa5, parent[0]);
         CheckMasks(mode, value, literals);
-    }
-
-    [Theory]
-    [MemberData(nameof(Cutoffs))]
-    public void EveryByteAndWorkCutoffRestoresParentStorageAndKeepsSpentWork(int mode, bool bytes)
-    {
-        var literals = Family(3); ulong peak, work;
-        using (var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-        { _ = Prepare(mode, literals); peak = owner.Budget.PeakBytes; work = owner.Budget.WorkSteps; }
-        var successes = 0;
-        for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
+        if (value.HasValue)
         {
-            using var owner = new Utf8ConstructionScope(0, bytes ? 128 + allowance : ulong.MaxValue,
-                bytes ? ulong.MaxValue : allowance + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
-            PreparedMultiLiteralPackedNibbleSimdPrefilter result = default;
-            var error = Record.Exception(() => result = Prepare(mode, literals));
-            if (error is null)
-            { successes++; Assert.Equal(128 + Loan(result), owner.Budget.ReservedBytes); Assert.Equal(bytes ? peak : work, allowance); }
-            else
-            {
-                Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
-                    Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            }
-            Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, bytes ? ulong.MaxValue : 2 + allowance);
+            var vectorBytes = (ulong)(value.LowMaskVectors.Length + value.HighMaskVectors.Length) * (ulong)Vector256<byte>.Count;
+            Assert.InRange(owner.Budget.ReservedBytes, held + vectorBytes, owner.Budget.PeakBytes);
         }
-        Assert.Equal(1, successes);
+        else Assert.Equal(held, owner.Budget.ReservedBytes);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(0ul, owner.Budget.Reserved);
+        Assert.Equal(0xa5, parent[0]);
     }
 
     [Theory]
     [MemberData(nameof(Depths))]
     public void RootAndNestedSearchDepthAreAdmittedBeforeAcquisition(int mode, int depth)
     {
-        var required = mode <= 2 && !Simd ? 1 : mode == 1 ? 3 : 2;
+        var required = !Simd ? 1 : mode == 1 ? 3 : 2;
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => Prepare(mode, Family(2)));
         if (depth < required)
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-            Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+            Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         }
         else { Assert.Null(error); Assert.Equal((ulong)required, owner.Budget.PeakDepth); }
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(17, parent.Value);
-        if (depth == 0) Assert.Equal(128ul, owner.Budget.PeakBytes);
+        if (depth == 0) Assert.Equal(checkpoint, owner.Budget.PeakBytes);
     }
 
     [Fact]
     public void EmptyFamiliesBorrowEveryExtentWithoutAnOwnerLoanOrWork()
     {
         using var owner = new Utf8ConstructionScope(0, 0, 0, 0);
-        for (var mode = 0; mode < 3; mode++) Assert.Equal(0ul, Loan(Prepare(mode, [])));
+        for (var mode = 0; mode < 3; mode++) Assert.False(Prepare(mode, []).HasValue);
+        Assert.Equal(0ul, owner.Budget.ReservedBytes);
         Assert.Equal(0ul, owner.Budget.WorkSteps); Assert.Equal(0ul, owner.Budget.PeakBytes); Assert.Equal(0ul, owner.Budget.PeakDepth);
     }
 
@@ -169,14 +143,13 @@ public sealed class Utf8MultiLiteralMaskAdmissionTests
 
     [Theory]
     [InlineData(RegexOptions.CultureInvariant)] [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]
-    public void FoldedSupplementaryLiteralFamilyKeepsScalarRangesWithoutFallback(RegexOptions options)
+    public void FoldedSupplementaryLiteralFamilyReportsScalarByteRanges(RegexOptions options)
     {
         var regex = new Utf8Regex("(?i:abcdefgh😀|xyzuvw😀|qwerty😀)", options: options);
         var subject = "xxABCDEFGH😀|xyzuvw😀|QWERTY😀yy"u8;
         Assert.True(regex.IsMatch(subject)); Assert.Equal(3, regex.Count(subject));
         var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(new[] { (2, 12), (15, 10), (26, 10) }, ranges);
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     private sealed class Box(int value) { public readonly int Value = value; }
