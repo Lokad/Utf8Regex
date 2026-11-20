@@ -8,19 +8,11 @@ public sealed class Pcre2SafetyContractExampleTests
     [Fact]
     public void TinyMatchLimitBreachesLiteralCount()
     {
-        var limits = new Utf8Pcre2ExecutionLimits { MatchLimit = 1 };
-        var regex = new Utf8Pcre2Regex("foo", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        using var regex = new Utf8Pcre2Regex("foo", policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new Utf8ResourcePolicy
-            {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).MatchLimit,
-                MaxDepth = ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).DepthLimit,
-                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).HeapLimitInBytes,
-                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(limits)).ResultLimitInBytes
-            },
-            MatchTimeout = Utf8Pcre2Regex.DefaultMatchTimeout
+            ResourcePolicy = new() { MaxWorkSteps = 1 }
         });
-        var exception = Assert.Throws<Pcre2MatchException>(() => regex.Count("foo foo foo"u8));
-        Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
+        var error = Assert.Throws<Pcre2MatchException>(() => regex.Count("foo foo foo"u8));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind);
     }
 }

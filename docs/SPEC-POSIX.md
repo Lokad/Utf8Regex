@@ -169,146 +169,43 @@ agree, including nonzero starts.
 
 ## Interruption and admission
 
-Use the [shared resource vocabulary](SPEC.md#cancellation-deadlines-and-resource-limits):
-original synchronous cancellation, one absolute deadline from invocation entry,
-finite work/depth/working/result policies and caller-owned working admission.
-The cursor keeps its original token/deadline and cumulative work/result charges
-across advances. No fallback, retry under another budget or partial successful
-answer after refusal. Boolean existence can stop on a proved hit. Selected whole
-matches and Count finish longest-match competition; operations returning captures
-also resolve hierarchical capture priority. Whole-only output can omit unobservable
-tag histories because this ERE subset has no capture-dependent acceptance.
-Scalar execution retains earliest-start/longest-whole selection and Boolean
-existence. An acceptance at physical input end is already maximal. Other general
-acceptances can use the normal consuming predicates to exclude the next scalar:
-the global walk has no instruction-count cap and polls at most32 instructions
-apart. If a predicate accepts it, the existing at-most64-instruction/2048-byte
-reachability refinement may still exclude it from the accepted prefix. Unknown
-operations, decoding failure or a cutoff keep input end as the conservative
-ceiling. A longer acceptance can refresh an unresolved ceiling. These proofs use
-the original work/interruption authority; they neither select captures nor
-allocate a second execution state.
+POSIX uses the [shared resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
+for numeric limits and shared admission. Matching checks the original token
+before entry and cooperatively during bounded scans, matching, capture selection
+and publication. Cancellation throws `OperationCanceledException` with that token.
+The absolute deadline starts at invocation entry and continues across cursor
+advances and host waits. Timeout throws `RegexMatchTimeoutException` with empty
+`Input`. A cursor keeps cumulative charges when a later advance changes the
+capture destination. A denial ends the operation without publishing a partial
+successful answer or retrying under another policy.
 
-Fixed sequences without choices or repetitions have one parse. Existing proofs
-also retain first acceptance for homogeneous greedy literal runs, suitable equal
-literal alternatives, eligible flat ASCII-origin runs and repeated literal
-captures. Fixed sequences with unique capture openings keep final byte offsets
-in admitted slots, including nested captures. Routes that need to reconcile
-repeated capture occurrences keep one trace. First and mandatory empty
-participation remain; redundant optional empty tails lose.
-No separate saved-best trace or competing-history copy/comparison remains.
-One greedy single-scalar repeat after a fixed scalar prefix, followed only by
-capture operations, also has one longest parse. Its ordinary scalar interpreter
-keeps counters, decoding, predicates and checkpoints but omits impossible shorter
-exit frames. A failing optional atom selects that exit directly. Body captures,
-forks and preceding repeats retain their existing rules. This can lower
-pending-depth/working requirements without weakening work
-or interruption enforcement; scalar values and finite repeat bounds are unchanged.
-Fixed scalar suffixes and anchors around one such repeat still require ordinary
-endpoint rewind and its frames. First successful greedy acceptance nevertheless
-maximizes the total scalar count and determines every non-repeated capture edge.
-The capture-free repeat can use those same offset slots when every capture
-opening outside the repeat is unique. Rewind restores offsets with the other
-saved execution state. Tails with suffixes or anchors keep their pending
-alternatives and the associated depth/working admission.
-For positive ASCII-origin literals/classes, invariant lowercase-fiber keys can
-also prove folded run boundaries. Intersecting scalar closures necessarily share
-an ASCII key. This proof changes selection eligibility only: Unicode partners
-use ordinary scalar consumption and the existing trace, with original byte
-positions. It does not admit a Unicode partner to an ASCII byte shortcut.
-When the first proved run has a positive minimum, its existing scalar predicate
-can reject an impossible start before capture events or repeat counters execute.
-Nullable or unproved prefixes decline this check. State reset, scalar-aligned
-candidate order and the original work/interruption authority remain; numeric
-work requirements can decrease without introducing another executor or replay.
-Flat positive ASCII class or unfolded ASCII literal runs also allow direct run
-consumption in the scalar executor when greedy boundaries prove the selected
-parse. A required piece must be disjoint from all preceding variable runs; an
-overlapping repeated successor must have minimum zero. Finite maxima remain effective.
-The same proof covers a single run and mandatory fixed ASCII-origin literals or
-classes between runs. Each required piece is disjoint from earlier variable
-runs; fixed pieces do not create rewind choices. This can omit frames, undo and
-counter capacity for patterns such as `Z(a+)()`, without a second executor.
-Any anchor in a nullable sequence declines this proof, because an interior anchor can require
-rewinding an earlier run. A multiline end anchor with an LF-consuming run
-declines only direct byte consumption. Positive disjoint runs retain semantic
-first acceptance through ordinary scalar execution and trace projection: their
-intervening boundaries are unique, and greedy rewind tries final endpoints
-longest first. For example, `^([a-z]+)([[:space:]]+)$` with `Newline` on
-`a \nb` selects `a `; consuming the LF cannot turn that hit into a miss.
-Each examined byte
-remains metered; impossible alternative exits, their undo journal and unused
-repeat-counter capacity are omitted. Work, pending depth and working admission
-can therefore be lower for these programs; capture selection is unchanged.
-Their public capture events occur outside repeat bodies, without forks or repeated
-occurrences. Construction can admit one balanced compiler-only wrapper around a
-atom after verifying its tag is not a public capture. The original syntax
-tags stay in the program; this proved route skips that private occurrence history.
-Repeated public captures, required overlapping successors, anchored nullable
-sequences and uncertain bodies retain their existing selection. On the direct
-run route, admitted state slots keep the selected public opening/closing byte
-offsets without a trace. Numerical work and working requirements can fall.
+Construction admits major buffers and instruction expansion before allocation.
+Execution work covers candidate discovery, pending alternatives, capture selection
+and copying ranges to the caller. Depth covers live matching alternatives and
+capture-selection dependencies. Working bytes cover major matching, capture
+and projection capacity, including overlapping storage during growth. These
+counts are modeled capacities. Pattern storage, borrowed text, fixed owner
+metadata and host allocation remain outside the invocation byte limits.
 
-Other requested captures select completed syntax intervals after the scalar
-executor fixes the whole winner. Immutable syntax records carry conservative
-maximum byte consumption; impossible extents and split endpoints are excluded
-before exploration. Keys contain syntax, valid byte start/end and a bounded or
-saturated repetition count. A memo decision selects failure, a branch or a split;
-it does not retain an unfinished history or an input coordinate map. An explicit
-admitted dependency stack avoids CLR recursion. The closed-subexpression order
-retains earlier-branch participation, concatenation priority, full repeated
-occurrence ordering and required empty iterations. Projection streams the selected
-children into final group ranges, clearing descendants when a new enclosing
-capture occurs. It never compares only the last returned slots.
+POSIX returns fixed byte ranges and writes captures into caller-owned spans.
+These operations use no producer-owned result payload or staging, so any positive
+`MaxResultBytes` admits their output. Matching and capture selection still require
+working admission. The result cap leaves any caller-created arrays and text to
+the host.
 
-Retained interval state depends on syntax, subject boundaries and repeat counts,
-not the number of explored histories. It can be quadratic in the number of subject
-boundaries; this is not a linear-memory or linear-time promise. Scalar whole/
-existence discovery can still require expensive search. Short capture destinations
-and cursor aliases retain the same selection and original cumulative authority.
+Boolean existence can stop on a proved hit. Whole-range operations and Count
+finish longest-match selection. Capturing operations also resolve the hierarchy
+under [selection and captures](#selection-and-captures). General capture
+selection resolves intervals within the winning whole match. Its retained state
+can grow quadratically in the number of subject boundaries. Matching time and
+capture storage depend on the pattern and input. A smaller capture destination
+leaves the same selection in force.
 
-Construction keeps scalar-instruction, traversal, byte and depth bounds and admits
-major immutable selector arrays before allocation. Runtime charges dependency,
-split and projection work under the same invocation, including capacity growth.
-Depth limits bound pending scalar alternatives or live dependency/projection
-frames in their respective phases. These depths and numerical work requirements
-can differ from the former DFS-history requirements. General scalar-choice buffers
-are refunded before closed capture selection, and all remaining loans refund
-synchronously on completion, refusal, cancellation or disposal.
-
-Dictionary growth uses a conservative capacity charge: four typed key/value-array
-and index-array extents, with actual element strides and old/new growth overlap.
-It is major-buffer admission, not per-object or hash-probe accounting. Native
-trace/state buffers retain their existing admission. Ordinary general captures
-can allocate dictionary storage where warmed history traversal previously did
-not; first-acceptance routes retain their existing allocation strategy. Recheck
-finite policies when upgrading rather than relying on exact prior step/byte totals.
-
-Scalar scans and capture publication retain bounded original interruption checks.
-Results copy byte endpoints without a text-coordinate or validity pass. Scalar
-units, the valid-text contract, captures and original-token/deadline behavior stay.
-
-Working limits cover modeled matching/history/projection capacity, not borrowed
-input, the compiled program, fixed owner metadata, all GC traffic or process RAM.
-Caller-owned capture destinations and fixed value coordinates need no producer
-result payload; admit any producer-owned result staging before allocation.
-These APIs currently create no producer-owned result payload or result staging;
-any positive `MaxResultBytes` therefore admits their value/caller-destination output.
-Matching traces, interval cells and projection dependencies remain working storage. This limit does not cap arrays/text
-that callers create afterward. Timeout exceptions omit subject text.
-Shared allowance loans release on completion, refusal, cancellation or disposal.
-Whole-only calls admit only their required repeat/alternative state; flat patterns
-can need no covered buffer. A cursor reserves native tag or final-group capacity at construction because
-later advances can request captures, and acquires trace/interval storage only
-when needed for that advance. Switching output sizes through aliases preserves capture selection
-and retained values; it does not reset cumulative work or interruption authority.
-
-Synchronous calls borrow a checked state span, using at most128 integers of stack
-storage and an exact heap vector for larger programs. Cursors retain their own
-exact heap vector. Both admit the same conservative array-capacity charge before
-use and keep the existing work charge and synchronous refund. This storage choice
-does not change scalar selection or retained values; route-dependent numeric
-requirements remain subject to the admission rules above.
+A cursor admits space for capture slots at creation because later advances may
+request captures. General capture-selection workspace is acquired as needed.
+Loans refund synchronously when released, including after refusal, cancellation
+or disposal. Recheck finite policies when upgrading because search and storage
+requirements vary with the execution route and library version.
 
 ## Qualification boundary
 

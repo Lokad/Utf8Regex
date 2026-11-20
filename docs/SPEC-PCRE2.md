@@ -57,7 +57,7 @@ not total heap, stack or process memory.
 ## Surface and admission
 
 `Utf8Pcre2Regex` supplies IsMatch, Count, Match, persistent memory cursors,
-EnumerateMatches, replacement, Analyze, name metadata and Probe.
+EnumerateMatches, replacement, name metadata and Probe.
 Compile, match, substitution and probe options are separate types.
 There is no RTL or DFA matcher.
 
@@ -232,7 +232,6 @@ Caller NotEmpty/NotEmptyAtStart flags apply to every attempt.
 Replacement preserves an admitted reset-empty `\K` result that ordinary
 enumeration suppresses, as pinned by operation-specific fixtures.
 
-Analyze exposes advisory length, literal and eligibility facts.
 Mark reports the last relevant named verb on success, partial or failure.
 
 ## Partial probing
@@ -289,285 +288,112 @@ for ownership and exclusions.
 
 ## Interruption and resource controls
 
-Execution twins preserve the original token. Checks cover bounded input inspection,
-search/VM/grapheme work, projection, byte output and publication.
-Long retries check and charge work in bounded blocks while rewinding journals
-or scanning saved frames and marks.
-One absolute deadline spans lazy advances and controlled preparation.
-Pre-cancellation wins; timeout reports `Pcre2MatchException` / Timeout.
+### Construction
 
-| Legacy execution limit | Zero | Breach |
-| --- | --- | --- |
-| MatchLimit | Unlimited | MatchLimit |
-| DepthLimit | Unlimited | DepthLimit |
-| HeapLimitInBytes | Unlimited | HeapLimit |
-| ResultLimitInBytes | Unlimited | ResultLimit |
+Constructors and `Compile` accept `Utf8RegexPolicy` separately from PCRE2 options
+and compile settings. Invalid policy values name `policy`. `Compile` checks its
+construction token before policy and pattern work. `ConstructionTimeout` defaults
+to infinite. Construction authority ends when the program is published.
+A constructor using default construction settings can borrow an active scope.
+An explicit construction scope cannot replace an active owner.
 
-Create maps positive nullable common policies to these limits; null becomes zero,
-common zero rejects, and work values above uint.MaxValue reject. Units depend on
-the managed route, not native PCRE2. Proved search/count shortcuts can change work
-counts or avoid VM workspace; exact denial thresholds are not version-stable.
-Complete positive-minimum, unbounded greedy ASCII class-run Count also supports
-finite policies, live tokens, deadlines and caller working allowances. It charges
-each candidate and at most 4096 bytes per scan block, using the original shared
-budget and publication checks. The counter needs no scratch or result storage:
-it makes no working-allowance loan, and depth/working/result ceilings need not
-reject work that acquires none of that storage. Existing shared denials remain
-authoritative, including for an empty stream. Positive, nonnegated unions of
-ASCII ranges also admit mixed valid UTF-8: their members are scalar-aligned ASCII
-bytes and all bytes of other scalars are excluded. This needs no subject ASCII
-classification or VM workspace. Eligibility scans immutable class terms with interruption/work checks
-at most 64 additional terms apart, without another retained program flag. An empty
-suffix is already ASCII and needs no such proof. Modeled work and working-state
-requirements can decrease; a large pattern's eligibility remains bounded.
-Other classes on non-ASCII subjects, lazy/bounded/caseless forms,
-anchoring, match flags and diagnostic hooks retain their runners.
-Eligible standalone positive, case-sensitive `\p{Sm}` Count reuses Core's scalar
-category counter under the original invocation, including finite policies, live
-tokens, deadlines and caller working allowances. It admits at most 4096 bytes
-ending at a scalar boundary per block and checks publication, even for unlimited
-calls. No capture or VM workspace is acquired. Numerical work and working-state
-requirements can decrease; other categories, negation, caseless/anchored forms
-and nondefault match options retain their existing selection.
-Class/delimiter Count windows can reject an unproved prefix using the original
-scalar predicate before VM admission. Classification retains bounded work and
-the original token/deadline; viable starts retain complete verification. Skipped
-attempts can reduce required work, depth and heap capacity.
-Controlled Count of eligible nonempty, unanchored literals searches windows of
-at most 2,048 bytes and charges long-literal comparisons separately. It keeps
-the original token and deadline and acquires no capture or result buffer.
-Disproved plain-alternative branches need no frame storage. For example, Count
-of `cat|horse` can succeed with a one-byte heap limit; nonlinear paths that need
-workspace still require admission. This limit does not cover total managed memory.
-Fused scalar repeats can also execute without unused counter vectors. The first
-counter-dependent repeat admits its complete state before acquisition; retries
-reuse it under the same synchronous invocation lifetime. Greedy class runs can
-scan in blocks of at most 2,048 ASCII bytes or one Unicode scalar between
-work and interruption checkpoints. A retryable scan saves one admitted frame
-when a shorter endpoint is legal. It restores checkpoints and visits earlier
-scalar boundaries in greedy order, charging work at each retry. Reusing the
-same frame can lower depth and working requirements. A nonpossessive optional
-literal, class, dot or subroutine call can use an ordinary branch without a
-repeat counter. Subroutine calls retain their usual state restoration. A greedy
-run can omit rewind before a required literal it cannot consume, including
-under finite execution limits. It can also omit rewind before a proved end
-when no shorter endpoint can satisfy the anchor. A greedy ASCII optional can
-omit its retry frame when the terminal suffix cannot begin with any byte it
-consumes. These paths still meter scanning
-and admit required capture and assertion storage. Work and heap requirements
-can fall.
-Subroutine return restores caller state from the existing mutation journals.
-The heap limit covers the retained journals and the vectors used to identify
-each changed slot. Long restoration scans check interruption and charge work
-every 64 journal entries.
-Short straight-line lookaheads with unobserved captures can evaluate their
-existing instructions without nested VM state. They charge the same reached
-instructions and retain the assertion depth and interruption checks.
-A positive word-only repeat can omit rewind state before a required `\b`,
-including under finite limits. Shortening the run would put the boundary
-between two word scalars. Scanning retains the original work, cancellation
-and deadline checks.
-Proved unbounded repeats excluding an ASCII pair can scan checked blocks of at
-most 2048 bytes on caller-valid subjects, retaining scalar endpoints and
-bounded work/interruption checks. This can reduce route-dependent work charges.
-Boolean slice searches can reuse a compiler-proved first ASCII byte to skip
-impossible starts. Each scan admits at most 2048 bytes, with original-token and
-deadline checks even on unlimited calls. Actual candidates retain normal VM and
-capture checks. Nullable, contiguous-origin and compile-anchored programs retain
-their existing search. Other public operations and non-None match options keep
-their existing paths. Skipped attempts reduce route-dependent work costs; these
-scans retain their own admission and normal publication checks.
-Unanchored backtracking with proved literal prefixes can use the same
-bounded search windows under finite limits and live cancellation.
-The same scanner can look for a required delimiter after positive unbounded
-scalar runs. Finding the delimiter triggers a bounded scalar retreat to the
-earliest eligible start at or after the requested offset. When a required
-literal has a proved minimum and maximum byte distance from the match start,
-the scanner can instead enumerate every scalar start in that window. This
-also works under finite limits, charging each bounded search block and each
-attempt that reaches the matcher.
-The matcher verifies each candidate on the original subject and resumes
-at overlapping starts after a failed attempt.
-Depth admits live frames/assertion state
-before growth. Working admission includes major workspace/output growth overlap;
-result admission cumulatively covers owned capture/probe roots, staging and
-returned bytes without refunds. Fixed values/inline partials need no result
-payload. Host decoding, caller storage/retention, custom computation and metadata have
-separate scope; these are not total heap/RSS bounds.
+Both pattern representations use the [shared construction contract](SPEC.md#construction-preparation-and-caches)
+for admission and failures. PCRE2 also caps backtracking and lexical construction
+at 256 live frames, which the caller can tighten. A funded build with no explicit
+`MaxBytes` uses its shared account for covered bytes. The other construction
+backstops still apply. Byte patterns are validated and copied before parsing.
+Construction work and extents use source bytes for byte patterns and UTF-16 units
+for string patterns. `Pattern` decodes byte source on request.
 
-Copied value cursors retain independent positions and shared allowance/deadline.
-First denial stays sticky; refused growth leaves reservations unchanged.
-Exclusive scratch releases synchronously; retained values/aliases survive.
-Byte/status publication remains metered. Capture arrays receive working/result
-admission before allocation, with bounded interruption checks while filling them.
-There is no coordinate endpoint table, sorting, prefix scan or per-cursor UTF-16
-cache. Removing that work/storage changes numerical budget requirements; the
-work/depth/working/result guarantees and interruption authority stay enforced.
+### Invocation
 
-Explicit Compile uses shared construction policy/timeout exceptions, independent
-of invocation limits. Major buffers, instructions, AST/name metadata and expansion
-are admitted conservatively before allocation. Backtracking/lexical construction
-has a fixed 256-frame ceiling, tightened by the caller. Separate construction
-backstops and opaque CLR/JIT exclusions remain. Cold finite-heap replacement
-preparation holds its additional peak reservation through output; its checkpoints
-also spend invocation work. Warm plans use their bounded cache. See
-[construction contract](SPEC.md#construction-preparation-and-caches).
+A pre-canceled token wins before argument validation or program access.
+Interruption checks cover bounded search, matching, rollback, projection, copying
+and publication. Cancellation throws `OperationCanceledException` with the token
+that triggered it. One absolute deadline covers execution, including cold
+replacement preparation and waits between cursor advances. Expiry throws
+`Pcre2MatchException` with `ErrorKind` of `Timeout`. A null `MatchTimeout` uses
+`Utf8Pcre2Regex.DefaultMatchTimeout`, initially infinite.
 
-Under the existing shared-slice compatibility checks, Count alone can reuse the
-constant-space scalar-run counter for a complete positive greedy repeat with
-plain capture markers. Its count-only proof examines at most 64 instructions;
-the original scalar predicates, input policy, cancellation/deadlines and useful
-limits remain. Avoiding unused capture/VM storage can lower numerical work,
-depth and working requirements. Other operations and existing native fast paths
-retain their selection; nondefault match options keep their owned PCRE2 continuation.
+`ResourcePolicy` exposes the selected `Utf8ResourcePolicy`.
+`DefaultExecutionLimits` is its read-only PCRE2 projection. Each policy field
+accepts a positive value or null for unlimited. Null projects to zero.
+`MaxWorkSteps` cannot exceed `uint.MaxValue`. A numeric denial throws
+`Pcre2MatchException` with the corresponding `ErrorKind`.
 
-Bounded ASCII Boolean plans can include subroutine calls whose authoritative
-lowered body is exactly capture-start, one eligible ASCII token, capture-end and
-return. They reuse the existing 64-alternative/128-token limits and construction
-admission, without recursive expansion. Controlled matching, match flags and capture-returning operations retain the
-owned VM and their original interruption/resource authority.
-The same Boolean plans can filter nonempty ASCII conditional branches guarded
-by one positive/negative lookahead token, including plain capture wrappers.
-Intersecting each branch's first class with the guard or its ASCII complement
-preserves the finite language without retaining an assertion executor. A terminal
-unnamed `(*ACCEPT)` wrapper around that token has the same condition truth and
-can use this proof; capture results still retain the PCRE2 conditional capture
-flow. Empty branches, lookbehind, multi-token/Unicode guards and other control
-verbs keep the VM; named ACCEPT guards and capture-dependent syntax remain
-ineligible. Existing construction caps apply.
-Paired outer `\b` assertions can surround a nonempty bounded ASCII language
-whose first and last classes contain only word bytes. With default non-UCP
-semantics, the existing Boolean runner checks their outside neighbors; Unicode
-neighbors remain nonword in that mode. Interior assertions, mixed/nonword
-endpoints and UCP keep their established executors. Flags, controlled calls and
-capture-returning operations retain the owned VM.
+| Policy | Projected limit | Covered scope | Error kind |
+| --- | --- | --- | --- |
+| `MaxWorkSteps` | `MatchLimit` | Cumulative modeled work, including scanning, retries and publication | `MatchLimit` |
+| `MaxDepth` | `DepthLimit` | Live backtracking and assertion depth | `DepthLimit` |
+| `MaxWorkingBytes` | `HeapLimitInBytes` | Live major workspace and output buffers, including growth overlap | `HeapLimit` |
+| `MaxResultBytes` | `ResultLimitInBytes` | Cumulative covered result and staging storage | `ResultLimit` |
 
-Constructors and the two `Compile` representations accept immutable
-`Utf8RegexPolicy` and return disposable `Utf8Pcre2Regex`, funded or not. Options
-and PCRE2 compile settings remain independent inputs. Shared positive resource
-fields map to the existing PCRE2 limits; work above uint.MaxValue rejects.
-`ResourcePolicy` and `DefaultExecutionLimits` are read-only projections; zero in
-the latter denotes unlimited. Policy field errors name `policy`. Null match
-timeout uses DefaultMatchTimeout; null construction timeout is infinite.
-Compile additionally accepts an original construction token, checked before policy/
-pattern work and not retained for later matching. Default construction inherits
-an existing authority; explicit construction/funding cannot replace an active owner.
-No separate Create factory or funded facade remains. Compilation
-uses the existing shared allowance before substantial acquisition, without an
-extra private byte ceiling when construction MaxBytes is null. Fixed work/depth/
-instruction backstops remain. Byte patterns are strictly validated, copied into
-admitted owned storage and parsed directly by the existing PCRE2 grammar. Caller
-reuse after compilation cannot alter the program. `Pattern` decodes on explicit
-request and does not cache that string. Selected names, properties and diagnostic
-operands may project text; compilation does not require a whole-pattern string.
-Native construction work/extent charges use source bytes; string entries retain
-UTF-16 source units. Coarse AST admission can therefore be larger for native
-Unicode sources. Exact internal charges are not a stable heap-size contract.
+The limits bound modeled capacities. Borrowed input, caller destinations, host
+retention and decoding, standalone metadata queries, and incidental allocations
+fall outside the execution limits. Fixed values and inline partial results can
+require no result payload. Which storage and work an operation needs depends on
+the pattern, route and library version. Exact thresholds can differ from native
+PCRE2. Failed admission leaves existing reservations unchanged. Sticky denials
+remain in effect across copies of a span enumerator.
 
-Funded program admission also reserves the existing replacement cache's maximum
-payload and metadata, even before its first use. This is a conservative per-program
-loan (currently 4MiB payload plus bounded metadata), not additional eager cache
-allocation. It intentionally raises the modeled program admission required by
-earlier owners. Cache publication/eviction needs no additional entry lease or
-funding transfer. Ordinary expressions retain their existing cache bounds.
+### Program and working allowances
 
-IsMatch, Match, Count, persistent cursor creation and destination replacement
-expose an optional shared working allowance. Null inherits program funding, or
-keeps numeric controls when unfunded; an explicit account overrides working only.
-A shared account fences unmetered literal shortcuts. Numeric limits, original
-cancellation and PCRE2 timeout/limit errors still apply. Shared refusal throws
-`Utf8MemoryAdmissionException` synchronously and never retries elsewhere.
-Covered temporary loans refund on success, failure and interruption. Borrowed
-input, fixed invocation metadata and caller retention are separate scopes.
+Set `ProgramMemoryAllowance` to admit covered program storage, including a
+conservative reservation for the bounded replacement cache. The cache reservation
+covers 4 MiB of payload plus bounded metadata without eager buffer allocation.
 
-Funded Dispose rejects new program-dependent calls/metadata and refunds after the
-final active use; admitted synchronous operations finish without re-entering a
-closed public gate. It does not wait, cancel or reclaim through GC. Disposal is a
-no-op without funding. Pattern/options/settings/timeouts/resource projections
-remain readable. Closing ends participating program admission; host retention of
-closed instances and published results is outside that loan and does not force
-CLR reclamation. Existing persistent cursors retain program admission through
-EOF/failure/Dispose and preserve their aliases/retained range snapshots after close.
+`IsMatch`, `Match`, `Count`, `CreateMatchCursor` and `TryReplace` accept an optional
+working allowance. Null inherits the program account if present. An explicit
+account overrides working admission only. Covered acquisitions must pass both
+numeric and shared admission. `Utf8MemoryAdmissionException` reports shared
+refusal synchronously. Refusal ends the operation and temporary loans refund on
+success, failure or interruption. Probe and owned-byte `Replace` retain numeric
+controls and admitted program use.
 
-Newly funded span enumerators borrow an open producer at creation and each
-advance, release its use between advances and hold no host working loan. Copies
-keep independent positions and their original shared cumulative numeric budget
-and absolute deadline. Close rejects later advances, including ended copies;
-original entry cancellation takes precedence. Current byte endpoints, fragment
-status and borrowed values remain valid with unchanged input. Use the persistent
-cursor for traversal surviving close or shared working admission. Probe, detailed
-metadata and owned output retain numeric controls and admitted program
-use, without adding working-overload symmetry or changing drivers/MARK/partials.
+Cold `TryReplace` key and parser buffers use the working allowance within the
+original deadline. Their covered storage remains admitted through output copying.
+Warm cache lookup borrows the key bytes. Template preparation also retains its
+construction backstops. [Substitution](#substitution) describes output behavior.
 
-`Utf8Pcre2Regex.TryReplace` retains the program's admission and accepts
-byte starts, substitution/match options, the current token and an optional separate
-working allowance. Cold key/parser arrays and live output borrow the same working
-ledger before allocation and remain admitted through final copying. An unlimited
-numeric heap ceiling does not disable host admission. Covered temporary loans
-refund synchronously on completion, refusal or interruption; refusal is terminal.
-Construction backstops, original deadlines and cumulative match/depth/heap/result
-controls remain. Warm cache queries borrow the source and avoid key copying.
+Disposal of a funded expression rejects new program-dependent calls and metadata
+queries. Admitted synchronous calls can finish, and persistent cursors keep their
+program use until EOF, failure or disposal. The account refunds after the last
+admitted use. Pattern, options, compile settings and policy projections remain
+readable. Disposal is a no-op on an unfunded expression.
 
-The literal destination driver remains in use. Detailed/native-value output copies
-directly from its live writer, avoiding an intermediate published byte array and
-its funding gap. Non-funded destination calls use the same output completion.
-Scalar captures, Extended transformations, lazy errors on no match/unselected
-branches, aliases and overflow-length reporting retain their profile semantics.
-Removing an intermediate allocation can admit formerly refused tight result caps;
-numeric charges remain route/version dependent. Copied output belongs to the caller
-and survives expression disposal. No new retained-output receipt or string overload is
-required for this funded route.
+### Cursor and result lifetimes
 
-`CreateMatchCursor(ReadOnlyMemory<byte>, byteStart, matchOptions, token, workingAllowance)`
-on expressions and program owners returns `Utf8Pcre2MatchCursor` over already-valid
-unchanged text. No validity pass precedes cursor creation. Explicit starts
-are scalar-aligned bytes; prefix/lookbehind/anchor context remains the original
-subject. Sequential advances
-can cross awaits under the creation token, absolute deadline and cumulative limits.
-An advance token applies only to that synchronous call; if both cancel, the
-original token wins. Aliases share position/disposal and reject concurrent or
-reentrant access. Dispose early abandonment; there is no finalizer. Scalar slots/
-workspace retain their admitted high-water capacity while positioned, including
-across host waits; other lexical VM scratch releases per advance. This can retain
-working admission longer than standalone calls. EOF, failure and Dispose drop
-exclusive roots and release all remaining loans/program use synchronously.
+Span enumerator copies have independent positions and share the cumulative
+numeric budget and deadline. Creation and each advance borrow an open funded
+expression. They release that use between advances and carry no shared working
+loan. Expression close prevents further advances, including on ended copies.
+Entry cancellation still wins. Published values remain valid while the subject
+lives unchanged.
 
-`MoveNext(out Utf8Pcre2RangeMatch)` returns immutable numbered last-capture byte
-slots and MARK. Existing native literal/character/repeat finders remain eligible;
-captured cases use existing scalar or PCRE2 VMs with a final byte result shape.
-PCRE2 flags retain their existing admitted VM route; empty retries can borrow
-the scalar runner's anchored nonempty attempt under the original anchor origin.
-Global progression uses consumed ranges, preserving `\K`, same-position nonempty
-retry and CRLF/Anchored behavior. Non-monotone iteration remains unsupported.
-Opted-in `\C` may return scalar fragments: inspect `IsUtf8SliceWellFormed` before
-decoding; byte access itself remains available. No full capture history is added.
-These range results do not provide a reusable scalar-coordinate index.
+A memory cursor retains program admission through expression close. Its aliases
+share position and disposal. Concurrent or reentrant access is rejected. The
+creation token, absolute deadline and cumulative limits apply across advances,
+including host waits. An advance token applies only to that call. The creation
+token takes precedence if both are canceled. The cursor may retain charged
+workspace between advances. EOF, failure or disposal releases exclusive scratch
+and program use synchronously. Dispose an abandoned cursor explicitly.
 
-Standalone value, group, match and partial-match views no longer expose
-`GetValueString`. Use `GetValueBytes` on a value/group, or `Value.GetValueBytes`
-on a match context. Hosts decode selected well-formed slices outside regex
-resource/interruption controls. `HasContiguousByteRange`, slice well-formedness,
-byte endpoints and noncontiguous byte-access errors retain their meanings.
+`MoveNext` publishes immutable last-capture ranges and MARK. They survive later
+advances and cursor or program close. The input memory and its manager remain
+borrowed. Use `GetValueBytes` on the value or group and inspect
+`IsUtf8SliceWellFormed` before decoding an opted-in byte fragment.
 
-Range metadata survives later advances and cursor/program close. Subject bytes
-and their memory manager remain borrowed. Ordinary publication ends producer
-working admission for results; continued host retention has separate scope.
 `MoveNextRetained` requires shared working funding and returns a disposable
-`Utf8Pcre2RetainedRangeMatch`. Default publication transfers the existing capture/
-metadata loan without reacquisition. A separate result account admits its charge
-before working staging refunds, including conservative overlap without a funding
-gap. The result charge includes its capture array and receipt, plus MARK text if
-present. Program admission covers capture names. Refusal is terminal. Receipt
-close refunds once; copied ranges remain valid afterward, with
-continued admission then the caller's responsibility. Numeric result traffic is
-cumulative regardless of live refunds. Native pattern compilation, source copying
-and UTF-8 template preparation are implemented. Funded caller-destination replacement
-is implemented; final package/consumer acceptance remains separate delivery work.
+`Utf8Pcre2RetainedRangeMatch`. The result charge covers its capture array,
+receipt and MARK text, when present. Capture names remain covered by the program.
+The working loan can transfer to the receipt. A separate result account must
+admit the charge before working staging refunds. Refusal is terminal. Disposal
+refunds once, while existing range copies remain valid under the caller's
+retention responsibility. Numeric result traffic remains cumulative after refunds.
 
 ## Isolation and non-goals
 
-Template `ReplaceToString` overloads are removed. `Replace` with a string or UTF-8
-template and `TryReplace` preserve substitution semantics and byte output controls.
+`Replace` and `TryReplace` take UTF-8 templates and produce byte output.
 Hosts decode valid byte results explicitly; that string allocation and any final
 host cancellation check fall outside the regex invocation. Callback replacement
 and evaluator delegates are removed as well; use the range cursor for host output.
@@ -586,9 +412,10 @@ Public examples live in the [package README](../src/Lokad.Utf8Regex.Pcre2/README
 The existing safety fixture executes this denial example:
 
 ```csharp
-var regex = new Utf8Pcre2Regex("foo", policy: new Utf8RegexPolicy
+using var regex = new Utf8Pcre2Regex("foo", policy: new Utf8RegexPolicy
 {
     ResourcePolicy = new() { MaxWorkSteps = 1 }
 });
-Assert.Throws<Pcre2MatchException>(() => regex.Count("foo foo foo"u8));
+var error = Assert.Throws<Pcre2MatchException>(() => regex.Count("foo foo foo"u8));
+Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind);
 ```
