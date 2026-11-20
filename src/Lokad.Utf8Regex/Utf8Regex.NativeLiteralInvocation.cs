@@ -73,31 +73,25 @@ public sealed partial class Utf8Regex
             literals.Length <= maximumAlternatives) &&
         (allowBoundaries || !_preparedRegex.SearchPlan.HasBoundaryRequirements);
 
-    // Metered literal operations start their one deadline before input admission.
-    // Unlimited operations keep the established specialized kernels. Semantic
-    // exclusions match native token enumeration; other profiles retain their VM.
-    private bool TryStartNativeLiteralInvocation(CancellationToken token,
-        out Utf8SliceInvocation invocation, bool forCount = false)
+    // Decide eligibility before constructing the invocation. Each selected
+    // search starts its deadline and checks admission before inspecting input.
+    private bool CanStartNativeLiteralInvocation(CancellationToken token, bool forCount = false)
     {
-        invocation = default;
-        // Unmetered Count already owns specialized counters. Trusting input
-        // removes their separate validity pass, not their matching algorithm.
+        var kind = _preparedRegex.ExecutionKind;
+        if (kind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or
+            NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals))
+            return false;
+
+        // Unmetered Count uses the specialized counters.
         if (forCount &&
             MatchTimeout == System.Text.RegularExpressions.Regex.InfiniteMatchTimeout && !token.CanBeCanceled &&
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null)
             return false;
-        if (_requiresKelvinSignFallback ||
-            _ownedSliceProgram is { HasBalancing: true } or { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true } ||
-            _ownedSliceProgram is { IgnoreCase: true } && _preparedRegex.ExecutionKind is not
-                (NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
-            _preparedRegex.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or
-                NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) ||
-            _preparedRegex.LiteralUtf8 is { Length: 0 })
-            return false;
+
         // Empty literals use the shared scalar program and its boundary progression.
-        invocation = Utf8SliceInvocation.CreateExclusive(Utf8ExecutionLimits.Unlimited, MatchTimeout, token);
-        // All three callers use the invocation by reference through publication.
-        Utf8SliceBufferWork.Checkpoint(ref invocation);
-        return true;
+        return !_requiresKelvinSignFallback &&
+            _ownedSliceProgram is not ({ HasBalancing: true } or { HasSharedCaptureDeclarations: true } or { HasExplicitCaptureNumbers: true }) &&
+            (!_ownedSliceProgram.IgnoreCase || kind is NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&
+            _preparedRegex.LiteralUtf8 is not { Length: 0 };
     }
 }

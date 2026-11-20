@@ -318,8 +318,10 @@ public sealed partial class Utf8Regex : IDisposable
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         if (HasFiniteExecutionLimits) return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
-        if (TryStartNativeLiteralInvocation(cancellationToken, out var invocation))
+        if (CanStartNativeLiteralInvocation(cancellationToken))
         {
+            var invocation = Utf8SliceInvocation.CreateExclusive(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
             var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan, input, 0, input.Length,
                 UsesRightToLeft(), ref invocation, out _, out var found);
             if (breach != Utf8ExecutionLimitKind.None)
@@ -471,8 +473,10 @@ public sealed partial class Utf8Regex : IDisposable
         {
             return invariantCyrillicLiteralCountStrategy.Count(input);
         }
-        if (TryStartNativeLiteralInvocation(cancellationToken, out var invocation, forCount: true))
+        if (CanStartNativeLiteralInvocation(cancellationToken, forCount: true))
         {
+            var invocation = Utf8SliceInvocation.CreateExclusive(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
             var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(_preparedRegex.SearchPlan,
                 input, UsesRightToLeft(), ref invocation, out var count);
             if (breach != Utf8ExecutionLimitKind.None)
@@ -666,9 +670,11 @@ public sealed partial class Utf8Regex : IDisposable
     private Utf8CaptureRange MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         if (HasFiniteExecutionLimits) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
-        if (TryStartNativeLiteralInvocation(cancellationToken, out var invocation))
+        if (CanStartNativeLiteralInvocation(cancellationToken))
         {
-            var plan = _preparedRegex.SearchPlan;
+            var invocation = Utf8SliceInvocation.CreateExclusive(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
+            ref readonly var plan = ref _preparedRegex.SearchPlan;
             var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input, 0, input.Length,
                 UsesRightToLeft(), ref invocation, out var selected, out var found);
             if (breach != Utf8ExecutionLimitKind.None)
