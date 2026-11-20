@@ -411,20 +411,14 @@ public sealed partial class Utf8Regex : IDisposable
             if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
             return found;
         }
-        var slots = new Utf8SliceSlots([], []);
-        try
-        {
-            slots = Utf8SliceRunner.RentSlots(GetValueOperationCaptureSlotCount(program), ref invocation);
-            var knownDelimiter = screenedLiteral >= 0 && ReferenceEquals(prefilter.LiteralSearch.Needle, search.LiteralUtf8)
-                ? screenedLiteral : -1;
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends,
-                false, ref invocation, search, existenceOnly: true, screenedLiteral: knownDelimiter);
-            if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
-            invocation.Budget.ThrowIfCancellationRequested();
-            return outcome.Found;
-        }
-        finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
+        var knownDelimiter = screenedLiteral >= 0 && ReferenceEquals(prefilter.LiteralSearch.Needle, search.LiteralUtf8)
+            ? screenedLiteral : -1;
+        var outcome = FindOwnedSliceValue(program, input, startByte, ref invocation, search,
+            existenceOnly: true, screenedLiteral: knownDelimiter);
+        if (outcome.Breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
+        invocation.Budget.ThrowIfCancellationRequested();
+        return outcome.Found;
     }
 
     // Adapters may borrow a necessary exact literal from their existing native
@@ -668,6 +662,31 @@ public sealed partial class Utf8Regex : IDisposable
     private static int GetValueOperationCaptureSlotCount(Utf8SliceProgram program)
         => program.IsNonBacktracking || !program.ReadsCaptures ? 0 : program.GroupCount;
 
+    private static Utf8SliceSearchOutcome FindOwnedSliceValue(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int startByte, ref Utf8SliceInvocation invocation,
+        in Utf8SearchPlan search, bool existenceOnly = false, int screenedLiteral = -1)
+    {
+        var groupCount = GetValueOperationCaptureSlotCount(program);
+        return groupCount == 0
+            ? Utf8SliceRunner.TryFindFirst(program, input, startByte, [], [],
+                false, ref invocation, search, existenceOnly, screenedLiteral)
+            : FindOwnedSliceValueWithSlots(program, groupCount, input, startByte, ref invocation,
+                search, existenceOnly, screenedLiteral);
+    }
+
+    private static Utf8SliceSearchOutcome FindOwnedSliceValueWithSlots(Utf8SliceProgram program, int groupCount,
+        ReadOnlySpan<byte> input, int startByte, ref Utf8SliceInvocation invocation,
+        in Utf8SearchPlan search, bool existenceOnly, int screenedLiteral)
+    {
+        var slots = Utf8SliceRunner.RentSlots(groupCount, ref invocation);
+        try
+        {
+            return Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends,
+                false, ref invocation, search, existenceOnly, screenedLiteral);
+        }
+        finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
+    }
+
     private Utf8CaptureRange MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
         if (HasFiniteExecutionLimits) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
@@ -753,20 +772,13 @@ public sealed partial class Utf8Regex : IDisposable
                 throw new InvalidOperationException("Native literal match breached the invocation budget.");
             return found ? Utf8SliceBufferWork.CreateMatchRange(selected.Index, (selected.Index) + (selected.Length), ref invocation) : default(Utf8CaptureRange);
         }
-        var slots = new Utf8SliceSlots([], []);
-        try
-        {
-            slots = Utf8SliceRunner.RentSlots(GetValueOperationCaptureSlotCount(program), ref invocation);
-            var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends,
-                false, ref invocation, _preparedRegex.SearchPlan);
-            if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (!outcome.Found) return default(Utf8CaptureRange);
-            var length = outcome.EndByte - outcome.StartByte;
-            return Utf8SliceBufferWork.CreateMatchRange(outcome.StartByte, (outcome.StartByte) + (length), ref invocation);
-        }
-        finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
+        var outcome = FindOwnedSliceValue(program, input, startByte, ref invocation, _preparedRegex.SearchPlan);
+        if (outcome.Breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
+        invocation.Budget.ThrowIfCancellationRequested();
+        return outcome.Found
+            ? Utf8SliceBufferWork.CreateMatchRange(outcome.StartByte, outcome.EndByte, ref invocation)
+            : default;
     }
 
     private struct CaptureCheckFrame(Utf8TreeNode node)
