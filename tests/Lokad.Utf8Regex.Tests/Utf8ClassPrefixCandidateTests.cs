@@ -331,11 +331,13 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.Equal("ok://ok", Encoding.UTF8.GetString(next.GetValueMemory().Span));
     }
 
-    [Fact]
-    public void RepeatedClassPrefixRetainsStartsBeforeAnEarlierLiteral()
+    [Theory]
+    [InlineData("Holmes")]
+    [InlineData("xHolmes")]
+    public void RepeatedClassPrefixRetainsStartsBeforeAnEarlierLiteral(string precedingWord)
     {
         const string pattern = @"(?<first>\w+)\s+\w+\s+Holmes";
-        const string first = "é\u0085Holmes\u2028Holmes";
+        var first = "é\u0085" + precedingWord + "\u2028Holmes";
         const string second = "Ω\u3000東\tHolmes";
         var prefix = new string('!', 100_000) + "😀";
         var input = Encoding.UTF8.GetBytes(prefix + first + "!" + second);
@@ -354,9 +356,41 @@ public sealed class Utf8ClassPrefixCandidateTests
         Assert.True(cursor.MoveNext(out var initial));
         Assert.True(cursor.MoveNext(out var next));
         Assert.False(cursor.MoveNext(out _));
-        Assert.True(initial.GetValueMemory().Span.SequenceEqual("é\u0085Holmes\u2028Holmes"u8));
+        Assert.True(initial.GetValueMemory().Span.SequenceEqual(Encoding.UTF8.GetBytes(first)));
         Assert.True(initial.GetGroupMemory(1).Span.SequenceEqual("é"u8));
         Assert.True(next.GetValueMemory().Span.SequenceEqual("Ω\u3000東\tHolmes"u8));
+    }
+
+    [Theory]
+    [InlineData(2042)]
+    [InlineData(2043)]
+    [InlineData(2044)]
+    public void RequiredLastRepeatRejectsAnInteriorDelimiterBeforeRewinding(int delimiterStart)
+    {
+        var miss = "a b " + new string('x', delimiterStart - 4) + "Holmes";
+        const string hit = "é\u0085東\u3000Holmes";
+        var input = Encoding.UTF8.GetBytes(miss + "! " + hit);
+        using var regex = Utf8Regex.Compile(@"\w+\s+\w+\s+Holmes", policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 128 }
+        });
+        using var live = new CancellationTokenSource();
+        Assert.False(regex.IsMatch(input.AsSpan(0, miss.Length), live.Token));
+        Assert.Equal(0, regex.Count(input.AsSpan(0, miss.Length), live.Token));
+        Assert.True(regex.IsMatch(input, live.Token));
+        Assert.Equal(1, regex.Count(input, live.Token));
+        var result = regex.Match(input, 0, [], live.Token);
+        Assert.Equal((miss.Length + 2, input.Length), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+    }
+
+    [Fact]
+    public void OptionalLastRepeatCanMatchAnUnspacedDelimiter()
+    {
+        var input = Encoding.UTF8.GetBytes(new string('!', 256) + "é bHolmes");
+        using var regex = Utf8Regex.Compile(@"\w+\s+\w+\s*Holmes", policy: new() { ResourcePolicy = Funded });
+        Assert.Equal(1, regex.Count(input));
+        var result = regex.Match(input, 0);
+        Assert.Equal((256, input.Length), (result.StartOffsetInBytes, result.EndOffsetInBytes));
     }
 
     [Theory]

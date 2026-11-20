@@ -520,7 +520,7 @@ internal static partial class Utf8SliceRunner
         var classLiteral = -1;
         var classSearch = default(PreparedSubstringSearch?);
         byte[][]? classAlternatives = null;
-        var repeatPrefixAscii = default(Utf8SearchAsciiSet);
+        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last) repeatPrefix = default;
         long classGapMaximum = 0;
         var directClassLiteral = false;
         var singleWindowAttempt = false;
@@ -562,7 +562,7 @@ internal static partial class Utf8SliceRunner
                 classAlternatives = GetAlignedDelimiterAlternatives(program, literalIndex, candidatePlan.RequiredPrefilterSearcher);
             }
             if (classLiteral < 0 && classAlternatives is null &&
-                GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefixAscii) is { } prefixSearch)
+                GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefix) is { } prefixSearch)
             {
                 classSearch = prefixSearch;
                 classLiteral = prefixSearch.Needle[0];
@@ -605,7 +605,7 @@ internal static partial class Utf8SliceRunner
             {
                 var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                     (byte)classLiteral, classSearch, classGapMaximum, directClassLiteral,
-                    ref position, ref invocation, out classWindowEnd, repeatPrefixAscii, classAlternatives, requiredClassSuffix);
+                    ref position, ref invocation, out classWindowEnd, repeatPrefix, classAlternatives, requiredClassSuffix);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
@@ -886,7 +886,7 @@ internal static partial class Utf8SliceRunner
         // consuming instructions separate the repeat from its delimiter.
         var literalImmediatelyAfterRepeat = whitespaceLiteral >= 0 && whitespaceLiteralIndex == leadingClass + 3;
         var classSearch = default(PreparedSubstringSearch?);
-        var repeatPrefixAscii = default(Utf8SearchAsciiSet);
+        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last) repeatPrefix = default;
         var singleWindowAttempt = false;
         var requiredClassSuffix = -1;
         if (whitespaceLiteral >= 0 && leadingClass >= 0)
@@ -904,7 +904,7 @@ internal static partial class Utf8SliceRunner
         }
         if (whitespaceLiteral < 0 && leadingAsciiFirst < 0 && !seekLiteral && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor && input.Length - fromByte >= 256 &&
-            GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefixAscii) is { } prefixSearch)
+            GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefix) is { } prefixSearch)
         {
             classSearch = prefixSearch;
             whitespaceLiteral = prefixSearch.Needle[0];
@@ -981,11 +981,11 @@ internal static partial class Utf8SliceRunner
                 }
                 while (whitespaceLiteral >= 0 && position > whitespaceWindowEnd)
                 {
-                    if (leadingClass >= 0 || repeatPrefixAscii.HasValue)
+                    if (leadingClass >= 0 || repeatPrefix.Any.HasValue)
                     {
                         var seekBreach = TrySeekLeadingClassLiteralWindow(program, input, leadingClass,
                             (byte)whitespaceLiteral, classSearch, whitespaceGapMaximum, directClassLiteral,
-                            ref position, ref invocation, out whitespaceWindowEnd, repeatPrefixAscii, requiredSuffix: requiredClassSuffix);
+                            ref position, ref invocation, out whitespaceWindowEnd, repeatPrefix, requiredSuffix: requiredClassSuffix);
                         if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     }
                     else
