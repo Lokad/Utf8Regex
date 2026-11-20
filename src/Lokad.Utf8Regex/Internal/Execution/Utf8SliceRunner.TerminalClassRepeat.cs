@@ -931,8 +931,11 @@ internal static partial class Utf8SliceRunner
         int repeatIndex, Utf8ConstructionBudget budget)
     {
         var repeat = code[repeatIndex];
-        if (!IsSingleAtomRepeat(code, repeatIndex, repeat) || repeat.RepeatMinimum == repeat.RepeatMaximum ||
-            code[repeatIndex + 1] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom)
+        if (!IsSingleAtomRepeat(code, repeatIndex, repeat) || repeat.RepeatMinimum == repeat.RepeatMaximum)
+            return;
+        var atom = code[repeatIndex + 1];
+        if (atom is not ({ Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                         { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
 
         var continuation = repeat.A + 1;
@@ -953,7 +956,7 @@ internal static partial class Utf8SliceRunner
         var mask = setMasks[atom.A].AsSpan();
         var consumed = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
             BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
-        if (ExcludesShorterAsciiRepeatEnds(code, continuation, consumed, ref work))
+        if (ExcludesShorterRepeatEnds(code, continuation, consumed, atom.Kind == Utf8SliceInstructionKind.Set, ref work))
         {
             var exit = code[repeat.A];
             code[repeat.A] = new(exit.Kind, exit.A, exit.B, 1, exit.D);
@@ -1006,11 +1009,11 @@ internal static partial class Utf8SliceRunner
         }
     }
 
-    private static bool ExcludesShorterAsciiRepeatEnds(ReadOnlySpan<Utf8SliceInstruction> instructions,
-        int index, Utf8SearchAsciiSet consumed, ref int remaining)
+    private static bool ExcludesShorterRepeatEnds(ReadOnlySpan<Utf8SliceInstruction> instructions,
+        int index, Utf8SearchAsciiSet consumedAscii, bool asciiOnly, ref int remaining)
     {
-        // A shorter endpoint precedes a consumed ASCII scalar. Each arm
-        // must reject that scalar, or require the actual end of the input.
+        // Each arm must reject the scalar at a shorter endpoint. An unfolded
+        // hybrid mask describes all ASCII members but may also admit wider ones.
         for (; remaining > 0 && (uint)index < (uint)instructions.Length; index++)
         {
             remaining--;
@@ -1020,14 +1023,14 @@ internal static partial class Utf8SliceRunner
                 case { Kind: Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd }:
                     continue;
                 case { Kind: Utf8SliceInstructionKind.Fork, B: 0 } when entry.A > index:
-                    if (!ExcludesShorterAsciiRepeatEnds(instructions, entry.A, consumed, ref remaining)) return false;
+                    if (!ExcludesShorterRepeatEnds(instructions, entry.A, consumedAscii, asciiOnly, ref remaining)) return false;
                     continue;
                 case { Kind: Utf8SliceInstructionKind.Literal, B: 0 }:
-                    return (uint)entry.A >= 128 || !consumed.Contains((byte)entry.A);
+                    return (uint)entry.A < 128 ? !consumedAscii.Contains((byte)entry.A) : asciiOnly;
                 case { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd }:
                     return true;
                 case { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End }:
-                    return !consumed.Contains((byte)'\n');
+                    return !consumedAscii.Contains((byte)'\n');
                 default:
                     return false;
             }

@@ -46,6 +46,44 @@ public sealed class Utf8OptionalRepeatTests
     }
 
     [Theory]
+    [InlineData("///doc")]
+    [InlineData("\u2003[|\t/// doc😀\n")]
+    public void DisjointAsciiContinuationsPrepareUnicodeWhitespaceRepeats(string text)
+    {
+        const string pattern = @"^\s*(\[\|\s*)?///\s?(?<doc>.*)$";
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        using var regex = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 << 14 }
+        });
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        Assert.Equal(2, program.Instructions.Count(instruction =>
+            instruction.Kind == Utf8SliceInstructionKind.RepeatExit && instruction.RepeatExitRejectsShorterEndpoints));
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern, options).Match(text);
+        using var source = new CancellationTokenSource();
+        Utf8MatchSequence.AssertRange(regex.Match(input, cancellationToken: source.Token), text, expected.Index, expected.Length);
+        Utf8MatchSequence.AssertCaptures(expected,
+            Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)), input, text);
+    }
+
+    [Theory]
+    [InlineData(@"^\s*(\u2003)/$", " \u2003/")]
+    [InlineData(@"^\s*(/|\u2003)/$", " \u2003/")]
+    [InlineData(@"^\s*(\n)$", " \n")]
+    public void OverlappingContinuationCanStillRewindUnicodeWhitespace(string pattern, string text)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        Assert.DoesNotContain(program.Instructions, instruction =>
+            instruction.Kind == Utf8SliceInstructionKind.RepeatExit && instruction.RepeatExitRejectsShorterEndpoints);
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern, RegexOptions.CultureInvariant).Match(text);
+        Assert.True(expected.Success);
+        Utf8MatchSequence.AssertCaptures(expected, Utf8MatchSequence.First(regex.CreateMatchCursor(input)), input, text);
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public void ScalarOptionalCapturesRetainByteBoundariesAndBorrowedResults(bool lazy)
