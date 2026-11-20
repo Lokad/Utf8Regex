@@ -997,9 +997,7 @@ public sealed class PreparedSearchPrimitivesTests
     {
         var window = new PreparedWindowSearch(
             new PreparedSearcher(new PreparedMultiLiteralSearch([Encoding.UTF8.GetBytes("using var")], ignoreCase: false)),
-            new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false),
-            maxGap: 64,
-            sameLine: true);
+            new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false));
         var input = Encoding.UTF8.GetBytes("using var value =\nawait");
         var state = PreparedWindowScanState.Create(0);
 
@@ -1050,9 +1048,8 @@ public sealed class PreparedSearchPrimitivesTests
         var source = Utf8StructuralSearchPlan.CreateWindowPlan(
             new PreparedWindowSearch(
                 new PreparedSearcher(new PreparedMultiLiteralSearch([Encoding.UTF8.GetBytes("using var")], ignoreCase: false)),
-                new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false),
-                maxGap: 64,
-                sameLine: true));
+                new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false)),
+            maxLines: 1);
         var input = Encoding.UTF8.GetBytes("using var value =\nawait");
         var state = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
 

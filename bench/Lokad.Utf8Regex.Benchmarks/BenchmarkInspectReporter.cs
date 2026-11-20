@@ -3630,7 +3630,7 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"PortfolioKind     : {regex.Inspection.SearchPortfolioKind}");
         Console.WriteLine($"PreparedSearcher  : {regex.Inspection.SearchPlan.PreparedSearcher.Kind}");
         Console.WriteLine($"RequiredPrefilter : {(regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")}");
-        Console.WriteLine($"WindowSearch      : {(regex.Inspection.SearchPlan.WindowSearch.HasValue ? "Present" : "None")}");
+        Console.WriteLine($"WindowPrefilters  : {regex.Inspection.SearchPlan.RequiredWindowPrefilterPlans?.Length ?? 0}");
         WriteStructuralSearchPlan(regex.Inspection.StructuralSearchPlan);
         var fallbackPlans = Utf8FallbackReplay.GetCandidatePlans(regex.Inspection.SearchPlan);
         Console.WriteLine($"FallbackPlans     : {fallbackPlans.Length}");
@@ -3668,10 +3668,6 @@ internal static partial class BenchmarkInspectReporter
         if (data.StartTransform.HasValue)
         {
             Console.WriteLine($"StartTransform    : {data.StartTransform.Kind}, offset {data.StartTransform.Offset}");
-        }
-        if (data.WindowSearch.MaxGap is > 0 and var maxSpan)
-        {
-            Console.WriteLine($"MaximumByteSpan   : {maxSpan}");
         }
         if (data.MaxLines > 0)
         {

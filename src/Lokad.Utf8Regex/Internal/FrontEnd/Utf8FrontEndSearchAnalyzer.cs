@@ -25,9 +25,6 @@ internal static class Utf8FrontEndSearchAnalyzer
             secondaryRequiredPrefilterQuotedAsciiSet,
             secondaryRequiredPrefilterQuotedAsciiLength,
             out var requiredWindowPrefilters);
-        TrySelectOrderedAsciiWindow(runtimeTree.Root, findOptimizations, UsesInvariantIgnoreCase(semanticRegex.ExecutionOptions), out var orderedLeadingLiterals, out var orderedTrailingLiteral);
-        TrySelectOrderedWindowConstraints(runtimeTree.Root, orderedLeadingLiterals, orderedTrailingLiteral,
-            out var orderedWindowMaxGap, out var orderedWindowSameLine);
         TrySelectFallbackStartTransform(runtimeTree.Root, out var fallbackStartTransform);
         TrySelectBoundaryRequirements(runtimeTree.Root, out var leadingBoundary, out var trailingBoundary);
         requiredPrefilterLiteral ??= [];
@@ -47,10 +44,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
                            SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
                            RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
-                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
-                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
-                           OrderedWindowMaxGap = orderedWindowMaxGap,
-                           OrderedWindowSameLine = orderedWindowSameLine,
                            FallbackStartTransform = fallbackStartTransform,
                            MinRequiredLength = trailingLength,
                            ExactRequiredLength = exactRequiredLength,
@@ -71,10 +64,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
                            SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
                            RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
-                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
-                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
-                           OrderedWindowMaxGap = orderedWindowMaxGap,
-                           OrderedWindowSameLine = orderedWindowSameLine,
                            FallbackStartTransform = fallbackStartTransform,
                            FixedDistanceSets = fixedDistanceSets,
                            MinRequiredLength = fixedDistanceMinRequiredLength,
@@ -96,10 +85,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
                            SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
                            RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
-                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
-                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
-                           OrderedWindowMaxGap = orderedWindowMaxGap,
-                           OrderedWindowSameLine = orderedWindowSameLine,
                            FallbackStartTransform = fallbackStartTransform,
                            FixedDistanceSets = deterministicPrefixSets,
                            MinRequiredLength = deterministicPrefixMinRequiredLength,
@@ -122,10 +107,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
                            SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
                            RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
-                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
-                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
-                           OrderedWindowMaxGap = orderedWindowMaxGap,
-                           OrderedWindowSameLine = orderedWindowSameLine,
                            FallbackStartTransform = fallbackStartTransform,
                            Distance = distance,
                            MinRequiredLength = minRequiredLength,
@@ -152,10 +133,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
                            SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
                            RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
-                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
-                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
-                           OrderedWindowMaxGap = orderedWindowMaxGap,
-                           OrderedWindowSameLine = orderedWindowSameLine,
                            FallbackStartTransform = fallbackStartTransform,
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
@@ -181,10 +158,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
                            SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
                            RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
-                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
-                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
-                           OrderedWindowMaxGap = orderedWindowMaxGap,
-                           OrderedWindowSameLine = orderedWindowSameLine,
                            FallbackStartTransform = fallbackStartTransform,
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
@@ -207,10 +180,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            RequiredPrefilterLiteralUtf8 = requiredPrefilterLiteral ?? [],
                            RequiredPrefilterAlternateLiteralsUtf8 = requiredPrefilterAlternateLiterals ?? [],
                            RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
-                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
-                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
-                           OrderedWindowMaxGap = orderedWindowMaxGap,
-                           OrderedWindowSameLine = orderedWindowSameLine,
                            FallbackStartTransform = fallbackStartTransform,
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
@@ -232,10 +201,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                            SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
                            SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
                            RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
-                           OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
-                           OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
-                           OrderedWindowMaxGap = orderedWindowMaxGap,
-                           OrderedWindowSameLine = orderedWindowSameLine,
                            FallbackStartTransform = fallbackStartTransform,
                            ExactRequiredLength = exactRequiredLength,
                            MaxPossibleLength = maxPossibleLength,
@@ -251,10 +216,6 @@ internal static class Utf8FrontEndSearchAnalyzer
                        SecondaryRequiredPrefilterQuotedAsciiSet = secondaryRequiredPrefilterQuotedAsciiSet,
                        SecondaryRequiredPrefilterQuotedAsciiLength = secondaryRequiredPrefilterQuotedAsciiLength,
                        RequiredWindowPrefilters = requiredWindowPrefilters ?? [],
-                       OrderedWindowLeadingLiteralsUtf8 = orderedLeadingLiterals,
-                       OrderedWindowTrailingLiteralUtf8 = orderedTrailingLiteral,
-                       OrderedWindowMaxGap = orderedWindowMaxGap,
-                       OrderedWindowSameLine = orderedWindowSameLine,
                        FallbackStartTransform = fallbackStartTransform,
                        ExactRequiredLength = exactRequiredLength,
                        MaxPossibleLength = maxPossibleLength,
@@ -607,7 +568,7 @@ internal static class Utf8FrontEndSearchAnalyzer
 
     private static bool TrySelectFallbackStartTransform(Utf8TreeNode root, out Utf8FallbackStartTransform transform)
     {
-        var leading = GetLeadingWindowNode(root);
+        var leading = GetLeadingContentNode(root);
         if (leading is not null && IsLeadingAsciiWhitespaceNode(leading))
         {
             transform = new Utf8FallbackStartTransform(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace);
@@ -618,205 +579,7 @@ internal static class Utf8FrontEndSearchAnalyzer
         return false;
     }
 
-    private static bool TrySelectOrderedAsciiWindow(
-        Utf8TreeNode root,
-        Utf8OwnedFindFacts findOptimizations,
-        bool ignoreCase,
-        out byte[][] leadingLiteralsUtf8,
-        out byte[] trailingLiteralUtf8)
-    {
-        leadingLiteralsUtf8 = [];
-        trailingLiteralUtf8 = [];
-        if (ignoreCase)
-        {
-            return false;
-        }
-
-        var ordered = UnwrapStructuralNode(root);
-        if (ordered is null || ordered.Kind != Utf8TreeNodeKind.Concatenate) return false;
-        var first = FindFirstSignificantChildIndex(ordered);
-        var last = FindLastSignificantChildIndex(ordered);
-        if (first < 0 || last <= first) return false;
-
-        if (((!TryExtractLeadingWindowPhrases(root, out var leadingPhrases) ||
-              leadingPhrases.Length == 0 ||
-              !TryEncodeAlternates(leadingPhrases, out leadingLiteralsUtf8)) &&
-             !TrySelectOrderedWindowLeadingLiterals(findOptimizations, out leadingLiteralsUtf8)) ||
-            !TryExtractTrailingLiteral(ordered.Child(last), out var trailingLiteral) ||
-            !IsAscii(trailingLiteral))
-        {
-            leadingLiteralsUtf8 = [];
-            trailingLiteralUtf8 = [];
-            return false;
-        }
-
-        trailingLiteralUtf8 = EncodeLiteral(trailingLiteral);
-        if (trailingLiteralUtf8.Length == 0)
-        {
-            leadingLiteralsUtf8 = [];
-            trailingLiteralUtf8 = [];
-            return false;
-        }
-
-        for (var i = 0; i < leadingLiteralsUtf8.Length; i++)
-        {
-            if (leadingLiteralsUtf8[i].AsSpan().SequenceEqual(trailingLiteralUtf8))
-            {
-                leadingLiteralsUtf8 = [];
-                trailingLiteralUtf8 = [];
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static void TrySelectOrderedWindowConstraints(
-        Utf8TreeNode root,
-        byte[][] leadingLiteralsUtf8,
-        byte[] trailingLiteralUtf8,
-        out int? maxGap,
-        out bool sameLine)
-    {
-        maxGap = null;
-        sameLine = false;
-
-        var ordered = UnwrapStructuralNode(root);
-        if (ordered is null || ordered.Kind != Utf8TreeNodeKind.Concatenate)
-        {
-            return;
-        }
-
-        var leadingIndex = FindFirstSignificantChildIndex(ordered);
-        var trailingIndex = FindLastSignificantChildIndex(ordered);
-        if (leadingIndex < 0 || trailingIndex <= leadingIndex)
-        {
-            return;
-        }
-
-        // Middle-node bounds apply only when both selected anchors consume
-        // their complete edge nodes. Otherwise an uncounted edge fragment can
-        // make a finite gap too short; retain the ordered proof without a cap.
-        if (!TryExtractCompleteWindowPhrases(ordered.Child(leadingIndex), out var completeLeading) ||
-            !TryExtractAsciiWindowPhrase(ordered.Child(trailingIndex), out var completeTrailing) ||
-            !SameAscii(completeTrailing, trailingLiteralUtf8)) return;
-        foreach (var phrase in completeLeading)
-        {
-            var covered = false;
-            foreach (var literal in leadingLiteralsUtf8)
-                if (SameAscii(phrase, literal)) { covered = true; break; }
-            if (!covered) return;
-        }
-
-        var totalMaxWidth = 0;
-        var excludesNewlines = true;
-        for (var i = leadingIndex + 1; i < trailingIndex; i++)
-        {
-            if (!TryGetFiniteScalarWindowByteWidth(ordered.Child(i), out var childMaxWidth, out var childExcludesNewlines))
-            {
-                return;
-            }
-
-            if (childMaxWidth > int.MaxValue - totalMaxWidth) return;
-            totalMaxWidth += childMaxWidth;
-            excludesNewlines &= childExcludesNewlines;
-        }
-
-        maxGap = totalMaxWidth;
-        sameLine = excludesNewlines;
-
-        static bool SameAscii(string text, byte[] bytes)
-        {
-            if (text.Length != bytes.Length) return false;
-            Utf8ConstructionScope.ChargeWork((ulong)text.Length);
-            for (var index = 0; index < text.Length; index++) if (text[index] != bytes[index]) return false;
-            return true;
-        }
-    }
-
-    private static bool TrySelectOrderedWindowLeadingLiterals(Utf8OwnedFindFacts findOptimizations, out byte[][] leadingLiteralsUtf8)
-    {
-        if (findOptimizations.AlternatePrefixes is { Length: > 0 } alternatePrefixes &&
-            alternatePrefixes.All(IsAscii))
-        {
-            leadingLiteralsUtf8 = alternatePrefixes;
-            return true;
-        }
-
-        if (TrySelectLeadingLiteral(findOptimizations, out var leadingLiteral) &&
-            IsAscii(leadingLiteral))
-        {
-            leadingLiteralsUtf8 = [EncodeLiteral(leadingLiteral)];
-            return true;
-        }
-
-        leadingLiteralsUtf8 = [];
-        return false;
-    }
-
-    private static bool TryExtractLeadingWindowPhrases(Utf8TreeNode root, out string[] phrases)
-    {
-        var leading = GetLeadingWindowNode(root);
-        if (leading is null)
-        {
-            phrases = [];
-            return false;
-        }
-
-        return TryExtractCompleteWindowPhrases(leading, out phrases);
-    }
-
-    private static bool TryExtractCompleteWindowPhrases(Utf8TreeNode leading, out string[] phrases)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-
-        using (var wrappers = Utf8ConstructionFrames<Utf8TreeNode>.Create(budget, leading))
-        {
-            while (leading.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && leading.ChildCount == 1)
-            {
-                budget.ChargeWork(1);
-                leading = leading.Child(0);
-                wrappers.Push(leading);
-            }
-        }
-
-        if (leading.Kind == Utf8TreeNodeKind.Alternate)
-        {
-            using var values = Utf8ConstructionBuffer<string>.Create(budget);
-            using var seen = Utf8ConstructionMap<string, bool>.Create(budget, StringComparer.Ordinal);
-            for (var i = 0; i < leading.ChildCount; i++)
-            {
-                budget.ChargeWork(1);
-                if (!TryExtractAsciiWindowPhrase(leading.Child(i), out var phrase))
-                {
-                    phrases = [];
-                    return false;
-                }
-                // Every alternative is part of the covering disjunction,
-                // including punctuation-only phrases. Deduplicate whole values
-                // in source order without filtering out a possible match.
-                if (!seen.ContainsKey(phrase)) { seen[phrase] = true; values.Add(phrase); }
-            }
-            if (values.Count == 0) { phrases = []; return false; }
-            phrases = values.Take();
-            construction.Complete();
-            return true;
-        }
-
-        if (TryExtractAsciiWindowPhrase(leading, out var single))
-        {
-            phrases = budget.AllocateArray<string>(1, false);
-            phrases[0] = single;
-            construction.Complete();
-            return true;
-        }
-
-        phrases = [];
-        return false;
-    }
-
-    private static Utf8TreeNode? GetLeadingWindowNode(Utf8TreeNode node)
+    private static Utf8TreeNode? GetLeadingContentNode(Utf8TreeNode node)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -848,63 +611,6 @@ internal static class Utf8FrontEndSearchAnalyzer
         return null;
     }
 
-    private struct PhraseFrame(Utf8TreeNode node)
-    {
-        internal Utf8TreeNode Node = node;
-        internal int Index;
-        internal int Start;
-        internal bool Entered;
-    }
-
-    private static bool TryExtractAsciiWindowPhrase(Utf8TreeNode node, out string phrase)
-    {
-        phrase = string.Empty;
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<PhraseFrame>.Create(budget, new(node));
-        using var builder = Utf8ConstructionText.Create();
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            if (!frame.Entered)
-            {
-                node = frame.Node;
-                if (TryGetLiteralText(node, out var literal) && IsAscii(literal))
-                {
-                    budget.ChargeWork((ulong)literal.Length);
-                    builder.Append(literal);
-                    frames.Pop();
-                    continue;
-                }
-                // A whitespace predicate is not one literal space. Optional,
-                // tab or Unicode whitespace cannot certify an exact phrase.
-                if (node.Kind != Utf8TreeNodeKind.Concatenate &&
-                    !(node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && node.ChildCount == 1)) return false;
-                frame.Node = node;
-                frame.Start = builder.Length;
-                frame.Entered = true;
-            }
-            node = frame.Node;
-            if (frame.Index == node.ChildCount)
-            {
-                // Each suspended concatenation must contribute a nonempty phrase.
-                if (builder.Length == frame.Start) return false;
-                frames.Pop();
-                continue;
-            }
-            var child = node.Child(frame.Index++);
-            frames[index] = frame;
-            if (child.Kind is not (Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary))
-                frames.Push(new(child));
-        }
-        if (builder.Length == 0) return false;
-        phrase = builder.ToText();
-        construction.Complete();
-        return true;
-    }
-
     private static bool IsWhitespaceLoop(Utf8TreeNode node)
     {
         if (node.Kind is not (Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Set))
@@ -915,58 +621,12 @@ internal static class Utf8FrontEndSearchAnalyzer
         return Utf8ScalarAsciiProjector.IsPositiveWhitespace(node.ScalarClass);
     }
 
-    private static int FindFirstSignificantChildIndex(Utf8TreeNode node)
-    {
-        for (var i = 0; i < node.ChildCount; i++)
-        {
-            if (!IsStructuralAnchor(node.Child(i)))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    private static int FindLastSignificantChildIndex(Utf8TreeNode node)
-    {
-        for (var i = node.ChildCount - 1; i >= 0; i--)
-        {
-            if (!IsStructuralAnchor(node.Child(i)))
-            {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    private static bool IsStructuralAnchor(Utf8TreeNode node)
-    {
-        return node.Kind is Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary or Utf8TreeNodeKind.Beginning or Utf8TreeNodeKind.Start or Utf8TreeNodeKind.End or Utf8TreeNodeKind.EndZ;
-    }
-
     private struct LineBreakFrame(Utf8TreeNode node)
     {
         internal Utf8TreeNode Node = node;
         internal int Index;
         internal int Total;
         internal bool Waiting;
-    }
-
-    // Window distances are bytes even when atoms fold to different scalar
-    // widths. Reuse the shared bound proof; do not maintain another formula.
-    private static bool TryGetFiniteScalarWindowByteWidth(Utf8TreeNode node, out int maxWidth, out bool excludesNewlines)
-    {
-        maxWidth = 0;
-        excludesNewlines = false;
-        using var construction = Utf8ConstructionScope.Enter();
-        var width = Utf8OwnedFindOptimizations.ComputeByteWidth(node);
-        if (width.Maximum is not int maximum) return false;
-        excludesNewlines = maximum == 0 ||
-            TryGetFiniteLineBreakCount(node, out var lineBreaks) && lineBreaks == 0;
-        maxWidth = maximum;
-        return true;
     }
 
     private static bool TryGetFiniteLineBreakCount(Utf8TreeNode node, out int maxLineBreaks)
@@ -1105,35 +765,6 @@ internal static class Utf8FrontEndSearchAnalyzer
         return node.Kind is Utf8TreeNodeKind.Setloop or Utf8TreeNodeKind.Setlazy or Utf8TreeNodeKind.Set &&
             Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(node.ScalarClass, out var mask) &&
             mask.ActualLowMask == 0x100003e00UL && mask.ActualHighMask == 0;
-    }
-
-    private static bool TryExtractTrailingLiteral(Utf8TreeNode node, out string literal)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        using var frames = Utf8ConstructionFrames<ScanFrame>.Create(budget, new(node));
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1);
-            var index = frames.Count - 1;
-            var frame = frames[index];
-            if (!frame.Entered)
-            {
-                if (TryGetLiteralText(frame.Node, out literal)) { construction.Complete(); return true; }
-                if (frame.Node.Kind != Utf8TreeNodeKind.Concatenate &&
-                    !(frame.Node.Kind is Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic && frame.Node.ChildCount == 1)) { frames.Pop(); continue; }
-                frame.Index = frame.Node.ChildCount;
-                frame.Entered = true;
-            }
-            if (frame.Index == 0) { frames.Pop(); continue; }
-            // Visit the rightmost subtree first, without reserving all siblings.
-            var child = frame.Node.Child(--frame.Index);
-            frames[index] = frame;
-            if (child.Kind is not (Utf8TreeNodeKind.Bol or Utf8TreeNodeKind.Eol or Utf8TreeNodeKind.End or Utf8TreeNodeKind.EndZ or Utf8TreeNodeKind.Boundary or Utf8TreeNodeKind.NonBoundary))
-                frames.Push(new(child));
-        }
-        literal = string.Empty;
-        return false;
     }
 
     private static bool TryGetLiteralText(Utf8TreeNode node, out string literal)
@@ -1513,26 +1144,6 @@ internal static class Utf8FrontEndSearchAnalyzer
         return node;
     }
 
-
-    private static bool TryEncodeAlternates(string[] alternatePrefixes, out byte[][] alternateLiterals)
-    {
-        using var construction = Utf8ConstructionScope.Enter();
-        var budget = construction.Budget;
-        alternateLiterals = budget.AllocateArray<byte[]>(alternatePrefixes.Length, false);
-        for (var i = 0; i < alternatePrefixes.Length; i++)
-        {
-            budget.ChargeWork(1);
-            if (alternatePrefixes[i].Length == 0)
-            {
-                alternateLiterals = [];
-                return false;
-            }
-
-            alternateLiterals[i] = budget.EncodeUtf8(alternatePrefixes[i]);
-        }
-        construction.Complete();
-        return true;
-    }
 
     // Strict scalar validation/counting precedes admitted byte acquisition.
     // This materializes pattern metadata, never a decoded subject.

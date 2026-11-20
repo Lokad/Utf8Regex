@@ -290,7 +290,7 @@ public sealed class Utf8StructuralInvocationTests
     public void StartTransformsKeepFullSubjectBoundaryRequirementsInBothDirections(bool reverse)
     {
         var plan = Utf8StructuralSearchPlan.Create(Utf8SearchKind.ExactAsciiLiteral, 0, canGuideFallbackStarts: false,
-            Searcher(0), default, null, new Utf8FallbackStartTransform(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace),
+            Searcher(0), null, new Utf8FallbackStartTransform(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace),
             Utf8BoundaryRequirement.Boundary, Utf8BoundaryRequirement.Boundary, trailingLiteralUtf8: "!"u8.ToArray());
         var input = Encoding.UTF8.GetBytes("xtarget! " + new string(' ', 140000) + "target! targetx");
         var state = default(Utf8StructuralSearchState);
@@ -316,7 +316,7 @@ public sealed class Utf8StructuralInvocationTests
             : null;
         var kind = set ? Utf8SearchKind.FixedDistanceAsciiSets : Utf8SearchKind.FixedDistanceAsciiLiteral;
         var plan = Utf8StructuralSearchPlan.Create(kind, set ? 0 : 2, canGuideFallbackStarts: false,
-            set ? default : Searcher(0), default, sets, default);
+            set ? default : Searcher(0), sets, default);
         var hit = set ? "zaQc" : "zztarget";
         var input = Encoding.UTF8.GetBytes(new string('x', offset) + hit + "xxxxx" + hit);
         var state = default(Utf8StructuralSearchState);

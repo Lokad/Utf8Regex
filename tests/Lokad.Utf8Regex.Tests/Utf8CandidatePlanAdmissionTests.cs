@@ -23,7 +23,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
             var plan = window
-                ? Utf8StructuralSearchPlan.CreateWindowPlan(new(leading, trailing, 32, true), 5, new(1, Utf8FallbackStartTransformKind.None))
+                ? Utf8StructuralSearchPlan.CreateWindowPlan(new(leading, trailing), 5, new(1, Utf8FallbackStartTransformKind.None))
                 : Utf8StructuralSearchPlan.CreateStartPlan(leading);
             Assert.True(plan.HasValue); Assert.Equal(PlanBytes, owner.Budget.ReservedBytes);
             Assert.Equal(owner.Budget.ReservedBytes, owner.Budget.PeakBytes);
@@ -36,7 +36,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
     [Fact]
     public void EveryByteAndWorkCutoffFundsTheWholeWindowOrRestoresItsParent()
     {
-        var window = new PreparedWindowSearch(Searcher("a"), Searcher("z"), 32, true);
+        var window = new PreparedWindowSearch(Searcher("a"), Searcher("z"));
         Utf8StructuralSearchPlan Build() => Utf8StructuralSearchPlan.CreateWindowPlan(window, 5, new(1, Utf8FallbackStartTransformKind.None));
         ulong peak, work;
         using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))

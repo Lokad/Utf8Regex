@@ -45,7 +45,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
             0 => Node(Utf8TreeNodeKind.Concatenate, "", Node(Utf8TreeNodeKind.Multi, "\""),
                 Node(Utf8TreeNodeKind.Setloop, Digits), Node(Utf8TreeNodeKind.Multi, "\"")),
             1 => Node(Utf8TreeNodeKind.Multi, "\""),
-            3 or 4 => Node(Utf8TreeNodeKind.Multi, "ab\r\n"),
+            4 => Node(Utf8TreeNodeKind.Multi, "ab\r\n"),
             _ => Node(Utf8TreeNodeKind.Multi, "ab"),
         };
         for (var index = 0; index < depth; index++)
@@ -53,7 +53,6 @@ public sealed class Utf8FrontEndScanAdmissionTests
             find = route switch
             {
                 1 => Node(Utf8TreeNodeKind.Alternate, "", find, Node(Utf8TreeNodeKind.Multi, "'")),
-                5 => Node(Utf8TreeNodeKind.Concatenate, "", Node(Utf8TreeNodeKind.Backreference, ""), find),
                 _ => Node(Utf8TreeNodeKind.Concatenate, "", find, Node(Utf8TreeNodeKind.Multi, "c")),
             };
         }
@@ -74,18 +73,14 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     private static void Run(int route, Input input)
     {
-        // These scan controls discard their outputs. Materialized phrase/text
-        // loans now transfer correctly; release them with this outer scope.
+        // Discard the scan results and release their construction loans.
         using var discarded = Utf8ConstructionScope.Enter();
         var analyzer = typeof(Utf8FrontEndSearchAnalyzer);
         switch (route)
         {
             case 0: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryFindQuotedAsciiRun", input.Find, null, 0))); break;
             case 1: Assert.True(Assert.IsType<bool>(Call(analyzer, "IsQuoteNode", input.Find))); break;
-            case 2: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractAsciiWindowPhrase", input.Find, ""))); break;
-            case 3: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryGetFiniteScalarWindowByteWidth", input.Find, 0, false))); break;
             case 4: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryGetFiniteLineBreakCount", input.Find, 0))); break;
-            case 5: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractTrailingLiteral", input.Find, ""))); break;
             case 6: Assert.True(Assert.IsType<bool>(Call(analyzer, "TryExtractDeterministicPrefixSets", input.Find, 0, null))); break;
             case 9: Assert.Equal(1, Utf8RuntimeTreeFeatureAnalyzer.Analyze(input.Semantic).CaptureCount); break;
             case 10: Assert.Null(Utf8NonBacktrackingGrammar.FindUnsupportedConstruct(input.Find)); break;
@@ -94,7 +89,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
 
     public static IEnumerable<object[]> RootDenials()
     {
-        foreach (var route in new[] { 0, 1, 2, 3, 4, 5, 6, 9, 10 })
+        foreach (var route in new[] { 0, 1, 4, 6, 9, 10 })
         for (var denial = 0; denial < 3; denial++) yield return [route, denial];
     }
 
@@ -118,7 +113,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
+    [InlineData(0)] [InlineData(1)] [InlineData(4)]
     [InlineData(6)] [InlineData(9)] [InlineData(10)]
     public void ChildDepthDenialRestoresParentAndAllowsRecovery(int route)
     {
@@ -142,7 +137,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
+    [InlineData(0)] [InlineData(1)] [InlineData(4)]
     [InlineData(6)] [InlineData(9)] [InlineData(10)]
     public void ArrayGrowthDenialReleasesEveryScratchLoan(int route)
     {
@@ -161,7 +156,7 @@ public sealed class Utf8FrontEndScanAdmissionTests
     }
 
     [Theory]
-    [InlineData(0)] [InlineData(1)] [InlineData(2)] [InlineData(3)] [InlineData(4)] [InlineData(5)]
+    [InlineData(0)] [InlineData(1)] [InlineData(4)]
     [InlineData(6)] [InlineData(9)] [InlineData(10)]
     public void EveryWorkCutoffRestoresScratchWithoutRefundingWork(int route)
     {

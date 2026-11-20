@@ -118,7 +118,8 @@ internal static class Utf8StructuralSearchExecutor
         var windowState = state.WindowState;
         while (windowSearch.TryFindNextWindow(input, ref windowState, out var window))
         {
-            if (!SatisfiesWindowRequirements(input, in plan, window))
+            if (plan.MaxLines > 0 &&
+                !SatisfiesLineSpan(input, window.Leading.Index, window.Trailing.Index, plan.MaxLines))
             {
                 continue;
             }
@@ -292,33 +293,8 @@ internal static class Utf8StructuralSearchExecutor
         return plan.ExactLength == 0 || startIndex <= input.Length - plan.ExactLength;
     }
 
-    private static bool SatisfiesWindowRequirements(
-        ReadOnlySpan<byte> input, in Utf8StructuralSearchPlan.Data plan, PreparedWindowMatch window)
-    {
-        var trailingEnd = window.Trailing.Index + window.Trailing.Length;
-        if (plan.WindowSearch.MaxGap is > 0 and var maxSpan && trailingEnd - window.Leading.Index > maxSpan)
-        {
-            return false;
-        }
-
-        if (plan.MaxLines > 0 && !SatisfiesLineSpan(input, window.Leading.Index, window.Trailing.Index, plan.MaxLines))
-        {
-            return false;
-        }
-
-        return (plan.LeadingBoundary == Utf8BoundaryRequirement.None ||
-                Utf8ScalarWordBoundary.MatchesRequirement(plan.LeadingBoundary, input, window.Leading.Index)) &&
-               (plan.TrailingBoundary == Utf8BoundaryRequirement.None ||
-                Utf8ScalarWordBoundary.MatchesRequirement(plan.TrailingBoundary, input, trailingEnd));
-    }
-
     private static bool SatisfiesLineSpan(ReadOnlySpan<byte> input, int startIndex, int endIndex, int maxLines)
     {
-        if (maxLines <= 0)
-        {
-            return false;
-        }
-
         var lineCount = 1;
         for (var i = startIndex; i < endIndex; i++)
         {

@@ -122,9 +122,6 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Utf8SearchFacts.Create(Utf8SearchKind.ExactAsciiLiterals, new() { AlternateLiteralsUtf8 = family }),
             Fallback(family), Fallback(family, "needle"u8.ToArray()),
             Fallback(family, windows: [invalid, valid, invalid, valid]),
-            Utf8SearchFacts.Create(Utf8SearchKind.None, new()
-            {
-                OrderedWindowLeadingLiteralsUtf8 = Bytes("é", "😀"),                OrderedWindowTrailingLiteralUtf8 = "中"u8.ToArray(),OrderedWindowMaxGap = 8            }),
         })
         {
             ulong peak, work, depth;

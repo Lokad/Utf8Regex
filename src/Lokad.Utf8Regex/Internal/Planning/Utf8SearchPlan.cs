@@ -20,11 +20,7 @@ internal readonly struct Utf8SearchPlan
         var secondaryRequiredPrefilterQuotedAsciiLength = facts.SecondaryRequiredPrefilterQuotedAsciiLength;
         var fixedDistanceSets = NullIfEmpty(facts.FixedDistanceSets);
         var trailingLiteralUtf8 = NullIfEmpty(facts.TrailingLiteralUtf8);
-        var orderedWindowLeadingLiteralsUtf8 = NullIfEmpty(facts.OrderedWindowLeadingLiteralsUtf8);
-        var orderedWindowTrailingLiteralUtf8 = NullIfEmpty(facts.OrderedWindowTrailingLiteralUtf8);
         var requiredWindowPrefilters = NullIfEmpty(facts.RequiredWindowPrefilters);
-        var orderedWindowMaxGap = facts.OrderedWindowMaxGap;
-        var orderedWindowSameLine = facts.OrderedWindowSameLine;
         var fallbackStartTransform = facts.FallbackStartTransform;
         var distance = facts.Distance;
         var minRequiredLength = facts.MinRequiredLength;
@@ -72,20 +68,12 @@ internal readonly struct Utf8SearchPlan
                 requiredPrefilterAlternateLiteralsUtf8,
                 requiredPrefilterSearcher,
                 secondaryRequiredPrefilterSearcher);
-        OrderedWindowMaxGap = orderedWindowMaxGap;
-        OrderedWindowSameLine = orderedWindowSameLine;
         FallbackStartTransform = fallbackStartTransform;
-        WindowSearch = CreateWindowSearch(
-            orderedWindowLeadingLiteralsUtf8,
-            orderedWindowTrailingLiteralUtf8,
-            orderedWindowMaxGap,
-            orderedWindowSameLine);
         var structuralSearchPlan = Utf8StructuralSearchPlan.Create(
             kind,
             distance,
             canGuideFallbackStarts,
             PreparedSearcher,
-            WindowSearch,
             fixedDistanceSets,
             fallbackStartTransform,
             leadingBoundary, trailingBoundary, trailingLiteralUtf8,
@@ -170,13 +158,7 @@ internal readonly struct Utf8SearchPlan
 
     public Utf8StructuralSearchPlan[]? RequiredWindowPrefilterPlans => PrefilterPlan.WindowPlans;
 
-    public int? OrderedWindowMaxGap { get; }
-
-    public bool OrderedWindowSameLine { get; }
-
     public Utf8FallbackStartTransform FallbackStartTransform { get; }
-
-    public PreparedWindowSearch WindowSearch { get; }
 
     public Utf8StructuralSearchPlan StructuralSearchPlan { get; }
 
@@ -209,8 +191,6 @@ internal readonly struct Utf8SearchPlan
     public bool HasTrailingLiteralRequirement => TrailingLiteralUtf8 is { Length: > 0 };
 
     public bool HasRequiredPrefilter => PrefilterPlan.HasValue;
-
-    public bool HasWindowSearch => WindowSearch.HasValue;
 
     public bool HasFallbackCandidates => HasStructuralCandidates || RequiredWindowPrefilterPlans is { Length: > 0 };
 
@@ -325,22 +305,6 @@ internal readonly struct Utf8SearchPlan
             : default;
     }
 
-    private static PreparedWindowSearch CreateWindowSearch(
-        byte[][]? orderedWindowLeadingLiteralsUtf8, byte[]? orderedWindowTrailingLiteralUtf8, int? orderedWindowMaxGap, bool orderedWindowSameLine)
-    {
-        if (orderedWindowLeadingLiteralsUtf8 is not { Length: > 0 } leadingLiterals ||
-            orderedWindowTrailingLiteralUtf8 is not { Length: > 0 } trailingLiteral)
-        {
-            return default;
-        }
-
-        return new PreparedWindowSearch(
-            new PreparedSearcher(new PreparedMultiLiteralSearch(leadingLiterals, ignoreCase: false)),
-            new PreparedSearcher(new PreparedSubstringSearch(trailingLiteral, ignoreCase: false), ignoreCase: false),
-            orderedWindowMaxGap,
-            orderedWindowSameLine);
-    }
-
     private static Utf8StructuralSearchPlan[]? CreateRequiredWindowPrefilterPlans(Utf8WindowSearchFacts[]? requiredWindowPrefilters)
     {
         if (requiredWindowPrefilters is not { Length: > 0 } windowInfos) return null;
@@ -362,7 +326,7 @@ internal readonly struct Utf8SearchPlan
             var leading = CreatePreparedSearcher(info.Leading);
             var trailing = CreatePreparedSearcher(info.Trailing);
             plans[index++] = Utf8StructuralSearchPlan.CreateWindowPlan(
-                new PreparedWindowSearch(leading, trailing, maxGap: null, sameLine: false), info.MaxLines);
+                new PreparedWindowSearch(leading, trailing), info.MaxLines);
         }
         return plans;
     }
@@ -387,10 +351,10 @@ internal readonly struct Utf8SearchPlan
             : new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false));
         var quoted = secondaryRequiredPrefilterSearcher;
         plans[0] = Utf8StructuralSearchPlan.CreateWindowPlan(
-            new PreparedWindowSearch(family, quoted, maxGap: null, sameLine: false), 5,
+            new PreparedWindowSearch(family, quoted), 5,
             new Utf8FallbackStartTransform(1, Utf8FallbackStartTransformKind.None));
         plans[1] = Utf8StructuralSearchPlan.CreateWindowPlan(
-            new PreparedWindowSearch(quoted, family, maxGap: null, sameLine: false), 5);
+            new PreparedWindowSearch(quoted, family), 5);
         return plans;
     }
 

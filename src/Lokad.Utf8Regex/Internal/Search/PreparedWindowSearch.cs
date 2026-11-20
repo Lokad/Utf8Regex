@@ -5,29 +5,14 @@ internal readonly struct PreparedWindowSearch
     // Each leading source and trailing source advances monotonically. A failed
     // trailing scan reaches end-of-input once, so the scan is O(n + candidates).
     public PreparedWindowSearch(PreparedSearcher leadingSearcher, PreparedSearcher trailingSearcher)
-        : this(leadingSearcher, trailingSearcher, maxGap: null, sameLine: false)
-    {
-    }
-
-    public PreparedWindowSearch(
-        PreparedSearcher leadingSearcher,
-        PreparedSearcher trailingSearcher,
-        int? maxGap,
-        bool sameLine)
     {
         LeadingSearcher = leadingSearcher;
         TrailingSearcher = trailingSearcher;
-        MaxGap = maxGap;
-        SameLine = sameLine;
     }
 
     public PreparedSearcher LeadingSearcher { get; }
 
     public PreparedSearcher TrailingSearcher { get; }
-
-    public int? MaxGap { get; }
-
-    public bool SameLine { get; }
 
     public bool HasValue => LeadingSearcher.HasValue && TrailingSearcher.HasValue;
 

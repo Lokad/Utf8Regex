@@ -293,7 +293,6 @@ public sealed class Utf8SearchPlanTests
         var literalFamily = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
         var fallback = Utf8FrontEnd.Compile("a.*b", RegexOptions.CultureInvariant);
         var structural = Utf8FrontEnd.Compile("ab[0-9][0-9]cd", RegexOptions.CultureInvariant);
-        var orderedWindow = Utf8FrontEnd.Compile(@"\b(?:using\s+var|await\s+using\s+var)\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*await\b", RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, literalFamily.Inspection.SearchPlan.NativeCandidateSource.Kind);
         Assert.True(fallback.SearchPlan.HasFallbackCandidates);
@@ -460,7 +459,6 @@ public sealed class Utf8SearchPlanTests
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, analysis.ExecutionKind);
         Assert.Equal(Utf8SearchKind.FixedDistanceAsciiSets, analysis.SearchPlan.Kind);
-        Assert.False(analysis.SearchPlan.HasWindowSearch);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(analysis).Kind);
         Assert.True(analysis.SearchPlan.HasFallbackCandidates);
         Assert.True(analysis.SearchPlan.StructuralSearchPlan.HasValue);
@@ -661,46 +659,12 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void StructuralWindowPlanKeepsByteAndLineSpans()
+    public void StructuralWindowPlanAppliesTheLineCap()
     {
         var windowSearch = new PreparedWindowSearch(
             new PreparedSearcher(new PreparedMultiLiteralSearch([Encoding.UTF8.GetBytes("using var")], ignoreCase: false)),
-            new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false),
-            maxGap: 32,
-            sameLine: true);
-
-        var plan = Utf8StructuralSearchPlan.Create(
-            Utf8SearchKind.None,
-            0,
-            canGuideFallbackStarts: false,
-            default,
-            windowSearch,
-            null,
-            default);
-
-        Assert.True(plan.HasValue);
-        Assert.Equal(Utf8StructuralSearchYieldKind.Window, plan.YieldKind);
-        Assert.Equal(32, plan.Payload.WindowSearch.MaxGap);
-        Assert.Equal(1, plan.Payload.MaxLines);
-    }
-
-    [Fact]
-    public void StructuralWindowPlanEnforcesExplicitLineSpanStages()
-    {
-        var windowSearch = new PreparedWindowSearch(
-            new PreparedSearcher(new PreparedMultiLiteralSearch([Encoding.UTF8.GetBytes("using var")], ignoreCase: false)),
-            new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false),
-            maxGap: 64,
-            sameLine: true);
-
-        var plan = Utf8StructuralSearchPlan.Create(
-            Utf8SearchKind.None,
-            0,
-            canGuideFallbackStarts: false,
-            default,
-            windowSearch,
-            null,
-            default);
+            new PreparedSearcher(new PreparedSubstringSearch(Encoding.UTF8.GetBytes("await"), ignoreCase: false), ignoreCase: false));
+        var plan = Utf8StructuralSearchPlan.CreateWindowPlan(windowSearch, maxLines: 1);
 
         var input = Encoding.UTF8.GetBytes("using var value = await\nusing var other = await");
         var state = new Utf8StructuralSearchState(default, new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
@@ -718,28 +682,6 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal(input.Length - "await".Length, second.TrailingIndex);
         Assert.Equal("await".Length, second.TrailingMatchLength);
         Assert.False(plan.TryFindNextCandidate(input, ref state, out _));
-    }
-
-    [Fact]
-    public void StructuralWindowPlanCanApplyBoundaryStages()
-    {
-        var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                              Utf8SearchKind.None,
-                                              new Utf8SearchFactData
-                                              {
-                                                  OrderedWindowLeadingLiteralsUtf8 = [Encoding.UTF8.GetBytes("foo"),],
-                                                  OrderedWindowTrailingLiteralUtf8 = Encoding.UTF8.GetBytes("bar"),
-                                                  OrderedWindowMaxGap = 16,
-                                                  OrderedWindowSameLine = true,
-                                                  LeadingBoundary = Utf8BoundaryRequirement.Boundary,
-                                                  TrailingBoundary = Utf8BoundaryRequirement.Boundary
-                                              }));
-        var input = Encoding.UTF8.GetBytes("xfoo bar foo barz foo bar");
-        var state = new Utf8StructuralSearchState(default, new PreparedWindowScanState(0, new PreparedSearchScanState(0, default)));
-
-        Assert.True(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out var candidate));
-        Assert.Equal(Encoding.UTF8.GetByteCount("xfoo bar foo barz "), candidate.StartIndex);
-        Assert.False(plan.StructuralSearchPlan.TryFindNextCandidate(input, ref state, out _));
     }
 
     [Fact]
@@ -795,54 +737,19 @@ public sealed class Utf8SearchPlanTests
         Assert.Equal((10, 6), (second.StartOffsetInBytes, (second.EndOffsetInBytes - second.StartOffsetInBytes)));
     }
 
-    [Fact]
-    public void AnalyzerCanExtractFiniteOrderedWindowGap()
+    [Theory]
+    [InlineData(RegexOptions.CultureInvariant, 25, 48)]
+    [InlineData(RegexOptions.CultureInvariant | RegexOptions.RightToLeft, 49, 64)]
+    public void BoundedLiteralAlternativesUseStartCandidatesForPublicMatches(
+        RegexOptions options, int expectedStart, int expectedEnd)
     {
-        var analysis = Utf8FrontEnd.Analyze(@"(?:using var|await using var)[A-Z]{1,3}await", RegexOptions.CultureInvariant);
-        var searchFacts = Utf8FrontEndSearchAnalyzer.Analyze(analysis.SemanticRegex);
-
-        Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, searchFacts.Kind);
-        Assert.Equal(3, searchFacts.OrderedWindowMaxGap);
-        Assert.True(searchFacts.OrderedWindowSameLine);
-
-        var searchPlan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
-                                                    searchFacts.Kind,
-                                                    new Utf8SearchFactData
-                                                    {
-                                                        LiteralUtf8 = searchFacts.LiteralUtf8,
-                                                        AlternateLiteralsUtf8 = searchFacts.AlternateLiteralsUtf8,
-                                                        CanGuideFallbackStarts = searchFacts.CanGuideFallbackStarts,
-                                                        RequiredPrefilterLiteralUtf8 = searchFacts.RequiredPrefilterLiteralUtf8,
-                                                        RequiredPrefilterAlternateLiteralsUtf8 = searchFacts.RequiredPrefilterAlternateLiteralsUtf8,
-                                                        SecondaryRequiredPrefilterQuotedAsciiSet = searchFacts.SecondaryRequiredPrefilterQuotedAsciiSet,
-                                                        SecondaryRequiredPrefilterQuotedAsciiLength = searchFacts.SecondaryRequiredPrefilterQuotedAsciiLength,
-                                                        FixedDistanceSets = searchFacts.FixedDistanceSets,
-                                                        TrailingLiteralUtf8 = searchFacts.TrailingLiteralUtf8,
-                                                        OrderedWindowLeadingLiteralsUtf8 = searchFacts.OrderedWindowLeadingLiteralsUtf8,
-                                                        OrderedWindowTrailingLiteralUtf8 = searchFacts.OrderedWindowTrailingLiteralUtf8,
-                                                        RequiredWindowPrefilters = searchFacts.RequiredWindowPrefilters,
-                                                        OrderedWindowMaxGap = searchFacts.OrderedWindowMaxGap,
-                                                        OrderedWindowSameLine = searchFacts.OrderedWindowSameLine,
-                                                        FallbackStartTransform = searchFacts.FallbackStartTransform,
-                                                        Distance = searchFacts.Distance,
-                                                        MinRequiredLength = searchFacts.MinRequiredLength,
-                                                        ExactRequiredLength = searchFacts.ExactRequiredLength,
-                                                        MaxPossibleLength = searchFacts.MaxPossibleLength,
-                                                        LeadingBoundary = searchFacts.LeadingBoundary,
-                                                        TrailingBoundary = searchFacts.TrailingBoundary
-                                                    }));
-        Assert.Equal(3, searchPlan.OrderedWindowMaxGap);
-        Assert.True(searchPlan.OrderedWindowSameLine);
-    }
-
-    [Fact]
-    public void AnalyzerDoesNotInventLineBoundedWindowForNewlinePermittingGap()
-    {
-        var analysis = Utf8FrontEnd.Analyze(@"foo\s+bar", RegexOptions.CultureInvariant);
-        var searchFacts = Utf8FrontEndSearchAnalyzer.Analyze(analysis.SemanticRegex);
-
-        Assert.False(searchFacts.OrderedWindowSameLine);
-        Assert.Null(searchFacts.OrderedWindowMaxGap);
+        using var regex = new Utf8Regex(@"(?:using var|await using var)[A-Z]{1,3}await", options);
+        var input = "😀using varABCDawait / await using varABCawait using varZawait"u8;
+        Assert.Equal(Utf8StructuralSearchYieldKind.Start, regex.Inspection.StructuralSearchPlan.YieldKind);
+        Assert.Equal(2, regex.Count(input));
+        var match = regex.Match(input);
+        Assert.True(match.Success);
+        Assert.Equal((expectedStart, expectedEnd), (match.StartOffsetInBytes, match.EndOffsetInBytes));
     }
 
     private static string DumpNode(Utf8TreeNode node, int depth = 0)

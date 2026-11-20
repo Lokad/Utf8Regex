@@ -50,7 +50,7 @@ internal readonly struct Utf8StructuralSearchPlan
 
     public static Utf8StructuralSearchPlan Create(
         Utf8SearchKind kind, int distance, bool canGuideFallbackStarts, in PreparedSearcher preparedSearcher,
-        in PreparedWindowSearch windowSearch, Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform,
+        Utf8FixedDistanceSet[]? fixedDistanceSets, Utf8FallbackStartTransform fallbackStartTransform,
         Utf8BoundaryRequirement leadingBoundary = default, Utf8BoundaryRequirement trailingBoundary = default,
         byte[]? trailingLiteralUtf8 = null, int? exactLength = null, int? maxLength = null)
     {
@@ -66,27 +66,22 @@ internal readonly struct Utf8StructuralSearchPlan
                 kind is Utf8SearchKind.ExactAsciiLiteral or Utf8SearchKind.FixedDistanceAsciiLiteral or Utf8SearchKind.AsciiFoldedByteLiteral or
                     Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.AsciiFoldedByteLiterals or Utf8SearchKind.ExactUtf8Literals);
             var useSets = !useSearcher && kind == Utf8SearchKind.FixedDistanceAsciiSets && fixedDistanceSets is { Length: > 0 };
-            Utf8StructuralSearchPlan result;
-            if (useSearcher || useSets)
+            if (!useSearcher && !useSets)
             {
-                result = Build(new Data(useSearcher ? preparedSearcher : default, default)
-                {
-                    YieldKind = Utf8StructuralSearchYieldKind.Start,
-                    FixedDistanceSets = useSets ? fixedDistanceSets : null,
-                    StartTransform = useSets ? fallbackStartTransform : transform,
-                    LeadingBoundary = leadingBoundary,
-                    TrailingBoundary = trailingBoundary,
-                    TrailingLiteral = trailingLiteralUtf8,
-                    ExactLength = Math.Max(0, exactLength.GetValueOrDefault()),
-                    MaxLength = exactLength > 0 ? 0 : Math.Max(0, maxLength.GetValueOrDefault()),
-                });
+                return default;
             }
-            else if (windowSearch.HasValue)
-            {
-                result = CreateWindowPlan(windowSearch, leadingBoundary: leadingBoundary, trailingBoundary: trailingBoundary);
-            }
-            else return default;
 
+            var result = Build(new Data(useSearcher ? preparedSearcher : default, default)
+            {
+                YieldKind = Utf8StructuralSearchYieldKind.Start,
+                FixedDistanceSets = useSets ? fixedDistanceSets : null,
+                StartTransform = useSets ? fallbackStartTransform : transform,
+                LeadingBoundary = leadingBoundary,
+                TrailingBoundary = trailingBoundary,
+                TrailingLiteral = trailingLiteralUtf8,
+                ExactLength = Math.Max(0, exactLength.GetValueOrDefault()),
+                MaxLength = exactLength > 0 ? 0 : Math.Max(0, maxLength.GetValueOrDefault()),
+            });
             scope.Complete();
             return result;
         }
@@ -99,16 +94,12 @@ internal readonly struct Utf8StructuralSearchPlan
     public static Utf8StructuralSearchPlan CreateWindowPlan(
         in PreparedWindowSearch windowSearch,
         int? maxLines = null,
-        Utf8FallbackStartTransform startTransform = default,
-        Utf8BoundaryRequirement leadingBoundary = default,
-        Utf8BoundaryRequirement trailingBoundary = default)
+        Utf8FallbackStartTransform startTransform = default)
         => windowSearch.HasValue ? Build(new Data(default, windowSearch)
         {
             YieldKind = Utf8StructuralSearchYieldKind.Window,
             StartTransform = startTransform,
-            LeadingBoundary = leadingBoundary,
-            TrailingBoundary = trailingBoundary,
-            MaxLines = windowSearch.SameLine ? 1 : Math.Max(0, maxLines.GetValueOrDefault()),
+            MaxLines = Math.Max(0, maxLines.GetValueOrDefault()),
         }) : default;
 
     // Searchers and literals keep their existing loans. The plan owns a single

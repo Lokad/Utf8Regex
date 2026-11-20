@@ -51,8 +51,7 @@ public sealed class Utf8OwnedSearchContinuationTests
         facts.RequiredPrefilterLiteralUtf8, facts.RequiredPrefilterAlternateLiteralsUtf8,
         facts.SecondaryRequiredPrefilterQuotedAsciiSet, facts.SecondaryRequiredPrefilterQuotedAsciiLength,
         Sets = facts.FixedDistanceSets.Select(static set => new { set.Distance, Bytes = set.ByteSet.GetMatchBytes() }),
-        facts.TrailingLiteralUtf8, facts.OrderedWindowLeadingLiteralsUtf8, facts.OrderedWindowTrailingLiteralUtf8,
-        facts.RequiredWindowPrefilters, facts.OrderedWindowMaxGap, facts.OrderedWindowSameLine,
+        facts.TrailingLiteralUtf8, facts.RequiredWindowPrefilters,
         facts.FallbackStartTransform, facts.Distance, facts.MinRequiredLength, facts.ExactRequiredLength,
         facts.MaxPossibleLength, facts.LeadingBoundary, facts.TrailingBoundary,
     });
@@ -81,7 +80,7 @@ public sealed class Utf8OwnedSearchContinuationTests
     [InlineData(16385, 2)]
     [InlineData(65, 3)]
     [InlineData(16385, 3)]
-    public void DeepWidthAndLineFactsUseSequenceSumBranchMaximumAndFiniteRepeat(int depth, int shape)
+    public void DeepLineFactsUseSequenceSumBranchMaximumAndFiniteRepeat(int depth, int shape)
     {
         var node = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "a\r\né");
         for (var index = 0; index < depth; index++)
@@ -92,10 +91,6 @@ public sealed class Utf8OwnedSearchContinuationTests
                 2 => Parent(Utf8TreeNodeKind.Alternate, node, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'x')),
                 _ => Parent(Utf8TreeNodeKind.Loop, node),
             };
-        object?[] width = [node, 0, false];
-        Assert.True(Assert.IsType<bool>(Call("TryGetFiniteScalarWindowByteWidth", width)));
-        Assert.Equal(5 + (shape == 1 ? depth : 0), Assert.IsType<int>(width[1]));
-        Assert.False(Assert.IsType<bool>(width[2]));
         object?[] lines = [node, 0];
         Assert.True(Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", lines)));
         Assert.Equal(2, Assert.IsType<int>(lines[1]));
@@ -110,41 +105,8 @@ public sealed class Utf8OwnedSearchContinuationTests
         object?[] lines = [root, 0];
         Assert.False(Assert.IsType<bool>(Call("TryGetFiniteLineBreakCount", lines)));
         Assert.Equal(0, Assert.IsType<int>(lines[1]));
-        object?[] width = [overflow, 0, true];
-        Assert.False(Assert.IsType<bool>(Call("TryGetFiniteScalarWindowByteWidth", width)));
-        Assert.Equal(0, Assert.IsType<int>(width[1]));
-        Assert.False(Assert.IsType<bool>(width[2]));
         var thrown = Assert.Throws<TargetInvocationException>(() => Call("TryGetFiniteLineBreakCount", overflow, 0));
         Assert.IsType<OverflowException>(thrown.InnerException);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void EmptyNestedPhraseFailsWhileDirectAnchorsAreSkipped(bool nested)
-    {
-        var anchor = Utf8TreeNode.Create(Utf8TreeNodeKind.Bol, RegexOptions.CultureInvariant);
-        var root = Parent(Utf8TreeNodeKind.Concatenate, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'a'),
-            nested ? Parent(Utf8TreeNodeKind.Concatenate, anchor) : anchor);
-        object?[] args = [root, ""];
-        Assert.Equal(!nested, Assert.IsType<bool>(Call("TryExtractAsciiWindowPhrase", args)));
-        Assert.Equal(nested ? "" : "a", Assert.IsType<string>(args[1]));
-    }
-
-    [Theory]
-    [InlineData(65)]
-    [InlineData(16385)]
-    public void DeepPhraseAndTrailingLiteralRetainForwardAndReverseOrder(int depth)
-    {
-        var phrase = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, RegexOptions.CultureInvariant, "ab");
-        for (var index = 0; index < depth; index++)
-            phrase = Parent(Utf8TreeNodeKind.Concatenate, phrase, Utf8TreeNode.Create(Utf8TreeNodeKind.One, RegexOptions.CultureInvariant, 'c'));
-        object?[] args = [phrase, ""];
-        Assert.True(Assert.IsType<bool>(Call("TryExtractAsciiWindowPhrase", args)));
-        Assert.Equal("ab" + new string('c', depth), Assert.IsType<string>(args[1]));
-        args = [phrase, ""];
-        Assert.True(Assert.IsType<bool>(Call("TryExtractTrailingLiteral", args)));
-        Assert.Equal("c", Assert.IsType<string>(args[1]));
     }
 
     [Theory]
