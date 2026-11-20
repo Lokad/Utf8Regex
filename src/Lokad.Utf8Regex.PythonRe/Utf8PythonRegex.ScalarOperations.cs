@@ -27,26 +27,43 @@ public sealed partial class Utf8PythonRegex
     private bool IsMatchScalar(ReadOnlySpan<byte> input, int startOffsetInBytes,
         CancellationToken cancellationToken)
     {
-        // The prepared literal finder can also answer a controlled Boolean query
-        // or discard captures that a value result would need.
-        if ((HasFiniteExecutionLimits || cancellationToken.CanBeCanceled ||
-             MatchTimeout != Timeout.InfiniteTimeSpan || _scalarProgram.GroupCount != 0) &&
-            !_scalarProgram.CanMatchEmpty &&
-            !_scalarProgram.HasContiguousAnchor && !_scalarProgram.RightToLeft &&
-            !_scalarProgram.IgnoreCase && _utf8Regex?.CanFindNativeLiteralForResult == true)
+        var program = ScalarProgram;
+        var prepared = _utf8Regex;
+        var useLiteral = (HasFiniteExecutionLimits || cancellationToken.CanBeCanceled ||
+            MatchTimeout != Timeout.InfiniteTimeSpan || program.GroupCount != 0) &&
+            prepared?.CanFindNativeLiteralForResult == true;
+        var useBranchProof = program.GroupCount == 0 && program.LeadingByteCandidate is
+            { First: >= 0 and < 128, FromBranch: true, InstructionIndex: 0 };
+        if ((useLiteral || useBranchProof) && !program.CanMatchEmpty &&
+            !program.HasContiguousAnchor && !program.RightToLeft && !program.IgnoreCase)
         {
             ValidateScalarStartOffset(input, startOffsetInBytes);
             var invocation = CreateInvocation(cancellationToken);
             try
             {
-                // Complete literal eligibility also covers ordinary captures;
-                // a boolean needs neither capture slots nor coordinate metadata.
-                // Keep interruption and the existing finder under one authority.
                 Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
-                if (!_utf8Regex.TryFindNativeLiteralForResult(input, startOffsetInBytes,
-                    ref invocation, out var found, out _, out _))
-                    throw new InvalidOperationException("Prepared literal discovery declined its eligible route.");
-                return found;
+                if (useLiteral)
+                {
+                    if (!prepared!.TryFindNativeLiteralForResult(input, startOffsetInBytes,
+                        ref invocation, out var found, out _, out _))
+                        throw new InvalidOperationException("Prepared literal discovery declined its eligible route.");
+                    return found;
+                }
+
+                // Use Python's own instructions for both the bounded proof and
+                // full verification when the proof leaves a candidate undecided.
+                if (program.RejectsByFinalAscii(input) ||
+                    prepared?.RejectMissingExactRequiredLiteral(input, ref invocation) == true)
+                {
+                    Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
+                    return false;
+                }
+                var result = Utf8SliceRunner.TryFindFirst(program, input, startOffsetInBytes,
+                    [], [], false, ref invocation, existenceOnly: true);
+                if (result.Breach != Utf8ExecutionLimitKind.None)
+                    throw invocation.Budget.CreateResourceFailure();
+                Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
+                return result.Found;
             }
             catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
                 invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -60,8 +77,8 @@ public sealed partial class Utf8PythonRegex
         }
         ValidateScalarStartOffset(input, startOffsetInBytes);
         // A one-shot search needs no cursor return or copy of its inline state.
-        var state = new PythonReScalarMatchState(input, ScalarProgram, startOffsetInBytes,
-            MatchTimeout, this, CreateInvocation(cancellationToken), _utf8Regex);
+        var state = new PythonReScalarMatchState(input, program, startOffsetInBytes,
+            MatchTimeout, this, CreateInvocation(cancellationToken), prepared);
         try
         {
             var found = state.MoveNext(input, existenceOnly: true);
