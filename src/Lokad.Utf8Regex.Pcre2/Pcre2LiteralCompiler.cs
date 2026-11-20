@@ -105,6 +105,67 @@ internal static class Pcre2LiteralCompiler
         Pcre2CompileOptions.ExtendedMore |
         Pcre2CompileOptions.FirstLine;
 
+    // A fully consuming exact literal can prove a leading positive lookahead.
+    // Only the Boolean route may ignore the writes of an enclosed capture.
+    internal static Pcre2LiteralProgram? CompileImpliedLookahead(IPcre2BacktrackingNode root)
+    {
+        if (root is not Pcre2SequenceBacktrackingNode { Children.Length: >= 2 and <= 33 } sequence ||
+            sequence.Children[0] is not Pcre2AssertionBacktrackingNode { AssertionKind: Pcre2AssertionKind.PositiveLookahead } assertion)
+            return null;
+
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        Span<byte> literal = stackalloc byte[sequence.Children.Length - 1];
+        budget.ChargeWork((ulong)literal.Length);
+        for (var index = 0; index < literal.Length; index++)
+        {
+            if (sequence.Children[index + 1] is not Pcre2TokenBacktrackingNode
+                { Token: { Kind: Pcre2CharacterTokenKind.Literal, Options: Pcre2CharacterOptions.None, Literal.IsAscii: true } token })
+                return null;
+            literal[index] = (byte)token.Literal.Value;
+        }
+
+        var body = assertion.Body is Pcre2CaptureBacktrackingNode capture ? capture.Body : assertion.Body;
+        var offset = 0;
+        if (body is Pcre2SequenceBacktrackingNode parts)
+        {
+            if (parts.Children.Length > literal.Length) return null;
+            budget.ChargeWork((ulong)parts.Children.Length);
+            foreach (var part in parts.Children)
+                if (!FitsLiteral(part, literal, ref offset)) return null;
+        }
+        else if (!FitsLiteral(body, literal, ref offset)) return null;
+
+        var bytes = budget.AllocateArray<byte>(literal.Length, false);
+        literal.CopyTo(bytes);
+        return budget.AllocateObject(bytes, static exact => new Pcre2LiteralProgram(exact,
+            Pcre2LiteralAnchor.None, endAnchored: false, hasExplicitEndAssertion: false,
+            hasExplicitCrOrLf: exact.AsSpan().IndexOfAny((byte)'\r', (byte)'\n') >= 0));
+
+        static bool FitsLiteral(IPcre2BacktrackingNode node, ReadOnlySpan<byte> literal, ref int offset)
+        {
+            var count = 1;
+            if (node is Pcre2RepeatBacktrackingNode { Minimum: > 0 } repeat && repeat.Minimum == repeat.Maximum)
+            {
+                node = repeat.Body;
+                count = repeat.Minimum;
+            }
+            if (count > literal.Length - offset || node is not Pcre2TokenBacktrackingNode
+                { Token: { Options: Pcre2CharacterOptions.None } atom }) return false;
+            var end = offset + count;
+            for (; offset < end; offset++)
+            {
+                var value = literal[offset];
+                if (!(atom.Kind switch
+                {
+                    Pcre2CharacterTokenKind.Literal => atom.Literal.Value == value,
+                    Pcre2CharacterTokenKind.CharacterClass => atom.CharacterClass.AsciiSet.Contains(value),
+                    _ => false,
+                })) return false;
+            }
+            return true;
+        }
+    }
+
     internal static Pcre2LiteralProgram? Compile(Pcre2CompileRequest request)
     {
         if ((request.Options & UnsupportedOptions) != 0) return null;

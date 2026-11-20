@@ -167,10 +167,12 @@ internal sealed class Pcre2SliceDirectProgram : IPcre2DirectProgram
 {
     internal Pcre2SliceDirectProgram(
         Utf8SliceProgram sliceProgram,
-        Pcre2BacktrackingProgram fallback)
+        Pcre2BacktrackingProgram fallback,
+        Pcre2LiteralProgram? booleanLiteral)
     {
         SliceProgram = sliceProgram;
         Fallback = fallback;
+        BooleanLiteral = booleanLiteral;
     }
 
     public Pcre2DirectProgramKind Kind => Pcre2DirectProgramKind.Pcre2Slice;
@@ -178,6 +180,7 @@ internal sealed class Pcre2SliceDirectProgram : IPcre2DirectProgram
     internal Utf8SliceProgram SliceProgram { get; }
 
     internal Pcre2BacktrackingProgram Fallback { get; }
+    internal Pcre2LiteralProgram? BooleanLiteral { get; }
 }
 
 internal class Pcre2LiteralFamilyDirectProgram : IPcre2DirectProgram
@@ -666,7 +669,9 @@ internal static class Pcre2CompiledProgramOverlay
         // Keep the complete admitted language fact, without retaining another
         // Core regex/root. Count can reuse its checked primitive under this
         // profile's original invocation; other operations keep the slice.
-        var shared = new Pcre2SliceDirectProgram(sliceProgram, fallback);
+        var booleanLiteral = !countOnly && operations.IsMatch is Pcre2BacktrackingDirectProgram
+            ? Pcre2LiteralCompiler.CompileImpliedLookahead(root) : null;
+        var shared = new Pcre2SliceDirectProgram(sliceProgram, fallback, booleanLiteral);
         if (countOnly) return operations with { Count = shared };
         return operations with
         {
@@ -1490,6 +1495,16 @@ internal static partial class Pcre2Runner
                     start,
                     matchOptions,
                     ref budget, out _).Success;
+                return true;
+            }
+
+            if (sliceProgram.BooleanLiteral is { } exact)
+            {
+                Pcre2SliceDriver.ThrowIfSliceBreached(invocation.TryReserveWorking(0));
+                var breach = Utf8SearchExecutor.TryFindLiteralCandidate(exact.Search, input.Bytes,
+                    start.Value, input.ByteLength - exact.LiteralUtf8.Length, false, ref invocation, out var candidate);
+                Pcre2SliceDriver.ThrowIfSliceBreached(breach);
+                result = candidate >= 0;
                 return true;
             }
 

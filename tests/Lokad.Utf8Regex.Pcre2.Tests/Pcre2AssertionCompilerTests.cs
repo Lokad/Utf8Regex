@@ -1,5 +1,7 @@
 using System.Text;
 
+using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -7,6 +9,71 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2AssertionCompilerTests
 {
+    private const string ImpliedLookahead = "(?=(?<token>[a-z]{3}[0-9]{3}))abc123";
+
+    [Fact]
+    public void ImpliedLookaheadBooleanKeepsByteOffsetsLimitsAndCapturedMatch()
+    {
+        using var limited = new Utf8Pcre2Regex(ImpliedLookahead, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 1, MaxDepth = 1, MaxWorkSteps = 32, MaxResultBytes = 1 },
+        });
+        Assert.True(limited.IsMatch("😀 abc123 trailing"u8, startOffsetInBytes: 4));
+        Assert.False(limited.IsMatch("😀 abc123 trailing"u8, startOffsetInBytes: 6));
+        Assert.False(limited.IsMatch("abc124"u8));
+        var longMiss = new byte[128 * 1024];
+        var work = Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(longMiss));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, work.ErrorKind);
+
+        using var regex = new Utf8Pcre2Regex(ImpliedLookahead);
+        ReadOnlySpan<byte> input = "😀 abc123 trailing"u8;
+        var captures = new Utf8Pcre2CaptureRange[2];
+        Assert.True(regex.Match(input, captures: captures).Success);
+        Assert.Equal((5, 11), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.True(regex.IsMatch(input, startOffsetInBytes: 5, matchOptions: Pcre2MatchOptions.Anchored));
+        Assert.False(regex.IsMatch(input, matchOptions: Pcre2MatchOptions.Anchored));
+        Assert.False(regex.IsMatch(input, matchOptions: Pcre2MatchOptions.EndAnchored));
+    }
+
+    [Theory]
+    [InlineData("(?=(?<token>[a-z]{4}[0-9]{2}))abc123", "abc123", false)]
+    [InlineData("(?=(?<token>abc123x))abc123", "abc123", false)]
+    [InlineData("(?=(?<token>abc123x))abc123", "abc123x", true)]
+    [InlineData("(?=(?<token>[a-z]{3}))\\k<token>!", "abc!", true)]
+    [InlineData("(?=(?<token>[a-z]{3}))\\k<token>!", "ab!", false)]
+    public void UnprovedLookaheadKeepsItsOwnConstraint(string pattern, string input, bool expected)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern);
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ImpliedLookaheadSearchObservesOriginalInterruption(bool expire)
+    {
+        using var cancellation = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var regex = new Utf8Pcre2Regex(ImpliedLookahead, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan,
+        });
+        var input = new byte[256 * 1024];
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            if (steps < 64) return;
+            if (expire) ticks = 50; else cancellation.Cancel();
+        });
+        try
+        {
+            var failure = Record.Exception(() => regex.IsMatch(input, cancellationToken: cancellation.Token));
+            if (expire) Assert.Equal(Pcre2ErrorKind.Timeout, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
+            else Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        }
+        finally { session.Complete(); }
+    }
+
     [Theory]
     [InlineData("foo(?!bar)", "xxfoobaz", "foo")]
     [InlineData("(?<=abc)def", "xxabcdef", "def")]
