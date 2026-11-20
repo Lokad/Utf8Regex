@@ -505,6 +505,18 @@ internal static partial class Utf8SliceRunner
             return RunNonBacktracking(program, input, fromByte, captureStarts, captureEnds,
                 false, false, ref invocation);
         }
+        if (CanSearchOrdinaryOrdered(program, input.Length - fromByte, ref invocation))
+        {
+            var selected = FindOrderedRegularRange(program, input, fromByte, ref invocation);
+            if (!selected.Found || captureStarts.Length == 0 && !collectHistory) return selected;
+            // Captures never affect discovery for this graph. Run the chosen
+            // start on the original subject to publish ordinary capture history.
+            var replay = TryMatchAt(program, input, selected.StartByte, captureStarts, captureEnds,
+                collectHistory, false, true, ref workspace, ref invocation);
+            return replay.IsMatch
+                ? new(true, selected.StartByte, replay.EndIndex, replay.CaptureStarts, replay.CaptureLengths, replay.Breach)
+                : new(false, -1, -1, null, null, replay.Breach);
+        }
         var first = program.Instructions[0];
         var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;

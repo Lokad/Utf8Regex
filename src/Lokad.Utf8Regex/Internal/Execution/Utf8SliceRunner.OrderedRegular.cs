@@ -11,6 +11,47 @@ internal static partial class Utf8SliceRunner
     private const ulong OrderedTagMask = (1UL << OrderedTagBits) - 1;
     private const int OrderedLeafLimit = (int)OrderedTagMask;
 
+    internal static bool CanPrepareOrdinaryOrderedSearch(
+        ReadOnlySpan<Utf8SliceInstruction> instructions, Utf8ConstructionBudget budget)
+    {
+        if (instructions.Length > 64 ||
+            instructions[0] is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0 })
+            return false;
+        budget.ChargeWork((ulong)instructions.Length);
+        var leaves = 0;
+        foreach (var instruction in instructions)
+        {
+            switch (instruction.Kind)
+            {
+                // The ordinary lowerer emits these backward edges only for
+                // greedy loops with a body that consumes on every completion.
+                case Utf8SliceInstructionKind.Jump when instruction.B == 0:
+                case Utf8SliceInstructionKind.Fork when instruction.B == 0:
+                case Utf8SliceInstructionKind.CaptureStart:
+                case Utf8SliceInstructionKind.CaptureEnd:
+                case Utf8SliceInstructionKind.Fail:
+                    break;
+                case Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Set or
+                     Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Shorthand or
+                     Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid or
+                     Utf8SliceInstructionKind.Accept or Utf8SliceInstructionKind.Boundary:
+                case Utf8SliceInstructionKind.Anchor when instruction.A != (int)Utf8SliceAnchorKind.Contiguous:
+                    if (++leaves > OrderedLeafLimit) return false;
+                    break;
+                default:
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    internal static bool CanSearchOrdinaryOrdered(Utf8SliceProgram program, int remaining,
+        ref Utf8SliceInvocation invocation)
+        // Keep the ordinary execution route when the caller imposes a
+        // depth or scratch cap. Work and deadlines use the same invocation.
+        => remaining >= 256 && program.NonBacktrackingOrderedClosures.Length != 0 &&
+            invocation.Budget.Limits.MaxDepth == 0 && invocation.HasUnlimitedWorkingMemory;
+
     internal static (ulong[] Closures, byte[] Leaves, uint Conditions) BuildOrderedRegularClosures(
         Utf8SliceInstruction[] instructions, ReadOnlySpan<int> epsilonOrder, Utf8ConstructionBudget budget)
     {

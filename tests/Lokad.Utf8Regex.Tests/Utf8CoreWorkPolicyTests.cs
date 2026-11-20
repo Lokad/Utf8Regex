@@ -226,6 +226,30 @@ public sealed class Utf8CoreWorkPolicyTests
     }
 
     [Fact]
+    public void OrderedOrdinaryDiscoverySharesWorkAndInterruption()
+    {
+        const string pattern = "(?:ab|ba)+z";
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab", 160)) + " z! abbaz");
+        using var limited = Create(pattern, 64);
+        AssertWorkFailure(() => limited.Match(input), 64);
+        AssertWorkFailure(() => limited.IsMatch(input), 64);
+
+        using var source = new CancellationTokenSource();
+        using var regex = Create(pattern, 4096);
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            if (steps >= 64) source.Cancel();
+        });
+        try
+        {
+            var error = Assert.Throws<OperationCanceledException>(() =>
+                regex.Match(input, cancellationToken: source.Token));
+            Assert.Equal(source.Token, error.CancellationToken);
+        }
+        finally { diagnostics.Complete(); }
+    }
+
+    [Fact]
     public void EmptySubjectsAndResultDestinationAdmissionKeepTheirDefinedOutcomes()
     {
         foreach (var pattern in new[] { "", "ab", "(?=(.))" })

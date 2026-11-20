@@ -170,6 +170,37 @@ public sealed class Utf8CaptureSlotMatchTests
     }
 
     [Fact]
+    public void OrderedDiscoveryKeepsOrdinaryCaptureHistoryAndByteFloors()
+    {
+        const string pattern = "(?<piece>ab|ba|😀)+z";
+        using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096 }
+        });
+        var prefix = "😀" + string.Concat(Enumerable.Repeat("ab", 160)) + " z! ";
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var input = Encoding.UTF8.GetBytes(prefix + "ab😀baz!");
+        Assert.NotEmpty(regex.Inspection.AvailableOwnedSliceProgram!.NonBacktrackingOrderedClosures);
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(new Utf8CaptureRange(start, start + 9), regex.Match(input));
+
+        var slots = new Utf8CaptureRange[2];
+        Assert.Equal(new Utf8CaptureRange(start, start + 9), regex.Match(input, 4, slots));
+        Assert.Equal(new Utf8CaptureRange(start + 6, start + 8), slots[1]);
+        Assert.False(regex.Match(input, 4, slots, endOffsetInBytes: start + 8).Success);
+        Assert.All(slots, range => Assert.False(range.Success));
+
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(new Utf8CaptureRange(start, start + 9), match.Value);
+        Assert.Equal(new Utf8CaptureRange[]
+        {
+            new(start, start + 2), new(start + 2, start + 6), new(start + 6, start + 8)
+        }, match.GetCaptures(1).ToArray());
+        Assert.False(cursor.MoveNext(out _));
+    }
+
+    [Fact]
     public void ByteBoundsAndCurrentInputPolicyAreEnforcedWithoutStaleOutput()
     {
         var regex = new Utf8Regex("(.)");

@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
@@ -219,33 +220,49 @@ public sealed class Utf8RegexTimeoutTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void SliceCatastrophicTimeoutAbortsAllLanes(bool astralTail)
+    public void SliceDeadlineAbortsAllLanes(bool astralTail)
     {
-        // R05: slice catastrophic backtracking checks the invocation deadline
-        // on every lane with the same timeout identity as the oracle, on ASCII
-        // and astral-tailed inputs alike, without constructing fallback engines.
+        // Expire the original deadline during execution, independently of
+        // how quickly ordered discovery and backtracking finish on this host.
+        const string pattern = "(a|ab)+$";
         var timeout = TimeSpan.FromMilliseconds(500);
-        var text = new string('a', 20000) + (astralTail ? "\U0001F600!a" : "!a");
+        var text = new string('a', 600) + (astralTail ? "\U0001F600!a" : "!a");
         var input = Encoding.UTF8.GetBytes(text);
-        var oracle = new Regex("(a|ab)+$", RegexOptions.CultureInvariant, timeout);
-        Assert.Throws<RegexMatchTimeoutException>(() => oracle.IsMatch(text));
-        var regex = new Utf8Regex("(a|ab)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
             MatchTimeout = timeout
         });
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        var exception = Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
-        Assert.Equal(text, exception.Input);
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input));
-        Assert.Throws<RegexMatchTimeoutException>(() =>
+        using var clock = Utf8DeadlineTestClock.Start();
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ => clock.Advance(501));
+        try
         {
-            var enumerator = regex.EnumerateMatches(input);
-            _ = enumerator.MoveNext();
-        });
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.Replace(input, "z"u8));
-        var destination = new byte[65536];
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.TryReplace(input, "z"u8, destination, out var bytesWritten));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
+            Assert.Equal(text, Check(() => regex.IsMatch(input)).Input);
+            Assert.Equal(text, Check(() => regex.Match(input)).Input);
+            Assert.Empty(Check(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input))).Input);
+            Check(() => regex.Count(input));
+            Check(() =>
+            {
+                var enumerator = regex.EnumerateMatches(input);
+                _ = enumerator.MoveNext();
+            });
+            Check(() =>
+            {
+                foreach (var _ in regex.EnumerateSplits(input, int.MaxValue)) { }
+            });
+            Check(() => regex.Replace(input, "z"u8));
+            var destination = new byte[input.Length];
+            Check(() => regex.TryReplace(input, "z"u8, destination, out _));
+        }
+        finally { diagnostics.Complete(); }
+
+        RegexMatchTimeoutException Check(Action action)
+        {
+            var error = Assert.Throws<RegexMatchTimeoutException>(action);
+            Assert.Equal(pattern, error.Pattern);
+            Assert.Equal(timeout, error.MatchTimeout);
+            return error;
+        }
     }
 
     [Theory]
@@ -266,36 +283,6 @@ public sealed class Utf8RegexTimeoutTests
         });
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
         Assert.Equal(expectedMiss, regex.IsMatch(input));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void SliceCatastrophicTimeoutRemainingLanes(bool astralTail)
-    {
-        // R05: catastrophic slice backtracking maps the invocation deadline to
-        // the oracle timeout identity on the remaining lanes (light and detailed
-        // matches, splits, and FromOffset operations), on ASCII and astral-tailed
-        // inputs alike, without constructing fallback engines.
-        var timeout = TimeSpan.FromMilliseconds(500);
-        var text = new string('a', 20000) + (astralTail ? "\U0001F600!" : "!");
-        var input = Encoding.UTF8.GetBytes(text);
-        var regex = new Utf8Regex("(a|ab)+$", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
-        {
-            MatchTimeout = timeout
-        });
-        Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        var detailed = Assert.Throws<RegexMatchTimeoutException>(() => Utf8MatchSequence.First(regex.CreateMatchCursor(input)));
-        Assert.Empty(detailed.Input);
-        var light = Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
-        Assert.Equal(text, light.Input);
-        Assert.Throws<RegexMatchTimeoutException>(() =>
-        {
-            foreach (var item in regex.EnumerateSplits(input, int.MaxValue))
-            {
-            }
-        });
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

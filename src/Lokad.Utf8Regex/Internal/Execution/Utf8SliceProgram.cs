@@ -479,7 +479,7 @@ internal sealed class Utf8SliceProgram
             hasUnicodePatternAtoms |= instruction.Kind == Utf8SliceInstructionKind.CategorySet ||
                 instruction.Kind == Utf8SliceInstructionKind.Boundary && instruction.C != 0 ||
                 instruction.Kind == Utf8SliceInstructionKind.Literal && instruction.A >= 128;
-            if (!isNonBacktracking || instructions.Length > 64) continue;
+            if (nonBacktrackingEpsilonAncestors.Length == 0) continue;
             var bit = 1UL << pc;
             switch (instruction.Kind)
             {
@@ -1234,7 +1234,10 @@ internal static class Utf8SliceLowerer
         }
         ulong[] epsilonAncestors = [];
         (ulong[] Closures, byte[] Leaves, uint Conditions) ordered = ([], [], 0);
-        var epsilonOrder = lowerer.NonBacktracking
+        var prepareEpsilon = lowerer.NonBacktracking ||
+            lowerer.HasCounterlessAlternationLoop && lowerer.RepeatCount == 0 &&
+            Utf8SliceRunner.CanPrepareOrdinaryOrderedSearch(instructions, lowerer.Budget);
+        var epsilonOrder = prepareEpsilon
             ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions, out epsilonAncestors, out ordered) : [];
         return Utf8SliceProgram.Create(
             instructions,
@@ -1330,6 +1333,7 @@ internal static class Utf8SliceLowerer
         internal readonly Utf8ConstructionBuffer<Utf8NonBacktrackingLoopScope?>? NonBacktrackingScopes;
         internal Utf8NonBacktrackingLoopScope? NonBacktrackingScope;
         internal bool HasNullableNonBacktrackingLoop;
+        internal bool HasCounterlessAlternationLoop;
         internal int GroupCount;
         internal bool SawContiguousAnchor;
         internal bool HasConditionalTest;
@@ -1639,7 +1643,9 @@ internal static class Utf8SliceLowerer
                         Emit(new(Utf8SliceInstructionKind.Fork, Instructions.Count + 2, 0, 0, 0));
                         // Jump.B carries the required delimiter plus one, or zero
                         // for a loop without a proved delimiter.
-                        Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, GetDelimitedAsciiRunByte(repeat.Body) + 1, 0, 0));
+                        var delimiter = GetDelimitedAsciiRunByte(repeat.Body);
+                        HasCounterlessAlternationLoop |= delimiter < 0;
+                        Emit(new(Utf8SliceInstructionKind.Jump, frame.Mark, delimiter + 1, 0, 0));
                         if (repeat.Minimum == 0) Patch(frame.Jump, Instructions.Count);
                         break;
                     }

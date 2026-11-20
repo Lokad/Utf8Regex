@@ -59,7 +59,7 @@ public sealed partial class Utf8Regex
                 Utf8InvocationOutput.Checkpoint(new Utf8InvocationBufferControl(ref invocation));
                 result = found ? new(selected.Index, selected.Index + selected.Length) : default;
             }
-            else if (output.Length > 1 && subject.Length - startOffsetInBytes >= 64 &&
+            else if (program.IsNonBacktracking && output.Length > 1 && subject.Length - startOffsetInBytes >= 64 &&
                 program.NonBacktrackingOrderedClosures.Length != 0)
             {
                 var selected = Utf8SliceRunner.TryFindFirst(program, subject, startOffsetInBytes,
