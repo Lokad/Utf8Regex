@@ -439,27 +439,18 @@ lexemes may project text under the existing name grammar. Prepared instructions
 retain byte literals and original syntax flags. The cache keeps the lowered plan
 and the admitted template key.
 
-General-pattern replacements use the existing scalar byte
-template engine for both allocated and caller-owned output. They select that
-engine before subject preparation and do not construct UTF-16 match/group views
-or repeat subject validation. Literal replacement paths retain their existing
-search and output implementations. Existing derived coordinate maps remain for
-legacy detailed-match results until their separate migration.
-
-Core's evaluator replacement overloads, evaluator delegates and `ReplaceToString`
-are removed in 0.5 development. Hosts compute custom substitutions over the byte capture cursor.
-Scalar templates use last-capture byte ranges without callback history or subject maps.
-Scalar byte/destination output does not request whole-input UTF-16 totals. Hosts decode
-returned bytes when text materialization is needed; that allocation and its cost
-belong to the host rather than the regex invocation's output budget.
-The former shared `Utf8ReplacementWriter` is removed now that all evaluator APIs
-are retired. Byte-template output keeps its owned scope and admitted buffers;
-there is no thread-local callback writer or implicit output-scope discovery.
+General patterns use the scalar byte-template engine for allocated and caller-owned
+output. Capture substitutions use the last capture's byte range. Eligible forward
+literal plans can size and emit structured templates from scalar-aligned match
+ranges and validated template bytes. Hosts can implement custom substitutions
+over capture cursors and decode output when they need text. Host decoding is
+outside the regex invocation's output budget.
 
 `TryReplace` returns `Done` or `DestinationTooSmall`. Shortage writes zero
 bytes and leaves the destination unchanged. Input/template overlap is supported;
-overlapping input stages output. Other failures throw, and interruption during
-the final copy can leave partial destination contents.
+overlapping input stages output. Other failures throw. Cancellation, deadline
+expiry or work exhaustion during the final copy can leave partial destination
+contents.
 For a large literal template with a nonoverlapping destination, scalar matching
 can retain admitted match ranges and publish directly after sizing. Its resource
 charges cover the retained ranges and bounded publication work.
