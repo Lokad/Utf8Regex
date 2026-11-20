@@ -173,7 +173,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            if (!Utf8PrefilterExecutor.Rejects(Utf8Regex.Inspection.SearchPlan.PrefilterPlan, sample))
+            if (!Utf8PrefilterReplay.Rejects(Utf8Regex.Inspection.SearchPlan.PrefilterPlan, sample))
             {
                 total++;
             }
@@ -310,7 +310,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
     public int ExecuteUtf8CountPrefilterOnly()
     {
         EnsureCountModel();
-        return Utf8PrefilterExecutor.Rejects(Utf8Regex.Inspection.SearchPlan.PrefilterPlan, InputBytes) ? 1 : 0;
+        return Utf8PrefilterReplay.Rejects(Utf8Regex.Inspection.SearchPlan.PrefilterPlan, InputBytes) ? 1 : 0;
     }
 
     public int ExecuteUtf8CountCompiled()

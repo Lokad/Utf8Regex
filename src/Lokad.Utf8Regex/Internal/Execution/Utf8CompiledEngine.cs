@@ -35,12 +35,12 @@ internal static class Utf8CompiledEngineSelector
 {
     public static Utf8CompiledEngine Select(Utf8PreparedRegex regexPlan)
     {
-        var search = regexPlan.SearchPlan.SearchOperation;
-        if (IsLiteral(regexPlan, search))
+        if (IsLiteral(regexPlan))
         {
             if (regexPlan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase)
                 return new(Utf8CompiledEngineKind.ExactLiteral);
 
+            var search = regexPlan.SearchPlan.SearchOperation;
             var canEmit = search.Kind != Utf8SearchOperationKind.HybridSearch &&
                 Utf8EmittedLiteralFamilyCounter.CanCreate(regexPlan.SearchPlan, search);
             return new(Utf8CompiledEngineKind.LiteralFamily, canEmit
@@ -51,21 +51,22 @@ internal static class Utf8CompiledEngineSelector
         return new(Utf8CompiledEngineKind.FallbackRegex);
     }
 
-    private static bool IsLiteral(Utf8PreparedRegex plan, in Utf8SearchOperationPlan search)
+    private static bool IsLiteral(Utf8PreparedRegex plan)
     {
+        ref readonly var searchPlan = ref plan.SearchPlan;
         var single = plan.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase;
         // Empty literals have no search candidate; the scalar cursor owns progress.
         if (single && plan.ExecutionBackend == Utf8ExecutionBackend.NativeLiteral &&
-            plan.LiteralUtf8 is { Length: 0 } && !plan.SearchPlan.HasBoundaryRequirements &&
-            !plan.SearchPlan.HasTrailingLiteralRequirement)
+            plan.LiteralUtf8 is { Length: 0 } && !searchPlan.HasBoundaryRequirements &&
+            !searchPlan.HasTrailingLiteralRequirement)
             return true;
         if (plan.CompiledPatternCategory != Utf8CompiledPatternCategory.Literal ||
-            search.CandidateSource.Kind != Utf8CandidateSearchKind.PreparedSearcher)
+            !searchPlan.HasPreparedSearcher)
             return false;
         return single
-            ? search.CandidateSource.PortfolioKind is Utf8SearchPortfolioKind.ExactLiteral or Utf8SearchPortfolioKind.IgnoreCaseLiteral
+            ? searchPlan.PortfolioKind is Utf8SearchPortfolioKind.ExactLiteral or Utf8SearchPortfolioKind.IgnoreCaseLiteral
             : (plan.ExecutionKind is NativeExecutionKind.ExactUtf8Literals or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals) &&
-                (search.CandidateSource.PortfolioKind is Utf8SearchPortfolioKind.ExactDirectFamily or Utf8SearchPortfolioKind.ExactTrieFamily or
+                (searchPlan.PortfolioKind is Utf8SearchPortfolioKind.ExactDirectFamily or Utf8SearchPortfolioKind.ExactTrieFamily or
                     Utf8SearchPortfolioKind.ExactAutomatonFamily or Utf8SearchPortfolioKind.ExactPackedFamily or
                     Utf8SearchPortfolioKind.ExactEarliestFamily or Utf8SearchPortfolioKind.AsciiIgnoreCaseFamily);
     }

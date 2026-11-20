@@ -8,15 +8,12 @@ internal static class Utf8MatchInspection
 {
     public static bool IsMatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input)
         => regex.Inspection.CompiledRuntime is { } runtime
-            ? !Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input) &&
-              runtime.IsMatch(input, Utf8ExecutionDeadline.Infinite)
+            ? runtime.IsMatch(input, Utf8ExecutionDeadline.Infinite)
             : regex.IsMatch(input);
 
     public static Utf8CaptureRange MatchCompiled(Utf8Regex regex, ReadOnlySpan<byte> input)
         => regex.Inspection.CompiledRuntime is { } runtime
-            ? Utf8PrefilterExecutor.Rejects(regex.Inspection.SearchPlan.PrefilterPlan, input)
-                ? default
-                : runtime.Match(input, Utf8ExecutionDeadline.Infinite)
+            ? runtime.Match(input, Utf8ExecutionDeadline.Infinite)
             : regex.Match(input);
 
     public static bool TryCountSelectedKernelWithoutValidation(Utf8Regex regex, ReadOnlySpan<byte> input, out int count)

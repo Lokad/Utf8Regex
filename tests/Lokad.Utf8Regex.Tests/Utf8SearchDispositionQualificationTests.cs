@@ -17,38 +17,13 @@ public sealed class Utf8SearchDispositionQualificationTests
     {
         var fields = typeof(Utf8SearchPlan).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
         Assert.InRange(Unsafe.SizeOf<Utf8SearchPlan>(), 1, 4096);
-        var retired = new[] { "NativeCandidateSource", "ConfirmationPlan",
-            "SearchOperation" };
+        var retired = new[] { "ConfirmationPlan", "SearchOperation" };
         Assert.DoesNotContain(fields, f => retired.Any(name => f.Name == $"<{name}>k__BackingField"));
         Assert.True(typeof(Utf8SearchStrategySelector).GetMethod("Create")!.GetParameters()[0].ParameterType.IsByRef);
     }
 
     [Fact]
-    public void PrefilterViewsBorrowSourcesAndExecuteWithoutConstructionAdmission()
-    {
-        var primary = new PreparedSearcher(new PreparedSubstringSearch("a"u8.ToArray(), false), false);
-        var secondary = new PreparedSearcher(new PreparedSubstringSearch("z"u8.ToArray(), false), false);
-        var structural = Utf8StructuralSearchPlan.CreateStartPlan(primary);
-        var windows = new[] { structural };
-        using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
-        foreach (var p in new[] { false, true })
-        foreach (var s in new[] { false, true })
-        foreach (var w in new[] { false, true })
-        {
-            var filter = new Utf8PrefilterPlan(p ? primary : default, s ? secondary : default, w ? windows : null);
-            Assert.Equal(p || s || w, filter.HasValue);
-            Assert.Equal(p, filter.PrimarySource.HasValue); Assert.Equal(s, filter.SecondarySource.HasValue);
-            Assert.Equal(w, filter.WindowSource.HasValue);
-            Assert.Same(w ? windows : null, filter.WindowSource.StructuralSearchPlans);
-            Assert.False(Utf8PrefilterExecutor.Rejects(filter, "az"u8));
-            Assert.Equal(filter.HasValue, Utf8PrefilterExecutor.Rejects(filter, "qq"u8));
-        }
-        Assert.Equal(0ul, zero.Budget.WorkSteps); Assert.Equal(0ul, zero.Budget.ReservedBytes);
-        Assert.Equal(0ul, zero.Budget.Depth);
-    }
-
-    [Fact]
-    public void DerivedDispositionsKeepOperationChoicesAndCanonicalReferencesWithoutRuntimeAdmission()
+    public void DerivedDispositionsKeepStrategyAndConfirmationWithoutRuntimeAdmission()
     {
         var patterns = new[] { "", "a", "é|😀|中", @"\b(?:Task|ValueTask|IAsyncEnumerable)\b", "a.*b",
             "Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", "[0-9]{2}x",
@@ -59,10 +34,11 @@ public sealed class Utf8SearchDispositionQualificationTests
             using var zero = new Utf8ConstructionScope(0, 0, 0, 0);
             {
                 var operation = plan.SearchOperation;
-                var native = plan.NativeCandidateSource; var fallback = plan.PrefilterPlan.WindowSource;
-                var confirm = native.HasValue ? plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement : fallback.HasValue;
-                var expected = !native.HasValue && !fallback.HasValue ? Utf8SearchOperationKind.None :
-                    !native.HasValue ? plan.HasRequiredPrefilter ? Utf8SearchOperationKind.PrefilterThenConfirm : Utf8SearchOperationKind.SearchThenConfirm :
+                var native = plan.HasPreparedSearcher || plan.HasStructuralCandidates;
+                var hasWindows = plan.RequiredWindowPrefilterPlans is { Length: > 0 };
+                var confirm = plan.HasBoundaryRequirements || plan.HasTrailingLiteralRequirement;
+                var expected = !native && !hasWindows ? Utf8SearchOperationKind.None :
+                    !native ? Utf8SearchOperationKind.PrefilterThenConfirm :
                     plan.HasRequiredPrefilter ? confirm ? Utf8SearchOperationKind.PrefilterThenConfirm : Utf8SearchOperationKind.PrefilterThenSearch :
                     confirm ? Utf8SearchOperationKind.SearchThenConfirm :
                     plan.MultiLiteralSearch.Kind == PreparedMultiLiteralKind.ExactAutomaton ? Utf8SearchOperationKind.HybridSearch : Utf8SearchOperationKind.DirectSearch;
@@ -70,13 +46,6 @@ public sealed class Utf8SearchDispositionQualificationTests
                 if (operation.HasValue)
                 {
                     Assert.Equal(plan.ConfirmationPlan, operation.Confirmation);
-                    var selected = native.HasValue ? native : fallback;
-                    Assert.Equal(selected.Kind, operation.CandidateSource.Kind);
-                    Assert.Same(selected.StructuralSearchPlans, operation.CandidateSource.StructuralSearchPlans);
-                    var preferred = plan.PrefilterPlan.PrimarySource.HasValue ? plan.PrefilterPlan.PrimarySource :
-                        plan.PrefilterPlan.SecondarySource.HasValue ? plan.PrefilterPlan.SecondarySource : plan.PrefilterPlan.WindowSource;
-                    Assert.Equal(preferred.Kind, operation.PrefilterSource.Kind);
-                    Assert.Same(preferred.StructuralSearchPlans, operation.PrefilterSource.StructuralSearchPlans);
                 }
             }
             Assert.Equal(0ul, zero.Budget.WorkSteps); Assert.Equal(0ul, zero.Budget.Depth); Assert.Equal(0ul, zero.Budget.ReservedBytes);
@@ -92,7 +61,7 @@ public sealed class Utf8SearchDispositionQualificationTests
         foreach (var plan in new[] { empty, prepared })
         {
             Assert.False(plan.SearchOperation.HasValue); Assert.False(plan.ConfirmationPlan.HasValue);
-            Assert.False(plan.HasFallbackCandidates); Assert.False(plan.NativeCandidateSource.HasValue);
+            Assert.False(plan.HasFallbackCandidates); Assert.False(plan.HasPreparedSearcher);
         }
         Assert.Equal(0ul, zero.Budget.WorkSteps);
     }

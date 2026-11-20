@@ -7,7 +7,6 @@ internal enum Utf8ExecutionRoute : byte
     CompiledFusedAsciiLiteralCount,
     CompiledFusedUtf8LiteralCount,
     CompiledFusedUtf8LiteralFamilyCount,
-    RequiredPrefilterReject,
     LiteralFamilyHybridEarliestAutomaton,
     LiteralFamilyPreparedNonOverlapping,
     LiteralFamilyPreparedWithRequirementsLengthOnly,

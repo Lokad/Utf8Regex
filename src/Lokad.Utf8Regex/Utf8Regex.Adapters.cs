@@ -135,11 +135,6 @@ public sealed partial class Utf8Regex
             return _compiledEngineRuntime.Count(remaining, CreateExecutionBudget());
         }
 
-        if (RejectsByRequiredPrefilter(remaining))
-        {
-            return 0;
-        }
-
         return _compiledEngineRuntime.Count(remaining, CreateExecutionBudget());
     }
 
@@ -311,11 +306,6 @@ public sealed partial class Utf8Regex
             if (_owner.TryMatchDirectWithoutValidation(bytes, out var match))
             {
                 return match.Success;
-            }
-
-            if (_owner.RejectsByRequiredPrefilter(bytes))
-            {
-                return false;
             }
 
             return _owner._compiledEngineRuntime.IsMatch(bytes, Utf8ExecutionDeadline.Infinite);

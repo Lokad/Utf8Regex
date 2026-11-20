@@ -137,10 +137,6 @@ internal readonly struct Utf8SearchPlan
     [UnscopedRef]
     public ref readonly Utf8PrefilterPlan PrefilterPlan => ref _prefilterPlan;
 
-    public Utf8CandidateSearchPlan NativeCandidateSource => HasPreparedSearcher
-        ? Utf8CandidateSearchPlan.FromPreparedSearcher(PreparedSearcher, PortfolioKind)
-        : Utf8CandidateSearchPlan.FromStructuralSearch(StructuralSearchPlan, PortfolioKind);
-
     public Utf8ConfirmationPlan ConfirmationPlan => CreateConfirmationPlan();
 
     public Utf8SearchOperationPlan SearchOperation =>

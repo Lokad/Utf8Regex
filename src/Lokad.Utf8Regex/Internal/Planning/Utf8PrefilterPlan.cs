@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Planning;
@@ -24,20 +23,6 @@ internal readonly struct Utf8PrefilterPlan
     public PreparedSearcher SecondarySearcher { get; }
 
     public Utf8StructuralSearchPlan[]? WindowPlans { get; }
-
-    public Utf8CandidateSearchPlan PrimarySource =>
-        Utf8CandidateSearchPlan.FromPreparedSearcher(
-            PrimarySearcher,
-            Utf8SearchPortfolioKind.None);
-
-    public Utf8CandidateSearchPlan SecondarySource =>
-        Utf8CandidateSearchPlan.FromPreparedSearcher(
-            SecondarySearcher,
-            Utf8SearchPortfolioKind.None);
-
-    public Utf8CandidateSearchPlan WindowSource =>
-        Utf8CandidateSearchPlan.FromStructuralSearchSet(
-            WindowPlans);
 
     public bool HasValue =>
         PrimarySearcher.HasValue ||

@@ -71,7 +71,6 @@ public sealed class Utf8CanonicalSearchPayloadTests
             var plan = Utf8SearchPlan.Prepare(facts);
             var windows = Assert.IsType<Utf8StructuralSearchPlan[]>(plan.PrefilterPlan.WindowPlans);
             Assert.Equal(2, windows.Length);
-            Assert.Same(windows, plan.PrefilterPlan.WindowSource.StructuralSearchPlans);
             var primary = Family(plan.PrefilterPlan.PrimarySearcher);
             var first = Family(Window(windows[0]).LeadingSearcher);
             var second = Family(Window(windows[1]).TrailingSearcher);

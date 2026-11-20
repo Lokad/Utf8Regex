@@ -359,11 +359,6 @@ public sealed partial class Utf8Regex : IDisposable
             return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
         }
 
-        if (RejectsByRequiredPrefilter(input))
-        {
-            return false;
-        }
-
         return _compiledEngineRuntime.IsMatch(input, CreateExecutionBudget());
     }
 
@@ -543,12 +538,6 @@ public sealed partial class Utf8Regex : IDisposable
             return _compiledEngineRuntime.Count(input, fastBudget);
         }
 
-        if (RejectsByRequiredPrefilter(input))
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.RequiredPrefilterReject);
-            return 0;
-        }
-
         return _compiledEngineRuntime.Count(input, CreateExecutionBudget());
     }
 
@@ -700,11 +689,6 @@ public sealed partial class Utf8Regex : IDisposable
         var canUseUtf8Probe = runtime.SupportsUtf8MatchProbe;
         if (canUseAsciiProbe || canUseUtf8Probe)
         {
-            if (RejectsByRequiredPrefilter(input))
-            {
-                return default;
-            }
-
             var handled = canUseAsciiProbe
                 ? runtime.TryMatchAsciiProbe(input, out var probeMatch)
                 : runtime.TryMatchUtf8Probe(input, out probeMatch);
@@ -717,11 +701,6 @@ public sealed partial class Utf8Regex : IDisposable
             {
                 return default;
             }
-        }
-
-        if (RejectsByRequiredPrefilter(input))
-        {
-            return default;
         }
 
         return runtime.Match(input, CreateExecutionBudget());

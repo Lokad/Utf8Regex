@@ -215,12 +215,11 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void NativeSearchPlanCarriesExplicitCandidateSourceForExactLiteral()
+    public void NativeSearchPlanUsesPreparedSearcherForExactLiteral()
     {
         var regex = new Utf8Regex("abc", options: RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, regex.Inspection.SearchPlan.NativeCandidateSource.Kind);
-        Assert.Equal(regex.Inspection.SearchPlan.PreparedSearcher.Kind, regex.Inspection.SearchPlan.NativeCandidateSource.PreparedSearcher.Kind);
+        Assert.Equal(PreparedSearcherKind.ExactLiteral, regex.Inspection.SearchPlan.PreparedSearcher.Kind);
         Assert.Equal(Utf8SearchOperationKind.DirectSearch, regex.Inspection.SearchPlan.SearchOperation.Kind);
     }
 
@@ -230,7 +229,6 @@ public sealed class Utf8SearchPlanTests
         var regex = new Utf8Regex("Sherlock Holmes|John Watson|Irene Adler|Inspector Lestrade|Professor Moriarty", options: RegexOptions.CultureInvariant);
 
         Assert.Equal(Utf8SearchOperationKind.HybridSearch, regex.Inspection.SearchPlan.SearchOperation.Kind);
-        Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, regex.Inspection.SearchPlan.SearchOperation.CandidateSource.Kind);
         Assert.Equal(Utf8SearchObservabilityKind.Effectiveness, regex.Inspection.SearchPlan.SearchOperation.ObservabilityKind);
     }
 
@@ -258,19 +256,6 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void SearchPlanCarriesBackendInstructionPrograms()
-    {
-        var regex = new Utf8Regex(@"\b(?:Task|ValueTask|IAsyncEnumerable)\b", options: RegexOptions.CultureInvariant);
-        var fallbackRegex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
-
-        Assert.True(regex.Inspection.SearchPlan.SearchOperation.CandidateSource.HasValue);
-        Assert.True(regex.Inspection.SearchPlan.SearchOperation.Confirmation.HasValue);
-
-        Assert.True(fallbackRegex.Inspection.SearchPlan.SearchOperation.CandidateSource.HasValue);
-        Assert.False(fallbackRegex.Inspection.SearchPlan.SearchOperation.Confirmation.HasValue);
-    }
-
-    [Fact]
     public void CompiledFamiliesUseSelectedRuntimesAndNativeKernels()
     {
         const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
@@ -294,7 +279,7 @@ public sealed class Utf8SearchPlanTests
         var fallback = Utf8FrontEnd.Compile("a.*b", RegexOptions.CultureInvariant);
         var structural = Utf8FrontEnd.Compile("ab[0-9][0-9]cd", RegexOptions.CultureInvariant);
 
-        Assert.Equal(Utf8CandidateSearchKind.PreparedSearcher, literalFamily.Inspection.SearchPlan.NativeCandidateSource.Kind);
+        Assert.True(literalFamily.Inspection.SearchPlan.HasPreparedSearcher);
         Assert.True(fallback.SearchPlan.HasFallbackCandidates);
         Assert.Equal(Utf8CompiledEngineKind.LiteralFamily, Utf8CompiledEngineSelector.Select(literalFamily.Inspection.PreparedRegex).Kind);
         Assert.Equal(Utf8CompiledEngineKind.FallbackRegex, Utf8CompiledEngineSelector.Select(fallback).Kind);

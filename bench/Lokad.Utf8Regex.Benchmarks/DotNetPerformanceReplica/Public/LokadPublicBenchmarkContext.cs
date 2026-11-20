@@ -141,7 +141,7 @@ internal sealed class LokadPublicBenchmarkContext
         return InputBytes.Length;
     }
 
-    public int ExecuteUtf8PrefilterOnly() => Utf8PrefilterExecutor.Rejects(Utf8Regex.Inspection.SearchPlan.PrefilterPlan, InputBytes) ? 0 : 1;
+    public int ExecuteUtf8PrefilterOnly() => Utf8PrefilterReplay.Rejects(Utf8Regex.Inspection.SearchPlan.PrefilterPlan, InputBytes) ? 0 : 1;
 
     public int ExecuteUtf8DirectHookOnly()
     {

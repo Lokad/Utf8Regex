@@ -651,7 +651,7 @@ internal static partial class BenchmarkInspectReporter
             Utf8Validation.ThrowIfInvalidOnly(benchmarkCase.InputBytes);
             return benchmarkCase.InputBytes.Length;
         });
-        Measure("RequiredPrefilterOnly", iterations, () => Utf8PrefilterExecutor.Rejects(benchmarkCase.Utf8Regex.Inspection.SearchPlan.PrefilterPlan, benchmarkCase.InputBytes) ? 1 : 0);
+        Measure("RequiredPrefilterOnly", iterations, () => Utf8PrefilterReplay.Rejects(benchmarkCase.Utf8Regex.Inspection.SearchPlan.PrefilterPlan, benchmarkCase.InputBytes) ? 1 : 0);
 
         Measure("Utf8Regex", iterations, () => benchmarkCase.Utf8Regex.Count(benchmarkCase.InputBytes));
         Measure(benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? "DotNetRegex" : "DecodeThenRegex", iterations, benchmarkCase.Source == ReplicaBenchmarkSource.DotNetPerformance ? benchmarkCase.CountPredecodedRegex : benchmarkCase.CountDecodeThenRegex);

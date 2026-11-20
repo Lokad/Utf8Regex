@@ -69,7 +69,7 @@ internal static class Utf8FallbackReplay
     internal static bool IsMatch(Utf8Regex regex, ReadOnlySpan<byte> input)
     {
         var plan = regex.Inspection.SearchPlan;
-        if (!plan.HasFallbackCandidates || Utf8PrefilterExecutor.Rejects(plan.PrefilterPlan, input)) return false;
+        if (!plan.HasFallbackCandidates || Utf8PrefilterReplay.Rejects(plan.PrefilterPlan, input)) return false;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, regex.MatchTimeout, default);
         invocation.AnchorOriginByte = 0;
         return TryFindNextVerifiedMatch(GetCandidatePlans(plan), regex.Inspection.PreparedRegex,
