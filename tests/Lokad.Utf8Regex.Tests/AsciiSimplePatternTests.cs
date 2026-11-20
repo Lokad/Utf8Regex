@@ -3339,7 +3339,7 @@ public sealed class AsciiSimplePatternTests
         Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text, template);
     }
 
-    public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableEvaluatorAlignedCases()
+    public static System.Collections.Generic.IEnumerable<object?[]> EmptyCapableScalarOperationCases()
     {
         (string pattern, string text)[] rows =
         [
@@ -3357,15 +3357,8 @@ public sealed class AsciiSimplePatternTests
     }
 
     [Theory]
-    [MemberData(nameof(EmptyCapableEvaluatorAlignedCases))]
-    public void EmptyCapableEvaluatorReceivesAlignedMatches(string pattern, RegexOptions options, string text)
-    {
-        Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text);
-    }
-
-    [Theory]
-    [MemberData(nameof(EmptyCapableEvaluatorAlignedCases))]
-    public void EmptyCapableStringEvaluatorOwnsInput(string pattern, RegexOptions options, string text)
+    [MemberData(nameof(EmptyCapableScalarOperationCases))]
+    public void EmptyCapableOperationsPreserveScalarBoundaries(string pattern, RegexOptions options, string text)
     {
         Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text);
     }

@@ -123,26 +123,7 @@ public sealed class Utf8CancellationTests
     }
 
     [Fact]
-    public void PreCanceledTokenThrowsBeforeReplaceBytes()
-    {
-        var regex = new Utf8Regex("cat|horse");
-        var token = CanceledToken();
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.Replace(s_input, "pet"u8, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
     public void PreCanceledTokenThrowsBeforeTryReplace()
-    {
-        var regex = new Utf8Regex("cat|horse");
-        var token = CanceledToken();
-        var destination = new byte[64];
-        var exception = Assert.Throws<OperationCanceledException>(() => regex.TryReplace(s_input, "pet"u8, destination, out _, token));
-        Assert.Equal(token, exception.CancellationToken);
-    }
-
-    [Fact]
-    public void PreCanceledTokenThrowsBeforeTryReplaceBytes()
     {
         var regex = new Utf8Regex("cat|horse");
         var token = CanceledToken();

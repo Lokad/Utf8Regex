@@ -4,11 +4,7 @@ using System.Text.RegularExpressions;
 namespace Lokad.Utf8Regex.Tests;
 
 /// <summary>
-/// R03 projection correctness: ASCII-literal-family patterns on non-ASCII input must
-/// report byte coordinates and derived UTF-16 coordinates at scalar boundaries,
-/// never raw byte offsets. Covers single and alternation literals, ignore-case
-/// literals, empty matches, splits, and from-offset enumeration on BMP and
-/// supplementary text, with an ASCII control row.
+/// Tests byte ranges, scalar progress and offset searches on non-ASCII subjects.
 /// </summary>
 public sealed class Utf8NonAsciiLiteralProjectionTests
 {
@@ -26,14 +22,7 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
 
     [Theory]
     [MemberData(nameof(LiteralCases))]
-    public void EnumerateMatchesProjectsScalarCoordinates(string pattern, RegexOptions options, string text)
-    {
-        Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text);
-    }
-
-    [Theory]
-    [MemberData(nameof(LiteralCases))]
-    public void EnumerateSplitsPreserveScalarValues(string pattern, RegexOptions options, string text)
+    public void LiteralOperationsPreserveByteRanges(string pattern, RegexOptions options, string text)
     {
         Utf8AsciiScalarOperationAssertions.Operations(pattern, options, text);
     }
@@ -71,9 +60,8 @@ public sealed class Utf8NonAsciiLiteralProjectionTests
 
     public static IEnumerable<object?[]> LightMatchCases()
     {
-        // Lightweight `Match` (and detailed group 0 shaped from it) must report
-        // UTF-16 coordinates on non-ASCII input, never raw byte offsets. Byte and
-        // UTF-16 offsets diverge past non-ASCII content, in both directions.
+        // Prefixes containing wider scalars distinguish byte offsets from the
+        // comparison engine's string indices in both search directions.
         yield return new object?[] { "\\bab\\b", RegexOptions.CultureInvariant, "x\U0001F600ab" };
         yield return new object?[] { "(?i)ab", RegexOptions.CultureInvariant, "x\u00E9ab" };
         yield return new object?[] { "(?i)ab", RegexOptions.CultureInvariant | RegexOptions.RightToLeft, "x\u00E9ab" };
