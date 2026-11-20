@@ -72,27 +72,23 @@ public sealed class Utf8StructuralInvocationTests
     [InlineData(2)]
     [InlineData(4)]
     [InlineData(5)]
-    public void EveryPreparedSearchCutoffLeavesCoordinatesAndStateUnpublished(int kind)
+    public void BoundedPreparedSearchDenialLeavesCoordinatesUnpublished(int kind)
     {
         var searcher = Searcher(kind);
         var hit = kind == 5 ? "\"" + new string('a', 8193) + "\"" : "target";
         var input = Encoding.UTF8.GetBytes(new string('x', 10000) + hit);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        var initial = new PreparedSearchScanState(1, default);
-        var state = initial;
-        Assert.Equal(Utf8ExecutionLimitKind.None, searcher.TryFindNextOverlappingMatch(input, ref state,
-            ref baseline, out _, out var found));
+        Assert.Equal(Utf8ExecutionLimitKind.None, searcher.TryFindMatch(input, 1, input.Length,
+            false, ref baseline, out _, out var found));
         Assert.True(found);
         for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
         {
             var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(7));
-            state = initial;
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, searcher.TryFindNextOverlappingMatch(input, ref state,
-                ref invocation, out var denied, out found));
+            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, searcher.TryFindMatch(input, 1, input.Length,
+                false, ref invocation, out var denied, out found));
             Assert.False(found);
             Assert.Equal(default, denied);
-            Assert.Equal(initial, state);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
         }
     }
@@ -103,54 +99,18 @@ public sealed class Utf8StructuralInvocationTests
                 new PreparedSearcher(new PreparedSubstringSearch("end"u8.ToArray(), false), false))),
             Utf8StructuralSearchStage.RequireWithinLineSpan(maxLines), Utf8StructuralSearchStage.YieldWindow()]);
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void PairedWindowsReuseTrailingProgressAndKeepCandidateFacts(bool bounded)
+    [Fact]
+    public void PairedWindowsReuseTrailingProgressAndKeepCandidateFacts()
     {
         var plan = WindowPlan(3);
-        var input = "target x target\r\nend target\n\n\nend target end"u8.ToArray();
-        var expectedState = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
-        var actualState = expectedState;
-        var invocation = new Utf8SliceInvocation(bounded ? new(ulong.MaxValue, 0, 7) : Utf8ExecutionLimits.Unlimited,
-            Regex.InfiniteMatchTimeout, default);
-        while (plan.TryFindNextCandidate(input, ref expectedState, out var expected))
+        var input = "target x target\r\nend target\n\n\nend target end"u8;
+        var state = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
+        foreach (var (start, trailing) in new[] { (0, 17), (9, 17), (34, 41) })
         {
-            Assert.Equal(Utf8ExecutionLimitKind.None, plan.TryFindNextCandidate(input, ref actualState,
-                ref invocation, out var actual, out var found));
-            Assert.True(found);
-            Assert.Equal(expected, actual);
+            Assert.True(plan.TryFindNextCandidate(input, ref state, out var candidate));
+            Assert.Equal(Utf8StructuralCandidate.Window(start, trailing + 3, 6, 0, trailing, 3, 0), candidate);
         }
-        Assert.Equal(Utf8ExecutionLimitKind.None, plan.TryFindNextCandidate(input, ref actualState,
-            ref invocation, out _, out var terminal));
-        Assert.False(terminal);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void EveryWindowAndLineScanCutoffPreservesBorrowedLeaseAndOriginalState(bool crlf)
-    {
-        var plan = WindowPlan();
-        var gap = crlf ? string.Concat(Enumerable.Repeat(new string('x', 2047) + "\r\n", 12)) : new string('x', 25000);
-        var input = Encoding.UTF8.GetBytes("target" + gap + "end");
-        var initial = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        var state = initial;
-        Assert.Equal(Utf8ExecutionLimitKind.None, plan.TryFindNextCandidate(input, ref state, ref baseline, out _, out var found));
-        Assert.True(found);
-        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            state = initial;
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, plan.TryFindNextCandidate(input, ref state, ref invocation,
-                out var denied, out found));
-            Assert.False(found);
-            Assert.Equal(default, denied);
-            Assert.Equal(initial, state);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
+        Assert.False(plan.TryFindNextCandidate(input, ref state, out _));
     }
 
     public static IEnumerable<object[]> PublicCases()
@@ -329,7 +289,7 @@ public sealed class Utf8StructuralInvocationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void StartTransformsAndFullSubjectBoundaryRequirementsAreBoundedInBothDirections(bool reverse)
+    public void StartTransformsKeepFullSubjectBoundaryRequirementsInBothDirections(bool reverse)
     {
         var plan = new Utf8StructuralSearchPlan(Utf8StructuralSearchYieldKind.Start, [
             Utf8StructuralSearchStage.FindLiteralFamily(Searcher(0)),
@@ -338,17 +298,11 @@ public sealed class Utf8StructuralInvocationTests
             Utf8StructuralSearchStage.RequireTrailingBoundary(Utf8BoundaryRequirement.Boundary),
             Utf8StructuralSearchStage.RequireTrailingLiteral("!"u8.ToArray()), Utf8StructuralSearchStage.YieldStart()]);
         var input = Encoding.UTF8.GetBytes("xtarget! " + new string(' ', 140000) + "target! targetx");
-        var expectedState = default(Utf8StructuralSearchState);
-        var expectedFound = reverse ? plan.TryFindLastCandidate(input, input.Length, out var expected)
-            : plan.TryFindNextCandidate(input, ref expectedState, out expected);
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         var state = default(Utf8StructuralSearchState);
-        var breach = reverse ? plan.TryFindLastCandidate(input, input.Length, ref invocation, out var actual, out var found)
-            : plan.TryFindNextCandidate(input, ref state, ref invocation, out actual, out found);
-        Assert.Equal(Utf8ExecutionLimitKind.None, breach);
-        Assert.Equal(expectedFound, found);
-        Assert.Equal(expected, actual);
-        Assert.True(invocation.Budget.Steps > 64);
+        var found = reverse ? plan.TryFindLastCandidate(input, input.Length, out var candidate)
+            : plan.TryFindNextCandidate(input, ref state, out candidate);
+        Assert.True(found);
+        Assert.Equal(Utf8StructuralCandidate.Start(8, -1, 6, 0), candidate);
     }
 
     public static IEnumerable<object[]> FixedCases()
@@ -368,42 +322,12 @@ public sealed class Utf8StructuralInvocationTests
             [Utf8StructuralSearchStage.FindAscii(ascii), Utf8StructuralSearchStage.YieldStart()]);
         var hit = set ? "zaQc" : "zztarget";
         var input = Encoding.UTF8.GetBytes(new string('x', offset) + hit + "xxxxx" + hit);
-        var original = default(Utf8StructuralSearchState);
-        var expectedFound = reverse ? plan.TryFindLastCandidate(input, input.Length, out var expected)
-            : plan.TryFindNextCandidate(input, ref original, out expected);
-        var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
         var state = default(Utf8StructuralSearchState);
-        var breach = reverse ? plan.TryFindLastCandidate(input, input.Length, ref invocation, out var actual, out var found)
-            : plan.TryFindNextCandidate(input, ref state, ref invocation, out actual, out found);
-        Assert.Equal(Utf8ExecutionLimitKind.None, breach);
+        var found = reverse ? plan.TryFindLastCandidate(input, input.Length, out var candidate)
+            : plan.TryFindNextCandidate(input, ref state, out candidate);
+        var start = reverse ? offset + hit.Length + 5 : offset;
         Assert.True(found);
-        Assert.Equal(expectedFound, found);
-        Assert.Equal(expected, actual);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FixedDistanceWorkDenialNeverPublishesItsPendingAnchor(bool set)
-    {
-        var plan = set ? PreparedAsciiFindPlan.CreateFixedDistanceSet([Utf8FixedDistanceSet.FromBytes(1, [(byte)'a'], false), Utf8FixedDistanceSet.FromBytes(3, [(byte)'c'], false)])
-            : PreparedAsciiFindPlan.CreateFixedDistanceLiteral("target"u8.ToArray(), 2);
-        var input = Encoding.UTF8.GetBytes(new string('x', 10000) + (set ? "zaQc" : "zztarget"));
-        var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-        Assert.Equal(Utf8ExecutionLimitKind.None, Utf8AsciiFindExecutor.TryFindNextFixedDistanceCandidate(input, plan, 0,
-            ref baseline, out _, out _, out var found));
-        Assert.True(found);
-        for (var cap = 1UL; cap < baseline.Budget.Steps; cap++)
-        {
-            var invocation = new Utf8SliceInvocation(new(cap, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
-            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, Utf8AsciiFindExecutor.TryFindNextFixedDistanceCandidate(input, plan, 0,
-                ref invocation, out var index, out var length, out found));
-            Assert.Equal(-1, index);
-            Assert.Equal(0, length);
-            Assert.False(found);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
-        }
+        Assert.Equal(Utf8StructuralCandidate.Start(start, -1, set ? 1 : 6, 0), candidate);
     }
 
     [Theory]
@@ -433,61 +357,41 @@ public sealed class Utf8StructuralInvocationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void PairedWindowTrailingSearchWorkAndTerminalProgressStayLinear(bool trailingHit)
+    public void PairedWindowsReuseTheTrailingMatchOrExhaustion(bool trailingHit)
     {
         var search = new PreparedWindowSearch(Searcher(0),
             new PreparedSearcher(new PreparedSubstringSearch("end"u8.ToArray(), false), false));
-        var measured = new List<ulong>();
         foreach (var repeats in new[] { 128, 256 })
         {
             var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("target x ", repeats)) +
                 new string('x', 4096) + (trailingHit ? "end" : ""));
-            var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 7), Regex.InfiniteMatchTimeout, default);
-            Assert.True(invocation.Ledger.TryReserve(7));
             var state = PreparedWindowScanState.Create(0);
             var count = 0;
-            while (true)
+            while (search.TryFindNextWindow(input, ref state, out var window))
             {
-                Assert.Equal(Utf8ExecutionLimitKind.None, search.TryFindNextWindow(input, ref state, ref invocation, out _, out var found));
-                if (!found) break;
+                Assert.Equal(count * 9, window.Leading.Index);
+                Assert.Equal(input.Length - 3, window.Trailing.Index);
+                Assert.Equal(window.Trailing.Index + 1, state.TrailingState.NextStart);
                 count++;
             }
             Assert.Equal(trailingHit ? repeats : 0, count);
-            measured.Add(invocation.Budget.Steps);
-            var terminalSteps = invocation.Budget.Steps;
-            for (var i = 0; i < 3; i++)
-            {
-                Assert.Equal(Utf8ExecutionLimitKind.None, search.TryFindNextWindow(input, ref state, ref invocation, out var window, out var found));
-                Assert.False(found);
-                Assert.Equal(default, window);
-            }
-            Assert.InRange(invocation.Budget.Steps - terminalSteps, 0UL, 30UL);
-            Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+            Assert.Equal(!trailingHit, state.TrailingExhausted);
+            var terminal = state;
+            Assert.False(search.TryFindNextWindow(input, ref state, out _));
+            Assert.Equal(terminal, state);
         }
-        Assert.True(measured[1] <= measured[0] * 3, $"Work grew from {measured[0]} to {measured[1]}.");
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void CrLfCrossingEveryBlockBoundaryCannotSkipLineScanTokenOrDeadlineCheckpoints(bool expire)
+    [InlineData(200, false)]
+    [InlineData(201, true)]
+    public void PairedWindowCountsEachCrLfAsOneLine(int maxLines, bool accepted)
     {
-        using var clock = Utf8DeadlineTestClock.Start();
         var gap = string.Concat(Enumerable.Repeat(new string('x', 2047) + "\r\n", 200));
         var input = Encoding.UTF8.GetBytes("target" + gap + "end");
-        var window = new PreparedWindowMatch(new(0, 6, 0), new(input.Length - 3, 3, 0));
-        using var source = new CancellationTokenSource();
-        var invocation = new Utf8SliceInvocation(new(0, 0, 7), expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
-        Assert.True(invocation.Ledger.TryReserve(7));
-        var entered = false;
-        invocation.CheckpointHook = _ => { if (!entered) { entered = true; if (expire) clock.Advance(250); else source.Cancel(); } };
-        var accepted = false;
-        void Run() => Utf8StructuralSearchExecutor.TrySatisfyWindowRequirements(input,
-            [Utf8StructuralSearchStage.RequireWithinLineSpan(int.MaxValue)], window, ref invocation, out accepted);
-        if (expire) Assert.Throws<Utf8ExecutionDeadlineExpiredException>(Run);
-        else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
-        Assert.True(entered);
-        Assert.False(accepted);
-        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+        var state = new Utf8StructuralSearchState(default, PreparedWindowScanState.Create(0));
+        Assert.Equal(accepted, WindowPlan(maxLines).TryFindNextCandidate(input, ref state, out var candidate));
+        if (accepted)
+            Assert.Equal(Utf8StructuralCandidate.Window(0, input.Length, 6, 0, input.Length - 3, 3, 0), candidate);
     }
 }

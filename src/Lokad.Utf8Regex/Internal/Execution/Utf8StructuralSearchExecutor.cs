@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal static partial class Utf8StructuralSearchExecutor
+internal static class Utf8StructuralSearchExecutor
 {
     public static bool TryFindNextCandidate(
         this Utf8StructuralSearchPlan plan,

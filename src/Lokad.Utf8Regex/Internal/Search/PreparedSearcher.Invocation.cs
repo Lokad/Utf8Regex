@@ -4,31 +4,6 @@ namespace Lokad.Utf8Regex.Internal.Search;
 
 internal readonly partial struct PreparedSearcher
 {
-    internal Utf8ExecutionLimitKind TryFindNextOverlappingMatch(ReadOnlySpan<byte> input,
-        ref PreparedSearchScanState state, ref Utf8SliceInvocation invocation,
-        out PreparedSearchMatch match, out bool found)
-    {
-        match = default;
-        found = false;
-        var pending = state;
-        if (invocation.IsUnmetered && invocation.CheckpointHook is null)
-            found = TryFindNextOverlappingMatch(input, ref pending, out match);
-        else
-        {
-            var breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) return breach;
-            if ((uint)state.NextStart <= (uint)input.Length)
-            {
-                breach = TryFindMatch(input, state.NextStart, input.Length, false,
-                    ref invocation, out match, out found);
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-            }
-            pending = new PreparedSearchScanState(found ? match.Index + 1 : input.Length, default);
-        }
-        state = pending;
-        return Utf8ExecutionLimitKind.None;
-    }
-
     // Searches borrow the existing immutable payload. Neither long needles nor
     // quoted runs enter an opaque unbounded comparison in a metered operation.
     internal Utf8ExecutionLimitKind TryFindMatch(ReadOnlySpan<byte> input, int start, int end,
