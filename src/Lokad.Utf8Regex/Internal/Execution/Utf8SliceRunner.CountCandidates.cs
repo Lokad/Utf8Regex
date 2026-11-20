@@ -238,7 +238,7 @@ internal static partial class Utf8SliceRunner
         return (set.D & 255) - 1;
     }
 
-    private static bool IsLeadingDecimalSet(Utf8SliceProgram program, int index)
+    internal static bool IsLeadingDecimalSet(Utf8SliceProgram program, int index)
         => index >= 0 && IsDecimalDigitSet(program, program.Instructions[index]);
 
     private static bool IsNonDecimalWideStart(ReadOnlySpan<byte> input, int position)

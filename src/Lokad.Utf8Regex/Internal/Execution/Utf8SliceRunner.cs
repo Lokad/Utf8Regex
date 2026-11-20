@@ -637,12 +637,12 @@ internal static partial class Utf8SliceRunner
         var hasClassWindow = classLiteral >= 0 || classAlternatives is not null;
         if (hasClassWindow && leading >= 128) leading = -1;
         var screenDecimalWindow = hasClassWindow && first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
-            leadingClass == leadingScalarIndex && IsLeadingDecimalSet(program, leadingScalarIndex);
+            leadingClass == leadingScalarIndex && program.LeadingScalarIsDecimal;
         var followingWindow = screenDecimalWindow && directClassLiteral && classLiteral >= 0 &&
             !Utf8AsciiBytePredicates.IsDigit((byte)classLiteral)
-            ? GetShortRepeatLiteralWindow(program, program.LeadingClassDelimiter.LiteralIndex + 2) : default;
+            ? program.FollowingDecimalLiteralWindow : default;
         var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
-            IsLeadingDecimalSet(program, leadingScalarIndex);
+            program.LeadingScalarIsDecimal;
         var canProveDecimal = !collectHistory && captureStarts.Length == 0 && !program.ReadsCaptures;
         var shortDecimalHead = canProveDecimal && seekDecimal &&
             program.Instructions.Length <= 32 && leadingScalarIndex > 0 &&
@@ -656,7 +656,7 @@ internal static partial class Utf8SliceRunner
             leadingLast = (byte)'9';
         }
         var shortRepeatWindow = leadingScalarIndex > 0 && leading is >= 0 and < 128
-            ? GetShortRepeatLiteralWindow(program, leadingScalarIndex) : default;
+            ? program.LeadingRepeatLiteralWindow : default;
         Span<byte> prefixStorage = stackalloc byte[16];
         var leadingPrefix = wideInput && second >= 0 && !candidatePlan.CanGuideFallbackStarts
             ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage) : default;
@@ -1009,8 +1009,8 @@ internal static partial class Utf8SliceRunner
         // the short window also makes decimal-or-wide-scalar seeking worthwhile.
         if (whitespaceLiteral >= 0 && leadingFirst >= 128) leadingFirst = -1;
         var shortRepeatWindow = whitespaceLiteral < 0 && leadingScalarIndex > 0 && leadingFirst < 128
-            ? GetShortRepeatLiteralWindow(program, leadingScalarIndex) : default;
-        var seekDecimal = shortRepeatWindow.Min != 0 && leadingFirst < 0 && IsLeadingDecimalSet(program, leadingScalarIndex);
+            ? program.LeadingRepeatLiteralWindow : default;
+        var seekDecimal = shortRepeatWindow.Min != 0 && leadingFirst < 0 && program.LeadingScalarIsDecimal;
         if (seekDecimal)
         {
             leadingFirst = '0';

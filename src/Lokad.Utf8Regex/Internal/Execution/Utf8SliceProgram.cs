@@ -425,6 +425,23 @@ internal sealed class Utf8SliceProgram
                 out var leadingClass, out var literalIndex, out var gapMaximum, out var direct);
             LeadingClassDelimiter = (literal, leadingClass, literalIndex, gapMaximum, direct);
         }
+        var leadingIndex = LeadingByteCandidate.InstructionIndex;
+        if (leadingIndex >= 0 && instructions[leadingIndex].Kind == Utf8SliceInstructionKind.CategorySet)
+        {
+            Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
+            LeadingScalarIsDecimal = Utf8SliceRunner.IsLeadingDecimalSet(this, leadingIndex);
+        }
+        if (leadingIndex > 0 && repeatCount != 0)
+        {
+            Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
+            LeadingRepeatLiteralWindow = Utf8SliceRunner.GetShortRepeatLiteralWindow(this, leadingIndex);
+        }
+        if (LeadingScalarIsDecimal && LeadingClassDelimiter is { Direct: true, LiteralIndex: >= 0 } delimiter &&
+            instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 })
+        {
+            Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
+            FollowingDecimalLiteralWindow = Utf8SliceRunner.GetShortRepeatLiteralWindow(this, delimiter.LiteralIndex + 2);
+        }
         if (NonBacktrackingOrderedClosures.Length != 0)
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
         if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
@@ -617,6 +634,9 @@ internal sealed class Utf8SliceProgram
         = (-1, 0, -1, 0, -1, false);
     internal (int Literal, int LeadingClass, int LiteralIndex, long GapMaximum, bool Direct) LeadingClassDelimiter { get; }
         = (-1, -1, -1, 0, false);
+    internal bool LeadingScalarIsDecimal { get; }
+    internal (int Min, int Max, byte Literal) LeadingRepeatLiteralWindow { get; }
+    internal (int Min, int Max, byte Literal) FollowingDecimalLiteralWindow { get; }
     private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
     internal byte? RequiredUnanchoredFinalByte { get; }
