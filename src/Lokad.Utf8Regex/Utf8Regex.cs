@@ -317,7 +317,13 @@ public sealed partial class Utf8Regex : IDisposable
 
     private bool IsMatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (HasFiniteExecutionLimits) return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
+        if (HasFiniteExecutionLimits || !_preparedRegex.HasLiteralPlan)
+            return OwnedSliceIsMatch(input, _ownedSliceProgram, cancellationToken);
+        return IsMatchLiteral(input, cancellationToken);
+    }
+
+    private bool IsMatchLiteral(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    {
         if (CanStartNativeLiteralInvocation(cancellationToken))
         {
             var invocation = Utf8SliceInvocation.CreateExclusive(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
