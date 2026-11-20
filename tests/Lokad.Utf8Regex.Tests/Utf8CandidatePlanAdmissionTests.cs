@@ -13,23 +13,23 @@ public sealed class Utf8CandidatePlanAdmissionTests
 {
     private sealed class ParentValue(int value) { internal readonly int Value = value; }
     private static PreparedSearcher Searcher(string text) => new(new PreparedSubstringSearch(Encoding.UTF8.GetBytes(text), false), false);
-    private static ulong StageBytes(Utf8StructuralSearchPlan plan) => Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchStage>(plan.Stages.Length);
+    private static ulong PlanBytes => Utf8ConstructionBudget.ObjectBytes<Utf8StructuralSearchPlan.Data>();
 
     [Fact]
-    public void StartAndWindowFactoriesTransferOnlyFinalStageArrays()
+    public void StartAndWindowFactoriesTransferOnlyThePlanPayload()
     {
         var leading = Searcher("a"); var trailing = Searcher("z");
         foreach (var window in new[] { false, true })
         {
             using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
             var plan = window
-                ? Utf8StructuralSearchPlan.CreateTransformedWindowPlanWithLineSpan(new(leading, trailing, 32, true), 5, new(1, Utf8FallbackStartTransformKind.None))
+                ? Utf8StructuralSearchPlan.CreateWindowPlan(new(leading, trailing, 32, true), 5, new(1, Utf8FallbackStartTransformKind.None))
                 : Utf8StructuralSearchPlan.CreateStartPlan(leading);
-            Assert.True(plan.HasValue); Assert.Equal(StageBytes(plan), owner.Budget.ReservedBytes);
+            Assert.True(plan.HasValue); Assert.Equal(PlanBytes, owner.Budget.ReservedBytes);
             Assert.Equal(owner.Budget.ReservedBytes, owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0ul, owner.Budget.Depth);
             Assert.True(owner.Budget.WorkSteps > 0);
-            Assert.Equal(window ? 6 : 2, plan.Stages.Length);
+            Assert.Equal(window ? Utf8StructuralSearchYieldKind.Window : Utf8StructuralSearchYieldKind.Start, plan.YieldKind);
         }
     }
 
@@ -37,7 +37,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
     public void EveryByteAndWorkCutoffFundsTheWholeWindowOrRestoresItsParent()
     {
         var window = new PreparedWindowSearch(Searcher("a"), Searcher("z"), 32, true);
-        Utf8StructuralSearchPlan Build() => Utf8StructuralSearchPlan.CreateTransformedWindowPlanWithLineSpan(window, 5, new(1, Utf8FallbackStartTransformKind.None));
+        Utf8StructuralSearchPlan Build() => Utf8StructuralSearchPlan.CreateWindowPlan(window, 5, new(1, Utf8FallbackStartTransformKind.None));
         ulong peak, work;
         using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         { Assert.True(Build().HasValue); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps; }
@@ -50,7 +50,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
                 using var owner = new Utf8ConstructionScope(0, bytes ? 128 + cutoff : ulong.MaxValue, bytes ? ulong.MaxValue : 2 + cutoff, ulong.MaxValue);
                 var parent = owner.Budget.AllocateObject(17, static value => new ParentValue(value)); var checkpoint = owner.Budget.ReservedBytes;
                 var plan = default(Utf8StructuralSearchPlan); var failure = Record.Exception(() => plan = Build());
-                if (failure is null) { successes++; Assert.True(plan.HasValue); Assert.Equal(128 + StageBytes(plan), owner.Budget.ReservedBytes); }
+                if (failure is null) { successes++; Assert.True(plan.HasValue); Assert.Equal(128 + PlanBytes, owner.Budget.ReservedBytes); }
                 else
                 {
                     Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
@@ -65,7 +65,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
     }
 
     [Fact]
-    public void SearchPreparationFundsItsStructuralStagesWithoutAcquiringRejectedWindows()
+    public void SearchPreparationFundsItsStructuralPlanWithoutAcquiringRejectedWindows()
     {
         var set = Utf8FixedDistanceSet.FromMask(0, AsciiCharClass.FromBytes("ab"u8));
         var invalid = Utf8WindowSearchFacts.WithinLines(Utf8PreparedSearcherInfo.LiteralFamily(["a"u8.ToArray()]),
@@ -74,7 +74,7 @@ public sealed class Utf8CandidatePlanAdmissionTests
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var plan = Utf8SearchPlan.Prepare(facts);
         Assert.True(plan.StructuralSearchPlan.HasValue);
-        Assert.Equal(StageBytes(plan.StructuralSearchPlan), owner.Budget.ReservedBytes);
+        Assert.Equal(PlanBytes, owner.Budget.ReservedBytes);
         Assert.Equal(owner.Budget.ReservedBytes, owner.Budget.PeakBytes);
         var state = default(Utf8StructuralSearchState);
         Assert.True(plan.StructuralSearchPlan.TryFindNextCandidate("😀xb"u8, ref state, out var candidate)); Assert.Equal(5, candidate.StartIndex);

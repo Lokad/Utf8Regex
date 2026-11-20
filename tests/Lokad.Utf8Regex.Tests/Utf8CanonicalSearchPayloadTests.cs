@@ -15,7 +15,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
     private static PreparedMultiLiteralSearch Family(PreparedSearcher search) =>
         (PreparedMultiLiteralSearch)typeof(PreparedSearcher).GetProperty("MultiLiteralSearch", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(search)!;
     private static PreparedWindowSearch Window(Utf8StructuralSearchPlan plan) =>
-        Assert.Single(plan.Stages.Where(stage => stage.Kind == Utf8StructuralSearchStageKind.FindWindow)).WindowSearch;
+        plan.Payload.WindowSearch;
     private static ulong FamilyBytes(byte[][] literals, out ulong peak)
     {
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
@@ -48,7 +48,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Assert.Equal(PreparedMultiLiteralKind.ExactDirect, plan.MultiLiteralSearch.Kind);
             Assert.True(plan.AlternateLiteralSearch.HasValue);
             Assert.Same(plan.AlternateLiteralSearch.Value.SearchData.Buckets, plan.MultiLiteralSearch.ExactSearch.SearchData.Buckets);
-            var expected = payload + Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchStage>(plan.StructuralSearchPlan.Stages.Length);
+            var expected = payload + Utf8ConstructionBudget.ObjectBytes<Utf8StructuralSearchPlan.Data>();
             Assert.Equal(expected, owner.Budget.ReservedBytes);
             Assert.Equal(Math.Max(payloadPeak, expected), owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth);
@@ -81,7 +81,7 @@ public sealed class Utf8CanonicalSearchPayloadTests
             Assert.Equal(primary.Kind, first.Kind);
             Assert.Equal(PreparedSearcherKind.QuotedAsciiRun, Window(windows[0]).TrailingSearcher.Kind);
             var expected = payload + Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchPlan>(2)
-                + windows.Aggregate(0ul, (sum, window) => sum + Utf8ConstructionBudget.ArrayBytes<Utf8StructuralSearchStage>(window.Stages.Length));
+                + (ulong)windows.Length * Utf8ConstructionBudget.ObjectBytes<Utf8StructuralSearchPlan.Data>();
             Assert.Equal(expected, owner.Budget.ReservedBytes);
             Assert.Equal(Math.Max(payloadPeak, expected), owner.Budget.PeakBytes);
             Assert.Equal(0ul, owner.Budget.Depth);

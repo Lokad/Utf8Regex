@@ -94,10 +94,8 @@ public sealed class Utf8StructuralInvocationTests
     }
 
     private static Utf8StructuralSearchPlan WindowPlan(int maxLines = int.MaxValue) =>
-        new(Utf8StructuralSearchYieldKind.Window, [
-            Utf8StructuralSearchStage.FindWindow(new PreparedWindowSearch(Searcher(0),
-                new PreparedSearcher(new PreparedSubstringSearch("end"u8.ToArray(), false), false))),
-            Utf8StructuralSearchStage.RequireWithinLineSpan(maxLines), Utf8StructuralSearchStage.YieldWindow()]);
+        Utf8StructuralSearchPlan.CreateWindowPlan(new PreparedWindowSearch(Searcher(0),
+            new PreparedSearcher(new PreparedSubstringSearch("end"u8.ToArray(), false), false)), maxLines);
 
     [Fact]
     public void PairedWindowsReuseTrailingProgressAndKeepCandidateFacts()
@@ -291,12 +289,9 @@ public sealed class Utf8StructuralInvocationTests
     [InlineData(true)]
     public void StartTransformsKeepFullSubjectBoundaryRequirementsInBothDirections(bool reverse)
     {
-        var plan = new Utf8StructuralSearchPlan(Utf8StructuralSearchYieldKind.Start, [
-            Utf8StructuralSearchStage.FindLiteralFamily(Searcher(0)),
-            Utf8StructuralSearchStage.TransformCandidateStart(new(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace)),
-            Utf8StructuralSearchStage.RequireLeadingBoundary(Utf8BoundaryRequirement.Boundary),
-            Utf8StructuralSearchStage.RequireTrailingBoundary(Utf8BoundaryRequirement.Boundary),
-            Utf8StructuralSearchStage.RequireTrailingLiteral("!"u8.ToArray()), Utf8StructuralSearchStage.YieldStart()]);
+        var plan = Utf8StructuralSearchPlan.Create(Utf8SearchKind.ExactAsciiLiteral, 0, canGuideFallbackStarts: false,
+            Searcher(0), default, null, new Utf8FallbackStartTransform(0, Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace),
+            Utf8BoundaryRequirement.Boundary, Utf8BoundaryRequirement.Boundary, trailingLiteralUtf8: "!"u8.ToArray());
         var input = Encoding.UTF8.GetBytes("xtarget! " + new string(' ', 140000) + "target! targetx");
         var state = default(Utf8StructuralSearchState);
         var found = reverse ? plan.TryFindLastCandidate(input, input.Length, out var candidate)

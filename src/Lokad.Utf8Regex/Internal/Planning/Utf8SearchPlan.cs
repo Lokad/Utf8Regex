@@ -361,7 +361,7 @@ internal readonly struct Utf8SearchPlan
             if (!CanPrepare(info.Leading) || !CanPrepare(info.Trailing)) continue;
             var leading = CreatePreparedSearcher(info.Leading);
             var trailing = CreatePreparedSearcher(info.Trailing);
-            plans[index++] = Utf8StructuralSearchPlan.CreateWindowPlanWithOptionalLineSpan(
+            plans[index++] = Utf8StructuralSearchPlan.CreateWindowPlan(
                 new PreparedWindowSearch(leading, trailing, maxGap: null, sameLine: false), info.MaxLines);
         }
         return plans;
@@ -386,10 +386,10 @@ internal readonly struct Utf8SearchPlan
             ? requiredPrefilterSearcher
             : new PreparedSearcher(new PreparedMultiLiteralSearch(literals, ignoreCase: false));
         var quoted = secondaryRequiredPrefilterSearcher;
-        plans[0] = Utf8StructuralSearchPlan.CreateTransformedWindowPlanWithLineSpan(
+        plans[0] = Utf8StructuralSearchPlan.CreateWindowPlan(
             new PreparedWindowSearch(family, quoted, maxGap: null, sameLine: false), 5,
             new Utf8FallbackStartTransform(1, Utf8FallbackStartTransformKind.None));
-        plans[1] = Utf8StructuralSearchPlan.CreateWindowPlanWithLineSpan(
+        plans[1] = Utf8StructuralSearchPlan.CreateWindowPlan(
             new PreparedWindowSearch(quoted, family, maxGap: null, sameLine: false), 5);
         return plans;
     }

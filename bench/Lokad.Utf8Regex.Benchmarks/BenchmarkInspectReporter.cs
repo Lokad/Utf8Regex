@@ -3631,21 +3631,13 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"PreparedSearcher  : {regex.Inspection.SearchPlan.PreparedSearcher.Kind}");
         Console.WriteLine($"RequiredPrefilter : {(regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue ? regex.Inspection.SearchPlan.RequiredPrefilterSearcher.Kind : "None")}");
         Console.WriteLine($"WindowSearch      : {(regex.Inspection.SearchPlan.WindowSearch.HasValue ? "Present" : "None")}");
-        Console.WriteLine($"StructuralYield   : {regex.Inspection.StructuralSearchPlan.YieldKind}");
-        Console.WriteLine($"StructuralStages  : {regex.Inspection.StructuralSearchPlan.Stages?.Length ?? 0}");
-        if (regex.Inspection.StructuralSearchPlan.Stages is { Length: > 0 } structuralStages)
-        {
-            for (var i = 0; i < structuralStages.Length; i++)
-            {
-                Console.WriteLine($"StructuralStage[{i}] : {FormatStructuralSearchStage(structuralStages[i])}");
-            }
-        }
+        WriteStructuralSearchPlan(regex.Inspection.StructuralSearchPlan);
         var fallbackPlans = Utf8FallbackReplay.GetCandidatePlans(regex.Inspection.SearchPlan);
         Console.WriteLine($"FallbackPlans     : {fallbackPlans.Length}");
         for (var i = 0; i < fallbackPlans.Length; i++)
         {
             var plan = fallbackPlans[i];
-            Console.WriteLine($"FallbackPlan[{i}]  : Yield={plan.YieldKind}, Stages={plan.Stages?.Length ?? 0}");
+            Console.WriteLine($"FallbackPlan[{i}]  : Yield={plan.YieldKind}, Source={DescribeStructuralSource(plan)}");
         }
         Console.WriteLine($"FallbackReason    : {regex.Inspection.FallbackReason ?? "<native>"}");
     }
@@ -3665,32 +3657,53 @@ internal static partial class BenchmarkInspectReporter
 
         Console.WriteLine($"Pattern           : {pattern}");
         Console.WriteLine($"Options           : {options}");
-        Console.WriteLine($"YieldKind         : {plan.YieldKind}");
-        var stages = plan.Stages ?? [];
-        Console.WriteLine($"StructuralStages  : {stages.Length}");
-        for (var i = 0; i < stages.Length; i++)
+        WriteStructuralSearchPlan(plan);
+    }
+
+    private static void WriteStructuralSearchPlan(Utf8StructuralSearchPlan plan)
+    {
+        ref readonly var data = ref plan.Payload;
+        Console.WriteLine($"StructuralYield   : {plan.YieldKind}");
+        Console.WriteLine($"StructuralSource  : {DescribeStructuralSource(plan)}");
+        if (data.StartTransform.HasValue)
         {
-            Console.WriteLine($"Stage[{i}]         : {FormatStructuralSearchStage(stages[i])}");
+            Console.WriteLine($"StartTransform    : {data.StartTransform.Kind}, offset {data.StartTransform.Offset}");
+        }
+        if (data.WindowSearch.MaxGap is > 0 and var maxSpan)
+        {
+            Console.WriteLine($"MaximumByteSpan   : {maxSpan}");
+        }
+        if (data.MaxLines > 0)
+        {
+            Console.WriteLine($"MaximumLines      : {data.MaxLines}");
+        }
+        if (data.LeadingBoundary != Utf8BoundaryRequirement.None || data.TrailingBoundary != Utf8BoundaryRequirement.None)
+        {
+            Console.WriteLine($"Boundaries        : {data.LeadingBoundary}, {data.TrailingBoundary}");
+        }
+        if (data.TrailingLiteral is { Length: > 0 } literal)
+        {
+            Console.WriteLine($"TrailingLiteral   : {Encoding.UTF8.GetString(literal)}");
+        }
+        if (data.ExactLength > 0)
+        {
+            Console.WriteLine($"ExactLength       : {data.ExactLength}");
+        }
+        if (data.MaxLength > 0)
+        {
+            Console.WriteLine($"MaximumLength     : {data.MaxLength}");
         }
     }
 
-    private static string FormatStructuralSearchStage(Utf8StructuralSearchStage stage)
+    private static string DescribeStructuralSource(Utf8StructuralSearchPlan plan)
     {
-        return stage.Kind switch
+        ref readonly var data = ref plan.Payload;
+        return data.YieldKind switch
         {
-            Utf8StructuralSearchStageKind.FindLiteralFamily => $"FindLiteralFamily {stage.Searcher.Kind}",
-            Utf8StructuralSearchStageKind.FindWindow => "FindWindow",
-            Utf8StructuralSearchStageKind.TransformCandidateStart => $"TransformStart {stage.StartTransform.Kind}",
-            Utf8StructuralSearchStageKind.RequireWithinByteSpan => $"RequireWithinByteSpan {stage.MaxSpan}",
-            Utf8StructuralSearchStageKind.RequireWithinLineSpan => $"RequireWithinLineSpan {stage.MaxLines}",
-            Utf8StructuralSearchStageKind.RequireLeadingBoundary => $"RequireLeadingBoundary {stage.BoundaryRequirement}",
-            Utf8StructuralSearchStageKind.RequireTrailingBoundary => $"RequireTrailingBoundary {stage.BoundaryRequirement}",
-            Utf8StructuralSearchStageKind.RequireTrailingLiteral => $"RequireTrailingLiteral \"{Encoding.UTF8.GetString(stage.LiteralUtf8 ?? [])}\"",
-            Utf8StructuralSearchStageKind.RequireExactLength => $"RequireExactLength {stage.MinLength}",
-            Utf8StructuralSearchStageKind.BoundMaxLength => $"BoundMaxLength {stage.MaxSpan}",
-            Utf8StructuralSearchStageKind.YieldStart => "YieldStart",
-            Utf8StructuralSearchStageKind.YieldWindow => "YieldWindow",
-            _ => stage.Kind.ToString(),
+            Utf8StructuralSearchYieldKind.Window => $"{data.WindowSearch.LeadingSearcher.Kind}, {data.WindowSearch.TrailingSearcher.Kind}",
+            Utf8StructuralSearchYieldKind.Start when data.Searcher.HasValue => data.Searcher.Kind.ToString(),
+            Utf8StructuralSearchYieldKind.Start => $"{data.FixedDistanceSets!.Length} fixed-distance sets",
+            _ => "None",
         };
     }
 

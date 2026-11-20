@@ -65,10 +65,9 @@ public sealed class Utf8SearchPlanTests
         Assert.True(regex.Inspection.StructuralSearchPlan.HasValue);
         Assert.True(regex.Inspection.SearchPlan.HasStructuralCandidates);
         Assert.Equal(Utf8StructuralSearchYieldKind.Start, regex.Inspection.StructuralSearchPlan.YieldKind);
-        Assert.Equal(Utf8StructuralSearchStageKind.FindLiteralFamily, regex.Inspection.StructuralSearchPlan.Stages![0].Kind);
+        Assert.True(regex.Inspection.StructuralSearchPlan.Payload.Searcher.HasValue);
         Assert.Equal(1, regex.Count("a😀b"u8));
         Assert.Equal(6, (regex.Match("a😀b"u8).EndOffsetInBytes - regex.Match("a😀b"u8).StartOffsetInBytes));
-        Assert.Equal(Utf8StructuralSearchStageKind.YieldStart, regex.Inspection.StructuralSearchPlan.Stages![^1].Kind);
     }
 
     [Fact]
@@ -174,14 +173,8 @@ public sealed class Utf8SearchPlanTests
 
         Assert.True(plan.StructuralSearchPlan.HasValue);
         Assert.Equal(Utf8StructuralSearchYieldKind.Start, plan.StructuralSearchPlan.YieldKind);
-        Assert.Contains(
-            plan.StructuralSearchPlan.Stages!,
-            static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireLeadingBoundary &&
-                            stage.BoundaryRequirement == Utf8BoundaryRequirement.Boundary);
-        Assert.Contains(
-            plan.StructuralSearchPlan.Stages!,
-            static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireTrailingBoundary &&
-                            stage.BoundaryRequirement == Utf8BoundaryRequirement.Boundary);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, plan.StructuralSearchPlan.Payload.LeadingBoundary);
+        Assert.Equal(Utf8BoundaryRequirement.Boundary, plan.StructuralSearchPlan.Payload.TrailingBoundary);
     }
 
     [Fact]
@@ -472,9 +465,8 @@ public sealed class Utf8SearchPlanTests
         Assert.True(analysis.SearchPlan.HasFallbackCandidates);
         Assert.True(analysis.SearchPlan.StructuralSearchPlan.HasValue);
         Assert.Equal(Utf8StructuralSearchYieldKind.Start, analysis.SearchPlan.StructuralSearchPlan.YieldKind);
-        Assert.Equal(Utf8StructuralSearchStageKind.FindAscii, analysis.SearchPlan.StructuralSearchPlan.Stages![0].Kind);
-        Assert.Contains(analysis.SearchPlan.StructuralSearchPlan.Stages!, static stage => stage.Kind == Utf8StructuralSearchStageKind.TransformCandidateStart);
-        Assert.Equal(Utf8StructuralSearchStageKind.YieldStart, analysis.SearchPlan.StructuralSearchPlan.Stages![^1].Kind);
+        Assert.NotEmpty(analysis.SearchPlan.StructuralSearchPlan.Payload.FixedDistanceSets!);
+        Assert.True(analysis.SearchPlan.StructuralSearchPlan.Payload.StartTransform.HasValue);
         Assert.Equal(Utf8FallbackStartTransformKind.TrimLeadingAsciiWhitespace, analysis.SearchPlan.FallbackStartTransform.Kind);
         Assert.NotNull(analysis.SearchPlan.FixedDistanceSets);
         Assert.True(analysis.SearchPlan.FixedDistanceSets!.Length >= 6);
@@ -563,7 +555,7 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void StructuralStartPlanIncludesTrailingLiteralStage()
+    public void StructuralStartPlanKeepsTrailingLiteral()
     {
         var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
                                               Utf8SearchKind.ExactAsciiLiteral,
@@ -574,10 +566,7 @@ public sealed class Utf8SearchPlanTests
                                                   TrailingLiteralUtf8 = Encoding.UTF8.GetBytes("bar")
                                               }));
 
-        Assert.Contains(
-            plan.StructuralSearchPlan.Stages!,
-            static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireTrailingLiteral &&
-                            stage.LiteralUtf8 is { Length: 3 });
+        Assert.True("bar"u8.SequenceEqual(plan.StructuralSearchPlan.Payload.TrailingLiteral));
     }
 
     [Fact]
@@ -600,7 +589,7 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void StructuralStartPlanIncludesExactLengthStage()
+    public void StructuralStartPlanKeepsExactLength()
     {
         var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
                                               Utf8SearchKind.ExactAsciiLiteral,
@@ -612,11 +601,8 @@ public sealed class Utf8SearchPlanTests
                                               }));
 
         Assert.True(plan.StructuralSearchPlan.HasValue);
-        Assert.True(plan.StructuralSearchPlan.ProducesBoundedCandidates);
-        Assert.Contains(
-            plan.StructuralSearchPlan.Stages!,
-            static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireExactLength &&
-                            stage.MinLength == 5);
+        Assert.True(plan.StructuralSearchPlan.RequiresCandidateEndCoverage);
+        Assert.Equal(5, plan.StructuralSearchPlan.Payload.ExactLength);
     }
 
     [Fact]
@@ -639,7 +625,7 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void StructuralStartPlanIncludesMaxLengthBoundStage()
+    public void StructuralStartPlanKeepsMaxLength()
     {
         var plan = Utf8SearchPlan.Prepare(Utf8SearchFacts.Create(
                                               Utf8SearchKind.ExactAsciiLiteral,
@@ -651,12 +637,8 @@ public sealed class Utf8SearchPlanTests
                                               }));
 
         Assert.True(plan.StructuralSearchPlan.HasValue);
-        Assert.True(plan.StructuralSearchPlan.ProducesBoundedCandidates);
         Assert.False(plan.StructuralSearchPlan.RequiresCandidateEndCoverage);
-        Assert.Contains(
-            plan.StructuralSearchPlan.Stages!,
-            static stage => stage.Kind == Utf8StructuralSearchStageKind.BoundMaxLength &&
-                            stage.MaxSpan == 6);
+        Assert.Equal(6, plan.StructuralSearchPlan.Payload.MaxLength);
     }
 
     [Fact]
@@ -679,7 +661,7 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void StructuralWindowPlanIncludesExplicitSpanStages()
+    public void StructuralWindowPlanKeepsByteAndLineSpans()
     {
         var windowSearch = new PreparedWindowSearch(
             new PreparedSearcher(new PreparedMultiLiteralSearch([Encoding.UTF8.GetBytes("using var")], ignoreCase: false)),
@@ -698,9 +680,8 @@ public sealed class Utf8SearchPlanTests
 
         Assert.True(plan.HasValue);
         Assert.Equal(Utf8StructuralSearchYieldKind.Window, plan.YieldKind);
-        Assert.Contains(plan.Stages!, static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireWithinByteSpan && stage.MaxSpan == 32);
-        Assert.Contains(plan.Stages!, static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireWithinLineSpan && stage.MaxLines == 1);
-        Assert.Equal(Utf8StructuralSearchStageKind.YieldWindow, plan.Stages![^1].Kind);
+        Assert.Equal(32, plan.Payload.WindowSearch.MaxGap);
+        Assert.Equal(1, plan.Payload.MaxLines);
     }
 
     [Fact]
