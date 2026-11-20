@@ -62,11 +62,15 @@ internal static class Utf8SliceScalarClasses
     {
         breach = Utf8ExecutionLimitKind.None;
         if (table.ScalarPredicate is { } predicate) return predicate(scalar.Value) != negated;
-        var category = Rune.GetUnicodeCategory(scalar);
-        var maskHit = fold && category is UnicodeCategory.LowercaseLetter or UnicodeCategory.UppercaseLetter or UnicodeCategory.TitlecaseLetter
-            ? (table.Mask & Utf8SliceCategories.CasedLetterMask) != 0
-            : ((table.Mask >> (int)category) & 1u) != 0;
-        if (maskHit) return !negated;
+        var mask = table.Mask;
+        if (mask != 0)
+        {
+            var category = Rune.GetUnicodeCategory(scalar);
+            var maskHit = fold && category is UnicodeCategory.LowercaseLetter or UnicodeCategory.UppercaseLetter or UnicodeCategory.TitlecaseLetter
+                ? (mask & Utf8SliceCategories.CasedLetterMask) != 0
+                : ((mask >> (int)category) & 1u) != 0;
+            if (maskHit) return !negated;
+        }
         var rangeHit = Utf8SliceCaseEquivalences.RangesHit(table.Ranges, scalar.Value, ref invocation, out breach);
         if (breach != Utf8ExecutionLimitKind.None) return false;
         return rangeHit != negated || fold && table.Ranges.Length != 0 &&
