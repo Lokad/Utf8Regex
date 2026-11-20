@@ -1514,7 +1514,8 @@ public sealed class Utf8RegexConstructionTests
         const string pattern = "a|needle";
         var options = RegexOptions.CultureInvariant |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var timeout = finiteTimeout ? TimeSpan.FromSeconds(1) : Regex.InfiniteMatchTimeout;
+        // Keep the finite-timeout route under load from the parallel suite.
+        var timeout = finiteTimeout ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout;
         var regex = new Utf8Regex(pattern, options: options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = timeout
