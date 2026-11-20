@@ -1266,10 +1266,17 @@ internal static class Pcre2BacktrackingRunner
                         if (frames.Count != 0)
                             RecordSubroutineUndo(Pcre2SubroutineCallFrame.UndoPush,
                                 ref subroutineCallMutations, ref budget);
-                        for (var activeRepeatId = 0; activeRepeatId < counts.Length; activeRepeatId++)
+                        for (var resetStart = 0; resetStart < counts.Length;)
                         {
-                            if (counts[activeRepeatId] >= 0)
+                            // The call's instruction step admits the first
+                            // block. Even unused repeat slots cost scan work.
+                            if (resetStart != 0) budget.ChargeWorkspaceStep();
+                            var block = counts.Slice(resetStart, Math.Min(64, counts.Length - resetStart));
+                            var firstUsed = block.IndexOfAnyExcept(-1);
+                            for (var offset = firstUsed; offset >= 0 && offset < block.Length; offset++)
                             {
+                                if (block[offset] < 0) continue;
+                                var activeRepeatId = resetStart + offset;
                                 SetRepeat(
                                     activeRepeatId,
                                     -1,
@@ -1279,6 +1286,7 @@ internal static class Pcre2BacktrackingRunner
                                     ref repeatMutations,
                                     ref budget);
                             }
+                            resetStart += block.Length;
                         }
                         instructionIndex = subroutineTarget;
                         continue;

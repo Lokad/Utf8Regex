@@ -331,10 +331,11 @@ accepts a positive value or null for unlimited. Null projects to zero.
 The limits bound modeled capacities. Borrowed input, caller destinations, host
 retention and decoding, standalone metadata queries, and incidental allocations
 fall outside the execution limits. Fixed values and inline partial results can
-require no result payload. Which storage and work an operation needs depends on
-the pattern, route and library version. Exact thresholds can differ from native
-PCRE2. Failed admission leaves existing reservations unchanged. Sticky denials
-remain in effect across copies of a span enumerator.
+require no result payload. Scanning repeat state at subroutine entry consumes
+work steps even when the slots are inactive. Which storage and work an operation
+needs depends on the pattern, route and library version. Exact thresholds can
+differ from native PCRE2. Failed admission leaves existing reservations unchanged.
+Sticky denials remain in effect across copies of a span enumerator.
 
 ### Program and working allowances
 

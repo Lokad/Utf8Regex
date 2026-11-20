@@ -137,4 +137,23 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
             Assert.True(regex.IsMatch(input));
         });
     }
+
+    [Fact]
+    public void RecursiveCallsChargeForScanningUnusedRepeatSlots()
+    {
+        const string prefix = @"\A(?:(?<r>x(?&r)?y)|z";
+        const string repeat = "(?:ab){1,3}w";
+        const string suffix = @")\z";
+        const string input = "xxxxxxxxxxyyyyyyyyyy";
+        var pattern = prefix + string.Concat(Enumerable.Repeat(repeat, 512)) + suffix;
+        var policy = new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 100 } };
+        var bytes = Encoding.UTF8.GetBytes(input);
+
+        using var small = new Utf8Pcre2Regex(prefix + repeat + suffix, policy: policy);
+        using var large = new Utf8Pcre2Regex(pattern, policy: policy);
+        using var unlimited = new Utf8Pcre2Regex(pattern);
+        Assert.True(small.IsMatch(bytes));
+        Assert.True(unlimited.IsMatch(bytes));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => large.IsMatch(bytes)).ErrorKind);
+    }
 }
