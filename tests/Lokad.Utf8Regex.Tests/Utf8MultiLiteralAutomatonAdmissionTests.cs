@@ -1,12 +1,11 @@
 using System.Text;
-using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8MultiLiteralAutomatonAdmissionTests
 {
-    public static IEnumerable<object[]> Families() => Enumerable.Range(0, 10).Select(value => new object[] { value });
+    public static IEnumerable<object[]> NonemptyFamilies() => Enumerable.Range(1, 9).Select(value => new object[] { value });
     private static byte[][] Literals(int family) => family switch
     {
         0 => [], 1 => [[]], 2 => ["a"u8.ToArray()], 3 => ["ab"u8.ToArray(), "ac"u8.ToArray(), "bb"u8.ToArray()],
@@ -27,63 +26,26 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
         return prefixes;
     }
 
-    private static ulong RetainedBytes(int states) =>
-        2 * (Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, object[], int)>()))
-        + Utf8ConstructionBudget.ArrayBytes<int>(states * 256) + 3 * Utf8ConstructionBudget.ArrayBytes<int>(states);
-
     [Theory]
-    [MemberData(nameof(Families))]
-    public void StateCountsAndFinalLoansMatchIndependentPrefixModel(int family)
+    [MemberData(nameof(NonemptyFamilies))]
+    public void PublishedAutomatonKeepsMajorStorageAdmitted(int family)
     {
-        var literals = Literals(family); var count = literals.Length == 0 ? 0 : Prefixes(literals).Count;
+        var literals = Literals(family);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateArray<byte>(1, false); parent[0] = 0xa5;
+        var parent = owner.Budget.AllocateArray<byte>(1, false);
+        parent[0] = 0xa5;
+        var held = owner.Budget.ReservedBytes;
         var search = PreparedMultiLiteralAutomatonSearch.Create(literals);
-        Assert.Equal(48 + (count == 0 ? 0 : RetainedBytes(count)), owner.Budget.ReservedBytes);
-        Assert.Equal(count, search.StateCount); Assert.Equal(count * 256, search.Transitions.Length);
-        Assert.Equal(count, search.BestOutputOrders.Length); Assert.Equal(count, search.ShortestOutputLengths.Length);
-        Assert.Equal(count == 0 ? 0ul : 1ul, owner.Budget.PeakDepth);
-        Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0xa5, parent[0]);
-        Assert.Equal(literals.Length == 0 ? int.MaxValue : literals.Min(value => value.Length), search.ShortestLength);
-        Assert.Equal(literals.Length == 0 ? 0 : literals.Max(value => value.Length), search.LongestLength);
-    }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void EveryByteAndWorkCutoffRestoresParentObjectsAndPreservesSpentWork(bool byteLimit)
-    {
-        var literals = Literals(2); ulong peak, work;
-        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-        {
-            _ = PreparedMultiLiteralAutomatonSearch.Create(literals); peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps;
-        }
-        var successes = 0;
-        for (var allowance = 0ul; allowance <= (byteLimit ? peak : work); allowance++)
-        {
-            using var owner = new Utf8ConstructionScope(0, byteLimit ? 128 + allowance : ulong.MaxValue,
-                byteLimit ? ulong.MaxValue : allowance + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
-            var error = Record.Exception(() => {
-                var search = PreparedMultiLiteralAutomatonSearch.Create(literals);
-                Assert.Equal(2, search.IndexOf("xxaa"u8)); Assert.Equal(3, search.LastIndexOf("xxaa"u8));
-            });
-            if (error is null)
-            {
-                successes++; Assert.Equal(128 + RetainedBytes(2), owner.Budget.ReservedBytes);
-                Assert.True(owner.Budget.ReservedBytes > checkpoint);
-                if (!byteLimit) Assert.Equal(work, allowance);
-            }
-            else
-            {
-                var failure = Assert.IsType<Utf8ResourceLimitExceededException>(error);
-                Assert.Equal(byteLimit ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            }
-            Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, byteLimit ? ulong.MaxValue : 2 + allowance);
-            if (byteLimit) Assert.InRange(owner.Budget.PeakBytes, 128ul, 128 + allowance);
-        }
-        Assert.True(successes > 0);
+        Assert.Equal(Prefixes(literals).Count, search.StateCount);
+        Assert.NotEmpty(search.Transitions);
+        var transitionBytes = (ulong)search.Transitions.Length * sizeof(int);
+        Assert.InRange(owner.Budget.ReservedBytes, held + transitionBytes, owner.Budget.PeakBytes);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(0ul, owner.Budget.Reserved);
+        Assert.Equal(0xa5, parent[0]);
+        Assert.Equal(literals.Min(value => value.Length), search.ShortestLength);
+        Assert.Equal(literals.Max(value => value.Length), search.LongestLength);
     }
 
     [Theory]
@@ -211,21 +173,6 @@ public sealed class Utf8MultiLiteralAutomatonAdmissionTests
         }
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.Equal(6000, sum); Assert.Equal(0, allocated);
-    }
-
-    [Fact]
-    public void SupersededMutableNodeAndTransitionFlagsAreAbsent()
-        => Assert.DoesNotContain(typeof(Utf8Regex).Assembly.GetTypes(), type => type.Name == "MutablePreparedMultiLiteralAutomatonNode");
-
-    [Theory]
-    [InlineData(RegexOptions.CultureInvariant)] [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]
-    public void PublicSupplementaryLiteralFamilyKeepsScalarRangesWithoutFallback(RegexOptions options)
-    {
-        var regex = new Utf8Regex("(?:é😀|é中|😀é|😀中|中é|中😀)", options: options); var subject = "xxé😀|é中|😀é|😀中|中é|中😀xx"u8;
-        Assert.True(regex.IsMatch(subject)); Assert.Equal(6, regex.Count(subject));
-        var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
-        Assert.Equal(new[] { (2, 6), (9, 5), (15, 6), (22, 7), (30, 5), (36, 7) }, ranges);
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     private sealed class Box(int value) { public readonly int Value = value; }

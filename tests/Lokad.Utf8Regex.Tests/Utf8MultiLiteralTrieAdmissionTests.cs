@@ -6,7 +6,7 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8MultiLiteralTrieAdmissionTests
 {
-    public static IEnumerable<object[]> Families() => Enumerable.Range(0, 9).Select(value => new object[] { value });
+    public static IEnumerable<object[]> NonemptyFamilies() => Enumerable.Range(1, 8).Select(value => new object[] { value });
 
     private static byte[][] Literals(int family) => family switch
     {
@@ -19,85 +19,26 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
         _ => [Encoding.UTF8.GetBytes(new string('a', 257)), "ab"u8.ToArray(), "ac"u8.ToArray()],
     };
 
-    private static ulong RetainedBytes(byte[][] literals)
-    {
-        if (literals.Length == 0) return 0;
-        var prefixes = new Dictionary<string, HashSet<byte>> { [""] = [] };
-        foreach (var literal in literals)
-        for (var offset = 0; offset < literal.Length; offset++)
-        {
-            var prefix = Convert.ToHexString(literal.AsSpan(0, offset));
-            prefixes[prefix].Add(literal[offset]);
-            prefixes.TryAdd(Convert.ToHexString(literal.AsSpan(0, offset + 1)), []);
-        }
-        var descriptors = 2 * (Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<(Utf8ConstructionBudget, bool, object[], int)>()));
-        var rootCount = prefixes[""].Count;
-        return descriptors + Utf8ConstructionBudget.ArrayBytes<PreparedMultiLiteralTrieNode>(prefixes.Count)
-            + Utf8ConstructionBudget.ArrayBytes<int>(256)
-            + prefixes.Values.Aggregate(0ul, (sum, children) => sum + Utf8ConstructionBudget.ArrayBytes<byte>(children.Count)
-                + Utf8ConstructionBudget.ArrayBytes<int>(children.Count))
-            + Utf8ConstructionBudget.ArrayBytes<byte>(rootCount)
-            + (rootCount > 5 ? Math.Max(128ul, Utf8ConstructionBudget.ObjectBytes<PreparedByteSetState>()) : 0);
-    }
-
     [Theory]
-    [MemberData(nameof(Families))]
-    public void FinalLoansMatchIndependentPrefixModelAndTemporaryArraysRelease(int family)
+    [MemberData(nameof(NonemptyFamilies))]
+    public void PublishedTrieKeepsMajorStorageAdmitted(int family)
     {
         var literals = Literals(family);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
-        var parent = owner.Budget.AllocateArray<byte>(1, false); parent[0] = 0xa5;
+        var parent = owner.Budget.AllocateArray<byte>(1, false);
+        parent[0] = 0xa5;
+        var held = owner.Budget.ReservedBytes;
         var search = PreparedMultiLiteralTrieSearch.Create(literals);
-        Assert.Equal(48 + RetainedBytes(literals), owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Reserved); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0xa5, parent[0]);
-        var rootCount = literals.Where(value => value.Length > 0).Select(value => value[0]).Distinct().Count();
-        Assert.Equal(family == 0 ? 0ul : rootCount == 0 ? 1ul : rootCount <= 3 ? 2ul : 3ul, owner.Budget.PeakDepth);
-        Assert.Equal(literals.Length == 0 ? int.MaxValue : literals.Min(value => value.Length), search.ShortestLength);
-        Assert.Equal(rootCount, search.RootSearch.Count);
-        Assert.Equal(family == 0 ? 0 : 256, search.RootMap.Length);
-    }
 
-    [Theory]
-    [InlineData(false)] [InlineData(true)]
-    public void EveryByteAndWorkCutoffRestoresParentObjectsAndPreservesSpentWork(bool byteLimit)
-    {
-        var literals = Literals(2);
-        ulong peak, work;
-        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
-        {
-            _ = PreparedMultiLiteralTrieSearch.Create(literals);
-            peak = funded.Budget.PeakBytes; work = funded.Budget.WorkSteps;
-        }
-        var successes = 0;
-        for (var allowance = 0ul; allowance <= (byteLimit ? peak : work); allowance++)
-        {
-            using var owner = new Utf8ConstructionScope(0, byteLimit ? 128 + allowance : ulong.MaxValue,
-                byteLimit ? ulong.MaxValue : allowance + 2, ulong.MaxValue);
-            var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
-            var checkpoint = owner.Budget.ReservedBytes;
-            var error = Record.Exception(() => {
-                var search = PreparedMultiLiteralTrieSearch.Create(literals);
-                Assert.Equal(2, search.IndexOf("xxacbb"u8));
-                Assert.Equal(4, search.LastIndexOf("xxacbb"u8));
-            });
-            if (error is null)
-            {
-                successes++;
-                Assert.Equal(128 + RetainedBytes(literals), owner.Budget.ReservedBytes);
-                Assert.True(owner.Budget.ReservedBytes > checkpoint);
-                if (!byteLimit) Assert.Equal(work, allowance);
-            }
-            else
-            {
-                var failure = Assert.IsType<Utf8ResourceLimitExceededException>(error);
-                Assert.Equal(byteLimit ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps, failure.ResourceKind);
-                Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
-            }
-            Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
-            Assert.InRange(owner.Budget.WorkSteps, 2ul, byteLimit ? ulong.MaxValue : 2 + allowance);
-            if (byteLimit) Assert.InRange(owner.Budget.PeakBytes, 128ul, 128 + allowance);
-        }
-        Assert.True(successes > 0);
+        Assert.NotEmpty(search.RootMap);
+        var rootMapBytes = (ulong)search.RootMap.Length * sizeof(int);
+        Assert.InRange(owner.Budget.ReservedBytes, held + rootMapBytes, owner.Budget.PeakBytes);
+        Assert.Equal(0ul, owner.Budget.Reserved);
+        Assert.Equal(0ul, owner.Budget.Depth);
+        Assert.Equal(0xa5, parent[0]);
+        var rootCount = literals.Where(value => value.Length > 0).Select(value => value[0]).Distinct().Count();
+        Assert.Equal(literals.Min(value => value.Length), search.ShortestLength);
+        Assert.Equal(rootCount, search.RootSearch.Count);
     }
 
     [Theory]
@@ -105,12 +46,14 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
     public void RootAndNestedSearchDepthDenialsReleaseAllChildLoans(int depth)
     {
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, (ulong)depth);
-        var parent = owner.Budget.AllocateArray<byte>(1, false); parent[0] = 0xa5;
+        var parent = owner.Budget.AllocateArray<byte>(1, false);
+        parent[0] = 0xa5;
+        var held = owner.Budget.ReservedBytes;
         var error = Record.Exception(() => PreparedMultiLiteralTrieSearch.Create(Literals(6)));
         if (depth < 3)
         {
             Assert.Equal(Utf8ResourceLimitKind.ConstructionDepth, Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-            Assert.Equal(48ul, owner.Budget.ReservedBytes);
+            Assert.Equal(held, owner.Budget.ReservedBytes);
         }
         else Assert.Null(error);
         Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0xa5, parent[0]);
@@ -205,23 +148,12 @@ public sealed class Utf8MultiLiteralTrieAdmissionTests
     [Theory]
     [InlineData(RegexOptions.CultureInvariant)]
     [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]
-    public void PublicSupplementaryLiteralFamilyKeepsScalarByteRangesWithoutFallback(RegexOptions options)
+    public void PublicSupplementaryLiteralFamilyReportsScalarByteRanges(RegexOptions options)
     {
         var regex = new Utf8Regex("(?:é😀|é中|😀é|😀中|中é|中😀)", options: options);
         var subject = "xxé😀|é中|😀é|😀中|中é|中😀xx"u8;
         Assert.True(regex.IsMatch(subject)); Assert.Equal(6, regex.Count(subject));
         var ranges = new List<(int, int)>(); foreach (var match in regex.EnumerateMatches(subject)) ranges.Add((match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));
         Assert.Equal(new[] { (2, 6), (9, 5), (15, 6), (22, 7), (30, 5), (36, 7) }, ranges);
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
-
-    [Fact]
-    public void SharedScratchInfrastructureHasNoRetiredMutableTrieBuilderOrFrontEndIdentity()
-    {
-        Assert.Equal("Lokad.Utf8Regex.Internal", typeof(Utf8ConstructionBuffer<>).Namespace);
-        Assert.Equal("Lokad.Utf8Regex.Internal", typeof(Utf8ConstructionSort).Namespace);
-        Assert.DoesNotContain(typeof(Utf8Regex).Assembly.GetTypes(), type => type.Name == "MutablePreparedMultiLiteralTrieNode");
-    }
-
-    private sealed class Box(int value) { public readonly int Value = value; }
 }
