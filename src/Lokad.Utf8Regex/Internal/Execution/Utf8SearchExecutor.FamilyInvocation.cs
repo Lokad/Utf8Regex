@@ -237,6 +237,7 @@ internal static partial class Utf8SearchExecutor
         var matchBoundary = reverse ? leadingBoundary : Utf8BoundaryRequirement.None;
         var confirmAfterComparison = confirm && (matchBoundary != Utf8BoundaryRequirement.None ||
             trailingBoundary != Utf8BoundaryRequirement.None || trailingLiteral is { Length: > 0 });
+        var boundedExactHeads = !folded && !reverse && literals.Length <= 8;
         var low = start;
         var high = end - 1;
         if (literals.Length > 0)
@@ -356,16 +357,18 @@ internal static partial class Utf8SearchExecutor
                     }
                 }
 
+                var head = boundedExactHeads ? input[candidateByte] : -1;
                 for (var id = 0; id < literals.Length; id++)
                 {
+                    var literal = literals[id];
+                    // The charged candidate search also covers up to eight
+                    // exact head checks. Matching heads keep branch admission.
+                    if (boundedExactHeads && head != literal[0]) continue;
                     breach = invocation.TryChargeInputStep();
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
-                    var literal = literals[id];
                     var candidate = reverse && confirm ? candidateByte + 1 - literal.Length : candidateByte;
                     if (candidate < start || candidate > end - literal.Length) continue;
-                    // The branch charge covers this rejection; a different
-                    // first byte needs no bounded full-literal comparison.
-                    if (!folded && input[candidate] != literal[0]) continue;
+                    if (!boundedExactHeads && !folded && input[candidate] != literal[0]) continue;
                     breach = TryCompareLiteral(input.Slice(candidate, literal.Length), literal, folded,
                         ref invocation, out var equal);
                     if (breach != Utf8ExecutionLimitKind.None) return breach;

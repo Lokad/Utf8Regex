@@ -88,6 +88,27 @@ public sealed class Utf8NativeFamilyInvocationTests
     }
 
     [Theory]
+    [InlineData(8, true)]
+    [InlineData(9, false)]
+    public void ExactHeadChecksUseOneCandidateChargeOnlyForSmallFamilies(int branches, bool admits)
+    {
+        var literals = Enumerable.Range(0, branches - 1).Select(id => Encoding.ASCII.GetBytes($"x{id}"))
+            .Append("target"u8.ToArray()).ToArray();
+        var plan = Plan(literals, trailing: "!"u8.ToArray());
+        var input = "target!"u8;
+        var invocation = new Utf8SliceInvocation(new(8, 1, 7), Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(7));
+
+        var breach = Utf8SearchExecutor.TryFindLiteralFamily(plan, input, 0, input.Length, false,
+            ref invocation, out var match, out var found);
+
+        Assert.Equal(admits ? Utf8ExecutionLimitKind.None : Utf8ExecutionLimitKind.WorkSteps, breach);
+        Assert.Equal(admits, found);
+        if (found) Assert.Equal((0, 6, branches - 1), (match.Index, match.Length, match.LiteralId));
+        Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]
