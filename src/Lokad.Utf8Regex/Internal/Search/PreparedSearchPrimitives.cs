@@ -29,6 +29,7 @@ internal readonly struct PreparedByteSearch
     public int Count => _values?.Length ?? 0;
 
     public ReadOnlySpan<byte> Values => _values ?? [];
+    public bool Contains(byte value) => ByteSet is { } set ? set.Contains(value) : Values.Contains(value);
 
     private PreparedByteSet? ByteSet { get; }
 

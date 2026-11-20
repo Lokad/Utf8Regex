@@ -1017,6 +1017,14 @@ internal static partial class Utf8SliceRunner
             }
             return false;
         }
+
+        static bool TryAddStartByte(byte first, Span<byte> starts, ref int count)
+        {
+            if (starts[..count].Contains(first)) return true;
+            if (count == starts.Length) return false;
+            starts[count++] = first;
+            return true;
+        }
     }
 
     private static Utf8ExecutionLimitKind FindPreviousRepeatStart(ReadOnlySpan<byte> input, int lower,

@@ -37,8 +37,8 @@ internal static partial class Utf8SliceRunner
             {
                 // Bit zero seeds the next start. Other live states can consume
                 // bytes that the root proof excludes, so they must advance first.
-                if (states == 1 && starts.Present && position < input.Length &&
-                    !IsRegularStartByte(input[position], starts))
+                if (states == 1 && starts.Count != 0 && position < input.Length &&
+                    !starts.Contains(input[position]))
                 {
                     breach = TrySeekRegularStart(input, ref position, starts, ref invocation);
                     if (breach != Utf8ExecutionLimitKind.None || position == input.Length) break;

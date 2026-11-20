@@ -29,10 +29,11 @@ internal sealed class Utf8NonBacktrackingSearchState
 
     internal bool IsWindow => _windowEnd >= 0;
 
-    internal static int[] BuildEpsilonOrder(Utf8SliceInstruction[] instructions, out ulong[] ancestors, out ulong[] orderedClosures)
+    internal static int[] BuildEpsilonOrder(Utf8SliceInstruction[] instructions, out ulong[] ancestors,
+        out (ulong[] Closures, byte[] Leaves, uint Conditions) ordered)
     {
         ancestors = [];
-        orderedClosures = [];
+        ordered = ([], [], 0);
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
         var colors = budget.AllocateArray<byte>(instructions.Length, false);
@@ -81,7 +82,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             // remains a runtime decision; its unconditional ancestors can fold.
             if (instructions.Length <= 64)
             {
-                orderedClosures = Utf8SliceRunner.BuildOrderedRegularClosures(instructions, order, budget);
+                ordered = Utf8SliceRunner.BuildOrderedRegularClosures(instructions, order, budget);
                 ancestors = budget.AllocateArray<ulong>(instructions.Length, false);
                 budget.ChargeWork(3UL * (ulong)instructions.Length);
                 for (var pc = 0; pc < instructions.Length; pc++) ancestors[pc] = 1UL << pc;
@@ -352,9 +353,9 @@ internal sealed class Utf8NonBacktrackingSearchState
             if (window is null || position >= window._windowEnd && window._windowEnd < input.Length)
             {
                 var starts = program.NonBacktrackingOrderedStartBytes;
-                if (starts.Present)
+                if (starts.Count != 0)
                 {
-                    if (position < input.Length && !Utf8SliceRunner.IsRegularStartByte(input[position], starts))
+                    if (position < input.Length && !starts.Contains(input[position]))
                     {
                         var seek = Utf8SliceRunner.TrySeekRegularStart(input, ref position, starts, ref invocation);
                         if (seek != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, seek);
@@ -368,13 +369,13 @@ internal sealed class Utf8NonBacktrackingSearchState
                 }
                 var commit = AlignedEnd(input, position, windowBytes);
                 var startEnd = commit;
-                if (starts.Present)
+                if (starts.Count != 0)
                 {
                     var scan = invocation.TryChargeInputStep();
                     if (scan != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, scan);
                     // The first byte at position is a candidate. Stop admitting
                     // starts after the last candidate, but skip the whole window.
-                    var last = input[position..commit].LastIndexOfAny(starts.First, starts.Second, starts.Third);
+                    var last = starts.LastIndexOf(input[position..commit]);
                     startEnd = AlignedEnd(input, position + last, 1);
                 }
                 // A forward-only path can visit each consuming instruction at most once.

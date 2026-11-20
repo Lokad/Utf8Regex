@@ -10,7 +10,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
     [InlineData(false)] [InlineData(true)]
     public void WorkspacePeakIncludesEveryCompleteStateVector(bool captured)
     {
-        var regex = new Utf8Regex(captured ? "(?<x>.)+b" : "^.{10}b", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex(captured ? "(?<x>.)+b" : "^.{15}b", options: RegexOptions.NonBacktracking | RegexOptions.CultureInvariant);
         var program = regex.Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
         var states = program.Instructions.Length;
         var registers = 2 * program.GroupCount + program.NonBacktrackingCaptureOpeningCount;
@@ -19,7 +19,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
             + 2 * Extent(registers, 4) + Extent(states, 1);
         var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(invocation.Ledger.TryReserve(13));
-        var input = captured ? "😀😀b"u8 : "😀abcdefghib"u8;
+        var input = captured ? "😀😀b"u8 : "😀abcdefghijklmnb"u8;
         var outcome = Utf8SliceRunner.TryFindFirst(program, input, 0,
             new int[program.GroupCount], new int[program.GroupCount], false, ref invocation);
         Assert.True(outcome.Found);
@@ -41,6 +41,23 @@ public sealed class Utf8ScalarNonBacktrackingTests
         Assert.Equal((4, expectedEnd), (range.StartOffsetInBytes, range.EndOffsetInBytes));
         Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
         Assert.Equal(range, regex.Match(input, 4, captures, endOffsetInBytes: 7));
+    }
+
+    [Theory]
+    [InlineData("a{0,13}b", 13, true)]
+    [InlineData("a{0,14}b", 14, false)]
+    public void OverlappingStartsKeepPriorityAtTheOrderedLeafCapacity(string pattern, int maximum, bool compact)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        Assert.Equal(compact, program.NonBacktrackingOrderedClosures.Length != 0);
+        var input = Encoding.UTF8.GetBytes(new string('a', 96) + "b");
+        var expected = new Utf8CaptureRange(96 - maximum, 97);
+        Assert.Equal(expected, regex.Match(input));
+        using var cursor = regex.CreateMatchCursor(input);
+        Assert.True(cursor.MoveNext(out var result));
+        Assert.Equal(expected, result.Value);
+        Assert.False(cursor.MoveNext(out _));
     }
 
     [Theory]
@@ -76,6 +93,7 @@ public sealed class Utf8ScalarNonBacktrackingTests
     [Theory]
     [InlineData("[α-ω][α-ω]|[ࠀ-ࠇ][ࠀ-ࠇ]", "Ͽ", "λω")]
     [InlineData("[😀-😇][😀-😇]|[ࠀ-ࠇ][ࠀ-ࠇ]", "😈", "😀😇")]
+    [InlineData(@"\b\d{1,2}q\b", "é", "𝟙q")]
     public void CompactOrderedRangeSkipsToPossibleUnicodeStarters(string pattern, string near, string value)
     {
         var prefix = new string('!', 6143) + near + near + new string('!', 2048);
