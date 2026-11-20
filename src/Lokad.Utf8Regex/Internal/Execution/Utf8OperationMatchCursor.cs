@@ -431,30 +431,6 @@ internal ref partial struct Utf8OperationMatchCursor
         };
     }
 
-    internal bool TryMoveNextSmallAsciiLiteralFamilyCoordinates(out int matchIndex, out int matchLength)
-    {
-        if (_mode != EnumeratorMode.SmallAsciiLiteralFamily)
-        {
-            matchIndex = -1;
-            matchLength = 0;
-            return false;
-        }
-
-        var nextStart = _consumed;
-        if (!_smallAsciiLiteralFamilySearch.TryFindNextNonOverlapping(
-                _input,
-                ref nextStart,
-                out matchIndex,
-                out matchLength))
-        {
-            return false;
-        }
-
-        _consumed = nextStart;
-        _remaining = _input[nextStart..];
-        return true;
-    }
-
     public Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, byte[] literal, Utf8ExecutionDeadline budget)
     {
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
@@ -657,12 +633,16 @@ internal ref partial struct Utf8OperationMatchCursor
 
     private bool MoveNextSmallAsciiLiteralFamily()
     {
-        if (!TryMoveNextSmallAsciiLiteralFamilyCoordinates(out var matchIndex, out var matchLength))
+        var nextStart = _consumed;
+        if (!_smallAsciiLiteralFamilySearch.TryFindNextNonOverlapping(
+            _input, ref nextStart, out var matchIndex, out var matchLength))
         {
             return false;
         }
 
-        _current = new Utf8CaptureRange(matchIndex, (matchIndex) + (matchLength));
+        _consumed = nextStart;
+        _remaining = _input[nextStart..];
+        _current = new Utf8CaptureRange(matchIndex, matchIndex + matchLength);
         return true;
     }
 

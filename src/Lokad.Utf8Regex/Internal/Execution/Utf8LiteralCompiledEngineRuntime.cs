@@ -51,10 +51,9 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals ||
         CanUseDirectExactSingleScalar(Utf8ExecutionDeadline.Infinite);
 
-    internal bool TryGetSmallAsciiLiteralFamilyPrimitive(
-        ReadOnlySpan<byte> input, out PreparedSmallAsciiLiteralFamilySearch primitive)
+    internal bool TryGetSmallAsciiLiteralFamilyPrimitive(out PreparedSmallAsciiLiteralFamilySearch primitive)
     {
-        if (_smallAsciiLiteralFamilyPrimitive is { } candidate && Utf8InputAnalyzer.IsAscii(input))
+        if (_smallAsciiLiteralFamilyPrimitive is { } candidate)
         {
             primitive = candidate;
             return true;
@@ -308,16 +307,10 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
 
         if (_smallAsciiLiteralFamilyPrimitive is { } primitive)
         {
-            var found = primitive.TryFindFirst(input, out var index, out var matchedLength);
-            // Decline before validation if this shortcut cannot project the
-            // prefix. The caller then owns validation and Unicode coordinates.
-            if (found && !Utf8InputAnalyzer.IsAscii(input[..index]))
-            {
-                match = default(Utf8CaptureRange);
-                return false;
-            }
-            match = found
-                ? new Utf8CaptureRange(index, (index) + (matchedLength))
+            // ASCII needles cannot overlap a multibyte scalar in valid UTF-8.
+            // The result uses byte offsets, even after a non-ASCII prefix.
+            match = primitive.TryFindFirst(input, out var index, out var matchedLength)
+                ? new Utf8CaptureRange(index, index + matchedLength)
                 : default(Utf8CaptureRange);
             return true;
         }

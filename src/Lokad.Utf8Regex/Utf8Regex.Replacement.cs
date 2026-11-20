@@ -149,7 +149,7 @@ public sealed partial class Utf8Regex
         // original range ledger still owns output admission and publication.
         var cursor = budget.IsInfinite && !_ownedSliceProgram.IsNonBacktracking &&
             Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is null &&
-            TryGetSmallAsciiLiteralFamilySearch(input, out var smallFamily)
+            TryGetSmallAsciiLiteralFamilySearch(out var smallFamily)
                 ? new Utf8OperationMatchCursor(input, smallFamily, budget)
                 : Utf8CompiledOperationCursorFactory.CreateMatchCursor(_preparedRegex, input, budget);
         return Utf8CursorReplaceEngine.Replace(input, replacementBytes, ref cursor, out replacementCount);

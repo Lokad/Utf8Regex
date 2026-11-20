@@ -978,7 +978,7 @@ public sealed partial class Utf8Regex : IDisposable
         if (UsesRightToLeft() || ShouldUseKelvinSignFallback(input))
             return OwnedSliceEnumerateSplits(input, _ownedSliceProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
 
-        if (count > 0 && TryGetSmallAsciiLiteralFamilySearch(input, out var smallAsciiLiteralFamilySearch))
+        if (count > 0 && TryGetSmallAsciiLiteralFamilySearch(out var smallAsciiLiteralFamilySearch))
         {
             return new Utf8ValueSplitEnumerator(
                 input,
@@ -1177,8 +1177,7 @@ public sealed partial class Utf8Regex : IDisposable
         };
     }
 
-    internal bool TryGetSmallAsciiLiteralFamilySearch(
-        ReadOnlySpan<byte> input, out PreparedSmallAsciiLiteralFamilySearch search)
+    internal bool TryGetSmallAsciiLiteralFamilySearch(out PreparedSmallAsciiLiteralFamilySearch search)
     {
         if (MatchTimeout != Regex.InfiniteMatchTimeout ||
             _preparedRegex.ExecutionPattern is null || _preparedRegex.ExecutionPattern.IndexOf('(') >= 0 ||
@@ -1189,7 +1188,7 @@ public sealed partial class Utf8Regex : IDisposable
             return false;
         }
 
-        return literalFamilyRuntime.TryGetSmallAsciiLiteralFamilyPrimitive(input, out search);
+        return literalFamilyRuntime.TryGetSmallAsciiLiteralFamilyPrimitive(out search);
     }
 
     private bool UsesRightToLeft()

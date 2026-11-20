@@ -1669,8 +1669,8 @@ internal static partial class BenchmarkInspectReporter
             var utf8Compiled = new Utf8Regex(control.Pattern, options: RegexOptions.Compiled);
             var regex = new Regex(control.Pattern);
             var compiledRegex = new Regex(control.Pattern, RegexOptions.Compiled);
-            var utf8Eligible = utf8Regex.TryGetSmallAsciiLiteralFamilySearch(inputBytes, out _);
-            var compiledEligible = utf8Compiled.TryGetSmallAsciiLiteralFamilySearch(inputBytes, out _);
+            var utf8Eligible = utf8Regex.TryGetSmallAsciiLiteralFamilySearch(out _);
+            var compiledEligible = utf8Compiled.TryGetSmallAsciiLiteralFamilySearch(out _);
             if (utf8Eligible != control.ExpectedEligible || compiledEligible != control.ExpectedEligible)
             {
                 throw new InvalidOperationException($"Control '{control.Name}' Split eligibility did not match its expectation.");
@@ -2569,8 +2569,8 @@ internal static partial class BenchmarkInspectReporter
         {
             Console.WriteLine($"BaselineCanUseNativeSplit : {context.Utf8Regex.CanUseNativeSplit()}");
             Console.WriteLine($"CompiledCanUseNativeSplit : {context.CompiledUtf8Regex.CanUseNativeSplit()}");
-            Console.WriteLine($"BaselineCanUseSmallAsciiLiteralFamilySplit : {context.Utf8Regex.TryGetSmallAsciiLiteralFamilySearch(context.InputBytes, out _)}");
-            Console.WriteLine($"CompiledCanUseSmallAsciiLiteralFamilySplit : {context.CompiledUtf8Regex.TryGetSmallAsciiLiteralFamilySearch(context.InputBytes, out _)}");
+            Console.WriteLine($"BaselineCanUseSmallAsciiLiteralFamilySplit : {context.Utf8Regex.TryGetSmallAsciiLiteralFamilySearch(out _)}");
+            Console.WriteLine($"CompiledCanUseSmallAsciiLiteralFamilySplit : {context.CompiledUtf8Regex.TryGetSmallAsciiLiteralFamilySearch(out _)}");
 
             Measure("WellFormedOnly", iterations, () =>
             {

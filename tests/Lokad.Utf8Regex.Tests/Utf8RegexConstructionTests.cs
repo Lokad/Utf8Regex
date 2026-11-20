@@ -1357,7 +1357,7 @@ public sealed class Utf8RegexConstructionTests
             var actual = new List<string>();
 
             Assert.True(
-                regex.TryGetSmallAsciiLiteralFamilySearch(bytes, out _),
+                regex.TryGetSmallAsciiLiteralFamilySearch(out _),
                 $"Expected small ASCII literal-family Split route for '{testCase.Pattern}'.");
             foreach (var split in regex.EnumerateSplits(bytes))
             {
@@ -1441,7 +1441,7 @@ public sealed class Utf8RegexConstructionTests
             var bytes = Encoding.UTF8.GetBytes(testCase.Input);
             var actual = new List<string>();
 
-            Assert.False(regex.TryGetSmallAsciiLiteralFamilySearch(bytes, out _));
+            Assert.False(regex.TryGetSmallAsciiLiteralFamilySearch(out _));
             foreach (var split in regex.EnumerateSplits(bytes))
             {
                 actual.Add(Encoding.UTF8.GetString(split.GetValueBytes()));
@@ -1450,16 +1450,12 @@ public sealed class Utf8RegexConstructionTests
             Assert.Equal(Regex.Split(testCase.Input, testCase.Pattern, options), actual);
         }
 
-        Assert.False(new Utf8Regex("(alpha|bravo|charlie)", options: options)            .TryGetSmallAsciiLiteralFamilySearch("alpha bravo"u8, out _));
+        Assert.False(new Utf8Regex("(alpha|bravo|charlie)", options: options).TryGetSmallAsciiLiteralFamilySearch(out _));
         Assert.False(new Utf8Regex(                "alpha|bravo|charlie", options:                 options, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromSeconds(1)
-        })            .TryGetSmallAsciiLiteralFamilySearch("alpha bravo"u8, out _));
-        Assert.False(new Utf8Regex("alpha|bravo|charlie", options: options | RegexOptions.RightToLeft)            .TryGetSmallAsciiLiteralFamilySearch("alpha bravo"u8, out _));
-
-        var malformed = new byte[] { (byte)'a', 0xC3, 0x28, (byte)'b' };
-        var eligible = new Utf8Regex("alpha|bravo|charlie", options: options);
-        Assert.False(eligible.TryGetSmallAsciiLiteralFamilySearch(malformed, out _));
+        }).TryGetSmallAsciiLiteralFamilySearch(out _));
+        Assert.False(new Utf8Regex("alpha|bravo|charlie", options: options | RegexOptions.RightToLeft).TryGetSmallAsciiLiteralFamilySearch(out _));
     }
 
     private static int CountSplitValues(Utf8Regex regex, byte[] input)
@@ -1839,7 +1835,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ExactAsciiLiteralFamilyDirectMatchValidatesNonAsciiSuffix()
+    public void ExactAsciiLiteralFamilyDirectMatchAcceptsNonAsciiSuffix()
     {
         var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.None);
         var bytes = Encoding.UTF8.GetBytes("magna café");
@@ -1853,16 +1849,15 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void ExactAsciiLiteralFamilyDirectMatchDeclinesNonAsciiPrefixProjection()
+    public void ExactAsciiLiteralFamilyDirectMatchReportsByteOffsetsAfterMixedPrefix()
     {
         var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.None);
-        var bytes = Encoding.UTF8.GetBytes("café magna");
+        var bytes = Encoding.UTF8.GetBytes("😀 café magna");
 
-        Assert.False(regex.TryMatchDirectWithoutValidation(bytes, out _));
-
-        var match = regex.Match(bytes);
-        Assert.True(match.Success);
-        Assert.Equal(6, match.StartOffsetInBytes);
+        Assert.True(regex.TryMatchDirectWithoutValidation(bytes, out var direct));
+        Assert.True(direct.Success);
+        Assert.Equal((11, 16), (direct.StartOffsetInBytes, direct.EndOffsetInBytes));
+        Assert.Equal(direct, regex.Match(bytes));
     }
 
     [Theory]
