@@ -102,7 +102,8 @@ public sealed class Utf8QueryValueMatchTests
     [InlineData(false)] [InlineData(true)]
     public void OriginalInterruptionAppliesDuringRetries(bool expire)
     {
-        var input = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("~bad ", 100)) + "~/d/1?t=x");
+        // Rewind must visit these false starters before it can reach the match.
+        var input = Encoding.ASCII.GetBytes("~/d/1?t=x " + string.Concat(Enumerable.Repeat("~bad ", 100)));
         long ticks = 0; using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         var regex = new Utf8Regex(Digits, options: Fold, policy: new Utf8RegexPolicy
@@ -110,6 +111,7 @@ public sealed class Utf8QueryValueMatchTests
             MatchTimeout = TimeSpan.FromMilliseconds(20),
             ResourcePolicy = Funded
         });
+        Assert.True(regex.Match(input).Success);
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(_ =>
         {
