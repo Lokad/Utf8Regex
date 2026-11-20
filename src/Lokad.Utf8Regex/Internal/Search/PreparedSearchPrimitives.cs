@@ -216,6 +216,7 @@ internal readonly struct PreparedSubstringSearch
         return length switch
         {
             <= 2 => PreparedExactSearchTier.None,
+            3 => PreparedExactSearchTier.SpanIndexOf,
             <= 8 => PreparedExactSearchTier.ShortFirstByte,
             <= 16 => PreparedExactSearchTier.MediumLastByte,
             _ => PreparedExactSearchTier.SpanIndexOf,
