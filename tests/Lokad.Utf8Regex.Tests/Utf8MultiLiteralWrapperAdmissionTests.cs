@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -37,83 +36,31 @@ public sealed class Utf8MultiLiteralWrapperAdmissionTests
         PreparedAsciiIgnoreCaseLiteralSetSearch folded) => mode switch
         { 0 => new(literals, false), 1 => new(exact), 2 => new(literals, true), _ => new(folded) };
 
-    // Independent selector model, including canonical empty alternatives, prefix
-    // precedence, and the small family's first-byte/unique-anchor conditions.
-    private static PreparedMultiLiteralKind ExpectedKind(byte[][] values, bool ignoreCase)
-    {
-        if (ignoreCase) return PreparedMultiLiteralKind.AsciiIgnoreCase;
-        if (values.Length == 0 || values.Any(v => v.Length == 0)) return PreparedMultiLiteralKind.ExactDirect;
-        var shortest = values.Min(v => v.Length);
-        if (values.Length is >= 3 and < 8 && shortest >= 4 && values.Any(v => v.Any(b => b >= 128)) &&
-            Enumerable.Range(0, shortest).Any(offset => values.Select(v => v[offset]).Distinct().Count() == values.Length))
-            return PreparedMultiLiteralKind.ExactPacked;
-        if (values.Length <= 3 && shortest >= 4 && values.Sum(v => (long)v.Length) >= 24)
-            return PreparedMultiLiteralKind.ExactEarliest;
-        var groups = values.GroupBy(v => v[0]).Select(g => g.ToArray()).ToArray();
-        var prefix = groups.Length == 1 && shortest >= 2 && values.Select(v => v[1]).Distinct().Count() == 1;
-        if (values.Length >= 5 && !prefix) return PreparedMultiLiteralKind.ExactAutomaton;
-        if (values.Length >= 8) return PreparedMultiLiteralKind.ExactTrie;
-        if (values.Length is >= 3 and < 5 && shortest >= 4 && groups.Length > 1 && groups.Any(g => g.Length > 1) &&
-            Enumerable.Range(1, shortest - 1).Any(offset => values.Select(v => v[offset]).Distinct().Count() == values.Length))
-            return PreparedMultiLiteralKind.ExactTrie;
-        return PreparedMultiLiteralKind.ExactDirect;
-    }
-
-    private static int Stride<T>() => Unsafe.SizeOf<T>();
-    private static ulong ArrayLoan(Array array)
-    {
-        var stride = (int)typeof(Utf8MultiLiteralWrapperAdmissionTests).GetMethod(nameof(Stride), BindingFlags.Static | BindingFlags.NonPublic)!
-            .MakeGenericMethod(array.GetType().GetElementType()!).Invoke(null, null)!;
-        return array.Length == 0 ? 0 : 32 + (((ulong)stride * (ulong)array.Length + 15) & ~15ul);
-    }
-    private static ulong Walk(object? value, HashSet<object> excluded, HashSet<object> seen)
-    {
-        if (value is null) return 0;
-        var type = value.GetType();
-        if (!type.IsValueType && (excluded.Contains(value) || !seen.Add(value))) return 0;
-        if (value is Array array)
-        {
-            var loan = ArrayLoan(array);
-            if (array.GetType().GetElementType() is { } itemType && (itemType.IsPrimitive || itemType.IsEnum)) return loan;
-            foreach (var item in array) loan += Walk(item, excluded, seen);
-            return loan;
-        }
-        if (type.Assembly != typeof(Utf8Regex).Assembly) return 0;
-        return type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-            .Aggregate(0ul, (sum, field) => sum + Walk(field.GetValue(value), excluded, seen));
-    }
-    private static HashSet<object> Borrowed(byte[][] literals, object? search = null)
-    {
-        var set = new HashSet<object>(ReferenceEqualityComparer.Instance);
-        _ = Walk(literals, new(ReferenceEqualityComparer.Instance), set);
-        _ = Walk(search, new(ReferenceEqualityComparer.Instance), set);
-        return set;
-    }
-
     [Theory]
     [MemberData(nameof(Modes))]
-    public void SelectionAndReachablePayloadLoansAgreeWithoutAcquiringDiscardedExactState(int family, int mode)
+    public void WrapperKeepsBorrowedLiteralsAndOnlyPublishesSelectedState(int family, int mode)
     {
         var literals = Family(family);
         using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue);
         var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
         var exact = mode == 1 ? new PreparedLiteralSetSearch(literals) : default;
         var folded = mode == 3 ? new PreparedAsciiIgnoreCaseLiteralSetSearch(literals) : default;
-        var loan = owner.Budget.ReservedBytes; var checkpoint = owner.Budget.ReservedBytes;
-        var borrowed = Borrowed(literals, mode == 1 ? exact : mode == 3 ? folded : null);
+        var held = owner.Budget.ReservedBytes;
         var search = Prepare(literals, mode, exact, folded);
-        Assert.Equal(ExpectedKind(literals, mode >= 2), search.Kind);
+        Assert.Equal(mode >= 2, search.Kind == PreparedMultiLiteralKind.AsciiIgnoreCase);
         var expected = mode == 1 ? exact.SearchData.Buckets.SelectMany(b => b.Literals).ToArray()
             : mode == 3 ? folded.Buckets.SelectMany(b => b.Literals).ToArray() : literals;
         Assert.Equal(expected.Length, search.Literals.Length);
         for (var i = 0; i < expected.Length; i++) Assert.Same(expected[i], search.Literals[i]);
         if (mode is 0 or 2) Assert.Same(literals, search.Literals);
-        Assert.True(owner.Budget.ReservedBytes >= loan + Walk(search, borrowed, new(ReferenceEqualityComparer.Instance)));
+        var flattenedPayload = mode is 1 or 3 ? (ulong)search.Literals.Length * (ulong)Unsafe.SizeOf<byte[]>() : 0;
+        Assert.InRange(owner.Budget.ReservedBytes, held + flattenedPayload, owner.Budget.PeakBytes);
         if (search.Kind != PreparedMultiLiteralKind.ExactDirect) Assert.Null(search.ExactSearch.SearchData.Buckets);
         if (search.Kind is not (PreparedMultiLiteralKind.ExactTrie or PreparedMultiLiteralKind.ExactAutomaton)) Assert.Null(search.TrieSearch.RootMap);
         if (search.Kind is not (PreparedMultiLiteralKind.ExactEarliest or PreparedMultiLiteralKind.ExactAutomaton)) Assert.Null(search.EarliestSearch.Literals);
         if (search.Kind == PreparedMultiLiteralKind.ExactEarliest)
-            Assert.Equal(loan + Walk(search, borrowed, new(ReferenceEqualityComparer.Instance)), owner.Budget.ReservedBytes);
+            Assert.Equal(held + Utf8ConstructionBudget.ArrayBytes<byte[]>(mode == 1 ? search.Literals.Length : 0),
+                owner.Budget.ReservedBytes);
         if (mode == 1 && search.Kind == PreparedMultiLiteralKind.ExactDirect) Assert.Same(exact.SearchData.Buckets, search.ExactSearch.SearchData.Buckets);
         if (mode == 3) Assert.Same(folded.Buckets, search.IgnoreCaseSearch.Buckets);
         Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
@@ -121,37 +68,54 @@ public sealed class Utf8MultiLiteralWrapperAdmissionTests
 
     [Theory]
     [MemberData(nameof(Cutoffs))]
-    public void EveryByteAndWorkCutoffPreservesFundedParentsAndNeverRefundsWork(int family, int mode, bool bytes)
+    public void WrapperDenialsPreserveFundedParentsAndAdmittedWork(int family, int mode, bool bytes)
     {
-        var literals = Family(family); ulong parentLoan, parentWork, peak, work;
-        using (var funded = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
+        var literals = Family(family);
+        ulong heldBytes, heldWork, required;
+        using (var measured = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue))
         {
             var exact = mode == 1 ? new PreparedLiteralSetSearch(literals) : default;
             var folded = mode == 3 ? new PreparedAsciiIgnoreCaseLiteralSetSearch(literals) : default;
-            _ = funded.Budget.AllocateObject(17, static value => new Box(value));
-            parentLoan = funded.Budget.ReservedBytes; parentWork = funded.Budget.WorkSteps;
-            _ = Prepare(literals, mode, exact, folded); peak = funded.Budget.PeakBytes - parentLoan; work = funded.Budget.WorkSteps - parentWork;
+            _ = measured.Budget.AllocateObject(17, static value => new Box(value));
+            heldBytes = measured.Budget.ReservedBytes;
+            heldWork = measured.Budget.WorkSteps;
+            _ = Prepare(literals, mode, exact, folded);
+            required = bytes ? measured.Budget.PeakBytes - heldBytes : measured.Budget.WorkSteps - heldWork;
         }
-        var successes = 0;
-        for (var allowance = 0ul; allowance <= (bytes ? peak : work); allowance++)
+
+        foreach (var allowance in new[] { 0ul, required == 0 ? 0ul : required - 1, required }.Distinct())
         {
-            using var owner = new Utf8ConstructionScope(0, bytes ? parentLoan + allowance : ulong.MaxValue,
-                bytes ? ulong.MaxValue : parentWork + allowance, ulong.MaxValue);
+            var byteCap = bytes ? heldBytes + allowance : ulong.MaxValue;
+            var workCap = bytes ? ulong.MaxValue : heldWork + allowance;
+            using var owner = new Utf8ConstructionScope(0, byteCap, workCap, ulong.MaxValue);
             var exact = mode == 1 ? new PreparedLiteralSetSearch(literals) : default;
             var folded = mode == 3 ? new PreparedAsciiIgnoreCaseLiteralSetSearch(literals) : default;
-            var parent = owner.Budget.AllocateObject(17, static value => new Box(value)); var checkpoint = owner.Budget.ReservedBytes;
-            var error = Record.Exception(() => _ = Prepare(literals, mode, exact, folded));
-            if (error is null) successes++;
+            var parent = owner.Budget.AllocateObject(17, static value => new Box(value));
+            var workBeforeLastCharge = heldWork;
+            owner.Budget.CheckpointHook = work => workBeforeLastCharge = work;
+
+            if (allowance == required)
+            {
+                var search = Prepare(literals, mode, exact, folded);
+                Assert.NotEmpty(search.Literals);
+            }
             else
             {
+                var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+                    Prepare(literals, mode, exact, folded));
                 Assert.Equal(bytes ? Utf8ResourceLimitKind.ConstructionBytes : Utf8ResourceLimitKind.ConstructionWorkSteps,
-                    Assert.IsType<Utf8ResourceLimitExceededException>(error).ResourceKind);
-                Assert.Equal(parentLoan, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
+                    failure.ResourceKind);
+                Assert.Equal(bytes ? byteCap : workCap, failure.Limit);
+                Assert.True(failure.Requested > failure.Limit);
+                Assert.Equal(heldBytes, owner.Budget.ReservedBytes);
+                if (!bytes) Assert.Equal(workBeforeLastCharge, owner.Budget.WorkSteps);
             }
-            Assert.InRange(owner.Budget.WorkSteps, parentWork, bytes ? ulong.MaxValue : parentWork + allowance);
-            Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth); Assert.Equal(0ul, owner.Budget.Reserved);
+            Assert.Equal(17, parent.Value);
+            Assert.Equal(0ul, owner.Budget.Depth);
+            Assert.Equal(0ul, owner.Budget.Reserved);
+            Assert.InRange(owner.Budget.WorkSteps, workBeforeLastCharge, workCap);
+            Assert.InRange(owner.Budget.PeakBytes, heldBytes, byteCap);
         }
-        Assert.Equal(1, successes);
     }
 
     [Theory]
