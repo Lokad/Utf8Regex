@@ -1222,12 +1222,20 @@ internal static partial class Utf8SliceRunner
             atom is { Kind: Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 })
         {
             var window = input.Slice(start, Math.Min(input.Length - start, (int)maximum));
-            // An ASCII-only window covers every scalar the repeat can inspect.
-            // A wider category candidate still needs the normal scalar loop.
-            if (atom.Kind == Utf8SliceInstructionKind.Set ||
-                Ascii.IsValid(window) && program.GetCompleteAsciiCategoryMask(atom) != 0)
-                return RunShortAsciiSetRepeat(window, start, (int)minimum, program.SetMasks[atom.A],
-                    ref invocation, out minimumEnd, checkExitDeadline);
+            var category = atom.Kind == Utf8SliceInstructionKind.CategorySet;
+            var consumed = GetShortAsciiSetRun(window, program.SetMasks[atom.A], category);
+            if (consumed >= 0 && (!category || program.GetCompleteAsciiCategoryMask(atom) != 0))
+            {
+                // The span probe reads at most four bytes. Charge it before
+                // publishing a result, and keep the repeat-boundary check.
+                minimumEnd = start;
+                var breach = invocation.TryChargeStep();
+                if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+                breach = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
+                if (breach != Utf8ExecutionLimitKind.None || consumed < minimum) return (-1, breach);
+                minimumEnd = start + (int)minimum;
+                return (start + consumed, Utf8ExecutionLimitKind.None);
+            }
         }
 
         minimumEnd = start;
@@ -1324,25 +1332,18 @@ internal static partial class Utf8SliceRunner
             : (-1, Utf8ExecutionLimitKind.None);
     }
 
-    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunShortAsciiSetRepeat(
-        ReadOnlySpan<byte> window, int start, int minimum, ReadOnlySpan<byte> mask,
-        ref Utf8SliceInvocation invocation, out int minimumEnd, bool checkExitDeadline)
+    private static int GetShortAsciiSetRun(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category)
     {
-        minimumEnd = start;
-        // One step covers at most four bytes. Each accepted byte is a complete
-        // ASCII scalar and a valid rewind endpoint.
-        var breach = invocation.TryChargeStep();
-        if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
         var consumed = 0;
         foreach (var value in window)
         {
-            if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) break;
+            // A wider candidate still needs the scalar predicate. An earlier
+            // ASCII miss already ends a repeat with a complete ASCII mask.
+            if (value >= 128) return category ? -1 : consumed;
+            if ((mask[value >> 3] & (1 << (value & 7))) == 0) break;
             consumed++;
         }
-        breach = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
-        if (breach != Utf8ExecutionLimitKind.None || consumed < minimum) return (-1, breach);
-        minimumEnd = start + minimum;
-        return (start + consumed, Utf8ExecutionLimitKind.None);
+        return consumed;
     }
 
     private static Utf8ExecutionLimitKind ChargeRepeatBoundary(ref Utf8SliceInvocation invocation, bool checkDeadline)

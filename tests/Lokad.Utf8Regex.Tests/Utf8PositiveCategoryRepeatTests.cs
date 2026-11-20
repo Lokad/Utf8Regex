@@ -8,6 +8,26 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8PositiveCategoryRepeatTests
 {
     [Theory]
+    [InlineData("1/٢", true)]
+    [InlineData("1٢/3", true)]
+    [InlineData("1𝟚/3", true)]
+    [InlineData("1a/٢", false)]
+    [InlineData("1٢٣٤٥/3", false)]
+    public void ShortRepeatsStopAtAnAsciiMissAndKeepWiderMembers(string text, bool expected)
+    {
+        const string pattern = @"^\d{1,4}/\d$";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var ordinary = new Utf8Regex(pattern);
+        using var funded = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 4096 },
+        });
+        using var live = new CancellationTokenSource();
+        Assert.Equal(expected, ordinary.IsMatch(input));
+        Assert.Equal(expected, funded.IsMatch(input, live.Token));
+    }
+
+    [Theory]
     [InlineData(@"([a\p{L}]+)@")]
     [InlineData(@"([a\p{Nd}]{2,4})@")]
     [InlineData(@"([a\p{L}]{3})@")]
