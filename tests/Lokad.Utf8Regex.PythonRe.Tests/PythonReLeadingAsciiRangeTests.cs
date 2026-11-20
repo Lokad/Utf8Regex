@@ -57,7 +57,7 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData("(?:a|[^b])")]
     [InlineData("(a?)*Z")]
     [InlineData("a|")]
-    [InlineData("(?>a?)b")]
+    [InlineData("(?>a??)b")]
     public void UnprovedPrefixesKeepTheExistingCandidateLoop(string pattern)
     {
         Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), out _, out _, out _));
@@ -70,6 +70,7 @@ public sealed class PythonReLeadingAsciiRangeTests
     [InlineData("([a-z]+)?Z", 90, 122)]
     [InlineData("(?:([a-c]+)|([x-z]+))!", 97, 122)]
     [InlineData("(?=[a-z])(?:a|z)", 97, 122)]
+    [InlineData("(?>a?)b", 97, 98)]
     [InlineData("(?>ab+)c", 97, 97)]
     [InlineData("a++b", 97, 97)]
     [InlineData("(?>(ab+))c", 97, 97)]

@@ -16,17 +16,35 @@ internal static class PythonReScalarNodeFactory
         for (var index = 1; index < children.Length; index++)
         {
             Utf8ConstructionScope.ChargeWork(1);
-            // A committed, greedy unbounded literal run consumes every adjacent
-            // occurrence. The same required literal immediately afterward can
-            // never succeed. Keep lazy/finite/folded and compound atoms intact.
-            if (children[index - 1] is Utf8SliceNode.AtomicNode
-                { Body: Utf8SliceNode.RepeatNode { Maximum: long.MaxValue, Lazy: false,
-                    Body: Utf8SliceNode.LiteralNode { FoldCase: false } repeated } } &&
-                children[index] is Utf8SliceNode.LiteralNode { FoldCase: false } next &&
-                repeated.Value == next.Value)
+            if (children[index - 1] is not Utf8SliceNode.AtomicNode atomic ||
+                children[index] is not Utf8SliceNode.LiteralNode { FoldCase: false } next ||
+                GetAtomicLiteralTail(atomic.Body) is not { Lazy: false,
+                    Body: Utf8SliceNode.LiteralNode { FoldCase: false } repeated } run)
+                continue;
+
+            // Shorter endpoints still face the repeated scalar. A different
+            // required literal makes the atomic frame redundant.
+            if (repeated.Value != next.Value)
+                children[index - 1] = atomic.Body;
+            else if (atomic.Body is Utf8SliceNode.RepeatNode && run.Maximum == long.MaxValue)
                 return Create(0, static _ => new Utf8SliceNode.FailNode());
         }
         return Create(children, static state => new Utf8SliceNode.ConcatNode(state));
+    }
+
+    private static Utf8SliceNode.RepeatNode? GetAtomicLiteralTail(Utf8SliceNode body)
+    {
+        if (body is Utf8SliceNode.RepeatNode repeat) return repeat;
+        if (body is not Utf8SliceNode.ConcatNode { Children.Length: >= 2 and <= 32 } sequence ||
+            sequence.Children[^1] is not Utf8SliceNode.RepeatNode tail)
+            return null;
+        // The prefix must have one endpoint and no effects or alternatives.
+        foreach (var prefix in sequence.Children.AsSpan(0, sequence.Children.Length - 1))
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            if (prefix is not Utf8SliceNode.LiteralNode { FoldCase: false }) return null;
+        }
+        return tail;
     }
 
     internal static Utf8SliceNode.AlternationNode Alternation(Utf8SliceNode[][] branches) =>

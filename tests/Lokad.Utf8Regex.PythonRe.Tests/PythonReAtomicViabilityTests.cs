@@ -60,6 +60,24 @@ public sealed class PythonReAtomicViabilityTests
     }
 
     [Fact]
+    public void DistinctLiteralAfterGreedyAtomicRunNeedsNoBacktrackStorage()
+    {
+        using var live = new CancellationTokenSource();
+        using var regex = new Utf8PythonRegex("(?>ab+)c", policy: new() { ResourcePolicy = Policy });
+        var hit = regex.Match("😀abbbc"u8, cancellationToken: live.Token, mode: Utf8PythonMatchMode.Search);
+        Assert.True(hit.Success);
+        Assert.Equal((4, 9), (hit.StartOffsetInBytes, hit.EndOffsetInBytes));
+        Assert.False(regex.Match("😀abbbd"u8, cancellationToken: live.Token, mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(regex.Match("abbbc"u8, cancellationToken: live.Token, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(1, regex.Count("😀abbbc"u8, cancellationToken: live.Token));
+
+        // A finite run can end before another copy of its own literal.
+        using var overlapping = new Utf8PythonRegex("(?>ab{1,2})b");
+        Assert.False(overlapping.Match("abb"u8, mode: Utf8PythonMatchMode.Search).Success);
+        Assert.True(overlapping.Match("abbb"u8, mode: Utf8PythonMatchMode.Search).Success);
+    }
+
+    [Fact]
     public void DeadSequencesKeepCaptureCatalogsAndEnclosingBranchSemantics()
     {
         var impossible = new Utf8PythonRegex("(?P<before>x)?a++a(?P<after>y)");

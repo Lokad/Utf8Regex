@@ -46,20 +46,19 @@ public sealed class PythonReAtomicRepeatCommitTests
     [Fact]
     public void ValidTextAndMeaningfulLimitsRemain()
     {
-        var regex = new Utf8PythonRegex("a++b");
-
-        foreach (var (policy, expected) in new[]
+        foreach (var (pattern, input, policy, expected) in new[]
         {
-            (new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, Utf8ResourceLimitKind.ExecutionWorkingBytes),
-            (new Utf8ResourcePolicy { MaxWorkSteps = 1 }, Utf8ResourceLimitKind.ExecutionWorkSteps),
+            ("a{1,2}+a", "aaa", new Utf8ResourcePolicy { MaxWorkingBytes = 1 }, Utf8ResourceLimitKind.ExecutionWorkingBytes),
+            ("a++b", "aaab", new Utf8ResourcePolicy { MaxWorkSteps = 1 }, Utf8ResourceLimitKind.ExecutionWorkSteps),
         })
         {
-            var denied = new Utf8PythonRegex("a++b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+            using var denied = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
             {
                 MatchTimeout = Timeout.InfiniteTimeSpan,
                 ResourcePolicy = policy
             });
-            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match("aaab"u8, mode: Utf8PythonMatchMode.Search)).ResourceKind);
+            var bytes = Encoding.UTF8.GetBytes(input);
+            Assert.Equal(expected, Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(bytes, mode: Utf8PythonMatchMode.Search)).ResourceKind);
         }
         var results = new Utf8PythonRegex("a++b", options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
         {
