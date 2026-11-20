@@ -79,27 +79,32 @@ public sealed partial class Utf8PythonRegex
         int kind, CancellationToken cancellationToken, scoped Span<Utf8PythonCaptureRange> captures = default,
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
-        var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken, kind, workingMemoryAllowance);
+        ValidateScalarStartOffset(input, startOffsetInBytes);
+        var invocation = CreateInvocation(cancellationToken, workingMemoryAllowance);
+        // A single result borrows the input here. Construct the state in its
+        // local so returning it through a value cursor does not copy it.
+        var state = new PythonReScalarMatchState(input, ScalarProgram, startOffsetInBytes,
+            MatchTimeout, this, invocation, _utf8Regex, prepareSearch: kind == 0);
         try
         {
-            var completed = kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition(requireFullInput: kind == 2);
-            var result = completed ? Utf8PythonValueMatch.Create(input, cursor.SnapshotValueData()) : default;
+            var completed = kind == 0 ? state.MoveNext(input) : state.MatchAtCurrentPosition(input, requireFullInput: kind == 2);
+            var result = completed ? Utf8PythonValueMatch.Create(input, state.SnapshotValueData()) : default;
             for (var number = 0; number < captures.Length; number++)
             {
-                if ((number & 255) == 0) cursor.Checkpoint();
-                captures[number] = !completed ? default : cursor.TryGetCaptureByteRange(number, out var start, out var end)
+                if ((number & 255) == 0) state.Checkpoint();
+                captures[number] = !completed ? default : state.TryGetCaptureByteRange(number, out var start, out var end)
                     ? new Utf8PythonCaptureRange { Number = number, Success = true, StartOffsetInBytes = start, EndOffsetInBytes = end }
                     : new Utf8PythonCaptureRange { Number = number };
             }
-            cursor.Checkpoint();
+            state.Checkpoint();
             return result;
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            cursor.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw cursor.WorkingInvocation.Budget.CreateResourceFailure(); }
+            state.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { throw state.WorkingInvocation.Budget.CreateResourceFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
-        { throw cursor.TimeoutFailure(); }
-        finally { cursor.Dispose(); }
+        { throw state.TimeoutFailure(input); }
+        finally { state.Dispose(); }
     }
 
     private Utf8PythonCaptureRange[] SplitRangesScalar(ReadOnlySpan<byte> input, int maxSplit,
