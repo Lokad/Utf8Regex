@@ -454,12 +454,14 @@ internal readonly struct Pcre2CandidateSearchProgram
 
 internal sealed class Pcre2CandidateSearchPlan
 {
+    private readonly Pcre2CandidateSearchProgram _program;
+
     internal Pcre2CandidateSearchPlan(Pcre2CandidateSearchProgram program)
     {
-        Program = program;
+        _program = program;
     }
 
-    internal Pcre2CandidateSearchProgram Program { get; }
+    internal ref readonly Pcre2CandidateSearchProgram Program => ref _program;
 }
 
 internal sealed class Pcre2CompiledProgram
@@ -499,7 +501,7 @@ internal sealed class Pcre2CompiledProgram
 
     internal Pcre2OperationPrograms Operations { get; }
 
-    internal Pcre2CandidateSearchProgram CandidateSearch => CandidateSearchPlan.Program;
+    internal ref readonly Pcre2CandidateSearchProgram CandidateSearch => ref CandidateSearchPlan.Program;
 
     internal Pcre2CandidateSearchPlan CandidateSearchPlan { get; }
 
@@ -1697,7 +1699,7 @@ internal static partial class Pcre2Runner
 
     private static Pcre2BacktrackingMatch ExecuteBacktrackingDetailed(
         Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
+        in Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,

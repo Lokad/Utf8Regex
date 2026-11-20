@@ -272,7 +272,7 @@ internal static class Pcre2SliceDriver
     // operations before renting VM scratch; candidates still need verification.
     internal static bool RejectMissingCandidate(
         Utf8SliceProgram program,
-        Pcre2CandidateSearchProgram candidates,
+        in Pcre2CandidateSearchProgram candidates,
         ReadOnlySpan<byte> input,
         int start,
         scoped ref Utf8SliceInvocation invocation)

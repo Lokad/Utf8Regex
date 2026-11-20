@@ -143,7 +143,7 @@ internal static class Pcre2BacktrackingRunner
 {
     internal static Pcre2CharacterMatch Match(
         Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
+        in Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
@@ -170,7 +170,7 @@ internal static class Pcre2BacktrackingRunner
     }
 
     internal static Pcre2CharacterMatch Match(
-        Pcre2BacktrackingProgram program, Pcre2CandidateSearchProgram candidateSearch,
+        Pcre2BacktrackingProgram program, in Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input, Utf8BytePosition searchStart, Utf8BytePosition firstMatchingPosition,
         Pcre2MatchOptions matchOptions, ref Pcre2ResourceBudget budget,
         scoped ref Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
@@ -181,7 +181,7 @@ internal static class Pcre2BacktrackingRunner
 
     internal static Pcre2BacktrackingMatch MatchDetailed(
         Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
+        in Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
@@ -198,7 +198,7 @@ internal static class Pcre2BacktrackingRunner
 
     internal static Pcre2BacktrackingMatch MatchDetailed(
         Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
+        in Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition searchStart,
         Utf8BytePosition firstMatchingPosition,
@@ -215,7 +215,7 @@ internal static class Pcre2BacktrackingRunner
             ref budget);
 
     internal static Pcre2BacktrackingMatch MatchByteRanges(Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch, ref Utf8ValidatedInput input,
+        in Pcre2CandidateSearchProgram candidateSearch, ref Utf8ValidatedInput input,
         Utf8BytePosition start, Utf8BytePosition firstMatchingPosition, Pcre2MatchOptions options,
         ref Pcre2ResourceBudget budget, scoped Span<Utf8Pcre2CaptureRange> destination = default)
         => MatchCore(program, candidateSearch, ref input, start, firstMatchingPosition,
@@ -223,7 +223,7 @@ internal static class Pcre2BacktrackingRunner
 
     private static Pcre2BacktrackingMatch MatchCore(
         Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
+        in Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Utf8BytePosition firstMatchingPosition,
@@ -244,7 +244,7 @@ internal static class Pcre2BacktrackingRunner
 
     private static Pcre2BacktrackingMatch MatchCore(
         Pcre2BacktrackingProgram program,
-        Pcre2CandidateSearchProgram candidateSearch,
+        in Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         Utf8BytePosition firstMatchingPosition,
@@ -423,7 +423,7 @@ internal static class Pcre2BacktrackingRunner
     }
 
     private static bool TryFindNextCandidate(
-        Pcre2CandidateSearchProgram candidateSearch,
+        in Pcre2CandidateSearchProgram candidateSearch,
         Pcre2CompileRequest request,
         ReadOnlySpan<byte> input,
         int lowerBound,
@@ -600,7 +600,7 @@ internal static class Pcre2BacktrackingRunner
     }
 
     private static bool TryFindNextBoundedWindowCandidate(
-        Pcre2CandidateSearchProgram candidateSearch,
+        in Pcre2CandidateSearchProgram candidateSearch,
         ReadOnlySpan<byte> input,
         int lowerBound,
         bool meterDelimiter,
