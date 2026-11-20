@@ -1141,7 +1141,18 @@ internal static partial class Utf8SliceRunner
             }
             if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index)
             {
-                if (MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, out acceptedEnd)) return true;
+                if (remaining == 0) return true;
+                // Many arms start with a fixed byte. Reject a mismatched arm
+                // here and charge its first instruction just like the walk.
+                if (code[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal)
+                {
+                    remaining--;
+                    if (position < input.Length && input[position] == literal.A &&
+                        MayMatchBranchedAsciiPrefix(program, input, position + 1, index + 1,
+                            ref remaining, proveMatch, out acceptedEnd)) return true;
+                }
+                else if (MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, out acceptedEnd))
+                    return true;
                 index = entry.A;
                 continue;
             }
