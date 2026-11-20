@@ -58,7 +58,8 @@ internal partial struct PosixWorkspace
         var generalCaptures = captureHistory && !_program.FirstAcceptanceIsLongest;
         var firstAtomIndex = _program.FirstRequiredRunAtom;
         var firstAtom = firstAtomIndex >= 0 ? _program.Scalar.Instructions[firstAtomIndex] : default;
-        for (var candidate = fromByte; candidate <= input.Length;)
+        var lastCandidate = _program.StartsAtInputStart ? 0 : input.Length;
+        for (var candidate = fromByte; candidate <= lastCandidate;)
         {
             Charge(ref invocation);
             Reset(state, ref invocation);
@@ -94,7 +95,7 @@ internal partial struct PosixWorkspace
                 Finish(ref invocation);
                 return true;
             }
-            if (candidate == input.Length) break;
+            if (candidate == lastCandidate) break;
             candidate = firstWidth == 0 ? Utf8SliceRunner.AdvancePastScalar(input, candidate, false) : candidate + firstWidth;
         }
         start = end = -1;

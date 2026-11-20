@@ -6,6 +6,41 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixGreedyAsciiRunTests
 {
     [Fact]
+    public void AbsoluteStartSearchStaysWithinOneAttempt()
+    {
+        using var plain = new Utf8PosixRegex("^([[:alpha:]]+)([0-9]+)$", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64, MaxDepth = 4, MaxWorkingBytes = 1024 }
+        });
+        using var source = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes("😀" + new string('!', 2048) + "\nsku007");
+        var captures = new Utf8CaptureRange[3];
+        Assert.False(plain.IsMatch(input, cancellationToken: source.Token));
+        Assert.False(plain.Match(input, 4, captures, source.Token).Success);
+        Assert.Equal(0, plain.Count(input, 4, source.Token));
+        using var cursor = plain.CreateMatchCursor(input, 4, source.Token);
+        Assert.False(cursor.MoveNext(out _, captures));
+
+        using var prefix = new Utf8PosixRegex("(^sku)", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 64 }
+        });
+        var prefixed = Encoding.UTF8.GetBytes("sku😀" + new string('!', 2048));
+        Assert.Equal(1, prefix.Count(prefixed, cancellationToken: source.Token));
+        using var prefixCursor = prefix.CreateMatchCursor(prefixed, cancellationToken: source.Token);
+        Assert.True(prefixCursor.MoveNext(out var first, captures));
+        Assert.Equal(new Utf8CaptureRange(0, 3), first);
+        Assert.Equal(first, captures[1]);
+        Assert.False(prefixCursor.MoveNext(out _, captures));
+
+        using var line = new Utf8PosixRegex(plain.Pattern, options: PosixCompileOptions.Newline);
+        Assert.Equal(new Utf8CaptureRange(input.Length - 6, input.Length), line.Match(input, 4, captures));
+        Assert.Equal(new Utf8CaptureRange(input.Length - 6, input.Length - 3), captures[1]);
+        using var alternative = new Utf8PosixRegex("(^a|sku007)");
+        Assert.Equal(new Utf8CaptureRange(input.Length - 6, input.Length), alternative.Match(input, 4, captures));
+    }
+
+    [Fact]
     public void NewlineAnchorsSelectEachCompleteDisjointRunPair()
     {
         var regex = new Utf8PosixRegex("^([a-z]+)([0-9]+)$", options: PosixCompileOptions.Newline, policy: new Utf8RegexPolicy()

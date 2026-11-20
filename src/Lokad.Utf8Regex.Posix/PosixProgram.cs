@@ -14,13 +14,14 @@ internal sealed partial class PosixProgram
     internal const int ForkSelectSingleLiteral = -2;
 
     private PosixProgram(Utf8SliceProgram scalar, int[] parents, int[] captureTags, bool firstAcceptanceIsLongest, bool directGreedyRuns,
-        bool useCaptureOffsets,
+        bool useCaptureOffsets, bool startsAtInputStart,
         int firstRequiredRunAtom, int terminalLineEndRepeat,
         ChartNode[] chart, Utf8SliceNode.CategorySetNode[] chartClasses)
     {
         Scalar = scalar; Parents = parents; CaptureTags = captureTags;
         FirstAcceptanceIsLongest = firstAcceptanceIsLongest; DirectGreedyRuns = directGreedyRuns;
         UseCaptureOffsets = useCaptureOffsets;
+        StartsAtInputStart = startsAtInputStart;
         FirstRequiredRunAtom = firstRequiredRunAtom;
         TerminalLineEndRepeat = terminalLineEndRepeat;
         Chart = chart; ChartClasses = chartClasses;
@@ -32,6 +33,7 @@ internal sealed partial class PosixProgram
     internal bool FirstAcceptanceIsLongest { get; }
     internal bool DirectGreedyRuns { get; }
     internal bool UseCaptureOffsets { get; }
+    internal bool StartsAtInputStart { get; }
     internal int FirstRequiredRunAtom { get; }
     internal int TerminalLineEndRepeat { get; }
     internal ChartNode[] Chart { get; }
@@ -158,12 +160,26 @@ internal sealed partial class PosixProgram
                 break;
             }
         }
+        var startsAtInputStart = RequiresInputStart(scalar.Instructions, budget);
         var result = budget.AllocateObject((scalar, parentTags, captureTags, firstAcceptanceIsLongest, directGreedyRuns, useCaptureOffsets, firstRequiredRunAtom,
-                terminalLineEndRepeat, chart.Nodes, chart.Classes),
+                startsAtInputStart, terminalLineEndRepeat, chart.Nodes, chart.Classes),
             static x => new PosixProgram(x.scalar, x.parentTags, x.captureTags, x.firstAcceptanceIsLongest, x.directGreedyRuns, x.useCaptureOffsets,
-                x.firstRequiredRunAtom, x.terminalLineEndRepeat, x.Nodes, x.Classes));
+                x.startsAtInputStart, x.firstRequiredRunAtom, x.terminalLineEndRepeat, x.Nodes, x.Classes));
         construction.Complete();
         return result;
+    }
+
+    private static bool RequiresInputStart(ReadOnlySpan<Utf8SliceInstruction> code, Utf8ConstructionBudget budget)
+    {
+        // Leading capture tags are unconditional and zero-width. Stop at a
+        // choice or consuming instruction before inferring a required anchor.
+        foreach (var instruction in code)
+        {
+            budget.ChargeWork(1);
+            if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
+            return instruction is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0 };
+        }
+        return false;
     }
 
     private static void PreferLongerScalarAlternatives(Utf8SliceInstruction[] code, Utf8ConstructionBudget budget)
