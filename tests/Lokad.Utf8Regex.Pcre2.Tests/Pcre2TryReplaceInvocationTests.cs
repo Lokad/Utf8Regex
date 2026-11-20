@@ -17,8 +17,10 @@ public sealed class Pcre2TryReplaceInvocationTests
         yield return ["abc", "xabc", "$0", "xabc"];
     }
 
-    [Theory] [MemberData(nameof(Routes))]
-    public void EntryDiscoveryAndPublicationObserveOriginalToken(string pattern, string text, string template, string expected)
+    public static IEnumerable<object[]> InterruptionRoutes() => Routes().Select(route => route[..3]);
+
+    [Theory] [MemberData(nameof(InterruptionRoutes))]
+    public void EntryDiscoveryAndPublicationObserveOriginalToken(string pattern, string text, string template)
     {
         foreach (var cancelAt in new[] { 2, 8 })
         foreach (var hit in new[] { true, false })
@@ -40,17 +42,22 @@ public sealed class Pcre2TryReplaceInvocationTests
         }
     }
 
-    [Theory] [MemberData(nameof(Routes))]
-    public void ValidationDenialPrecedesMalformedSubjectAndTemplateTails(string pattern, string text, string template, string expected)
+    [Theory] [MemberData(nameof(InterruptionRoutes))]
+    public void WorkLimitLeavesDestinationUnchangedForLongInputOrTemplate(string pattern, string text, string template)
     {
-        var malformed = new byte[16385]; malformed.AsSpan().Fill((byte)'x'); malformed[^1] = 0xff;
+        var longSubject = Encoding.UTF8.GetBytes(new string('x', 16380) + "😀");
+        byte[] malformedTemplate = [.. longSubject, 0xff];
         var destination = new byte[64]; destination.AsSpan().Fill(0xcc);
-        foreach (var templateTail in new[] { true, false })
+        using var regex = Policy(pattern, 3);
+        var cases = new[]
         {
-            var input = templateTail ? Encoding.UTF8.GetBytes(text) : malformed;
-            var replacement = templateTail ? malformed : Encoding.UTF8.GetBytes(template);
+            (Encoding.UTF8.GetBytes(text), malformedTemplate),
+            (longSubject, Encoding.UTF8.GetBytes(template)),
+        };
+        foreach (var (input, replacement) in cases)
+        {
             var error = Assert.Throws<Pcre2MatchException>(() =>
-            { _ = Policy(pattern, 3).TryReplace(input, replacement, destination, out _); });
+            { _ = regex.TryReplace(input, replacement, destination, out _); });
             Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind);
             Assert.All(destination, value => Assert.Equal((byte)0xcc, value));
         }

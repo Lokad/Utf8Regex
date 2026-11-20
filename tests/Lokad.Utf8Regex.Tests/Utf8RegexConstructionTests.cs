@@ -1223,7 +1223,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledExactUtf8LiteralCanCountWithFusedValidation()
+    public void CompiledExactUtf8LiteralCountsBmpMatches()
     {
         const string pattern = "夏洛克·福尔摩斯";
         const string input = "夏洛克·福尔摩斯 abc 夏洛克·福尔摩斯";
@@ -1236,7 +1236,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledExactUtf8LiteralFusedValidationHandlesSupplementaryScalars()
+    public void CompiledExactUtf8LiteralCountHandlesSupplementaryNeighbors()
     {
         const string pattern = "夏洛克·福尔摩斯";
         const string input = "𐐀𐐁 夏洛克·福尔摩斯 𐐂";
@@ -1272,7 +1272,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledExactUtf8LiteralFamilyCanCountWithFusedValidation()
+    public void CompiledExactUtf8LiteralFamilyCountsBmpMatches()
     {
         const string pattern = "夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授";
         const string input = "夏洛克·福尔摩斯 约翰华生 x 阿德勒 雷斯垂德 莫里亚蒂教授";
@@ -1285,7 +1285,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledExactUtf8LiteralFamilyFusedValidationHandlesSupplementaryScalars()
+    public void CompiledExactUtf8LiteralFamilyCountHandlesSupplementaryNeighbors()
     {
         const string pattern = "夏洛克·福尔摩斯|约翰华生|阿德勒|雷斯垂德|莫里亚蒂教授";
         const string input = "𐐀 夏洛克·福尔摩斯 𐐁 约翰华生";
@@ -1296,7 +1296,7 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledExactUtf8LiteralFamilyFusedValidationHandlesMixedScalarLengths()
+    public void CompiledExactUtf8LiteralFamilyCountHandlesMixedScalarLengths()
     {
         const string pattern = "阿|阿德勒|雷斯垂德";
         const string input = "𐐀 阿 x 阿德勒 y 雷斯垂德 z 阿";
