@@ -591,10 +591,11 @@ internal static partial class Utf8SliceRunner
               atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 })); skipped++) tail++;
         if (tail == instructions.Length) return false;
         var suffix = instructions[tail];
-        if (requiredEnd is null && atom is { Kind: Utf8SliceInstructionKind.Dot, A: not 0 } &&
+        var requiresInputEnd = requiredEnd == input.Length;
+        if ((requiredEnd is null || requiresInputEnd) && atom is { Kind: Utf8SliceInstructionKind.Dot, A: not 0 } &&
             repeat.RepeatMinimum <= 1 && repeat.RepeatMaximum == long.MaxValue &&
             suffix is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } &&
-            TryGetStrictEndLiteralWidth(instructions.AsSpan(tail), out var suffixWidth))
+            TryGetStrictEndLiteralWidth(instructions.AsSpan(tail), requiresInputEnd, out var suffixWidth))
         {
             // An exact-width tail at absolute end allows just one endpoint.
             // Leave literal checks and captures to the VM at that endpoint.
@@ -636,7 +637,7 @@ internal static partial class Utf8SliceRunner
         // An atomic commit discards shorter greedy endpoints even if its tail
         // later fails. Absolute end rejects every shorter endpoint, even when
         // the atom can consume LF. Capture endings and the tail still execute.
-        if (suffix.Kind == Utf8SliceInstructionKind.Accept && requiredEnd is null ||
+        if (suffix.Kind == Utf8SliceInstructionKind.Accept && (requiredEnd is null || requiresInputEnd) ||
             suffix.Kind == Utf8SliceInstructionKind.AtomicCommit ||
             suffix is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd })
         {
@@ -1138,14 +1139,18 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static bool TryGetStrictEndLiteralWidth(ReadOnlySpan<Utf8SliceInstruction> tail, out int width)
+    private static bool TryGetStrictEndLiteralWidth(ReadOnlySpan<Utf8SliceInstruction> tail, bool implicitEnd, out int width)
     {
         width = 0;
-        if (tail.Length is < 3 or > 64 || tail[^1].Kind != Utf8SliceInstructionKind.Accept) return false;
-        var anchor = tail.Length - 2;
-        while (anchor > 0 && tail[anchor].Kind == Utf8SliceInstructionKind.CaptureEnd) anchor--;
-        if (tail[anchor] is not { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd })
-            return false;
+        if (tail.Length is < 2 or > 64 || tail[^1].Kind != Utf8SliceInstructionKind.Accept) return false;
+        var anchor = tail.Length - 1;
+        if (!implicitEnd)
+        {
+            anchor--;
+            while (anchor > 0 && tail[anchor].Kind == Utf8SliceInstructionKind.CaptureEnd) anchor--;
+            if (tail[anchor] is not { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd })
+                return false;
+        }
 
         foreach (ref readonly var instruction in tail[..anchor])
         {

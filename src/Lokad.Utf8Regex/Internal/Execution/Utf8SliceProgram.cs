@@ -1259,8 +1259,7 @@ internal static class Utf8SliceLowerer
             lowerer.BackreferenceLowerings.Take(), orderedClosures);
     }
 
-    internal static void MarkBoundedEndTails(Span<Utf8SliceInstruction> code, Utf8ConstructionBudget budget,
-        bool appendedEndAnchor = false)
+    private static void MarkBoundedEndTails(Span<Utf8SliceInstruction> code, Utf8ConstructionBudget budget)
     {
         if (code.Length < 2 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return;
         var end = Utf8SliceProgram.FindTerminalEnd(code[..^1]);
@@ -1270,20 +1269,6 @@ internal static class Utf8SliceLowerer
         // cannot be proved. The lax end can leave an unconsumed final LF.
         const int precedingInstructions = 127;
         var start = Math.Max(0, end - precedingInstructions);
-        if (appendedEndAnchor && Utf8SliceProgram.FindTerminalEnd(code[..^2]) is >= 0 and var oldEnd)
-        {
-            // FullMatch owns a copy with one new terminal anchor. A few copied
-            // hints may now be outside the window we are about to recompute.
-            for (var index = Math.Max(0, oldEnd - precedingInstructions); index < start; index++)
-            {
-                budget.ChargeWork(1);
-                var previous = code[index];
-                if (previous is { Kind: Utf8SliceInstructionKind.RepeatExit, B: > 0 })
-                    code[index] = new(previous.Kind, previous.A, 0, previous.C, previous.D);
-                else if (previous is { Kind: Utf8SliceInstructionKind.Fork, B: 0 })
-                    code[index] = new(previous.Kind, previous.A, 0, 0, 0);
-            }
-        }
         Span<int> limits = stackalloc int[end - start + 1];
         limits[^1] = code[end].A == (int)Utf8SliceAnchorKind.VeryEnd ? 1 : 2;
         for (var index = end - 1; index >= start; index--)

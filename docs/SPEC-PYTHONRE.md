@@ -66,9 +66,9 @@ impossible starting byte before mandatory-literal screening or VM scratch. This
 never establishes success; possible starts retain screening and verification.
 The original invocation still checks interruption and resource admission.
 
-Nonliteral prefix/digit Match and DotAll prefix/suffix FullMatch use the existing
-scalar programs, including first-use FullMatch preparation under the original
-invocation. Pure literal paths remain. Work/depth/scratch requirements depend on
+Nonliteral prefix/digit Match and DotAll prefix/suffix FullMatch use the shared
+scalar program. FullMatch requires the selected end during backtracking. Work,
+depth and scratch requirements depend on
 the selected program; retirement of a shortcut can increase these costs without
 changing the input, matching, lifetime or interruption contracts.
 
@@ -438,12 +438,10 @@ rules above. `Compile` observes its construction token before validating
 arguments or acquiring storage.
 
 `ConstructionPolicy` and `ConstructionTimeout` govern compilation independently
-of matching. Null construction timeout means infinite. Explicit compilation and
-funded constructors prepare the general FullMatch program before publication.
-An unfunded constructor can defer that preparation to a FullMatch call. Cold
-preparation then uses that call's token and deadline, and a failed preparation
-can be retried. Constructors with default construction settings and no funding
-can borrow an active construction scope. Explicit construction cannot replace it.
+of matching. Null construction timeout means infinite. Construction prepares the
+same scalar program for Search, Match and FullMatch before publication. Constructors
+with default construction settings and no funding can borrow an active construction
+scope. An explicit compilation requires its own construction scope.
 
 The Python scalar program defines the profile's semantics. Eligible literal
 operations and candidate searches can reuse Core helpers under the same input
@@ -500,8 +498,8 @@ modeled capacities.
 The bounded cache keeps validated template keys and plans. Warm lookups borrow
 the supplied span. Template lookup and matching draw from the same execution
 work budget. A cold lookup admits the immutable key before copying and
-keeps its working charge during preparation. Cold template and FullMatch
-preparation retain their construction backstops within the original invocation
+keeps its working charge during preparation. Cold template
+preparation retains its construction backstops within the original invocation
 deadline. Finite working bytes also cap additional covered preparation storage.
 A numeric working-byte denial on the template key reports
 `ExecutionWorkingBytes`. A preparation byte denial can report
@@ -522,8 +520,8 @@ modes publish at most one result, including an empty result. The optional end
 defaults to input.Length. Start/end must satisfy 0 <= start <= end <= input.Length
 and fall on scalar boundaries. The prefix before start remains available to anchors
 and lookbehind; lookahead cannot read past end. Bounds do not validate the subject.
-FullMatch uses the existing lazy full-program preparation under the same original
-invocation deadline. Reference aliases share
+FullMatch checks its required end under the original invocation deadline.
+Reference aliases share
 position and disposal; concurrent/reentrant access rejects. Advance with
 `MoveNext(out Utf8PythonRangeMatch match, token = default)` and keep the returned
 value. There is no text `Current` or no-output advance. EOF, failure or Dispose

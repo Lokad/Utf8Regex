@@ -27,7 +27,6 @@ public sealed class PythonReCompilationPolicyTests
         using var regex = utf8
             ? factory ? Utf8PythonRegex.Compile(source, policy: policy) : new Utf8PythonRegex(source, policy: policy)
             : factory ? Utf8PythonRegex.Compile("(?P<x>😀)+", policy: policy) : new Utf8PythonRegex("(?P<x>😀)+", policy: policy);
-        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal(policy.ResourcePolicy, regex.ResourcePolicy);
         Assert.Equal(TimeSpan.FromSeconds(2), regex.MatchTimeout);
         Array.Fill(source, (byte)'x');
@@ -90,13 +89,11 @@ public sealed class PythonReCompilationPolicyTests
         {
             Utf8PythonRegex.DefaultMatchTimeout = TimeSpan.FromSeconds(7);
             var policy = new Utf8RegexPolicy { MatchTimeout = null, ConstructionTimeout = null };
-            using var lazy = new Utf8PythonRegex("(?P<x>a)", policy: policy);
-            using var eager = Utf8PythonRegex.Compile("(?P<x>a)"u8, policy: policy);
-            Assert.Equal(TimeSpan.FromSeconds(7), lazy.MatchTimeout);
-            Assert.Equal(lazy.MatchTimeout, eager.MatchTimeout);
-            Assert.False(lazy.DebugIsScalarFullProgramValueCreated);
-            Assert.True(eager.DebugIsScalarFullProgramValueCreated);
-            Assert.Equal(Utf8ResourcePolicy.Unlimited, eager.ResourcePolicy);
+            using var constructed = new Utf8PythonRegex("(?P<x>a)", policy: policy);
+            using var compiled = Utf8PythonRegex.Compile("(?P<x>a)"u8, policy: policy);
+            Assert.Equal(TimeSpan.FromSeconds(7), constructed.MatchTimeout);
+            Assert.Equal(constructed.MatchTimeout, compiled.MatchTimeout);
+            Assert.Equal(Utf8ResourcePolicy.Unlimited, compiled.ResourcePolicy);
         }
         finally { Utf8PythonRegex.DefaultMatchTimeout = previous; }
     }
@@ -106,7 +103,6 @@ public sealed class PythonReCompilationPolicyTests
     {
         using var scope = Utf8ConstructionScope.Enter();
         using var regex = new Utf8PythonRegex("(?P<x>a)", policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000 } });
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         var spent = scope.Budget.WorkSteps; Assert.True(spent > 0);
         Assert.Throws<InvalidOperationException>(() => new Utf8PythonRegex("a", policy: new()
         {

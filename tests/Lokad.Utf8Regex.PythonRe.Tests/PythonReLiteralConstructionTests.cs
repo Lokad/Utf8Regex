@@ -24,7 +24,6 @@ public sealed class PythonReLiteralConstructionTests
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         Assert.True(allocated < 16 * 1024 * 1024, $"Literal construction allocated {allocated} bytes.");
         Assert.Equal(pattern, expression.Pattern);
-        Assert.True(expression.DebugIsScalarFullProgramValueCreated);
         Assert.True(expression.Match(Encoding.UTF8.GetBytes(pattern), mode: Utf8PythonMatchMode.FullMatch).Success);
         GC.KeepAlive(expression);
     }

@@ -22,7 +22,6 @@ public sealed class PythonRePublicConstructionTests
             ConstructionTimeout = Timeout.InfiniteTimeSpan
         }, cancellationToken: CancellationToken.None);
         Assert.Equal(pattern, regex.Pattern);
-        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Assert.True(regex.Match(bytes, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.Equal(1, regex.Count(bytes));
         Assert.False(Utf8ConstructionScope.IsActive);
@@ -50,7 +49,6 @@ public sealed class PythonRePublicConstructionTests
     public void ExplicitCompileNeedsNoLaterFullMatchConstruction(bool bytes)
     {
         var regex = Compile(Utf8ConstructionPolicy.Default, bytes);
-        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         using var deniedPreparation = new Utf8ConstructionScope(1, 1, 1, 1);
         Utf8PythonRangeMatch match = default;
         using (var captureCursor1 = regex.CreateMatchCursor(("😀😀"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
@@ -68,7 +66,7 @@ public sealed class PythonRePublicConstructionTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void EagerFullProgramUsesConstructionDeadlineInsteadOfMatchDeadline(bool bytes)
+    public void CompileUsesConstructionDeadlineInsteadOfMatchDeadline(bool bytes)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks++);
@@ -87,7 +85,6 @@ public sealed class PythonRePublicConstructionTests
                 ConstructionTimeout = TimeSpan.FromSeconds(30)
             }, cancellationToken: CancellationToken.None);
         Assert.True(ticks > 1);
-        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal(TimeSpan.FromMilliseconds(1), regex.MatchTimeout);
         Assert.False(Utf8ConstructionScope.IsActive);
     }
@@ -136,7 +133,6 @@ public sealed class PythonRePublicConstructionTests
         Assert.Equal(1ul, error.Limit);
         Assert.False(Utf8ConstructionScope.IsActive);
         var regex = Compile(Utf8ConstructionPolicy.Default, bytes);
-        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Utf8PythonRangeMatch result = default;
         using (var captureCursor2 = regex.CreateMatchCursor(("😀😀"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
         {
@@ -191,7 +187,6 @@ public sealed class PythonRePublicConstructionTests
             ConstructionTimeout = TimeSpan.FromSeconds(30)
         }, cancellationToken: cancellation.Token);
         cancellation.Cancel();
-        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
         Utf8PythonRangeMatch result = default;
         using (var captureCursor3 = regex.CreateMatchCursor(("😀😀"u8).ToArray(), mode: Utf8PythonMatchMode.Search))
         {

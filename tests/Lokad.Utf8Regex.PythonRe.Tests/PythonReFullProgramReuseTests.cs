@@ -1,59 +1,72 @@
-using Lokad.Utf8Regex.Internal;
+using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonReFullProgramReuseTests
 {
-    [Theory]
-    [InlineData("")]
-    [InlineData("a|ab")]
-    [InlineData("(?P<x>😀|a)+?")]
-    [InlineData("(a)(?P<x>.)(?<=\\1)(?(x)(?:é|b)+|x)")]
-    [InlineData("(?i:(?P<x>[a-z]+))(?P=x)")]
-    [InlineData("(?>a|ab)b")]
-    [InlineData("(?=(a+))a*")]
-    [InlineData("[^😀]+$")]
-    public void DerivedProgramMatchesIndependentAnchoredLowering(string pattern)
+    [Fact]
+    public void FirstFullMatchRunsWithItsInvocationBudgetAlone()
     {
-        var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-        _ = PythonReTranslator.Translate(parse, false);
-        var original = PythonReScalarCompiler.Compile(parse);
-        var anchored = PythonReScalarCompiler.Compile(parse with
+        using var regex = new Utf8PythonRegex("[A-Z]{3}[0-9]{3}", policy: new Utf8RegexPolicy
         {
-            // The shared leaf parser spells absolute EOF as \z.
-            Root = new PythonReSequenceNode([parse.Root, new PythonReRawNode(@"\z", PythonReRawKind.Escape)]),
+            ResourcePolicy = new() { MaxWorkingBytes = 1, MaxWorkSteps = 64 }
         });
-        var derived = PythonReScalarCompiler.RequireFullMatch(original);
-
-        Assert.Equal(anchored.Instructions, derived.Instructions);
-        Assert.Equal(anchored.GroupNames, derived.GroupNames);
-        Assert.Equal(anchored.GroupNumbers, derived.GroupNumbers);
-        Assert.Equal(anchored.RepeatCount, derived.RepeatCount);
-        Assert.Equal(anchored.GroupCount, derived.GroupCount);
-        Assert.Equal(anchored.UsesCaptureOpeningJournal, derived.UsesCaptureOpeningJournal);
-        Assert.Equal(anchored.CanMatchEmpty, derived.CanMatchEmpty);
-        Assert.Same(original.SetMasks, derived.SetMasks);
-        Assert.Same(original.CategorySetMembers, derived.CategorySetMembers);
-        Assert.Same(original.Assertions, derived.Assertions);
-        Assert.Same(original.BackreferenceLowerings, derived.BackreferenceLowerings);
-        Assert.Same(original.GroupNames, derived.GroupNames);
-        Assert.Equal(Utf8SliceInstructionKind.Accept, original.Instructions[^1].Kind);
+        using var cancellation = new CancellationTokenSource();
+        using var unrelated = new Utf8ConstructionScope(1, 1, 1, 1);
+        Assert.True(regex.Match("ABC123"u8, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.False(regex.Match("ABC123x"u8, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(0UL, unrelated.Budget.WorkSteps);
+        Assert.Equal(0UL, unrelated.Budget.ReservedBytes);
     }
 
-    [Fact]
-    public void FullMatchRecomputesACopiedHintAtTheTailWindowBoundary()
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void FullMatchRetriesKeepTheOriginalInvocation(bool cursorMode, bool expire)
     {
-        var pattern = "(?:ab)+" + new string('c', 126) + "$";
-        var parse = new PythonReParser(pattern).Parse(PythonReCompileOptions.None);
-        var original = PythonReScalarCompiler.Compile(parse);
-        var exit = Array.FindIndex(original.Instructions, static op => op.Kind == Utf8SliceInstructionKind.RepeatExit);
-        var priorLimit = original.Instructions[exit].B;
-        Assert.True(priorLimit > 0);
+        const string pattern = "(?P<x>a|😀)+?";
+        using var regex = new Utf8PythonRegex(pattern, policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
+        var input = Enumerable.Repeat((byte)'a', 256).ToArray();
+        using var cancellation = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (expire) ticks = 100;
+            else cancellation.Cancel();
+        });
+        try
+        {
+            if (expire)
+            {
+                var error = Assert.Throws<RegexMatchTimeoutException>(Match);
+                Assert.Equal(pattern, error.Pattern);
+                Assert.Equal(TimeSpan.FromMilliseconds(20), error.MatchTimeout);
+            }
+            else
+                Assert.Equal(cancellation.Token, Assert.Throws<OperationCanceledException>(Match).CancellationToken);
+        }
+        finally { session.Complete(); }
+        ticks = 0;
+        Assert.True(regex.Match(input, mode: Utf8PythonMatchMode.FullMatch).Success);
 
-        var derived = PythonReScalarCompiler.RequireFullMatch(original);
-        Assert.Equal(0, derived.Instructions[exit].B);
-        Assert.Equal(priorLimit, original.Instructions[exit].B);
+        void Match()
+        {
+            if (cursorMode)
+            {
+                using var cursor = regex.CreateMatchCursor(input, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.FullMatch);
+                cursor.MoveNext(out _);
+            }
+            else
+                regex.Match(input, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.FullMatch);
+        }
     }
 
     [Theory]
@@ -77,7 +90,7 @@ public sealed class PythonReFullProgramReuseTests
     {
         var regex = new Utf8PythonRegex(pattern);
         var bytes = System.Text.Encoding.UTF8.GetBytes(input);
-        Assert.Equal(success, regex.Match(bytes,mode: Utf8PythonMatchMode.FullMatch).Success);
+        Assert.Equal(success, regex.Match(bytes, mode: Utf8PythonMatchMode.FullMatch).Success);
         Utf8PythonRangeMatch snapshot1 = default;
         using (var captureCursor1 = regex.CreateMatchCursor(bytes, mode: Utf8PythonMatchMode.FullMatch))
         {
@@ -90,34 +103,6 @@ public sealed class PythonReFullProgramReuseTests
             captureCursor2.MoveNext(out snapshot2);
         }
         Assert.Equal(success, snapshot2.Success);
-        PythonReMatchAssert.Equal(success ? input : null, regex.Match(bytes,mode: Utf8PythonMatchMode.FullMatch));
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(2)]
-    public void DerivationAdmissionRollsBackWithoutChangingBorrowedProgram(int limit)
-    {
-        var parse = new PythonReParser("(?P<x>[é😀]+)(?=a)a").Parse(PythonReCompileOptions.None);
-        var original = PythonReScalarCompiler.Compile(parse);
-        var previous = original.Instructions.ToArray();
-        using var owner = new Utf8ConstructionScope(
-            limit == 0 ? 1ul : ulong.MaxValue,
-            limit == 1 ? 1ul : ulong.MaxValue,
-            limit == 2 ? 1ul : ulong.MaxValue,
-            ulong.MaxValue);
-        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
-            PythonReScalarCompiler.RequireFullMatch(original));
-        Assert.Equal(limit switch
-        {
-            0 => Utf8ResourceLimitKind.ConstructionInstructionCapacity,
-            1 => Utf8ResourceLimitKind.ConstructionBytes,
-            _ => Utf8ResourceLimitKind.ConstructionWorkSteps,
-        }, failure.ResourceKind);
-        Assert.Equal(0ul, owner.Budget.Reserved);
-        Assert.Equal(0ul, owner.Budget.ReservedBytes);
-        Assert.Equal(0ul, owner.Budget.Depth);
-        Assert.Equal(previous, original.Instructions);
+        PythonReMatchAssert.Equal(success ? input : null, regex.Match(bytes, mode: Utf8PythonMatchMode.FullMatch));
     }
 }

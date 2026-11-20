@@ -11,65 +11,9 @@ public sealed partial class Utf8PythonRegex
         CancellationToken cancellationToken, int kind = 0, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
-        // Capture the invocation before cold full-match preparation. Preparation
-        // keeps its fixed backstop, but its elapsed time cannot reset the deadline.
         var invocation = CreateInvocation(cancellationToken, workingMemoryAllowance);
-        var program = kind == 2 ? GetScalarFullProgram(input, invocation.Budget.Deadline, cancellationToken) : ScalarProgram;
-        return new PythonReScalarMatchCursor(input, program,
+        return new PythonReScalarMatchCursor(input, ScalarProgram,
             startOffsetInBytes, MatchTimeout, _utf8Regex, this, invocation, prepareSearch: kind == 0);
-    }
-
-    private Utf8SliceProgram GetScalarFullProgram(ReadOnlySpan<byte> input,
-        Utf8ExecutionDeadline deadline, CancellationToken cancellationToken)
-    {
-        if (_lazyScalarFullProgram.IsValueCreated)
-            return _lazyScalarFullProgram.Value;
-
-        if (deadline.IsInfinite && !cancellationToken.CanBeCanceled)
-        {
-            if (ResourcePolicy.MaxWorkingBytes is not { } maximumBytes)
-                return _lazyScalarFullProgram.Value;
-            // Restrict only execution-triggered cold preparation. Explicit
-            // Compile completes Lazy.Value under its separate eager owner.
-            // No interruption callback is needed on this uncontrolled lane.
-            using var construction = Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes);
-            var program = _lazyScalarFullProgram.Value;
-            construction.Complete();
-            return program;
-        }
-
-        // Keep the checkpoint closure out of the warm path: the C# compiler
-        // otherwise allocates its display class before the early return above.
-        return PrepareScalarFullProgram(input, deadline, cancellationToken);
-    }
-
-    private Utf8SliceProgram PrepareScalarFullProgram(ReadOnlySpan<byte> input,
-        Utf8ExecutionDeadline deadline, CancellationToken cancellationToken)
-    {
-        // Borrow interruption through the existing construction checkpoints.
-        // Preserve fixed backstops and any enclosing authority. Working bytes
-        // also bound this phase's additional covered preparation capacity.
-        using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
-            ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
-            : Utf8ConstructionScope.Enter();
-        var previousCheckpoint = construction.Budget.CheckpointHook;
-        construction.Budget.CheckpointHook = steps =>
-        {
-            previousCheckpoint?.Invoke(steps);
-            cancellationToken.ThrowIfCancellationRequested();
-            deadline.CheckNow();
-        };
-        try
-        {
-            var program = _lazyScalarFullProgram.Value;
-            construction.Complete();
-            return program;
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input, Pattern);
-        }
-        finally { construction.Budget.CheckpointHook = previousCheckpoint; }
     }
 
     private static void ValidateScalarStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)
@@ -138,7 +82,7 @@ public sealed partial class Utf8PythonRegex
         var cursor = CreateScalarCursor(input, startOffsetInBytes, cancellationToken, kind, workingMemoryAllowance);
         try
         {
-            var completed = kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition();
+            var completed = kind == 0 ? cursor.MoveNext() : cursor.MatchAtCurrentPosition(requireFullInput: kind == 2);
             var result = completed ? Utf8PythonValueMatch.Create(input, cursor.SnapshotValueData()) : default;
             for (var number = 0; number < captures.Length; number++)
             {

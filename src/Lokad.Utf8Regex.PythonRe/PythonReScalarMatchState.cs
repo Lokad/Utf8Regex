@@ -211,7 +211,8 @@ internal struct PythonReScalarMatchState
     internal bool MoveNext(ReadOnlySpan<byte> input, bool existenceOnly = false) =>
         MoveNextCore(input, search: true, existenceOnly);
 
-    internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input) => MoveNextCore(input, search: false, existenceOnly: false);
+    internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input, bool requireFullInput = false) =>
+        MoveNextCore(input, search: false, existenceOnly: false, requireFullInput);
 
     private static bool TryGetLaterAsciiRange(Utf8SliceProgram program, int leadingLow, int leadingHigh,
         ref Utf8SliceInvocation invocation, out int distance, out int low, out int high)
@@ -361,7 +362,7 @@ internal struct PythonReScalarMatchState
         return true;
     }
 
-    private bool MoveNextCore(ReadOnlySpan<byte> input, bool search, bool existenceOnly)
+    private bool MoveNextCore(ReadOnlySpan<byte> input, bool search, bool existenceOnly, bool requireFullInput = false)
     {
         // A scalar cursor exclusively owns this admitted scratch. Published
         // snapshots copy values; ResetAttempt never touches retained results.
@@ -392,7 +393,7 @@ internal struct PythonReScalarMatchState
                 }
                 Utf8SliceMatchOutcome outcome;
                 // A complete native literal match needs no capture/VM state.
-                // Match and the derived FullMatch program use search=false;
+                // Match and FullMatch use search=false;
                 // their additional position/end constraints keep the VM.
                 if (search && _program.GroupCount == 0 && _candidateRegex is { } candidate &&
                     candidate.TryFindNativeLiteralForResult(input, _position, ref _invocation,
@@ -492,7 +493,8 @@ internal struct PythonReScalarMatchState
                         outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
                     else
                         outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
-                            _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation, existenceOnly);
+                            _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation,
+                            existenceOnly, requireFullInput: requireFullInput);
                 }
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                     throw ResourceFailure();

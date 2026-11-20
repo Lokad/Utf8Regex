@@ -96,9 +96,9 @@ Constructors and Compile accept one immutable Utf8RegexPolicy. Its ResourcePolic
 and MatchTimeout govern later invocations; ConstructionPolicy and ConstructionTimeout
 govern eager creation. Null timeouts use DefaultMatchTimeout for matching and
 infinite construction time. Compile accepts a separate synchronous construction
-token and completes FullMatch preparation. Unfunded constructors defer that program;
-a ProgramMemoryAllowance funds it eagerly before publication and supplies default
-working admission. Dispose funded expressions after use; active calls/cursors keep
+token. Search, Match and FullMatch share one scalar program. A ProgramMemoryAllowance
+funds construction before publication and supplies default working admission.
+Dispose funded expressions after use. Active calls and cursors keep
 their funding until they finish. Refusal never retries without admission.
 
 With no explicit construction controls/funding, constructors can borrow an active

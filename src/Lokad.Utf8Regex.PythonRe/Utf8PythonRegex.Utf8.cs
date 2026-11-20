@@ -25,20 +25,18 @@ public sealed partial class Utf8PythonRegex
     private Utf8PythonValueMatch MatchLiteralRepeatFullValue(ReadOnlySpan<byte> input,
         int startOffsetInBytes, CancellationToken cancellationToken)
     {
-        // Capture the original deadline before the bounded proof or cold fallback
-        // preparation. A declined proof must not create a second invocation.
+        // The bounded proof and the scalar fallback use one invocation.
         var invocation = CreateInvocation(cancellationToken);
         // At most 60 scalar instructions survive the structural proof. This
         // fixed stack scratch, like scalar locals, needs no heap/program loan.
         Span<byte> encoded = stackalloc byte[240];
         if (!TryGetFullMatchLiteralRepeat(encoded, out var literal, out var suffix, out var minimum, out var maximum))
         {
-            var program = GetScalarFullProgram(input, invocation.Budget.Deadline, cancellationToken);
-            var cursor = new PythonReScalarMatchCursor(input, program, startOffsetInBytes,
+            var cursor = new PythonReScalarMatchCursor(input, ScalarProgram, startOffsetInBytes,
                 MatchTimeout, _utf8Regex, this, invocation, prepareSearch: false);
             try
             {
-                var result = cursor.MatchAtCurrentPosition()
+                var result = cursor.MatchAtCurrentPosition(requireFullInput: true)
                     ? Utf8PythonValueMatch.Create(input, cursor.SnapshotValueData()) : default;
                 cursor.Checkpoint();
                 return result;

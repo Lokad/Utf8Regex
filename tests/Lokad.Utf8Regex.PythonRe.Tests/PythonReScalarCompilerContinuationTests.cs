@@ -12,13 +12,12 @@ public sealed class PythonReScalarCompilerContinuationTests
     {
         foreach (var depth in new[] { 129, 16385 })
             foreach (var shape in Enumerable.Range(0, 4))
-                foreach (var full in new[] { false, true })
-                    yield return [depth, shape, full];
+                yield return [depth, shape];
     }
 
     [Theory]
     [MemberData(nameof(DeepTrees))]
-    public void DeepResolvedTreesKeepScalarWidthsWithoutRecursiveRecordHashing(int depth, int shape, bool full)
+    public void DeepResolvedTreesKeepScalarWidthsWithoutRecursiveRecordHashing(int depth, int shape)
     {
         var parse = new PythonReParser("(?P<x>.)").Parse(PythonReCompileOptions.None);
         _ = PythonReTranslator.Translate(parse, false);
@@ -35,7 +34,6 @@ public sealed class PythonReScalarCompilerContinuationTests
                     PythonReCompileOptions.Multiline, PythonReCompileOptions.None),
             };
         var program = PythonReScalarCompiler.Compile(parse with { Root = node });
-        if (full) program = PythonReScalarCompiler.RequireFullMatch(program);
         Assert.NotNull(program);
         var starts = new int[program.GroupCount];
         var ends = new int[program.GroupCount];

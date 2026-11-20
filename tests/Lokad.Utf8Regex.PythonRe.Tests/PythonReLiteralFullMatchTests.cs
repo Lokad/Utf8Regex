@@ -46,7 +46,6 @@ public sealed class PythonReLiteralFullMatchTests
                 Assert.Equal((start, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
                 Assert.Equal(pattern, System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
             }
-            Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         }
     }
 
@@ -71,7 +70,6 @@ public sealed class PythonReLiteralFullMatchTests
         var input = Encoding.UTF8.GetBytes(pattern);
         using var live = new CancellationTokenSource();
         Assert.True(regex.Match(input, 0, cancellationToken: live.Token, mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal(0ul, deniedPreparation.Budget.WorkSteps);
         Assert.Equal(0ul, deniedPreparation.Budget.ReservedBytes);
     }
@@ -138,7 +136,6 @@ public sealed class PythonReLiteralFullMatchTests
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
         var canceled = Assert.Throws<OperationCanceledException>(() => regex.Match([0xff], 0, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.FullMatch));
         Assert.Equal(cancellation.Token, canceled.CancellationToken);
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Theory]
@@ -211,7 +208,6 @@ public sealed class PythonReLiteralFullMatchTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(success, regex.Match(input, start, mode: Utf8PythonMatchMode.FullMatch).Success);
         PythonReMatchAssert.Equal(success ? Encoding.UTF8.GetString(input.AsSpan(start)) : null, regex.Match(input, start, mode: Utf8PythonMatchMode.FullMatch));
-        Assert.True(regex.DebugIsScalarFullProgramValueCreated);
     }
 
 
@@ -240,7 +236,6 @@ public sealed class PythonReLiteralFullMatchTests
         regex.Match(input, 65536, cancellationToken: default, mode: Utf8PythonMatchMode.FullMatch);
         Assert.True(regex.Match(input, 65536, mode: Utf8PythonMatchMode.FullMatch).Success);
         PythonReMatchAssert.Equal(pattern, regex.Match(input, 65536, mode: Utf8PythonMatchMode.FullMatch));
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]

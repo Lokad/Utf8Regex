@@ -15,7 +15,7 @@ namespace Lokad.Utf8Regex.PythonRe;
 public sealed partial class Utf8PythonRegex
 {
     /// <summary>Constructs an expression for caller-valid, unchanged UTF-8 subjects.</summary>
-    /// <remarks>The immutable policy separates construction and invocation limits/deadlines. Unfunded constructors defer the full-match program; caller-funded construction prepares retained programs before publication. With no explicit construction controls/funding, nested construction borrows its existing owner. Compile always starts an explicit eager construction owner.</remarks>
+    /// <remarks>The immutable policy separates construction and invocation limits/deadlines. Construction prepares the program for all match modes. With no explicit construction controls/funding, nested construction borrows its existing owner. Compile always starts an explicit construction owner.</remarks>
     public Utf8PythonRegex(string pattern, PythonReCompileOptions options = PythonReCompileOptions.None,
         Utf8RegexPolicy? policy = null)
         : this(new Utf8ConstructionPattern(pattern), options, policy, default, eager: false) { }
@@ -28,7 +28,6 @@ public sealed partial class Utf8PythonRegex
 
     private static TimeSpan s_defaultMatchTimeout = Timeout.InfiniteTimeSpan;
     private readonly Utf8SliceProgram _scalarProgram;
-    private readonly Lazy<Utf8SliceProgram> _lazyScalarFullProgram;
     private readonly Utf8Regex? _utf8Regex;
     private readonly KeyValuePair<byte[], int>[] _nameEntriesUtf8;
     private readonly IReadOnlyDictionary<string, int> _namedGroups;
@@ -93,10 +92,6 @@ public sealed partial class Utf8PythonRegex
             var prepareCore = !_canMatchEmpty || isExactLiteral;
             var translation = PythonReTranslator.Translate(parseResult, prepareCore);
             _scalarProgram = PythonReScalarCompiler.Compile(parseResult);
-            // Failed preparation is retryable: a caller's cancellation must not
-            // become a permanently cached failure. Concurrent cold callers may each
-            // derive under their own construction scope; only one result is kept.
-            _lazyScalarFullProgram = new Lazy<Utf8SliceProgram>(() => PythonReScalarCompiler.RequireFullMatch(_scalarProgram), LazyThreadSafetyMode.PublicationOnly);
 
             _nameEntriesUtf8 = construction.Budget.AllocateArray<KeyValuePair<byte[], int>>(parseResult.NamedGroups.Count, false);
             var nameIndex = 0;
@@ -147,9 +142,6 @@ public sealed partial class Utf8PythonRegex
                 _utf8Regex?.Inspection.ExecutionKind == NativeExecutionKind.ExactAsciiLiteral;
             _replacementPlanCache = Utf8BoundedPreparationCache<byte[], PythonReReplacementPlan>.CreateRetained(ReplacementPlanCacheCapacity, PythonReReplacementKeyComparer.Instance);
 
-            // Fund every retained operation program before transferring compilation
-            // admission. Lazy unfunded constructors retain their established path.
-            if (eager || programMemoryAllowance is not null) _ = _lazyScalarFullProgram.Value;
             if (programMemoryAllowance is not null)
             {
                 var owner = construction.Budget.AllocateObject(programMemoryAllowance,
@@ -226,7 +218,6 @@ public sealed partial class Utf8PythonRegex
     internal bool DebugUsesZeroOffsetUtf8SearchValueFastPath =>
         _canUseZeroOffsetUtf8SearchValueFastPath;
 
-    internal bool DebugIsScalarFullProgramValueCreated => _lazyScalarFullProgram.IsValueCreated;
 
     internal static bool IsOptionalUtf8BackendUnavailableException(Exception exception)
         => exception is ArgumentException or NotSupportedException;

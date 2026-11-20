@@ -80,9 +80,7 @@ public sealed class Utf8PythonRegexTests
 
         Assert.True(regex.DebugUsesUtf8RegexBackend);
         Assert.True(regex.DebugUsesZeroOffsetUtf8ValueFastPath);
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.True(regex.Match("foo"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.False(regex.DebugIsScalarFullProgramValueCreated);
         Assert.Equal("foo", PythonReDotNetReference.Render(regex));
         Assert.True(regex.IsMatch("xxfooyy"u8));
         var nonAsciiPrefixMatch = regex.Match("éfoo"u8, mode: Utf8PythonMatchMode.Search);
@@ -315,61 +313,35 @@ public sealed class Utf8PythonRegexTests
 
         Assert.False(conditional.DebugUsesUtf8RegexBackend);
         Assert.True(lookahead.DebugUsesUtf8RegexBackend);
-        Assert.False(conditional.DebugIsScalarFullProgramValueCreated);
-        Assert.False(lookahead.DebugIsScalarFullProgramValueCreated);
         Assert.True(conditional.Match("foobar"u8, mode: Utf8PythonMatchMode.Search).Success);
         Assert.True(lookahead.Match("foobar"u8, mode: Utf8PythonMatchMode.Search).Success);
         Assert.True(conditional.Match("foobar"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.True(conditional.Match("baz"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.False(conditional.Match("foo"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
-        Assert.True(conditional.DebugIsScalarFullProgramValueCreated);
         Assert.False(lookahead.Match("foobar"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         Assert.False(lookahead.Match("foo"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
-        // The complete single-literal finder checks both full-match endpoints
-        // and its positive suffix without preparing a second scalar program.
-        Assert.False(lookahead.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]
-    public void LazyUtf8FullMatcherSupportsConcurrentNativeAndScalarFirstUse()
+    public void FullMatchSupportsConcurrentSpanAndCursorUse()
     {
         var native = new Utf8PythonRegex("ab[0-9]{2}");
-        Assert.False(native.DebugIsScalarFullProgramValueCreated);
 
         Parallel.For(0, 32, iteration =>
         {
-            switch (iteration % 3)
+            if ((iteration & 1) != 0)
             {
-                case 0:
-                    Assert.True(native.Match("ab12"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
-                    break;
-                case 1:
-                    Utf8PythonRangeMatch snapshot1 = default;
-                    using (var captureCursor1 = native.CreateMatchCursor(("ab12"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
-                    {
-                        captureCursor1.MoveNext(out snapshot1);
-                    }
-                    Assert.True(snapshot1.Success);
-                    break;
-                default:
-                    Utf8PythonRangeMatch snapshot2 = default;
-                    using (var captureCursor2 = native.CreateMatchCursor(("ab12"u8).ToArray(), mode: Utf8PythonMatchMode.FullMatch))
-                    {
-                        captureCursor2.MoveNext(out snapshot2);
-                    }
-                    Assert.True(snapshot2.Success);
-                    break;
+                using var cursor = native.CreateMatchCursor("ab12"u8.ToArray(), mode: Utf8PythonMatchMode.FullMatch);
+                Assert.True(cursor.MoveNext(out var snapshot));
+                Assert.True(snapshot.Success);
             }
+            else
+                Assert.True(native.Match("ab12"u8, mode: Utf8PythonMatchMode.FullMatch).Success);
         });
 
-        Assert.True(native.DebugIsScalarFullProgramValueCreated);
 
-        // The anchored search shape shares a lazily created scalar full
-        // matcher across concurrent callers.
         var managed = new Utf8PythonRegex(@"^ab[0-9]{2}");
-        Assert.False(managed.DebugIsScalarFullProgramValueCreated);
         Parallel.For(0, 32, _ => Assert.True(managed.Match("ab12"u8, mode: Utf8PythonMatchMode.FullMatch).Success));
-        Assert.True(managed.DebugIsScalarFullProgramValueCreated);
     }
 
     [Fact]

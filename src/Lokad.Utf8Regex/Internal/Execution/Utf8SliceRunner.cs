@@ -341,13 +341,16 @@ internal static partial class Utf8SliceRunner
         bool startIsScalarBoundary,
         ref AttemptWorkspace workspace,
         ref Utf8SliceInvocation invocation, bool existenceOnly = false,
-        (int Instruction, int Bytes) verifiedPrefix = default)
+        (int Instruction, int Bytes) verifiedPrefix = default, bool requireFullInput = false)
     {
         // Profile cursors can reuse this admitted workspace across candidate
         // attempts while preserving their own empty-match and anchor progress.
         if (program.IsNonBacktracking)
+        {
+            if (requireFullInput) throw new InvalidOperationException("Full input matching requires the scalar backtracker.");
             return TryMatchAt(program, input, start, captureStarts, captureEnds,
                 startIsScalarBoundary, ref invocation, collectHistory, requireNonEmpty);
+        }
         if (!startIsScalarBoundary || (uint)start > (uint)input.Length ||
             start < input.Length && (input[start] & 0xC0) == 0x80)
             return new Utf8SliceMatchOutcome(false, -1, Utf8ExecutionLimitKind.None, null, null);
@@ -371,7 +374,8 @@ internal static partial class Utf8SliceRunner
         try
         {
             Utf8SliceMatchOutcome attempt;
-            var canStopEarly = existenceOnly && !collectHistory && !requireNonEmpty;
+            var canStopEarly = existenceOnly && !collectHistory && !requireNonEmpty && !requireFullInput;
+            int? requiredEnd = requireFullInput ? input.Length : null;
             if (!collectHistory && TryRunTerminalCaptureRoot(program, input, start,
                 captureStarts, captureEnds, ref workspace.Stacks, ref invocation, out attempt, canStopEarly))
             {
@@ -408,7 +412,8 @@ internal static partial class Utf8SliceRunner
                     requireNonEmpty, startIsScalarBoundary, workspace.Stacks.FrameCount)
                 {
                     ProgramIndex = verifiedPrefix.Instruction,
-                    InputIndex = start + verifiedPrefix.Bytes
+                    InputIndex = start + verifiedPrefix.Bytes,
+                    RequiredEnd = requiredEnd
                 };
                 try
                 {
@@ -423,7 +428,11 @@ internal static partial class Utf8SliceRunner
             }
             else
                 attempt = RunFrom(program, input, start, captureStarts, captureEnds,
-                    collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace, ref invocation);
+                    collectHistory, requireNonEmpty, startIsScalarBoundary, ref workspace, ref invocation, requiredEnd);
+            // Complete terminal proofs return a unique or maximal extent. The
+            // scalar VM tests the end within Accept so other outcomes can retry.
+            if (requireFullInput && attempt.IsMatch && attempt.EndIndex != input.Length)
+                return new(false, -1, attempt.Breach, null, null);
             if (attempt.IsMatch && program.RightToLeft)
             {
                 // Mirrored runs record right edges at capture starts and left
@@ -2042,7 +2051,8 @@ internal static partial class Utf8SliceRunner
                     }
 
                 case Utf8SliceInstructionKind.Accept:
-                    if (requireNonEmpty && inputIndex == start)
+                    if (requireNonEmpty && inputIndex == start ||
+                        cursor.RequiredEnd is int requiredEnd && inputIndex != requiredEnd)
                     {
                         failed = true;
                         break;

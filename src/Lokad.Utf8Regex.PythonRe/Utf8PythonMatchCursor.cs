@@ -23,20 +23,20 @@ public sealed class Utf8PythonMatchCursor : IDisposable
     private int _active;
     private Utf8FundedStorage.Use? _programUse;
     private Status _status;
-    private readonly bool _anchored;
+    private readonly Utf8PythonMatchMode _mode;
 
     private enum Status : byte { Open, Matched, Ended, Faulted, Disposed }
 
     internal Utf8PythonMatchCursor(ReadOnlyMemory<byte> input, Utf8SliceProgram program,
         int startOffsetInBytes, TimeSpan timeout,
         object pattern, Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, Utf8FundedStorage.Use? programUse = null,
-        bool anchored = false)
+        Utf8PythonMatchMode mode = Utf8PythonMatchMode.Search)
     {
         _input = input;
         _programUse = programUse;
-        _anchored = anchored;
+        _mode = mode;
         _discovery = new PythonReScalarMatchState(input.Span, program,
-            startOffsetInBytes, timeout, pattern, invocation, candidateRegex, prepareSearch: !anchored);
+            startOffsetInBytes, timeout, pattern, invocation, candidateRegex, prepareSearch: mode == Utf8PythonMatchMode.Search);
         try { _discovery.Checkpoint(); }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
             _discovery.WorkingInvocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -133,7 +133,10 @@ public sealed class Utf8PythonMatchCursor : IDisposable
                 return false;
             }
             var input = _input.Span;
-            if (!(_anchored ? _discovery.MatchAtCurrentPosition(input) : _discovery.MoveNext(input)))
+            var found = _mode == Utf8PythonMatchMode.Search
+                ? _discovery.MoveNext(input)
+                : _discovery.MatchAtCurrentPosition(input, requireFullInput: _mode == Utf8PythonMatchMode.FullMatch);
+            if (!found)
             {
                 Close(Status.Ended);
                 return false;
@@ -153,7 +156,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
                     _discovery.ReleaseResultsSince(marker);
                     match = completed;
                 }
-                _status = _anchored ? Status.Matched : Status.Open;
+                _status = _mode == Utf8PythonMatchMode.Search ? Status.Open : Status.Matched;
             }
             return true;
         }

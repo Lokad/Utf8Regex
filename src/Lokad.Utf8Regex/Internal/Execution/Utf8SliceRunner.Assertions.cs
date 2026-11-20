@@ -42,7 +42,7 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int start,
         int[] captureStarts, int[] captureEnds,
         bool collectHistory, bool requireNonEmpty, bool startIsScalarBoundary,
-        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation)
+        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, int? requiredEnd = null)
     {
         ref var stacks = ref workspace.Stacks;
         ref var continuations = ref workspace.AssertionContinuations;
@@ -51,7 +51,7 @@ internal static partial class Utf8SliceRunner
         // Assertion segments can still need them to satisfy RequiredEnd.
         var terminalClassRepeat = CanRunTerminalClassRepeat(program);
         var current = new AssertionCursor(program, start, workspace.Counts, workspace.Positions,
-            requireNonEmpty, startIsScalarBoundary, stacks.FrameCount);
+            requireNonEmpty, startIsScalarBoundary, stacks.FrameCount) { RequiredEnd = requiredEnd };
         var resumeFailure = false;
         try
         {
@@ -63,13 +63,6 @@ internal static partial class Utf8SliceRunner
                     : RunSegment(input, captureStarts, captureEnds, balanceHeads,
                         ref current, resumeFailure, preserveCaptureTrail: true, ref stacks, ref invocation, out suspended);
                 resumeFailure = false;
-                if (!suspended && outcome.IsMatch && current.RequiredEnd is int requiredEnd && outcome.EndIndex != requiredEnd)
-                {
-                    // A forward fixed-length assertion must end at its original
-                    // edge. Keep alternatives within the same owned VM.
-                    resumeFailure = true;
-                    continue;
-                }
                 if (suspended)
                 {
                     var instruction = current.Program.Instructions[current.ProgramIndex];
