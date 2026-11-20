@@ -49,6 +49,11 @@ public sealed class Utf8AdjacentSetRepeatTests
     [InlineData(@"\A(?<run>[\sA]+[^\sX]+)\z", "AZ")]
     [InlineData(@"\A(?<run>[\sA]+[^\sX]+)\z", "AA")]
     [InlineData(@"\A(?<run>[\sA]+[^\sX]+)\z", "Aé📍")]
+    [InlineData(@"(?<run>[^/\s]+[^\s]+)(?:x|/x)\z", "abc/x")]
+    [InlineData(@"(?<run>[^/\s]+[^\s]+)(?:x|/x)\z", "a📍/x")]
+    [InlineData(@"\A(?<run>[^/\s]+[^\s]+)\z", "/abc")]
+    [InlineData(@"\A(?<run>([^/\s]+)[^\s]+)\z", "abc/x")]
+    [InlineData(@"\A(?<run>[^/\s]+[^\s]+?)", "abc/x")]
     public void PublicCapturesAndDeclinedShapesKeepTheirOutcomes(string pattern, string text)
     {
         var options = RegexOptions.CultureInvariant;
@@ -85,6 +90,17 @@ public sealed class Utf8AdjacentSetRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         var actual = Utf8MatchSequence.First(owner.CreateMatchCursor(input));
         Utf8MatchSequence.AssertCaptures(oracle.Match(text), actual, input, text);
+    }
+
+    [Fact]
+    public void SubsumedFirstClassStillRequiresTwoScalars()
+    {
+        using var regex = new Utf8Regex(@"\A(?<path>[^/\s]+[^\s]+)\z");
+        Assert.False(regex.IsMatch("😀"u8));
+        Assert.False(regex.IsMatch("/😀"u8));
+        var slots = new Utf8CaptureRange[2];
+        Assert.Equal(new Utf8CaptureRange(0, 5), regex.Match("😀/"u8, captures: slots));
+        Assert.Equal(slots[0], slots[1]);
     }
 
     [Fact]

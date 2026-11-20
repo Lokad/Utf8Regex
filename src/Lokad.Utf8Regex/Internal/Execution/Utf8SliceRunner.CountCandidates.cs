@@ -506,13 +506,17 @@ internal static partial class Utf8SliceRunner
         => candidatePlan.LiteralSearch is { IgnoreCase: false } search &&
             LiteralStartsAtInstruction(program, index, search.Needle) ? search : null;
 
-    private static int GetRequiredHybridSuffix(ReadOnlySpan<Utf8SliceInstruction> code, int index)
+    private static (int First, int Second) GetRequiredHybridSuffix(ReadOnlySpan<Utf8SliceInstruction> code, int index)
     {
-        if (!IsSingleClassRepeat(code, index) || !IsSingleClassRepeat(code, index + 4) ||
-            code[index].RepeatMinimum == 0 || code[index + 4].RepeatMinimum == 0 ||
-            code[index + 1] is not { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } ||
-            code[index + 5] is not { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 }) return -1;
-        return index;
+        // The first class may already have been reduced to one scalar.
+        // Either layout requires two scalars before the suffix can finish.
+        var repeated = IsSingleClassRepeat(code, index) && code[index].RepeatMinimum != 0;
+        var first = repeated ? index + 1 : index;
+        var next = repeated ? index + 4 : index + 1;
+        if (!IsSingleClassRepeat(code, next) || code[next].RepeatMinimum == 0 ||
+            code[first] is not { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } ||
+            code[next + 1] is not { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 }) return default;
+        return (first, next + 1);
     }
 
     private static byte[][]? GetAlignedDelimiterAlternatives(Utf8SliceProgram program, int index,
@@ -766,7 +770,8 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
         in (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default,
-        byte[][]? delimiterAlternatives = null, int requiredSuffix = -1, int screenedDelimiter = -1)
+        byte[][]? delimiterAlternatives = null, (int First, int Second) requiredSuffix = default,
+        int screenedDelimiter = -1)
     {
         if (leadingClass >= 2 && !repeatPrefix.Any.HasValue && delimiterAlternatives is null)
         {
@@ -819,12 +824,12 @@ internal static partial class Utf8SliceRunner
             breach = TrySeekAsciiCandidate(input, ref position, literal, literal, ref invocation);
         windowEnd = position;
         if (breach != Utf8ExecutionLimitKind.None || position < 0) return breach;
-        if (requiredSuffix >= 0 && search is { } aligned)
+        if (requiredSuffix.Second != 0 && search is { } aligned)
         {
             breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var code = program.Instructions;
-            if (RejectsAdjacentHybridRuns(program, code[requiredSuffix + 1], code[requiredSuffix + 5],
+            if (RejectsAdjacentHybridRuns(program, code[requiredSuffix.First], code[requiredSuffix.Second],
                 input, position + aligned.Length))
             {
                 // The leading class cannot consume this ASCII delimiter byte.

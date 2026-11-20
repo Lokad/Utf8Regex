@@ -574,7 +574,7 @@ internal static partial class Utf8SliceRunner
         long classGapMaximum = 0;
         var directClassLiteral = false;
         var singleWindowAttempt = false;
-        var requiredClassSuffix = -1;
+        var requiredClassSuffix = default((int First, int Second));
         var verifiedClassLiteralLength = 0;
         var screenedDelimiter = -1;
         var wideInput = input.Length - fromByte >= 256;
@@ -984,7 +984,7 @@ internal static partial class Utf8SliceRunner
         var classSearch = default(PreparedSubstringSearch?);
         (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default;
         var singleWindowAttempt = false;
-        var requiredClassSuffix = -1;
+        var requiredClassSuffix = default((int First, int Second));
         if (whitespaceLiteral >= 0 && leadingClass >= 0)
         {
             classSearch = GetAlignedDelimiterSearch(program, whitespaceLiteralIndex, candidatePlan);

@@ -114,7 +114,13 @@ public sealed class Utf8UriExistenceTests
             if (expire) ticks = 50; else cancellation.Cancel();
         });
         Exception? failure = null;
-        try { regex.IsMatch(input, cancellation.Token); }
+        try
+        {
+            // The body only needs two scalars for existence. A range must
+            // still find its greedy end and observe interruption during the run.
+            if (phase == 2) regex.Match(input, cancellationToken: cancellation.Token);
+            else regex.IsMatch(input, cancellation.Token);
+        }
         catch (Exception error) { failure = error; }
         finally { session.Complete(); }
         Assert.True(entered);

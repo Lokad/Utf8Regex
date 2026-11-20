@@ -1457,7 +1457,7 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.ConcatNode concat:
                     if (frame.Index < concat.Children.Length)
                     {
-                        request = new(concat.Children[frame.Index++], false, MirrorExecute, 0);
+                        request = new(GetConcatChild(concat.Children, frame.Index++), false, MirrorExecute, 0);
                         return true;
                     }
                     break;
@@ -1893,6 +1893,27 @@ internal static class Utf8SliceLowerer
                     throw new ArgumentException($"Unsupported slice node {node.GetType().Name}.", nameof(node));
             }
             return false;
+        }
+
+        private Utf8SliceNode GetConcatChild(Utf8SliceNode[] children, int index)
+        {
+            var child = children[index];
+            if (NonBacktracking || MirrorExecute || index + 1 == children.Length ||
+                child is not Utf8SliceNode.RepeatNode { Minimum: 1, Maximum: long.MaxValue, Lazy: false,
+                    Body: Utf8SliceNode.SetNode { Negated: true, FoldCase: false } first } ||
+                children[index + 1] is not Utf8SliceNode.RepeatNode { Minimum: 1, Maximum: long.MaxValue, Lazy: false,
+                    Body: Utf8SliceNode.SetNode { Negated: true, FoldCase: false } second })
+                return child;
+
+            Budget.ChargeWork((ulong)first.Members.Length + (ulong)second.Members.Length + 16);
+            if (!first.Members.AsSpan().SequenceEqual(second.Members)) return child;
+            for (var i = 0; i < first.Mask16.Length; i++)
+                if ((second.Mask16[i] & ~first.Mask16[i]) != 0) return child;
+
+            // Both atoms are effect-free, and every first-class member also
+            // belongs to the second. A+ B+ tries the same candidate ends in
+            // descending order as A B+; additional splits only repeat ends.
+            return first;
         }
 
         private bool IsSmallPureBody(Utf8SliceNode node, ref int remaining)
