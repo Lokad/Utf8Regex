@@ -630,6 +630,7 @@ internal static partial class Utf8SliceRunner
             program.Instructions[leadingScalarIndex - 1] is
                 { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0, RepeatMaximum: <= 4 };
         var proveDecimalWindow = canProveDecimal && followingWindow.Min != 0 && program.SkipsTerminalRewind(1);
+        var reuseDecimalWindow = proveDecimalWindow && leadingClass == 2 && program.Instructions[1].RepeatMinimum == 1;
         if (seekDecimal)
         {
             leading = '0';
@@ -727,7 +728,17 @@ internal static partial class Utf8SliceRunner
                 var proveDecimalPrefix = shortDecimalHead || proveDecimalWindow;
                 var proveMatch = proveDecimalPrefix || existenceOnly && !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
                 var proofStart = proveDecimalPrefix ? 0 : leadingScalarIndex;
-                if (!MayMatchBranchedAsciiPrefix(program, input, position, proofStart, out var acceptedEnd, proveMatch))
+                var proofPosition = position;
+                if (reuseDecimalWindow && position < classWindowEnd)
+                {
+                    // Rewind already admitted a nonempty decimal run ending at
+                    // this excluded delimiter. Check its leading boundary and
+                    // start the bounded proof at the repeat's continuation.
+                    if (!MatchesBoundary(program, first, input, position)) continue;
+                    proofPosition = classWindowEnd;
+                    proofStart = program.Instructions[1].A + 1;
+                }
+                if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch))
                     continue;
                 if (acceptedEnd >= 0)
                 {

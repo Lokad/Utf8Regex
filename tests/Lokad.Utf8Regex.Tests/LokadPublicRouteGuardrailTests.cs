@@ -236,6 +236,8 @@ public sealed class LokadPublicRouteGuardrailTests
             "Today is 11/18/20199.",
             "x11/18/2019",
             "é11/18/2019",
+            "😀1١/2/2024",
+            "é1١/2/2024",
             "١١/١٨/٢٠١٩",
         ];
         foreach (var input in inputs)
