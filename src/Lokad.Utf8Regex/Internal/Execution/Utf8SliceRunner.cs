@@ -573,6 +573,9 @@ internal static partial class Utf8SliceRunner
         var hasClassWindow = classLiteral >= 0 || classAlternatives is not null;
         var screenDecimalWindow = hasClassWindow && first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
             leadingClass == leadingScalarIndex && IsLeadingDecimalSet(program, leadingScalarIndex);
+        var followingWindow = screenDecimalWindow && directClassLiteral && classLiteral >= 0 &&
+            !Utf8AsciiBytePredicates.IsDigit((byte)classLiteral)
+            ? GetShortRepeatLiteralWindow(program, program.LeadingClassDelimiter.LiteralIndex + 2) : default;
         var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
             IsLeadingDecimalSet(program, leadingScalarIndex);
         if (seekDecimal)
@@ -608,6 +611,11 @@ internal static partial class Utf8SliceRunner
                 if (position < 0)
                     return new(false, -1, -1, null, null,
                         new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+                // A decimal repeat cannot consume this delimiter. Every start
+                // in its window must reach the next literal from the same suffix.
+                if (followingWindow.Min != 0 && position <= classWindowEnd &&
+                    !MayReachShortRepeatLiteral(input, classWindowEnd + 1, followingWindow, admitsWideScalars: true))
+                    position = classWindowEnd + 1;
             }
             if (seekLiteral)
             {

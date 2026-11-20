@@ -91,6 +91,24 @@ public sealed class Utf8ControlledDecimalBooleanTests
         Assert.Equal(new Utf8CaptureRange(9, 17), captures[2]);
     }
 
+    [Fact]
+    public void DecimalWindowsSkipImpossibleContinuationsWithinWorkLimit()
+    {
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", options: RegexOptions.Compiled,
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 55, MaxWorkingBytes = 1 } });
+
+        Assert.False(regex.IsMatch("Today is 11/18/201A and tomorrow is 11/19/201A."u8, source.Token));
+        Assert.Equal(new Utf8CaptureRange(7, 22), regex.Match(" 1/2x! 1/𝟙/٢٠٢٦!"u8, cancellationToken: source.Token));
+    }
+
+    [Fact]
+    public void DecimalWindowCanStillConsumeAnOverlappingDelimiter()
+    {
+        using var regex = new Utf8Regex(@"\b\d{1,2}1\d{1,2}/\d{2,4}\b", options: RegexOptions.Compiled);
+        Assert.Equal(new Utf8CaptureRange(1, 10), regex.Match(" 1212/2026!"u8));
+    }
+
     [Theory]
     [InlineData(@"\A\p{Nd}{1,3}\b", "1٢!", RegexOptions.ECMAScript, 1)]
     [InlineData(@"\A[\d!]{1,3}\b", "1!!", RegexOptions.None, 1)]
