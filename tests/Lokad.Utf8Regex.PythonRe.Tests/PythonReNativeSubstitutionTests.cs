@@ -67,7 +67,11 @@ public sealed class PythonReNativeSubstitutionTests
     public void NativeGrammarAndUtf8ErrorsAreValidatedOnMissEvenWithNegativeCount(bool warm)
     {
         var regex = new Utf8PythonRegex("a");
-        if (warm) regex.Replace("a"u8, "é\\g<0>"u8);
+        if (warm)
+        {
+            regex.Replace("a"u8, "é\\g<0>"u8);
+            regex.Replace("a"u8, "tiger"u8);
+        }
         var retained = regex.DebugReplacementPlanCachePayloadBytes;
         foreach (var count in new[] { -1, 0, 1 })
         {
@@ -83,6 +87,26 @@ public sealed class PythonReNativeSubstitutionTests
         var error = Assert.Throws<OperationCanceledException>(() =>
             regex.Subn([0x80], [0x80], startOffsetInBytes: -1, cancellationToken: token.Token));
         Assert.Equal(token.Token, error.CancellationToken);
+    }
+
+    [Theory]
+    [InlineData(4093)]
+    [InlineData(4094)]
+    [InlineData(4095)]
+    public void ExactReplacementKeepsOwnedBytesAcrossOutputBlockBoundary(int gapLength)
+    {
+        using var regex = new Utf8PythonRegex("cat", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 64 << 10, MaxResultBytes = 64 << 10 },
+        });
+        var gap = new string('x', gapLength);
+        var input = Encoding.UTF8.GetBytes(gap + "cat!");
+        var template = "é"u8.ToArray();
+        var result = regex.Subn(input, template, count: 1);
+        input.AsSpan().Clear();
+        template.AsSpan().Clear();
+        Assert.Equal(1, result.ReplacementCount);
+        Assert.Equal(Encoding.UTF8.GetBytes(gap + "é!"), result.ResultBytes);
     }
 
     [Theory]

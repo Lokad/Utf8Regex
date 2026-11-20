@@ -28,22 +28,4 @@ public sealed class Utf8ProfileLiteralReplacementTests
         input.AsSpan().Fill((byte)'x');
         Assert.Equal("é😀😀é 中foo!"u8.ToArray(), retained);
     }
-
-    [Fact]
-    public void IndependentReplacementValidationPrecedesMissPublication()
-    {
-        var regex = new Utf8Regex("foo");
-        {
-            var input = "é😀 no match"u8.ToArray();
-            var replacement = new byte[] { 0xff };
-            var invocation = new Utf8SliceInvocation(default, Timeout.InfiniteTimeSpan, default);
-            Utf8InvocationResultLedger results = default;
-            Exception? failure = null;
-            try { _ = regex.ReplaceExactLiteralForResult(input, replacement, int.MaxValue, ref invocation, ref results, out _); }
-            catch (ArgumentException error) { failure = error; }
-            finally { results.Release(ref invocation); }
-            Assert.IsAssignableFrom<ArgumentException>(failure);
-            Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        }
-    }
 }

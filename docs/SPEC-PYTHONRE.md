@@ -619,8 +619,9 @@ with optional count, byte start and cancellation token. Templates encode Python'
 Unicode template grammar in UTF-8. Parsing, literal fragments, cache keys and output stay in bytes;
 only selected group-name/error lexemes may project text. Complete strict template
 validation precedes grammar errors and matching, including misses and negative
-counts. Template `Position` retains its published UTF-16 units, derived from the
-failed prefix.
+counts. An exact replacement consumes the immutable literal produced by that
+validated plan. Template `Position` retains its published UTF-16 units, derived
+from the failed prefix.
 
 Warm native lookup borrows the supplied span. Cold preparation admits an immutable
 byte-key copy before acquisition and keeps its working loan through retained-cache

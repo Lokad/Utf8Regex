@@ -56,10 +56,21 @@ internal static class Utf8ExactLiteralReplacement
                     "The exact replacement copy pass lost a preflighted match.");
             }
 
-            Utf8InvocationOutput.Copy(input[sourcePosition..matchStart], output.AsSpan(destinationPosition), control);
-            destinationPosition += matchStart - sourcePosition;
-            Utf8InvocationOutput.Copy(replacement, output.AsSpan(destinationPosition), control);
-            destinationPosition += replacement.Length;
+            var gap = input[sourcePosition..matchStart];
+            var destination = output.AsSpan(destinationPosition);
+            if (gap.Length <= Utf8InvocationOutput.CopyBlockLength - replacement.Length)
+            {
+                // The iteration checkpoint admits one output block. Both
+                // fragments fit in it and the destination is freshly owned.
+                gap.CopyTo(destination);
+                replacement.CopyTo(destination[gap.Length..]);
+            }
+            else
+            {
+                Utf8InvocationOutput.Copy(gap, destination, control);
+                Utf8InvocationOutput.Copy(replacement, destination[gap.Length..], control);
+            }
+            destinationPosition += gap.Length + replacement.Length;
             sourcePosition = matchStart + search.Length;
             copied++;
         }

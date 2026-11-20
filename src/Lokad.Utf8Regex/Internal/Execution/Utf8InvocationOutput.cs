@@ -5,6 +5,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 // separate gate. Views borrow the live operation authority without copying it.
 internal static class Utf8InvocationOutput
 {
+    internal const int CopyBlockLength = 4096;
+
     internal static void Checkpoint<TControl>(scoped TControl control)
         where TControl : IUtf8InvocationBufferControl, allows ref struct
     {
@@ -50,7 +52,7 @@ internal static class Utf8InvocationOutput
         destination = destination[..source.Length];
         // One bounded CopyTo already handles overlap. Preserve the same work
         // charges and terminal interruption check without inspecting direction.
-        if (source.Length <= 4096)
+        if (source.Length <= CopyBlockLength)
         {
             if (!source.IsEmpty)
             {
@@ -67,7 +69,7 @@ internal static class Utf8InvocationOutput
         for (var copied = 0; copied < source.Length;)
         {
             Checkpoint(control);
-            var count = Math.Min(4096, source.Length - copied);
+            var count = Math.Min(CopyBlockLength, source.Length - copied);
             var offset = backward ? source.Length - copied - count : copied;
             source.Slice(offset, count).CopyTo(destination.Slice(offset, count));
             copied += count;

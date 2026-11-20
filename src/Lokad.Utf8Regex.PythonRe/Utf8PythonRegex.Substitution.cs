@@ -143,6 +143,9 @@ public sealed partial class Utf8PythonRegex
         PythonRePreparationInterruptionControl control)
     {
         if (owned.Length != query.Length) return false;
+        // The cache checks interruption before comparison and again before
+        // returning the plan. One short comparison fits between those checks.
+        if (query.Length <= 2048) return owned.SequenceEqual(query);
         for (var offset = 0; offset < query.Length;)
         {
             control.Check();
