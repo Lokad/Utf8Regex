@@ -520,7 +520,7 @@ internal static partial class Utf8SliceRunner
         var classLiteral = -1;
         var classSearch = default(PreparedSubstringSearch?);
         byte[][]? classAlternatives = null;
-        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last) repeatPrefix = default;
+        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default;
         long classGapMaximum = 0;
         var directClassLiteral = false;
         var singleWindowAttempt = false;
@@ -886,7 +886,7 @@ internal static partial class Utf8SliceRunner
         // consuming instructions separate the repeat from its delimiter.
         var literalImmediatelyAfterRepeat = whitespaceLiteral >= 0 && whitespaceLiteralIndex == leadingClass + 3;
         var classSearch = default(PreparedSubstringSearch?);
-        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last) repeatPrefix = default;
+        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default;
         var singleWindowAttempt = false;
         var requiredClassSuffix = -1;
         if (whitespaceLiteral >= 0 && leadingClass >= 0)

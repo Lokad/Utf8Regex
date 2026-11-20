@@ -462,13 +462,16 @@ internal static partial class Utf8SliceRunner
     }
 
     private static PreparedSubstringSearch? GetRepeatPrefixSearch(Utf8SliceProgram program,
-        in Utf8SearchPlan candidatePlan, out (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last) prefix)
+        in Utf8SearchPlan candidatePlan, out (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) prefix)
     {
         prefix = default;
         if (candidatePlan.LiteralSearch is not { IgnoreCase: false, Length: > 1 } search) return null;
         var code = program.Instructions.AsSpan();
         ulong low = 0, high = 0;
         var last = default(Utf8SearchAsciiSet);
+        var previousCategories = 0u;
+        var disjoint = true;
+        var repeats = 0;
         var index = 0;
         while (index < code.Length && index < 64)
         {
@@ -481,21 +484,31 @@ internal static partial class Utf8SliceRunner
             }
             if (!IsSingleClassRepeat(code, index)) break;
             var atom = code[index + 1];
-            if (!program.TryGetUnfoldedAsciiSet(atom, out var ascii, out _))
-            {
-                if (!TryGetPositiveCategorySet(program, atom, out _, out var atomLow, out var atomHigh))
-                    return null;
+            var categories = 0u;
+            Utf8SearchAsciiSet ascii;
+            if (atom.Kind != Utf8SliceInstructionKind.Set &&
+                TryGetPositiveCategorySet(program, atom, out categories, out var atomLow, out var atomHigh))
                 ascii = Utf8SearchAsciiSet.FromMasks(atomLow, atomHigh);
+            else
+            {
+                if (!program.TryGetUnfoldedAsciiSet(atom, out ascii, out var asciiOnly)) return null;
+                disjoint &= asciiOnly;
             }
+            var required = code[index].RepeatMinimum > 0;
+            disjoint &= required && code[index].RepeatMaximum == long.MaxValue &&
+                (last.Low & ascii.Low) == 0 && (last.High & ascii.High) == 0 &&
+                (previousCategories & categories) == 0;
             low |= ascii.Low;
             high |= ascii.High;
-            last = code[index].RepeatMinimum > 0 ? ascii : default;
+            last = required ? ascii : default;
+            previousCategories = categories;
+            repeats++;
             index += 4;
         }
 
         if ((low | high) == 0 || (low & high) == ulong.MaxValue || index >= 64 ||
             !LiteralStartsAtInstruction(program, index, search.Needle)) return null;
-        prefix = (Utf8SearchAsciiSet.FromMasks(low, high), last);
+        prefix = (Utf8SearchAsciiSet.FromMasks(low, high), last, disjoint && repeats >= 2 ? index : 0);
         return search;
     }
 
@@ -657,7 +670,7 @@ internal static partial class Utf8SliceRunner
     internal static Utf8ExecutionLimitKind TrySeekLeadingClassLiteralWindow(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int leadingClass, byte literal, in PreparedSubstringSearch? search,
         long gapMaximum, bool direct, ref int position, ref Utf8SliceInvocation invocation, out int windowEnd,
-        (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last) repeatPrefix = default,
+        in (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default,
         byte[][]? delimiterAlternatives = null, int requiredSuffix = -1)
     {
         if (leadingClass >= 2 && !repeatPrefix.Any.HasValue && delimiterAlternatives is null)
@@ -670,6 +683,7 @@ internal static partial class Utf8SliceRunner
                 return TrySeekWhitespaceClassStart(program, input, leadingClass, literal, search, ref position, ref invocation, out windowEnd);
         }
         var floor = position;
+        var earliest = -1;
         Utf8ExecutionLimitKind breach;
         if (delimiterAlternatives is not null)
         {
@@ -684,9 +698,16 @@ internal static partial class Utf8SliceRunner
             {
                 breach = Utf8SearchExecutor.TryFindLiteralCandidate(prepared, input, position, lastStart,
                     false, ref invocation, out position);
-                if (breach != Utf8ExecutionLimitKind.None || position < 0 || !repeatPrefix.Last.HasValue ||
-                    position > floor && (input[position - 1] >= 128 || repeatPrefix.Last.Contains(input[position - 1])))
-                    break;
+                if (breach != Utf8ExecutionLimitKind.None || position < 0) break;
+                var rejected = repeatPrefix.Last.HasValue &&
+                    (position == floor || input[position - 1] < 128 && !repeatPrefix.Last.Contains(input[position - 1]));
+                if (!rejected && repeatPrefix.DisjointEnd != 0)
+                {
+                    breach = TryNarrowDisjointRepeatPrefix(program, input, floor, position,
+                        repeatPrefix.DisjointEnd, ref invocation, out earliest, out rejected);
+                    if (breach != Utf8ExecutionLimitKind.None) break;
+                }
+                if (!rejected) break;
 
                 // This literal cannot follow the mandatory final repeat.
                 // A later delimiter may still match from before this hit.
@@ -714,6 +735,11 @@ internal static partial class Utf8SliceRunner
         }
         if (repeatPrefix.Any.HasValue)
         {
+            if (earliest >= 0)
+            {
+                position = earliest;
+                return Utf8ExecutionLimitKind.None;
+            }
             // Even if this hit is inside a repeat and the actual delimiter is
             // later, every byte from its viable start to here can occur in the
             // prefix. Only an excluded ASCII byte proves a barrier. Rewind no
@@ -736,6 +762,61 @@ internal static partial class Utf8SliceRunner
             return invocation.TryChargeInputStep();
         }
         return TryRewindClassWhitespace(program, input, floor, leadingClass, gapMaximum, direct, ref position, ref invocation);
+    }
+
+    private static Utf8ExecutionLimitKind TryNarrowDisjointRepeatPrefix(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int floor, int position, int instruction, ref Utf8SliceInvocation invocation,
+        out int earliest, out bool rejected)
+    {
+        earliest = -1;
+        rejected = false;
+        // One bounded probe, plus at most the remainder of a scalar at its
+        // lower edge. Leave longer runs to the existing conservative search.
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        var stop = Math.Max(floor, position - 64);
+        var code = program.Instructions.AsSpan();
+        while (instruction > 0)
+        {
+            if (code[instruction - 1].Kind is Utf8SliceInstructionKind.CaptureStart or
+                Utf8SliceInstructionKind.CaptureEnd or Utf8SliceInstructionKind.Boundary)
+            {
+                instruction--;
+                continue;
+            }
+            instruction -= 4;
+            var atom = code[instruction + 1];
+            var ascii = program.SetMasks[atom.A].AsSpan();
+            var end = position;
+            while (position > stop)
+            {
+                var previous = input[position - 1];
+                if (previous < 128)
+                {
+                    if ((ascii[previous >> 3] & (1 << (previous & 7))) == 0) break;
+                    position--;
+                    continue;
+                }
+                if (!TryReadScalar(input, position, true, out var scalar, out var width))
+                    return Utf8ExecutionLimitKind.None;
+                breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var member);
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (!member) break;
+                position -= width;
+            }
+            if (position <= stop && stop > floor) return Utf8ExecutionLimitKind.None;
+            if (position == end)
+            {
+                rejected = true;
+                return Utf8ExecutionLimitKind.None;
+            }
+        }
+
+        // Disjoint adjacent classes force every internal split. The start of
+        // each maximal backward run is monotone in its end, even for a later
+        // delimiter. The VM still checks minima, captures and assertions.
+        earliest = position;
+        return Utf8ExecutionLimitKind.None;
     }
 
     private static Utf8ExecutionLimitKind TrySeekWhitespaceClassStart(Utf8SliceProgram program,

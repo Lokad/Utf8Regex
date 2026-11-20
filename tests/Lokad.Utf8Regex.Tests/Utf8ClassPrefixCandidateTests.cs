@@ -394,6 +394,23 @@ public sealed class Utf8ClassPrefixCandidateTests
     }
 
     [Theory]
+    [InlineData(0, 6)]
+    [InlineData(6, 6)]
+    [InlineData(9, -1)]
+    public void DisjointRunsNarrowTheFirstAttemptToTheRequestedFloor(int floor, int start)
+    {
+        var input = "é Ω 中 Sherlock Holmes"u8;
+        using var regex = Utf8Regex.Compile(@"\w+\s+\w+\s+Holmes", policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 64 }
+        });
+        var result = regex.Match(input, floor);
+        Assert.Equal(start >= 0, result.Success);
+        if (start >= 0)
+            Assert.Equal((start, input.Length), (result.StartOffsetInBytes, result.EndOffsetInBytes));
+    }
+
+    [Theory]
     [InlineData(96)]
     [InlineData(512)]
     public void DisjointRunNeedsOnlyOneTailAttemptPerDelimiter(int runLength)
