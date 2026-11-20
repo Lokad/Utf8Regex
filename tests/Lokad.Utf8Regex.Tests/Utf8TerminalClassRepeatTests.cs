@@ -99,6 +99,50 @@ public sealed class Utf8TerminalClassRepeatTests
     }
 
     [Theory]
+    [InlineData(63)]
+    [InlineData(64)]
+    [InlineData(65)]
+    public void AsciiMaskRunKeepsWiderDelimiterAndByteCapture(int length)
+    {
+        var bytes = Encoding.UTF8.GetBytes("padX" + new string('_', length) + "é");
+        using var regex = Utf8Regex.Compile(@"\AX([A-C_]+)é\z", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 40 }
+        });
+        using var token = new CancellationTokenSource();
+        var input = bytes.AsSpan(3);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        Assert.Equal(new Utf8CaptureRange(0, input.Length), regex.Match(input, captures: captures, cancellationToken: token.Token));
+        Assert.Equal(new Utf8CaptureRange(1, length + 1), captures[1]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AsciiMaskBlocksObserveOriginalInterruption(bool deadline)
+    {
+        var input = Encoding.ASCII.GetBytes("X" + new string('_', 64 * 130) + "!");
+        using var regex = Utf8Regex.Compile(@"\AX[A-C_]+!", policy: new()
+        {
+            MatchTimeout = deadline ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout,
+            ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 1 }
+        });
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var token = new CancellationTokenSource();
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (deadline) clock.Advance(250); else token.Cancel();
+        });
+        try
+        {
+            if (deadline) Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input, token.Token));
+            else Assert.Equal(token.Token,
+                Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, token.Token)).CancellationToken);
+        }
+        finally { diagnostics.Complete(); }
+    }
+
+    [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]
     public void BooleanAcceptsBeforeAProvedOptionalTailWhileMatchKeepsItsFullExtent(RegexOptions options)

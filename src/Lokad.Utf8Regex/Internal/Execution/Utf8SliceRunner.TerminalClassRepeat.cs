@@ -1223,7 +1223,7 @@ internal static partial class Utf8SliceRunner
         {
             var window = input.Slice(start, Math.Min(input.Length - start, (int)maximum));
             var category = atom.Kind == Utf8SliceInstructionKind.CategorySet;
-            var consumed = GetShortAsciiSetRun(window, program.SetMasks[atom.A], category);
+            var consumed = ScanAsciiMask(window, program.SetMasks[atom.A], category);
             if (consumed >= 0 && (!category || program.GetCompleteAsciiCategoryMask(atom) != 0))
             {
                 // The span probe reads at most four bytes. Charge it before
@@ -1259,21 +1259,26 @@ internal static partial class Utf8SliceRunner
             if (minimum != 0 && digits.EndIndex > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);
             return digits.EndIndex == start && minimum != 0 ? (-1, digits.Breach) : digits;
         }
-        var asciiWord = unboundedAsciiSet && IsAsciiWordMask(program.SetMasks[atom.A]);
-        if (unbounded && (TryGetAsciiRepeatStops(program, atom, out var first, out var second) || asciiWord))
+        ReadOnlySpan<byte> exactAsciiMask = unboundedAsciiSet ? program.SetMasks[atom.A] : [];
+        var asciiWord = unboundedAsciiSet && IsAsciiWordMask(exactAsciiMask);
+        if (unbounded && (TryGetAsciiRepeatStops(program, atom, out var first, out var second) || unboundedAsciiSet))
         {
             var dotAll = dot && atom.A != 0;
-            // The word set stops before any wider scalar. Dot and negated
+            var scanMask = unboundedAsciiSet && !asciiWord;
+            var blockSize = scanMask ? 64 : 2048;
+            // Positive ASCII masks stop before any wider scalar. Dot and negated
             // sets may cross a block boundary inside a scalar, but their
-            // ASCII stops still leave an aligned endpoint.
+            // ASCII stops still leave an aligned endpoint. Bound the scalar
+            // mask walk more tightly than the vectorized span searches.
             while (position < input.Length)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
-                var block = input.Slice(position, Math.Min(2048, input.Length - position));
+                var block = input.Slice(position, Math.Min(blockSize, input.Length - position));
                 var stop = asciiWord ? Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(block) :
+                    scanMask ? ScanAsciiMask(block, exactAsciiMask, category: false) :
                     IndexOfRepeatStop(block, dotAll, first, second);
-                if (stop >= 0) { position += stop; break; }
+                if ((uint)stop < (uint)block.Length) { position += stop; break; }
                 position += block.Length;
             }
             var terminalBreach = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
@@ -1281,7 +1286,7 @@ internal static partial class Utf8SliceRunner
             // With no maximum and minimum at most one, nonempty byte extent
             // suffices; bounded/scalar-counted repeats keep the normal loop.
             if (minimum != 0 && position > start)
-                minimumEnd = asciiWord ? start + 1 : AdvancePastScalar(input, start, reverse: false);
+                minimumEnd = unboundedAsciiSet ? start + 1 : AdvancePastScalar(input, start, reverse: false);
             return position != start || minimum == 0
                 ? (position, Utf8ExecutionLimitKind.None)
                 : (-1, Utf8ExecutionLimitKind.None);
@@ -1332,7 +1337,7 @@ internal static partial class Utf8SliceRunner
             : (-1, Utf8ExecutionLimitKind.None);
     }
 
-    private static int GetShortAsciiSetRun(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category)
+    private static int ScanAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category)
     {
         var consumed = 0;
         foreach (var value in window)
