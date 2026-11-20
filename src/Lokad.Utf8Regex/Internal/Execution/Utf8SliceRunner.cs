@@ -630,7 +630,7 @@ internal static partial class Utf8SliceRunner
             ? GetShortRepeatLiteralWindow(program, program.LeadingClassDelimiter.LiteralIndex + 2) : default;
         var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
             IsLeadingDecimalSet(program, leadingScalarIndex);
-        var canProveDecimal = existenceOnly && !collectHistory && captureStarts.Length == 0;
+        var canProveDecimal = !collectHistory && captureStarts.Length == 0 && !program.ReadsCaptures;
         var shortDecimalHead = canProveDecimal && seekDecimal &&
             program.Instructions.Length <= 32 && leadingScalarIndex > 0 &&
             program.Instructions[leadingScalarIndex - 1] is

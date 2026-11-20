@@ -1157,8 +1157,8 @@ internal static partial class Utf8SliceRunner
             code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == index &&
             code[entry.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == entry.B;
 
-    // This check eliminates impossible starts. A Boolean caller at the root
-    // can also reuse an Accept reached through completely verified atoms.
+    // This check eliminates impossible starts. A caller without capture output
+    // can also reuse an Accept reached through completely verified, ordered atoms.
     private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, int index, ref int remaining, bool proveMatch, out int acceptedEnd)
     {
@@ -1235,9 +1235,11 @@ internal static partial class Utf8SliceRunner
                         position++;
                         continue;
                     }
-                    // Both prefix queries can test the same two byte endpoints.
-                    if (MayMatchBranchedAsciiPrefix(program, input, position + 1, index, ref remaining, proveMatch, out acceptedEnd))
+                    var lazy = proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatLazy;
+                    var preferred = lazy ? position : position + 1;
+                    if (MayMatchBranchedAsciiPrefix(program, input, preferred, index, ref remaining, proveMatch, out acceptedEnd))
                         return true;
+                    if (lazy) position++;
                     continue;
                 }
                 if (proveMatch && singleAtom &&
@@ -1282,7 +1284,7 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    // Keep Boolean-only repeat verification out of the rejection walk used
+    // Keep complete repeat verification out of the rejection walk used
     // for every viable Count prefix. Every continuation shares its visit allowance.
     // Leave the final endpoint for the caller's loop. Competing endpoints
     // still try their continuations before choosing the next one.
@@ -1341,13 +1343,16 @@ internal static partial class Utf8SliceRunner
             consumed++;
         }
         if (consumed < minimum) return false;
-        // The Boolean witness needs one valid endpoint.
-        var rewindFree = program.SkipsTerminalRewind(atomIndex - 1);
-        while (!rewindFree && consumed > minimum)
+        if (consumed != minimum && !program.SkipsTerminalRewind(atomIndex - 1))
         {
-            if (MayMatchBranchedAsciiPrefix(program, input, position + consumed, continuation, ref remaining, true, out acceptedEnd))
-                return true;
-            consumed--;
+            // Keep the first viable endpoint in the program's repeat order.
+            var lazy = repeat.Kind == Utf8SliceInstructionKind.RepeatLazy;
+            var last = lazy ? consumed : minimum;
+            var step = lazy ? 1 : -1;
+            for (var count = lazy ? minimum : consumed; count != last; count += step)
+                if (MayMatchBranchedAsciiPrefix(program, input, position + count, continuation, ref remaining, true, out acceptedEnd))
+                    return true;
+            consumed = last;
         }
         continueAt = position + consumed;
         return true;

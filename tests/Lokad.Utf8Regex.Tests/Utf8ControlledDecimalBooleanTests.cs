@@ -130,6 +130,25 @@ public sealed class Utf8ControlledDecimalBooleanTests
         Assert.Equal(new Utf8CaptureRange(4, 14), regex.Match("😀11/18/2019😀"u8));
     }
 
+    [Theory]
+    [InlineData(@"\d{1,2}[0-9]{0,2}", "😀1234!", 4, 8)]
+    [InlineData(@"\d{1,2}[0-9]{0,2}?", "😀1234!", 4, 6)]
+    [InlineData(@"\d{1,2}[0-9]??", "1234!", 0, 2)]
+    [InlineData(@"\d{1,2}[0-9]{0,2}?1", "12311!", 0, 4)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "😀11/18/2019😀", 4, 14)]
+    [InlineData(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", "😀𝟙/٢/２０２６!", 4, 24)]
+    public void ShortDecimalProofPreservesThePreferredWholeRange(string pattern, string text, int start, int end)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        using var tokenSource = new CancellationTokenSource();
+        using var ordinary = new Utf8Regex(pattern, RegexOptions.Compiled);
+        using var limited = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 4096 } });
+        var expected = new Utf8CaptureRange(start, end);
+        Assert.Equal(expected, ordinary.Match(input));
+        Assert.Equal(expected, limited.Match(input, cancellationToken: tokenSource.Token));
+    }
+
     [Fact]
     public void ShortDecimalProofKeepsRepeatedCaptureHistory()
     {
