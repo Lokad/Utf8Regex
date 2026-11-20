@@ -169,13 +169,15 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.Equal(options == RegexOptions.NonBacktracking ? 1 : 3, history.GetCaptures(1).Length);
     }
 
-    [Fact]
-    public void OrderedDiscoveryKeepsOrdinaryCaptureHistoryAndByteFloors()
+    [Theory]
+    [InlineData(null)]
+    [InlineData(4096UL)]
+    public void OrderedDiscoveryKeepsOrdinaryCaptureHistoryAndByteFloors(ulong? maxWorkingBytes)
     {
         const string pattern = "(?<piece>ab|ba|😀)+z";
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new() { MaxWorkSteps = 4096 }
+            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxWorkingBytes = maxWorkingBytes }
         });
         var prefix = "😀" + string.Concat(Enumerable.Repeat("ab", 160)) + " z! ";
         var start = Encoding.UTF8.GetByteCount(prefix);
@@ -198,6 +200,20 @@ public sealed class Utf8CaptureSlotMatchTests
             new(start, start + 2), new(start + 2, start + 6), new(start + 6, start + 8)
         }, match.GetCaptures(1).ToArray());
         Assert.False(cursor.MoveNext(out _));
+    }
+
+    [Fact]
+    public void OrdinaryOrderedRangeCanUseOnlyTheOriginVectors()
+    {
+        const string hit = "ab😀baz";
+        var prefix = string.Concat(Enumerable.Repeat("ab", 160)) + " z! ";
+        var input = Encoding.UTF8.GetBytes(prefix + hit);
+        using var regex = new Utf8Regex("(?:ab|ba|😀)+z", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 72, MaxWorkSteps = 4096 }
+        });
+        Assert.Equal(new Utf8CaptureRange(prefix.Length, input.Length), regex.Match(input));
+        Assert.False(regex.Match(input.AsSpan(0, prefix.Length)).Success);
     }
 
     [Fact]

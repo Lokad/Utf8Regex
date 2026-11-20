@@ -182,8 +182,9 @@ public sealed class Utf8CoreWorkingPolicyTests
     [InlineData(true)]
     public void CopiedCursorWorkingFailurePreservesTheFirstRangeAndSharedDenial(bool compiled)
     {
-        const string pattern = "(ab)|(😀|😀😀)+ab";
-        var input = Encoding.UTF8.GetBytes("ab " + string.Concat(Enumerable.Repeat("😀", 70)) + "ab");
+        // A late assertion keeps the ambiguous branch on the scratch-using verifier.
+        const string pattern = "(ab)|(😀|😀😀)+ab(?=!)";
+        var input = Encoding.UTF8.GetBytes("ab " + string.Concat(Enumerable.Repeat("😀", 70)) + "ab!");
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0);
         var program = new Utf8Regex(pattern, options: options).Inspection.AvailableOwnedSliceProgram!;
         var invocation = new Utf8SliceInvocation(new(0, 0, ulong.MaxValue), Regex.InfiniteMatchTimeout, default);

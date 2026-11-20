@@ -207,13 +207,31 @@ internal static partial class Utf8SliceRunner
     private static void AddStartByte(byte first, Span<ulong> starts)
         => starts[first >> 6] |= 1UL << (first & 63);
 
+    private static int GetOrderedRangeOriginCapacity(Utf8SliceProgram program)
+        => Math.Max(9, program.NonBacktrackingOrderedLeaves.Length - 1);
+
+    private static ulong GetOrderedRangeOriginBytes(int capacity)
+        => (ulong)(2 * capacity * Unsafe.SizeOf<int>());
+
+    private static bool CanAdmitOrdinaryOrderedRange(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
+    {
+        ref var ledger = ref invocation.Ledger;
+        if (ledger.HasMemoryAllowance) return false;
+        var cap = invocation.Budget.Limits.MaxWorkingBytes;
+        if (cap == 0) return true;
+        // The origin vectors are required. The transition table is optional.
+        // Keep ordinary verification when the numeric cap cannot admit both vectors.
+        var bytes = GetOrderedRangeOriginBytes(GetOrderedRangeOriginCapacity(program));
+        return bytes <= cap && ledger.ReservedBytes <= cap - bytes;
+    }
+
     internal static Utf8SliceSearchOutcome FindOrderedRegularRange(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation)
     {
         const int capacity = 16;
         var leaves = program.NonBacktrackingOrderedLeaves;
-        var originCapacity = Math.Max(9, leaves.Length - 1);
-        var originBytes = (ulong)(2 * originCapacity * Unsafe.SizeOf<int>());
+        var originCapacity = GetOrderedRangeOriginCapacity(program);
+        var originBytes = GetOrderedRangeOriginBytes(originCapacity);
         var cacheBytes = (ulong)(capacity * Unsafe.SizeOf<OrderedRegularTransition>());
         var limit = invocation.Budget.Limits.MaxWorkingBytes;
         var total = originBytes + cacheBytes;

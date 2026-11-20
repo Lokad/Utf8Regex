@@ -506,7 +506,7 @@ internal static partial class Utf8SliceRunner
                 false, false, ref invocation);
         }
         if (CanSearchOrdinaryOrdered(program, input.Length - fromByte, ref invocation) &&
-            invocation.HasUnlimitedWorkingMemory)
+            CanAdmitOrdinaryOrderedRange(program, ref invocation))
         {
             var selected = FindOrderedRegularRange(program, input, fromByte, ref invocation);
             if (!selected.Found || captureStarts.Length == 0 && !collectHistory) return selected;
