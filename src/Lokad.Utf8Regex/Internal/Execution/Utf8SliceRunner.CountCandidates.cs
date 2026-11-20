@@ -1151,6 +1151,21 @@ internal static partial class Utf8SliceRunner
             window.Min == 1 && window.Max == 3 && remaining > 2 && input[start + 2] == window.Literal;
     }
 
+    // A delimiter outside the decimal set can have only one matching endpoint.
+    // Leave a possible wider decimal to the scalar proof.
+    private static int FindShortAsciiDecimalLiteralEnd(ReadOnlySpan<byte> input, int start,
+        (int Min, int Max, byte Literal) window)
+    {
+        var suffix = input[start..];
+        var limit = Math.Min(suffix.Length, window.Max);
+        var digits = 0;
+        while (digits < limit && Utf8AsciiBytePredicates.IsDigit(suffix[digits])) digits++;
+        if (digits == suffix.Length) return -1;
+        var next = suffix[digits];
+        if (digits >= window.Min && next == window.Literal) return start + digits + 1;
+        return digits < limit && next >= 128 ? 0 : -1;
+    }
+
     private static int CountStartsBelowRepeatMinimum(ReadOnlySpan<byte> prefix, Utf8SearchAsciiSet ascii)
     {
         // The input step covers this short probe. An excluded ASCII scalar
@@ -1385,8 +1400,11 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
+    private const int BranchedPrefixInstructionLimit = 96;
+
     private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, int index, out int acceptedEnd, bool proveMatch = false, int instructionLimit = 96)
+        ReadOnlySpan<byte> input, int position, int index, out int acceptedEnd, bool proveMatch = false,
+        int instructionLimit = BranchedPrefixInstructionLimit)
     {
         // Share one instruction and scalar allowance across the arms. The
         // caller meters this bounded check with each candidate search step.

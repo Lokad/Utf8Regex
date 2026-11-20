@@ -441,6 +441,13 @@ internal sealed class Utf8SliceProgram
         {
             Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
             FollowingDecimalLiteralWindow = Utf8SliceRunner.GetShortRepeatLiteralWindow(this, delimiter.LiteralIndex + 2);
+            if (FollowingDecimalLiteralWindow is { Min: > 0, Literal: var next } &&
+                !Utf8AsciiBytePredicates.IsDigit(next))
+            {
+                Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
+                if (Utf8SliceRunner.IsLeadingDecimalSet(this, delimiter.LiteralIndex + 2))
+                    FollowingDecimalContinuation = delimiter.LiteralIndex + 6;
+            }
         }
         if (NonBacktrackingOrderedClosures.Length != 0)
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
@@ -637,6 +644,7 @@ internal sealed class Utf8SliceProgram
     internal bool LeadingScalarIsDecimal { get; }
     internal (int Min, int Max, byte Literal) LeadingRepeatLiteralWindow { get; }
     internal (int Min, int Max, byte Literal) FollowingDecimalLiteralWindow { get; }
+    internal int FollowingDecimalContinuation { get; }
     private (ulong Mask, int Anchor) TerminalRepeatsWithoutRewind { get; }
     private (Utf8SliceAnchorKind End, Utf8SearchAsciiSet Ascii) RequiredFinalAscii { get; }
     internal byte? RequiredUnanchoredFinalByte { get; }

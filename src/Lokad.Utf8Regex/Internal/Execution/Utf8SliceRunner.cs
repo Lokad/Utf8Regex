@@ -650,6 +650,8 @@ internal static partial class Utf8SliceRunner
                 { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0, RepeatMaximum: <= 4 };
         var proveDecimalWindow = canProveDecimal && followingWindow.Min != 0 && program.SkipsTerminalRewind(1);
         var reuseDecimalWindow = proveDecimalWindow && leadingClass == 2 && program.Instructions[1].RepeatMinimum == 1;
+        var verifyFollowingWindow = reuseDecimalWindow && program.FollowingDecimalContinuation != 0 &&
+            !repeatPrefix.Any.HasValue && classAlternatives is null && classLiteral == program.LeadingClassDelimiter.Literal;
         if (seekDecimal)
         {
             leading = '0';
@@ -668,6 +670,7 @@ internal static partial class Utf8SliceRunner
                 return new(false, -1, -1, null, null, admission);
         }
         var classWindowEnd = -1;
+        var followingWindowEnd = 0;
         for (var position = fromByte; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
         {
             // The required delimiter proves a window of possible starts.
@@ -687,9 +690,15 @@ internal static partial class Utf8SliceRunner
                         new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
                 // A decimal repeat cannot consume this delimiter. Every start
                 // in its window must reach the next literal from the same suffix.
-                if (followingWindow.Min != 0 && position <= classWindowEnd &&
-                    !MayReachShortRepeatLiteral(input, classWindowEnd + 1, followingWindow, admitsWideScalars: true))
-                    position = classWindowEnd + 1;
+                if (followingWindow.Min != 0 && position <= classWindowEnd)
+                {
+                    followingWindowEnd = verifyFollowingWindow
+                        ? FindShortAsciiDecimalLiteralEnd(input, classWindowEnd + 1, followingWindow)
+                        : 0;
+                    if (followingWindowEnd < 0 || !verifyFollowingWindow &&
+                        !MayReachShortRepeatLiteral(input, classWindowEnd + 1, followingWindow, admitsWideScalars: true))
+                        position = classWindowEnd + 1;
+                }
             }
             if (seekLiteral)
             {
@@ -748,6 +757,7 @@ internal static partial class Utf8SliceRunner
                 var proveMatch = proveDecimalPrefix || existenceOnly && !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
                 var proofStart = proveDecimalPrefix ? 0 : leadingScalarIndex;
                 var proofPosition = position;
+                var proofLimit = BranchedPrefixInstructionLimit;
                 if (reuseDecimalWindow && position < classWindowEnd)
                 {
                     // Rewind already admitted a nonempty decimal run ending at
@@ -756,8 +766,14 @@ internal static partial class Utf8SliceRunner
                     if (!MatchesBoundary(program, first, input, position)) continue;
                     proofPosition = classWindowEnd;
                     proofStart = program.Instructions[1].A + 1;
+                    if (followingWindowEnd > 0)
+                    {
+                        proofPosition = followingWindowEnd;
+                        proofStart = program.FollowingDecimalContinuation;
+                        proofLimit -= followingWindow.Max + 3;
+                    }
                 }
-                if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch))
+                if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch, proofLimit))
                     continue;
                 if (acceptedEnd >= 0)
                 {
