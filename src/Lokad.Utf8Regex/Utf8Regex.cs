@@ -388,6 +388,14 @@ public sealed partial class Utf8Regex : IDisposable
             return found;
         }
         if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return false;
+        ref readonly var search = ref _preparedRegex.SearchPlan;
+        ref readonly var prefilter = ref search.RequiredPrefilterSearcher;
+        if (screenedLiteral >= 0 && screenedLiteral >= startByte &&
+            Utf8SliceRunner.HasRequiredLiteralWitness(program, prefilter.LiteralSearch.Needle))
+        {
+            Utf8SliceBufferWork.Checkpoint(ref invocation);
+            return true;
+        }
         if (program.NonBacktrackingEpsilonAncestors.Length != 0)
         {
             var breach = Utf8SliceRunner.IsMatchPackedNonBacktracking(program, input, startByte, ref invocation, out var found);
@@ -398,8 +406,10 @@ public sealed partial class Utf8Regex : IDisposable
         try
         {
             slots = Utf8SliceRunner.RentSlots(GetValueOperationCaptureSlotCount(program), ref invocation);
+            var knownDelimiter = screenedLiteral >= 0 && ReferenceEquals(prefilter.LiteralSearch.Needle, search.LiteralUtf8)
+                ? screenedLiteral : -1;
             var outcome = Utf8SliceRunner.TryFindFirst(program, input, startByte, slots.Starts, slots.Ends,
-                false, ref invocation, _preparedRegex.SearchPlan, existenceOnly: true, screenedLiteral: screenedLiteral);
+                false, ref invocation, search, existenceOnly: true, screenedLiteral: knownDelimiter);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
             invocation.Budget.ThrowIfCancellationRequested();
@@ -440,13 +450,12 @@ public sealed partial class Utf8Regex : IDisposable
         ref readonly var prefilter = ref _preparedRegex.SearchPlan.RequiredPrefilterSearcher;
         if (prefilter.Kind is not (PreparedSearcherKind.ExactLiteral or PreparedSearcherKind.MultiLiteral)) return false;
         // The existing planner proves this literal is necessary. Search the
-        // complete caller-valid subject, including lookbehind context;
-        // presence proves nothing about a match and retains normal verification.
+        // complete caller-valid subject, including lookbehind context.
+        // The caller still verifies whether a hit is sufficient.
         var breach = prefilter.TryFindMatch(input, 0, input.Length, false, ref invocation, out var match, out var found);
         if (breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Required literal screening breached the invocation budget.");
-        if (found && prefilter.Kind == PreparedSearcherKind.ExactLiteral &&
-            ReferenceEquals(prefilter.LiteralSearch.Needle, _preparedRegex.SearchPlan.LiteralUtf8))
+        if (found && prefilter.Kind == PreparedSearcherKind.ExactLiteral)
             screenedLiteral = match.Index;
         return !found;
     }

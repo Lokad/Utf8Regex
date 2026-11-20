@@ -8,6 +8,36 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
+    internal static bool HasRequiredLiteralWitness(Utf8SliceProgram program, ReadOnlySpan<byte> needle)
+    {
+        var code = program.Instructions.AsSpan();
+        if (program.IsNonBacktracking || program.HasBalancing || code.Length is < 6 or > 32 ||
+            needle.Length is < 1 or > 64 || code[^1].Kind != Utf8SliceInstructionKind.Accept)
+            return false;
+
+        // At the literal's own start the initial repeat can consume zero. Only
+        // consuming atoms may be skipped, and the remaining path must be the
+        // exact literal through Accept, with plain capture markers allowed.
+        var repeat = code[0];
+        if (repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) ||
+            repeat.RepeatMinimum != 0 || !IsSingleAtomRepeat(code, 0, repeat) ||
+            code[1].Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or
+                Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+                Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
+            return false;
+
+        var offset = 0;
+        foreach (ref readonly var op in code[(repeat.A + 1)..^1])
+        {
+            if (op.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
+            if (op is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } ||
+                !TryReadScalar(needle, offset, false, out var scalar, out var width) || scalar.Value != op.A)
+                return false;
+            offset += width;
+        }
+        return offset == needle.Length;
+    }
+
     internal static bool CanRunTerminalCaptureRoot(Utf8SliceProgram program)
     {
         var code = program.Instructions;

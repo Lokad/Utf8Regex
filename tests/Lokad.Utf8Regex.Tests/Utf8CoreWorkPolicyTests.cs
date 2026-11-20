@@ -100,6 +100,31 @@ public sealed class Utf8CoreWorkPolicyTests
         }
     }
 
+    [Fact]
+    public void LiteralWitnessAvoidsScanningTheRepeatForBooleanResults()
+    {
+        using var source = new CancellationTokenSource();
+        using var bounded = Create(".*(ss)", 32);
+        Assert.True(bounded.IsMatch(Encoding.UTF8.GetBytes("ss" + new string('a', 65536)), source.Token));
+        Assert.True(bounded.IsMatch(Encoding.UTF8.GetBytes(new string('a', 2048) + "\n😀ss"), source.Token));
+
+        using var greedy = Create(".*(ss)", 100000);
+        var match = Utf8MatchSequence.First(greedy.CreateMatchCursor("ss😀ss"u8.ToArray()));
+        Assert.Equal((0, 8), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+        Assert.Equal("ss", Encoding.UTF8.GetString(match.GetGroupMemory(1).Span));
+        Assert.True(match.TryGetGroup(1, out var capture));
+        Assert.Equal((6, 8), (capture.StartOffsetInBytes, capture.EndOffsetInBytes));
+
+        using var anchored = Create(".*(ss)$", 100000);
+        using var nonempty = Create(".+(ss)", 100000);
+        Assert.False(anchored.IsMatch("ssx"u8, source.Token));
+        Assert.False(nonempty.IsMatch("ss"u8, source.Token));
+
+        source.Cancel();
+        var canceled = Assert.Throws<OperationCanceledException>(() => bounded.IsMatch("ss"u8, source.Token));
+        Assert.Equal(source.Token, canceled.CancellationToken);
+    }
+
     [Theory]
     [InlineData(".", false)]
     [InlineData(".", true)]
