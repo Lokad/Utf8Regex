@@ -11,7 +11,7 @@ internal enum Utf8StructuralSearchYieldKind : byte
 
 internal enum Utf8StructuralSearchStageKind : byte
 {
-    FindLiteralFamily = 0, FindAscii = 1, FindWindow = 2, TransformCandidateStart = 3, RequireByteAtOffset = 4, RequireLiteralAtOffset = 5, RequireMinLength = 6, RequireWithinByteSpan = 7, RequireWithinLineSpan = 8, RequireLeadingBoundary = 9, RequireTrailingBoundary = 10, RequireTrailingLiteral = 11, RequireExactLength = 12, BoundMaxLength = 13, YieldStart = 14, YieldWindow = 15
+    FindLiteralFamily = 0, FindAscii = 1, FindWindow = 2, TransformCandidateStart = 3, RequireWithinByteSpan = 7, RequireWithinLineSpan = 8, RequireLeadingBoundary = 9, RequireTrailingBoundary = 10, RequireTrailingLiteral = 11, RequireExactLength = 12, BoundMaxLength = 13, YieldStart = 14, YieldWindow = 15
 }
 
 internal readonly struct Utf8StructuralSearchStage
@@ -22,11 +22,6 @@ internal readonly struct Utf8StructuralSearchStage
         public PreparedWindowSearch WindowSearch { get; init; }
         public Utf8FallbackStartTransform StartTransform { get; init; }
         public Execution.PreparedAsciiFindPlan AsciiFindPlan { get; init; }
-        public int ByteOffset { get; init; }
-        public bool HasLiteralByte { get; init; }
-        public byte LiteralByte { get; init; }
-        public bool HasSet { get; init; }
-        public AsciiCharClass Set { get; init; }
         public byte[] LiteralUtf8 { get; init; }
         public int MinLength { get; init; }
         public int MaxSpan { get; init; }
@@ -41,11 +36,6 @@ internal readonly struct Utf8StructuralSearchStage
         WindowSearch = data.WindowSearch;
         StartTransform = data.StartTransform;
         AsciiFindPlan = data.AsciiFindPlan;
-        ByteOffset = data.ByteOffset;
-        HasLiteralByte = data.HasLiteralByte;
-        LiteralByte = data.LiteralByte;
-        HasSet = data.HasSet;
-        Set = data.Set;
         LiteralUtf8 = data.LiteralUtf8 ?? [];
         MinLength = data.MinLength;
         MaxSpan = data.MaxSpan;
@@ -63,15 +53,10 @@ internal readonly struct Utf8StructuralSearchStage
 
     public Execution.PreparedAsciiFindPlan AsciiFindPlan { get; }
 
-    public int ByteOffset { get; }
 
-    public bool HasLiteralByte { get; }
 
-    public byte LiteralByte { get; }
 
-    public bool HasSet { get; }
 
-    public AsciiCharClass Set { get; }
 
     public byte[] LiteralUtf8 { get; }
 
@@ -94,18 +79,6 @@ internal readonly struct Utf8StructuralSearchStage
 
     public static Utf8StructuralSearchStage TransformCandidateStart(Utf8FallbackStartTransform startTransform) =>
         new(Utf8StructuralSearchStageKind.TransformCandidateStart, new Data { StartTransform = startTransform });
-
-    public static Utf8StructuralSearchStage RequireByteAtOffset(int byteOffset, byte literalByte) =>
-        new(Utf8StructuralSearchStageKind.RequireByteAtOffset, new Data { ByteOffset = byteOffset, HasLiteralByte = true, LiteralByte = literalByte });
-
-    public static Utf8StructuralSearchStage RequireAsciiClassAtOffset(int byteOffset, AsciiCharClass set) =>
-        new(Utf8StructuralSearchStageKind.RequireByteAtOffset, new Data { ByteOffset = byteOffset, HasSet = true, Set = set });
-
-    public static Utf8StructuralSearchStage RequireLiteralAtOffset(int byteOffset, byte[] literalUtf8) =>
-        new(Utf8StructuralSearchStageKind.RequireLiteralAtOffset, new Data { ByteOffset = byteOffset, LiteralUtf8 = literalUtf8 });
-
-    public static Utf8StructuralSearchStage RequireMinLength(int minLength) =>
-        new(Utf8StructuralSearchStageKind.RequireMinLength, new Data { MinLength = minLength });
 
     public static Utf8StructuralSearchStage RequireWithinByteSpan(int maxSpan) =>
         new(Utf8StructuralSearchStageKind.RequireWithinByteSpan, new Data { MaxSpan = maxSpan });

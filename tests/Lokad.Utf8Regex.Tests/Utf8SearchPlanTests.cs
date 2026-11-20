@@ -55,7 +55,7 @@ public sealed class Utf8SearchPlanTests
     }
 
     [Fact]
-    public void ScalarFallbackRetainsSearchFactsWithoutUnusedTreeGuards()
+    public void ScalarFallbackRetainsSearchFactsAndWholeScalarMatch()
     {
         var regex = new Utf8Regex("a.*b", options: RegexOptions.CultureInvariant);
 
@@ -66,7 +66,6 @@ public sealed class Utf8SearchPlanTests
         Assert.True(regex.Inspection.SearchPlan.HasStructuralCandidates);
         Assert.Equal(Utf8StructuralSearchYieldKind.Start, regex.Inspection.StructuralSearchPlan.YieldKind);
         Assert.Equal(Utf8StructuralSearchStageKind.FindLiteralFamily, regex.Inspection.StructuralSearchPlan.Stages![0].Kind);
-        Assert.DoesNotContain(regex.Inspection.StructuralSearchPlan.Stages!, static stage => stage.Kind == Utf8StructuralSearchStageKind.RequireByteAtOffset);
         Assert.Equal(1, regex.Count("a😀b"u8));
         Assert.Equal(6, (regex.Match("a😀b"u8).EndOffsetInBytes - regex.Match("a😀b"u8).StartOffsetInBytes));
         Assert.Equal(Utf8StructuralSearchStageKind.YieldStart, regex.Inspection.StructuralSearchPlan.Stages![^1].Kind);

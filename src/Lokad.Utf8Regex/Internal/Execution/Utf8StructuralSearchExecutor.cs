@@ -293,52 +293,6 @@ internal static class Utf8StructuralSearchExecutor
         {
             switch (stage.Kind)
             {
-                case Utf8StructuralSearchStageKind.RequireByteAtOffset:
-                    var index = startIndex + stage.ByteOffset;
-                    if ((uint)index >= (uint)input.Length)
-                    {
-                        return false;
-                    }
-
-                    if (stage.HasLiteralByte && input[index] != stage.LiteralByte)
-                    {
-                        return false;
-                    }
-
-                    if (stage.HasSet && !stage.Set.Contains(input[index]))
-                    {
-                        return false;
-                    }
-
-                    break;
-
-                case Utf8StructuralSearchStageKind.RequireLiteralAtOffset:
-                    if (stage.LiteralUtf8 is not { Length: > 0 } literalUtf8)
-                    {
-                        break;
-                    }
-
-                    var literalOffset = startIndex + stage.ByteOffset;
-                    if (literalOffset < 0 || literalOffset > input.Length - literalUtf8.Length)
-                    {
-                        return false;
-                    }
-
-                    if (!input.Slice(literalOffset, literalUtf8.Length).SequenceEqual(literalUtf8))
-                    {
-                        return false;
-                    }
-
-                    break;
-
-                case Utf8StructuralSearchStageKind.RequireMinLength:
-                    if (startIndex > input.Length - stage.MinLength)
-                    {
-                        return false;
-                    }
-
-                    break;
-
                 case Utf8StructuralSearchStageKind.RequireLeadingBoundary:
                     if (!Utf8ScalarWordBoundary.MatchesRequirement(stage.BoundaryRequirement, input, startIndex))
                     {

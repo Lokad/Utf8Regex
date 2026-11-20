@@ -3681,11 +3681,6 @@ internal static partial class BenchmarkInspectReporter
             Utf8StructuralSearchStageKind.FindLiteralFamily => $"FindLiteralFamily {stage.Searcher.Kind}",
             Utf8StructuralSearchStageKind.FindWindow => "FindWindow",
             Utf8StructuralSearchStageKind.TransformCandidateStart => $"TransformStart {stage.StartTransform.Kind}",
-            Utf8StructuralSearchStageKind.RequireByteAtOffset => stage.LiteralByte is byte b
-                ? $"RequireByteAtOffset @{stage.ByteOffset}='{(char)b}'"
-                : $"RequireAsciiClassAtOffset @{stage.ByteOffset} ascii-bytes={stage.Set.Count}",
-            Utf8StructuralSearchStageKind.RequireLiteralAtOffset => $"RequireLiteralAtOffset @{stage.ByteOffset}=\"{Encoding.UTF8.GetString(stage.LiteralUtf8 ?? [])}\"",
-            Utf8StructuralSearchStageKind.RequireMinLength => $"RequireMinLength {stage.MinLength}",
             Utf8StructuralSearchStageKind.RequireWithinByteSpan => $"RequireWithinByteSpan {stage.MaxSpan}",
             Utf8StructuralSearchStageKind.RequireWithinLineSpan => $"RequireWithinLineSpan {stage.MaxLines}",
             Utf8StructuralSearchStageKind.RequireLeadingBoundary => $"RequireLeadingBoundary {stage.BoundaryRequirement}",
