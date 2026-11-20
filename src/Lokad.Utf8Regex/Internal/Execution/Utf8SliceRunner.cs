@@ -599,9 +599,7 @@ internal static partial class Utf8SliceRunner
                     if (singleWindowAttempt)
                     {
                         requiredClassSuffix = GetRequiredHybridSuffix(program.Instructions, literalIndex + aligned.Length);
-                        if (existenceOnly && !collectHistory && program.GroupCount == 0 &&
-                            leadingClass == 1 && literalIndex == 4 &&
-                            first is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 })
+                        if (existenceOnly && !collectHistory && CanReuseLeadingClassWindow(program, leadingClass, literalIndex))
                         {
                             verifiedClassLiteralLength = aligned.Length;
                             // The prefilter already searched this exact needle
@@ -1000,6 +998,7 @@ internal static partial class Utf8SliceRunner
         var classSearch = default(PreparedSubstringSearch?);
         (Utf8SearchAsciiSet Any, Utf8SearchAsciiSet Last, int DisjointEnd) repeatPrefix = default;
         var singleWindowAttempt = false;
+        var verifiedClassLiteralLength = 0;
         var requiredClassSuffix = default((int First, int Second));
         if (whitespaceLiteral >= 0 && leadingClass >= 0)
         {
@@ -1011,7 +1010,11 @@ internal static partial class Utf8SliceRunner
                     ref invocation, out singleWindowAttempt);
                 if (proofBreach != Utf8ExecutionLimitKind.None) return new(count, proofBreach);
                 if (singleWindowAttempt)
+                {
                     requiredClassSuffix = GetRequiredHybridSuffix(program.Instructions, whitespaceLiteralIndex + aligned.Length);
+                    if (CanReuseLeadingClassWindow(program, leadingClass, whitespaceLiteralIndex))
+                        verifiedClassLiteralLength = aligned.Length;
+                }
             }
         }
         if (whitespaceLiteral < 0 && leadingFirst is < 0 or >= 128 && !seekLiteral && !program.RightToLeft &&
@@ -1182,6 +1185,10 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
                 var verifiedPrefix = prefixContinuation == 0 ? default : (prefixContinuation, prefixBytes);
+                // The rewind proved this nonempty class run up to the
+                // excluded delimiter. Continue with the original suffix.
+                if (verifiedClassLiteralLength != 0 && position < whitespaceWindowEnd)
+                    verifiedPrefix = (4 + verifiedClassLiteralLength, whitespaceWindowEnd - position + verifiedClassLiteralLength);
                 if (prefixRepeatAscii.HasValue)
                 {
                     var extra = ScanExactPrefixRepeatHead(input[(position + prefixBytes)..],

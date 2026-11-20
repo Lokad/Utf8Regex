@@ -57,6 +57,10 @@ public sealed class Utf8UriExistenceTests
         var expected = new Utf8CaptureRange(0, "https://écho/?id=😀#début"u8.Length);
         Assert.Equal(expected, regex.Match(input, cancellationToken: source.Token));
         Assert.Equal(1, regex.Count(input, source.Token));
+
+        const string record = "://path x://a?empty 𐐀://é/b?query=😀#tag x://ab y://cd#frag\n";
+        var document = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(record, 20)));
+        Assert.Equal(60, regex.Count(document, source.Token));
     }
 
     [Fact]

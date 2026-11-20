@@ -623,6 +623,10 @@ internal static partial class Utf8SliceRunner
         return breach;
     }
 
+    private static bool CanReuseLeadingClassWindow(Utf8SliceProgram program, int leadingClass, int literalIndex)
+        => leadingClass == 1 && literalIndex == 4 && program.GroupCount == 0 &&
+            program.Instructions[0] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 };
+
     private static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int floor, int leadingClass, long gapMaximum, bool directClassLiteral,
         ref int position, ref Utf8SliceInvocation invocation)
