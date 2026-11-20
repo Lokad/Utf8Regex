@@ -1054,8 +1054,8 @@ public sealed partial class Utf8Regex : IDisposable
         }
 
         var replacementPattern = GetParsedReplacement(replacementPatternUtf8, control);
-        if (GetOwnedReplacementProgram(input, replacementPattern, cancellationToken) is { } requiredProgram)
-            return OwnedSliceReplace(input, requiredProgram, replacementPattern,
+        if (UsesRightToLeft())
+            return OwnedSliceReplace(input, _ownedSliceProgram, replacementPattern,
                 Utf8SliceReplacementResultKind.Bytes, default, cancellationToken, deadline).Bytes;
         var budget = deadline;
         if (TryGetExactLiteralReplacementBytes(replacementPattern, out var exactLiteralReplacementBytes))
@@ -1084,11 +1084,12 @@ public sealed partial class Utf8Regex : IDisposable
         var control = new ReplacementPreparationControl(deadline, cancellationToken);
         ValidateReplacementTemplateUtf8(replacementPatternUtf8, control);
 
-        if (!input.Overlaps(destination) &&
-            _preparedRegex.HasLiteralPlan &&
-            GetOwnedSliceProgram(input, cancellationToken) is null && !input.IsEmpty &&
-            !_ownedSliceProgram.CanMatchEmpty &&
-            replacementPatternUtf8.IndexOf((byte)'$') < 0)
+        // The owned writer stages subject/destination overlap. Reuse the
+        // subject selection for parsed templates as well as literal output.
+        var ownedProgram = !_preparedRegex.HasLiteralPlan || input.IsEmpty || input.Overlaps(destination)
+            ? _ownedSliceProgram
+            : GetOwnedSliceProgram(input, cancellationToken);
+        if (ownedProgram is null && replacementPatternUtf8.IndexOf((byte)'$') < 0)
         {
             // The worker consumes the template synchronously. Own it only when
             // writing the destination could overwrite bytes still needed later.
@@ -1099,7 +1100,8 @@ public sealed partial class Utf8Regex : IDisposable
         }
 
         var replacementPattern = GetParsedReplacement(replacementPatternUtf8, control);
-        return TryReplaceCore(input, replacementPattern, destination, out bytesWritten, cancellationToken, deadline);
+        if (UsesRightToLeft()) ownedProgram = _ownedSliceProgram;
+        return TryReplaceCore(input, ownedProgram, replacementPattern, destination, out bytesWritten, cancellationToken, deadline);
     }
 
     /// <summary>Attempts to apply a UTF-8 replacement template to a caller-provided destination, with cancellation during template processing, matching and output.</summary>

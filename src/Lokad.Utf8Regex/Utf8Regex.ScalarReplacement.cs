@@ -2,7 +2,6 @@ using System.Buffers;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
 
 namespace Lokad.Utf8Regex;
@@ -15,23 +14,6 @@ public sealed partial class Utf8Regex
         try { return Utf8SliceByteOutputScope.Enter(invocation); }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         { throw CreateExecutionResourceFailure(ref invocation); }
-    }
-
-    private Utf8SliceProgram? GetOwnedReplacementProgram(ReadOnlySpan<byte> input, Utf8AnalyzedReplacement replacement, CancellationToken token)
-    {
-        // Non-literal shape replacements use the existing byte template engine.
-        // Select it before preparation; no legacy capture view or second subject
-        // invocation is needed. Genuine literal replacement routes remain below.
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
-            return _ownedSliceProgram;
-        if ((GetOwnedSliceProgram(input, token) ?? (input.IsEmpty ? _ownedSliceProgram : null)) is { } program) return program;
-        // The native literal plans preserve scalar endpoints. Stateful cursor
-        // shapes use the admitted scalar program with the original token.
-        if (UsesRightToLeft() || _ownedSliceProgram.HasContiguousAnchor ||
-             replacement.ContainsGroupReferences &&
-                (MatchTimeout != Regex.InfiniteMatchTimeout || _hasCaptures && ShouldUseKelvinSignFallback(input)))
-            return _ownedSliceProgram;
-        return null;
     }
 
     private Utf8SliceReplacementResult OwnedSliceReplace(ReadOnlySpan<byte> input, Utf8SliceProgram program,
