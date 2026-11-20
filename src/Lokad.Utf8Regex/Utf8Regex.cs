@@ -725,7 +725,7 @@ public sealed partial class Utf8Regex : IDisposable
 
     private Utf8CaptureRange OwnedSliceMatchFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, CancellationToken token)
     {
-        var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
+        var invocation = Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, token);
         try
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);
