@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -1122,18 +1123,6 @@ internal static partial class Utf8SliceRunner
                 if (proveMatch) acceptedEnd = position;
                 return true;
             }
-            if (proveMatch && entry is { Kind: Utf8SliceInstructionKind.Anchor,
-                A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd })
-            {
-                if (!MatchesEndAnchor(input, position, entry)) return false;
-                continue;
-            }
-            if (proveMatch && entry.Kind == Utf8SliceInstructionKind.Boundary)
-            {
-                if (!Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary)) return true;
-                if (boundary != (entry.A != 0)) return false;
-                continue;
-            }
             if (entry.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) continue;
             if (entry is { Kind: Utf8SliceInstructionKind.Jump } && entry.A >= index)
             {
@@ -1146,6 +1135,21 @@ internal static partial class Utf8SliceRunner
                 index = entry.A;
                 continue;
             }
+            if (entry.Kind is Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary)
+            {
+                if (!proveMatch) return true;
+                if (entry.Kind == Utf8SliceInstructionKind.Anchor)
+                {
+                    if (entry.A is not ((int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd)) return true;
+                    if (!MatchesEndAnchor(input, position, entry)) return false;
+                }
+                else
+                {
+                    if (!Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary)) return true;
+                    if (boundary != (entry.A != 0)) return false;
+                }
+                continue;
+            }
 
             var width = 1;
             if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
@@ -1154,48 +1158,8 @@ internal static partial class Utf8SliceRunner
                 var singleAtom = IsSingleAtomRepeat(code, index - 1, entry);
                 if (proveMatch && singleAtom && entry.RepeatMaximum <= 4 &&
                     program.TryGetUnfoldedAsciiSet(code[index], out var ascii, out var asciiOnly))
-                {
-                    var maximum = Math.Min(input.Length - position, (int)entry.RepeatMaximum);
-                    if (maximum > remaining) return true;
-                    remaining -= maximum;
-                    var consumed = 0;
-                    while (consumed < maximum)
-                    {
-                        var value = input[position + consumed];
-                        if (value >= 128 && !asciiOnly)
-                        {
-                            if (minimum != entry.RepeatMaximum || !IsDecimalDigitSet(program, code[index])) return true;
-
-                            // A fixed decimal repeat has one end. Decode the
-                            // remaining scalars under the same small visit bound.
-                            var end = position + consumed;
-                            for (var digit = consumed; digit < minimum; digit++)
-                            {
-                                if (!TryReadScalar(input, end, false, out var scalar, out var scalarWidth) ||
-                                    !Rune.IsDigit(scalar)) return false;
-                                end += scalarWidth;
-                            }
-                            return MayMatchBranchedAsciiPrefix(program, input, end, entry.A + 1,
-                                ref remaining, proveMatch, out acceptedEnd);
-                        }
-                        if (!ascii.Contains(value)) break;
-                        consumed++;
-                    }
-                    if (consumed < minimum) return false;
-                    var rewindFree = program.SkipsTerminalRewind(index - 1);
-                    index = entry.A + 1;
-                    // The Boolean witness only needs one valid endpoint.
-                    // Share the visit bound across the remaining alternatives.
-                    while (!rewindFree && consumed > minimum)
-                    {
-                        if (MayMatchBranchedAsciiPrefix(program, input, position + consumed, index,
-                            ref remaining, proveMatch, out acceptedEnd))
-                            return true;
-                        consumed--;
-                    }
-                    position += consumed;
-                    continue;
-                }
+                    return MayMatchShortPrefixRepeat(program, input, position, index, entry, ascii, asciiOnly,
+                        ref remaining, out acceptedEnd);
                 if (minimum == 0)
                 {
                     if (!singleAtom || entry.RepeatMaximum != 1) return true;
@@ -1239,6 +1203,53 @@ internal static partial class Utf8SliceRunner
             position += width;
         }
         return true;
+    }
+
+    // Keep Boolean-only repeat verification out of the rejection walk used
+    // for every viable Count prefix. Every continuation shares its visit allowance.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool MayMatchShortPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
+        int atomIndex, Utf8SliceInstruction repeat, Utf8SearchAsciiSet ascii, bool asciiOnly,
+        ref int remaining, out int acceptedEnd)
+    {
+        acceptedEnd = -1;
+        var minimum = (int)repeat.RepeatMinimum;
+        var maximum = Math.Min(input.Length - position, (int)repeat.RepeatMaximum);
+        if (maximum > remaining) return true;
+        remaining -= maximum;
+        var continuation = repeat.A + 1;
+        var consumed = 0;
+        while (consumed < maximum)
+        {
+            var value = input[position + consumed];
+            if (value >= 128 && !asciiOnly)
+            {
+                if (minimum != repeat.RepeatMaximum || !IsDecimalDigitSet(program, program.Instructions[atomIndex]))
+                    return true;
+
+                // A fixed decimal repeat has one end. Decode the remaining scalars under the same small bound.
+                var end = position + consumed;
+                for (var digit = consumed; digit < minimum; digit++)
+                {
+                    if (!TryReadScalar(input, end, false, out var scalar, out var scalarWidth) ||
+                        !Rune.IsDigit(scalar)) return false;
+                    end += scalarWidth;
+                }
+                return MayMatchBranchedAsciiPrefix(program, input, end, continuation, ref remaining, true, out acceptedEnd);
+            }
+            if (!ascii.Contains(value)) break;
+            consumed++;
+        }
+        if (consumed < minimum) return false;
+        // The Boolean witness needs one valid endpoint.
+        var rewindFree = program.SkipsTerminalRewind(atomIndex - 1);
+        while (!rewindFree && consumed > minimum)
+        {
+            if (MayMatchBranchedAsciiPrefix(program, input, position + consumed, continuation, ref remaining, true, out acceptedEnd))
+                return true;
+            consumed--;
+        }
+        return MayMatchBranchedAsciiPrefix(program, input, position + consumed, continuation, ref remaining, true, out acceptedEnd);
     }
 
     private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
