@@ -58,7 +58,7 @@ internal static partial class Utf8SliceRunner
         return continuation;
     }
 
-    private static (Utf8SearchAsciiSet Ascii, byte Literal) GetExactFamilyRepeatHead(
+    private static (Utf8SearchAsciiSet Ascii, byte Literal) GetExactPrefixRepeatHead(
         Utf8SliceProgram program, int index)
     {
         var code = program.Instructions.AsSpan();
@@ -83,7 +83,7 @@ internal static partial class Utf8SliceRunner
     // The candidate step covers this bounded scan. Only a complete ASCII
     // run can prove the next literal's unique endpoint. Wider or longer runs
     // leave the existing scalar attempt in charge.
-    private static int ScanExactFamilyRepeatHead(ReadOnlySpan<byte> input, Utf8SearchAsciiSet ascii, byte literal)
+    private static int ScanExactPrefixRepeatHead(ReadOnlySpan<byte> input, Utf8SearchAsciiSet ascii, byte literal)
     {
         var length = Math.Min(16, input.Length);
         for (var offset = 0; offset < length; offset++)

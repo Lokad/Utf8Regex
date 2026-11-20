@@ -917,17 +917,15 @@ internal static partial class Utf8SliceRunner
         // PCRE2-INTEGRATION-POINT: a caller may provide its proved branch prefixes.
         var useBranchPrefixes = branchPrefixes.HasValue;
         var seekLiteral = useBranchPrefixes || CanSeekExactPrefix(program, candidatePlan);
-        var familyContinuation = 0;
+        var prefixContinuation = 0;
         if (seekLiteral && !useBranchPrefixes && input.Length - fromByte >= 256 &&
             program.Assertions.Length == 0 && candidatePlan.Kind == Utf8SearchKind.ExactAsciiLiterals &&
             candidatePlan.LiteralSearch is null && candidatePlan.AlternateLiteralsUtf8 is { Length: >= 2 and <= 8 } literals)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-            familyContinuation = FindExactFamilyContinuation(program.Instructions, literals);
+            prefixContinuation = FindExactFamilyContinuation(program.Instructions, literals);
         }
-        var (familyRepeatAscii, familyRepeatLiteral) = familyContinuation == 0
-            ? default : GetExactFamilyRepeatHead(program, familyContinuation);
         // A direct beginning anchor already owns bounded line/prefix discovery.
         // Keep one candidate search rather than scanning its prefix twice.
         var (leadingAsciiFirst, leadingAsciiLast, leadingAsciiSecond, leadingAsciiSecondLast, leadingScalarIndex, _) = seekLiteral
@@ -991,6 +989,16 @@ internal static partial class Utf8SliceRunner
         var leadingPrefix = input.Length - fromByte >= 256 && whitespaceLiteral < 0 && leadingAsciiSecond >= 0
             ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage)
             : default;
+        var (prefixRepeatAscii, prefixRepeatLiteral) = GetExactPrefixRepeatHead(program, prefixContinuation);
+        if (!leadingPrefix.IsEmpty && !program.HasContiguousAnchor &&
+            (leadingScalarIndex == 0 || leadingScalarIndex == 1 && first.Kind == Utf8SliceInstructionKind.Boundary))
+        {
+            // The checked search has verified these literals. Reuse the family
+            // repeat proof when only the leading boundary still needs checking.
+            var afterPrefix = leadingScalarIndex + leadingPrefix.Length;
+            (prefixRepeatAscii, prefixRepeatLiteral) = GetExactPrefixRepeatHead(program, afterPrefix);
+            if (prefixRepeatAscii.HasValue) prefixContinuation = afterPrefix;
+        }
         // When Count has no stronger start search, reject an impossible ASCII
         // boundary before resetting the VM. Profile predicates and wider
         // neighbors keep the complete scalar check inside the VM.
@@ -1072,7 +1080,7 @@ internal static partial class Utf8SliceRunner
                 // an offset or the preceding match has moved below that start.
                 if (seekVeryEnd && position != input.Length)
                     return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
-                var familyLength = 0;
+                var prefixBytes = leadingPrefix.Length;
                 if (seekLiteral)
                 {
                     Utf8ExecutionLimitKind seekBreach;
@@ -1082,7 +1090,7 @@ internal static partial class Utf8SliceRunner
                             ref invocation, out var candidate, out var found);
                         position = found ? candidate.Index : -1;
                     }
-                    else seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation, out familyLength);
+                    else seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation, out prefixBytes);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     // Keep the final charge and recheck the original token after
                     // its diagnostic hook before publishing any accumulated count.
@@ -1119,25 +1127,25 @@ internal static partial class Utf8SliceRunner
                         }
                     }
                 }
-                if (familyContinuation != 0 && first.Kind == Utf8SliceInstructionKind.Boundary &&
+                if (prefixContinuation != 0 && first.Kind == Utf8SliceInstructionKind.Boundary &&
                     !MatchesBoundary(program, first, input, position))
                 {
                     // The verified literal begins with a complete ASCII scalar.
                     position++;
                     continue;
                 }
-                var verifiedPrefix = familyContinuation == 0 ? default : (familyContinuation, familyLength);
-                if (familyRepeatAscii.HasValue)
+                var verifiedPrefix = prefixContinuation == 0 ? default : (prefixContinuation, prefixBytes);
+                if (prefixRepeatAscii.HasValue)
                 {
-                    var extra = ScanExactFamilyRepeatHead(input[(position + familyLength)..],
-                        familyRepeatAscii, familyRepeatLiteral);
+                    var extra = ScanExactPrefixRepeatHead(input[(position + prefixBytes)..],
+                        prefixRepeatAscii, prefixRepeatLiteral);
                     if (extra < 0)
                     {
                         position++;
                         continue;
                     }
                     if (extra != 0)
-                        verifiedPrefix = (familyContinuation + 5, familyLength + extra);
+                        verifiedPrefix = (prefixContinuation + 5, prefixBytes + extra);
                 }
                 var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true,
                     ref workspace, ref invocation, verifiedPrefix: verifiedPrefix);

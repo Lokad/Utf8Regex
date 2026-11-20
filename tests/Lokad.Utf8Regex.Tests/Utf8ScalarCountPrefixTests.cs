@@ -53,6 +53,25 @@ public sealed class Utf8ScalarCountPrefixTests
         }
     }
 
+    [Fact]
+    public void ExactPrefixCountKeepsWordBoundariesAndWiderRepeatEndpoints()
+    {
+        const string pattern = @"\bpublic\s+async\b";
+        var subject = new string('x', 2044) + " public async | épublic async | public asyncx | public static | " +
+            "public\u2003async | public" + new string(' ', 16) + "async | public";
+        var input = Encoding.UTF8.GetBytes(subject);
+        const RegexOptions options = RegexOptions.CultureInvariant;
+        Assert.Equal(3, new Regex(pattern, options).Count(subject));
+        using var ordinary = new Utf8Regex(pattern, options);
+        using var funded = new Utf8Regex(pattern, options, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxDepth = 128, MaxWorkingBytes = 1 << 16 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.Equal(3, ordinary.Count(input));
+        Assert.Equal(3, funded.Count(input, source.Token));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
