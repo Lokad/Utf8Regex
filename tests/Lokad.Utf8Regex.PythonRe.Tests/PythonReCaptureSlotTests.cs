@@ -86,6 +86,20 @@ public sealed class PythonReCaptureSlotTests
     }
 
     [Fact]
+    public void FullMatchRetriesAProvedShorterArm()
+    {
+        using var regex = new Utf8PythonRegex("[ab][xy]*|a(?P<tail>[az]+)");
+        Span<Utf8PythonCaptureRange> captures = stackalloc Utf8PythonCaptureRange[2];
+        Assert.Equal(1, regex.Match("az"u8, captures: captures).EndOffsetInBytes);
+        Assert.False(captures[1].Success);
+        var full = regex.Match("az"u8, captures: captures, mode: Utf8PythonMatchMode.FullMatch);
+        Assert.True(full.Success);
+        Assert.Equal(2, full.EndOffsetInBytes);
+        Assert.True(captures[1].Success);
+        Assert.Equal((1, 2), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+    }
+
+    [Fact]
     public void DefaultIsAnchoredAndEndRetainsAbsoluteLookbehind()
     {
         using var regex = new Utf8PythonRegex("(?<=π)(?P<x>😀)(?=é)");

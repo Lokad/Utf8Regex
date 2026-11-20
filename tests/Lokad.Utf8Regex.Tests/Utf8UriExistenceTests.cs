@@ -49,6 +49,17 @@ public sealed class Utf8UriExistenceTests
     }
 
     [Fact]
+    public void GreedyQueryAndFragmentRangesNeedNoRetryStorage()
+    {
+        using var source = new CancellationTokenSource();
+        using var regex = Limited(4096, working: 1);
+        var input = "https://écho/?id=😀#début fin"u8;
+        var expected = new Utf8CaptureRange(0, "https://écho/?id=😀#début"u8.Length);
+        Assert.Equal(expected, regex.Match(input, cancellationToken: source.Token));
+        Assert.Equal(1, regex.Count(input, source.Token));
+    }
+
+    [Fact]
     public void FiniteExistenceRetainsFundedAdmissionAndScalarSemantics()
     {
         using var cancellation = new CancellationTokenSource();

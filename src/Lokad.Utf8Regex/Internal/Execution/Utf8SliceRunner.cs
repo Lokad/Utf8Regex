@@ -1391,7 +1391,12 @@ internal static partial class Utf8SliceRunner
                             programIndex = instruction.A;
                             break;
                         }
-                        saveAlternative = GetForkPrefixLength(program, input, inputIndex, instruction.A) >= 0;
+                        // A consumed prefix followed by an unconditional path
+                        // to Accept cannot need the other arm. Still execute the
+                        // preferred tail for its greedy extent and captures.
+                        saveAlternative = (verifiedPrefix == 0 || cursor.RequiredEnd.HasValue ||
+                            !CanAcceptEmptyTail(instructions, programIndex + 1 + verifiedPrefix)) &&
+                            GetForkPrefixLength(program, input, inputIndex, instruction.A) >= 0;
                     }
 
                     if (saveAlternative && !stacks.PushFrame(
