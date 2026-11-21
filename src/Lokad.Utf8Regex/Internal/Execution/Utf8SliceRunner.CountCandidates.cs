@@ -1263,7 +1263,7 @@ internal static partial class Utf8SliceRunner
         while (remaining > 0 && (uint)index < (uint)code.Length)
         {
             remaining--;
-            var entry = code[index++];
+            ref readonly var entry = ref code[index++];
             var width = 1;
             switch (entry.Kind)
             {
@@ -1396,7 +1396,7 @@ internal static partial class Utf8SliceRunner
                     remaining -= width;
                     var atomIndex = index;
                     index = entry.A + 1;
-                    entry = code[atomIndex];
+                    entry = ref code[atomIndex];
                     break;
                 default:
                     return true;
