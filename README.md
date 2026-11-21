@@ -3,9 +3,7 @@
 Regular expressions directly over UTF-8 spans for **.NET 10 and .NET 11**. Match, count,
 enumerate and replace without first decoding the subject to a string.
 Core and the optional adapters are fully managed .NET libraries.
-This README describes ongoing 0.5.0 development. Its API and execution machinery
-are being simplified. Published 0.4.0 and frozen development packages retain
-their original behavior; development package qualification is not a release.
+This README describes the upcoming 0.5.0 API.
 
 ## Quick start
 
@@ -23,12 +21,11 @@ byte[] redacted = regex.Replace(input, "[order]"u8);
 ```
 
 Use `EnumerateMatches` to visit whole matches and `CreateMatchCursor` over
-`ReadOnlyMemory<byte>` for groups and capture history. Match byte ranges can be used directly with UTF-8
-slices. `EnumerateMatches(input, startOffsetInBytes, cancellationToken)` searches
+`ReadOnlyMemory<byte>` for groups and capture history. Use match ranges directly
+with UTF-8 slices. `EnumerateMatches(input, startOffsetInBytes, cancellationToken)` searches
 from a scalar-aligned byte position while retaining full context for assertions.
 The byte-start `Match` can fill caller-owned `Utf8CaptureRange` slots; slot zero
 is the whole match and `GroupNumberFromCaptureSlot` resolves sparse group numbers.
-Use the persistent memory cursor when capture history is required.
 Copy a slot's name into caller storage with `TryCopyGroupNameUtf8`; metadata
 collections and text decoding belong to the host.
 
@@ -105,8 +102,7 @@ borrow an open regex; persistent cursors can retain admission after it closes.
 See the [resource contract](docs/SPEC.md#cancellation-deadlines-and-resource-limits)
 for failure, deadline and ownership details.
 
-See [release notes](CHANGELOG.md) and the [migration guide](docs/MIGRATION.md)
-for the 0.4.0 changes.
+See the [release notes](CHANGELOG.md) for published versions and 0.5.0 upgrades.
 
 ## Runtime support
 

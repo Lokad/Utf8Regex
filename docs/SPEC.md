@@ -2,7 +2,7 @@
 
 `Lokad.Utf8Regex` matches Unicode scalars over UTF-8 on .NET 10 and 11.
 Its coordinates are byte offsets. [API snapshot](../tests/Lokad.Utf8Regex.Tests/PublicApi.Shipped.txt) ·
-[Release notes](../CHANGELOG.md) · [Migration](MIGRATION.md)
+[Release notes](../CHANGELOG.md) · [Upgrading](../CHANGELOG.md#upgrading)
 
 ## Matching and coordinates
 

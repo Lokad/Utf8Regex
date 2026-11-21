@@ -106,8 +106,8 @@ internal construction owner. Explicit Compile and construction/funding controls
 start one owner and reject replacing an active one. Invalid policy values report
 the policy parameter. Settings are copied; the construction token does not become
 execution authority. Host retention/decoding and incidental objects keep their
-separate scope. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits)
-and [migration guidance](../../docs/MIGRATION.md#pythonre-compilation-policy).
+separate scope. See the [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits)
+and [release notes](../../CHANGELOG.md#upgrading).
 
 Old timeout/resource/construction/funding argument lists are removed. Recompile
 callers. Matching/count/output retain their optional offset/count/token signatures;

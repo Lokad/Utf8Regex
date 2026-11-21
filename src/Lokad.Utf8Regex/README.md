@@ -70,7 +70,7 @@ the exact matching Core package version. Keep selected packages at the same
 version. They are managed profile adapters with explicit compatibility boundaries;
 no native PCRE2 binary is shipped.
 
-Read [release notes](../../CHANGELOG.md) and [migration guide](../../docs/MIGRATION.md).
+See the [release notes](../../CHANGELOG.md) for upgrades and version history.
 The [repository specification](../../docs/SPEC.md)
 defines the target contract; qualification fixtures establish implemented scope.
 Performance snapshots retain their recorded source/package/runtime identities.

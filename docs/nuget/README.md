@@ -75,7 +75,7 @@ upgrading from 0.4, move whole-subject validation to the text boundary. If you
 used a 0.5 development build with a validation option, remove `inputValidation`
 arguments and `InputValidation` property reads.
 
-NuGet's project-website link leads to the repository specifications, migration
-guide, profile examples and benchmark tables. Those tables retain their measured
-source/runtime identities; they are not a speed guarantee for every package.
+NuGet's project-website link leads to the repository specifications, release
+notes, profile examples and benchmark tables. Those tables identify the measured
+sources and runtimes.
 NativeAOT publishing and trimming remain unqualified.

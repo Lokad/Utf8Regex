@@ -275,7 +275,7 @@ later gaps and captures retain their original bytes. That temporary capacity
 requires working and cumulative result admission under the same invocation.
 Disjoint simple-template output and no-match copies retain their direct paths.
 
-Read [release notes](../../CHANGELOG.md) and [migration guide](../../docs/MIGRATION.md).
+See the [release notes](../../CHANGELOG.md) for upgrades and version history.
 The [PCRE2 summary](../../bench/Snapshots/Pcre2.json) records the measured source,
 runtime and comparator qualification for each byte-operation row.
 

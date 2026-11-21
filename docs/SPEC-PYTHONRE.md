@@ -6,8 +6,7 @@
 positions or decode selected bytes when needed.
 
 See the [API snapshot](../tests/Lokad.Utf8Regex.PythonRe.Tests/PublicApi.Shipped.txt)
-for signatures and the [migration guide](MIGRATION.md#pythonre-compilation-policy)
-for changes to previous APIs.
+for signatures and the [release notes](../CHANGELOG.md#upgrading) for upgrade guidance.
 
 ## Subject text contract
 

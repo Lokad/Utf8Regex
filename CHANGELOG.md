@@ -24,8 +24,10 @@
   compute custom output in the host. PythonRe exposes numbered captures and
   `LastIndex`; PCRE2 exposes final capture slots, MARK and its supported partial
   probes.
-- See the [migration guide](docs/MIGRATION.md) for current signatures and the
-  [profile contracts](README.md#choose-a-profile) for supported semantics.
+- Recompile callers after upgrading. Use named arguments for byte bounds, capture
+  buffers and cancellation. PythonRe `Match` uses an explicit mode for search
+  and full matching, and Core `EnumerateMatches` can count from a byte offset.
+  See the [profile contracts](README.md#choose-a-profile) for current APIs.
 
 ### Execution
 
@@ -64,8 +66,6 @@ Published on NuGet: [Core](https://www.nuget.org/packages/Lokad.Utf8Regex/0.4.0)
   Actual Unsafe.SizeOf queries remain.
 
 Upgrade selected packages together; adapters require the matching Core version.
-Read the [migration guide](docs/MIGRATION.md) and profile specifications for
-supported behavior and resource-control scope.
 
 ## 0.3.0 — 2026-08-28
 
