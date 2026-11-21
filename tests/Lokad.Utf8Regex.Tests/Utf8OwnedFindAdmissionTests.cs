@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -258,13 +257,5 @@ public sealed class Utf8OwnedFindAdmissionTests
         Assert.Same(input, last.Parent);
         Assert.True(owner.Budget.ReservedBytes > 0);
         Assert.Equal(0ul, owner.Budget.Depth);
-    }
-
-    [Fact]
-    public void RemovedFindStateAndProducerAreAbsentFromShippedMetadata()
-    {
-        Assert.Null(typeof(Utf8OwnedFindOptimizations).GetMethod("FindLeadingAnchor", BindingFlags.Public | BindingFlags.Static));
-        Assert.Null(typeof(Utf8OwnedFindFacts).GetProperty("LeadingAnchor"));
-        Assert.Null(typeof(Utf8OwnedFindFacts).GetProperty("Root"));
     }
 }

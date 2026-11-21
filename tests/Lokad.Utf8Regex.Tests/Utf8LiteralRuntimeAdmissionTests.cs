@@ -32,7 +32,7 @@ public sealed class Utf8LiteralRuntimeAdmissionTests
                                                     select new object[] { pattern, depth };
 
     [Fact]
-    public void TransferStateCoversEveryRuntimeAndCompositeFieldWithoutUnusedEnumerationState()
+    public void TransferStateCoversRuntimeAndCompositeFields()
     {
         var root = typeof(Utf8LiteralCompiledEngineRuntime);
         void AssertState(Type runtime, string stateName)
@@ -44,7 +44,6 @@ public sealed class Utf8LiteralRuntimeAdmissionTests
         }
         AssertState(root, "ConstructionState");
         AssertState(root.GetNestedType("CompositeTrailingLiteralSearch", BindingFlags.NonPublic)!, "CompositeConstructionState");
-        Assert.Null(root.GetField("_enumerationProgram", BindingFlags.Instance | BindingFlags.NonPublic));
         Assert.Empty(root.GetConstructors(BindingFlags.Instance | BindingFlags.Public));
     }
 

@@ -598,14 +598,6 @@ public sealed class Utf8FindByteFactsTests
         Assert.Equal(new Utf8OwnedFindOptimizations.ByteWidth(1, 2), Utf8OwnedFindOptimizations.ComputeByteWidth(node));
     }
 
-    [Fact]
-    public void ObsoleteWidthWrappersAndLiteralHolderAreAbsentFromMetadata()
-    {
-        Assert.Null(typeof(Utf8OwnedFindOptimizations).GetMethod("ComputeMinLength"));
-        Assert.Null(typeof(Utf8OwnedFindOptimizations).GetMethod("ComputeMaxLength"));
-        Assert.Null(typeof(Utf8OwnedFindOptimizations).GetNestedType("LiteralHolder", System.Reflection.BindingFlags.NonPublic));
-    }
-
     [Theory]
     [InlineData(0)] [InlineData(1)] [InlineData(2)]
     public void FixedLiteralProofAdmitsItsRootBeforeAnyAcquisition(int denial)

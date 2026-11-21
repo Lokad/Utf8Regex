@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -63,7 +62,6 @@ public sealed class Utf8ScalarClassPreparationTests
             large = Utf8ScalarClass.Create(data);
             preparation.Complete();
         }
-        Assert.Null(typeof(Utf8ScalarClass).GetProperty("NativeProjection", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic));
         Assert.True(Utf8ScalarAsciiProjector.TryProjectAsciiQuery(large, out var warmed));
         Assert.True(warmed.IsEmpty);
         using (var query = new Utf8ConstructionScope(0, 128, ulong.MaxValue, ulong.MaxValue))

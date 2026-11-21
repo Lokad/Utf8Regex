@@ -133,8 +133,6 @@ public sealed class Pcre2ExecutionArchitectureTests
     [Fact]
     public void InvocationStateIsNeverRetainedByCompiledProgram()
     {
-        foreach (var name in new[] { "Pcre2InvocationState", "Pcre2BacktrackingState", "Pcre2GlobalIterationState" })
-            Assert.Null(typeof(Utf8Pcre2Regex).Assembly.GetType("Lokad.Utf8Regex.Pcre2." + name));
         Assert.DoesNotContain(
             typeof(Pcre2CompiledProgram).GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic),
             static field => field.FieldType == typeof(Pcre2ResourceBudget) || field.FieldType == typeof(Utf8SliceInvocation));

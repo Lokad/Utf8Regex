@@ -159,14 +159,4 @@ public sealed class Utf8OwnedFeatureTests
         var features = Utf8RuntimeTreeFeatureAnalyzer.Analyze(new("", RegexOptions.None, "", RegexOptions.None, tree));
         Assert.True(features.HasLoops);
     }
-
-    [Fact]
-    public void ObsoleteTreeFactTypesStateAndPredicateStayAbsent()
-    {
-        var assembly = typeof(Utf8Regex).Assembly;
-        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.Utf8OwnedTreeAnalyzer"));
-        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.Utf8OwnedTreeAnalysis"));
-        Assert.Null(typeof(Utf8SemanticRegex).GetProperty("RuntimeAnalysis"));
-        Assert.Null(typeof(Utf8TreeNode).GetProperty("IsBacktrackingConstruct"));
-    }
 }

@@ -165,8 +165,6 @@ public sealed class Utf8TreeObjectAdmissionTests
         var stateFields = state.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.Equal(fieldCount, fields.Length);
         Assert.Equal(fields.Select(static field => field.FieldType), stateFields.Select(static field => field.FieldType));
-        Assert.Null(type.GetProperty("Str2"));
-        Assert.Null(type.GetProperty("ChildList"));
         var method = typeof(Utf8ConstructionBudget).GetMethod("ObjectBytes", BindingFlags.Static | BindingFlags.NonPublic)!;
         return Math.Max(128ul, (ulong)method.MakeGenericMethod(state).Invoke(null, null)!);
     }

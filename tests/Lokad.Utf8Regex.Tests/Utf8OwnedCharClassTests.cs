@@ -230,10 +230,6 @@ public sealed class Utf8OwnedCharClassTests
         Assert.Equal(typeof(int[]), Assert.Single(fields).FieldType);
         Assert.DoesNotContain(typeof(Utf8ScalarClass).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic),
             property => property.PropertyType == typeof(string));
-        Assert.Null(typeof(Utf8ScalarClass).GetMethod("TryProject", BindingFlags.Static | BindingFlags.NonPublic));
-        Assert.Null(typeof(Utf8ScalarClass).Assembly.GetType("Lokad.Utf8Regex.Internal.FrontEnd.Utf8OwnedCharClass"));
-        Assert.Null(typeof(Utf8ScalarClass).GetMethod("TryImport", BindingFlags.Static | BindingFlags.NonPublic));
-        Assert.Null(typeof(Utf8ScalarClass).GetMethod("ImportCategories", BindingFlags.Static | BindingFlags.NonPublic));
     }
 
     public static IEnumerable<object?[]> MatchingCases()

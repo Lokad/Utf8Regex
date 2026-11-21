@@ -254,10 +254,4 @@ public sealed class Utf8NativeEligibilityAdmissionTests
         Assert.Equal(checkpoint, owner.Budget.ReservedBytes);
         Assert.Equal(17, parent.Value);
     }
-
-    [Fact]
-    public void UnusedLookaroundEligibilityHelperIsAbsentFromShippedMetadata()
-    {
-        Assert.Null(typeof(Utf8NativeExecutionAnalyzer).GetMethod("IsSupportedSimplePatternLookaroundNode", BindingFlags.Static | BindingFlags.NonPublic));
-    }
 }

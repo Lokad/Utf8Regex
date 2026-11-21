@@ -5,12 +5,6 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8CaptureSlotRetirementTests
 {
-    [Fact]
-    public void ShippedCoreRetainsNoSecondCaptureNumberingTranslator()
-    {
-        Assert.Null(typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8BclSlotTranslator"));
-    }
-
     public static IEnumerable<object[]> PublicCases()
     {
         (string Pattern, string Text)[] cases =

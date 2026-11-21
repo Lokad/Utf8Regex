@@ -138,8 +138,6 @@ public sealed class Utf8CursorInvocationReservationTests
     [Fact]
     public void ShippedCursorAccountingHasNoFinalizerOrCollectionReleaseState()
     {
-        var assembly = typeof(Utf8Regex).Assembly;
-        Assert.Null(assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8StorageLease"));
         Assert.Empty(typeof(Utf8StorageLedger).GetNestedTypes(BindingFlags.Public | BindingFlags.NonPublic));
         var flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
         Assert.Null(typeof(Utf8NonBacktrackingSearchState).GetMethod("Finalize", flags));

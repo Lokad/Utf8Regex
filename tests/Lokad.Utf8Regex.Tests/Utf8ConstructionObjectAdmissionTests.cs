@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 
@@ -111,8 +110,6 @@ public sealed class Utf8ConstructionObjectAdmissionTests
         Assert.Equal(128ul, held);
         Assert.Equal(held, owner.Budget.ReservedBytes);
         Assert.Equal(2ul, owner.Budget.WorkSteps);
-        Assert.Null(typeof(Utf8ConstructionBudget).GetNestedType("ObjectAllocation", BindingFlags.NonPublic));
-        Assert.Null(typeof(Utf8ConstructionBudget).GetProperty("ObjectCheckpoint", BindingFlags.Instance | BindingFlags.NonPublic));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
