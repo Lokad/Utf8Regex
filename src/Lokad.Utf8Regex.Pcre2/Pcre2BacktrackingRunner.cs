@@ -1128,6 +1128,7 @@ internal static class Pcre2BacktrackingRunner
                                 captureEnds[captureSlot],
                                 inputIndex,
                                 instruction.BackreferenceOptions,
+                                ref budget,
                                 out inputIndex))
                         {
                             instructionIndex++;
@@ -1153,6 +1154,7 @@ internal static class Pcre2BacktrackingRunner
                                 captureEnds[selectedSlot],
                                 inputIndex,
                                 instruction.BackreferenceOptions,
+                                ref budget,
                                 out inputIndex))
                         {
                             instructionIndex++;
@@ -2418,32 +2420,50 @@ internal static class Pcre2BacktrackingRunner
         int captureEnd,
         int subjectStart,
         Pcre2CharacterOptions options,
+        ref Pcre2ResourceBudget budget,
         out int subjectEnd)
     {
+        subjectEnd = subjectStart;
         var capture = input[captureStart..captureEnd];
         if ((options & Pcre2CharacterOptions.Caseless) == 0)
         {
-            if (subjectStart <= input.Length - capture.Length &&
-                input.Slice(subjectStart, capture.Length).SequenceEqual(capture))
+            const int blockBytes = 2048;
+            if (subjectStart > input.Length - capture.Length) return false;
+            var subject = input.Slice(subjectStart, capture.Length);
+            if (capture.Length <= blockBytes || budget.IsUnmetered)
             {
-                subjectEnd = subjectStart + capture.Length;
-                return true;
+                if (!subject.SequenceEqual(capture)) return false;
             }
-
-            subjectEnd = subjectStart;
-            return false;
+            else
+            {
+                // The backreference instruction admits the first block.
+                for (var offset = 0; offset < capture.Length;)
+                {
+                    if (offset != 0) budget.ChargeWorkspaceStep();
+                    var length = Math.Min(blockBytes, capture.Length - offset);
+                    if (!subject.Slice(offset, length).SequenceEqual(capture.Slice(offset, length))) return false;
+                    offset += length;
+                }
+            }
+            subjectEnd = subjectStart + capture.Length;
+            return true;
         }
 
         var captureIndex = captureStart;
         var subjectIndex = subjectStart;
+        var remainingInBlock = 64;
         while (captureIndex < captureEnd)
         {
+            if (remainingInBlock-- == 0)
+            {
+                budget.ChargeWorkspaceStep();
+                remainingInBlock = 63;
+            }
             if (subjectIndex >= input.Length ||
                 Rune.DecodeFromUtf8(input[captureIndex..captureEnd], out var capturedRune, out var capturedWidth) != OperationStatus.Done ||
                 Rune.DecodeFromUtf8(input[subjectIndex..], out var subjectRune, out var subjectWidth) != OperationStatus.Done ||
                 !Pcre2CharacterSemantics.Equals(capturedRune, subjectRune, options))
             {
-                subjectEnd = subjectStart;
                 return false;
             }
 

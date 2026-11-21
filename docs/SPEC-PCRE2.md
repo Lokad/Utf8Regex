@@ -53,6 +53,8 @@ operating costs can increase or decrease as strategies change. Fixed-scratch or
 direct byte-range operations need no mandatory heap loan; major growing buffers
 and program expansion still require admission. These controls bound modeled work and admitted storage,
 not total heap, stack or process memory.
+The owned backtracker checks the original invocation between blocks of long
+backreference comparisons, including exact bytes and scalar case folding.
 
 ## Surface and admission
 

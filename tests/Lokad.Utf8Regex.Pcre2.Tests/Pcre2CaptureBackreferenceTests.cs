@@ -44,6 +44,25 @@ public sealed class Pcre2CaptureBackreferenceTests
         Assert.False(regex.IsMatch("😀abca😀"u8, cancellationToken: source.Token));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LongSubroutineBackreferenceChargesComparisonWork(bool folded)
+    {
+        var reference = folded ? @"(?i:\k<text>)" : @"\k<text>";
+        var pattern = @"\A(?<text>[ab]+):(?&check)\z(?(DEFINE)(?<check>" + reference + "))";
+        var capture = new string('a', 128 << 10);
+        var input = Encoding.UTF8.GetBytes(capture + ":" + (folded ? capture.ToUpperInvariant() : capture));
+        using var limited = new Utf8Pcre2Regex(pattern,
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 112 } });
+        using var unlimited = new Utf8Pcre2Regex(pattern);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(limited.DebugCompiledProgram.Operations.IsMatch);
+        Assert.True(limited.IsMatch(folded ? "ab:AB"u8 : "ab:ab"u8));
+        Assert.True(unlimited.IsMatch(input));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit,
+            Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(input)).ErrorKind);
+    }
+
     [Fact]
     public void FixedCapturedSequenceKeepsTheLastUnicodeCaptureForBackreference()
     {
