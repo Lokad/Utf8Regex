@@ -49,13 +49,18 @@ public sealed partial class Utf8Regex
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (workingMemoryAllowance is not null || _programMemory is not null)
+            return IsMatchFunded(input, cancellationToken, workingMemoryAllowance);
+
+        try { return IsMatchCore(input, cancellationToken); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+    }
+
+    private bool IsMatchFunded(ReadOnlySpan<byte> input, CancellationToken cancellationToken,
+        IUtf8MemoryAllowance? workingMemoryAllowance)
+    {
         using var programUse = _programMemory?.Enter();
-        workingMemoryAllowance ??= _programMemory?.Allowance;
-        if (workingMemoryAllowance is null)
-        {
-            try { return IsMatchCore(input, cancellationToken); }
-            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
-        }
+        workingMemoryAllowance ??= _programMemory!.Allowance;
         var invocation = Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
         try
         {
