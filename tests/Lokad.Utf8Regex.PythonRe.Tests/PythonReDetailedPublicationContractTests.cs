@@ -112,7 +112,7 @@ public sealed class PythonReDetailedPublicationContractTests
         var core = new global::Lokad.Utf8Regex.Utf8Regex("(😀)(é?)");
         var program = core.Inspection.AvailableOwnedSliceProgram;
         var input = "😀é"u8.ToArray();
-        var measured = new PythonReScalarMatchState(input, program, 0,
+        PythonReScalarMatchState.Initialize(out var measured, input, program, 0,
             Regex.InfiniteMatchTimeout,
             "(😀)(é?)", new(new(0, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default), null);
         ulong work, extent;
@@ -131,7 +131,7 @@ public sealed class PythonReDetailedPublicationContractTests
             var reserved = false;
             try
             {
-                cursor = new(input, program, 0, Regex.InfiniteMatchTimeout,
+                PythonReScalarMatchState.Initialize(out cursor, input, program, 0, Regex.InfiniteMatchTimeout,
                     "(😀)(é?)", new(new(cap, 0, 0, 1048576), Regex.InfiniteMatchTimeout, default), null);
                 constructed = true;
                 Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(13));

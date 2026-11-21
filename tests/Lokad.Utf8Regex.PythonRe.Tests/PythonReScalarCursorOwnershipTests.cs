@@ -21,14 +21,14 @@ public sealed class PythonReScalarCursorOwnershipTests
         {
             var failure = Assert.Throws<OperationCanceledException>(() =>
             {
-                var cursor = new PythonReScalarMatchState("\U0001f600"u8.ToArray(), program, 0, Regex.InfiniteMatchTimeout,
+                PythonReScalarMatchState.Initialize(out var cursor, "\U0001f600"u8.ToArray(), program, 0, Regex.InfiniteMatchTimeout,
                     "(.)", new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token), null);
                 cursor.Dispose();
             });
             Assert.Equal(source.Token, failure.CancellationToken);
             return;
         }
-        var mapped = new PythonReScalarMatchState("\U0001f600"u8.ToArray(), program, 0, Regex.InfiniteMatchTimeout,
+        PythonReScalarMatchState.Initialize(out var mapped, "\U0001f600"u8.ToArray(), program, 0, Regex.InfiniteMatchTimeout,
             "(.)", new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, source.Token), null);
         try
         {

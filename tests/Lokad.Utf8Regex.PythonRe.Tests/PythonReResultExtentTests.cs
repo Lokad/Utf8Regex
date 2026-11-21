@@ -19,7 +19,7 @@ public sealed class PythonReResultExtentTests
         var program = core.Inspection.AvailableOwnedSliceProgram;
         Assert.NotNull(program);
         var input = Encoding.UTF8.GetBytes(new string('é', 1025));
-        var cursor = new PythonReScalarMatchState(input, program, 0,
+        PythonReScalarMatchState.Initialize(out var cursor, input, program, 0,
             Regex.InfiniteMatchTimeout,
             "(.)", new(new(0, 0, 1UL << 20), Regex.InfiniteMatchTimeout, CancellationToken.None), null);
         try

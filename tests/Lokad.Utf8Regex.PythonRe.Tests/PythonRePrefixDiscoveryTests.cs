@@ -29,7 +29,7 @@ public sealed class PythonRePrefixDiscoveryTests
         Utf8PythonRangeMatch cursorRange = default;
         var regex = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.Multiline);
         var input = Encoding.UTF8.GetBytes(subject);
-        var plain = new PythonReScalarMatchState(input, Field<Utf8SliceProgram>(regex, "_scalarProgram"),
+        PythonReScalarMatchState.Initialize(out var plain, input, Field<Utf8SliceProgram>(regex, "_scalarProgram"),
             0, Regex.InfiniteMatchTimeout, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default), null);
         var expected = new List<Utf8PythonRangeMatch>();
         try { while (plain.MoveNext(input)) expected.Add(plain.SnapshotRanges(input)); }
@@ -93,7 +93,7 @@ public sealed class PythonRePrefixDiscoveryTests
                     var start = 0;
                     while (true)
                     {
-                        var plain = new PythonReScalarMatchState(input, program, start,
+                        PythonReScalarMatchState.Initialize(out var plain, input, program, start,
                             Regex.InfiniteMatchTimeout, pattern, new(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default), null);
                         var expected = new List<Utf8PythonRangeMatch>();
                         try { while (plain.MoveNext(input)) expected.Add(plain.SnapshotRanges(input)); }

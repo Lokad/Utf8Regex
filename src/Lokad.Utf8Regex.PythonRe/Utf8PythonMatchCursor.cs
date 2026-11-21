@@ -35,7 +35,7 @@ public sealed class Utf8PythonMatchCursor : IDisposable
         _input = input;
         _programUse = programUse;
         _mode = mode;
-        _discovery = new PythonReScalarMatchState(input.Span, program,
+        PythonReScalarMatchState.Initialize(out _discovery, input.Span, program,
             startOffsetInBytes, timeout, pattern, invocation, candidateRegex, prepareSearch: mode == Utf8PythonMatchMode.Search);
         try { _discovery.Checkpoint(); }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&

@@ -15,7 +15,7 @@ internal ref struct PythonReScalarMatchCursor
         object pattern, scoped in Utf8SliceInvocation invocation, bool prepareSearch = true)
     {
         _input = input;
-        _state = new PythonReScalarMatchState(input, program, startOffsetInBytes, timeout, pattern, invocation, candidateRegex, prepareSearch);
+        PythonReScalarMatchState.Initialize(out _state, input, program, startOffsetInBytes, timeout, pattern, invocation, candidateRegex, prepareSearch);
     }
 
     internal int StartOffsetInBytes => _state.StartOffsetInBytes;

@@ -15,52 +15,53 @@ namespace Lokad.Utf8Regex.PythonRe;
 // Python retains the last capture, so discovery does not collect capture history.
 internal struct PythonReScalarMatchState
 {
-    private readonly Utf8SliceProgram _program;
-    private readonly Utf8Regex? _candidateRegex;
-    private readonly int _leadingAsciiLow;
-    private readonly int _leadingAsciiHigh;
-    private readonly int _laterAsciiDistance;
-    private readonly byte _laterAsciiLow;
-    private readonly byte _laterAsciiHigh;
-    private readonly int _delimiter;
-    private readonly int _delimiterLeadingClass;
+    private Utf8SliceProgram _program;
+    private Utf8Regex? _candidateRegex;
+    private int _leadingAsciiLow;
+    private int _leadingAsciiHigh;
+    private int _laterAsciiDistance;
+    private byte _laterAsciiLow;
+    private byte _laterAsciiHigh;
+    private int _delimiter;
+    private int _delimiterLeadingClass;
     // Production retains the expression for lazy diagnostics. Standalone
     // diagnostic/test cursors can supply text without constructing a facade.
-    private readonly object _timeoutSource;
-    private readonly TimeSpan _timeout;
+    private object _timeoutSource;
+    private TimeSpan _timeout;
     private Utf8SliceInvocation _invocation;
     private Utf8InvocationResultLedger _results;
     private Utf8SliceSlots _slots;
     private Utf8SliceRunner.AttemptWorkspace _workspace;
-    private readonly bool _leadingAsciiMayMatchUnicode;
+    private bool _leadingAsciiMayMatchUnicode;
     private bool _retryNonEmpty;
     private bool _finished;
     private int _position;
 
-    internal PythonReScalarMatchState(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+    internal static void Initialize(out PythonReScalarMatchState state,
+        ReadOnlySpan<byte> input, Utf8SliceProgram program,
         int startOffsetInBytes, TimeSpan timeout, object pattern,
         scoped in Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, bool prepareSearch = true)
     {
-        this = default;
-        _program = program;
-        _leadingAsciiLow = _leadingAsciiHigh = -1;
-        _delimiter = _delimiterLeadingClass = -1;
-        _timeoutSource = pattern;
-        _timeout = timeout;
-        _position = startOffsetInBytes;
-        _slots = new Utf8SliceSlots([], []);
-        _workspace = new Utf8SliceRunner.AttemptWorkspace();
-        // Own one value copy; the constructor chain only borrows the source.
-        _invocation = invocation;
+        state = default;
+        state._program = program;
+        state._leadingAsciiLow = state._leadingAsciiHigh = -1;
+        state._delimiter = state._delimiterLeadingClass = -1;
+        state._timeoutSource = pattern;
+        state._timeout = timeout;
+        state._position = startOffsetInBytes;
+        state._slots = new Utf8SliceSlots([], []);
+        state._workspace = new Utf8SliceRunner.AttemptWorkspace();
+        // Own one value copy; the caller only lends the source.
+        state._invocation = invocation;
         try
         {
             // Python re consumes text. The caller supplies valid unchanged UTF-8;
             // admission/interruption still precede preparation and early results.
-            Checkpoint();
+            state.Checkpoint();
             if (program.RejectsByFinalAscii(input))
             {
-                if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
-                _finished = true;
+                if (state._invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw state.ResourceFailure();
+                state._finished = true;
                 return;
             }
             // Anchored calls cannot skip a rejected starting byte. Reuse the
@@ -74,30 +75,30 @@ internal struct PythonReScalarMatchState
                 (startOffsetInBytes == input.Length ||
                  (uint)(input[startOffsetInBytes] - startLow) > (uint)(startHigh - startLow)) ||
                 !program.CanMatchEmpty && !program.IgnoreCase && candidateRegex is { } required &&
-                required.RejectMissingExactRequiredLiteral(input, ref _invocation))
+                required.RejectMissingExactRequiredLiteral(input, ref state._invocation))
             {
-                Checkpoint();
-                _finished = true;
+                state.Checkpoint();
+                state._finished = true;
                 return;
             }
             // Anchored Match/FullMatch never seek a candidate. Their existing
             // operation intent avoids preparing hints they cannot consume.
             if (prepareSearch)
             {
-                if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
-                if (_candidateRegex is null)
+                if (CanUseCandidateRegex(program, candidateRegex)) state._candidateRegex = candidateRegex;
+                if (state._candidateRegex is null)
                 {
                     if (TryGetLeadingAsciiRange(program, out var low, out var high, out var mayMatchUnicode))
                     {
-                        _leadingAsciiLow = low;
-                        _leadingAsciiHigh = high;
-                        _leadingAsciiMayMatchUnicode = mayMatchUnicode;
-                        if (!mayMatchUnicode && TryGetLaterAsciiRange(program, low, high, ref _invocation,
+                        state._leadingAsciiLow = low;
+                        state._leadingAsciiHigh = high;
+                        state._leadingAsciiMayMatchUnicode = mayMatchUnicode;
+                        if (!mayMatchUnicode && TryGetLaterAsciiRange(program, low, high, ref state._invocation,
                             out var distance, out var laterLow, out var laterHigh))
                         {
-                            _laterAsciiDistance = distance;
-                            _laterAsciiLow = (byte)laterLow;
-                            _laterAsciiHigh = (byte)laterHigh;
+                            state._laterAsciiDistance = distance;
+                            state._laterAsciiLow = (byte)laterLow;
+                            state._laterAsciiHigh = (byte)laterHigh;
                         }
                     }
                     // The program and subject extent are immutable for this
@@ -113,26 +114,26 @@ internal struct PythonReScalarMatchState
                         if (directClassLiteral &&
                             (program.Instructions[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom &&
                                 program.SetMasks[atom.A].Length == 16 ||
-                             _leadingAsciiLow >= 0 && program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 }))
+                             state._leadingAsciiLow >= 0 && program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 }))
                         {
-                            _delimiter = delimiter;
-                            _delimiterLeadingClass = leadingClass;
+                            state._delimiter = delimiter;
+                            state._delimiterLeadingClass = leadingClass;
                         }
                     }
                 }
             }
-            _slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref _invocation);
+            state._slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref state._invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { Dispose(); throw ResourceFailure(); }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && state._invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { state.Dispose(); throw state.ResourceFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            Dispose();
-            throw TimeoutFailure(input);
+            state.Dispose();
+            throw state.TimeoutFailure(input);
         }
         catch
         {
-            Dispose();
+            state.Dispose();
             throw;
         }
     }

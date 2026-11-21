@@ -320,7 +320,7 @@ public sealed class PythonReClassDelimiterWindowTests
         {
             var invocation = new Utf8SliceInvocation(new(cap, 128, 1_000_000, 1), Timeout.InfiniteTimeSpan, default);
             Assert.True(invocation.Ledger.TryReserve(13));
-            var state = new PythonReScalarMatchState(input, program, 0, Timeout.InfiniteTimeSpan, "pattern", invocation, null);
+            PythonReScalarMatchState.Initialize(out var state, input, program, 0, Timeout.InfiniteTimeSpan, "pattern", invocation, null);
             try
             {
                 Assert.True(state.MoveNext(input));
@@ -356,7 +356,7 @@ public sealed class PythonReClassDelimiterWindowTests
         var duration = timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan;
         var invocation = new Utf8SliceInvocation(new(1_000_000, 128, 1_000_000, 1), duration, token.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
-        var state = new PythonReScalarMatchState(input, program, 0, duration, "pattern", invocation, null);
+        PythonReScalarMatchState.Initialize(out var state, input, program, 0, duration, "pattern", invocation, null);
         var reached = false;
         state.WorkingInvocation.CheckpointHook = _ =>
         {
