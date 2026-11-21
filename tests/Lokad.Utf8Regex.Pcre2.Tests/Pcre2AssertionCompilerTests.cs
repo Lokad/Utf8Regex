@@ -249,13 +249,16 @@ public sealed class Pcre2AssertionCompilerTests
             Assert.True(regex.IsMatch(input));
         }
 
+        var matches = 0;
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var index = 0; index < 256; index++)
         {
-            Assert.True(regex.IsMatch(input));
+            if (regex.IsMatch(input)) matches++;
         }
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        Assert.Equal(256, matches);
+        Assert.Equal(0, allocated);
     }
 
     [Fact]
