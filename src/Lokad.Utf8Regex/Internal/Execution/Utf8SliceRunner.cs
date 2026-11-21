@@ -507,7 +507,7 @@ internal static partial class Utf8SliceRunner
         }
         var remaining = program.RightToLeft ? fromByte : input.Length - fromByte;
         if (CanSearchOrdinaryOrdered(program, remaining, candidatePlan, ref invocation) &&
-            CanAdmitOrdinaryOrderedRows(program, ref invocation))
+            CanAdmitOrderedRows(program, ref invocation))
         {
             var selected = FindOrderedRegularRange(program, input, fromByte, ref invocation);
             if (!selected.Found || captureStarts.Length == 0 && !collectHistory) return selected;
@@ -957,9 +957,15 @@ internal static partial class Utf8SliceRunner
             Array.Fill(captureEnds, -1);
             if (TryCountAnchoredLine(program, input, fromByte, ref invocation, out var lineCount))
                 return lineCount;
-            if (program.NonBacktrackingOrderedForwardOnly && input.Length - fromByte >= 64)
-                return Utf8NonBacktrackingSearchState.CountInWindows(program, input, fromByte,
-                    new(captureStarts, captureEnds), ref invocation);
+            if (input.Length - fromByte >= 64)
+            {
+                if (program.NonBacktrackingOrderedForwardOnly)
+                    return Utf8NonBacktrackingSearchState.CountInWindows(program, input, fromByte,
+                        new(captureStarts, captureEnds), ref invocation);
+                if (captureStarts.Length == 0 && program.NonBacktrackingOrderedClosures.Length != 0 &&
+                    CanAdmitOrderedRows(program, ref invocation))
+                    return CountOrderedRegular(program, input, fromByte, ref invocation);
+            }
             var breach = Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out var batch);
             if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
             if (batch is null) throw new InvalidOperationException("NonBacktracking preparation returned no state.");
@@ -1080,7 +1086,7 @@ internal static partial class Utf8SliceRunner
         if (CanSearchOrdinaryOrdered(program, remaining, candidatePlan, ref invocation) &&
             captureStarts.Length == 0 && !seekLiteral && !seekBeginning && !seekVeryEnd &&
             whitespaceLiteral < 0 && branchWindow.Min == 0 && leadingPrefix.IsEmpty &&
-            CanAdmitOrdinaryOrderedRows(program, ref invocation))
+            CanAdmitOrderedRows(program, ref invocation))
             return CountOrderedRegular(program, input, fromByte, ref invocation);
 
         // When Count has no stronger start search, reject an impossible ASCII

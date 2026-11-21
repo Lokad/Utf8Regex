@@ -8,6 +8,19 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8NonBacktrackingBatchTests
 {
+    [Fact]
+    public void CyclicCountPreservesEmptyScalarProgressUnderABoundedWorkingLimit()
+    {
+        const int scalarCount = 128;
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", scalarCount)) + "aaaz");
+        using var regex = new Utf8Regex("(a?)*z|", RegexOptions.NonBacktracking, new()
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 128 },
+        });
+
+        Assert.Equal(scalarCount + 2, regex.Count(input));
+    }
+
     [Theory]
     [InlineData(@"(?<x>a?)(?<y>b?)|(?<z>ab)", "ab a b é")]
     [InlineData(@"(?:a(?<x>b?)|(?<y>a?))(?<last>c?)", "abc a acc\n")]

@@ -265,14 +265,14 @@ internal static partial class Utf8SliceRunner
     private static ulong GetOrderedRegularRowBytes(int capacity)
         => (ulong)(2 * capacity * Unsafe.SizeOf<int>());
 
-    private static bool CanAdmitOrdinaryOrderedRows(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
+    private static bool CanAdmitOrderedRows(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
     {
         ref var ledger = ref invocation.Ledger;
-        if (ledger.HasMemoryAllowance && program.RepeatCount == 0) return false;
+        if (ledger.HasMemoryAllowance && !program.IsNonBacktracking && program.RepeatCount == 0) return false;
         var cap = invocation.Budget.Limits.MaxWorkingBytes;
         if (cap == 0) return true;
         // Both rows are required. The range transition table is optional.
-        // Keep ordinary verification when the numeric cap cannot admit them.
+        // Retain the caller's existing route under a tighter numeric cap.
         var bytes = GetOrderedRegularRowBytes(GetOrderedRegularRowCapacity(program));
         return bytes <= cap && ledger.ReservedBytes <= cap - bytes;
     }
@@ -283,8 +283,21 @@ internal static partial class Utf8SliceRunner
     private static Utf8SliceCountOutcome CountOrderedRegular(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation)
     {
+        var reverse = program.RightToLeft;
+        var starts = program.NonBacktrackingOrderedStartBytes;
+        if (!reverse && starts.Count != 0 && fromByte < input.Length && !starts.Contains(input[fromByte]))
+        {
+            var seek = TrySeekRegularStart(input, ref fromByte, starts, ref invocation);
+            if (seek != Utf8ExecutionLimitKind.None) return new(0, seek);
+            if (fromByte == input.Length)
+            {
+                invocation.Budget.ThrowIfCancellationRequested();
+                invocation.Budget.CheckDeadline();
+                return new(0, Utf8ExecutionLimitKind.None);
+            }
+        }
         var leaves = program.NonBacktrackingOrderedLeaves;
-        if (program.RepeatCount != 0)
+        if (program.RepeatCount != 0 && !program.IsNonBacktracking)
         {
             var depth = invocation.Budget.TryNoteDepth((uint)(leaves.Length - 1));
             if (depth != Utf8ExecutionLimitKind.None) return new(0, depth);
@@ -298,11 +311,18 @@ internal static partial class Utf8SliceRunner
             Span<int> row = stackalloc int[capacity];
             Span<int> following = stackalloc int[capacity];
             var closures = program.NonBacktrackingOrderedClosures;
-            var conditions = program.NonBacktrackingOrderedConditions;
-            var reverse = program.RightToLeft;
+            var ancestors = program.NonBacktrackingEpsilonAncestors;
+            uint acceptLeaves = 0;
+            for (var tag = 1; tag < leaves.Length; tag++)
+            {
+                if (program.Instructions[leaves[tag]].Kind != Utf8SliceInstructionKind.Accept) continue;
+                acceptLeaves |= 1U << tag;
+                row[tag - 1] = following[tag - 1] = OrderedCountEmpty;
+            }
+            ulong followingViable = 0;
+            uint followingLeaves = 0;
             var edge = reverse ? 0 : input.Length;
             var followingCount = 0;
-            var hasScalar = false;
             var scalar = default(Rune);
             while (true)
             {
@@ -310,37 +330,41 @@ internal static partial class Utf8SliceRunner
                 // class tables keep their own predicate work and checkpoints.
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-                // Carry the count from the chosen endpoint. Distinguish an
-                // empty acceptance until a parent consumes the first scalar.
-                for (var tag = 1; tag < leaves.Length; tag++)
+                var viable = program.NonBacktrackingAcceptClosure;
+                var viableLeaves = acceptLeaves;
+                // The following row's viable instructions admit only atoms
+                // whose continuations can finish. Leaf bits mark valid counts.
+                var candidates = (followingViable >> 1) & program.NonBacktrackingConsumerMask;
+                for (; candidates != 0; candidates &= candidates - 1)
                 {
-                    if ((conditions & (1U << tag)) != 0) continue;
-                    var pc = leaves[tag];
+                    var pc = BitOperations.TrailingZeroCount(candidates);
                     var instruction = program.Instructions[pc];
-                    if (instruction.Kind == Utf8SliceInstructionKind.Accept)
-                    {
-                        row[tag - 1] = OrderedCountEmpty;
-                        continue;
-                    }
-                    var outcome = hasScalar ? FirstOrderedCount(closures[pc + 1], following) : OrderedCountFail;
-                    if (outcome != OrderedCountFail &&
-                        !MatchesRegularAtom(program, instruction, scalar, ref invocation, out breach))
-                        outcome = OrderedCountFail;
+                    var hit = MatchesRegularAtom(program, instruction, scalar, ref invocation, out breach);
                     if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                    if (!hit) continue;
+                    var tag = (int)closures[pc];
+                    var outcome = FirstOrderedCount(closures[pc + 1], followingLeaves, following);
+                    // A consuming edge ending at an empty acceptance uses
+                    // the search count at that endpoint.
                     row[tag - 1] = outcome == OrderedCountEmpty ? followingCount : outcome;
+                    viableLeaves |= 1U << tag;
+                    viable |= ancestors[pc];
                 }
                 // Conditions appear after their epsilon dependencies.
                 foreach (var pc in program.NonBacktrackingEpsilonOrder)
                 {
-                    var outcome = FirstOrderedCount(closures[pc + 1], row);
+                    if ((viable & (1UL << (pc + 1))) == 0) continue;
                     var instruction = program.Instructions[pc];
-                    if (outcome != OrderedCountFail && !(instruction.Kind == Utf8SliceInstructionKind.Anchor
+                    if (!(instruction.Kind == Utf8SliceInstructionKind.Anchor
                         ? HoldsNonBacktrackingAnchor(instruction, input, edge)
                         : MatchesBoundary(program, instruction, input, edge)))
-                        outcome = OrderedCountFail;
-                    row[(int)closures[pc] - 1] = outcome;
+                        continue;
+                    var tag = (int)closures[pc];
+                    row[tag - 1] = FirstOrderedCount(closures[pc + 1], viableLeaves, row);
+                    viableLeaves |= 1U << tag;
+                    viable |= ancestors[pc];
                 }
-                var match = FirstOrderedCount(closures[0], row);
+                var match = FirstOrderedCount(closures[0], viableLeaves, row);
                 var count = match switch
                 {
                     OrderedCountFail => followingCount,
@@ -356,7 +380,8 @@ internal static partial class Utf8SliceRunner
                 if (!TryReadScalar(input, edge, !reverse, out scalar, out var width))
                     throw new InvalidOperationException("Ordered traversal requires a complete scalar.");
                 edge += reverse ? width : -width;
-                hasScalar = true;
+                followingViable = viable;
+                followingLeaves = viableLeaves;
                 followingCount = count;
                 var previous = following;
                 following = row;
@@ -366,12 +391,12 @@ internal static partial class Utf8SliceRunner
         finally { invocation.Ledger.Release(bytes); }
     }
 
-    private static int FirstOrderedCount(ulong tags, ReadOnlySpan<int> row)
+    private static int FirstOrderedCount(ulong tags, uint viableLeaves, ReadOnlySpan<int> row)
     {
         for (; tags != 0; tags >>= OrderedTagBits)
         {
-            var value = row[(int)(tags & OrderedTagMask) - 1];
-            if (value != OrderedCountFail) return value;
+            var tag = (int)(tags & OrderedTagMask);
+            if ((viableLeaves & (1U << tag)) != 0) return row[tag - 1];
         }
         return OrderedCountFail;
     }
