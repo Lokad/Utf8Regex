@@ -21,6 +21,19 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal(scalarCount + 2, regex.Count(input));
     }
 
+    [Fact]
+    public void WideCountPreservesEmptyScalarProgressUnderABoundedWorkingLimit()
+    {
+        const int scalarCount = 128;
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("😀", scalarCount)) + new string('a', 72) + "z");
+        using var regex = new Utf8Regex("(?<run>a{72})z|", RegexOptions.NonBacktracking, new()
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 1_024 },
+        });
+
+        Assert.Equal(scalarCount + 2, regex.Count(input));
+    }
+
     [Theory]
     [InlineData(@"(?<x>a?)(?<y>b?)|(?<z>ab)", "ab a b é")]
     [InlineData(@"(?:a(?<x>b?)|(?<y>a?))(?<last>c?)", "abc a acc\n")]

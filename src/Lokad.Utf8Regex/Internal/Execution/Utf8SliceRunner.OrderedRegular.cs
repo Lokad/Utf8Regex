@@ -365,12 +365,7 @@ internal static partial class Utf8SliceRunner
                     viable |= ancestors[pc];
                 }
                 var match = FirstOrderedCount(closures[0], viableLeaves, row);
-                var count = match switch
-                {
-                    OrderedCountFail => followingCount,
-                    OrderedCountEmpty => followingCount + 1,
-                    _ => match + 1,
-                };
+                var count = CountFromOrderedOutcome(match, followingCount);
                 if (edge == fromByte)
                 {
                     invocation.Budget.ThrowIfCancellationRequested();
@@ -390,6 +385,111 @@ internal static partial class Utf8SliceRunner
         }
         finally { invocation.Ledger.Release(bytes); }
     }
+
+    private static Utf8SliceCountOutcome CountWideNonBacktracking(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation)
+    {
+        var instructions = program.Instructions;
+        var useStack = instructions.Length <= 256;
+        var bytes = useStack ? GetOrderedRegularRowBytes(instructions.Length)
+            : checked(2 * Utf8ConstructionBudget.ArrayBytes<int>(instructions.Length));
+        var admission = invocation.TryReserveWorking(bytes);
+        if (admission != Utf8ExecutionLimitKind.None) return new(0, admission);
+
+        try
+        {
+            Span<int> row = useStack ? stackalloc int[instructions.Length] : new int[instructions.Length];
+            Span<int> following = useStack ? stackalloc int[instructions.Length] : new int[instructions.Length];
+            var edge = input.Length;
+            var scalar = default(Rune);
+            var hasScalar = false;
+            var followingCount = 0;
+            while (true)
+            {
+                var hasBefore = TryReadScalar(input, edge, true, out var before, out var width);
+                var instructionWork = 0;
+                foreach (var pc in program.NonBacktrackingEpsilonOrder)
+                {
+                    // The full order has at most 64 simple cells per step.
+                    // Large class predicates retain their own checkpoints.
+                    if ((instructionWork++ & 63) == 0)
+                    {
+                        var step = invocation.TryChargeInputStep();
+                        if (step != Utf8ExecutionLimitKind.None) return new(0, step);
+                    }
+                    ref readonly var instruction = ref instructions[pc];
+                    int outcome;
+                    switch (instruction.Kind)
+                    {
+                        case Utf8SliceInstructionKind.Accept:
+                            outcome = OrderedCountEmpty;
+                            break;
+                        case Utf8SliceInstructionKind.Fail:
+                            outcome = OrderedCountFail;
+                            break;
+                        case Utf8SliceInstructionKind.Fork:
+                            var first = instruction.B == 0 ? pc + 1 : instruction.A;
+                            var second = instruction.B == 0 ? instruction.A : pc + 1;
+                            outcome = row[first];
+                            if (outcome == OrderedCountFail) outcome = row[second];
+                            break;
+                        case Utf8SliceInstructionKind.Jump:
+                            outcome = row[instruction.A];
+                            break;
+                        case Utf8SliceInstructionKind.CaptureStart:
+                        case Utf8SliceInstructionKind.CaptureEnd:
+                            outcome = row[pc + 1];
+                            break;
+                        case Utf8SliceInstructionKind.Anchor:
+                            outcome = row[pc + 1];
+                            if (outcome != OrderedCountFail && !HoldsNonBacktrackingAnchor(instruction, input, edge))
+                                outcome = OrderedCountFail;
+                            break;
+                        case Utf8SliceInstructionKind.Boundary:
+                            outcome = row[pc + 1];
+                            if (outcome == OrderedCountFail) break;
+                            var beforeWord = hasBefore && Utf8SliceScalarClasses.IsBoundaryWord(before, program, instruction);
+                            var afterWord = hasScalar && Utf8SliceScalarClasses.IsBoundaryWord(scalar, program, instruction);
+                            if ((beforeWord != afterWord) != (instruction.A != 0)) outcome = OrderedCountFail;
+                            break;
+                        default:
+                            outcome = hasScalar ? following[pc + 1] : OrderedCountFail;
+                            if (outcome == OrderedCountFail) break;
+                            if (!MatchesRegularAtom(program, instruction, scalar, ref invocation, out var breach))
+                                outcome = OrderedCountFail;
+                            if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                            if (outcome == OrderedCountEmpty) outcome = followingCount;
+                            break;
+                    }
+                    row[pc] = outcome;
+                }
+
+                var count = CountFromOrderedOutcome(row[0], followingCount);
+                if (edge == fromByte)
+                {
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    invocation.Budget.CheckDeadline();
+                    return new(count, Utf8ExecutionLimitKind.None);
+                }
+                if (!hasBefore) throw new InvalidOperationException("Ordered traversal requires a complete scalar.");
+                edge -= width;
+                scalar = before;
+                hasScalar = true;
+                followingCount = count;
+                var previous = following;
+                following = row;
+                row = previous;
+            }
+        }
+        finally { invocation.Ledger.Release(bytes); }
+    }
+
+    private static int CountFromOrderedOutcome(int outcome, int followingCount) => outcome switch
+    {
+        OrderedCountFail => followingCount,
+        OrderedCountEmpty => followingCount + 1,
+        _ => outcome + 1,
+    };
 
     private static int FirstOrderedCount(ulong tags, uint viableLeaves, ReadOnlySpan<int> row)
     {

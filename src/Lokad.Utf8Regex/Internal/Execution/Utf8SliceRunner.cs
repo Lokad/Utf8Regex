@@ -957,6 +957,10 @@ internal static partial class Utf8SliceRunner
             Array.Fill(captureEnds, -1);
             if (TryCountAnchoredLine(program, input, fromByte, ref invocation, out var lineCount))
                 return lineCount;
+            // With at least 64 scalar edges, two instruction rows fit within
+            // the capacity of the subject-sized offset and viability table.
+            if (captureStarts.Length == 0 && program.Instructions.Length > 64 && input.Length - fromByte >= 256)
+                return CountWideNonBacktracking(program, input, fromByte, ref invocation);
             if (input.Length - fromByte >= 64)
             {
                 if (program.NonBacktrackingOrderedForwardOnly)
