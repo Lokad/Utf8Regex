@@ -29,6 +29,11 @@ internal sealed class Utf8NonBacktrackingSearchState
 
     internal bool IsWindow => _windowEnd >= 0;
 
+    internal static bool IsEpsilonInstruction(Utf8SliceInstructionKind kind) => kind is
+        Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Jump or
+        Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
+        Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary;
+
     internal static int[] BuildEpsilonOrder(ReadOnlySpan<Utf8SliceInstruction> instructions, out ulong[] ancestors,
         out (ulong[] Closures, byte[] Leaves, uint Conditions) ordered)
     {
@@ -41,6 +46,8 @@ internal sealed class Utf8NonBacktrackingSearchState
         {
             var order = budget.AllocateArray<int>(instructions.Length, false);
             var written = 0;
+            var epsilonStart = instructions.Length;
+            var wide = instructions.Length > 64;
             using var frames = new Utf8ConstructionBuffer<(int Pc, bool Complete)>(budget);
             for (var pc = 0; pc < instructions.Length; pc++)
             {
@@ -51,7 +58,10 @@ internal sealed class Utf8NonBacktrackingSearchState
                     if (frame.Complete)
                     {
                         colors[frame.Pc] = 2;
-                        order[written++] = frame.Pc;
+                        if (wide && IsEpsilonInstruction(instructions[frame.Pc].Kind))
+                            order[--epsilonStart] = frame.Pc;
+                        else
+                            order[written++] = frame.Pc;
                         continue;
                     }
                     if (colors[frame.Pc] == 2) continue;
@@ -80,7 +90,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             }
             // Fold unconditional packed dependencies once. A condition's edge
             // remains a runtime decision; its unconditional ancestors can fold.
-            if (instructions.Length <= 64)
+            if (!wide)
             {
                 ordered = Utf8SliceRunner.BuildOrderedRegularClosures(instructions, order, budget);
                 ancestors = budget.AllocateArray<ulong>(instructions.Length, false);
@@ -115,6 +125,13 @@ internal sealed class Utf8NonBacktrackingSearchState
                 order.AsSpan(0, kept).CopyTo(compact);
                 budget.ReleaseArray(order, false);
                 order = compact;
+            }
+            else
+            {
+                // Leaves have no same-row dependencies. Keep them together
+                // and preserve the dependency order among epsilon operations.
+                budget.ChargeWork((ulong)(order.Length - epsilonStart));
+                order.AsSpan(epsilonStart).Reverse();
             }
             construction.Complete();
             return order;
