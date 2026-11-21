@@ -47,6 +47,27 @@ public sealed class Utf8TerminalClassRepeatTests
     public void GeneralRewindCaptureLazyEmptyAndAssertionPathsRemainValid(string pattern, string text, int expected)
         => Assert.Equal(expected, Create(pattern, 256).Count(Encoding.UTF8.GetBytes(text)));
 
+    [Theory]
+    [InlineData(" ")]
+    [InlineData("\u2003")]
+    public void OptionalScalarBeforeTerminalDotKeepsGreedyCaptureWithoutRetryStorage(string whitespace)
+    {
+        const string pattern = @"^///\s?(?<doc>.*)$";
+        var input = Encoding.UTF8.GetBytes("///" + whitespace + "doc😀");
+        using var funded = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 }
+        });
+        using var token = new CancellationTokenSource();
+        var wholeRange = new Utf8CaptureRange(0, input.Length);
+        Assert.Equal(wholeRange, funded.Match(input, cancellationToken: token.Token));
+
+        using var regex = Utf8Regex.Compile(pattern);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        Assert.Equal(wholeRange, regex.Match(input, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(3 + Encoding.UTF8.GetByteCount(whitespace), input.Length), captures[1]);
+    }
+
     [Fact]
     public void NullableTerminalCountKeepsRunsAcrossBlockAndScalarEdges()
     {

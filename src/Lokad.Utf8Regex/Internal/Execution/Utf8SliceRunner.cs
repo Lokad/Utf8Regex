@@ -1595,7 +1595,9 @@ internal static partial class Utf8SliceRunner
                                                 preferred = retry;
                                                 suffixLength = 0;
                                             }
-                                            else if (!stacks.PushFrame(new Utf8SliceFrame
+                                            else if ((lazy || cursor.RequiredEnd.HasValue || scalar.Value == '\n' ||
+                                                !program.HasTerminalGreedyDot(continuation)) &&
+                                                !stacks.PushFrame(new Utf8SliceFrame
                                             {
                                                 ResumeKind = Utf8SliceResumeKind.Alternation,
                                                 Target = continuation,

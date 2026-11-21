@@ -714,6 +714,24 @@ internal sealed class Utf8SliceProgram
         return mask != 0 && (uint)distance < 64 && (mask & (1UL << distance)) != 0;
     }
 
+    internal bool HasTerminalGreedyDot(int continuation)
+    {
+        var code = Instructions.AsSpan();
+        var dot = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, continuation);
+        if (!SkipsTerminalRewind(dot) ||
+            code[dot] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy,
+                RepeatMinimum: 0, RepeatMaximum: long.MaxValue } repeat ||
+            code[dot + 1].Kind != Utf8SliceInstructionKind.Dot)
+            return false;
+
+        // The terminal proof identifies the final anchor after capture ends.
+        // With no intervening consumption the dot reaches the same boundary
+        // from either side of a non-LF scalar. Preserve the greedy capture start.
+        var anchor = TerminalRepeatsWithoutRewind.Anchor;
+        return Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, repeat.A + 1) == anchor &&
+            IsAbsoluteEndConstraint(code[anchor]);
+    }
+
     internal bool RejectsByFinalAscii(ReadOnlySpan<byte> input)
     {
         var (end, ascii) = RequiredFinalAscii;
