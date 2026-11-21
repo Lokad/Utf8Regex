@@ -22,12 +22,11 @@ internal readonly ref struct Utf8ValidatedInput
     public Utf8BytePosition GetBytePosition(int value, string parameterName)
         => GetBytePosition(_bytes, value, parameterName);
 
-    // Scalar-floor admission needs only bytes, including Boolean operations
-    // whose established input contract requires no UTF-16 metadata.
+    // The subject is caller-valid. Only the requested boundary is inspected.
     internal static Utf8BytePosition GetBytePosition(ReadOnlySpan<byte> input, int value, string parameterName)
     {
         var position = Utf8BytePosition.CreateChecked(input.Length, value, parameterName);
-        if (value != input.Length && value != 0 && (input[value] & 0xc0) == 0x80)
+        if (value != 0 && !IsScalarBoundary(input, value))
         {
             throw new ArgumentOutOfRangeException(
                 parameterName,
@@ -38,11 +37,12 @@ internal readonly ref struct Utf8ValidatedInput
         return position;
     }
 
+    internal static bool IsScalarBoundary(ReadOnlySpan<byte> input, int value)
+        => (uint)value <= (uint)input.Length &&
+            (value == input.Length || (input[value] & 0xc0) != 0x80);
+
     public bool IsScalarBoundary(Utf8BytePosition position)
-    {
-        var value = position.Value;
-        return value == _bytes.Length || value == 0 || (_bytes[value] & 0xC0) != 0x80;
-    }
+        => position.Value == 0 || IsScalarBoundary(_bytes, position.Value);
 
     public bool TryAdvanceScalar(Utf8BytePosition position, out Utf8BytePosition next)
     {

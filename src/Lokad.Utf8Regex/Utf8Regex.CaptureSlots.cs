@@ -40,19 +40,17 @@ public sealed partial class Utf8Regex
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);
             var end = endOffsetInBytes ?? input.Length;
-            if ((uint)end > (uint)input.Length || end < input.Length && (input[end] & 0xc0) == 0x80)
+            if (!Utf8ValidatedInput.IsScalarBoundary(input, end))
                 throw new ArgumentOutOfRangeException(nameof(endOffsetInBytes));
-            if ((uint)startOffsetInBytes > (uint)end ||
-                startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xc0) == 0x80)
-                throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             var subject = input[..end];
+            if (!Utf8ValidatedInput.IsScalarBoundary(subject, startOffsetInBytes))
+                throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             var program = _ownedSliceProgram;
             invocation.AnchorOriginByte = startOffsetInBytes;
             Utf8CaptureRange result;
             if (program.GroupCount == 0 && CanUseNativeLiteralSearch(program, maximumAlternatives: 8))
             {
-                // Preserve the existing value matcher’s bounded literal-family
-                // search when callers migrate from its UTF16-start entry.
+                // Reuse bounded literal-family search for explicit byte matches.
                 var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan,
                     subject, startOffsetInBytes, subject.Length, false, ref invocation, out var selected, out var found);
                 if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();

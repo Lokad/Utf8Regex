@@ -45,6 +45,6 @@ internal static partial class Utf8CompiledOperationCursorFactory
                 => new Utf8OperationMatchCursor(input, prepared, invocation),
             _ => throw new InvalidOperationException("The prepared plan cannot transfer a native invocation cursor.")
         };
-        return cursor.WithStartFloor(byteFloor);
+        return cursor.WithLiteralStartFloor(byteFloor);
     }
 }

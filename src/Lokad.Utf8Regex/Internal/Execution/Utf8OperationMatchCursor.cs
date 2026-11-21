@@ -524,19 +524,9 @@ internal ref partial struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.SmallAsciiLiteralFamily;
     }
 
-    // Keep the full subject so a byte start preserves context for anchors.
-    public Utf8OperationMatchCursor WithStartFloor(int startByteOffset)
+    // The entry point supplies a checked floor. Anchors use the full subject.
+    internal Utf8OperationMatchCursor WithLiteralStartFloor(int startByteOffset)
     {
-        if (_sliceProgram is not null)
-        {
-            if ((uint)startByteOffset > (uint)_input.Length ||
-                startByteOffset < _input.Length && (_input[startByteOffset] & 0xC0) == 0x80)
-                throw new ArgumentOutOfRangeException(nameof(startByteOffset));
-            _slicePositionByte = startByteOffset;
-            _sliceOriginByte = startByteOffset;
-            if (_nonBacktrackingState is { } batch)
-                _nonBacktrackingBoundary = batch.ResolveByteOffset(_input, startByteOffset);
-        }
         _preserveOffsetCurrent = true;
         _remaining = _input[startByteOffset..];
         _consumed = startByteOffset;

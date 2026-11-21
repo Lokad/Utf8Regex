@@ -287,7 +287,7 @@ public sealed class Utf8NativeFamilyInvocationTests
         var input = Encoding.UTF8.GetBytes(text);
         var invocation = new Utf8SliceInvocation(metered ? new(ulong.MaxValue, 0, 0) : Utf8ExecutionLimits.Unlimited,
             Regex.InfiniteMatchTimeout, default);
-        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), invocation).WithStartFloor(10);
+        var cursor = new Utf8OperationMatchCursor(input, Prepared(regex), invocation).WithLiteralStartFloor(10);
         foreach (Match expected in new Regex(regex.Pattern, RegexOptions.CultureInvariant).Matches(text, 9))
         {
             Assert.True(cursor.MoveNext());

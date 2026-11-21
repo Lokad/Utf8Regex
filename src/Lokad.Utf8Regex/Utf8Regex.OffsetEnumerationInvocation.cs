@@ -15,14 +15,13 @@ public sealed partial class Utf8Regex
         try
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);
-            _ = Utf8BytePosition.CreateChecked(input.Length, startOffsetInBytes, nameof(startOffsetInBytes));
-            if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
+            if (!Utf8ValidatedInput.IsScalarBoundary(input, startOffsetInBytes))
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             Utf8OperationMatchCursor cursor;
             if (!HasFiniteExecutionLimits && CanUseNativeOffsetCursor(ref invocation, out var anchored))
             {
                 cursor = anchored
-                    ? new Utf8OperationMatchCursor(input, _anchoredLiteral.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _anchoredLiteral.Kind, invocation).WithStartFloor(startOffsetInBytes)
+                    ? new Utf8OperationMatchCursor(input, _anchoredLiteral.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _anchoredLiteral.Kind, invocation).WithLiteralStartFloor(startOffsetInBytes)
                     : Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, invocation, startOffsetInBytes);
             }
             else

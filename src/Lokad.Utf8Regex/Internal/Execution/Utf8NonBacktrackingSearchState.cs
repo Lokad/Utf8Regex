@@ -1,5 +1,6 @@
 using System.Numerics;
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
@@ -298,8 +299,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             var index = Array.BinarySearch(_boundaries, byteOffset);
             if (index >= 0) return index;
         }
-        else if ((uint)byteOffset <= (uint)input.Length &&
-            (byteOffset == input.Length || (input[byteOffset] & 0xc0) != 0x80))
+        else if (Utf8ValidatedInput.IsScalarBoundary(input, byteOffset))
         {
             // Every skipped start is impossible. The first retained row,
             // or the end of an empty table, represents any earlier floor.
