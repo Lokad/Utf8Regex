@@ -379,15 +379,14 @@ internal static partial class Utf8SliceRunner
             Utf8SliceMatchOutcome attempt;
             var canStopEarly = existenceOnly && !collectHistory && !requireNonEmpty && !requireFullInput;
             int? requiredEnd = requireFullInput ? input.Length : null;
-            if (!collectHistory && TryRunTerminalCaptureRoot(program, input, start,
-                captureStarts, captureEnds, ref workspace.Stacks, ref invocation, out attempt, canStopEarly))
+            var terminalRoot = collectHistory ? Utf8SliceTerminalRootKind.None : program.TerminalRoot;
+            if (terminalRoot == Utf8SliceTerminalRootKind.Capture)
             {
                 // A proved complete root has no continuation or capture rollback.
+                attempt = RunTerminalCaptureRoot(program, input, start, captureStarts, captureEnds,
+                    ref workspace.Stacks, ref invocation, canStopEarly);
             }
-            else if (!collectHistory && program.GroupCount == 0 && !program.RightToLeft &&
-                program.Assertions.Length == 0 && program.Instructions is { Length: 2 } boundaryCode &&
-                boundaryCode[0].Kind == Utf8SliceInstructionKind.Boundary &&
-                boundaryCode[1].Kind == Utf8SliceInstructionKind.Accept)
+            else if (terminalRoot == Utf8SliceTerminalRootKind.Boundary)
             {
                 // Keep initial workspace admission and reset above. This complete
                 // root has no continuation or consuming nonempty alternative. Preserve
@@ -396,13 +395,13 @@ internal static partial class Utf8SliceRunner
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (breach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, breach, null, null);
-                var matched = !requireNonEmpty && MatchesBoundary(program, boundaryCode[0], input, start);
+                var matched = !requireNonEmpty && MatchesBoundary(program, program.Instructions[0], input, start);
                 breach = invocation.TryChargeStep();
                 invocation.Budget.ThrowIfCancellationRequested();
                 attempt = new(matched && breach == Utf8ExecutionLimitKind.None,
                     matched && breach == Utf8ExecutionLimitKind.None ? start : -1, breach, null, null);
             }
-            else if (!collectHistory && CanRunTerminalClassRepeat(program))
+            else if (terminalRoot == Utf8SliceTerminalRootKind.ClassRepeat)
             {
                 // This complete repeat has no assertion continuation to drive.
                 attempt = RunTerminalClassRepeat(program, input, start, requireNonEmpty, ref invocation, canStopEarly);

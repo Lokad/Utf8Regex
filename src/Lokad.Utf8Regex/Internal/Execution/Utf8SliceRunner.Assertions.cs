@@ -49,7 +49,7 @@ internal static partial class Utf8SliceRunner
         var balanceHeads = workspace.Heads;
         // Only the complete root program may discard terminal rewind choices.
         // Assertion segments can still need them to satisfy RequiredEnd.
-        var terminalClassRepeat = CanRunTerminalClassRepeat(program);
+        var terminalClassRepeat = program.TerminalRoot == Utf8SliceTerminalRootKind.ClassRepeat;
         var current = new AssertionCursor(program, start, workspace.Counts, workspace.Positions,
             requireNonEmpty, startIsScalarBoundary, stacks.FrameCount) { RequiredEnd = requiredEnd };
         var resumeFailure = false;

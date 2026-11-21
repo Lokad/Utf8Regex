@@ -6,8 +6,26 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
+internal enum Utf8SliceTerminalRootKind : byte
+{
+    None,
+    Capture,
+    Boundary,
+    ClassRepeat
+}
+
 internal static partial class Utf8SliceRunner
 {
+    internal static Utf8SliceTerminalRootKind ClassifyTerminalRoot(Utf8SliceProgram program)
+    {
+        if (program.IsNonBacktracking || program.RightToLeft) return Utf8SliceTerminalRootKind.None;
+        if (CanRunTerminalCaptureRoot(program)) return Utf8SliceTerminalRootKind.Capture;
+        if (program.GroupCount == 0 && program.Assertions.Length == 0 &&
+            program.Instructions is [{ Kind: Utf8SliceInstructionKind.Boundary }, { Kind: Utf8SliceInstructionKind.Accept }])
+            return Utf8SliceTerminalRootKind.Boundary;
+        return CanRunTerminalClassRepeat(program) ? Utf8SliceTerminalRootKind.ClassRepeat : Utf8SliceTerminalRootKind.None;
+    }
+
     internal static bool HasRequiredLiteralWitness(Utf8SliceProgram program, ReadOnlySpan<byte> needle)
     {
         var code = program.Instructions.AsSpan();
@@ -38,18 +56,18 @@ internal static partial class Utf8SliceRunner
         return offset == needle.Length;
     }
 
-    internal static bool CanRunTerminalCaptureRoot(Utf8SliceProgram program)
+    private static bool CanRunTerminalCaptureRoot(Utf8SliceProgram program)
     {
         var code = program.Instructions;
         if (code.Length == 4 && program.GroupCount == 1 && program.RepeatCount == 0 &&
-            !program.IsNonBacktracking && !program.RightToLeft && !program.IgnoreCase &&
+            !program.IgnoreCase &&
             !program.HasBalancing && !program.UsesCaptureOpeningJournal && program.Assertions.Length == 0 &&
             code[0] is { Kind: Utf8SliceInstructionKind.CaptureStart, A: 0 } &&
             code[1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } &&
             code[2] is { Kind: Utf8SliceInstructionKind.CaptureEnd, A: 0 } &&
             code[3].Kind == Utf8SliceInstructionKind.Accept) return true;
         if (program.GroupCount is not (1 or 2) || program.RepeatCount != program.GroupCount || code.Length is < 7 or > 64 ||
-            program.IsNonBacktracking || program.RightToLeft || program.IgnoreCase || program.HasBalancing ||
+            program.IgnoreCase || program.HasBalancing ||
             program.UsesCaptureOpeningJournal || program.Assertions.Length != 0) return false;
         var repeatIndex = code.Length - 6;
         var prefixLength = repeatIndex - 1;
@@ -88,12 +106,10 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static bool TryRunTerminalCaptureRoot(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+    private static Utf8SliceMatchOutcome RunTerminalCaptureRoot(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int start, int[] captureStarts, int[] captureEnds, ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation,
-        out Utf8SliceMatchOutcome outcome, bool minimumOnly)
+        bool minimumOnly)
     {
-        outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
-        if (!program.HasTerminalCaptureRoot) return false;
         var code = program.Instructions;
         if (program.RepeatCount == 0)
         {
@@ -103,21 +119,20 @@ internal static partial class Utf8SliceRunner
             var singleBreach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (singleBreach != Utf8ExecutionLimitKind.None)
-            { outcome = new(false, -1, singleBreach, null, null); return true; }
+                return new(false, -1, singleBreach, null, null);
             if (!TryReadScalar(input, start, false, out var scalar, out var width) ||
                 !Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[single.A], false, program.CaseBehavior))
-                return true;
+                return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
             singleBreach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (singleBreach != Utf8ExecutionLimitKind.None)
-            { outcome = new(false, -1, singleBreach, null, null); return true; }
+                return new(false, -1, singleBreach, null, null);
             if (captureStarts.Length != 0)
             {
                 captureStarts[0] = start;
                 captureEnds[0] = start + width;
             }
-            outcome = new(true, start + width, Utf8ExecutionLimitKind.None, null, null);
-            return true;
+            return new(true, start + width, Utf8ExecutionLimitKind.None, null, null);
         }
         var repeatIndex = code.Length - 6;
         var prefixLength = repeatIndex - 1;
@@ -132,7 +147,7 @@ internal static partial class Utf8SliceRunner
         var breach = invocation.TryChargeStep();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None)
-        { outcome = new(false, -1, breach, null, null); return true; }
+            return new(false, -1, breach, null, null);
         var firstEnd = start;
         if (slot != 0)
         {
@@ -142,46 +157,44 @@ internal static partial class Utf8SliceRunner
             var firstLow = GetUnfoldedAsciiRange(code[2], out var firstHigh);
             var first = RunUnboundedAsciiRange(input, start, (byte)firstLow, firstHigh, ref invocation);
             if (first.EndIndex <= start || first.Breach != Utf8ExecutionLimitKind.None)
-            { outcome = new(false, -1, first.Breach, null, null); return true; }
+                return new(false, -1, first.Breach, null, null);
             firstEnd = first.EndIndex;
             breach = invocation.TryChargeStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None)
-            { outcome = new(false, -1, breach, null, null); return true; }
+                return new(false, -1, breach, null, null);
         }
         var literalLength = prefixLength - literalStart;
-        if (input.Length - firstEnd < literalLength) return true;
+        if (input.Length - firstEnd < literalLength)
+            return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
         for (var index = 0; index < literalLength; index++)
-            if (input[firstEnd + index] != code[literalStart + index].A) return true;
+            if (input[firstEnd + index] != code[literalStart + index].A)
+                return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
         var captureStart = firstEnd + literalLength;
         var lastLow = GetUnfoldedAsciiRange(code[repeatIndex + 1], out var lastHigh);
         var last = minimumOnly ? RunClassRepeat(program, repeatIndex, input, captureStart, ref invocation, minimumOnly: true)
             : RunUnboundedAsciiRange(input, captureStart, (byte)lastLow, lastHigh, ref invocation);
         if (last.EndIndex <= captureStart || last.Breach != Utf8ExecutionLimitKind.None)
-        { outcome = new(false, -1, last.Breach, null, null); return true; }
+            return new(false, -1, last.Breach, null, null);
         if (slot != 0 && captureStarts.Length != 0 &&
             (!stacks.PushTrail(0, captureEnds[0], firstEnd, false, ref invocation) ||
              !stacks.PushTrail(1, captureEnds[1], last.EndIndex, false, ref invocation)))
-        { outcome = new(false, -1, stacks.Breach, null, null); return true; }
+            return new(false, -1, stacks.Breach, null, null);
         breach = invocation.TryChargeStep();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None)
-        { outcome = new(false, -1, breach, null, null); return true; }
+            return new(false, -1, breach, null, null);
         if (captureStarts.Length != 0)
         {
             if (slot != 0) { captureStarts[0] = start; captureEnds[0] = firstEnd; }
             captureStarts[slot] = captureStart; captureEnds[slot] = last.EndIndex;
         }
-        // Complete-root repeats have no history payload. Publish once instead
-        // of copying intermediate reference-bearing results through the byref.
-        outcome = new(true, last.EndIndex, Utf8ExecutionLimitKind.None, null, null);
-        return true;
+        return new(true, last.EndIndex, Utf8ExecutionLimitKind.None, null, null);
     }
 
     private static bool CanRunTerminalClassRepeat(Utf8SliceProgram program)
     {
-        if (program.IsNonBacktracking || program.RightToLeft || program.GroupCount != 0 ||
-            program.RepeatCount != 1 || program.Instructions.Length != 5)
+        if (program.GroupCount != 0 || program.RepeatCount != 1 || program.Instructions.Length != 5)
             return false;
         var instructions = program.Instructions;
         var repeat = instructions[0];
@@ -236,7 +249,7 @@ internal static partial class Utf8SliceRunner
         repeatIndex = 0;
         atomIndex = 1;
         asciiStops = null;
-        if (CanRunTerminalClassRepeat(program))
+        if (program.TerminalRoot == Utf8SliceTerminalRootKind.ClassRepeat)
         {
             var terminal = program.Instructions[0];
             if (terminal.RepeatMinimum <= 1 && terminal.RepeatMaximum == long.MaxValue &&

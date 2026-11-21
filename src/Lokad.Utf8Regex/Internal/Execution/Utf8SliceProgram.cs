@@ -415,7 +415,7 @@ internal sealed class Utf8SliceProgram
         RequiresUnicodeCategory = requiresUnicodeCategory;
         // Instructions and flags are complete before publishing the program.
         // Keep this bounded, allocation-free proof off repeated match attempts.
-        HasTerminalCaptureRoot = Utf8SliceRunner.CanRunTerminalCaptureRoot(this);
+        TerminalRoot = Utf8SliceRunner.ClassifyTerminalRoot(this);
         HasSingleCapturePerGroup = CanReadCapturesFromSlots();
         if (!rightToLeft && !isNonBacktracking && !ignoreCase && !canMatchEmpty && !hasContiguousAnchor &&
             instructions is not [{ Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning }, ..])
@@ -651,7 +651,8 @@ internal sealed class Utf8SliceProgram
     internal bool RightToLeft { get; }
     internal bool CanMatchEmpty { get; }
     internal bool HasUnicodePatternAtoms { get; }
-    internal bool HasTerminalCaptureRoot { get; }
+    internal Utf8SliceTerminalRootKind TerminalRoot { get; }
+    internal bool HasTerminalCaptureRoot => TerminalRoot == Utf8SliceTerminalRootKind.Capture;
     internal bool HasSingleCapturePerGroup { get; }
     internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch, bool SparsePair) LeadingByteCandidate { get; }
         = (-1, 0, -1, 0, -1, false, false);
