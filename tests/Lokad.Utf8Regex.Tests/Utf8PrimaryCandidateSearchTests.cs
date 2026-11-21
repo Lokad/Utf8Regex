@@ -8,6 +8,26 @@ public sealed class Utf8PrimaryCandidateSearchTests
 {
     private const string Pattern = "(?<hit>A.{1,2}B|B.{1,2}A|A.{3,4}B|B.{3,4}A)";
 
+    [Theory]
+    [InlineData(2047)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    public void ProvedStarterPairSkipsHolesAcrossChargedBlocks(int holes)
+    {
+        var input = Encoding.UTF8.GetBytes("😀" + new string('m', holes) + "z12 a34");
+        var start = 4 + holes;
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"(?<head>a|z)(?<digits>\d{2})", RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 << 20 } });
+        Assert.Equal(2, regex.Count(input, source.Token));
+        Assert.True(regex.IsMatch(input, source.Token));
+
+        var slots = new Utf8CaptureRange[3];
+        Assert.Equal(new Utf8CaptureRange(start, start + 3), regex.Match(input, 4, slots, source.Token));
+        Assert.Equal(new Utf8CaptureRange(start, start + 1), slots[1]);
+        Assert.Equal(new Utf8CaptureRange(start + 1, start + 3), slots[2]);
+    }
+
     [Fact]
     public void AsciiChoiceWindowsRejectHolesAndPreserveCaptureSlots()
     {

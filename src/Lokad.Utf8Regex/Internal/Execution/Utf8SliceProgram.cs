@@ -640,8 +640,8 @@ internal sealed class Utf8SliceProgram
     internal bool HasUnicodePatternAtoms { get; }
     internal bool HasTerminalCaptureRoot { get; }
     internal bool HasSingleCapturePerGroup { get; }
-    internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch) LeadingByteCandidate { get; }
-        = (-1, 0, -1, 0, -1, false);
+    internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch, bool SparsePair) LeadingByteCandidate { get; }
+        = (-1, 0, -1, 0, -1, false, false);
     internal (int Literal, int LeadingClass, int LiteralIndex, long GapMaximum, bool Direct) LeadingClassDelimiter { get; }
         = (-1, -1, -1, 0, false);
     internal bool LeadingScalarIsDecimal { get; }

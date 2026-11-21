@@ -106,7 +106,7 @@ internal static partial class Utf8SliceRunner
 
     // An unfolded literal or positive range can prove possible first bytes.
     // This bounded instruction proof is independent of the subject.
-    internal static (int, byte, int, byte, int, bool) FindLeadingByteCandidate(
+    internal static (int, byte, int, byte, int, bool, bool) FindLeadingByteCandidate(
         Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
         var code = program.Instructions.AsSpan();
@@ -117,20 +117,21 @@ internal static partial class Utf8SliceRunner
             if (!PrecedesRequiredScalar(code[index])) break;
             index++;
         }
-        if (index >= code.Length || index >= 64) return (-1, 0, -1, 0, -1, false);
+        if (index >= code.Length || index >= 64) return (-1, 0, -1, 0, -1, false, false);
         var firstScalarIndex = index;
-        var first = GetAsciiStartEnvelope(program, code[index], budget, out var last);
+        var first = GetAsciiStartEnvelope(program, code[index], budget, out var last, out var onlyEndpoints);
         if (first < 0)
         {
             if (GetUnfoldedUnicodeLeadRange(program, code[index], budget, out last) is >= 0 and var wide)
-                return (wide, last, -1, 0, firstScalarIndex, false);
+                return (wide, last, -1, 0, firstScalarIndex, false, false);
             if (code[index].Kind is not (Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.RepeatGreedy or
-                Utf8SliceInstructionKind.RepeatLazy)) return (-1, 0, -1, 0, firstScalarIndex, false);
+                Utf8SliceInstructionKind.RepeatLazy)) return (-1, 0, -1, 0, firstScalarIndex, false, false);
             var remaining = 64;
-            first = GetBranchedStartBytes(program, index, budget, ref remaining, out last);
-            return (first, last, -1, 0, firstScalarIndex, true);
+            first = GetBranchedStartBytes(program, index, budget, ref remaining, out last, out onlyEndpoints);
+            return (first, last, -1, 0, firstScalarIndex, true, onlyEndpoints && last - first > 1);
         }
-        if (code[index].IsLiteralChoice) return (first, last, -1, 0, firstScalarIndex, true);
+        var sparsePair = onlyEndpoints && last - first > 1;
+        if (code[index].IsLiteralChoice) return (first, last, -1, 0, firstScalarIndex, true, sparsePair);
         // Only straight-line mandatory entries can precede the next scalar.
         // Repeat-end/exit, optional entries and forks stay opaque: the next
         // instruction in storage need not be the next consumed scalar.
@@ -145,7 +146,7 @@ internal static partial class Utf8SliceRunner
         byte secondLast = 0;
         if (index < code.Length && index < 64)
             second = GetUnfoldedAsciiRange(code[index], out secondLast);
-        return (first, last, second, secondLast, firstScalarIndex, false);
+        return (first, last, second, secondLast, firstScalarIndex, false, sparsePair);
     }
 
     private static int GetUnfoldedUnicodeLeadRange(Utf8SliceProgram program, Utf8SliceInstruction atom,
@@ -181,10 +182,11 @@ internal static partial class Utf8SliceRunner
     // unknown effects, an empty completion or backwards control flow. The
     // two arms share a fixed visit budget, including when paths reconverge.
     private static int GetBranchedStartBytes(Utf8SliceProgram program, int index, Utf8ConstructionBudget budget,
-        ref int remaining, out byte last)
+        ref int remaining, out byte last, out bool onlyEndpoints)
     {
         var code = program.Instructions.AsSpan();
         last = 0;
+        onlyEndpoints = false;
         while ((uint)index < (uint)code.Length && remaining > 0)
         {
             budget.ChargeWork(1);
@@ -196,7 +198,7 @@ internal static partial class Utf8SliceRunner
             int first, next;
             if (entry is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } && entry.A > index + 1)
             {
-                first = GetBranchedStartBytes(program, index + 1, budget, ref remaining, out last);
+                first = GetBranchedStartBytes(program, index + 1, budget, ref remaining, out last, out onlyEndpoints);
                 next = entry.A;
             }
             else if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy &&
@@ -204,35 +206,43 @@ internal static partial class Utf8SliceRunner
             {
                 // The one-atom optional can consume its byte or skip directly
                 // through the zero-width repeat exit into the continuation.
-                first = GetStartRange(program, code[index + 1], budget, out last);
+                first = GetStartRange(program, code[index + 1], budget, out last, out onlyEndpoints);
                 next = entry.A + 1;
             }
-            else return GetStartRange(program, entry, budget, out last);
+            else return GetStartRange(program, entry, budget, out last, out onlyEndpoints);
 
             if (first < 0) return -1;
-            var other = GetBranchedStartBytes(program, next, budget, ref remaining, out var otherLast);
+            var other = GetBranchedStartBytes(program, next, budget, ref remaining, out var otherLast, out var otherOnlyEndpoints);
             // A single interval joining ASCII and wide starters would also
             // include UTF-8 continuation bytes.
-            if (other < 0 || (first < 128) != (other < 128)) return -1;
-            last = Math.Max(last, otherLast);
-            return Math.Min(first, other);
+            if (other < 0 || (first < 128) != (other < 128)) { onlyEndpoints = false; return -1; }
+            var low = Math.Min(first, other);
+            var high = Math.Max(last, otherLast);
+            // Two arm endpoints can be interior bytes of the combined interval.
+            onlyEndpoints = onlyEndpoints && otherOnlyEndpoints &&
+                (first == low || first == high) && (last == low || last == high) &&
+                (other == low || other == high) && (otherLast == low || otherLast == high);
+            last = high;
+            return low;
         }
         return -1;
     }
 
     private static int GetStartRange(Utf8SliceProgram program, Utf8SliceInstruction atom,
-        Utf8ConstructionBudget budget, out byte last)
-        => GetAsciiStartEnvelope(program, atom, budget, out last) is >= 0 and var ascii ? ascii :
+        Utf8ConstructionBudget budget, out byte last, out bool onlyEndpoints)
+        => GetAsciiStartEnvelope(program, atom, budget, out last, out onlyEndpoints) is >= 0 and var ascii ? ascii :
             GetUnfoldedUnicodeLeadRange(program, atom, budget, out last);
 
     private static int GetAsciiStartEnvelope(Utf8SliceProgram program, Utf8SliceInstruction atom,
-        Utf8ConstructionBudget budget, out byte last)
+        Utf8ConstructionBudget budget, out byte last, out bool onlyEndpoints)
     {
         var first = GetUnfoldedAsciiRange(atom, out last);
+        onlyEndpoints = first >= 0 && last - first <= 1;
         if (first >= 0 || atom is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }) return first;
 
         budget.ChargeWork(1);
         if (!program.TryGetUnfoldedAsciiSet(atom, out var set, out _) || !set.HasValue) return -1;
+        onlyEndpoints = BitOperations.PopCount(set.Low) + BitOperations.PopCount(set.High) == 2;
         // The exact mask still decides whether a candidate in this interval matches.
         last = (byte)(set.High != 0 ? 127 - BitOperations.LeadingZeroCount(set.High)
             : 63 - BitOperations.LeadingZeroCount(set.Low));
@@ -375,11 +385,12 @@ internal static partial class Utf8SliceRunner
     }
 
     private static Utf8ExecutionLimitKind TrySeekLeadingByte(ReadOnlySpan<byte> input, ref int position,
-        byte first, byte last, bool decimalSet, ref Utf8SliceInvocation invocation, scoped ReadOnlySpan<byte> exactPrefix = default)
+        byte first, byte last, bool decimalSet, ref Utf8SliceInvocation invocation,
+        scoped ReadOnlySpan<byte> exactPrefix = default, bool sparsePair = false)
     {
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
         {
-            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(input[position..], first, last, decimalSet)
+            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(input[position..], first, last, decimalSet, sparsePair)
                 : input[position..].IndexOf(exactPrefix);
             position = relative < 0 ? -1 : position + relative;
             return Utf8ExecutionLimitKind.None;
@@ -393,7 +404,7 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Math.Min(2048, input.Length - position);
             var block = input.Slice(position, length);
-            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(block, first, last, decimalSet) : block.IndexOf(exactPrefix);
+            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(block, first, last, decimalSet, sparsePair) : block.IndexOf(exactPrefix);
             if (relative >= 0) { position += relative; return Utf8ExecutionLimitKind.None; }
             position += length - overlap;
         }
@@ -401,9 +412,13 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
-    private static int IndexOfLeadingByte(ReadOnlySpan<byte> input, byte first, byte last, bool decimalSet)
+    private static int IndexOfLeadingByte(ReadOnlySpan<byte> input, byte first, byte last, bool decimalSet, bool sparsePair)
         => decimalSet ? Utf8AsciiBytePredicates.DecimalOrScalarLead.IndexOf(input)
+            : sparsePair ? input.IndexOfAny(first, last)
             : first == last ? input.IndexOf(first) : input.IndexOfAnyInRange(first, last);
+
+    private static bool MayStartAtByte(byte value, int first, byte last, bool sparsePair)
+        => sparsePair ? value == first || value == last : (uint)(value - first) <= (uint)(last - first);
 
     // Locate the tail after a proved whitespace repeat, optional initial class
     // run and bounded gap. Return the direct ASCII delimiter when present.

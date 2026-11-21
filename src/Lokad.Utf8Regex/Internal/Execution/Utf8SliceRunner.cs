@@ -567,7 +567,7 @@ internal static partial class Utf8SliceRunner
                 ? new(true, fromByte, outcome.EndIndex, outcome.CaptureStarts, outcome.CaptureLengths, Utf8ExecutionLimitKind.None)
                 : new(false, -1, -1, null, null, outcome.Breach);
         }
-        var (leading, leadingLast, second, secondLast, leadingScalarIndex, fromBranch) = program.LeadingByteCandidate;
+        var (leading, leadingLast, second, secondLast, leadingScalarIndex, fromBranch, sparsePair) = program.LeadingByteCandidate;
         // Prefer a straight ASCII proof. Prepared literal search can be more
         // selective than a branch interval or the lead of a wider scalar.
         var seekLiteral = (leading is < 0 or >= 128 || fromBranch) && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
@@ -717,11 +717,12 @@ internal static partial class Utf8SliceRunner
                         new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
             }
             if (leading >= 0 && ((uint)position >= (uint)input.Length ||
-                (uint)(input[position] - leading) > (uint)(leadingLast - leading) &&
+                !MayStartAtByte(input[position], leading, leadingLast, sparsePair) &&
                 !(seekDecimal && input[position] is >= 0xc2 and <= 0xf4) ||
                 !leadingPrefix.IsEmpty && !input[position..].StartsWith(leadingPrefix)))
             {
-                var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leading, leadingLast, seekDecimal, ref invocation, leadingPrefix);
+                var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leading, leadingLast, seekDecimal,
+                    ref invocation, leadingPrefix, sparsePair);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, null, null, seekBreach);
                 if (position < 0)
@@ -989,8 +990,8 @@ internal static partial class Utf8SliceRunner
         }
         // A direct beginning anchor already owns bounded line/prefix discovery.
         // Keep one candidate search rather than scanning its prefix twice.
-        var (leadingFirst, leadingLast, leadingSecond, leadingSecondLast, leadingScalarIndex, _) = seekLiteral
-            ? (-1, (byte)0, -1, (byte)0, -1, false)
+        var (leadingFirst, leadingLast, leadingSecond, leadingSecondLast, leadingScalarIndex, _, sparsePair) = seekLiteral
+            ? (-1, (byte)0, -1, (byte)0, -1, false, false)
             : program.LeadingByteCandidate;
         var checkBranchedPrefix = leadingFirst is >= 0 and < 128 && program.Instructions[leadingScalarIndex] is
             { Kind: Utf8SliceInstructionKind.Fork } or { IsLiteralChoice: true };
@@ -1094,7 +1095,8 @@ internal static partial class Utf8SliceRunner
             {
                 if (leadingFirst >= 0)
                 {
-                    var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leadingFirst, leadingLast, seekDecimal, ref invocation, leadingPrefix);
+                    var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leadingFirst, leadingLast, seekDecimal,
+                        ref invocation, leadingPrefix, sparsePair);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
