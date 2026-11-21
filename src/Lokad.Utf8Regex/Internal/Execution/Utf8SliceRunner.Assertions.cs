@@ -257,9 +257,16 @@ internal static partial class Utf8SliceRunner
         int? requiredEnd, uint depth, ref Utf8SliceInvocation invocation, out bool matched)
     {
         matched = false;
-        var breach = invocation.TryChargeInputStep();
+        var breach = invocation.TryChargeStep();
         if (breach == Utf8ExecutionLimitKind.None) breach = invocation.Budget.TryNoteDepth(depth);
-        if (breach != Utf8ExecutionLimitKind.None) return breach;
+        if (breach != Utf8ExecutionLimitKind.None)
+        {
+            invocation.Budget.CheckDeadline();
+            return breach;
+        }
+
+        // The prepared assertion has at most 32 instructions. The exit check
+        // covers this bounded read before the assertion can affect matching.
         matched = MatchInlineLiteralAssertion(code, first, end, prefixLength, input, start, reverse, requiredEnd);
         breach = invocation.TryChargeInputStep();
         invocation.Budget.ThrowIfCancellationRequested();
