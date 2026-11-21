@@ -257,8 +257,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     {
         if (_regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literals)
         {
-            // The family cursor derives coordinates from the consumed prefix;
-            // it does not consume whole-input validation metadata.
+            // The family cursor returns byte coordinates from the consumed prefix.
             match = Match(input, Utf8ExecutionDeadline.Infinite);
             return true;
         }

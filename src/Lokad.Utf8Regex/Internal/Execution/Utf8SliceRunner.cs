@@ -1823,9 +1823,8 @@ internal static partial class Utf8SliceRunner
                     // Dots consume one scalar: ASCII and BMP leads take
                     // their scalar, astral leads take all four bytes.
                     // Continuation bytes fail the attempt, so byte-stepping
-                    // drivers cannot report unaligned starts. Inputs are
-                    // validated before execution, hence lead widths stay
-                    // in bounds without revalidation here.
+                    // drivers cannot report unaligned starts. The caller's
+                    // valid UTF-8 guarantee keeps each lead's width in bounds.
                     if (inputIndex < input.Length &&
                         (instruction.A != 0 || input[inputIndex] != (byte)'\n') &&
                         (input[inputIndex] & 0xC0) != 0x80)

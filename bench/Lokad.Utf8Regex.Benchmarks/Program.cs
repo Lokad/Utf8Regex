@@ -287,24 +287,9 @@ if (args.Length >= 2 && args[0].Equals("--measure-ignore-case-primitive-case", S
     return BenchmarkInspectReporter.RunMeasureIgnoreCasePrimitiveReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
 }
 
-if (args.Length >= 2 && args[0].Equals("--measure-utf8-validation-profile", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureUtf8ValidationProfile(args[1], args.Length >= 3 ? args[2] : null);
-}
-
 if (args.Length >= 2 && args[0].Equals("--measure-unicode-literal-case", StringComparison.Ordinal))
 {
     return BenchmarkInspectReporter.RunMeasureUnicodeLiteralCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--measure-utf8-validation-case", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunMeasureUtf8ValidationReplicaCase(args[1], args.Length >= 3 ? args[2] : null);
-}
-
-if (args.Length >= 2 && args[0].Equals("--inspect-utf8-validation-route", StringComparison.Ordinal))
-{
-    return BenchmarkInspectReporter.RunInspectUtf8ValidationRoute(args[1]);
 }
 
 if (args.Length >= 2 && args[0].Equals("--measure-exact-literal-family-backends-case", StringComparison.Ordinal))

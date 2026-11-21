@@ -2241,76 +2241,6 @@ internal static partial class BenchmarkInspectReporter
         Func<int> Action,
         int ExpectedResult);
 
-    public static int RunInspectUtf8ValidationRoute(string caseId)
-    {
-        byte[] input;
-        string origin;
-        if (LokadPublicBenchmarkContext.GetAllCaseIds().Contains(caseId, StringComparer.Ordinal))
-        {
-            var context = new LokadPublicBenchmarkContext(caseId);
-            input = context.InputBytes;
-            origin = $"public/{context.Operation}";
-        }
-        else if (ReplicaCountBenchmarkCase.TryResolve(caseId, out var benchmarkCase))
-        {
-            input = benchmarkCase!.InputBytes;
-            origin = benchmarkCase.Source.ToString();
-        }
-        else
-        {
-            Console.Error.WriteLine($"Benchmark case '{caseId}' was not found.");
-            return 1;
-        }
-
-        Utf8Validation.ThrowIfInvalidOnly(input);
-        var census = Utf8ValidationRouteCensus.Analyze(input);
-        var first256 = Utf8LeadByteSampling.DescribeLeadByteSample(input, 256);
-        var first4096 = Utf8LeadByteSampling.DescribeLeadByteSample(input, 4096);
-
-        Console.WriteLine($"CaseId                    : {caseId}");
-        Console.WriteLine($"Origin                    : {origin}");
-        Console.WriteLine($"InputBytes                : {census.InputBytes}");
-        WriteUtf8LeadByteSample("First256", first256);
-        WriteUtf8LeadByteSample("First4096", first4096);
-        Console.WriteLine($"ScalarCount               : {census.ScalarCount}");
-        Console.WriteLine($"FirstNonAsciiOffset       : {census.FirstNonAsciiOffset}");
-        Console.WriteLine($"FirstTwoByteOffset        : {census.FirstTwoByteOffset}");
-        Console.WriteLine($"FirstSafeThreeByteOffset  : {census.FirstSafeThreeByteOffset}");
-        Console.WriteLine($"FirstConstrained3Offset   : {census.FirstConstrainedThreeByteOffset}");
-        Console.WriteLine($"FirstFourByteOffset       : {census.FirstFourByteOffset}");
-        Console.WriteLine($"Cross32ByteScalars        : {census.CrossBlockScalars}");
-        foreach (var shape in Enum.GetValues<Utf8ValidationScalarShape>())
-        {
-            var index = (int)shape;
-            Console.WriteLine(
-                $"Scalar[{shape,-17}]: count={census.ScalarCounts[index]}, bytes={census.ScalarBytes[index]}, " +
-                $"runs={census.ScalarRuns[index]}, maxRunScalars={census.LongestScalarRunScalars[index]}, " +
-                $"maxRunBytes={census.LongestScalarRunBytes[index]}");
-        }
-
-        Console.WriteLine($"Blocks32                  : {census.BlockCount}");
-        foreach (var shape in Enum.GetValues<Utf8ValidationBlockShape>())
-        {
-            var index = (int)shape;
-            Console.WriteLine(
-                $"Block[{shape,-21}]: count={census.BlockShapeCounts[index]}, " +
-                $"maxRun={census.LongestBlockShapeRuns[index]}");
-        }
-
-        Console.WriteLine($"BlockShapeTransitions     : {census.BlockShapeTransitions}");
-        Console.WriteLine($"DenseSafeThreeByteBlocks  : {census.DenseSafeThreeByteBlocks}");
-        Console.WriteLine("CensusScope                : untimed scalar and fixed 32-byte input composition; no execution-policy estimates");
-        return 0;
-    }
-
-    private static void WriteUtf8LeadByteSample(string label, Utf8LeadByteSampleShape sample)
-    {
-        Console.WriteLine(
-            $"{label,-26}: bytes={sample.SampleLength}, ascii={sample.AsciiBytes}, " +
-            $"firstNonAscii={sample.FirstNonAsciiOffset}, leads2={sample.TwoByteLeads}, " +
-            $"leads3={sample.ThreeByteLeads}, leads4={sample.FourByteLeads}");
-    }
-
     public static int RunMeasureLokadPublicCaseDeep(string caseId, string? iterationsText)
     {
         var context = new LokadPublicBenchmarkContext(caseId);
@@ -2519,24 +2449,6 @@ internal static partial class BenchmarkInspectReporter
         Measure("DecodeThenCompiledRegex", iterations, context.ExecuteDecodeThenCompiledRegex);
         Measure("PredecodedRegex", iterations, context.ExecutePredecodedRegex);
         Measure("PredecodedCompiledRegex", iterations, context.ExecutePredecodedCompiledRegex);
-        return 0;
-    }
-
-    public static int RunMeasureUtf8ValidationProfile(string profileName, string? iterationsText)
-    {
-        var iterations = ParseIterations(iterationsText);
-        var input = Utf8ValidationBenchmarkProfiles.Create(profileName);
-
-        Console.WriteLine($"Profile           : {profileName}");
-        Console.WriteLine($"Iterations        : {iterations}");
-        Console.WriteLine($"InputBytes        : {input.Length}");
-
-        Measure("ThrowIfInvalidOnly", iterations, () =>
-        {
-            Utf8Validation.ThrowIfInvalidOnly(input);
-            return input.Length;
-        });
-        Measure("Utf8IsValid", iterations, () => Utf8.IsValid(input) ? input.Length : 0);
         return 0;
     }
 
@@ -2803,44 +2715,6 @@ internal static partial class BenchmarkInspectReporter
         }
 
         return 0;
-    }
-
-    public static int RunMeasureUtf8ValidationReplicaCase(string caseId, string? iterationsText)
-    {
-        var iterations = ParseIterations(iterationsText);
-        if (ReplicaCountBenchmarkCase.TryResolve(caseId, out var benchmarkCase))
-        {
-            WriteReplicaCaseHeader(benchmarkCase!, iterations);
-            Console.WriteLine($"InputBytes        : {benchmarkCase!.InputBytes.Length}");
-            Measure("ThrowIfInvalidOnly", iterations, () =>
-            {
-                Utf8Validation.ThrowIfInvalidOnly(benchmarkCase.InputBytes);
-                return benchmarkCase.InputBytes.Length;
-            });
-            Measure("Utf8IsValid", iterations, () => Utf8.IsValid(benchmarkCase.InputBytes) ? benchmarkCase.InputBytes.Length : 0);
-            return 0;
-        }
-
-        if (LokadPublicBenchmarkContext.GetAllCaseIds().Contains(caseId, StringComparer.Ordinal))
-        {
-            var context = new LokadPublicBenchmarkContext(caseId);
-            Console.WriteLine($"CaseId            : {caseId}");
-            Console.WriteLine($"Operation         : {context.Operation}");
-            Console.WriteLine($"Pattern           : {context.Pattern}");
-            Console.WriteLine($"Options           : {context.Options}");
-            Console.WriteLine($"Iterations        : {iterations}");
-            Console.WriteLine($"InputBytes        : {context.InputBytes.Length}");
-            Measure("ThrowIfInvalidOnly", iterations, () =>
-            {
-                Utf8Validation.ThrowIfInvalidOnly(context.InputBytes);
-                return context.InputBytes.Length;
-            });
-            Measure("Utf8IsValid", iterations, () => Utf8.IsValid(context.InputBytes) ? context.InputBytes.Length : 0);
-            return 0;
-        }
-
-        Console.Error.WriteLine($"Case '{caseId}' was not found.");
-        return 1;
     }
 
     public static int RunMeasureExactLiteralFamilyBackendsReplicaCase(

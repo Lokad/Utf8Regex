@@ -3,7 +3,6 @@ using System.Text.RegularExpressions;
 using BenchmarkDotNet.Attributes;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 
@@ -33,10 +32,6 @@ public class Utf8SearchKernelBenchmarks
     private PreparedMultiLiteralSearch _multiLiteralAlternationSearch;
     private PreparedMultiLiteralSearch _ignoreCaseMultiLiteralSearch;
     private PreparedMultiLiteralSearch _largeMultiLiteralAlternationSearch;
-    private ReadOnlyMemory<byte> _validationAsciiLarge;
-    private ReadOnlyMemory<byte> _validationTwoByteLarge;
-    private ReadOnlyMemory<byte> _validationThreeByteLarge;
-    private ReadOnlyMemory<byte> _validationMixedLarge;
 
     [GlobalSetup]
     public void Setup()
@@ -137,10 +132,6 @@ public class Utf8SearchKernelBenchmarks
             Encoding.UTF8.GetBytes("dynamo"),
             Encoding.UTF8.GetBytes("needle"),
         ], ignoreCase: false);
-        _validationAsciiLarge = Utf8ValidationBenchmarkProfiles.Create("ascii-large");
-        _validationTwoByteLarge = Utf8ValidationBenchmarkProfiles.Create("two-byte-large");
-        _validationThreeByteLarge = Utf8ValidationBenchmarkProfiles.Create("three-byte-large");
-        _validationMixedLarge = Utf8ValidationBenchmarkProfiles.Create("mixed-large");
     }
 
     [Benchmark(Baseline = true)]
@@ -257,34 +248,6 @@ public class Utf8SearchKernelBenchmarks
         }
 
         return count;
-    }
-
-    [Benchmark]
-    public int ThrowIfInvalidOnlyAsciiLarge()
-    {
-        Utf8Validation.ThrowIfInvalidOnly(_validationAsciiLarge.Span);
-        return _validationAsciiLarge.Length;
-    }
-
-    [Benchmark]
-    public int ThrowIfInvalidOnlyTwoByteLarge()
-    {
-        Utf8Validation.ThrowIfInvalidOnly(_validationTwoByteLarge.Span);
-        return _validationTwoByteLarge.Length;
-    }
-
-    [Benchmark]
-    public int ThrowIfInvalidOnlyThreeByteLarge()
-    {
-        Utf8Validation.ThrowIfInvalidOnly(_validationThreeByteLarge.Span);
-        return _validationThreeByteLarge.Length;
-    }
-
-    [Benchmark]
-    public int ThrowIfInvalidOnlyMixedLarge()
-    {
-        Utf8Validation.ThrowIfInvalidOnly(_validationMixedLarge.Span);
-        return _validationMixedLarge.Length;
     }
 
     private static string BuildInput(string needle)
