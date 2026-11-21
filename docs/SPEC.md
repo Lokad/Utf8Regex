@@ -492,46 +492,10 @@ unlimited and zero is invalid. All fields default to unlimited.
 Denial throws `Utf8ResourceLimitExceededException` with the resource kind,
 limit and requested total. Totals saturate and the first denial remains in
 effect across cursor copies. A denied acquisition never publishes a partial
-successful result. Charges depend on the route and version. For example,
-a proved repeat endpoint can avoid acquiring backtracking frames, and a
-proved candidate filter can avoid VM work before verification.
-A bounded candidate walk can also verify a capture-free Boolean match
-directly. Candidate admission and completion both retain work and
-interruption checks.
-
-A lookaround body consisting of one side-effect-free scalar class can run
-without allocating a continuation. Its logical depth, directional edge and
-interruption checks still apply.
-
-A forward greedy repeat of one side-effect-free scalar atom can keep its
-remaining endpoints in a single live frame. A capture around that atom may be
-omitted when execution has no capture slots because neither the pattern nor the
-operation observes it. The run scan and each retry are metered. Unbounded
-ASCII mask scans charge work and check interruption before each bounded block.
-An unbounded repeat of an unfolded class with shorthand members can use the
-same blocks when its minimum is zero or one. It checks wider scalars with the
-class predicate. Depth and working admission cover the frame. Capture and
-assertion state retain their own admission. When the remaining instructions
-prove an exact terminal literal, the engine can find the last reachable
-occurrence in bounded, metered blocks and execute the tail without a rewind
-frame. The usual capture and result admission applies at that endpoint.
-A greedy dot can also search its saved endpoints backwards in bounded blocks
-when every continuation arm has a proved starter among at most three ASCII
-bytes. Each surviving endpoint runs the continuation and capture effects in
-normal order. The same frame owns rollback and remains subject to admission.
-A forward repeat that consumes only ASCII can also use the longest endpoint
-when every possible first byte of its terminal continuation is disjoint from
-the repeated atom. The proof includes final LF for a lax end anchor and can
-reuse the first-byte set after a proved forward jump.
-When a bounded continuation must reach a terminal end anchor, the engine
-can discard a saved repeat exit that is too far from the end. Its rollback
-and interruption checks still run. A lax anchor allows a final LF, and a
-multiline anchor can still succeed earlier in the subject.
-
-A scalar program that cannot match empty and has a mandatory terminal anchor
-can rule out an impossible final ASCII scalar before acquiring match scratch.
-A lax anchor considers both the input end and the position before a final LF.
-The matcher verifies possible endpoints, including those with a non-ASCII final scalar.
+successful result. Search, retries, and direct matches retain bounded work
+and interruption checks. Depth includes logical assertion state even when
+the engine allocates no continuation. Charges vary with the execution route
+and library version. Recheck finite policies when upgrading.
 
 The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result
@@ -660,32 +624,20 @@ profile scopes.
 
 ## Implementation and qualification
 
-Nonliteral simple-pattern execution, its standalone fixed-token programs and
-whole-pattern validators are removed. These patterns use the owned scalar VM. This
-can increase work or working-storage requirements for a given numerical limit.
-Admission, original-token cancellation, deadlines, scalar semantics and byte
-capture ranges still apply to the selected program.
+Managed code performs parsing, preparation and execution. An immutable program
+drives each invocation. Shipped matching and result publication are owned by the
+library and use managed bounds checks. Actual `Unsafe.SizeOf<T>()` is permitted.
+`Compiled` affects strategy only. General patterns use the scalar interpreter.
+Eligible literal families can use emitted code when dynamic code is enabled.
+NativeAOT and trimming remain outside qualification.
 
-Production execution is owned and managed: parse/analyze/prepare, immutable
-program, invocation runtime. No BCL matcher/result engine, native imports or
-unchecked memory reads are shipped. Actual `Unsafe.SizeOf<T>()` is permitted.
-`Compiled` affects strategy only. General patterns currently use the owned scalar
-interpreter; the removed shape-specific IL emitters are not a general compiled
-backend. Literal-family emission remains. Disabled dynamic code uses existing
-non-emitted execution. NativeAOT/trimming are not qualified.
-
-General-engine programs do not construct a second specialized runtime or verifier.
-Removing that unused preparation can lower modeled construction requirements;
-pattern/state/buffer admission and execution limits retain their existing scope.
-
-Native search is an optimization of the same scalar semantics. Eligibility must
-prove full grammar/options/capture/branch order, scalar widths, assertion context,
-case fibers and progress. Failure declines the optimization, not the grammar.
+Byte search uses the same scalar semantics, including options, captures, branch
+order, widths, assertions, case equivalences and match progress.
 See [architecture](../src/Lokad.Utf8Regex/ARCHITECTURE.md) and
 [search complexity](../src/Lokad.Utf8Regex/Internal/Search/COMPLEXITY.md).
 
-Qualify scalar/boundary, grammar, captures, RTL/NonBacktracking, malformed-input,
-interruption, admission and lifetime behavior through public fixtures. Benchmark
-only equal-result workloads with warm throughput against both strict-decode and
-predecoded controls. Historical measurements are not current qualification:
+Qualify scalar boundaries, grammar, captures, RTL/NonBacktracking, pattern and
+replacement validation, interruption, admission and lifetimes through public
+fixtures. Benchmark equal-result workloads with warm throughput against both
+strict-decode and predecoded controls. See the current
 [benchmark summary](../bench/Snapshots/Core.json).
