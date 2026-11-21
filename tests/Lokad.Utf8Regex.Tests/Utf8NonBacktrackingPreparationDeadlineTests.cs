@@ -331,6 +331,8 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
         using var live = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(1_000_000, 0, 1_000_000), TimeSpan.FromMilliseconds(50), live.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
+        // Align the second row batch with the diagnostic checkpoint.
+        for (var i = 0; i < 61; i++) _ = invocation.TryChargeStep();
         var interrupted = false;
         invocation.CheckpointHook = _ =>
         {
@@ -351,13 +353,15 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [Fact]
     public void CancellationOnTheLastQuantumCannotPublishTheTable()
     {
-        var regex = new Utf8Regex(new string('a', 4031), options: RegexOptions.NonBacktracking);
+        using var regex = new Utf8Regex("." + new string('a', 4030), RegexOptions.NonBacktracking);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(4032, program.Instructions.Length);
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var live = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(1_000_000, 0, 1_000_000), TimeSpan.FromMilliseconds(50), live.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
+        // The allocation and the 63 mask words each take one step.
+        for (var i = 0; i < 62; i++) _ = invocation.TryChargeStep();
         invocation.CheckpointHook = _ => live.Cancel();
         Utf8NonBacktrackingSearchState? state = null;
         Assert.Equal(live.Token, Assert.Throws<OperationCanceledException>(() =>
@@ -386,13 +390,16 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [Theory]
     [InlineData(63, 2)]
     [InlineData(64, 2)]
-    [InlineData(65, 3)]
-    [InlineData(128, 3)]
-    [InlineData(129, 4)]
-    [InlineData(4097, 66)]
+    [InlineData(65, 2)]
+    [InlineData(128, 2)]
+    [InlineData(129, 2)]
+    [InlineData(4096, 2)]
+    [InlineData(4097, 3)]
     public void EmptyRowWorkBoundsEachQuantumAndRefusesBeforeItRuns(int states, ulong steps)
     {
-        var program = new Utf8Regex(new string('a', states - 1), options: RegexOptions.NonBacktracking)            .Inspection.AvailableOwnedSliceProgram!;
+        var pattern = states <= 64 ? new string('a', states - 1) : "." + new string('a', states - 2);
+        using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(states, program.Instructions.Length);
         for (ulong limit = 1; limit <= steps; limit++)
         {

@@ -43,18 +43,18 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
     [InlineData(63)] [InlineData(64)] [InlineData(65)] [InlineData(129)]
     public void EachRowHasExactWorkAndEveryRefusalRefundsTheTable(int states)
     {
-        var program = new Utf8Regex(new string('a', states - 1), options: RegexOptions.NonBacktracking)            .Inspection.AvailableOwnedSliceProgram!;
+        var pattern = states <= 64 ? new string('a', states - 1) : "." + new string('a', states - 2);
+        using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
         Assert.Equal(states, program.Instructions.Length);
         var boundary = states <= 64 ? 64 / states : 1;
         foreach (var scalars in new[] { boundary - 1, boundary, boundary + 1 })
         foreach (var unit in new[] { "x", "😀" })
         {
             var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(unit, scalars)));
-            // Packed rows reject the impossible last literal under their cell
-            // admission; wide rows retain their separate failed-atom charges.
-            var rowWork = (scalars + 1) * ((states + 63) / 64);
-            var steps = (ulong)((input.Length + 63) / 64 + 1 + (scalars + 63) / 64 + rowWork
-                + (states <= 64 ? 0 : scalars));
+            // Only the last literal can be feasible, and it does not match.
+            // Up to three wide mask words fit in one charged batch per row.
+            var steps = (ulong)((input.Length + 63) / 64 + 1 + (scalars + 63) / 64 + scalars + 1);
             for (ulong limit = 1; limit <= steps; limit++)
             {
                 var invocation = new Utf8SliceInvocation(new(limit, 0, 1_000_000), Timeout.InfiniteTimeSpan, default);
