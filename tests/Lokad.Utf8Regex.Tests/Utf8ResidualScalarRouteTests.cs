@@ -2,7 +2,6 @@ using Lokad.Utf8Regex.Internal.Execution;
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -40,7 +39,7 @@ public sealed class Utf8ResidualScalarRouteTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void OrderedWindowsMeasureCompleteScalarsInPreparedAndPublicCount(bool compiled)
+    public void OrderedWindowsMeasureCompleteScalarsInPublicCount(bool compiled)
     {
         const string pattern = "Holmes.{0,25}Watson|Watson.{0,25}Holmes";
         foreach (var gap in new[] { 25, 26 })
@@ -52,8 +51,6 @@ public sealed class Utf8ResidualScalarRouteTests
             var regex = new Utf8Regex(pattern, options: Options(compiled));
             var expected = gap == 25 ? 1 : 0;
             Assert.Equal(expected, regex.Count(bytes));
-            var input = Utf8ValidatedInput.BorrowBytes(bytes);
-            Assert.Equal(expected, regex.ByteOffsetExecution.CountPrepared(input, input.GetBytePosition(0, "start")));
             var match = regex.Match(bytes);
             Assert.Equal(expected != 0, match.Success);
                 if (match.Success) Assert.Equal((0, bytes.Length), (match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)));

@@ -2,7 +2,6 @@ using System.Buffers;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -188,7 +187,7 @@ public sealed class Utf8ScalarCultureTests
     [InlineData("tr-TR", false, true)]
     [InlineData("tr-TR", true, false)]
     [InlineData("tr-TR", true, true)]
-    public void PreparedAdapterRoutesRetainCultureAndWholeScalarRanges(string culture, bool compiled, bool scoped)
+    public void PublicCountAndCursorRetainCultureAndWholeScalarRanges(string culture, bool compiled, bool scoped)
     {
         var saved = CultureInfo.CurrentCulture;
         try
@@ -197,15 +196,14 @@ public sealed class Utf8ScalarCultureTests
             var prefix = culture == "tr-TR" ? "\u0130" : "I";
             var regex = new Utf8Regex(scoped ? "(?i:i(.))" : "i(.)", options: Options(compiled, false, scoped));
             var firstSegment = "a" + prefix + "\U0001f600b";
-            var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(firstSegment + prefix + "\U0001f600"));
+            var input = Encoding.UTF8.GetBytes(firstSegment + prefix + "\U0001f600");
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
-            var zero = input.GetBytePosition(0, "start");
-            Assert.True(regex.IsMatch(input.Bytes));
-            Assert.Equal(2, regex.ByteOffsetExecution.CountPrepared(input, zero));
-            var second = input.GetBytePosition(Encoding.UTF8.GetByteCount(firstSegment), "start");
-            Assert.Equal(1, regex.ByteOffsetExecution.CountPrepared(input, second));
-            var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input.Bytes.ToArray(), second.Value));
-            Assert.Equal((second.Value, input.Bytes.Length), (found.Value.StartOffsetInBytes, found.Value.EndOffsetInBytes));
+            Assert.True(regex.IsMatch(input));
+            Assert.Equal(2, regex.Count(input));
+            var second = Encoding.UTF8.GetByteCount(firstSegment);
+            Assert.Equal(1, regex.Count(input.AsSpan(second)));
+            var found = Utf8MatchSequence.First(regex.CreateMatchCursor(input, second));
+            Assert.Equal((second, input.Length), (found.Value.StartOffsetInBytes, found.Value.EndOffsetInBytes));
             Assert.Equal("😀"u8.ToArray(), found.GetGroupMemory(1).ToArray());
             AssertOwned(regex);
         }

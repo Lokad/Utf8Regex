@@ -566,6 +566,7 @@ internal static class Pcre2CompiledProgramOverlay
             };
         }
         else if (preparedCore is { } primary &&
+            primary.Inspection.CompiledEngineKind == Utf8CompiledEngineKind.LiteralFamily &&
             Pcre2LiteralFamilyAnalyzer.CanReuseCoreExecution(
                 root,
                 request,
@@ -1752,14 +1753,13 @@ internal static class Pcre2GlobalOperationDriver
             {
                 // Exact, case-sensitive literal portfolios count byte ranges;
                 // they consume no whole-subject coordinate description.
-                result = literalFamilyProgram.Regex.ByteOffsetExecution.CountPrepared(input, start);
+                result = literalFamilyProgram.Regex.ByteOffsetExecution.CountLiteralFamily(input.Bytes[start.Value..]);
                 return true;
             }
 
             // The finite-language compiler already owns escaped, ordered literals.
             // Reuse their bounded native Count under the original authority; neither
             // this value operation nor its scalar fallback needs projected captures.
-            // CountPrepared would start a separate budget.
             var inspection = literalFamilyProgram.Regex.Inspection;
             var scalarProgram = inspection.AvailableOwnedSliceProgram;
             if (!scalarProgram.CanMatchEmpty && !scalarProgram.RightToLeft)

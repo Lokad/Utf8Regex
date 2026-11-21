@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
@@ -29,14 +28,6 @@ public class Utf8Pcre2CountBenchmarks
     public int Utf8Regex()
     {
         return _context.Utf8Regex!.Count(_context.InputBytes);
-    }
-
-    [Benchmark]
-    public int Utf8RegexPcre2Bridge()
-    {
-        var input = Utf8ValidatedInput.BorrowBytes(_context.InputBytes);
-        var start = input.GetBytePosition(0, "startOffsetInBytes");
-        return _context.Utf8Regex!.ByteOffsetExecution.CountPrepared(input, start);
     }
 
     [Benchmark]

@@ -1,4 +1,3 @@
-using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -30,55 +29,6 @@ public sealed partial class Utf8Regex
         return false;
     }
 
-    private int CountAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
-    {
-        if (_anchoredLiteral.IsExactSuffix &&
-            _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
-            return TryMatchAnchoredLiteral(input.Bytes, out var suffixAdapterCount) &&
-                suffixAdapterCount.Success &&
-                start.Value <= suffixAdapterCount.StartOffsetInBytes
-                ? 1
-                : 0;
-        }
-
-        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
-            _anchoredLiteral.LiteralUtf8 is { Length: > 0 } adapterCountLiteral)
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
-            if (start.Value != 0)
-            {
-                return 0;
-            }
-
-            return adapterCountLiteral.Length <= input.Bytes.Length &&
-                input.Bytes[..adapterCountLiteral.Length].SequenceEqual(adapterCountLiteral)
-                ? 1
-                : 0;
-        }
-
-        try
-        {
-            return OwnedSliceCountFromByte(input.Bytes, _ownedSliceProgram, start.Value, CancellationToken.None);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input.Bytes);
-        }
-    }
-
-    private int CountPreparedAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
-    {
-        var remaining = input.Bytes[start.Value..];
-        if (CompiledEngineKind == Utf8CompiledEngineKind.FallbackRegex || ShouldUseKelvinSignFallback(remaining))
-        {
-            return CountAtByteOffset(input, start);
-        }
-
-        return _compiledEngineRuntime.Count(remaining, CreateExecutionBudget());
-    }
-
     private Utf8PreparedValueMatchEnumerator EnumeratePreparedMatchesAtByteOffset(
         Utf8ValidatedInput input, Utf8BytePosition start)
     {
@@ -94,8 +44,10 @@ public sealed partial class Utf8Regex
             _owner = owner;
         }
 
-        public int CountPrepared(Utf8ValidatedInput input, Utf8BytePosition start)
-            => _owner.CountPreparedAtByteOffset(input, start);
+        // PCRE2-INTEGRATION-POINT: the adapter admits an exact literal family
+        // and supplies a scalar-aligned suffix of an unmetered invocation.
+        public int CountLiteralFamily(ReadOnlySpan<byte> remaining) =>
+            _owner._compiledEngineRuntime.Count(remaining, Utf8ExecutionDeadline.Infinite);
 
         // PCRE2-INTEGRATION-POINT: flavor-neutral prepared byte-range iteration.
         public Utf8PreparedValueMatchEnumerator EnumeratePreparedMatches(
