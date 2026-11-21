@@ -1427,15 +1427,15 @@ internal static partial class Utf8SliceRunner
     {
         var minimum = repeat.RepeatMinimum;
         var maximum = minimumOnly ? minimum : repeat.RepeatMaximum;
-        if (maximum is >= 2 and <= 4 &&
-            atom is { Kind: Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 })
+        if (maximum is >= 2 and <= 16 && atom is { B: 0, C: 0 } &&
+            (atom.Kind == Utf8SliceInstructionKind.Set || maximum <= 4 && atom.Kind == Utf8SliceInstructionKind.CategorySet))
         {
             var window = input.Slice(start, Math.Min(input.Length - start, (int)maximum));
             var category = atom.Kind == Utf8SliceInstructionKind.CategorySet;
             var consumed = ScanAsciiMask(window, program.SetMasks[atom.A], category);
             if (consumed >= 0 && (!category || program.GetCompleteAsciiCategoryMask(atom) != 0))
             {
-                // The span probe reads at most four bytes. Charge it before
+                // The span probe reads at most sixteen bytes. Charge it before
                 // publishing a result, and keep the repeat-boundary check.
                 minimumEnd = start;
                 var breach = invocation.TryChargeStep();
