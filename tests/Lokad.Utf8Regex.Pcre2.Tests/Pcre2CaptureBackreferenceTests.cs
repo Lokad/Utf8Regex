@@ -63,6 +63,24 @@ public sealed class Pcre2CaptureBackreferenceTests
             Assert.Throws<Pcre2MatchException>(() => limited.IsMatch(input)).ErrorKind);
     }
 
+    [Theory]
+    [InlineData(63)]
+    [InlineData(64)]
+    public void FoldedBackreferenceKeepsWiderEquivalentsAtBlockEdges(int asciiPrefix)
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?<text>[a-z]+):(?&check)\z(?(DEFINE)(?<check>(?i:\k<text>)))");
+        var capture = new string('a', asciiPrefix) + "k" + new string('b', 68);
+        var target = new string('A', asciiPrefix) + "\u212A" + new string('B', 68);
+        var input = Encoding.UTF8.GetBytes(capture + ":" + target);
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+        var match = regex.Match(input, captures: captures);
+        Assert.True(match.Success);
+        Assert.Equal(input.Length, match.EndOffsetInBytes);
+        AssertGroup(captures[1], input, capture, 0, capture.Length);
+        input[^1] = (byte)'C';
+        Assert.False(regex.IsMatch(input));
+    }
+
     [Fact]
     public void FixedCapturedSequenceKeepsTheLastUnicodeCaptureForBackreference()
     {

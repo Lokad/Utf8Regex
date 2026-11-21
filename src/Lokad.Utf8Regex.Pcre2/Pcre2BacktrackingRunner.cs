@@ -2449,26 +2449,30 @@ internal static class Pcre2BacktrackingRunner
             return true;
         }
 
+        const int blockScalars = 64;
         var captureIndex = captureStart;
         var subjectIndex = subjectStart;
-        var remainingInBlock = 64;
         while (captureIndex < captureEnd)
         {
-            if (remainingInBlock-- == 0)
+            if (captureIndex != captureStart) budget.ChargeWorkspaceStep();
+            if (captureEnd - captureIndex >= blockScalars && input.Length - subjectIndex >= blockScalars &&
+                Ascii.EqualsIgnoreCase(input.Slice(captureIndex, blockScalars), input.Slice(subjectIndex, blockScalars)))
             {
-                budget.ChargeWorkspaceStep();
-                remainingInBlock = 63;
+                captureIndex += blockScalars;
+                subjectIndex += blockScalars;
+                continue;
             }
-            if (subjectIndex >= input.Length ||
-                Rune.DecodeFromUtf8(input[captureIndex..captureEnd], out var capturedRune, out var capturedWidth) != OperationStatus.Done ||
-                Rune.DecodeFromUtf8(input[subjectIndex..], out var subjectRune, out var subjectWidth) != OperationStatus.Done ||
-                !Pcre2CharacterSemantics.Equals(capturedRune, subjectRune, options))
+            // An ASCII comparison can decline wider equivalent scalars.
+            for (var compared = 0; compared < blockScalars && captureIndex < captureEnd; compared++)
             {
-                return false;
+                if (subjectIndex >= input.Length ||
+                    Rune.DecodeFromUtf8(input[captureIndex..captureEnd], out var capturedRune, out var capturedWidth) != OperationStatus.Done ||
+                    Rune.DecodeFromUtf8(input[subjectIndex..], out var subjectRune, out var subjectWidth) != OperationStatus.Done ||
+                    !Pcre2CharacterSemantics.Equals(capturedRune, subjectRune, options))
+                    return false;
+                captureIndex += capturedWidth;
+                subjectIndex += subjectWidth;
             }
-
-            captureIndex += capturedWidth;
-            subjectIndex += subjectWidth;
         }
 
         subjectEnd = subjectIndex;
