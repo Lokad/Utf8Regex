@@ -1428,7 +1428,9 @@ internal static partial class Utf8SliceRunner
                                 break;
                             }
                         }
-                        verifiedPrefix = GetForkPrefixLength(program, input, inputIndex, programIndex + 1);
+                        var allowAcceptProof = !cursor.RequiredEnd.HasValue;
+                        verifiedPrefix = GetForkPrefixLength(program, input, inputIndex, programIndex + 1,
+                            allowAcceptProof, out var provesAccept);
                         if (verifiedPrefix < 0)
                         {
                             programIndex = instruction.A;
@@ -1437,9 +1439,9 @@ internal static partial class Utf8SliceRunner
                         // A consumed prefix followed by an unconditional path
                         // to Accept cannot need the other arm. Still execute the
                         // preferred tail for its greedy extent and captures.
-                        saveAlternative = (verifiedPrefix == 0 || cursor.RequiredEnd.HasValue ||
+                        saveAlternative = !provesAccept && (verifiedPrefix == 0 || !allowAcceptProof ||
                             !CanAcceptEmptyTail(instructions, programIndex + 1 + verifiedPrefix)) &&
-                            GetForkPrefixLength(program, input, inputIndex, instruction.A) >= 0;
+                            GetForkPrefixLength(program, input, inputIndex, instruction.A, false, out _) >= 0;
                     }
 
                     if (saveAlternative && !stacks.PushFrame(

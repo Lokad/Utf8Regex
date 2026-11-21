@@ -240,15 +240,19 @@ show scalar "y" with 2
         Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
     }
 
-    [Fact]
-    public void IntegerLexerKeepsTheGreedyRangeBeforeOptionalTails()
+    [Theory]
+    [InlineData("12345 rest", 5)]
+    [InlineData("12345.67 rest", 8)]
+    [InlineData("12345.", 5)]
+    [InlineData("12345.😀", 5)]
+    public void NumberLexerKeepsTheGreedyRangeBeforeOptionalTails(string subject, int end)
     {
         const string pattern = @"\G-?[0-9]+(\.[0-9]+)?(e[+-]?[0-9]+)?";
         using var source = new CancellationTokenSource();
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
             new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 } });
 
-        Assert.Equal(new Utf8CaptureRange(0, 5), regex.Match("12345 rest"u8, cancellationToken: source.Token));
+        Assert.Equal(new Utf8CaptureRange(0, end), regex.Match(Encoding.UTF8.GetBytes(subject), cancellationToken: source.Token));
     }
 
     [Fact]

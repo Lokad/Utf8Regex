@@ -1052,8 +1052,10 @@ internal static partial class Utf8SliceRunner
 
     // Return -1 for a disproved arm or the number of consecutive pure
     // one-byte atoms verified at the arm's original entry.
-    private static int GetForkPrefixLength(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position, int index)
+    private static int GetForkPrefixLength(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position, int index,
+        bool allowAcceptProof, out bool provesAccept)
     {
+        provesAccept = false;
         var code = program.Instructions.AsSpan();
         var probe = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, index);
         if ((uint)probe >= (uint)code.Length) return 0;
@@ -1092,6 +1094,20 @@ internal static partial class Utf8SliceRunner
         }
         if (!MatchesStraightAsciiPrefix(program, input, position, probe, 2, out var verified, out _))
             return -1;
+
+        // A required ASCII repeat immediately after a verified byte cannot
+        // match without its first byte. A greedy repeat with an empty tail
+        // then has an accepting path, but still runs for extent and captures.
+        var next = probe + 1;
+        if (verified == 1 && next < code.Length &&
+            code[next] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 } repeat &&
+            IsSingleAtomRepeat(code, next, repeat) &&
+            GetUnfoldedAsciiRange(code[next + 1], out var end) is >= 0 and var start)
+        {
+            var edge = position + 1;
+            if (edge == input.Length || (uint)(input[edge] - start) > (uint)(end - start)) return -1;
+            provesAccept = allowAcceptProof && CanAcceptEmptyTail(code, repeat.A + 1);
+        }
         return probe == index ? verified : 0;
     }
 
