@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
@@ -8,6 +9,19 @@ namespace Lokad.Utf8Regex;
 /// <summary>Supplies shared invocation state to metered native literal operations.</summary>
 public sealed partial class Utf8Regex
 {
+    // Keep the literal invocation's locals out of the scalar Match frame.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private Utf8CaptureRange MatchNativeLiteral(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    {
+        var invocation = Utf8SliceInvocation.CreateExclusive(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
+        Utf8SliceBufferWork.Checkpoint(ref invocation);
+        var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(_preparedRegex.SearchPlan, input, 0, input.Length,
+            UsesRightToLeft(), ref invocation, out var selected, out var found);
+        if (breach != Utf8ExecutionLimitKind.None)
+            throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
+        return found ? Utf8SliceBufferWork.CreateMatchRange(selected.Index, selected.Index + selected.Length, ref invocation) : default;
+    }
+
     // The adapter's literal result/count root shares this invocation with
     // validation and counting, instead of starting a second budget at shaping.
     internal int CountForResult(ReadOnlySpan<byte> input, int startOffsetInBytes,

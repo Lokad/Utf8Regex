@@ -627,16 +627,7 @@ public sealed partial class Utf8Regex : IDisposable
     {
         if (HasFiniteExecutionLimits) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
         if (CanStartNativeLiteralInvocation(cancellationToken))
-        {
-            var invocation = Utf8SliceInvocation.CreateExclusive(Utf8ExecutionLimits.Unlimited, MatchTimeout, cancellationToken);
-            Utf8SliceBufferWork.Checkpoint(ref invocation);
-            ref readonly var plan = ref _preparedRegex.SearchPlan;
-            var breach = Utf8SearchExecutor.TryFindNativeLiteralMatch(plan, input, 0, input.Length,
-                UsesRightToLeft(), ref invocation, out var selected, out var found);
-            if (breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
-            return found ? Utf8SliceBufferWork.CreateMatchRange(selected.Index, (selected.Index) + (selected.Length), ref invocation) : default(Utf8CaptureRange);
-        }
+            return MatchNativeLiteral(input, cancellationToken);
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceMatch(input, ownedProgram, cancellationToken);
