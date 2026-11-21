@@ -31,6 +31,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
     private Utf8SliceInvocation _invocation;
     private int _position;
     private bool _retryPending;
+    private readonly byte? _leadingAsciiByte;
     private int _retryPosition;
 
     internal Pcre2SliceGlobalMatchCursor(
@@ -50,7 +51,8 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         Utf8SliceInvocation invocation,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
-        Pcre2CompileRequest request)
+        Pcre2CompileRequest request,
+        byte? leadingAsciiByte = null)
     {
         _program = program;
         _input = input;
@@ -58,6 +60,7 @@ internal ref struct Pcre2SliceGlobalMatchCursor
         _invocation = invocation;
         _position = start.Value;
         _retryPending = false;
+        _leadingAsciiByte = leadingAsciiByte;
         _retryPosition = start.Value;
         Current = Pcre2CharacterMatch.NoMatch;
     }
@@ -168,7 +171,8 @@ internal ref struct Pcre2SliceGlobalMatchCursor
                 _position = advanced.Value;
             }
 
-            var end = Pcre2SliceDriver.FindMatchingEnd(_program, bytes, ref _position, bytes.Length, null, slots,
+            var lastStart = _leadingAsciiByte.HasValue ? bytes.Length - 1 : bytes.Length;
+            var end = Pcre2SliceDriver.FindMatchingEnd(_program, bytes, ref _position, lastStart, _leadingAsciiByte, slots,
                 ref workspace, ref _invocation);
             if (end < 0) return false;
             Current = Pcre2CharacterMatch.Create(_position, end);

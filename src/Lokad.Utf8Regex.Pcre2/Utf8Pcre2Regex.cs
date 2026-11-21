@@ -421,6 +421,9 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         if (matchOptions == Pcre2MatchOptions.None &&
             _program.Operations.Enumerate is Pcre2SliceDirectProgram slice)
         {
+            var leadingAsciiByte = slice.SliceProgram.CanMatchEmpty ||
+                (_program.Request.Options & Pcre2CompileOptions.Anchored) != 0
+                ? null : slice.Fallback.LeadingAsciiByte;
             return new Utf8Pcre2ValueMatchEnumerator(
                 input.Bytes,
                 new Pcre2SliceGlobalMatchCursor(
@@ -428,7 +431,8 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                     invocation,
                     input,
                     start,
-                    _program.Request));
+                    _program.Request,
+                    leadingAsciiByte));
         }
 
         if (_program.Operations.Enumerate.Kind == Pcre2DirectProgramKind.Pcre2Slice)

@@ -62,6 +62,23 @@ public sealed class Pcre2MultilineSearchTests
     }
 
     [Fact]
+    public void ExactLinePrefixEnumerationUsesBoundedWorkAcrossNonStarters()
+    {
+        using var regex = new Utf8Pcre2Regex("^ERROR: .+$", options: Pcre2CompileOptions.Multiline,
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 128 } });
+        using var live = new CancellationTokenSource();
+        var gap = "😀" + new string('x', 4096) + "\n";
+        var input = Encoding.UTF8.GetBytes(gap + "ERROR: é\n" + gap);
+        var start = Encoding.UTF8.GetByteCount(gap);
+
+        var matches = regex.EnumerateMatches(input, 4, cancellationToken: live.Token);
+        Assert.True(matches.MoveNext());
+        Assert.Equal(start, matches.Current.StartOffsetInBytes);
+        Assert.Equal(start + "ERROR: é"u8.Length, matches.Current.EndOffsetInBytes);
+        Assert.False(matches.MoveNext());
+    }
+
+    [Fact]
     public void ExactLinePrefixMatchesBclAcrossAsciiOffsets()
     {
         var direct = new Utf8Pcre2Regex("^ERROR: .+$", options: Pcre2CompileOptions.Multiline);
