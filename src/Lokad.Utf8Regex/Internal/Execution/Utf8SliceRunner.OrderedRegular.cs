@@ -97,9 +97,9 @@ internal static partial class Utf8SliceRunner
         var depth = invocation.Budget.Limits.MaxDepth;
         if (program.RepeatCount == 0) return depth == 0;
 
-        // Keep more selective prepared starts. Tight depth limits retain
+        // Keep more selective prepared forward starts. Tight depth limits retain
         // the scalar path, which can admit less than a complete frontier.
-        return search.Kind == Utf8SearchKind.None &&
+        return (program.RightToLeft || search.Kind == Utf8SearchKind.None) &&
             (depth == 0 || depth >= (uint)(program.NonBacktrackingOrderedLeaves.Length - 1));
     }
 
@@ -292,7 +292,9 @@ internal static partial class Utf8SliceRunner
         var cacheBytes = (ulong)(capacity * Unsafe.SizeOf<OrderedRegularTransition>());
         var limit = invocation.Budget.Limits.MaxWorkingBytes;
         var total = originBytes + cacheBytes;
-        var cache = input.Length - fromByte >= 64 &&
+        var reverse = program.RightToLeft;
+        var remaining = reverse ? fromByte : input.Length - fromByte;
+        var cache = remaining >= 64 &&
             (limit == 0 || total <= limit && invocation.Ledger.ReservedBytes <= limit - total);
         var reserved = cache ? total : originBytes;
         var breach = invocation.TryReserveWorking(reserved);
@@ -304,7 +306,8 @@ internal static partial class Utf8SliceRunner
             Span<OrderedRegularTransition> table = stackalloc OrderedRegularTransition[cache ? capacity : 0];
             table.Clear();
             var closures = program.NonBacktrackingOrderedClosures;
-            var starts = input.Length - fromByte >= 64 ? program.NonBacktrackingOrderedStartBytes : default;
+            // Only forward traversal has a prepared set of UTF-8 lead bytes.
+            var starts = !reverse && remaining >= 64 ? program.NonBacktrackingOrderedStartBytes : default;
             var conditionMask = program.NonBacktrackingOrderedConditions;
             var current = new OrderedRegularFrontier();
             var bestStart = -1;
@@ -345,7 +348,7 @@ internal static partial class Utf8SliceRunner
                     current = expanded;
                 }
 
-                var hasScalar = TryReadScalar(input, position, false, out var scalar, out var width);
+                var hasScalar = TryReadScalar(input, position, reverse, out var scalar, out var width);
                 var value = hasScalar ? scalar.Value : -1;
                 var index = (int)((current.Order ^ (current.Order >> 32) ^ (uint)(value * 13)) & (capacity - 1));
                 var canCache = cache && current.Order != 0;
@@ -387,7 +390,9 @@ internal static partial class Utf8SliceRunner
                 {
                     invocation.Budget.ThrowIfCancellationRequested();
                     invocation.Budget.CheckDeadline();
-                    return new(bestStart >= 0, bestStart, bestEnd, null, null, Utf8ExecutionLimitKind.None);
+                    return reverse
+                        ? new(bestStart >= 0, bestEnd, bestStart, null, null, Utf8ExecutionLimitKind.None)
+                        : new(bestStart >= 0, bestStart, bestEnd, null, null, Utf8ExecutionLimitKind.None);
                 }
 
                 // The cache stores origin indexes. Every call's raw byte
@@ -399,7 +404,7 @@ internal static partial class Utf8SliceRunner
                 origins = nextOrigins;
                 nextOrigins = previous;
                 current = next.Frontier;
-                position += width;
+                position += reverse ? -width : width;
             }
         }
         finally { invocation.Ledger.Release(reserved); }

@@ -16,6 +16,49 @@ namespace Lokad.Utf8Regex.Tests;
 // Right-to-left result operations retain oracle encounter order.
 public sealed class Utf8SliceRtlTests
 {
+    [Fact]
+    public void OrderedReverseDiscoveryPreservesPriorityAndCapturesUnderFiniteWork()
+    {
+        const string pattern = "(?<preferred>[xy][cçd]+)|(?<other>[xz][cçe]+)";
+        const RegexOptions options = RegexOptions.RightToLeft | RegexOptions.CultureInvariant;
+        using var regex = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 8_192, MaxWorkingBytes = 4_096 },
+        });
+        using var source = new CancellationTokenSource();
+        var trailing = new string('c', 384) + "😀";
+        var text = "é😀yçd!xçcc!" + trailing;
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = new Regex(pattern, options).Matches(text);
+        Assert.Equal(2, expected.Count);
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(trailing), source.Token));
+
+        var slots = new Utf8CaptureRange[3];
+        AssertRange(expected[0], regex.Match(input, input.Length, slots, source.Token));
+        AssertRange(expected[0].Groups["preferred"], slots[1]);
+        Assert.False(slots[2].Success);
+        var endOfEarlierMatch = Encoding.UTF8.GetByteCount("é😀yçd");
+        AssertRange(expected[1], regex.Match(input, endOfEarlierMatch, cancellationToken: source.Token));
+
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: source.Token);
+        foreach (Match match in expected)
+        {
+            Assert.True(cursor.MoveNext(out var result));
+            AssertRange(match, result.Value);
+            var history = result.GetCaptures(1);
+            Assert.Equal(1, history.Length);
+            AssertRange(match.Groups["preferred"], history[0]);
+        }
+        Assert.False(cursor.MoveNext(out _));
+
+        void AssertRange(Capture capture, Utf8CaptureRange range)
+        {
+            Assert.True(range.Success);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index)), range.StartOffsetInBytes);
+            Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index + capture.Length)), range.EndOffsetInBytes);
+        }
+    }
+
     public static IEnumerable<object?[]> SliceRtlShapes()
     {
         yield return new object?[] { "(a+)(b+)" };

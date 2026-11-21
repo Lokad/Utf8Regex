@@ -453,7 +453,7 @@ internal sealed class Utf8SliceProgram
                     FollowingDecimalContinuation = delimiter.LiteralIndex + 6;
             }
         }
-        if (NonBacktrackingOrderedClosures.Length != 0)
+        if (!rightToLeft && NonBacktrackingOrderedClosures.Length != 0)
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
         if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
             TerminalRepeatsWithoutRewind = Utf8SliceRunner.FindTerminalRepeatsWithoutRewind(this, Utf8ConstructionScope.CurrentBudget);
@@ -930,9 +930,8 @@ internal static class Utf8SliceLowerer
                 try
                 {
                     if (owner.Failed) return null;
-                    var program = FinishLowering(owner, frame.Root,
-                        frames.Count == 0 && usesInterpretedLazyLoopSemantics,
-                        frames.Count == 0 && usesLiteralClassBracketSyntax);
+                    var program = FinishLowering(owner, frame.Root, frames.Count == 0,
+                        usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax);
                     if (program is null) return null;
                     if (frames.Count == 0) { construction.Complete(); return program; }
                     var parent = frames[frames.Count - 1].Owner
@@ -1157,7 +1156,8 @@ internal static class Utf8SliceLowerer
         internal Utf8ConstructionBuffer<int>? Scratch;
     }
 
-    private static Utf8SliceProgram? FinishLowering(Lowering lowerer, Utf8SliceNode root, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
+    private static Utf8SliceProgram? FinishLowering(Lowering lowerer, Utf8SliceNode root, bool isRoot,
+        bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax)
     {
         lowerer.Emit(new Utf8SliceInstruction(Utf8SliceInstructionKind.Accept, 0, 0, 0, 0));
         var requiresUnicodeWordBoundary = false;
@@ -1266,9 +1266,11 @@ internal static class Utf8SliceLowerer
         var prepareEpsilon = lowerer.NonBacktracking ||
             lowerer.HasCounterlessAlternationLoop && lowerer.RepeatCount == 0 &&
             Utf8SliceRunner.CanPrepareOrdinaryOrderedSearch(instructions, lowerer.Budget);
+        // Mirrored assertion bodies run at a fixed edge. Only the mirrored
+        // root can use ordered search across multiple starting positions.
         var epsilonOrder = prepareEpsilon
             ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions, out epsilonAncestors, out ordered)
-            : !lowerer.MirrorExecute && lowerer.RepeatCount != 0 && lowerer.HasAlternation
+            : (isRoot || !lowerer.MirrorExecute) && lowerer.RepeatCount != 0 && lowerer.HasAlternation
                 ? Utf8SliceRunner.BuildOrdinaryRepeatClosures(instructions, lowerer.Budget, out epsilonAncestors, out ordered)
                 : [];
         return Utf8SliceProgram.Create(
@@ -1281,7 +1283,8 @@ internal static class Utf8SliceLowerer
             requiresUnicodeShorthand,
             requiresUnicodeCategory,
             assertions,
-            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog, usesInterpretedLazyLoopSemantics, usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
+            hasNonFixedLookbehind, resolvedNames, hasUnnamedGroups && hasNamedGroups, lowerer.MaintainBalance, lowerer.MatchCaseInsensitive, lowerer.SawContiguousAnchor, lowerer.HasConditionalTest, lowerer.MirrorExecute, lowerer.SawLookaround, lowerer.Facts[root].CanMatchEmpty, lowerer.CaptureCatalog,
+            isRoot && usesInterpretedLazyLoopSemantics, isRoot && usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
             lowerer.BackreferenceLowerings.Take(), ordered);
