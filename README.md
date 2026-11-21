@@ -121,6 +121,8 @@ and calls with finite limits, deadlines and cancellation.
 
 Ordinary and compiled rows use matching .NET compilation flags. All tables rank
 `Utf8Regex / .NET predecoded` ratios from highest to lowest; lower is better.
+Frozen `common/match-word` results through dev.117 include .NET's `Match`
+object allocation. New runs compare the first whole-match range on both sides.
 
 [refresh-benchmarks.ps1](tools/refresh-benchmarks.ps1) runs the full cycle or selected
 phases; [bench.ps1](tools/bench.ps1) supports focused single-case iterations.

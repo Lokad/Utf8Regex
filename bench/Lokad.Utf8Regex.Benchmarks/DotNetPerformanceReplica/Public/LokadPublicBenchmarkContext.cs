@@ -129,6 +129,26 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecutePredecodedCompiledRegex() => Execute(CompiledRegex, InputString);
 
+    public void VerifyMatchRanges()
+    {
+        if (Operation != LokadPublicBenchmarkOperation.Match) return;
+
+        VerifyMatchRange(Utf8Regex, Regex);
+        VerifyMatchRange(CompiledUtf8Regex, CompiledRegex);
+    }
+
+    private void VerifyMatchRange(Utf8Regex regex, Regex reference)
+    {
+        var actual = regex.Match(InputBytes);
+        var (start, end) = FindFirstRegexRange(reference, InputString);
+        if (actual.Success != (start >= 0) ||
+            actual.Success && (actual.StartOffsetInBytes != Encoding.UTF8.GetByteCount(InputString.AsSpan(0, start)) ||
+                actual.EndOffsetInBytes != Encoding.UTF8.GetByteCount(InputString.AsSpan(0, end))))
+        {
+            throw new InvalidOperationException($"The first match range differs for {CaseId}.");
+        }
+    }
+
     public int ExecuteUtf8IsValidOnly() => Utf8.IsValid(InputBytes) ? InputBytes.Length : 0;
 
     public int ExecuteUtf8WellFormedOnly()
@@ -200,16 +220,22 @@ internal sealed class LokadPublicBenchmarkContext
         {
             LokadPublicBenchmarkOperation.Count => regex.Count(input),
             LokadPublicBenchmarkOperation.IsMatch => regex.IsMatch(input) ? 1 : 0,
-            LokadPublicBenchmarkOperation.Match => MeasureMatch(regex.Match(input)),
+            LokadPublicBenchmarkOperation.Match => FindFirstRegexRange(regex, input).End,
             LokadPublicBenchmarkOperation.Replace => RegexBenchmarkResult.ReplaceUtf8Length(regex, input, Replacement),
             LokadPublicBenchmarkOperation.Split => CountRegexSplits(regex, input),
             _ => throw new ArgumentOutOfRangeException(),
         };
     }
 
-    private static int MeasureMatch(Utf8CaptureRange match) => match.Success ? match.StartOffsetInBytes + (match.EndOffsetInBytes - match.StartOffsetInBytes) : -1;
+    private static int MeasureMatch(Utf8CaptureRange match) => match.Success ? match.EndOffsetInBytes : -1;
 
-    private static int MeasureMatch(Match match) => match.Success ? match.Index + match.Length : -1;
+    private static (int Start, int End) FindFirstRegexRange(Regex regex, ReadOnlySpan<char> input)
+    {
+        var matches = regex.EnumerateMatches(input);
+        if (!matches.MoveNext()) return (-1, -1);
+        var match = matches.Current;
+        return (match.Index, match.Index + match.Length);
+    }
 
     private static int CountUtf8Splits(Utf8Regex regex, byte[] input)
     {

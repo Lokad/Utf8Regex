@@ -1007,8 +1007,7 @@ internal static partial class BenchmarkInspectReporter
         }
 
         var benchmarkCase = ReplicaCountBenchmarkCase.Resolve(caseId);
-        var utf8Regex = false ? benchmarkCase.Utf8Regex
-            : new Utf8Regex(benchmarkCase.Utf8Pattern, options: benchmarkCase.Options);
+        var utf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, options: benchmarkCase.Options);
         var compiledUtf8Regex = new Utf8Regex(benchmarkCase.Utf8Pattern, options: benchmarkCase.Options | RegexOptions.Compiled);
         Console.WriteLine($"CaseId            : {caseId}; InputBytes={benchmarkCase.InputBytes.Length}; InputSha256={Convert.ToHexString(SHA256.HashData(benchmarkCase.InputBytes))}");
         var iterationTarget = GetReadmeReplicaIterationTarget(benchmarkCase, requestedIterations);
@@ -1039,6 +1038,7 @@ internal static partial class BenchmarkInspectReporter
         var requestedIterations = ParseIterations(iterationsText);
         var samples = ParseSamples(samplesText);
         var context = new LokadPublicBenchmarkContext(caseId);
+        context.VerifyMatchRanges();
         Console.WriteLine("InputContract     : caller-valid unchanged UTF-8");
         Console.WriteLine($"Environment       : {JsonSerializer.Serialize(CaptureBenchmarkEnvironment())}");
         Console.WriteLine($"CaseId            : {caseId}; InputBytes={context.InputBytes.Length}; InputSha256={Convert.ToHexString(SHA256.HashData(context.InputBytes))}");
