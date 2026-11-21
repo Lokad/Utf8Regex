@@ -1,148 +1,53 @@
 # Lokad.Utf8Regex
 
-.NET 10/11 libraries matching Unicode scalars over strict UTF-8 spans, with primary
-byte coordinates. Dot matches 😀 once across four bytes. Match results expose
-bytes only; callers derive character positions when needed.
+Follow the profile contracts and the ignored root PLAN.md.
+[Core](docs/SPEC.md) · [PythonRe](docs/SPEC-PYTHONRE.md) · [PCRE2](docs/SPEC-PCRE2.md) · [POSIX](docs/SPEC-POSIX.md)
 
-## Contracts and scope
+## Contracts
 
-- Follow [Core](docs/SPEC.md), [PythonRe](docs/SPEC-PYTHONRE.md) and
-  [PCRE2](docs/SPEC-PCRE2.md) and [Posix](docs/SPEC-POSIX.md) contracts.
-  The ignored root PLAN.md holds active work.
-- Preserve scalar boundaries, captures, RTL/NonBacktracking behavior, retained
-  results/cursor aliases, resource admission and synchronous original-token
-  cancellation/deadlines. Do not restore UTF-16 parity or dormant fallback engines.
-- All profiles require already-valid, unchanged UTF-8 subjects. Regex operations
-  do not validate text or expose a validation policy. Validate external bytes where
-  they become text. Pattern/template/assembled-output checks remain independent.
-  No validation-token API or replacement profile framework.
-- Shipped execution is fully managed and owned: no BCL matcher/results, native
-  regex dependency or unchecked reads. Actual Unsafe.SizeOf<T>() is permitted.
-  BCL Regex is a test/benchmark comparator only on overlapping semantics.
+- Match Unicode scalars over caller-valid, unchanged UTF-8. Expose byte
+  coordinates. Validate subjects at the text boundary and keep the matching
+  API free of validation policies or tokens. Pattern, template and
+  assembled-output checks are independent.
+- Preserve captures, RTL, NonBacktracking, retained results and cursor aliases.
+  Keep synchronous original-token cancellation, deadlines and resource bounds.
+- Ship owned, checked managed matching. BCL Regex and native regex engines may
+  serve as comparators. Actual `Unsafe.SizeOf<T>()` queries are permitted.
+- Keep PCRE2-specific code and fixtures in the Pcre2 projects. Mark unavoidable
+  Core hooks `PCRE2-INTEGRATION-POINT`. Share low-level utilities. Core loads
+  independently and is the adapter's sole non-BCL implementation dependency.
+  Keep shipped packages free of native regex binaries and interop.
 
-## Build and test
+## Build, test and benchmark
 
-Use the SDK pinned by global.json (host install or ignored .dotnet/), and
-`--tl:off` for stable output. With a local SDK, put .dotnet/ on PATH so direct
-DLL launches and benchmark children use its runtimes. Prefer the repository scripts:
+- Use the SDK pinned by global.json and `--tl:off`. Put the ignored `.dotnet/`
+  on PATH when using that SDK, including for child processes.
+- Use `tools/test.ps1 -Configuration Release -Project <project>` with a focused
+  filter. The default covers .NET 10 and 11. Reuse matching binaries with
+  `-SkipBuild`. Zero discovered tests is failure.
+- Reuse build servers. Recover test hosts only after a file-lock failure and
+  only when the executable is inside this checkout.
+- Use `tools/bench.ps1` in Release, normally `-Job Short`, on .NET 11. Run
+  focused comparisons sequentially and keep the public outputs equal.
+  The quiet VM target for a complete refresh is one hour. Preserve raw
+  evidence and regenerate tables with the existing tools.
+  [Benchmark procedure](docs/BENCHMARKS.md)
 
-```powershell
-./tools/test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -Filter 'FullyQualifiedName~Utf8CoreWorkPolicyTests'
-./tools/test.ps1 -Configuration Release -Project tests/Lokad.Utf8Regex.Tests/Lokad.Utf8Regex.Tests.csproj -SkipBuild -Filter 'FullyQualifiedName~Utf8FiniteLiteralCountTests'
-```
+## Delivery
 
-Use -Framework net10.0 or net11.0 for focused runs; the test default covers both.
-Build affected projects during experiments; reuse matching binaries with
--SkipBuild. Zero discovered tests is failure. Reserve solution/platform/package
-matrices for coherent delivery boundaries; do not repeat unchanged qualification.
-The test script serializes project/target hosts to bound peak memory; each suite
-retains its normal internal parallelism.
+- Reserve complete build, platform and package matrices for delivery boundaries.
+  Use `tools/qualify-package-candidate.ps1` with clean source, a fresh common
+  version and exact Core pins. Keep published and staged bytes immutable.
+- Packages go to `artifacts/nuget/`. Keep package, platform, performance and
+  original consumer checks distinct. NuGet uses the self-contained package
+  README. [Package qualification](tools/qualify-package-candidate.ps1) ·
+  [Package README](docs/nuget/README.md)
+- Push authorized scoped commits. Space GitHub CI status queries minutes apart
+  and continue useful work while CI runs.
 
-Reuse build/compiler servers. Recover test hosts only after an observed file-lock
-failure and only when their executable path is inside this checkout; command-line
-mentions do not prove ownership. Leave unknown/outside hosts running. Normal test
-and benchmark builds disable incidental packing.
+## Files
 
-## Benchmarks
-
-Use ./tools/bench.ps1 in Release, sequentially, with a focused filter or custom command.
-Benchmarks default to net11.0; use -Framework net10.0 for compatibility controls.
-Let the existing benchmark code set affinity after runtime startup. An outer
-`taskset` changes .NET's visible processor count and defines a different environment.
-Use warm throughput (typically -Job Short); Dry is smoke evidence, not parity.
-Custom commands default to a 120-second outer cap; disable it only for preflighted
-milestone refreshes. The cap returns 124 and owns only its launched process tree;
-normal runs do not shut down servers or kill other benchmark hosts.
-
-```powershell
-./tools/bench.ps1 -Configuration Release -Job Short -Filter '*Literal*'
-./tools/bench.ps1 -SkipBuild -CommandArgs '--measure-case','literal/sherlock-en','20'
-./tools/bench.ps1 -SkipBuild -CommandArgs '--measure-case-deep','lokad/imports/module-imports','20'
-```
-
-Use `./tools/refresh-benchmarks.ps1 -Phase Resources` for a selected refresh phase.
-The default runs one Release build, both-runtime tests and the complete .NET 11
-catalogs, lifecycle/scaling, paired comparators and resource checks, reusing those
-binaries. Phase logs and `refresh.json` go to `artifacts/benchmark-refresh/`.
-Only a completed full run counts toward the 60-minute VM target. Benchmark children
-share the remaining budget; on Linux wrap the runner in
-`timeout --kill-after=5s 3600s pwsh -NoProfile -File ./tools/refresh-benchmarks.ps1`
-to hard-cap builds/tests too. Set PATH and UTF8REGEX_CPYTHON before starting.
-Check disk capacity and actual available RAM first; free tmpfs capacity does not
-reserve physical memory. Retire archived fixture scratch before a full run.
-Size focused experiments' memory admission for their bounded workers and retained
-results; do not copy the full-refresh reserve into small comparisons.
-Keep an SSH session open until `/dev/shm` evidence
-is archived and copied off the VM; logout cleanup can clear this filesystem.
-The Verify phase requires matching frozen paired evidence; it deliberately rejects
-old comparisons after source or binaries change.
-
-- Compare equal-result public operations against both decode-then-Regex and
-  predecoded Regex. Include finite-limit costs and allocations where relevant.
-  Kernel/phase attribution is not a public speedup or benchmark Status.
-- Bound comparisons and any confirmation before running them; use public-operation
-  costs and unchanged controls rather than isolated-kernel estimates.
-- Compare producer versions in separate ordinary processes. Identical Core DLLs
-  showed9.8% slot movement in a dual-AssemblyLoadContext driver; retain per-process
-  observations and uncertainty, with one producer loaded per process.
-  For change comparisons, explicitly stage each producer's DLL/PDB pair and
-  reject identical producer DLL hashes before timing; verify shared controls too.
-- Track compact presentation summaries in bench/Snapshots/. Full samples and
-  provenance live in artifacts/benchmark-refresh/current/ and content-addressed
-  local refresh outputs. Regenerate README blocks through existing rewrite/verify
-  commands; never hand-edit generated tables. Ordinary CI uses summaries offline;
-  full qualification uses local raw evidence. No archive/upload step is required.
-  Prefer selective refresh and preserve historical identities/uncertainty.
-  New Core/PCRE2 refresh lanes calibrate independently and retain raw durations;
-  Core V3 targets 75 ms with one calibration confirmation; samples below 20 ms
-  remain unqualified. Python/.NET/CPython result
-  batches consume checksums after timing. Keep lifecycle/scaling evidence when
-  refreshing ordinary rows; package matrices stay at delivery boundaries.
-- Python comparisons use an official CPython in a long-lived worker, excluding
-  startup/compilation. Set UTF8REGEX_CPYTHON if needed. Qualification requires
-  matching loaded binaries/PDB source checksums, clean relevant inputs and the
-  existing paired protocol; do not refresh data merely to update provenance.
-- PCRE.NET is a private benchmark-only native comparator. Keep it out of shipped
-  projects and mark unsupported/result-incompatible rows with exclusion reasons.
-  Command details live in the profile README benchmark sections and CLI help.
-
-## Package delivery
-
-Use ./tools/qualify-package-candidate.ps1 at a delivery boundary; Core/PythonRe is the
-default, or select -Profiles Core,PythonRe,Pcre2,Posix. Require clean tracked source,
-a new common version and exact adapter-to-Core pins. -SkipBuild requires matching
-configuration/revision binaries for both targets; retain source/PDB/DLL/feed/cache/
-lock checks for each asset and isolated consumer.
-
-Qualified packages and symbols are delivered to artifacts/nuget/. Qualification
-records under artifacts/package-candidates/<version> and historical published/
-staged bytes are immutable. Platform, performance and original consumer acceptance
-remain separate checks. Detached fixtures stage API snapshots and filter
-Category!=SourceOnly; source CI keeps repository/layout/snapshot guards.
-Core-only qualification must not require adapters or the benchmark executable.
-NuGet uses the self-contained docs/nuget/README.md; profile READMEs retain
-repository examples, navigation and benchmarks.
-
-## Files and documentation
-
-Keep guides in docs/; README.md, CHANGELOG.md, AGENTS.md and ignored PLAN.md stay
-at root. Use tmp/<task>/ for disposable logs/probes/scripts, then delete task
-scratch. Do not create root logs, backup copies or a planning-history file.
-Use existing tracked receipts for durable evidence and preserve raw measurements.
-Use relative repository links in Markdown; retain external attribution and render
-raw commit references as text.
-
-## PCRE2 isolation
-
-Keep all PCRE2-specific implementation under src/Lokad.Utf8Regex.Pcre2/ and use
-Pcre2 in its types, namespaces, folders and test fixtures. PCRE2-only helpers belong
-there; unavoidable Core hooks carry PCRE2-INTEGRATION-POINT.
-Share genuine low-level utilities without a flavor framework. Core loads alone.
-The adapter's sole non-BCL implementation dependency is Core; no P/Invoke,
-NativeLibrary, external PCRE2 executable/binary or RID-native assets.
-
-## CI
-
-Push authorized scoped changes and check CI without idle waiting while other work
-is available. Space GitHub status queries minutes apart; anonymous API quota is
-60/hour. Do not poll in a tight loop or repeat unchanged package matrices.
+Keep guides in `docs/` and README.md, CHANGELOG.md, AGENTS.md and ignored PLAN.md
+at root. Put disposable work in `tmp/<task>/` and delete it after use. Preserve
+measurement evidence in `artifacts/benchmark-refresh/`. Use relative repository
+links, keep external attribution, and render raw commit IDs as text.

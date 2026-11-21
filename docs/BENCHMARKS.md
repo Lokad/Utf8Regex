@@ -41,23 +41,61 @@ Raw durations, iteration counts, allocations and loaded producer identities go
 to a unique JSON file under `artifacts/benchmark-refresh/generality/`. A focused
 selection neither replaces accepted README tables nor qualifies a package.
 
+## Complete refreshes on the quiet VM
+
 The full refresh includes both-runtime tests, public catalogs, paired
-comparisons, lifecycle, scaling and resource checks. It writes the duration and
-step results to `refresh.json` in its timestamped output directory under
-`artifacts/benchmark-refresh/`. The compact summaries record the measured
-sources, runtimes and results for the README tables.
+comparisons, lifecycle, scaling and resource checks. It builds Release once and
+reuses the binaries. The completed `refresh.json` records each step and the
+total duration. A selected phase serves focused work. The one-hour target
+applies to the complete run.
+
+Set PATH to the pinned .NET 11 SDK and set `UTF8REGEX_CPYTHON` before starting.
+Check actual available RAM and disk space, including `/dev/shm`. Retire archived
+fixture scratch before a full run. Size the reservation for each focused
+experiment to fit its workers and retained results.
+
+```bash
+timeout --kill-after=5s 3600s pwsh -NoProfile -File ./tools/refresh-benchmarks.ps1
+```
+
+This also caps builds and tests. Benchmark children share the remaining
+budget. Keep the SSH session open until you have copied the evidence from
+`/dev/shm` and checked the archive digest. Logout can clear the remote files.
+
+Track compact summaries and generated README blocks. Keep full samples and
+provenance under `artifacts/benchmark-refresh/`. Regenerate tables through the
+existing commands. The Verify phase requires matching frozen paired evidence
+and binaries, and CI checks the compact summaries offline. Preserve source
+identities, uncertainty and lifecycle or scaling evidence on selective refreshes.
 [Compact summaries](../bench/Snapshots/)
 
-Keep experiments selective and bounded, reuse matching binaries and build
-servers, and compare equal public outputs. Use one ordinary producer per process
-for before/after comparisons. Report kernel attribution separately from public
-operation measurements.
+## Focused comparisons
 
-Comparator scope matters: Python uses a long-lived official CPython worker over
-`str`. The canonical PCRE2 comparison uses the interpreted UTF-mode matcher
+Use Release with warm throughput, typically `-Job Short`. The Dry job serves
+smoke tests. Custom commands default to a 120-second process-tree cap. The
+benchmark code sets affinity after runtime startup so it sees the ordinary .NET
+processor count. Start it without an outer `taskset`.
+
+Select public workloads, a time bound and the unchanged control up front.
+Use one ordinary producer per process. Stage the exact DLL and PDB together for
+each producer and check that the DLL hashes differ and the driver, environment
+and inputs agree. Retain per-process observations and allocations. Report
+kernel attribution separately from public operation measurements.
+
+Core and PCRE2 refresh lanes calibrate independently. Core's six-lane protocol
+targets 75 ms batches with one calibration confirmation. Samples below 20 ms
+prevent Core qualification. Python comparison batches consume the result
+checksum after timing.
+
+Python uses a long-lived official CPython worker over `str`, with startup and
+compilation outside timing. The canonical PCRE2 comparison uses the interpreted UTF-mode matcher
 through benchmark-only PCRE.NET, with `NO_UTF_CHECK` on caller-valid text.
-Compact PCRE2 rows report `ReferenceMatchOptions` when the measured lane records
-the flags. Historical rows keep their original measurements and metadata.
+Keep incompatible native rows marked with an exclusion reason. Compact PCRE2
+rows report `ReferenceMatchOptions` when recorded by the measured lane.
+Historical rows keep their original measurements and metadata.
+Python paired qualification checks the loaded binaries and PDB source
+checksums against clean relevant inputs. Use the existing paired protocol and
+refresh when the comparison has changed.
 
 `--measure-pcre2-case <id> 1 3` compares labeled native interpreted and JIT
 lanes for IsMatch and Count. It checks JIT compilation and equal results, and

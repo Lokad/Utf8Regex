@@ -3,6 +3,16 @@
 Create one immutable common-version package candidate with detached consumers.
 .DESCRIPTION
 Requires clean source and a new version; builds/packs selected profiles and writes artifacts/nuget plus qualification evidence. Does not publish.
+.NOTES
+Core and PythonRe are selected by default. Each adapter pins the exact Core
+version. -SkipBuild uses matching configuration and source binaries for both
+frameworks. Detached fixtures verify local package assets and API snapshots
+while excluding tests marked SourceOnly. Core-only qualification runs without
+adapters or the benchmark executable.
+
+Keep records in artifacts/package-candidates/<version> and preserve prior
+package bytes. Platform, performance and original consumer acceptance are
+separate checks.
 #>
 [CmdletBinding()]
 param(
