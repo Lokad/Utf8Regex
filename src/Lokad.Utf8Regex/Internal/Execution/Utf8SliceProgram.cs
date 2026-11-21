@@ -455,6 +455,8 @@ internal sealed class Utf8SliceProgram
         }
         if (!rightToLeft && NonBacktrackingOrderedClosures.Length != 0)
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
+        else if (!rightToLeft && isNonBacktracking && !canMatchEmpty && instructions.Length > 64)
+            NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetWideRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
         if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
             TerminalRepeatsWithoutRewind = Utf8SliceRunner.FindTerminalRepeatsWithoutRewind(this, Utf8ConstructionScope.CurrentBudget);
         // An absolute start confines an empty match to byte zero. A terminal

@@ -34,6 +34,26 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal(scalarCount + 2, regex.Count(input));
     }
 
+    [Fact]
+    public void WideRegularStartsPreserveFoldedScalarsAndByteOffsets()
+    {
+        const int prefixLength = 8_192;
+        var input = Encoding.UTF8.GetBytes(new string('!', prefixLength) + "K");
+        var options = RegexOptions.NonBacktracking | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        using var regex = new Utf8Regex("(?<long>a{72})z|(?<fold>k+)", options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256 },
+        });
+
+        Assert.False(regex.IsMatch(input.AsSpan(0, prefixLength)));
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(1, regex.Count(input));
+        var match = regex.Match(input);
+        Assert.True(match.Success);
+        Assert.Equal(prefixLength, match.StartOffsetInBytes);
+        Assert.Equal(input.Length, match.EndOffsetInBytes);
+    }
+
     [Theory]
     [InlineData(@"(?<x>a?)(?<y>b?)|(?<z>ab)", "ab a b é")]
     [InlineData(@"(?:a(?<x>b?)|(?<y>a?))(?<last>c?)", "abc a acc\n")]

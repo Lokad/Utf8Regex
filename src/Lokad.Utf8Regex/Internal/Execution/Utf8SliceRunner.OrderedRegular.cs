@@ -186,50 +186,102 @@ internal static partial class Utf8SliceRunner
 
         Span<ulong> starts = stackalloc ulong[4];
         starts.Clear();
-        var behavior = program.CaseBehavior;
         for (var candidates = program.NonBacktrackingConsumerMask; candidates != 0; candidates &= candidates - 1)
         {
             budget.ChargeWork(1);
             var pc = BitOperations.TrailingZeroCount(candidates);
             if ((program.NonBacktrackingEpsilonAncestors[pc] & reachable) == 0) continue;
-            var instruction = program.Instructions[pc];
-            if (instruction.Kind == Utf8SliceInstructionKind.Literal)
-            {
-                if (!Rune.TryCreate(instruction.A, out var literal)) return default;
-                AddOrderedRegularStarts(literal, instruction.B != 0, behavior, starts);
-                continue;
-            }
-
-            if (GetUnfoldedUnicodeLeadRange(program, instruction, budget, out var last) is >= 0 and var first)
-            {
-                for (var starter = first; starter <= last; starter++)
-                    AddStartByte((byte)starter, starts);
-                continue;
-            }
-
-            if (TryGetPositiveCategorySet(program, instruction, out _, out var low, out var high))
-            {
-                // ASCII membership is known. Keep every multibyte lead as a
-                // candidate and leave scalar category membership to execution.
-                starts[0] |= low;
-                starts[1] |= high;
-                starts[3] |= Utf8AsciiBytePredicates.DecimalOrScalarLead.Mask3;
-                continue;
-            }
-
-            // Acceptance, complements and general class predicates lack a
-            // complete list of scalar starts here.
-            if (instruction is not { Kind: Utf8SliceInstructionKind.Set, B: 0 }) return default;
-            var mask = program.SetMasks[instruction.A];
-            budget.ChargeWork((ulong)mask.Length);
-            for (var index = 0; index < mask.Length; index++)
-                for (var bits = (uint)mask[index]; bits != 0; bits &= bits - 1)
-                {
-                    budget.ChargeWork(1);
-                    var scalar = new Rune((index << 3) + BitOperations.TrailingZeroCount(bits));
-                    AddOrderedRegularStarts(scalar, instruction.C != 0, behavior, starts);
-                }
+            if (!TryAddRegularStartBytes(program, program.Instructions[pc], starts, budget)) return default;
         }
+        return BuildRegularStartSearch(starts);
+    }
+
+    internal static PreparedByteSearch GetWideRegularStartBytes(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    {
+        const int visitLimit = 64;
+        Span<int> branches = stackalloc int[visitLimit];
+        Span<ulong> starts = stackalloc ulong[4];
+        starts.Clear();
+        var branchCount = 0;
+        var pc = 0;
+
+        // Inspect only the epsilon paths from the root. Conditions can hold
+        // and cannot provide a byte. Abandon open paths at the visit limit.
+        for (var visit = 0; visit < visitLimit; visit++)
+        {
+            budget.ChargeWork(1);
+            ref readonly var instruction = ref program.Instructions[pc];
+            switch (instruction.Kind)
+            {
+                case Utf8SliceInstructionKind.Fork:
+                    branches[branchCount++] = instruction.A;
+                    pc++;
+                    continue;
+                case Utf8SliceInstructionKind.Jump:
+                    pc = instruction.A;
+                    continue;
+                case Utf8SliceInstructionKind.CaptureStart:
+                case Utf8SliceInstructionKind.CaptureEnd:
+                case Utf8SliceInstructionKind.Anchor:
+                case Utf8SliceInstructionKind.Boundary:
+                    pc++;
+                    continue;
+                case Utf8SliceInstructionKind.Accept:
+                    return default;
+                case Utf8SliceInstructionKind.Fail:
+                    break;
+                default:
+                    if (!TryAddRegularStartBytes(program, instruction, starts, budget)) return default;
+                    break;
+            }
+            if (branchCount == 0) return BuildRegularStartSearch(starts);
+            pc = branches[--branchCount];
+        }
+        return default;
+    }
+
+    private static bool TryAddRegularStartBytes(Utf8SliceProgram program, in Utf8SliceInstruction instruction,
+        Span<ulong> starts, Utf8ConstructionBudget budget)
+    {
+        var behavior = program.CaseBehavior;
+        if (instruction.Kind == Utf8SliceInstructionKind.Literal)
+        {
+            if (!Rune.TryCreate(instruction.A, out var literal)) return false;
+            AddOrderedRegularStarts(literal, instruction.B != 0, behavior, starts);
+            return true;
+        }
+
+        if (GetUnfoldedUnicodeLeadRange(program, instruction, budget, out var last) is >= 0 and var first)
+        {
+            for (var starter = first; starter <= last; starter++)
+                AddStartByte((byte)starter, starts);
+            return true;
+        }
+
+        if (TryGetPositiveCategorySet(program, instruction, out _, out var low, out var high))
+        {
+            // Keep all multibyte leads for scalar category verification.
+            starts[0] |= low;
+            starts[1] |= high;
+            starts[3] |= Utf8AsciiBytePredicates.DecimalOrScalarLead.Mask3;
+            return true;
+        }
+
+        if (instruction is not { Kind: Utf8SliceInstructionKind.Set, B: 0 }) return false;
+        var mask = program.SetMasks[instruction.A];
+        budget.ChargeWork((ulong)mask.Length);
+        for (var index = 0; index < mask.Length; index++)
+            for (var bits = (uint)mask[index]; bits != 0; bits &= bits - 1)
+            {
+                budget.ChargeWork(1);
+                var scalar = new Rune((index << 3) + BitOperations.TrailingZeroCount(bits));
+                AddOrderedRegularStarts(scalar, instruction.C != 0, behavior, starts);
+            }
+        return true;
+    }
+
+    private static PreparedByteSearch BuildRegularStartSearch(ReadOnlySpan<ulong> starts)
+    {
         Span<byte> values = stackalloc byte[256];
         var count = 0;
         for (var block = 0; block < starts.Length; block++)
@@ -283,19 +335,9 @@ internal static partial class Utf8SliceRunner
     private static Utf8SliceCountOutcome CountOrderedRegular(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation)
     {
+        var seek = TrySeekInitialRegularStart(program, input, ref fromByte, ref invocation);
+        if (seek != Utf8ExecutionLimitKind.None || fromByte < 0) return new(0, seek);
         var reverse = program.RightToLeft;
-        var starts = program.NonBacktrackingOrderedStartBytes;
-        if (!reverse && starts.Count != 0 && fromByte < input.Length && !starts.Contains(input[fromByte]))
-        {
-            var seek = TrySeekRegularStart(input, ref fromByte, starts, ref invocation);
-            if (seek != Utf8ExecutionLimitKind.None) return new(0, seek);
-            if (fromByte == input.Length)
-            {
-                invocation.Budget.ThrowIfCancellationRequested();
-                invocation.Budget.CheckDeadline();
-                return new(0, Utf8ExecutionLimitKind.None);
-            }
-        }
         var leaves = program.NonBacktrackingOrderedLeaves;
         if (program.RepeatCount != 0 && !program.IsNonBacktracking)
         {
@@ -389,6 +431,8 @@ internal static partial class Utf8SliceRunner
     private static Utf8SliceCountOutcome CountWideNonBacktracking(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation)
     {
+        var seek = TrySeekInitialRegularStart(program, input, ref fromByte, ref invocation);
+        if (seek != Utf8ExecutionLimitKind.None || fromByte < 0) return new(0, seek);
         var instructions = program.Instructions;
         var useStack = instructions.Length <= 256;
         var bytes = useStack ? GetOrderedRegularRowBytes(instructions.Length)
@@ -482,6 +526,23 @@ internal static partial class Utf8SliceRunner
             }
         }
         finally { invocation.Ledger.Release(bytes); }
+    }
+
+    private static Utf8ExecutionLimitKind TrySeekInitialRegularStart(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, ref int fromByte, ref Utf8SliceInvocation invocation)
+    {
+        var starts = program.NonBacktrackingOrderedStartBytes;
+        if (program.RightToLeft || starts.Count == 0 || fromByte < input.Length && starts.Contains(input[fromByte]))
+            return Utf8ExecutionLimitKind.None;
+        var breach = TrySeekRegularStart(input, ref fromByte, starts, ref invocation);
+        if (breach == Utf8ExecutionLimitKind.None && fromByte == input.Length)
+        {
+            invocation.Budget.ThrowIfCancellationRequested();
+            invocation.Budget.CheckDeadline();
+            fromByte = -1;
+            return invocation.Budget.LimitBreach;
+        }
+        return breach;
     }
 
     private static int CountFromOrderedOutcome(int outcome, int followingCount) => outcome switch

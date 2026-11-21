@@ -154,6 +154,12 @@ internal static partial class Utf8SliceRunner
         Array.Fill(captureEnds, -1);
         try
         {
+            if (!anchored && program.Instructions.Length > 64)
+            {
+                var seek = TrySeekInitialRegularStart(program, input, ref fromByte, ref invocation);
+                if (seek != Utf8ExecutionLimitKind.None || fromByte < 0)
+                    return new(false, -1, -1, null, null, seek);
+            }
             var breach = workspace.Initialize(program, captureStarts.Length != 0, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
             var bestStart = -1;
