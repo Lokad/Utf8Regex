@@ -2812,7 +2812,7 @@ internal struct Pcre2ResourceBudget
 
     internal void ChargeCandidate()
     {
-        CandidateSteps++;
+        if (_diagnostics is not null) CandidateSteps++;
         Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
     }
 
@@ -2821,8 +2821,11 @@ internal struct Pcre2ResourceBudget
         Pcre2BacktrackingInstructionKind instructionKind,
         Pcre2CharacterTokenKind tokenKind)
     {
-        BacktrackingSteps++;
-        _diagnostics?.RecordBacktrackingInstruction(instructionKind, tokenKind);
+        if (_diagnostics is { } diagnostics)
+        {
+            BacktrackingSteps++;
+            diagnostics.RecordBacktrackingInstruction(instructionKind, tokenKind);
+        }
         Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
     }
 

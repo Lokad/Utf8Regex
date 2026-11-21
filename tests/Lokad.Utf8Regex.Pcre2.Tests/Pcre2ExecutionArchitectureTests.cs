@@ -141,12 +141,12 @@ public sealed class Pcre2ExecutionArchitectureTests
         var first = new Pcre2ResourceBudget(limits, Timeout.InfiniteTimeSpan, false);
         var second = new Pcre2ResourceBudget(limits, Timeout.InfiniteTimeSpan, false);
         first.ChargeCandidate(); first.ReserveWorking(64);
-        Assert.Equal(1UL, first.CandidateSteps); Assert.Equal(64UL, first.ReservedWorkingBytes);
-        Assert.Equal(0UL, second.CandidateSteps); Assert.Equal(0UL, second.ReservedWorkingBytes);
+        Assert.Equal(1UL, first.WorkingInvocation.Budget.Steps); Assert.Equal(64UL, first.ReservedWorkingBytes);
+        Assert.Equal(0UL, second.WorkingInvocation.Budget.Steps); Assert.Equal(0UL, second.ReservedWorkingBytes);
         Assert.Equal(0UL, second.HeapBytes);
         Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.Throws<Pcre2MatchException>(() => first.ChargeCandidate()).ErrorKind);
         second.ChargeCandidate();
-        Assert.Equal(1UL, second.CandidateSteps);
+        Assert.Equal(1UL, second.WorkingInvocation.Budget.Steps);
         first.ReleaseWorking(64);
         Assert.Equal(0UL, first.ReservedWorkingBytes);
 
