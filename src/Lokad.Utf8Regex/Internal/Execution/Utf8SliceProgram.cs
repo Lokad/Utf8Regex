@@ -333,7 +333,7 @@ internal sealed class Utf8SliceProgram
 {
 
     // Conservative carrier allowance; major children have separate admission.
-    internal static ulong ObjectBytes => 512;
+    internal static ulong ObjectBytes => 512 + (ulong)IntPtr.Size;
 
     private Utf8SliceProgram(
         Utf8SliceInstruction[] instructions,
