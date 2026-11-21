@@ -26,7 +26,7 @@
   probes.
 - Recompile callers after upgrading. Use named arguments for byte bounds, capture
   buffers and cancellation. PythonRe `Match` uses an explicit mode for search
-  and full matching, and Core `EnumerateMatches` can count from a byte offset.
+  and full matching. Core `EnumerateMatches` accepts a scalar-aligned byte start.
   See the [profile contracts](README.md#choose-a-profile) for current APIs.
 
 ### Execution
