@@ -751,53 +751,35 @@ internal static class Pcre2BacktrackingRunner
         // cannot be seen by the sole reader, even across calls and retries.
         var onlyCaptureSlot = !retainCaptures && !isAssertion && program.AssertionPrograms.Length == 0 &&
             program.CaptureReadSlot > 0 ? program.CaptureReadSlot : 0;
+        var repeatSlots = program.RepeatCount;
         var captureSlots = needsCaptureState && program.CaptureSlotCount > 1 ? program.CaptureSlotCount : 0;
-        var captureStateLength = checked(captureSlots * 5);
         var restoresSubroutines = program.SubroutineTargets.Length != 0;
         // Slot zero belongs to the match result, outside the capture journal.
         var restoresMultipleCaptures = restoresSubroutines && captureSlots > 2 && onlyCaptureSlot == 0;
-        var acquiredWorkspace = workspace.EnsureInitialized(program.RepeatCount, captureSlots,
+        var acquiredWorkspace = workspace.EnsureInitialized(repeatSlots, captureSlots,
             restoresSubroutines, restoresMultipleCaptures, ref budget);
         var rentedRepeatState = workspace.RepeatState;
         var rentedCaptureState = workspace.CaptureState;
         var rentedCaptureRestoreGenerations = workspace.CaptureRestoreGenerations;
         var rentedRepeatRestoreGenerations = workspace.RepeatRestoreGenerations;
-        var captureState = rentedCaptureState is null ? Span<int>.Empty : rentedCaptureState.AsSpan(0, captureStateLength);
+        var repeatState = rentedRepeatState.AsSpan(0, repeatSlots * 2);
+        var captureState = rentedCaptureState.AsSpan(0, captureSlots * 5);
+        repeatState.Fill(-1);
+        captureState.Fill(-1);
 
-        var counts = rentedRepeatState is null
-            ? Span<int>.Empty
-            : rentedRepeatState.AsSpan(0, program.RepeatCount);
-        var positions = rentedRepeatState is null
-            ? Span<int>.Empty
-            : rentedRepeatState.AsSpan(program.RepeatCount, program.RepeatCount);
-        var captureStarts = captureState.IsEmpty
-            ? Span<int>.Empty
-            : captureState[..program.CaptureSlotCount];
-        var captureEnds = captureState.IsEmpty
-            ? Span<int>.Empty
-            : captureState.Slice(program.CaptureSlotCount, program.CaptureSlotCount);
-        var captureOpenStarts = captureState.IsEmpty
-            ? Span<int>.Empty
-            : captureState.Slice(program.CaptureSlotCount * 2, program.CaptureSlotCount);
-        var captureOwners = captureState.IsEmpty
-            ? Span<int>.Empty
-            : captureState.Slice(program.CaptureSlotCount * 3, program.CaptureSlotCount);
-        var captureOpenOwners = captureState.IsEmpty
-            ? Span<int>.Empty
-            : captureState.Slice(program.CaptureSlotCount * 4, program.CaptureSlotCount);
+        var counts = repeatState[..repeatSlots];
+        var positions = repeatState[repeatSlots..];
+        var captureStarts = captureState[..captureSlots];
+        var captureEnds = captureState.Slice(captureSlots, captureSlots);
+        var captureOpenStarts = captureState.Slice(captureSlots * 2, captureSlots);
+        var captureOwners = captureState.Slice(captureSlots * 3, captureSlots);
+        var captureOpenOwners = captureState[(captureSlots * 4)..];
         var captureRestoreGenerations = rentedCaptureRestoreGenerations is null
             ? Span<int>.Empty
-            : rentedCaptureRestoreGenerations.AsSpan(0, program.CaptureSlotCount);
+            : rentedCaptureRestoreGenerations.AsSpan(0, captureSlots);
         var repeatRestoreGenerations = rentedRepeatRestoreGenerations is null
             ? Span<int>.Empty
-            : rentedRepeatRestoreGenerations.AsSpan(0, program.RepeatCount);
-        counts.Fill(-1);
-        positions.Fill(-1);
-        captureStarts.Fill(-1);
-        captureEnds.Fill(-1);
-        captureOpenStarts.Fill(-1);
-        captureOwners.Fill(-1);
-        captureOpenOwners.Fill(-1);
+            : rentedRepeatRestoreGenerations.AsSpan(0, repeatSlots);
         captureRestoreGenerations.Clear();
         repeatRestoreGenerations.Clear();
         if (!initialCaptureStarts.IsEmpty)
