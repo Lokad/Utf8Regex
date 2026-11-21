@@ -2571,6 +2571,83 @@ internal enum Pcre2GlobalRetryState : byte
 
 internal sealed class Pcre2ExecutionDiagnosticsCollector
 {
+    internal void RecordBacktrackingInstruction(
+        Pcre2BacktrackingInstructionKind instructionKind,
+        Pcre2CharacterTokenKind tokenKind)
+    {
+        switch (instructionKind)
+        {
+            case Pcre2BacktrackingInstructionKind.Token:
+                VmTokenSteps++;
+                switch (tokenKind)
+                {
+                    case Pcre2CharacterTokenKind.Literal:
+                        VmLiteralTokenSteps++;
+                        break;
+                    case Pcre2CharacterTokenKind.CharacterClass:
+                        VmClassTokenSteps++;
+                        break;
+                    case Pcre2CharacterTokenKind.BeginningOfLine:
+                    case Pcre2CharacterTokenKind.EndOfLine:
+                    case Pcre2CharacterTokenKind.BeginningOfSubject:
+                    case Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline:
+                    case Pcre2CharacterTokenKind.EndOfSubject:
+                    case Pcre2CharacterTokenKind.FirstMatchingPosition:
+                    case Pcre2CharacterTokenKind.WordBoundary:
+                    case Pcre2CharacterTokenKind.NonWordBoundary:
+                        VmBoundaryAnchorTokenSteps++;
+                        break;
+                    default:
+                        VmOtherTokenSteps++;
+                        break;
+                }
+                break;
+            case Pcre2BacktrackingInstructionKind.Split:
+            case Pcre2BacktrackingInstructionKind.Jump:
+                VmBranchSteps++;
+                break;
+            case Pcre2BacktrackingInstructionKind.Repeat:
+                VmRepeatSteps++;
+                VmRepeatEnterSteps++;
+                break;
+            case Pcre2BacktrackingInstructionKind.RepeatEnd:
+                VmRepeatSteps++;
+                VmRepeatEndSteps++;
+                break;
+            case Pcre2BacktrackingInstructionKind.RepeatExit:
+                VmRepeatSteps++;
+                VmRepeatExitSteps++;
+                break;
+            case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
+                VmRepeatSteps++;
+                VmRepeatEnterSteps++;
+                VmPossessiveTokenScanSteps++;
+                break;
+            case Pcre2BacktrackingInstructionKind.GreedyClassRepeat:
+                VmRepeatSteps++;
+                VmRepeatEnterSteps++;
+                break;
+            case Pcre2BacktrackingInstructionKind.CaptureStart:
+            case Pcre2BacktrackingInstructionKind.CaptureEnd:
+            case Pcre2BacktrackingInstructionKind.CaptureToken:
+            case Pcre2BacktrackingInstructionKind.Backreference:
+            case Pcre2BacktrackingInstructionKind.BackreferenceSlotSet:
+                VmCaptureSteps++;
+                break;
+            case Pcre2BacktrackingInstructionKind.Assertion:
+            case Pcre2BacktrackingInstructionKind.SubroutineCall:
+            case Pcre2BacktrackingInstructionKind.SubroutineReturn:
+                VmAssertionSubroutineSteps++;
+                break;
+            case Pcre2BacktrackingInstructionKind.Accept:
+                VmAcceptSteps++;
+                break;
+            default:
+                VmControlSteps++;
+                break;
+        }
+    }
+
     internal ulong VmTokenSteps { get; set; }
 
     internal ulong VmLiteralTokenSteps { get; set; }
@@ -2739,86 +2816,13 @@ internal struct Pcre2ResourceBudget
         Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void ChargeBacktracking(
         Pcre2BacktrackingInstructionKind instructionKind,
         Pcre2CharacterTokenKind tokenKind)
     {
         BacktrackingSteps++;
-        if (_diagnostics is { } diagnostics)
-        {
-            switch (instructionKind)
-            {
-                case Pcre2BacktrackingInstructionKind.Token:
-                    diagnostics.VmTokenSteps++;
-                    switch (tokenKind)
-                    {
-                        case Pcre2CharacterTokenKind.Literal:
-                            diagnostics.VmLiteralTokenSteps++;
-                            break;
-                        case Pcre2CharacterTokenKind.CharacterClass:
-                            diagnostics.VmClassTokenSteps++;
-                            break;
-                        case Pcre2CharacterTokenKind.BeginningOfLine:
-                        case Pcre2CharacterTokenKind.EndOfLine:
-                        case Pcre2CharacterTokenKind.BeginningOfSubject:
-                        case Pcre2CharacterTokenKind.EndOfSubjectOrFinalNewline:
-                        case Pcre2CharacterTokenKind.EndOfSubject:
-                        case Pcre2CharacterTokenKind.FirstMatchingPosition:
-                        case Pcre2CharacterTokenKind.WordBoundary:
-                        case Pcre2CharacterTokenKind.NonWordBoundary:
-                            diagnostics.VmBoundaryAnchorTokenSteps++;
-                            break;
-                        default:
-                            diagnostics.VmOtherTokenSteps++;
-                            break;
-                    }
-                    break;
-                case Pcre2BacktrackingInstructionKind.Split:
-                case Pcre2BacktrackingInstructionKind.Jump:
-                    diagnostics.VmBranchSteps++;
-                    break;
-                case Pcre2BacktrackingInstructionKind.Repeat:
-                    diagnostics.VmRepeatSteps++;
-                    diagnostics.VmRepeatEnterSteps++;
-                    break;
-                case Pcre2BacktrackingInstructionKind.RepeatEnd:
-                    diagnostics.VmRepeatSteps++;
-                    diagnostics.VmRepeatEndSteps++;
-                    break;
-                case Pcre2BacktrackingInstructionKind.RepeatExit:
-                    diagnostics.VmRepeatSteps++;
-                    diagnostics.VmRepeatExitSteps++;
-                    break;
-                case Pcre2BacktrackingInstructionKind.PossessiveTokenRepeat:
-                    diagnostics.VmRepeatSteps++;
-                    diagnostics.VmRepeatEnterSteps++;
-                    diagnostics.VmPossessiveTokenScanSteps++;
-                    break;
-                case Pcre2BacktrackingInstructionKind.GreedyClassRepeat:
-                    diagnostics.VmRepeatSteps++;
-                    diagnostics.VmRepeatEnterSteps++;
-                    break;
-                case Pcre2BacktrackingInstructionKind.CaptureStart:
-                case Pcre2BacktrackingInstructionKind.CaptureEnd:
-                case Pcre2BacktrackingInstructionKind.CaptureToken:
-                case Pcre2BacktrackingInstructionKind.Backreference:
-                case Pcre2BacktrackingInstructionKind.BackreferenceSlotSet:
-                    diagnostics.VmCaptureSteps++;
-                    break;
-                case Pcre2BacktrackingInstructionKind.Assertion:
-                case Pcre2BacktrackingInstructionKind.SubroutineCall:
-                case Pcre2BacktrackingInstructionKind.SubroutineReturn:
-                    diagnostics.VmAssertionSubroutineSteps++;
-                    break;
-                case Pcre2BacktrackingInstructionKind.Accept:
-                    diagnostics.VmAcceptSteps++;
-                    break;
-                default:
-                    diagnostics.VmControlSteps++;
-                    break;
-            }
-        }
-
+        _diagnostics?.RecordBacktrackingInstruction(instructionKind, tokenKind);
         Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
     }
 
