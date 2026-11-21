@@ -85,7 +85,7 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
         _isMatch = state.IsMatch; _tryMatch = state.TryMatch;
     }
 
-    internal static bool CanCreate(in Utf8SearchPlan plan, in Utf8SearchOperationPlan search)
+    private static bool CanCreate(in Utf8SearchPlan plan, in Utf8SearchOperationPlan search)
     {
         // The generic emitted loop crosses a DynamicMethod helper for every accepted
         // candidate. With no confirmation to fuse, the prepared loop is cheaper.

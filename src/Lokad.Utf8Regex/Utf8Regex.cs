@@ -35,9 +35,7 @@ public sealed partial class Utf8Regex : IDisposable
     private static TimeSpan s_defaultMatchTimeout = Regex.InfiniteMatchTimeout;
 
     private readonly Utf8RegexProgram _program;
-    private readonly bool _prioritizePlainAsciiLiteralCount;
-    private readonly int _fusedAsciiLiteralCountAnchorOffset;
-    private readonly bool _prioritizeBoundaryLiteralFamilyCount;
+    private readonly int _asciiLiteralCountAnchorOffset;
     private readonly Utf8EmittedLiteralFamilyCounter? _fusedAsciiBoundaryLiteralFamilyCounter;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
@@ -80,20 +78,12 @@ public sealed partial class Utf8Regex : IDisposable
 
             _program = Utf8RegexProgram.Compile(pattern, options, prepareRuntime: !HasFiniteExecutionLimits, out var root);
             var preparedRegex = _program.PreparedRegex;
-            _prioritizePlainAsciiLiteralCount = CanPrioritizePlainAsciiLiteralCount(pattern, preparedRegex, options);
-            _fusedAsciiLiteralCountAnchorOffset =
-                _prioritizePlainAsciiLiteralCount &&
+            _asciiLiteralCountAnchorOffset =
                 matchTimeout == Regex.InfiniteMatchTimeout &&
-                preparedRegex.LiteralUtf8 is { } fusedAsciiLiteral
-                    ? Utf8AsciiExactLiteralCountExecutor.SelectRarestAnchorOffset(fusedAsciiLiteral)
+                IsPlainAsciiLiteral(pattern, preparedRegex, options) &&
+                preparedRegex.LiteralUtf8 is { } asciiLiteral
+                    ? Utf8AsciiExactLiteralCountExecutor.SelectRarestAnchorOffset(asciiLiteral)
                     : -1;
-            _prioritizeBoundaryLiteralFamilyCount =
-                (options & RegexOptions.RightToLeft) == 0 &&
-                preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-                preparedRegex.SearchPlan.HasBoundaryRequirements &&
-                Utf8EmittedLiteralFamilyCounter.CanCreate(
-                    preparedRegex.SearchPlan,
-                    preparedRegex.SearchPlan.SearchOperation);
             if (matchTimeout == Regex.InfiniteMatchTimeout &&
                 (options & RegexOptions.RightToLeft) == 0 &&
                 _program.CompiledEngineRuntime is { } literalRuntime &&
@@ -135,7 +125,7 @@ public sealed partial class Utf8Regex : IDisposable
             {
                 _wholeLiteralCaptureNumber = GetWholeLiteralCaptureNumber(captureRoot);
             }
-            static bool CanPrioritizePlainAsciiLiteralCount(
+            static bool IsPlainAsciiLiteral(
                 Utf8ConstructionPattern pattern, Utf8PreparedRegex preparedRegex, RegexOptions options)
             {
                 if (preparedRegex.ExecutionKind != NativeExecutionKind.ExactAsciiLiteral ||
@@ -475,16 +465,16 @@ public sealed partial class Utf8Regex : IDisposable
             return OwnedSliceCount(input, ownedProgram, cancellationToken);
         }
 
-        if (_fusedAsciiLiteralCountAnchorOffset >= 0 &&
-            _preparedRegex.LiteralUtf8 is { } fusedAsciiLiteral &&
-            Utf8AsciiExactLiteralCountExecutor.TryCountAndValidateAscii(
+        if (_asciiLiteralCountAnchorOffset >= 0 &&
+            _preparedRegex.LiteralUtf8 is { } asciiLiteral &&
+            Utf8AsciiExactLiteralCountExecutor.TryCount(
                 input,
-                fusedAsciiLiteral,
-                _fusedAsciiLiteralCountAnchorOffset,
-                out var fusedAsciiLiteralCount))
+                asciiLiteral,
+                _asciiLiteralCountAnchorOffset,
+                out var asciiLiteralCount))
         {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedAsciiLiteralCount);
-            return fusedAsciiLiteralCount;
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.VectorAsciiLiteralCount);
+            return asciiLiteralCount;
         }
 
         if (_fusedAsciiBoundaryLiteralFamilyCounter is { } fusedAsciiBoundaryLiteralFamilyCounter &&
@@ -497,21 +487,6 @@ public sealed partial class Utf8Regex : IDisposable
         if (_packedNibbleLiteralFamilyCountStrategy is { } packedNibbleLiteralFamilyCountStrategy)
         {
             return packedNibbleLiteralFamilyCountStrategy.Count(input);
-        }
-
-        if (_prioritizePlainAsciiLiteralCount ||
-            _prioritizeBoundaryLiteralFamilyCount)
-        {
-
-            return _compiledEngineRuntime.Count(input, CreateExecutionBudget());
-        }
-
-        if (CanUseFusedCompiledAsciiLiteralFamilyCount())
-        {
-
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedAsciiLiteralFamilyCount);
-            var fastBudget = CreateExecutionBudget();
-            return _compiledEngineRuntime.Count(input, fastBudget);
         }
 
         return _compiledEngineRuntime.Count(input, CreateExecutionBudget());

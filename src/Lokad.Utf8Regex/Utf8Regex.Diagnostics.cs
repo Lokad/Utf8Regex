@@ -63,9 +63,6 @@ public sealed partial class Utf8Regex
         public bool DebugHasPackedNibbleLiteralFamilyCountStrategy =>
             _owner._packedNibbleLiteralFamilyCountStrategy is not null;
 
-        public bool DebugPrioritizesBoundaryLiteralFamilyCount =>
-            _owner._prioritizeBoundaryLiteralFamilyCount;
-
         public bool DebugHasFusedAsciiBoundaryLiteralFamilyCount =>
             _owner._fusedAsciiBoundaryLiteralFamilyCounter is not null;
 

@@ -303,7 +303,6 @@ public sealed class Utf8SearchPlanTests
         var input = Encoding.UTF8.GetBytes("LogTrace xLogError LogWarning_ LogDebug");
 
         Assert.Equal(Utf8SearchKind.ExactAsciiLiterals, plan.Kind);
-        Assert.True(Utf8EmittedLiteralFamilyCounter.CanCreate(plan, plan.SearchOperation));
         Assert.True(Utf8EmittedLiteralFamilyCounter.TryCreate(plan, plan.SearchOperation, out var counter));
         Assert.NotNull(counter);
         Assert.Equal(2, counter!.Count(input));

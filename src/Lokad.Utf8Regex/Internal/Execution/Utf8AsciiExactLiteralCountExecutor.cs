@@ -40,7 +40,7 @@ internal static class Utf8AsciiExactLiteralCountExecutor
         return bestRank <= MaximumAnchorFrequencyRank ? bestOffset : -1;
     }
 
-    public static bool TryCountAndValidateAscii(
+    public static bool TryCount(
         ReadOnlySpan<byte> input,
         ReadOnlySpan<byte> literal,
         int anchorOffset,
@@ -63,14 +63,7 @@ internal static class Utf8AsciiExactLiteralCountExecutor
         while (index <= input.Length - Vector256<byte>.Count)
         {
             var values = MemoryMarshal.Read<Vector256<byte>>(input[index..]);
-            if (values.ExtractMostSignificantBits() != 0)
-            {
-                // Valid non-ASCII input can still contain ASCII matches. Let the caller
-                // perform complete UTF-8 validation and use the general exact-literal path.
-                count = 0;
-                return false;
-            }
-
+            // ASCII literal bytes cannot occur inside a wider UTF-8 scalar.
             var candidates = Vector256.Equals(values, anchor).ExtractMostSignificantBits();
             while (candidates != 0)
             {
@@ -97,12 +90,6 @@ internal static class Utf8AsciiExactLiteralCountExecutor
         for (; index < input.Length; index++)
         {
             var value = input[index];
-            if (value >= 0x80)
-            {
-                count = 0;
-                return false;
-            }
-
             if (value != literal[anchorOffset])
             {
                 continue;

@@ -34,7 +34,7 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
         {
             var input = Encoding.UTF8.GetBytes(new string('x', prefixLength) + Literal + "-" + Literal + "tail");
 
-            Assert.True(Utf8AsciiExactLiteralCountExecutor.TryCountAndValidateAscii(
+            Assert.True(Utf8AsciiExactLiteralCountExecutor.TryCount(
                 input,
                 literal,
                 anchorOffset,
@@ -86,7 +86,7 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
 
         if (Vector256.IsHardwareAccelerated)
         {
-            Assert.True(Utf8AsciiExactLiteralCountExecutor.TryCountAndValidateAscii(
+            Assert.True(Utf8AsciiExactLiteralCountExecutor.TryCount(
                 Encoding.UTF8.GetBytes(input),
                 Encoding.UTF8.GetBytes(repeatedLiteral),
                 anchorOffset: 0,
@@ -109,17 +109,17 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
             var expected = length >= LiteralUtf8.Length ? 1 : 0;
             if (expected != 0) LiteralUtf8.CopyTo(input[^LiteralUtf8.Length..]);
 
-            var handled = Utf8AsciiExactLiteralCountExecutor.TryCountAndValidateAscii(
+            var handled = Utf8AsciiExactLiteralCountExecutor.TryCount(
                 input, LiteralUtf8, anchor, out var count);
             Assert.Equal(length >= Vector256<byte>.Count, handled);
             Assert.Equal(handled ? expected : 0, count);
 
             if (length >= Vector256<byte>.Count)
             {
-                input[^1] = 0xFF;
-                Assert.False(Utf8AsciiExactLiteralCountExecutor.TryCountAndValidateAscii(
+                "é"u8.CopyTo(input.Slice(length - LiteralUtf8.Length - 2));
+                Assert.True(Utf8AsciiExactLiteralCountExecutor.TryCount(
                     input, LiteralUtf8, anchor, out count));
-                Assert.Equal(0, count);
+                Assert.Equal(expected, count);
             }
         }
     }
@@ -127,9 +127,9 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
     [Theory]
     [InlineData(RegexOptions.CultureInvariant)]
     [InlineData(RegexOptions.CultureInvariant | RegexOptions.Compiled)]
-    public void PublicCountFallsBackForNonAsciiAndRejectsMalformedUtf8(RegexOptions options)
+    public void PublicCountKeepsMatchesInValidMixedText(RegexOptions options)
     {
-        const string input = "é CancellationToken λCancellationToken";
+        const string input = "é CancellationToken λCancellationToken 😀";
         var regex = new Utf8Regex(Literal, options: options);
         var bytes = Encoding.UTF8.GetBytes(input);
 
@@ -151,8 +151,8 @@ public sealed class Utf8AsciiExactLiteralCountExecutorTests
 
         if (Vector256.IsHardwareAccelerated)
         {
-            Assert.Equal("compiled_fused_ascii_literal_count", infinite.CollectCountDiagnostics(input).ExecutionRoute);
-            Assert.NotEqual("compiled_fused_ascii_literal_count", finite.CollectCountDiagnostics(input).ExecutionRoute);
+            Assert.Equal("vector_ascii_literal_count", infinite.CollectCountDiagnostics(input).ExecutionRoute);
+            Assert.NotEqual("vector_ascii_literal_count", finite.CollectCountDiagnostics(input).ExecutionRoute);
         }
 
         Assert.Equal(infinite.Count(input), finite.Count(input));

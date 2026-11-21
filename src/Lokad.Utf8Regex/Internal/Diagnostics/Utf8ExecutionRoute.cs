@@ -4,7 +4,7 @@ internal enum Utf8ExecutionRoute : byte
 {
     None = 0,
     CompiledFusedAsciiLiteralFamilyCount,
-    CompiledFusedAsciiLiteralCount,
+    VectorAsciiLiteralCount,
     LiteralFamilyHybridEarliestAutomaton,
     LiteralFamilyPreparedNonOverlapping,
     LiteralFamilyPreparedWithRequirementsLengthOnly,

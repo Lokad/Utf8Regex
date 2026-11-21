@@ -3,7 +3,6 @@ using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Search;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
 using System.Buffers;
@@ -16,29 +15,6 @@ namespace Lokad.Utf8Regex;
 /// <summary>Compiled execution engines for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    private bool CanUseFusedCompiledAsciiLiteralFamilyCount()
-    {
-        if (CompiledEngineKind != Utf8CompiledEngineKind.LiteralFamily ||
-            _preparedRegex.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
-            UsesRightToLeft() ||
-            _preparedRegex.SearchPlan.HasBoundaryRequirements ||
-            _preparedRegex.SearchPlan.HasTrailingLiteralRequirement ||
-            _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is not { Length: > 0 } literals)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < literals.Length; i++)
-        {
-            if (!Utf8InputAnalyzer.IsAscii(literals[i]))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledEngine(
         ReadOnlySpan<byte> input, int count, Utf8ExecutionDeadline budget)
     {
