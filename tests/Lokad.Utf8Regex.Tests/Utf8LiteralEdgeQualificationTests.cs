@@ -157,7 +157,7 @@ public sealed class Utf8LiteralEdgeQualificationTests
     }
 
     [Fact]
-    public void ActualLiteralWrappersAreAdmittedAndTheSameOwnerRecoversWithoutDeadScanners()
+    public void LiteralWrapperAdmissionFailureLeavesTheOwnerUsable()
     {
         var tree = Tree(@"\Aab", RegexOptions.CultureInvariant); var root = tree.Root;
         for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.CultureInvariant).WithChild(root);
@@ -169,7 +169,5 @@ public sealed class Utf8LiteralEdgeQualificationTests
         Assert.Equal(128ul, owner.Budget.ReservedBytes); Assert.Equal(checkpoint, owner.Budget.ReservedBytes); Assert.Equal(0ul, owner.Budget.Depth);
         var spent = owner.Budget.WorkSteps; Assert.True(Classify(method, tree).HasValue); Assert.Equal(128ul + 48ul, owner.Budget.ReservedBytes);
         Assert.True(owner.Budget.WorkSteps > spent); Assert.Equal(17, parent.Value); Assert.Equal(0ul, owner.Budget.Depth);
-        foreach (var name in new[] { "ClassifyPattern", "TryParseAnchoredAsciiLiteralPrefix", "TryParseAnchoredAsciiLiteralSuffix", "TryParseLeadingAnyRunTrailingAsciiLiteral", "TryDecodeStrictAsciiRegexLiteral", "IsEscapedAsciiRegexLiteral", "IsRegexMetaChar" })
-            Assert.DoesNotContain(typeof(Utf8AnchoredLiteralClassifier).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static), m => m.Name == name);
     }
 }

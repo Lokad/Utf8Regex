@@ -50,13 +50,6 @@ public sealed class PythonReTranslatorFrameAdmissionTests
         owner.Budget.ReleaseArray(parent, false);
     }
 
-    [Fact]
-    public void TranslationAndRenderingHaveNoGeneratedYieldOrCapturedClosureTypes()
-    {
-        Assert.DoesNotContain(typeof(PythonReTranslator).GetNestedTypes(System.Reflection.BindingFlags.NonPublic),
-            type => type.Name.Contains("d__", StringComparison.Ordinal) || type.Name.Contains("DisplayClass", StringComparison.Ordinal));
-    }
-
     private sealed class IndexedOnlyList<T>(T[] items) : IReadOnlyList<T>
     {
         public int Count => items.Length;

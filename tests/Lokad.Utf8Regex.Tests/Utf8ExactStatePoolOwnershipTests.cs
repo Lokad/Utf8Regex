@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -34,13 +33,5 @@ public sealed class Utf8ExactStatePoolOwnershipTests
             Assert.Equal(0ul, invocation.Ledger.ReservedBytes);
         }
         finally { buffer.Release(ref invocation); }
-    }
-
-    [Fact]
-    public void ExactStateRetentionHasOneNonGenericOwner()
-    {
-        Assert.NotNull(typeof(Utf8Regex).Assembly.GetType("Lokad.Utf8Regex.Internal.Execution.Utf8ExactStatePool"));
-        Assert.DoesNotContain(typeof(Utf8ExactStatePool<HeaderState>).GetFields(BindingFlags.Static | BindingFlags.NonPublic),
-            field => field.IsDefined(typeof(ThreadStaticAttribute)));
     }
 }

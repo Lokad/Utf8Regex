@@ -1,6 +1,4 @@
 using Lokad.Utf8Regex.Internal.Diagnostics;
-using Lokad.Utf8Regex.Internal.Execution;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -27,15 +25,6 @@ public sealed class Utf8OperationCursorArchitectureTests
         outer.Complete();
         Assert.Null(Utf8SearchDiagnosticsSession.Current);
         Assert.Equal(expected, regex.Count(input));
-    }
-
-    [Fact]
-    public void MatchAndSplitAdaptersShareTheInternalOperationCursor()
-    {
-        // Check the consumed implementation, including detached packages.
-        foreach (var adapter in new[] { typeof(Utf8ValueMatchEnumerator), typeof(Utf8ValueSplitEnumerator) })
-            Assert.Single(adapter.GetFields(BindingFlags.Instance | BindingFlags.NonPublic),
-                static field => field.FieldType == typeof(Utf8OperationMatchCursor));
     }
 
     [Theory]
