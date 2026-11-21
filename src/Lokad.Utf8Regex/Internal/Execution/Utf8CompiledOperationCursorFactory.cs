@@ -5,15 +5,6 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8CompiledOperationCursorFactory
 {
-    // R05: offset enumeration floors the owned cursor scan at the starting byte; arm
-    // selection mirrors CreateMatchCursor.
-    public static Utf8OperationMatchCursor CreateMatchCursorFromOffset(
-        Utf8PreparedRegex regexPlan, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, int startByteOffset)
-    {
-        return CreateMatchCursor(regexPlan, input, budget)
-            .WithStartFloor(startByteOffset);
-    }
-
     public static Utf8OperationMatchCursor CreateMatchCursor(
         Utf8PreparedRegex regexPlan, ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
@@ -49,9 +40,7 @@ internal static partial class Utf8CompiledOperationCursorFactory
     {
         if (regexPlan.ScalarProgram is { RightToLeft: true } or { IsNonBacktracking: true })
             return CreateOwnedSplitEnumerator(regexPlan, input, count, budget);
-        // R05: single ASCII literals (exact and folded) split through the owned
-        // byte-range cursor on every input. Kelvin, culture, and RTL
-        // stay fenced in the split router upstream of this factory.
+        // The caller admits the literal cursor only for compatible folding and direction.
         var literal = regexPlan.LiteralUtf8;
         return regexPlan.ExecutionKind switch
         {

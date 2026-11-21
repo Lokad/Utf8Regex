@@ -18,9 +18,7 @@ public sealed partial class Utf8Regex
     private Utf8ValueSplitEnumerator CreateSplitEnumeratorViaCompiledEngine(
         ReadOnlySpan<byte> input, int count, Utf8ExecutionDeadline budget)
     {
-        // R05: anchored ASCII literal families split through the anchor-enforcing owned
-        // cursors (at most one match at a fixed position), mirroring enumeration; the
-        // split router admits these families past the simple-pattern gate below.
+        // The prefix cursor supplies the split point only at the input start.
         if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
             _anchoredLiteral.LiteralUtf8 is { Length: > 0 } anchoredSplitLiteral)
         {

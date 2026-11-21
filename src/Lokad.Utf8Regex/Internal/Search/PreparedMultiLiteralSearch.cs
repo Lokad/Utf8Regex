@@ -121,8 +121,7 @@ internal readonly partial struct PreparedMultiLiteralSearch
             ExactSearch.TryFindFirstMatchWithLength(input[state.NextStart..], out var fusedRelative, out matchedLength))
         {
             index = state.NextStart + fusedRelative;
-            // R03: the fused search reports no identity, so resolve the winning branch in
-            // alternation order; a miss keeps -1 and declines branch-sensitive consumers.
+            // Recover branch identity in alternation order for consumers that need it.
             if (!TryGetMatchedLiteralInfo(input, index, out _, out literalId))
             {
                 literalId = -1;

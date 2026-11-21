@@ -37,53 +37,6 @@ public sealed partial class Utf8Regex
         return false;
     }
 
-    private bool IsMatchAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
-    {
-        // Anchored suffixes match at most once at a fixed end position: a start past
-        // it misses definitively, otherwise the direct hit itself decides.
-        if (_anchoredLiteral.IsExactSuffix &&
-            _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralSuffix);
-            return TryMatchAnchoredLiteral(input.Bytes, out var suffixAdapterIsMatch) &&
-                suffixAdapterIsMatch.Success &&
-                start.Value <= suffixAdapterIsMatch.StartOffsetInBytes;
-        }
-
-        // Anchored prefixes anchor to byte 0: nonzero starts miss definitively,
-        // offset 0 reuses the byte-exact prefix compare without BCL construction.
-        if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix)
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.FallbackDirectAnchoredAsciiLiteralPrefix);
-            return start.Value == 0 &&
-                Utf8AnchoredLiteralPrefixExecutor.TryMatchPrefix(input.Bytes, _anchoredLiteral, out _);
-        }
-
-        // General scalar programs preserve the whole subject's anchor context.
-        if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
-        {
-            try
-            {
-                return OwnedSliceIsMatchFromByte(input.Bytes, _ownedSliceProgram, start.Value, CancellationToken.None);
-            }
-            catch (Utf8ExecutionDeadlineExpiredException)
-            {
-                throw CreateMatchTimeoutException(input.Bytes);
-            }
-        }
-
-        try
-        {
-            return OwnedSliceIsMatchFromByte(input.Bytes,
-                _ownedSliceProgram,
-                start.Value, CancellationToken.None);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input.Bytes);
-        }
-    }
-
     private int CountAtByteOffset(Utf8ValidatedInput input, Utf8BytePosition start)
     {
         if (_anchoredLiteral.IsExactSuffix &&
@@ -219,10 +172,8 @@ public sealed partial class Utf8Regex
             }
         }
 
-        // Adapter enumeration rides the owned slice from the start unit on
-        // full input (anchors keep true left context and \\G pins to the scan
-        // start exactly like BCL startat, unlike suffix slicing); anything
-        // unserved keeps the routing below.
+        // Match against the full subject so anchors and lookbehind can use
+        // the original context at the byte start.
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex)
         {
             return OwnedSliceEnumerateMatchesFromByte(input.Bytes, _ownedSliceProgram, start.Value, CancellationToken.None)
@@ -232,12 +183,8 @@ public sealed partial class Utf8Regex
         var remaining = input.Bytes[start.Value..];
         var literal = _preparedRegex.LiteralUtf8;
         var budget = CreateExecutionBudget();
-        // R05: exact literals enumerate right-to-left through the reverse-search
-        // cursor above; anchored shapes never reach literal kinds, boundary and
-        // trailing requirements use the owned scalar cursor below, empty literals
-        // cannot match, non-ASCII literals project through the literal UTF-16 length,
-        // and folded shapes stay Kelvin-fenced like the forward cursor.
-        // Other right-to-left starts preserve full context in the scalar cursor.
+        // The literal reverse cursor starts at the end. Other RTL starts
+        // and matches with boundary or tail requirements use the scalar cursor.
         if (UsesRightToLeft() &&
             start.Value == input.Bytes.Length &&
             _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
@@ -269,10 +216,7 @@ public sealed partial class Utf8Regex
         return new Utf8PreparedValueMatchEnumerator(input.Bytes, _preparedRegex.SearchPlan.PreparedSearcher, start);
     }
 
-    // R03: suffix slicing loses absolute-origin anchors and left context (word boundaries,
-    // lookbehind). From a nonzero start those shapes keep full-input owned scalar verification;
-    // multiline-anchored patterns divert conservatively, while \G anchors at the search
-    // start exactly like BCL startat and stay native.
+    // Keep the original origin and prefix for anchors, boundaries and lookbehind.
     private bool RequiresOriginSemanticsForOffsetSearch()
     {
         return _preparedRegex.ExecutionKind == NativeExecutionKind.FallbackRegex ||
@@ -288,22 +232,6 @@ public sealed partial class Utf8Regex
         public Utf8ByteOffsetExecution(Utf8Regex owner)
         {
             _owner = owner;
-        }
-
-        // PCRE2-INTEGRATION-POINT: flavor-neutral definitive prepared boolean kernels.
-        public bool IsMatchPrepared(ReadOnlySpan<byte> bytes)
-        {
-            if (_owner.CompiledEngineKind == Utf8CompiledEngineKind.FallbackRegex)
-            {
-                return _owner.IsMatchAtByteOffset(Utf8ValidatedInput.BorrowBytes(bytes), new Utf8BytePosition(0));
-            }
-
-            if (_owner.TryMatchDirectWithoutValidation(bytes, out var match))
-            {
-                return match.Success;
-            }
-
-            return _owner._compiledEngineRuntime.IsMatch(bytes, Utf8ExecutionDeadline.Infinite);
         }
 
         public int CountPrepared(Utf8ValidatedInput input, Utf8BytePosition start)

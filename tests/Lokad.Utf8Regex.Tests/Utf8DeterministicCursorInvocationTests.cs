@@ -1,10 +1,6 @@
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
-using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -16,8 +12,6 @@ public sealed class Utf8DeterministicCursorInvocationTests
         "abcdefgh ijklmnop ab12 ab34 12ab 34ab ab1cd ab2cd\nab1d\nab2d\naéd a😀d abéd ab😀cd\nab12\nab34\n",
         "é😀 12 Ab ab12 word:34 abcdefgh ijklmnop 12ab 34ab",
         new string('x', 8193) + " ab12 34 Ab word:56 abcdefgh 12ab"];
-    private static Utf8PreparedRegex Prepared(Utf8Regex regex) =>
-        (Utf8PreparedRegex)typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
     private static RegexOptions Options(bool compiled) => RegexOptions.CultureInvariant | RegexOptions.Multiline |
         (compiled ? RegexOptions.Compiled : RegexOptions.None);
 
@@ -76,30 +70,32 @@ public sealed class Utf8DeterministicCursorInvocationTests
 
     [Theory]
     [MemberData(nameof(CompleteCases))]
-    public void OffsetFactoryUsesFullSubjectAnchorsAndOriginalDeadline(string pattern, bool compiled)
+    public void OffsetEnumerationUsesFullSubjectAnchorsAndOriginalDeadline(string pattern, bool compiled)
     {
         using var clock = Utf8DeadlineTestClock.Start();
-        var regex = new Utf8Regex(pattern, options: Options(compiled));
-        var prepared = Prepared(regex);
+        using var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(200)
+        });
         const string text = "ab12 12ab ab34 34ab abcdefgh ijklmnop\nab1d\nab2d\nab12\nab34\n";
         var input = Encoding.UTF8.GetBytes(text);
         var oracle = new Regex(pattern, Options(compiled));
         for (var floor = 0; floor <= text.Length; floor++)
         {
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, Utf8ExecutionDeadline.Infinite, floor);
+            var cursor = regex.EnumerateMatches(input, startOffsetInBytes: floor);
             foreach (Match expected in oracle.Matches(text, floor))
             {
                 Assert.True(cursor.MoveNext());
-                Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
+                Assert.Equal((expected.Index, expected.Index + expected.Length),
+                    (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
             }
             Assert.False(cursor.MoveNext());
         }
-        var budget = Utf8ExecutionDeadline.Start(TimeSpan.FromMilliseconds(200));
-        var timed = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, budget, 0);
+        var timed = regex.EnumerateMatches(input, startOffsetInBytes: 0);
         clock.Advance(250);
         Exception? observed = null;
         try { _ = timed.MoveNext(); } catch (Exception exception) { observed = exception; }
-        Assert.IsType<Utf8ExecutionDeadlineExpiredException>(observed);
+        Assert.Equal(regex.MatchTimeout, Assert.IsType<RegexMatchTimeoutException>(observed).MatchTimeout);
     }
 
     public static IEnumerable<object[]> PhaseCases()

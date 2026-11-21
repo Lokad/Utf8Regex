@@ -240,12 +240,8 @@ internal static class Pcre2FiniteLiteralLanguageAnalyzer
                                 statesByCount.Add(repeatedStates);
                             }
 
-                            // R05: greedy ranged repeats over mixed-length derivations would
-                            // project longest spans where PCRE2 stops ordered repetition at first
-                            // success (probed: (?:a|ab){2,3} enum aaba vs oracle aa). Decline those
-                            // shapes to the backtracking program (the slice overlay converts where
-                            // it serves); exact counts resolve it1-major like backtracking, uniform
-                            // derivations cannot diverge, and lazy starts at minimum like the oracle.
+                            // Mixed-length greedy repeats need ordered backtracking.
+                            // For example, (?:a|ab){2,3} matches aa first in aaba.
                             if (bodyRelativeLengths is { Count: > 1 })
                             {
                                 return false;

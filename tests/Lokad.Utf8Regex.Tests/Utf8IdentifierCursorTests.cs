@@ -1,10 +1,7 @@
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
-using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -53,9 +50,6 @@ public sealed class Utf8IdentifierCursorTests
             }
         }
     }
-
-    private static Utf8PreparedRegex Prepared(Utf8Regex regex) =>
-        (Utf8PreparedRegex)typeof(Utf8Regex).GetProperty("PreparedRegex", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(regex)!;
 
     private static readonly string[] Patterns = [@"(?:get|set)[A-Z][A-Za-z0-9_]*", @"\b(?:get|set)[A-Z][A-Za-z0-9_]*\b",
         @"\b(?:LogError|LogWarning|LogInformation)\s*\(", @"\b(?:record|struct|class)\s+[A-Z][A-Za-z0-9_]+",
@@ -132,25 +126,24 @@ public sealed class Utf8IdentifierCursorTests
 
     [Theory]
     [MemberData(nameof(OffsetCases))]
-    public void FactoryOffsetsBorrowOwnedPlansAndKeepFullSubjectBoundaryContext(string pattern, bool compiled)
+    public void OffsetEnumerationKeepsFullSubjectBoundaryContext(string pattern, bool compiled)
     {
         var options = RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex(pattern, options: options);
-        var prepared = Prepared(regex);
+        using var regex = new Utf8Regex(pattern, options: options);
         var oracle = new Regex(pattern, options);
         const string text = "xgetAlpha getOmega setBeta LogError ( xLogWarning( LogInformation( class Order struct Worker";
         var input = Encoding.UTF8.GetBytes(text);
         for (var floor = 0; floor <= text.Length; floor++)
         {
-            var cursor = Utf8CompiledOperationCursorFactory.CreateMatchCursorFromOffset(prepared, input, Utf8ExecutionDeadline.Infinite, floor);
+            var cursor = regex.EnumerateMatches(input, startOffsetInBytes: floor);
             foreach (Match expected in oracle.Matches(text, floor))
             {
                 Assert.True(cursor.MoveNext());
-                Assert.Equal((System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)), System.Text.Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))), (cursor.CurrentValueMatch.StartOffsetInBytes, (cursor.CurrentValueMatch.EndOffsetInBytes - cursor.CurrentValueMatch.StartOffsetInBytes)));
+                Assert.Equal((expected.Index, expected.Index + expected.Length),
+                    (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
             }
             Assert.False(cursor.MoveNext());
         }
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
     public static IEnumerable<object[]> PhaseCases()

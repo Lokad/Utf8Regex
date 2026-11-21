@@ -3,18 +3,8 @@ using System.Text;
 
 namespace Lokad.Utf8Regex.Internal.Replacement;
 
-// Owned replacement template parsing, pinned against legacy instances over the
-// probe catalog. Dollar introduces whole match, portions, last group, whole
-// string, numbered and named group references while anything else stays
-// literal, with maximal literal runs, greedy digits, braced names validated by
-// a word character head, int overflow falling back to literal, and unclosed
-// braces degrading to literal runs. Group resolution validates numbered groups
-// against the valid numbers, maps names through the parallel arrays, demotes
-// unknown references to their original literal text with adjacent literals
-// merged brace free, and extracts literal text when nothing substitutes.
-// Invalid replacement syntax degrades to literal text; resource admission can throw. Token kind
-// names follow the public documented replacement syntax. Every rule above was
-// read off probe behavior.
+// Malformed and unknown references stay literal. Preparation still enforces
+// the construction limits.
 internal enum Utf8ReplacementTokenKind : byte
 {
     Literal,

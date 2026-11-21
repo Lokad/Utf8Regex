@@ -200,7 +200,7 @@ public sealed class Utf8ScalarCultureTests
             var input = Utf8ValidatedInput.BorrowBytes(Encoding.UTF8.GetBytes(firstSegment + prefix + "\U0001f600"));
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture == "tr-TR" ? "en-US" : "tr-TR");
             var zero = input.GetBytePosition(0, "start");
-            Assert.True(regex.ByteOffsetExecution.IsMatchPrepared(input.Bytes));
+            Assert.True(regex.IsMatch(input.Bytes));
             Assert.Equal(2, regex.ByteOffsetExecution.CountPrepared(input, zero));
             var second = input.GetBytePosition(Encoding.UTF8.GetByteCount(firstSegment), "start");
             Assert.Equal(1, regex.ByteOffsetExecution.CountPrepared(input, second));

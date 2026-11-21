@@ -861,21 +861,13 @@ internal sealed class Utf8SliceProgram
 
     internal int[] GroupNumbers { get; }
     internal string[] GroupNames { get; }
-    // R03 word-boundary marker: the shared runner applies Unicode word
-    // semantics (BCL-exact, including zero-width joiners). Consumers whose
-    // native boundary is ASCII-scoped decline marked programs.
+    // Consumers with ASCII-only boundaries decline programs using Unicode boundaries.
     internal bool RequiresUnicodeWordBoundary { get; }
 
-    // R03 shorthand marker: the shared runner applies Unicode shorthand
-    // semantics (decimal digits, word chars, and separators beyond ASCII).
-    // Consumers whose native shorthands are ASCII-scoped decline marked
-    // programs.
+    // Consumers with ASCII-only shorthands decline programs using Unicode shorthands.
     internal bool RequiresUnicodeShorthand { get; }
 
-    // R03 category marker: the shared runner applies Unicode property
-    // semantics (general categories/groups and named blocks beyond ASCII).
-    // Consumers whose native properties are ASCII-scoped or unsupported
-    // decline marked programs.
+    // Covers general categories, category groups and named Unicode blocks.
     internal bool RequiresUnicodeCategory { get; }
 
 }

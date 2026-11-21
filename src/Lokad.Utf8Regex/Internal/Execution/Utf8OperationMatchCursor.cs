@@ -524,8 +524,7 @@ internal ref partial struct Utf8OperationMatchCursor
         _mode = EnumeratorMode.SmallAsciiLiteralFamily;
     }
 
-    // R05: offset enumeration starts the scan at the floor unit over the full input so
-    // line anchors keep their true left context; at floor zero this is the default state.
+    // Keep the full subject so a byte start preserves context for anchors.
     public Utf8OperationMatchCursor WithStartFloor(int startByteOffset)
     {
         if (_sliceProgram is not null)

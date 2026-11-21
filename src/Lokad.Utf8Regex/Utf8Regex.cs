@@ -896,11 +896,8 @@ public sealed partial class Utf8Regex : IDisposable
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
         if (GetOwnedSliceProgram(input) is { } ownedProgram)
             return OwnedSliceEnumerateSplits(input, ownedProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
-        // R05: right-to-left literal shapes split owned through the reverse-search
-        // cursor (the same cursor backing owned RTL enumeration), projecting segments
-        // descending from the input end exactly like the oracle encounter order.
-        // The selector above handles Kelvin partners and culture. Boundary and
-        // trailing requirements still use the scalar cursor.
+        // Eligible literal RTL splits use the reverse cursor and return
+        // segments in encounter order from the end of the subject.
         if ((count == 0 || count > 1) &&
             UsesRightToLeft() &&
             _preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
@@ -931,8 +928,7 @@ public sealed partial class Utf8Regex : IDisposable
 
 
         var budget = CreateExecutionBudget();
-        // R05: anchored ASCII literal families split through the anchor-enforcing
-        // owned cursors (at most one match at a fixed position), like enumeration.
+        // Anchored literals contribute at most one split point.
         var isAnchoredDirectSplitFamily = _anchoredLiteral.LiteralUtf8 is { Length: > 0 } &&
             (_anchoredLiteral.Kind is Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix or Utf8AnchoredLiteralKind.AnchoredFoldedAsciiLiteralPrefix ||
             _anchoredLiteral.IsExactSuffix ||
