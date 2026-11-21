@@ -1,224 +1,126 @@
-# POSIX profile contract for 0.5.0
+# POSIX profile contract
 
-`Lokad.Utf8Regex.Posix` is an optional .NET 10/11 adapter with an exact Core
-dependency. It owns ERE admission and POSIX selection. Core, PythonRe and PCRE2
-retain their contracts. This is an invariant, scalar ERE subset, not complete
-locale-sensitive POSIX, GNU or BSD compatibility.
+`Lokad.Utf8Regex.Posix` implements an invariant subset of POSIX extended
+regular expressions (ERE). It uses Unicode scalars for matching and owns
+leftmost-longest selection and capture priority.
+[API snapshot](../tests/Lokad.Utf8Regex.Posix.Tests/PublicApi.Shipped.txt)
 
 ## Subject text contract
 
-Subjects are already-valid UTF-8 text, borrowed unchanged during an operation or
-cursor lifetime. The profile does not impose a whole-input validity pass or
-malformed-suffix rejection as an additional POSIX compatibility requirement.
-Invalid UTF-8 subjects are outside this profile's domain. External byte validation
-belongs at the application's text boundary.
+Supply valid UTF-8 and keep borrowed bytes unchanged during matching and cursor
+use. Validate external bytes where they become text. Regex operations trust
+that guarantee. Pattern validation is independent.
 
-There is no subject-validation option, property or token. Pattern validation,
-managed bounds, scalar selection, captures, byte-range publication, resource
-admission and original synchronous cancellation/deadlines remain independent.
-Only requested matching and output work needs to inspect text.
+A matching character is one scalar, including supplementary characters and
+U+0000. Start offsets must be scalar boundaries between zero and the subject
+length. They preserve the original byte coordinates and anchor context.
 
 ## Input and syntax
 
-Patterns are well-formed Unicode strings; subjects are strict UTF-8. A matching
-character is one Unicode scalar, including supplementary characters and U+0000.
-Offsets refer to the original bytes; results expose only byte ranges.
-A start offset must be a scalar boundary in `[0,input.Length]` and does
-not rebase anchors or remove prefix context.
+Patterns are well-formed Unicode strings.
 
 | Admitted ERE | Meaning |
-|---|---|
-| Literals, concatenation, `|`, `(expression)` | Case-sensitive scalar matching; parentheses capture in opening order |
-| `.`, `[abc]`, `[^abc]`, `[a-z]` | One scalar; ranges use scalar-value order, without locale collation |
-| `*`, `+`, `?`, `{m}`, `{m,}`, `{m,n}` | Repetition; interval numbers are 0–255, ordered when both are present |
-| `^`, `$` | Absolute subject edges by default; both remain special outside brackets |
-| `[[:name:]]` | The twelve fixed ASCII classes listed below |
-| Empty expression, branch or `()` | Participating empty match; an explicit supported extension |
-| Backslash + ERE punctuation | Literal punctuation outside brackets: `.^$[]()|*+?{}\` |
+| --- | --- |
+| Literals, concatenation, `\|`, `(expression)` | Scalar matching. Parentheses capture in opening order. |
+| `.`, `[abc]`, `[^abc]`, `[a-z]` | One scalar. Ranges follow scalar value order. |
+| `*`, `+`, `?`, `{m}`, `{m,}`, `{m,n}` | Repetition. Interval bounds range from 0 to 255 in ascending order. |
+| `^`, `$` | Absolute subject edges by default. Special outside brackets. |
+| `[[:name:]]` | One of the twelve fixed ASCII classes below. |
+| Empty expression, branch or `()` | Participating empty match. |
+| Backslash before ERE punctuation | Literal `.^$[]()\|*+?{}\\` outside brackets. |
 
-In brackets, `]` is literal first (after optional `^`), `-` first/last, and
-backslash is an ordinary character. Descending ranges, malformed intervals,
-adjacent repetition operators and repetition of anchors are errors. Braces
-outside valid intervals must be escaped.
+Inside brackets, `]` is literal first after optional `^`, `-` is literal
+first or last, and backslash is ordinary. Escape braces outside valid
+intervals. Descending ranges, malformed intervals, adjacent quantifiers and
+repetition of anchors are errors.
 
-The named classes are `alnum`, `alpha`, `blank`, `cntrl`, `digit`, `graph`, `lower`,
-`print`, `punct`, `space`, `upper` and `xdigit`, with ASCII C-locale membership.
-`space` is HT/LF/VT/FF/CR/space; `blank` is HT/space; `cntrl` includes DEL;
-`graph` is U+0021–U+007E and `print` U+0020–U+007E. Negation can match any other
-Unicode scalar. There is no culture-dependent classification.
+The fixed C-locale classes are `alnum`, `alpha`, `blank`, `cntrl`, `digit`,
+`graph`, `lower`, `print`, `punct`, `space`, `upper` and `xdigit`.
+`space` includes HT/LF/VT/FF/CR/space. `blank` includes HT and space.
+`cntrl` includes DEL. `graph` covers U+0021–U+007E and `print`
+U+0020–U+007E. Negation can match other scalars.
 
-`PosixCompileOptions.IgnoreCase` applies the invariant Unicode 16.0 simple-
-lowercase relation shared with Core: scalars with the same simple lowercase
-form are equivalent, with invariant `I`/`i` paired and dotted `İ`/dotless `ı`
-independent. This is a single-scalar relation, not full Unicode case folding:
-`Σ`/`σ` pair, final `ς` stays separate; `S`/`s` pair, long `ſ` stays separate.
-It does not normalize text or expand `ß` into `ss`. Construction and execution
-ignore ambient culture. Literals and bracket members, including the ASCII named
-classes, accept this case closure; negation applies after closure. Thus `[k]`
-accepts `K`, and `[[:upper:]]` accepts `a` and `K`, without becoming a general
-Unicode category or locale class. Supplementary pairs use complete scalars.
+`IgnoreCase` uses invariant Unicode 16 simple-lowercase equivalence.
+`I`/`i` and `Σ`/`σ` pair. Dotted and dotless I, final sigma and long S
+remain separate from those ordinary pairs. Folding applies to literals and
+class members before negation. `[k]` accepts `K` and `[[:upper:]]` accepts
+`a` and `K` with this option. Folding compares one scalar at a time, with
+no normalization or expansions such as `ß` to `ss`. Byte ranges retain
+the original widths. `(k|kk)` on `KK` takes all four bytes.
 
-Folding preserves the original subject and byte coordinates, even when partners
-have different UTF-8 widths. `(k|kk)` on `KK` selects all four original bytes.
-Whole-match longest selection and hierarchical capture priority remain unchanged;
-an ordered alternation is not a substitute for folded POSIX selection. The option
-composes with `Newline` and byte search floors for all operations and cursors.
+`Newline` allows `^` after LF and `$` before LF, in addition to absolute
+edges. It excludes LF from dot and negated brackets. With default options
+dot and negated brackets can include LF and `$` means true end. CR has no
+special meaning.
 
-`PosixCompileOptions.Newline` makes `^`/`$` recognize edges after/before LF as
-well as absolute edges, and excludes LF from dot and negated bracket expressions.
-Without it, dot and negated brackets can match LF, and `$` means true end (no
-special position before a trailing newline). CR has no special treatment.
-
-Reject BRE-specific operator interpretations, collating/equivalence elements, backreferences, lookarounds,
-word boundaries, shorthand/property escapes, named/noncapturing groups, inline
-flags, lazy/possessive repetition, atomic/balancing/conditional groups and unknown
-options. Do not reinterpret these as Core syntax or invoke another matcher.
+BRE, collating or equivalence elements, backreferences, assertions other
+than `^` and `$`, shorthand or property escapes, extended groups and
+non-ERE quantifier suffixes are outside this subset.
 
 ## Selection and captures
 
-Choose the earliest possible whole-match start, then the greatest end at that
-start. Resolve equal whole matches through hierarchical POSIX subpattern priority:
-outer nodes before descendants, left parts before right parts. This includes
-unparenthesized concatenation/repetition parts, not only returned capture slots.
-Associate concatenation to the right for this hierarchy: the first part takes
-priority over the remaining suffix. Parentheses preserve their explicit scope.
+Choose the earliest start and then the greatest end at that start. For
+ties, compare the hierarchy outer before inner and left before right,
+including unparenthesized parts. Concatenation associates to the right in
+this hierarchy. Parentheses preserve their own scope.
 
-Within that hierarchy, compare occurrences in iteration order, preferring an
-earlier start and then a later end. Participation, including empty, beats absence.
-Repeat histories are compared before discarding earlier iterations; if otherwise
-equal, a shorter history wins over redundant empty iterations. Descendant
-occurrences are compared within their enclosing occurrence. These rules follow
-the tagged-history interpretation in [Trofimovich, POSIX section, pp. 10–12](https://re2c.org/2017_trofimovich_tagged_deterministic_finite_automata_with_lookahead.pdf).
+Compare occurrences in iteration order, preferring participation over
+absence, then earlier starts and later ends. Compare descendant occurrences
+within their enclosing occurrence. A shorter history wins over redundant
+empty iterations when otherwise equal. Independent comparisons pin the
+chosen interpretation. [Tagged-history rules, pp. 10–12](https://re2c.org/2017_trofimovich_tagged_deterministic_finite_automata_with_lookahead.pdf) ·
+[WG15 interpretation 135](https://www.open-std.org/JTC1/SC22/WG15/docs/rr/9945-2/9945-2-135.html) ·
+[Selection fixtures](../tests/Lokad.Utf8Regex.Posix.Tests/Corpus/selection.json)
 
-Return only the last capture from the winning occurrence history. A group absent
-in the final iteration of its enclosing group is absent, even if it participated
-earlier. Capture numbering follows opening parentheses, starting at one; zero is
-the whole match. Empty captures retain `Success=true` and their actual position;
-absent captures use the default unsuccessful value. Do not select by the lengths
-of the final returned slots or by the first accepting ordered path.
-
-Historical interpretations identify ambiguity across implementations; see
-[WG15 interpretation 135](https://www.open-std.org/JTC1/SC22/WG15/docs/rr/9945-2/9945-2-135.html).
-The rules and fixtures here choose one documented policy. Native implementations
-and ordered Core/.NET are not universal capture oracles.
+Return the last capture from the winning history. A group absent in the
+final iteration of its enclosing group is absent. `GroupCount` excludes
+slot zero, which holds the whole match. An absent capture is the default
+unsuccessful value. A participating empty capture retains its byte position
+and `Success = true`.
 
 ## Public surface and lifetimes
 
-Namespace `Lokad.Utf8Regex.Posix`; immutable, reusable `Utf8PosixRegex`:
+`IsMatch` returns existence. `Match` returns `Utf8CaptureRange` and can
+fill a caller span from slot zero. Short destinations preserve selection
+and excess slots remain untouched. A miss or later failure clears the
+requested prefix. Entry cancellation preserves it. Ranges own byte
+coordinates and remain usable after later calls or disposal.
 
-- Constructor: `Utf8PosixRegex(pattern, options=None, policy=null)`, using the
-  shared immutable `Utf8RegexPolicy`. Options contain `None`, `Newline` and `IgnoreCase`.
-  Properties expose `Pattern`, `Options`, `MatchTimeout` and `GroupCount`
-  (capturing parentheses, excluding zero).
-- `Compile(pattern, options=None, policy=null, cancellationToken=default)` uses
-  the same policy and an independent construction token, checked before pattern
-  or policy work and not retained for matching.
-- `IsMatch(input, token=default, workingMemoryAllowance=null)` returns existence.
-- `Match(input, startOffsetInBytes=0, captures=default, token=default,
-  workingMemoryAllowance=null)` returns `Utf8CaptureRange` for the selected whole
-  match and writes available slots zero onward into a caller-owned capture span. Clear supplied
-  output slots before publication, including after no match; leave no partial
-  result on refusal/interruption. Excess slots are untouched. A shorter or empty span cannot alter
-  selection, capture priority or the whole match.
-- `Count(input, startOffsetInBytes=0, token=default, workingMemoryAllowance=null)`
-  counts nonoverlapping selected matches.
-- `CreateMatchCursor(ReadOnlyMemory<byte> input, startOffsetInBytes=0,
-  token=default, workingMemoryAllowance=null)` returns a sealed disposable
-  `Utf8PosixMatchCursor`. `MoveNext(out Utf8CaptureRange match,
-  Span<Utf8CaptureRange> captures=default)` uses the same
-  selection and cumulative invocation. No copied value cursor or finalizer lease.
+`Count` and `CreateMatchCursor` discover nonoverlapping matches. After a
+nonempty match, resume at its end. After an empty match, advance one scalar.
+An empty match at subject end is emitted once. Cursor aliases share position
+and disposal. Use one caller at a time, keep the borrowed memory alive and
+dispose a cursor on abandonment. Completion, failure and disposal refund
+workspace synchronously. The caller can supply capture slots on each advance.
 
-This surface deliberately uses caller-owned capture spans and value coordinates.
-Values survive later calls and cursor disposal without retaining regex storage or
-subject bytes. Keep a cursor's borrowed memory unchanged and alive until disposal;
-copied references alias one cursor, and disposal rejects further advancement.
-Use a cursor from one caller at a time; concurrent advances/disposal are unsupported.
-Dispose refunds temporary workspace synchronously. Callers wanting text or owned
-arrays materialize them themselves. No replacement/split API, capture-history
-collection, RTL option or separate NonBacktracking mode is part of this subset.
-
-The policy's `ResourcePolicy` and `MatchTimeout` govern each invocation;
-`ConstructionPolicy` and `ConstructionTimeout` govern compilation. Null timeouts
-mean infinite; explicit zero timeouts are invalid. Default constructors inherit an
-existing internal construction authority. Explicit Compile or explicit
-construction/funding controls own one construction scope and cannot replace an
-active owner. Numeric bounds remain independent of shared memory admission.
-
-`ProgramMemoryAllowance` admits covered program storage before publication.
-Dispose funded regexes: closing rejects new matching calls but admitted calls and
-cursors retain funding until completion or disposal. A null per-operation working
-allowance inherits program funding; an explicit allowance overrides it for working
-storage only. Refusal is terminal. Dispose without program funding is a no-op.
-Scalar metadata and copied byte ranges remain valid after close. Cursor aliases
-share one lifetime; early termination requires disposal, with no finalizer or GC
-refund guarantee. Program charges use the existing conservative construction
-capacity model rather than exact live-object measurement.
-
-`Utf8CaptureRange` exposes `Success`, inclusive `StartOffsetInBytes` and exclusive
-`EndOffsetInBytes`. An absent capture is the default value; a participating empty
-capture has equal endpoints and `Success=true`. Publication copies the selected
-byte endpoints without scanning the prefix or matched content. No UTF-16
-coordinates, alignment flags, coordinate map or cursor coordinate cache remain.
-Removing this output work can lower modeled work requirements; matching,
-capture selection, allocation admission and interruption checks stay metered.
-
-After a nonempty match, resume at its end. After an empty match, advance one scalar;
-the empty match at subject end is emitted once and completes iteration. For
-example, `a*` on `ba` yields empty at 0, `a` at 1 and empty at 2. Count and cursor
-agree, including nonzero starts.
+Replacement, splitting, RTL, capture history and a separate NonBacktracking
+mode are outside this subset.
 
 ## Interruption and admission
 
-POSIX uses the [shared resource contract](SPEC.md#cancellation-deadlines-and-resource-limits)
-for numeric limits and shared admission. Matching checks the original token
-before entry and cooperatively during bounded scans, matching, capture selection
-and publication. Cancellation throws `OperationCanceledException` with that token.
-The absolute deadline starts at invocation entry and continues across cursor
-advances and host waits. Timeout throws `RegexMatchTimeoutException` with empty
-`Input`. A cursor keeps cumulative charges when a later advance changes the
-capture destination. A denial ends the operation without publishing a partial
-successful answer or retrying under another policy.
+`Utf8RegexPolicy` separates construction limits and timeout from invocation
+limits and timeout. Null timeouts mean infinite. `Compile` checks its
+construction token before pattern or policy work. Default constructors can
+borrow an active construction scope. Major buffers and instructions need
+admission before allocation. [Shared construction rules](SPEC.md#construction-preparation-and-caches)
 
-Construction admits major buffers and instruction expansion before allocation.
-Execution work covers candidate discovery, pending alternatives, capture selection
-and copying ranges to the caller. Depth covers live matching alternatives and
-capture-selection dependencies. Working bytes cover major matching, capture
-and projection capacity, including overlapping storage during growth. These
-counts are modeled capacities. Pattern storage, borrowed text, fixed owner
-metadata and host allocation remain outside the invocation byte limits.
+One original token and deadline cover each operation and all cursor advances
+and waits. Cooperative cancellation reports the original token. Expiry
+throws `RegexMatchTimeoutException` with empty `Input`. Refusal ends the
+operation without partial output. Work covers discovery, matching, capture
+selection and publication. Depth covers live alternatives and capture
+dependencies. General capture workspace can grow quadratically in subject
+boundaries. It requires working admission, including growth overlap.
 
-POSIX returns fixed byte ranges and writes captures into caller-owned spans.
-These operations use no producer-owned result payload or staging, so any positive
-`MaxResultBytes` admits their output. Matching and capture selection still require
-working admission. The result cap leaves any caller-created arrays and text to
-the host.
+POSIX publishes fixed ranges or writes caller-owned slots. Any positive
+`MaxResultBytes` admits those outputs. Cursor creation can admit capture
+slots for later advances. Caller arrays, decoded text and borrowed subject
+bytes fall outside execution-byte limits. Numerical requirements can change
+with the pattern and version. [Shared resource rules](SPEC.md#cancellation-deadlines-and-resource-limits)
 
-Boolean existence can stop on a proved hit. Whole-range operations and Count
-finish longest-match selection. Capturing operations also resolve the hierarchy
-under [selection and captures](#selection-and-captures). General capture
-selection resolves intervals within the winning whole match. Its retained state
-can grow quadratically in the number of subject boundaries. Matching time and
-capture storage depend on the pattern and input. A smaller capture destination
-leaves the same selection in force.
+`ProgramMemoryAllowance` funds covered program storage. An optional working
+allowance overrides program funding for workspace only. Funded close rejects
+new calls and refunds after admitted calls and cursors finish. Unfunded disposal
+is a no-op. Pattern metadata and copied ranges survive close.
 
-A cursor admits space for capture slots at creation because later advances may
-request captures. General capture-selection workspace is acquired as needed.
-Loans refund synchronously when released, including after refusal, cancellation
-or disposal. Recheck finite policies when upgrading because search and storage
-requirements vary with the execution route and library version.
-
-## Qualification boundary
-
-[Independent selection fixtures](../tests/Lokad.Utf8Regex.Posix.Tests/Corpus/selection.json)
-pin ambiguous, nested/repeated/nullable, absent/empty and supplementary-scalar
-coordinates before execution changes. Qualification covers every capture-span size,
-public discovery/count/cursor routes, valid text/scalar-aligned offsets, original-token
-and deadline interruption, each finite limit, shared refusal and alias disposal
-on both target frameworks. Fixture data alone is not implementation qualification.
-
-The [profile README](../src/Lokad.Utf8Regex.Posix/README.md#benchmarks) records warm
-public-operation and finite-policy costs. Four-package delivery also checks both
-target frameworks, Windows/Linux and isolated package consumers. Subsequent
-changes need a fresh candidate at the
-next delivery boundary. No complete POSIX equivalence or general native throughput
-parity is claimed.
+[Profile examples and benchmarks](../src/Lokad.Utf8Regex.Posix/README.md)
