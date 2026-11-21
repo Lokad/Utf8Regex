@@ -82,9 +82,11 @@ each producer and check that the DLL hashes differ and the driver, environment
 and inputs agree. Retain per-process observations and allocations. Report
 kernel attribution separately from public operation measurements.
 
-For `common/match-word`, Core returns a whole-match byte range and .NET returns
-the first value from `Regex.EnumerateMatches`. The runner checks both endpoints
-in ordinary and compiled modes before timing.
+For `common/match-word` and the Lokad prefix-match loops, Core returns a
+whole-match byte range and .NET returns the first value from
+`Regex.EnumerateMatches`. The runner checks both endpoints in ordinary and
+compiled modes before timing. Timed lanes consume lengths in their native
+coordinate units.
 
 Core and PCRE2 refresh lanes calibrate independently. Core's six-lane protocol
 targets 75 ms batches with one calibration confirmation. Samples below 20 ms

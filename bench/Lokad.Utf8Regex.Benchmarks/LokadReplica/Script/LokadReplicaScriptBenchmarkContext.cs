@@ -84,23 +84,26 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         {
             var expected = Verify(Regex, Utf8Regex, Samples[index], SampleBytes[index]);
             _ = Verify(CompiledRegex, CompiledUtf8Regex, Samples[index], SampleBytes[index]);
-            if (expected.Success)
-            {
-                units += expected.Length;
-                bytes += Encoding.UTF8.GetByteCount(Samples[index].AsSpan(expected.Index, expected.Length));
-            }
+            bytes += expected.Bytes;
+            units += expected.Units;
         }
         return (bytes, units);
 
-        static Match Verify(Regex oracle, Utf8Regex actual, string text, byte[] input)
+        static (int Bytes, int Units) Verify(Regex oracle, Utf8Regex actual, string text, byte[] input)
         {
-            var expected = oracle.Match(text);
+            var matches = oracle.EnumerateMatches(text);
             var match = actual.Match(input);
-            if (match.Success != expected.Success || expected.Success &&
-                (match.StartOffsetInBytes != Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)) ||
-                 (match.EndOffsetInBytes - match.StartOffsetInBytes) != Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length))))
+            if (match.Success != matches.MoveNext())
+                throw new InvalidOperationException("Lexer benchmark match success disagrees.");
+            if (!match.Success)
+                return (0, 0);
+
+            var expected = matches.Current;
+            var bytes = Encoding.UTF8.GetByteCount(text.AsSpan(expected.Index, expected.Length));
+            if (match.StartOffsetInBytes != Encoding.UTF8.GetByteCount(text.AsSpan(0, expected.Index)) ||
+                match.EndOffsetInBytes - match.StartOffsetInBytes != bytes)
                 throw new InvalidOperationException("Lexer benchmark match ranges disagree after UTF-8 coordinate projection.");
-            return expected;
+            return (bytes, expected.Length);
         }
     }
 
@@ -119,7 +122,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return BenchmarkCase.Model switch
         {
             LokadReplicaScriptBenchmarkModel.Count => Regex.Count(Encoding.UTF8.GetString(InputBytes)),
-            LokadReplicaScriptBenchmarkModel.PrefixMatchLoop => ExecuteDecodeThenRegexPrefixMatchLoop(),
+            LokadReplicaScriptBenchmarkModel.PrefixMatchLoop => ExecuteDecodeThenDotNetPrefixMatchLoop(Regex),
             _ => throw new ArgumentOutOfRangeException(nameof(BenchmarkCase.Model)),
         };
     }
@@ -129,7 +132,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return BenchmarkCase.Model switch
         {
             LokadReplicaScriptBenchmarkModel.Count => CompiledRegex.Count(Encoding.UTF8.GetString(InputBytes)),
-            LokadReplicaScriptBenchmarkModel.PrefixMatchLoop => ExecuteDecodeThenCompiledRegexPrefixMatchLoop(),
+            LokadReplicaScriptBenchmarkModel.PrefixMatchLoop => ExecuteDecodeThenDotNetPrefixMatchLoop(CompiledRegex),
             _ => throw new ArgumentOutOfRangeException(nameof(BenchmarkCase.Model)),
         };
     }
@@ -139,7 +142,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return BenchmarkCase.Model switch
         {
             LokadReplicaScriptBenchmarkModel.Count => Regex.Count(InputString),
-            LokadReplicaScriptBenchmarkModel.PrefixMatchLoop => ExecutePredecodedRegexPrefixMatchLoop(),
+            LokadReplicaScriptBenchmarkModel.PrefixMatchLoop => ExecutePredecodedDotNetPrefixMatchLoop(Regex),
             _ => throw new ArgumentOutOfRangeException(nameof(BenchmarkCase.Model)),
         };
     }
@@ -149,7 +152,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return BenchmarkCase.Model switch
         {
             LokadReplicaScriptBenchmarkModel.Count => CompiledRegex.Count(InputString),
-            LokadReplicaScriptBenchmarkModel.PrefixMatchLoop => ExecutePredecodedCompiledRegexPrefixMatchLoop(),
+            LokadReplicaScriptBenchmarkModel.PrefixMatchLoop => ExecutePredecodedDotNetPrefixMatchLoop(CompiledRegex),
             _ => throw new ArgumentOutOfRangeException(nameof(BenchmarkCase.Model)),
         };
     }
@@ -315,7 +318,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             var match = Utf8Regex.Match(sample);
             if (match.Success)
             {
-                total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
+                total += match.EndOffsetInBytes - match.StartOffsetInBytes;
             }
         }
 
@@ -383,63 +386,27 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         }
     }
 
-    private int ExecuteDecodeThenRegexPrefixMatchLoop()
+    private int ExecuteDecodeThenDotNetPrefixMatchLoop(Regex regex)
     {
         var total = 0;
         foreach (var sample in SampleBytes)
         {
-            var decoded = Encoding.UTF8.GetString(sample);
-            var match = Regex.Match(decoded);
-            if (match.Success)
-            {
-                total += match.Length;
-            }
+            var matches = regex.EnumerateMatches(Encoding.UTF8.GetString(sample));
+            if (matches.MoveNext())
+                total += matches.Current.Length;
         }
 
         return total;
     }
 
-    private int ExecuteDecodeThenCompiledRegexPrefixMatchLoop()
-    {
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            var decoded = Encoding.UTF8.GetString(sample);
-            var match = CompiledRegex.Match(decoded);
-            if (match.Success)
-            {
-                total += match.Length;
-            }
-        }
-
-        return total;
-    }
-
-    private int ExecutePredecodedRegexPrefixMatchLoop()
+    private int ExecutePredecodedDotNetPrefixMatchLoop(Regex regex)
     {
         var total = 0;
         foreach (var sample in Samples)
         {
-            var match = Regex.Match(sample);
-            if (match.Success)
-            {
-                total += match.Length;
-            }
-        }
-
-        return total;
-    }
-
-    private int ExecutePredecodedCompiledRegexPrefixMatchLoop()
-    {
-        var total = 0;
-        foreach (var sample in Samples)
-        {
-            var match = CompiledRegex.Match(sample);
-            if (match.Success)
-            {
-                total += match.Length;
-            }
+            var matches = regex.EnumerateMatches(sample);
+            if (matches.MoveNext())
+                total += matches.Current.Length;
         }
 
         return total;
@@ -453,7 +420,7 @@ internal sealed class LokadReplicaScriptBenchmarkContext
             var match = CompiledUtf8Regex.Match(sample);
             if (match.Success)
             {
-                total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
+                total += match.EndOffsetInBytes - match.StartOffsetInBytes;
             }
         }
 
