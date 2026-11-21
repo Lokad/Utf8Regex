@@ -110,28 +110,21 @@ for the 0.4.0 changes.
 
 ## Runtime support
 
-The 0.5.0 release candidate targets `net10.0` and `net11.0`. .NET 11
+The 0.5.0 development branch targets `net10.0` and `net11.0`. .NET 11
 uses the stable SDK pinned in [global.json](global.json) and is the
 primary benchmark baseline. .NET 10 remains a compatibility target, with both
 runtimes checked in Windows/Linux CI. Published 0.4.0 packages target .NET 10.
 
 ## Benchmarks
 
-The **18 November 2026** refresh measured source `654d5716` on **.NET 11.0.0**,
-Ubuntu 24.04.4 x64 and an Intel Xeon Platinum 8573C. The Release build, .NET 10/11
-tests, all-profile catalogs, paired comparisons, lifecycle, scaling and resource
-checks completed and verified in **52m17s**.
-
 The measured operations start with valid, unchanged UTF-8 and include the required
-result materialization. [The Core summary](bench/Snapshots/Core.json) records each
-row's source, qualification and snapshot identity. [Generality measurements](docs/BENCHMARKS.md)
-cover ordinary patterns and calls with finite limits, deadlines and cancellation.
+result materialization. The Core summary records the measured sources, runtimes,
+qualification and snapshot identity. The benchmark guide covers ordinary patterns
+and calls with finite limits, deadlines and cancellation.
+[Core summary](bench/Snapshots/Core.json) · [Benchmark guide](docs/BENCHMARKS.md)
 
 Ordinary and compiled rows use matching .NET compilation flags. All tables rank
 `Utf8Regex / .NET predecoded` ratios from highest to lowest; lower is better.
-
-The `common/ip-miss` row was refreshed separately on `edf04445` with the
-corrected miss input.
 
 [refresh-benchmarks.ps1](tools/refresh-benchmarks.ps1) runs the full cycle or selected
 phases; [bench.ps1](tools/bench.ps1) supports focused single-case iterations.

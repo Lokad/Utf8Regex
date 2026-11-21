@@ -41,12 +41,12 @@ Raw durations, iteration counts, allocations and loaded producer identities go
 to a unique JSON file under `artifacts/benchmark-refresh/generality/`. A focused
 selection neither replaces accepted README tables nor qualifies a package.
 
-The 19 November 2026 full refresh on `c66180bb` completed in 52m 06s on the
-quiet VM. Core generality took 593.88 seconds. All 90 steps passed, including
-both-runtime tests, paired comparisons, lifecycle, scaling and resource checks.
-Raw durations and the receipt are under `artifacts/benchmark-refresh/`.
-The measured source and results are recorded in the
-[compact summaries](../bench/Snapshots/).
+The full refresh includes both-runtime tests, public catalogs, paired
+comparisons, lifecycle, scaling and resource checks. It writes the duration and
+step results to `refresh.json` in its timestamped output directory under
+`artifacts/benchmark-refresh/`. The compact summaries record the measured
+sources, runtimes and results for the README tables.
+[Compact summaries](../bench/Snapshots/)
 
 Keep experiments selective and bounded, reuse matching binaries and build
 servers, and compare equal public outputs. Use one ordinary producer per process

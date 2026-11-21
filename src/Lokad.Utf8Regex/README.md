@@ -10,7 +10,7 @@ using Lokad.Utf8Regex;
 
 var regex = new Utf8Regex(".");
 int count = regex.Count("A😀"u8); // 2
-var match = regex.Match("😀"u8); // LengthInBytes == 4
+var match = regex.Match("😀"u8); // StartOffsetInBytes == 0, EndOffsetInBytes == 4
 ```
 
 The owned managed engine supports documented .NET-style grammar, captures/history,
