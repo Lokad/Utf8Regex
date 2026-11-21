@@ -1390,8 +1390,23 @@ internal static partial class Utf8SliceRunner
             return true;
         }
 
-        if (repeat.RepeatMaximum > 4 || !program.TryGetUnfoldedAsciiSet(atom, out var ascii, out var asciiOnly))
-            return null;
+        if (repeat.RepeatMaximum > 4) return null;
+        Func<int, bool>? additionalAsciiMember = null;
+        if (!program.TryGetUnfoldedAsciiSet(atom, out var ascii, out var asciiOnly))
+        {
+            if (atom is not { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } ||
+                program.CategorySetMembers[atom.D] is not
+                    [{ Negated: false, Table: {
+                        Mask: 0, Ranges.Length: 0, ClassProgram: null, ScalarPredicate: { } predicate } }]) return null;
+
+            // The mask immediately accepts its members. Consult the same pure
+            // predicate as the VM for other ASCII bytes. Wide bytes still
+            // leave the repeat undecided for profile-specific classification.
+            var mask = program.SetMasks[atom.A].AsSpan();
+            ascii = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
+                BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
+            additionalAsciiMember = predicate;
+        }
 
         var minimum = (int)repeat.RepeatMinimum;
         var maximum = Math.Min(input.Length - position, (int)repeat.RepeatMaximum);
@@ -1417,7 +1432,7 @@ internal static partial class Utf8SliceRunner
                 continueAt = end;
                 return true;
             }
-            if (!ascii.Contains(value)) break;
+            if (!ascii.Contains(value) && additionalAsciiMember?.Invoke(value) != true) break;
             consumed++;
         }
         if (consumed < minimum) return false;
@@ -1466,7 +1481,7 @@ internal static partial class Utf8SliceRunner
 
     private const int BranchedPrefixInstructionLimit = 96;
 
-    private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
+    internal static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, int index, out int acceptedEnd, bool proveMatch = false,
         int instructionLimit = BranchedPrefixInstructionLimit)
     {

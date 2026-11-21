@@ -376,6 +376,8 @@ internal struct PythonReScalarMatchState
             _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 }
             ? Utf8SliceRunner.GetShortRepeatLiteralWindow(_program, _program.LeadingClassDelimiter.LiteralIndex + 2)
             : default;
+        var proveWindow = followingWindow.Min != 0 && existenceOnly && _program.GroupCount == 0 &&
+            !_program.IsNonBacktracking && !_program.ReadsCaptures;
         try
         {
             while (!_finished)
@@ -492,9 +494,19 @@ internal struct PythonReScalarMatchState
                         repeatCode[4].Kind == Utf8SliceInstructionKind.Accept)
                         outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
                     else
-                        outcome = Utf8SliceRunner.TryMatchAt(_program, input, _position,
-                            _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation,
-                            existenceOnly, requireFullInput: requireFullInput);
+                    {
+                        // The candidate checkpoint funds the same bounded proof
+                        // as Core's first-match search. The original VM verifies
+                        // any candidate the proof leaves undecided.
+                        var provedEnd = -1;
+                        var possible = !proveWindow || Utf8SliceRunner.MayMatchBranchedAsciiPrefix(
+                            _program, input, _position, 0, out provedEnd, proveMatch: true);
+                        outcome = !possible || provedEnd >= 0
+                            ? new(possible, provedEnd, Utf8ExecutionLimitKind.None, null, null)
+                            : Utf8SliceRunner.TryMatchAt(_program, input, _position,
+                                _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation,
+                                existenceOnly, requireFullInput: requireFullInput);
+                    }
                 }
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                     throw ResourceFailure();

@@ -9,6 +9,30 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 public sealed class PythonReClassDelimiterWindowTests
 {
     [Theory]
+    [InlineData("Today is 11/18/201A and tomorrow is 11/19/201A.", "")]
+    [InlineData("Today is 11/18/2019.", "11/18/2019")]
+    [InlineData("😀 11/18/201A then 𝟙𝟚/١٨/٢٠١٩.", "𝟙𝟚/١٨/٢٠١٩")]
+    [InlineData("Today is 11/18/201\U0001E5F1!", "11/18/201")]
+    [InlineData("Today is 11/18/201é!", "")]
+    public void BoundedDateSearchWithAsciiAndPinnedUnicodeBoundaries(string text, string expected)
+    {
+        const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var cancellation = new CancellationTokenSource();
+        using var ordinary = new Utf8PythonRegex(pattern);
+        using var funded = new Utf8PythonRegex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 512, MaxDepth = 32, MaxWorkingBytes = 4096 }
+        });
+
+        Assert.Equal(expected.Length != 0, ordinary.IsMatch(input));
+        Assert.Equal(expected.Length != 0, funded.IsMatch(input, cancellationToken: cancellation.Token));
+        var match = funded.Match(input, cancellationToken: cancellation.Token, mode: Utf8PythonMatchMode.Search);
+        Assert.Equal(expected.Length != 0, match.Success);
+        if (match.Success) Assert.Equal(expected, Encoding.UTF8.GetString(match.GetValueBytes()));
+    }
+
+    [Theory]
     [InlineData("([a-z]+)-([0-9]+)", "xx-! good-12 tail", 0, 5, "good-12", "good", "12")]
     [InlineData("([a-z]{2,3})-([0-9]+)", "abcde-12 tail", 0, 2, "cde-12", "cde", "12")]
     [InlineData("([a-z]+)-([0-9]+)", "😀xx-! good-12 tail", 4, 9, "good-12", "good", "12")]

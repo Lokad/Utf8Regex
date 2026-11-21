@@ -137,6 +137,11 @@ runner can verify that first candidate directly, including a long first run.
 A failed verification resumes the existing window search and scalar progression. Captures still come
 from the VM; no result is inferred from the prefix. Actual discovery work changes
 and rejection-heavy subjects can cost more, under the same original authority.
+For capture-free `IsMatch`, a short second repeat and delimiter can also admit
+the shared bounded ASCII proof. It uses PythonRe's class predicates and checks
+word boundaries against the original subject. Inconclusive candidates go to the
+same VM. Each candidate checkpoint funds the bounded proof, so it can reduce
+work charges and avoid acquiring VM scratch.
 
 A leading positive class can also guide starts using its complete ASCII mask.
 This includes bounded unions of predefined Unicode classes and masks with a
