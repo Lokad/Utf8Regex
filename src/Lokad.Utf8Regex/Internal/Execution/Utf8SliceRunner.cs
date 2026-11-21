@@ -2764,6 +2764,7 @@ internal static partial class Utf8SliceRunner
             _balanceCount = 0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool Push<T>(ref T[][] tables, ref int count, int chunkCapacity,
             T value, ref Utf8SliceInvocation invocation, ref ulong reservedBytes, out Utf8ExecutionLimitKind breach)
             where T : struct
@@ -2772,51 +2773,59 @@ internal static partial class Utf8SliceRunner
             if (count == int.MaxValue) { breach = Utf8ExecutionLimitKind.WorkingBytes; return false; }
             var chunk = count / chunkCapacity;
             var slot = count % chunkCapacity;
-            if (slot == 0 && (tables is null || chunk >= tables.Length || tables[chunk] is null))
-            {
-                var replaceTable = tables is null || chunk >= tables.Length;
-                var oldCapacity = tables?.Length ?? 0;
-                var capacity = oldCapacity == 0 ? ChunkTableCapacity :
-                    oldCapacity <= Array.MaxLength / 2 ? oldCapacity * 2 : Array.MaxLength;
-                if (replaceTable && capacity <= chunk) { breach = Utf8ExecutionLimitKind.WorkingBytes; return false; }
-                var tableBytes = replaceTable ? Utf8ConstructionBudget.ArrayBytes<T[]>(capacity) : 0;
-                var bytes = checked(tableBytes + Utf8ConstructionBudget.ArrayBytes<T>(chunkCapacity));
-                breach = invocation.TryReserveWorking(bytes);
-                if (breach != Utf8ExecutionLimitKind.None) return false;
-                var adopted = false;
-                try
-                {
-                    breach = invocation.TryChargeInputStep();
-                    if (breach != Utf8ExecutionLimitKind.None) return false;
-                    var candidate = replaceTable ? new T[capacity][] : tables ?? throw new InvalidOperationException("Live slice stack table is missing.");
-                    if (replaceTable && tables is not null)
-                    {
-                        for (var offset = 0; offset < oldCapacity;)
-                        {
-                            breach = invocation.TryChargeInputStep();
-                            if (breach != Utf8ExecutionLimitKind.None) return false;
-                            var length = Math.Min(256, oldCapacity - offset);
-                            tables.AsSpan(offset, length).CopyTo(candidate.AsSpan(offset, length));
-                            offset += length;
-                        }
-                    }
-                    breach = invocation.TryChargeInputStep();
-                    if (breach != Utf8ExecutionLimitKind.None) return false;
-                    var leaf = new T[chunkCapacity];
-                    // Publish only after acquisition and copy complete. Failed growth
-                    // leaves the original table, count and parent reservation intact.
-                    var oldBytes = replaceTable ? Utf8ConstructionBudget.ArrayBytes<T[]>(oldCapacity) : 0;
-                    candidate[chunk] = leaf;
-                    tables = candidate;
-                    invocation.Ledger.Release(oldBytes);
-                    reservedBytes = checked(reservedBytes + bytes - oldBytes);
-                    adopted = true;
-                }
-                finally { if (!adopted) invocation.Ledger.Release(bytes); }
-            }
+            if (slot == 0 && (tables is null || chunk >= tables.Length || tables[chunk] is null) &&
+                !TryGrowStack(ref tables!, chunk, chunkCapacity, ref invocation, ref reservedBytes, out breach))
+                return false;
             tables[chunk][slot] = value;
             count++;
             return true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static bool TryGrowStack<T>(ref T[][] tables, int chunk, int chunkCapacity,
+            ref Utf8SliceInvocation invocation, ref ulong reservedBytes, out Utf8ExecutionLimitKind breach)
+            where T : struct
+        {
+            var replaceTable = tables is null || chunk >= tables.Length;
+            var oldCapacity = tables?.Length ?? 0;
+            var capacity = oldCapacity == 0 ? ChunkTableCapacity :
+                oldCapacity <= Array.MaxLength / 2 ? oldCapacity * 2 : Array.MaxLength;
+            if (replaceTable && capacity <= chunk) { breach = Utf8ExecutionLimitKind.WorkingBytes; return false; }
+            var tableBytes = replaceTable ? Utf8ConstructionBudget.ArrayBytes<T[]>(capacity) : 0;
+            var bytes = checked(tableBytes + Utf8ConstructionBudget.ArrayBytes<T>(chunkCapacity));
+            breach = invocation.TryReserveWorking(bytes);
+            if (breach != Utf8ExecutionLimitKind.None) return false;
+            var adopted = false;
+            try
+            {
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return false;
+                var candidate = replaceTable ? new T[capacity][] : tables ?? throw new InvalidOperationException("Live slice stack table is missing.");
+                if (replaceTable && tables is not null)
+                {
+                    for (var offset = 0; offset < oldCapacity;)
+                    {
+                        breach = invocation.TryChargeInputStep();
+                        if (breach != Utf8ExecutionLimitKind.None) return false;
+                        var length = Math.Min(256, oldCapacity - offset);
+                        tables.AsSpan(offset, length).CopyTo(candidate.AsSpan(offset, length));
+                        offset += length;
+                    }
+                }
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return false;
+                var leaf = new T[chunkCapacity];
+                // Publish only after acquisition and copy complete. Failed growth
+                // leaves the original table, count and parent reservation intact.
+                var oldBytes = replaceTable ? Utf8ConstructionBudget.ArrayBytes<T[]>(oldCapacity) : 0;
+                candidate[chunk] = leaf;
+                tables = candidate;
+                invocation.Ledger.Release(oldBytes);
+                reservedBytes = checked(reservedBytes + bytes - oldBytes);
+                adopted = true;
+                return true;
+            }
+            finally { if (!adopted) invocation.Ledger.Release(bytes); }
         }
     }
 
