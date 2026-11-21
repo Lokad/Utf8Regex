@@ -121,9 +121,9 @@ and calls with finite limits, deadlines and cancellation.
 
 Ordinary and compiled rows use matching .NET compilation flags. All tables rank
 `Utf8Regex / .NET predecoded` ratios from highest to lowest; lower is better.
-Frozen `common/match-word` and Lokad prefix-loop results through dev.117
-include .NET's `Match` object allocation. New runs compare the first
-whole-match range on both sides.
+The `common/match-word` and `lokad/docs/inline-doc-prefix` rows compare the
+first whole-match range on both sides. The other Lokad prefix-loop rows from
+the dev.117 refresh include .NET's `Match` object allocation.
 
 [refresh-benchmarks.ps1](tools/refresh-benchmarks.ps1) runs the full cycle or selected
 phases; [bench.ps1](tools/bench.ps1) supports focused single-case iterations.
@@ -199,7 +199,7 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `industry/rust-sherlock-holmes-window-count` | `Count` | 157.189 us | 252.275 us | 494.483 us | 0.62x |
 | `common/date-miss` | `IsMatch` | 0.329 us | 0.554 us | 0.592 us | 0.59x |
 | `industry/leipzig-twain-count` | `Count` | 639.517 us | 1,339.090 us | 8,487.467 us | 0.48x |
-| `common/match-word` | `Match` | 0.058 us | 0.163 us | 1.095 us | 0.35x |
+| `common/match-word` | `Match` | 0.057 us | 0.126 us | 1.321 us | 0.45x |
 | `common/matches-set` | `Count` | 59.150 us | 188.825 us | 191.297 us | 0.31x |
 | `common/matches-word` | `Count` | 1.197 us | 4.127 us | 5.820 us | 0.29x |
 | `industry/mariomka-ip-count` | `Count` | 2,180.258 us | 7,988.790 us | 16,293.700 us | 0.27x |
@@ -282,10 +282,10 @@ These rows mix `Count(...)`, `IsMatch(...)`, `Match(...)`, `Replace(...)`, and `
 | `common/backtracking` | `IsMatch` | 0.056 us | 0.043 us | 0.071 us | 1.31x |
 | `industry/leipzig-river-window-count` | `Count` | 1,848.544 us | 1,498.427 us | 7,594.625 us | 1.23x |
 | `common/replace-words` | `Replace` | 20.296 us | 16.864 us | 17.785 us | 1.20x |
+| `common/match-word` | `Match` | 0.057 us | 0.049 us | 0.977 us | 1.17x |
 | `industry/mariomka-email-count` | `Count` | 418.367 us | 453.573 us | 7,435.575 us | 0.92x |
 | `common/matches-words` | `Count` | 8.936 us | 10.436 us | 13.649 us | 0.86x |
 | `industry/leipzig-symbol-count` | `Count` | 1,010.716 us | 1,231.769 us | 7,195.760 us | 0.82x |
-| `common/match-word` | `Match` | 0.057 us | 0.076 us | 0.965 us | 0.75x |
 | `industry/mariomka-ip-count` | `Count` | 2,184.769 us | 3,377.448 us | 10,786.633 us | 0.65x |
 | `common/split-words` | `Split` | 12.707 us | 20.046 us | 21.934 us | 0.63x |
 | `common/one-node-backtracking` | `IsMatch` | 0.051 us | 0.086 us | 0.124 us | 0.59x |
@@ -316,7 +316,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex elapsed | .NET predecoded elapsed | .NET + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `lokad/docs/inline-doc-prefix` | 9.880 us | 4.649 us | 5.350 us | 2.13x |
+| `lokad/docs/inline-doc-prefix` | 8.718 us | 3.520 us | 4.273 us | 2.48x |
 | `lokad/langserv/identifier-validator` | 25.365 us | 12.313 us | 13.462 us | 2.06x |
 | `lokad/lexer/doc-line` | 5.714 us | 2.964 us | 3.533 us | 1.93x |
 | `fallback/lookahead` | 10.781 us | 5.850 us | 18.244 us | 1.84x |
@@ -367,7 +367,7 @@ This combined suite covers Lokad production-style workloads, mixing coding-agent
 
 | Case | Utf8Regex Compiled elapsed | .NET compiled predecoded elapsed | .NET compiled + decode elapsed | Ratio (lower is better) |
 |---|---:|---:|---:|---:|
-| `lokad/docs/inline-doc-prefix` | 9.888 us | 2.569 us | 3.393 us | 3.85x |
+| `lokad/docs/inline-doc-prefix` | 8.644 us | 1.516 us | 2.231 us | 5.70x |
 | `lokad/lexer/number` | 22.465 us | 7.061 us | 8.019 us | 3.18x |
 | `balancing/begin-end-blocks` | 1,313.245 us | 446.487 us | 475.039 us | 2.94x |
 | `lokad/langserv/identifier-validator` | 25.496 us | 8.697 us | 10.586 us | 2.93x |

@@ -3,7 +3,7 @@
   "Profile": "Core",
   "Evidence": {
     "Snapshot": "README.Benchmarks.json",
-    "SnapshotSha256": "F72488094B4EAD25E94EF4F632AAF7705E4690A30214D78F1BB72E5FCA8EB271"
+    "SnapshotSha256": "B28071E88003C6A1CC42F8A2A8322DB973E248E35A08FA761F2747CC739F8F26"
   },
   "Sources": {
     "43295756AAA99511DA17C7721233C64C09B7227F61B3467003C964EEC8221BC2": {
@@ -12,6 +12,19 @@
       "Pcre2Assembly": "0.5.0-dev.117\u002Bd657d7e61696643ceeaa6cd1a53aebf7348457d5 sha256=098A955E8F8791C149FC41EED1776A807567EA28E2C07390F64F6D7DBCF2A5EC",
       "PythonReAssembly": "0.5.0-dev.117\u002Bd657d7e61696643ceeaa6cd1a53aebf7348457d5 sha256=C3FBDBBBBE81FD7595310163581AD6F0576DA1760CACEFD9019FFE93F9DEAF15",
       "SourceCommit": "d657d7e61696",
+      "TrackedDirty": false,
+      "HasUntrackedFiles": false,
+      "Runtime": ".NET 11.0.0",
+      "OperatingSystem": "Ubuntu 24.04.4 LTS",
+      "Processor": "X64",
+      "TieredPgo": "runtime-default"
+    },
+    "B890FF5E63F6DBAD60BE2C6C8D93C202527EA6CD93F26B055FC1930CB2852212": {
+      "BenchmarkAssembly": "1.0.0\u002B6d31444ba9154962a79d8aa4b63a367dddf0dba4 sha256=D7CB73ED9E55D55C891F0CE3B8BB2716A758B1185D7B5C15125FC7E156327F41",
+      "CoreAssembly": "0.5.0-dev.117\u002B6d31444ba9154962a79d8aa4b63a367dddf0dba4 sha256=1E688C71B2CD543B8F3A564E9C648AC5E0580B4AC2F98C3221C169BEB2CAA560",
+      "Pcre2Assembly": "0.5.0-dev.117\u002B6d31444ba9154962a79d8aa4b63a367dddf0dba4 sha256=BC4F57AA97B41C1CB4B31B4A2869329331047918061911F6FE6F601DD93062E6",
+      "PythonReAssembly": "0.5.0-dev.117\u002B6d31444ba9154962a79d8aa4b63a367dddf0dba4 sha256=78D97A2EBB252E47EA1C0B83E679619F91449C920EC29607C233E42A9EB81354",
+      "SourceCommit": "6d31444ba915",
       "TrackedDirty": false,
       "HasUntrackedFiles": false,
       "Runtime": ".NET 11.0.0",
@@ -180,15 +193,15 @@
       },
       "common/match-word": {
         "Operation": "Match",
-        "Source": "43295756AAA99511DA17C7721233C64C09B7227F61B3467003C964EEC8221BC2",
-        "ManagedUs": 0.05753800045635652,
-        "ReferenceUs": 0.16303761115532334,
-        "DecodeUs": 1.094516812658943,
-        "Ratio": 0.3529124356559726,
+        "Source": "B890FF5E63F6DBAD60BE2C6C8D93C202527EA6CD93F26B055FC1930CB2852212",
+        "ManagedUs": 0.057414906180089265,
+        "ReferenceUs": 0.12619291370613442,
+        "DecodeUs": 1.3206197450501762,
+        "Ratio": 0.45497726055990295,
         "Status": "Win",
         "ManagedBytes": 0,
-        "ReferenceBytes": 208,
-        "DecodeBytes": 16648
+        "ReferenceBytes": 0,
+        "DecodeBytes": 16440
       },
       "common/matches-boundary": {
         "Operation": "Count",
@@ -842,15 +855,15 @@
       },
       "common/match-word": {
         "Operation": "Match",
-        "Source": "43295756AAA99511DA17C7721233C64C09B7227F61B3467003C964EEC8221BC2",
-        "ManagedUs": 0.05737305243462982,
-        "ReferenceUs": 0.07620660596807659,
-        "DecodeUs": 0.9648287236741944,
-        "Ratio": 0.7528619298261852,
-        "Status": "Win",
+        "Source": "B890FF5E63F6DBAD60BE2C6C8D93C202527EA6CD93F26B055FC1930CB2852212",
+        "ManagedUs": 0.05748350094584012,
+        "ReferenceUs": 0.04930839809476059,
+        "DecodeUs": 0.9769246944407938,
+        "Ratio": 1.1657953445449325,
+        "Status": "Gap",
         "ManagedBytes": 0,
-        "ReferenceBytes": 208,
-        "DecodeBytes": 16648
+        "ReferenceBytes": 0,
+        "DecodeBytes": 16440
       },
       "common/matches-boundary": {
         "Operation": "Count",
@@ -1432,15 +1445,15 @@
       },
       "lokad/docs/inline-doc-prefix": {
         "Operation": "MatchLoop",
-        "Source": "43295756AAA99511DA17C7721233C64C09B7227F61B3467003C964EEC8221BC2",
-        "ManagedUs": 9.880264679429526,
-        "ReferenceUs": 4.648844511429289,
-        "DecodeUs": 5.350381732370905,
-        "Ratio": 2.125316227535396,
+        "Source": "B890FF5E63F6DBAD60BE2C6C8D93C202527EA6CD93F26B055FC1930CB2852212",
+        "ManagedUs": 8.71752220556004,
+        "ReferenceUs": 3.519558197220012,
+        "DecodeUs": 4.273366068405012,
+        "Ratio": 2.476879686900969,
         "Status": "Gap",
-        "ManagedBytes": 7920,
-        "ReferenceBytes": 8184,
-        "DecodeBytes": 11720
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "DecodeBytes": 3536
       },
       "lokad/folding/region-marker": {
         "Operation": "Count",
@@ -1842,15 +1855,15 @@
       },
       "lokad/docs/inline-doc-prefix": {
         "Operation": "MatchLoop",
-        "Source": "43295756AAA99511DA17C7721233C64C09B7227F61B3467003C964EEC8221BC2",
-        "ManagedUs": 9.888427342952923,
-        "ReferenceUs": 2.5694630272242693,
-        "DecodeUs": 3.3930493478062576,
-        "Ratio": 3.848441187198229,
+        "Source": "B890FF5E63F6DBAD60BE2C6C8D93C202527EA6CD93F26B055FC1930CB2852212",
+        "ManagedUs": 8.643537414965985,
+        "ReferenceUs": 1.5163163201247931,
+        "DecodeUs": 2.230684546466007,
+        "Ratio": 5.700352426632604,
         "Status": "Gap",
-        "ManagedBytes": 7920,
-        "ReferenceBytes": 8184,
-        "DecodeBytes": 11720
+        "ManagedBytes": 0,
+        "ReferenceBytes": 0,
+        "DecodeBytes": 3536
       },
       "lokad/folding/region-marker": {
         "Operation": "Count",
