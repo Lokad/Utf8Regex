@@ -1,6 +1,5 @@
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex;
@@ -24,12 +23,6 @@ public ref struct Utf8ValueMatchEnumerator
         _programMemory = null;
         _timeoutInput = default;
         _timeoutRegex = null;
-    }
-
-    internal Utf8ValueMatchEnumerator(
-        Utf8SliceProgram program, ReadOnlySpan<byte> input, TimeSpan timeout, CancellationToken token, int startByte)
-        : this(new Utf8OperationMatchCursor(program, input, timeout, token, startByte))
-    {
     }
 
     /// <summary>Gets the match at the current enumerator position.</summary>
@@ -70,12 +63,6 @@ public ref struct Utf8ValueMatchEnumerator
         {
             throw _cursor.CreateMatchTimeoutException(_timeoutInput, _timeoutRegex.Pattern, _timeoutRegex.MatchTimeout);
         }
-    }
-
-    internal Utf8ValueMatchEnumerator WithBaseOffset(int byteOffset)
-    {
-        _cursor = _cursor.WithBaseOffset(byteOffset);
-        return this;
     }
 
     internal Utf8ValueMatchEnumerator WithTimeoutMapping(

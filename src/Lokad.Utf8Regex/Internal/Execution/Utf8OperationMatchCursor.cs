@@ -55,7 +55,6 @@ internal ref partial struct Utf8OperationMatchCursor
     private int _consumed;
     private PreparedMultiLiteralScanState _multiLiteralScanState;
     private Utf8CaptureRange _current;
-    private int _baseByteOffset;
     private Utf8SliceProgram? _sliceProgram;
     private Utf8NonBacktrackingSearchState? _nonBacktrackingState;
     private int _nonBacktrackingBoundary;
@@ -80,7 +79,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _consumed = 0;
         _multiLiteralScanState = default;
         _current = default(Utf8CaptureRange);
-        _baseByteOffset = 0;
         _mode = executionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral => EnumeratorMode.ExactAsciiLiteral,
@@ -126,7 +124,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _consumed = 0;
         _multiLiteralScanState = default;
         _current = default(Utf8CaptureRange);
-        _baseByteOffset = 0;
         _mode = (executionKind, rightToLeft) switch
         {
             (NativeExecutionKind.ExactAsciiLiteral, true) => EnumeratorMode.RtlExactAsciiLiteral,
@@ -136,7 +133,7 @@ internal ref partial struct Utf8OperationMatchCursor
         };
     }
 
-    public Utf8CaptureRange CurrentValueMatch => ApplyBaseOffsets(_current);
+    public Utf8CaptureRange CurrentValueMatch => _current;
 
     internal Utf8OperationMatchCursor(Utf8SliceProgram program, ReadOnlySpan<byte> input, Utf8SliceInvocation invocation)
         : this(program, input, invocation, program.RightToLeft ? input.Length : 0)
@@ -155,7 +152,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _consumed = 0;
         _multiLiteralScanState = default;
         _current = default(Utf8CaptureRange);
-        _baseByteOffset = 0;
         _sliceProgram = program;
         _sliceInvocation = invocation;
         _sliceInvocation.ShareStorageForCursor();
@@ -179,13 +175,6 @@ internal ref partial struct Utf8OperationMatchCursor
     internal void ReleaseOwnedSearchState()
     {
         _nonBacktrackingState = null;
-    }
-
-    // Byte starts retain the original subject for assertions and scalar progress.
-    internal Utf8OperationMatchCursor(
-        Utf8SliceProgram program, ReadOnlySpan<byte> input, TimeSpan timeout, CancellationToken token, int startByte)
-        : this(program, input, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, timeout, token), startByte)
-    {
     }
 
     private bool MoveNextOwnedSlice() => MoveNextOwnedSliceBytes(out _);
@@ -257,7 +246,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _consumed = 0;
         _multiLiteralScanState = default;
         _current = default(Utf8CaptureRange);
-        _baseByteOffset = 0;
         _sliceProgram = null;
         _slicePositionByte = 0;
         _sliceOriginByte = 0;
@@ -483,7 +471,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _consumed = 0;
         _multiLiteralScanState = default;
         _current = default(Utf8CaptureRange);
-        _baseByteOffset = 0;
         _mode = executionKind == NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals
             ? EnumeratorMode.AsciiLiteralIgnoreCaseLiterals
             : EnumeratorMode.ExactUtf8Literals;
@@ -502,7 +489,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _consumed = 0;
         _multiLiteralScanState = default;
         _current = default(Utf8CaptureRange);
-        _baseByteOffset = 0;
         _mode = EnumeratorMode.EmptyLiteral;
     }
 
@@ -520,7 +506,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _consumed = 0;
         _multiLiteralScanState = default;
         _current = default(Utf8CaptureRange);
-        _baseByteOffset = 0;
         _mode = EnumeratorMode.SmallAsciiLiteralFamily;
     }
 
@@ -532,12 +517,6 @@ internal ref partial struct Utf8OperationMatchCursor
         _consumed = startByteOffset;
         _multiLiteralScanState = new PreparedMultiLiteralScanState(startByteOffset, startByteOffset, 0);
         _anchoredExhausted = false;
-        return this;
-    }
-
-    public Utf8OperationMatchCursor WithBaseOffset(int byteOffset)
-    {
-        _baseByteOffset = byteOffset;
         return this;
     }
 
@@ -658,19 +637,6 @@ internal ref partial struct Utf8OperationMatchCursor
             _consumed += width;
         }
         return true;
-    }
-
-
-
-    private Utf8CaptureRange ApplyBaseOffsets(Utf8CaptureRange match)
-    {
-        if (!match.Success || _baseByteOffset == 0)
-        {
-            return match;
-        }
-
-        return new Utf8CaptureRange(_baseByteOffset + match.StartOffsetInBytes,
-            _baseByteOffset + match.EndOffsetInBytes);
     }
 
     private enum EnumeratorMode : byte

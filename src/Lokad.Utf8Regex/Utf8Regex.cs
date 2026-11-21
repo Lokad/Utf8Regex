@@ -727,8 +727,7 @@ public sealed partial class Utf8Regex : IDisposable
     {
         if (HasFiniteExecutionLimits)
             return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, CancellationToken.None).WithTimeoutMapping(input, this);
-        // Anchored prefixes yield at most one match at offset 0 through the
-        // anchor-enforcing owned cursor, without BCL construction.
+        // Anchored prefixes yield at most one match at byte zero.
         if (_anchoredLiteral.Kind == Utf8AnchoredLiteralKind.AnchoredAsciiLiteralPrefix &&
             _anchoredLiteral.LiteralUtf8 is { Length: > 0 } anchoredEnumerateLiteral)
         {
@@ -738,8 +737,7 @@ public sealed partial class Utf8Regex : IDisposable
                 .WithTimeoutMapping(input, this);
         }
 
-        // Anchored suffixes yield at most one match at the input end through the
-        // anchor-enforcing owned cursor, without BCL construction.
+        // The anchored suffix cursor handles strict ends and final line feeds.
         if (_anchoredLiteral.IsExactSuffix &&
             _anchoredLiteral.LiteralUtf8 is { Length: > 0 })
         {
@@ -784,10 +782,26 @@ public sealed partial class Utf8Regex : IDisposable
                 .WithTimeoutMapping(input, this);
         }
 
-        var subject = Utf8ValidatedInput.BorrowBytes(input);
-        var startOffsetInBytes = UsesRightToLeft() ? input.Length : 0;
-        var start = subject.GetBytePosition(startOffsetInBytes, "startOffsetInBytes");
-        return new Utf8ByteOffsetExecution(this).EnumerateMatches(subject, start)
+        if (UsesRightToLeft())
+        {
+            // The reverse literal cursor starts at the subject end.
+            if (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or
+                    NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.AsciiLiteralIgnoreCase &&
+                _preparedRegex.LiteralUtf8 is { Length: > 0 } literal &&
+                !_preparedRegex.SearchPlan.HasBoundaryRequirements &&
+                !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
+            {
+                var cursor = new Utf8OperationMatchCursor(input, _preparedRegex, literal,
+                    _preparedRegex.ExecutionKind, CreateExecutionBudget(), rightToLeft: true);
+                return new Utf8ValueMatchEnumerator(cursor).WithTimeoutMapping(input, this);
+            }
+
+            return OwnedSliceEnumerateMatches(input, _ownedSliceProgram, CancellationToken.None)
+                .WithTimeoutMapping(input, this);
+        }
+
+        return new Utf8ValueMatchEnumerator(
+            Utf8CompiledOperationCursorFactory.CreateMatchCursor(_preparedRegex, input, CreateExecutionBudget()))
             .WithTimeoutMapping(input, this);
     }
 
@@ -804,18 +818,6 @@ public sealed partial class Utf8Regex : IDisposable
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         {
             throw CreateExecutionResourceFailure(ref invocation);
-        }
-        catch (Utf8ExecutionDeadlineExpiredException)
-        {
-            throw CreateMatchTimeoutException(input);
-        }
-    }
-
-    private Utf8ValueMatchEnumerator OwnedSliceEnumerateMatchesFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, CancellationToken token)
-    {
-        try
-        {
-            return new Utf8ValueMatchEnumerator(program, input, MatchTimeout, token, startByte);
         }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
