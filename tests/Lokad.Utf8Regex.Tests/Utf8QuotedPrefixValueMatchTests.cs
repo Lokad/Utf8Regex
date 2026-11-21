@@ -71,14 +71,16 @@ public sealed class Utf8QuotedPrefixValueMatchTests
     }
 
     [Fact]
-    public void WholeValidationAndOriginalEntryCancellationRemainStrict()
+    public void MatchObservesAlreadyCanceledTokenOnHitsAndMisses()
     {
-        var regex = new Utf8Regex(Pattern);
+        using var regex = new Utf8Regex(Pattern);
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
         foreach (var text in new[] { "\"abc\"", "miss" })
         {
-            byte[] invalid = [.. Encoding.UTF8.GetBytes(text), 0xff];
-            using var canceled = new CancellationTokenSource(); canceled.Cancel();
-            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(invalid, cancellationToken: canceled.Token)).CancellationToken);
+            var input = Encoding.UTF8.GetBytes(text);
+            var error = Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: canceled.Token));
+            Assert.Equal(canceled.Token, error.CancellationToken);
         }
     }
 

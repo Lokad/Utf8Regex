@@ -1419,6 +1419,14 @@ internal static partial class Utf8SliceRunner
                         if ((instruction.C | instruction.D) != 0)
                         {
                             var remaining = input.Length - inputIndex;
+                            if (instruction.C < 0)
+                            {
+                                // The exit starts with this byte. Every body
+                                // arm excludes it. Neither choice needs undo.
+                                programIndex = remaining > 0 && input[inputIndex] == ~instruction.C
+                                    ? instruction.A : programIndex + 1;
+                                break;
+                            }
                             var excludesTarget = instruction.D > 0 && remaining >= instruction.D;
                             if (instruction.C > 0 && remaining >= instruction.C)
                             {

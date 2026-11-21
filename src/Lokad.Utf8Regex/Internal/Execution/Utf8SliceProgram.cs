@@ -214,6 +214,7 @@ internal readonly struct Utf8SliceInstruction
     // A backward Jump can carry an excluded starting ASCII byte plus one in C.
     // A normal Fork can carry exclusive remaining byte bounds in C and D
     // for the fall-through and target respectively. Zero leaves an arm unknown.
+    // A negative C on a normal Fork encodes a disjoint loop exit byte as ~C.
     internal int C { get; }
     // For a positive unfolded Set, packed ASCII interval endpoints:
     // low byte is first+1, high byte is last; zero means no exact interval.

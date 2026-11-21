@@ -1050,7 +1050,7 @@ internal static partial class Utf8SliceRunner
     {
         var jump = code[jumpIndex];
         if (jump.A < 0 || jump.A >= jumpIndex - 1 || jumpIndex + 1 >= code.Length ||
-            code[jumpIndex - 1] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0 } fork ||
+            code[jumpIndex - 1] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0, C: 0, D: 0 } fork ||
             fork.A != jumpIndex + 1 ||
             code[fork.A] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } exit)
             return;
@@ -1060,7 +1060,14 @@ internal static partial class Utf8SliceRunner
         var remaining = 12;
         budget.ChargeWork((ulong)remaining);
         if (RejectsLoopStart(code[..(jumpIndex - 1)], setMasks, jump.A, exit.A, ref remaining))
-            code[jumpIndex] = new(jump.Kind, jump.A, jump.B, exit.A + 1, jump.D);
+        {
+            // A plain back edge and its literal exit are disjoint at this
+            // byte. A delimited back edge still needs its own viability check.
+            if (jump.B == 0)
+                code[jumpIndex - 1] = new(fork.Kind, fork.A, 0, ~exit.A, 0);
+            else
+                code[jumpIndex] = new(jump.Kind, jump.A, jump.B, exit.A + 1, jump.D);
+        }
 
         static bool RejectsLoopStart(ReadOnlySpan<Utf8SliceInstruction> body, byte[][] masks,
             int index, int value, ref int remaining)
