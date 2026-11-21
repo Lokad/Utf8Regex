@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -15,7 +14,6 @@ public sealed class Utf8LeadingDigitsBooleanTests
     {
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         try
         {
@@ -121,16 +119,13 @@ public sealed class Utf8LeadingDigitsBooleanTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void BoundedSearchObservesOriginalInterruptionAfterValidation(bool expire)
+    public void BoundedSearchObservesOriginalInterruptionDuringLongScans(bool expire)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         foreach (var leading in new[] { false, true })
         {
             var input = Encoding.UTF8.GetBytes(leading ? new string('1', 320000) + "-tail" : "1-" + new string('x', 320000));
-            var probe = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-            Utf8Validation.ThrowIfInvalidOnly(input, ref probe);
-            var validationSteps = probe.Budget.Steps;
             var entered = false;
             var timeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan;
             var regex = new Utf8Regex(Pattern, options: RegexOptions.None, policy: new Utf8RegexPolicy
@@ -145,9 +140,9 @@ public sealed class Utf8LeadingDigitsBooleanTests
                 }
             });
             using var currentToken = new CancellationTokenSource();
-            var session = Utf8SearchDiagnosticsSession.Start(steps =>
+            var session = Utf8SearchDiagnosticsSession.Start(_ =>
             {
-                if (entered || steps <= validationSteps) return;
+                if (entered) return;
                 entered = true;
                 if (expire) ticks += 50; else currentToken.Cancel();
             });

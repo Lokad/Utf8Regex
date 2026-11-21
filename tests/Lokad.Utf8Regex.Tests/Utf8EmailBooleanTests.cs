@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -15,7 +14,6 @@ public sealed class Utf8EmailBooleanTests
     {
         var program = regex.Inspection.AvailableOwnedSliceProgram;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
         invocation.AnchorOriginByte = program.RightToLeft ? input.Length : 0;
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         try

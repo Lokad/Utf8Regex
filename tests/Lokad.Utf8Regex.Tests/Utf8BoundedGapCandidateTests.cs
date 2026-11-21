@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -16,7 +15,6 @@ public sealed class Utf8BoundedGapCandidateTests
     {
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
         var slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref invocation);
         try
         {
@@ -168,12 +166,9 @@ public sealed class Utf8BoundedGapCandidateTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void OriginalInterruptionCoversDiscoveryAfterValidation(bool expire)
+    public void OriginalInterruptionCoversLongCandidateDiscovery(bool expire)
     {
         var input = Encoding.UTF8.GetBytes(new string('!', 200000) + "abcdefghij 😀Result klmnopqrst");
-        var calibration = new Utf8SliceInvocation(new(4000000, 0, 0), Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
-        var threshold = (calibration.Budget.Steps / 64 + 1) * 64;
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -185,7 +180,7 @@ public sealed class Utf8BoundedGapCandidateTests
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps < threshold) return;
+            if (steps < 128) return;
             entered = true;
             if (expire) ticks = 50; else token.Cancel();
         });

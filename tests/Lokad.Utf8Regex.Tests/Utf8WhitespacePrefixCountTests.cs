@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -158,12 +157,9 @@ public sealed class Utf8WhitespacePrefixCountTests
 
     [Theory]
     [InlineData(false)] [InlineData(true)]
-    public void OriginalInterruptionIsObservedAfterValidation(bool expire)
+    public void OriginalInterruptionCoversLongPrefixSearch(bool expire)
     {
         var input = Encoding.UTF8.GetBytes(new string('x', 200000) + "\u2003#abc");
-        var calibration = new Utf8SliceInvocation(new(1000000, 0, 0), Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
-        var threshold = (calibration.Budget.Steps / 64 + 1) * 64;
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -175,7 +171,7 @@ public sealed class Utf8WhitespacePrefixCountTests
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps < threshold) return;
+            if (steps < 128) return;
             entered = true;
             if (expire) ticks += 100; else token.Cancel();
         });

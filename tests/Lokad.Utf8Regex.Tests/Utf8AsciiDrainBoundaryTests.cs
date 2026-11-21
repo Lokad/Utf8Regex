@@ -69,7 +69,7 @@ public sealed class Utf8AsciiDrainBoundaryTests
             byte[] subject = [.. prefix, .. malformed];
             var invocation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 13), Regex.InfiniteMatchTimeout, default);
             Assert.True(invocation.Ledger.TryReserve(13));
-            var failure = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(subject, ref invocation));
+            var failure = Assert.Throws<ArgumentException>(() => Utf8Validation.TryValidateOnly(subject, ref invocation));
             Assert.Contains($"byte offset {prefix.Length}", failure.Message);
             Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
         }

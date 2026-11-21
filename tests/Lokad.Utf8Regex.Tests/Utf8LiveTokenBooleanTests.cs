@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -60,7 +59,7 @@ public sealed class Utf8LiveTokenBooleanTests
     }
 
     [Theory] [InlineData(false)] [InlineData(true)]
-    public void ControlledBooleanInterruptsSubstantialMatchingAfterFullValidation(bool timeout)
+    public void ControlledBooleanInterruptsSubstantialMatching(bool timeout)
     {
         long ticks = 0; using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var canceled = new CancellationTokenSource();
@@ -69,11 +68,9 @@ public sealed class Utf8LiveTokenBooleanTests
         {
             MatchTimeout = timeout ? TimeSpan.FromMilliseconds(100) : Timeout.InfiniteTimeSpan
         });
-        var validation = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Timeout.InfiniteTimeSpan, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref validation); var before = validation.Budget.Steps;
         var reached = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps => {
-            if (steps <= before + 64) return;
+            if (steps < 128) return;
             reached = true; if (timeout) ticks = 100; else canceled.Cancel();
         });
         try

@@ -4,13 +4,6 @@ namespace Lokad.Utf8Regex.Internal.Input;
 
 internal static partial class Utf8Validation
 {
-    internal static void ThrowIfInvalidOnly(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
-    {
-        var breach = TryValidateOnly(input, ref invocation);
-        if (breach != Utf8ExecutionLimitKind.None)
-            throw new InvalidOperationException($"UTF-8 validation exceeded the invocation {breach} budget.");
-    }
-
     // Patterns, templates and assembled outputs retain bounded strict checking.
     // Regex subjects already satisfy their caller-valid text contract.
     internal static Utf8ExecutionLimitKind TryValidateOnly(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)

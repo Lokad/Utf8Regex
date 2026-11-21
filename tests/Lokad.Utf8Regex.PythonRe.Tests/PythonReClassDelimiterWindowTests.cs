@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.PythonRe.Tests;
 
@@ -141,7 +140,6 @@ public sealed class PythonReClassDelimiterWindowTests
             Assert.True(invocation.Ledger.TryReserve(13));
             try
             {
-                Utf8Validation.ThrowIfInvalidOnly(input, ref invocation);
                 var outcome = Utf8SliceRunner.CountFromBytes(program, input, 0, [], [], ref invocation);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                 {

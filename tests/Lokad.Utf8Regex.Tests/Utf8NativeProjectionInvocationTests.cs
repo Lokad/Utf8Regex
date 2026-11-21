@@ -28,10 +28,6 @@ public sealed class Utf8NativeProjectionInvocationTests
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8Validation.TryValidateOnly(input, ref invocation));
         Assert.True(invocation.Budget.Steps >= (ulong)input.Length / 2048);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        var only = Metered();
-        Utf8Validation.ThrowIfInvalidOnly(input, ref only);
-        Assert.Equal(invocation.Budget.Steps, only.Budget.Steps);
-        Assert.Equal(0UL, only.Ledger.ReservedBytes);
     }
     public static IEnumerable<object[]> InvalidCases()
     {
@@ -52,11 +48,6 @@ public sealed class Utf8NativeProjectionInvocationTests
         Assert.Equal(expected.ParamName, actual.ParamName);
         Assert.Equal(expected.Message, actual.Message);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        var only = Metered();
-        var invalidOnly = Assert.Throws<ArgumentException>(() => Utf8Validation.ThrowIfInvalidOnly(input, ref only));
-        Assert.Equal(expected.ParamName, invalidOnly.ParamName);
-        Assert.Equal(expected.Message, invalidOnly.Message);
-        Assert.Equal(0UL, only.Ledger.ReservedBytes);
     }
     [Theory]
     [InlineData(0)]

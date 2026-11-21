@@ -2,7 +2,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -237,12 +236,10 @@ public sealed class Utf8ClassPrefixCandidateTests
         const int spaces = 200000;
         const string pattern = @"\p{Lu}+\s+result";
         var input = Encoding.UTF8.GetBytes("😀" + new string(' ', spaces) + "result");
-        var calibration = new Utf8SliceInvocation(new(4000000, 0, 0), Regex.InfiniteMatchTimeout, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
         // Search and the backwards whitespace scan finish well before this
         // point. The tiny workspace cap prevents a failed VM attempt from
         // satisfying this witness instead of the forward membership scan.
-        var threshold = calibration.Budget.Steps + spaces + spaces / 2;
+        const ulong threshold = spaces + spaces / 2;
         using var token = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -549,9 +546,6 @@ public sealed class Utf8ClassPrefixCandidateTests
             _ => string.Concat(Enumerable.Repeat("word Holmesx ", 16000)),
         };
         var input = Encoding.UTF8.GetBytes(text);
-        var calibration = new Utf8SliceInvocation(new(4000000, 0, 0), Regex.InfiniteMatchTimeout, default);
-        Utf8Validation.ThrowIfInvalidOnly(input, ref calibration);
-        var threshold = ((calibration.Budget.Steps / 64) + 1) * 64;
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
@@ -563,7 +557,7 @@ public sealed class Utf8ClassPrefixCandidateTests
         var entered = false;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps < threshold) return;
+            if (steps < 128) return;
             entered = true;
             if (expire) ticks = 50; else cancellation.Cancel();
         });
