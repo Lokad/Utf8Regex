@@ -262,18 +262,16 @@ internal static partial class Utf8SliceRunner
 
     private static bool TryReadScalar(ReadOnlySpan<byte> input, int edge, bool rightToLeft, out Rune scalar, out int width)
     {
+        if ((uint)edge <= (uint)input.Length)
+        {
+            var status = rightToLeft
+                ? Rune.DecodeLastFromUtf8(input[..edge], out scalar, out width)
+                : Rune.DecodeFromUtf8(input[edge..], out scalar, out width);
+            if (status == OperationStatus.Done) return true;
+        }
         scalar = default;
         width = 0;
-        if (rightToLeft)
-        {
-            if (!TryGetScalarWidthEndingAt(input, edge, out width)) return false;
-            edge -= width;
-        }
-        if ((uint)edge >= (uint)input.Length) return false;
-        if (Rune.DecodeFromUtf8(input.Slice(edge), out scalar, out var decodedWidth) != OperationStatus.Done) return false;
-        if (rightToLeft && decodedWidth != width) return false;
-        width = decodedWidth;
-        return true;
+        return false;
     }
 
     private static bool IsWordScalarStartingAt(Utf8SliceProgram program, in Utf8SliceInstruction instruction,
