@@ -203,6 +203,47 @@ public sealed class Utf8CaptureSlotMatchTests
     }
 
     [Fact]
+    public void OrderedSingleAtomRepeatsKeepCapturesAndRefundFundedSearch()
+    {
+        using var regex = new Utf8Regex("(?<left>[éö]+ed)|(?<right>[a-z]*ly)", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromSeconds(10),
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 4096, MaxWorkingBytes = 4096 }
+        });
+        var prefix = "ly 😀 " + new string('q', 320) + " ";
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var input = Encoding.UTF8.GetBytes(prefix + "éöed ly drolly");
+        var slots = new Utf8CaptureRange[3];
+        var account = new Account();
+        using var source = new CancellationTokenSource();
+        var floor = Encoding.UTF8.GetByteCount("ly 😀 ");
+        var first = new Utf8CaptureRange(start, start + 6);
+        Assert.Equal(first, regex.Match(input, floor, slots, source.Token, workingMemoryAllowance: account));
+        Assert.Equal(first, slots[1]);
+        Assert.False(slots[2].Success);
+        Assert.Equal(0UL, account.Held);
+
+        using (var cursor = regex.CreateMatchCursor(input, floor, source.Token, account))
+        {
+            Assert.True(cursor.MoveNext(out var retained));
+            Assert.True(cursor.MoveNext(out var emptyRepeat));
+            Assert.Equal(new Utf8CaptureRange(start + 7, start + 9), emptyRepeat.GetCaptures(2).ToArray().Single());
+            Assert.True(cursor.MoveNext(out var nonemptyRepeat));
+            Assert.Equal(new Utf8CaptureRange(start + 10, input.Length), nonemptyRepeat.Value);
+            Assert.False(cursor.MoveNext(out _));
+            Assert.Equal(first, retained.GetCaptures(1).ToArray().Single());
+        }
+
+        Assert.True(account.Peak > 0);
+        Assert.Equal(0UL, account.Held);
+        account.Maximum = 0;
+        Assert.Throws<Utf8MemoryAdmissionException>(() =>
+            regex.Match(input, floor, slots, source.Token, workingMemoryAllowance: account));
+        Assert.Equal(0UL, account.Held);
+        Assert.All(slots, range => Assert.False(range.Success));
+    }
+
+    [Fact]
     public void OrdinaryOrderedRangeCanUseOnlyTheOriginVectors()
     {
         const string hit = "ab😀baz";

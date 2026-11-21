@@ -380,7 +380,7 @@ public sealed partial class Utf8Regex : IDisposable
             return true;
         }
         if (program.IsNonBacktracking && program.NonBacktrackingEpsilonAncestors.Length != 0 ||
-            Utf8SliceRunner.CanSearchOrdinaryOrdered(program, input.Length - startByte, ref invocation))
+            Utf8SliceRunner.CanSearchOrdinaryOrdered(program, input.Length - startByte, search, ref invocation))
         {
             var breach = Utf8SliceRunner.IsMatchPackedNonBacktracking(program, input, startByte, ref invocation, out var found);
             if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();

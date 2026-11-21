@@ -505,7 +505,7 @@ internal static partial class Utf8SliceRunner
             return RunNonBacktracking(program, input, fromByte, captureStarts, captureEnds,
                 false, false, ref invocation);
         }
-        if (CanSearchOrdinaryOrdered(program, input.Length - fromByte, ref invocation) &&
+        if (CanSearchOrdinaryOrdered(program, input.Length - fromByte, candidatePlan, ref invocation) &&
             CanAdmitOrdinaryOrderedRange(program, ref invocation))
         {
             var selected = FindOrderedRegularRange(program, input, fromByte, ref invocation);

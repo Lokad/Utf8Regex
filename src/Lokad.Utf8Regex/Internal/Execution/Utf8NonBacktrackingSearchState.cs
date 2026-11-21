@@ -29,7 +29,7 @@ internal sealed class Utf8NonBacktrackingSearchState
 
     internal bool IsWindow => _windowEnd >= 0;
 
-    internal static int[] BuildEpsilonOrder(Utf8SliceInstruction[] instructions, out ulong[] ancestors,
+    internal static int[] BuildEpsilonOrder(ReadOnlySpan<Utf8SliceInstruction> instructions, out ulong[] ancestors,
         out (ulong[] Closures, byte[] Leaves, uint Conditions) ordered)
     {
         ancestors = [];

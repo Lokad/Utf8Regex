@@ -519,6 +519,11 @@ internal sealed class Utf8SliceProgram
                 case Utf8SliceInstructionKind.Jump:
                     nonBacktrackingOrderedForwardOnly &= instruction.A > pc;
                     break;
+                case Utf8SliceInstructionKind.RepeatEnd:
+                    nonBacktrackingOrderedForwardOnly = false;
+                    break;
+                case Utf8SliceInstructionKind.RepeatGreedy:
+                case Utf8SliceInstructionKind.RepeatExit:
                 case Utf8SliceInstructionKind.CaptureStart:
                 case Utf8SliceInstructionKind.CaptureEnd:
                 case Utf8SliceInstructionKind.Anchor:
@@ -1269,7 +1274,10 @@ internal static class Utf8SliceLowerer
             lowerer.HasCounterlessAlternationLoop && lowerer.RepeatCount == 0 &&
             Utf8SliceRunner.CanPrepareOrdinaryOrderedSearch(instructions, lowerer.Budget);
         var epsilonOrder = prepareEpsilon
-            ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions, out epsilonAncestors, out ordered) : [];
+            ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions, out epsilonAncestors, out ordered)
+            : !lowerer.MirrorExecute && lowerer.RepeatCount != 0 && lowerer.HasAlternation
+                ? Utf8SliceRunner.BuildOrdinaryRepeatClosures(instructions, lowerer.Budget, out epsilonAncestors, out ordered)
+                : [];
         return Utf8SliceProgram.Create(
             instructions,
             lowerer.SetMasks.Take(),
@@ -1365,6 +1373,7 @@ internal static class Utf8SliceLowerer
         internal Utf8NonBacktrackingLoopScope? NonBacktrackingScope;
         internal bool HasNullableNonBacktrackingLoop;
         internal bool HasCounterlessAlternationLoop;
+        internal bool HasAlternation;
         internal int GroupCount;
         internal bool SawContiguousAnchor;
         internal bool HasConditionalTest;
@@ -1507,6 +1516,7 @@ internal static class Utf8SliceLowerer
                         throw new ArgumentException("Slice alternations need at least one branch.", nameof(node));
                     if (frame.Stage == 0)
                     {
+                        HasAlternation |= alternate.Branches.Length > 1;
                         frame.Scratch = Utf8ConstructionBuffer<int>.Create(Budget);
                         frame.Stage = 1;
                     }

@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
@@ -45,14 +46,65 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
+    internal static int[] BuildOrdinaryRepeatClosures(ReadOnlySpan<Utf8SliceInstruction> instructions,
+        Utf8ConstructionBudget budget, out ulong[] ancestors, out (ulong[] Closures, byte[] Leaves, uint Conditions) ordered)
+    {
+        ancestors = [];
+        ordered = ([], [], 0);
+        if (instructions.Length > 64) return [];
+
+        // The projected graph keeps the original atom indexes. Only the
+        // closures survive, so capture replay still uses the original VM.
+        Span<Utf8SliceInstruction> projected = stackalloc Utf8SliceInstruction[instructions.Length];
+        budget.ChargeWork(2UL * (ulong)instructions.Length);
+        instructions.CopyTo(projected);
+        for (var pc = 0; pc < instructions.Length; pc++)
+        {
+            var repeat = instructions[pc];
+            if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy) continue;
+            if (instructions.Length - pc < 5 || repeat.RepeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1 ||
+                repeat.A != pc + 3 || instructions[pc + 1].Kind is not (Utf8SliceInstructionKind.Literal or
+                    Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid or
+                    Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.Dot) ||
+                instructions[pc + 2].Kind != Utf8SliceInstructionKind.RepeatEnd || instructions[pc + 2].A != pc ||
+                instructions[pc + 3].Kind != Utf8SliceInstructionKind.RepeatExit || instructions[pc + 3].A != repeat.B)
+                return [];
+
+            if (repeat.RepeatMinimum == 0)
+            {
+                projected[pc] = new(Utf8SliceInstructionKind.Fork, pc + 3, 0, 0, 0);
+                projected[pc + 2] = new(Utf8SliceInstructionKind.Jump, pc, 0, 0, 0);
+                projected[pc + 3] = new(Utf8SliceInstructionKind.Jump, pc + 4, 0, 0, 0);
+            }
+            else
+            {
+                // Consume the first atom, then give the repeat edge priority
+                // over leaving. The original exit slot is local to the loop.
+                projected[pc] = new(Utf8SliceInstructionKind.Jump, pc + 1, 0, 0, 0);
+                projected[pc + 2] = new(Utf8SliceInstructionKind.Fork, pc + 4, 0, 0, 0);
+                projected[pc + 3] = new(Utf8SliceInstructionKind.Jump, pc + 1, 0, 0, 0);
+            }
+            pc += 3;
+        }
+        return CanPrepareOrdinaryOrderedSearch(projected, budget)
+            ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(projected, out ancestors, out ordered) : [];
+    }
+
     internal static bool CanSearchOrdinaryOrdered(Utf8SliceProgram program, int remaining,
-        ref Utf8SliceInvocation invocation)
-        // Keep the ordinary route when the caller imposes a depth cap.
-        => remaining >= 256 && program.NonBacktrackingOrderedClosures.Length != 0 &&
-            invocation.Budget.Limits.MaxDepth == 0;
+        in Utf8SearchPlan search, ref Utf8SliceInvocation invocation)
+    {
+        if (remaining < 256 || program.NonBacktrackingOrderedClosures.Length == 0) return false;
+        var depth = invocation.Budget.Limits.MaxDepth;
+        if (program.RepeatCount == 0) return depth == 0;
+
+        // Keep more selective prepared starts. Tight depth limits retain
+        // the scalar path, which can admit less than a complete frontier.
+        return search.Kind == Utf8SearchKind.None &&
+            (depth == 0 || depth >= (uint)(program.NonBacktrackingOrderedLeaves.Length - 1));
+    }
 
     internal static (ulong[] Closures, byte[] Leaves, uint Conditions) BuildOrderedRegularClosures(
-        Utf8SliceInstruction[] instructions, ReadOnlySpan<int> epsilonOrder, Utf8ConstructionBudget budget)
+        ReadOnlySpan<Utf8SliceInstruction> instructions, ReadOnlySpan<int> epsilonOrder, Utf8ConstructionBudget budget)
     {
         if (instructions.Length > 64) return ([], [], 0);
         budget.ChargeWork((ulong)instructions.Length);
@@ -216,7 +268,7 @@ internal static partial class Utf8SliceRunner
     private static bool CanAdmitOrdinaryOrderedRange(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
     {
         ref var ledger = ref invocation.Ledger;
-        if (ledger.HasMemoryAllowance) return false;
+        if (ledger.HasMemoryAllowance && program.RepeatCount == 0) return false;
         var cap = invocation.Budget.Limits.MaxWorkingBytes;
         if (cap == 0) return true;
         // The origin vectors are required. The transition table is optional.
@@ -230,6 +282,11 @@ internal static partial class Utf8SliceRunner
     {
         const int capacity = 16;
         var leaves = program.NonBacktrackingOrderedLeaves;
+        if (program.RepeatCount != 0 && !program.IsNonBacktracking)
+        {
+            var depth = invocation.Budget.TryNoteDepth((uint)(leaves.Length - 1));
+            if (depth != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, depth);
+        }
         var originCapacity = GetOrderedRangeOriginCapacity(program);
         var originBytes = GetOrderedRangeOriginBytes(originCapacity);
         var cacheBytes = (ulong)(capacity * Unsafe.SizeOf<OrderedRegularTransition>());
