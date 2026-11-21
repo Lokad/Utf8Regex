@@ -507,7 +507,7 @@ internal static partial class Utf8SliceRunner
         }
         var remaining = program.RightToLeft ? fromByte : input.Length - fromByte;
         if (CanSearchOrdinaryOrdered(program, remaining, candidatePlan, ref invocation) &&
-            CanAdmitOrdinaryOrderedRange(program, ref invocation))
+            CanAdmitOrdinaryOrderedRows(program, ref invocation))
         {
             var selected = FindOrderedRegularRange(program, input, fromByte, ref invocation);
             if (!selected.Found || captureStarts.Length == 0 && !collectHistory) return selected;
@@ -1076,6 +1076,13 @@ internal static partial class Utf8SliceRunner
             (prefixRepeatAscii, prefixRepeatFollower) = GetExactPrefixRepeatHead(program, afterPrefix);
             if (prefixRepeatAscii.HasValue) prefixContinuation = afterPrefix;
         }
+        var remaining = program.RightToLeft ? fromByte : input.Length - fromByte;
+        if (CanSearchOrdinaryOrdered(program, remaining, candidatePlan, ref invocation) &&
+            captureStarts.Length == 0 && !seekLiteral && !seekBeginning && !seekVeryEnd &&
+            whitespaceLiteral < 0 && branchWindow.Min == 0 && leadingPrefix.IsEmpty &&
+            CanAdmitOrdinaryOrderedRows(program, ref invocation))
+            return CountOrderedRegular(program, input, fromByte, ref invocation);
+
         // When Count has no stronger start search, reject an impossible ASCII
         // boundary before resetting the VM. Profile predicates and wider
         // neighbors keep the complete scalar check inside the VM.

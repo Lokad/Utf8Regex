@@ -32,6 +32,7 @@ public sealed class Utf8SliceRtlTests
         var expected = new Regex(pattern, options).Matches(text);
         Assert.Equal(2, expected.Count);
         Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(trailing), source.Token));
+        Assert.Equal(expected.Count, regex.Count(input, source.Token));
 
         var slots = new Utf8CaptureRange[3];
         AssertRange(expected[0], regex.Match(input, input.Length, slots, source.Token));
@@ -57,6 +58,18 @@ public sealed class Utf8SliceRtlTests
             Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index)), range.StartOffsetInBytes);
             Assert.Equal(Encoding.UTF8.GetByteCount(text.AsSpan(0, capture.Index + capture.Length)), range.EndOffsetInBytes);
         }
+    }
+
+    [Theory]
+    [InlineData("a[bc]+|[bc]+|a|", 2)]
+    [InlineData("[bc]+|a[bc]+|a|", 3)]
+    public void OrderedCountKeepsReversePriorityAndEmptyScalarProgress(string pattern, int matchesPerBlock)
+    {
+        const int repetitions = 48;
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("abc😀", repetitions)));
+        using var regex = new Utf8Regex(pattern, RegexOptions.RightToLeft);
+
+        Assert.Equal(matchesPerBlock * repetitions + 1, regex.Count(input));
     }
 
     public static IEnumerable<object?[]> SliceRtlShapes()

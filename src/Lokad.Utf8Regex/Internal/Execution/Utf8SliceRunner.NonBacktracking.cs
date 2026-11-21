@@ -429,6 +429,13 @@ internal static partial class Utf8SliceRunner
     {
         breach = invocation.TryChargeInputStep();
         if (breach != Utf8ExecutionLimitKind.None) return false;
+        return MatchesRegularAtom(program, instruction, scalar, ref invocation, out breach);
+    }
+
+    private static bool MatchesRegularAtom(Utf8SliceProgram program, Utf8SliceInstruction instruction, Rune scalar,
+        ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
+    {
+        breach = Utf8ExecutionLimitKind.None;
         switch (instruction.Kind)
         {
             case Utf8SliceInstructionKind.Literal:

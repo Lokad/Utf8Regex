@@ -259,22 +259,121 @@ internal static partial class Utf8SliceRunner
     private static void AddStartByte(byte first, Span<ulong> starts)
         => starts[first >> 6] |= 1UL << (first & 63);
 
-    private static int GetOrderedRangeOriginCapacity(Utf8SliceProgram program)
+    private static int GetOrderedRegularRowCapacity(Utf8SliceProgram program)
         => Math.Max(9, program.NonBacktrackingOrderedLeaves.Length - 1);
 
-    private static ulong GetOrderedRangeOriginBytes(int capacity)
+    private static ulong GetOrderedRegularRowBytes(int capacity)
         => (ulong)(2 * capacity * Unsafe.SizeOf<int>());
 
-    private static bool CanAdmitOrdinaryOrderedRange(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
+    private static bool CanAdmitOrdinaryOrderedRows(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
     {
         ref var ledger = ref invocation.Ledger;
         if (ledger.HasMemoryAllowance && program.RepeatCount == 0) return false;
         var cap = invocation.Budget.Limits.MaxWorkingBytes;
         if (cap == 0) return true;
-        // The origin vectors are required. The transition table is optional.
-        // Keep ordinary verification when the numeric cap cannot admit both vectors.
-        var bytes = GetOrderedRangeOriginBytes(GetOrderedRangeOriginCapacity(program));
+        // Both rows are required. The range transition table is optional.
+        // Keep ordinary verification when the numeric cap cannot admit them.
+        var bytes = GetOrderedRegularRowBytes(GetOrderedRegularRowCapacity(program));
         return bytes <= cap && ledger.ReservedBytes <= cap - bytes;
+    }
+
+    private const int OrderedCountFail = -1;
+    private const int OrderedCountEmpty = -2;
+
+    private static Utf8SliceCountOutcome CountOrderedRegular(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int fromByte, ref Utf8SliceInvocation invocation)
+    {
+        var leaves = program.NonBacktrackingOrderedLeaves;
+        if (program.RepeatCount != 0)
+        {
+            var depth = invocation.Budget.TryNoteDepth((uint)(leaves.Length - 1));
+            if (depth != Utf8ExecutionLimitKind.None) return new(0, depth);
+        }
+        var capacity = GetOrderedRegularRowCapacity(program);
+        var bytes = GetOrderedRegularRowBytes(capacity);
+        var breach = invocation.TryReserveWorking(bytes);
+        if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+        try
+        {
+            Span<int> row = stackalloc int[capacity];
+            Span<int> following = stackalloc int[capacity];
+            var closures = program.NonBacktrackingOrderedClosures;
+            var conditions = program.NonBacktrackingOrderedConditions;
+            var reverse = program.RightToLeft;
+            var edge = reverse ? 0 : input.Length;
+            var followingCount = 0;
+            var hasScalar = false;
+            var scalar = default(Rune);
+            while (true)
+            {
+                // One quantum covers a row of at most fifteen leaves. Large
+                // class tables keep their own predicate work and checkpoints.
+                breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                // Carry the count from the chosen endpoint. Distinguish an
+                // empty acceptance until a parent consumes the first scalar.
+                for (var tag = 1; tag < leaves.Length; tag++)
+                {
+                    if ((conditions & (1U << tag)) != 0) continue;
+                    var pc = leaves[tag];
+                    var instruction = program.Instructions[pc];
+                    if (instruction.Kind == Utf8SliceInstructionKind.Accept)
+                    {
+                        row[tag - 1] = OrderedCountEmpty;
+                        continue;
+                    }
+                    var outcome = hasScalar ? FirstOrderedCount(closures[pc + 1], following) : OrderedCountFail;
+                    if (outcome != OrderedCountFail &&
+                        !MatchesRegularAtom(program, instruction, scalar, ref invocation, out breach))
+                        outcome = OrderedCountFail;
+                    if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                    row[tag - 1] = outcome == OrderedCountEmpty ? followingCount : outcome;
+                }
+                // Conditions appear after their epsilon dependencies.
+                foreach (var pc in program.NonBacktrackingEpsilonOrder)
+                {
+                    var outcome = FirstOrderedCount(closures[pc + 1], row);
+                    var instruction = program.Instructions[pc];
+                    if (outcome != OrderedCountFail && !(instruction.Kind == Utf8SliceInstructionKind.Anchor
+                        ? HoldsNonBacktrackingAnchor(instruction, input, edge)
+                        : MatchesBoundary(program, instruction, input, edge)))
+                        outcome = OrderedCountFail;
+                    row[(int)closures[pc] - 1] = outcome;
+                }
+                var match = FirstOrderedCount(closures[0], row);
+                var count = match switch
+                {
+                    OrderedCountFail => followingCount,
+                    OrderedCountEmpty => followingCount + 1,
+                    _ => match + 1,
+                };
+                if (edge == fromByte)
+                {
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    invocation.Budget.CheckDeadline();
+                    return new(count, Utf8ExecutionLimitKind.None);
+                }
+                if (!TryReadScalar(input, edge, !reverse, out scalar, out var width))
+                    throw new InvalidOperationException("Ordered traversal requires a complete scalar.");
+                edge += reverse ? width : -width;
+                hasScalar = true;
+                followingCount = count;
+                var previous = following;
+                following = row;
+                row = previous;
+            }
+        }
+        finally { invocation.Ledger.Release(bytes); }
+    }
+
+    private static int FirstOrderedCount(ulong tags, ReadOnlySpan<int> row)
+    {
+        for (; tags != 0; tags >>= OrderedTagBits)
+        {
+            var value = row[(int)(tags & OrderedTagMask) - 1];
+            if (value != OrderedCountFail) return value;
+        }
+        return OrderedCountFail;
     }
 
     internal static Utf8SliceSearchOutcome FindOrderedRegularRange(Utf8SliceProgram program,
@@ -287,8 +386,8 @@ internal static partial class Utf8SliceRunner
             var depth = invocation.Budget.TryNoteDepth((uint)(leaves.Length - 1));
             if (depth != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, depth);
         }
-        var originCapacity = GetOrderedRangeOriginCapacity(program);
-        var originBytes = GetOrderedRangeOriginBytes(originCapacity);
+        var originCapacity = GetOrderedRegularRowCapacity(program);
+        var originBytes = GetOrderedRegularRowBytes(originCapacity);
         var cacheBytes = (ulong)(capacity * Unsafe.SizeOf<OrderedRegularTransition>());
         var limit = invocation.Budget.Limits.MaxWorkingBytes;
         var total = originBytes + cacheBytes;
