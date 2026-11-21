@@ -14,10 +14,10 @@ namespace Lokad.Utf8Regex.Posix;
 // Pass this owner by reference; no borrowed span or result aliases its buffers.
 internal partial struct PosixWorkspace
 {
-    private readonly PosixProgram _program;
+    private PosixProgram _program;
     private ulong _stateBytes;
-    private readonly int _openOffset;
-    private readonly int _lastOffset;
+    private int _openOffset;
+    private int _lastOffset;
     private Utf8InvocationStateBuffer<Frame> _frames;
     private Utf8InvocationStateBuffer<Mutation> _undo;
     private Utf8InvocationStateBuffer<TagEvent> _trace;
@@ -33,20 +33,22 @@ internal partial struct PosixWorkspace
 
     internal readonly int StateLength => _lastOffset + (_lastOffset - _openOffset);
 
-    internal PosixWorkspace(PosixProgram program, ref Utf8SliceInvocation invocation, bool captureHistory = true)
+    internal static void Initialize(out PosixWorkspace workspace, PosixProgram program,
+        ref Utf8SliceInvocation invocation, bool captureHistory = true)
     {
-        _program = program;
-        _openOffset = program.DirectGreedyRuns ? 0 : checked(program.Scalar.RepeatCount * 2);
+        workspace = default;
+        workspace._program = program;
+        workspace._openOffset = program.DirectGreedyRuns ? 0 : checked(program.Scalar.RepeatCount * 2);
         var tags = captureHistory ? program.FirstAcceptanceIsLongest ? program.Parents.Length : program.CaptureTags.Length - 1 : 0;
-        _lastOffset = checked(_openOffset + tags);
-        var count = checked(_lastOffset + tags);
+        workspace._lastOffset = checked(workspace._openOffset + tags);
+        var count = checked(workspace._lastOffset + tags);
         if (count == 0) return;
         var bytes = Utf8ConstructionBudget.ArrayBytes<int>(count);
         Check(invocation.TryReserveWorking(bytes), ref invocation);
         try
         {
             Charge(ref invocation);
-            _stateBytes = bytes;
+            workspace._stateBytes = bytes;
         }
         catch { invocation.Ledger.Release(bytes); throw; }
     }

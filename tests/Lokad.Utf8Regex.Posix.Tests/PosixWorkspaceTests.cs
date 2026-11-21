@@ -46,14 +46,14 @@ public sealed class PosixWorkspaceTests
         PosixWorkspace first = default, second = default, reused = default;
         try
         {
-            first = new(program, ref invocation);
-            second = new(program, ref invocation);
+            PosixWorkspace.Initialize(out first, program, ref invocation);
+            PosixWorkspace.Initialize(out second, program, ref invocation);
             var firstState = new int[first.StateLength];
             var secondState = new int[second.StateLength];
             Assert.True(first.Find("sku007"u8, firstState, 0, false, ref invocation, out _, out _));
             Assert.True(second.Find("xyz42"u8, secondState, 0, false, ref invocation, out _, out _));
             second.Release(ref invocation);
-            reused = new(program, ref invocation);
+            PosixWorkspace.Initialize(out reused, program, ref invocation);
             Assert.False(reused.Find("1"u8, secondState, 0, false, ref invocation, out _, out _));
             Assert.False(reused.GetCapture(secondState, 2, ref invocation, out _, out _));
             Assert.True(reused.Find("q4"u8, secondState, 0, false, ref invocation, out _, out _));
@@ -135,7 +135,7 @@ public sealed class PosixWorkspaceTests
         {
             var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
             {
-                workspace = new PosixWorkspace(program, ref invocation);
+                PosixWorkspace.Initialize(out workspace, program, ref invocation);
                 workspace.Find("aaaa"u8, new int[workspace.StateLength], 0, false, ref invocation, out _, out _);
             });
             Assert.Equal(kind, error.ResourceKind);
@@ -149,12 +149,12 @@ public sealed class PosixWorkspaceTests
         var program = PosixProgram.Compile("(a|aa)*", default);
         var refused = new Account(0);
         var denied = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default, refused);
-        Assert.Throws<Utf8MemoryAdmissionException>(() => new PosixWorkspace(program, ref denied));
+        Assert.Throws<Utf8MemoryAdmissionException>(() => PosixWorkspace.Initialize(out _, program, ref denied));
         Assert.Equal(0UL, refused.Used);
         using var canceled = new CancellationTokenSource();
         var account = new Account(1 << 20) { AfterGrant = canceled.Cancel };
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, canceled.Token, account);
-        var error = Assert.Throws<OperationCanceledException>(() => new PosixWorkspace(program, ref invocation));
+        var error = Assert.Throws<OperationCanceledException>(() => PosixWorkspace.Initialize(out _, program, ref invocation));
         Assert.Equal(canceled.Token, error.CancellationToken);
         Assert.Equal(0UL, account.Used); Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
     }
@@ -168,7 +168,7 @@ public sealed class PosixWorkspaceTests
         var regex = new Utf8PosixRegex(pattern);
         var program = PosixProgram.Compile(pattern, default);
         var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
-        var workspace = new PosixWorkspace(program, ref invocation);
+        PosixWorkspace.Initialize(out var workspace, program, ref invocation);
         try { Assert.Equal(2 * groups, workspace.StateLength); }
         finally { workspace.Release(ref invocation); }
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
@@ -210,7 +210,7 @@ public sealed class PosixWorkspaceTests
         PosixWorkspace workspace = default;
         try
         {
-            workspace = new PosixWorkspace(program, ref invocation);
+            PosixWorkspace.Initialize(out workspace, program, ref invocation);
             var state = new int[workspace.StateLength];
             var error = Record.Exception(() => { workspace.Find(input, state, 0, false, ref invocation, out _, out _); });
             Assert.True(fired);

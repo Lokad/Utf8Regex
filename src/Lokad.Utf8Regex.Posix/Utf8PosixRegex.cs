@@ -99,7 +99,7 @@ public sealed class Utf8PosixRegex : IDisposable
         try
         {
             CheckStart(input, 0, ref invocation);
-            workspace = CreateWorkspace(ref invocation, captureHistory: false);
+            InitializeWorkspace(out workspace, ref invocation, captureHistory: false);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             return workspace.Find(input, state, 0, true, ref invocation, out _, out _);
         }
@@ -121,7 +121,7 @@ public sealed class Utf8PosixRegex : IDisposable
         {
             CheckStart(input, startOffsetInBytes, ref invocation);
             var captureHistory = output.Length > 1;
-            workspace = CreateWorkspace(ref invocation, captureHistory);
+            InitializeWorkspace(out workspace, ref invocation, captureHistory);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             if (!workspace.Find(input, state, startOffsetInBytes, false, ref invocation, out var start, out var end, captureHistory))
             { ClearOutput(output, ref invocation); return default; }
@@ -143,7 +143,7 @@ public sealed class Utf8PosixRegex : IDisposable
         try
         {
             CheckStart(input, startOffsetInBytes, ref invocation);
-            workspace = CreateWorkspace(ref invocation, captureHistory: false);
+            InitializeWorkspace(out workspace, ref invocation, captureHistory: false);
             Span<int> state = workspace.StateLength <= StackStateLimit ? stackalloc int[workspace.StateLength] : new int[workspace.StateLength];
             var count = 0; var position = startOffsetInBytes;
             while (workspace.Find(input, state, position, false, ref invocation, out var start, out var end, captureHistory: false))
@@ -177,8 +177,8 @@ public sealed class Utf8PosixRegex : IDisposable
         return Utf8SliceInvocation.CreateExclusive(_limits, MatchTimeout, token, allowance ?? _programMemory?.Allowance);
     }
 
-    internal PosixWorkspace CreateWorkspace(ref Utf8SliceInvocation invocation, bool captureHistory = true)
-        => new(_program, ref invocation, captureHistory);
+    internal void InitializeWorkspace(out PosixWorkspace workspace, ref Utf8SliceInvocation invocation, bool captureHistory = true)
+        => PosixWorkspace.Initialize(out workspace, _program, ref invocation, captureHistory);
 
     internal static void CheckStart(ReadOnlySpan<byte> input, int start, ref Utf8SliceInvocation invocation)
     {
