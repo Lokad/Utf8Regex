@@ -10,6 +10,20 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ClassPrefixCandidateTests
 {
     [Theory]
+    [InlineData("[A-Z]", 3)]
+    [InlineData("[ A-Z]", 4)]
+    public void CountAfterLiteralFamilyPreservesWideRunsAndOverlappingFollowers(string follower, int count)
+    {
+        var pattern = @"\b(?:record|struct|class)\s+" + follower + @"\w+";
+        var text = new string('!', 2046) + "érecord Ab!record Ab!struct\u3000Cd!class" +
+            new string(' ', 17) + "Ef!class  lower!classAb!";
+        using var source = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, policy: new() { ResourcePolicy = Funded });
+
+        Assert.Equal(count, regex.Count(Encoding.UTF8.GetBytes(text), source.Token));
+    }
+
+    [Theory]
     [InlineData("[α-ω]{2}", "Ͽ", "λω")]
     [InlineData("[ࠀ-ࠇ]{2}", "ࠈ", "ࠀࠇ")]
     [InlineData("[😀-😇]{2}", "😈", "😀😇")]

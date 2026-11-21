@@ -1063,14 +1063,14 @@ internal static partial class Utf8SliceRunner
         var leadingPrefix = input.Length - fromByte >= 256 && whitespaceLiteral < 0 && leadingSecond >= 0
             ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage)
             : default;
-        var (prefixRepeatAscii, prefixRepeatLiteral) = GetExactPrefixRepeatHead(program, prefixContinuation);
+        var (prefixRepeatAscii, prefixRepeatFollower) = GetExactPrefixRepeatHead(program, prefixContinuation);
         if (!leadingPrefix.IsEmpty && !program.HasContiguousAnchor &&
             (leadingScalarIndex == 0 || leadingScalarIndex == 1 && first.Kind == Utf8SliceInstructionKind.Boundary))
         {
             // The checked search has verified these literals. Reuse the family
             // repeat proof when only the leading boundary still needs checking.
             var afterPrefix = leadingScalarIndex + leadingPrefix.Length;
-            (prefixRepeatAscii, prefixRepeatLiteral) = GetExactPrefixRepeatHead(program, afterPrefix);
+            (prefixRepeatAscii, prefixRepeatFollower) = GetExactPrefixRepeatHead(program, afterPrefix);
             if (prefixRepeatAscii.HasValue) prefixContinuation = afterPrefix;
         }
         // When Count has no stronger start search, reject an impossible ASCII
@@ -1217,7 +1217,7 @@ internal static partial class Utf8SliceRunner
                 if (prefixRepeatAscii.HasValue)
                 {
                     var extra = ScanExactPrefixRepeatHead(input[(position + prefixBytes)..],
-                        prefixRepeatAscii, prefixRepeatLiteral);
+                        prefixRepeatAscii, prefixRepeatFollower);
                     if (extra < 0)
                     {
                         position++;

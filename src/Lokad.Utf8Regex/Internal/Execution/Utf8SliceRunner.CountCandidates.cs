@@ -59,39 +59,43 @@ internal static partial class Utf8SliceRunner
         return continuation;
     }
 
-    private static (Utf8SearchAsciiSet Ascii, byte Literal) GetExactPrefixRepeatHead(
+    private static (Utf8SearchAsciiSet Repeated, Utf8SearchAsciiSet Follower) GetExactPrefixRepeatHead(
         Utf8SliceProgram program, int index)
     {
         var code = program.Instructions.AsSpan();
         if (index == 0 || code.Length - index < 5 || !IsSingleClassRepeat(code, index) ||
             code[index] is not { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } ||
-            code[index + 4] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal)
+            !program.TryGetUnfoldedAsciiSet(code[index + 4], out var follower, out var asciiOnly) || !asciiOnly)
             return default;
 
         var atom = code[index + 1];
+        Utf8SearchAsciiSet repeated;
         if (atom is { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
         {
             // The unfolded hybrid mask includes all of its ASCII members.
             var mask = program.SetMasks[atom.A].AsSpan();
-            var ascii = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
+            repeated = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
                 BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
-            return ascii.Contains((byte)literal.A) ? default : (ascii, (byte)literal.A);
         }
-        return program.TryGetUnfoldedAsciiSet(atom, out var set, out _) && !set.Contains((byte)literal.A)
-            ? (set, (byte)literal.A) : default;
+        else if (!program.TryGetUnfoldedAsciiSet(atom, out repeated, out _))
+            return default;
+
+        return ((repeated.Low & follower.Low) | (repeated.High & follower.High)) == 0
+            ? (repeated, follower) : default;
     }
 
     // The candidate step covers this bounded scan. Only a complete ASCII
-    // run can prove the next literal's unique endpoint. Wider or longer runs
+    // run can prove the following scalar's unique start. Wider or longer runs
     // leave the existing scalar attempt in charge.
-    private static int ScanExactPrefixRepeatHead(ReadOnlySpan<byte> input, Utf8SearchAsciiSet ascii, byte literal)
+    private static int ScanExactPrefixRepeatHead(ReadOnlySpan<byte> input, Utf8SearchAsciiSet ascii,
+        Utf8SearchAsciiSet follower)
     {
         var length = Math.Min(16, input.Length);
         for (var offset = 0; offset < length; offset++)
         {
             var next = input[offset];
             if (next >= 128) return 0;
-            if (!ascii.Contains(next)) return offset > 0 && next == literal ? offset + 1 : -1;
+            if (!ascii.Contains(next)) return offset > 0 && follower.Contains(next) ? offset + 1 : -1;
         }
         return length == input.Length ? -1 : 0;
     }
