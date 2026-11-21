@@ -200,7 +200,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
     {
         var breach = Utf8NonBacktrackingSearchState.TryCreate(program, _input.Span, ref _invocation, out _nonBacktracking);
         if (breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
-        _boundary = _nonBacktracking!.ResolveByteOffset(_position);
+        _boundary = _nonBacktracking!.ResolveByteOffset(_input.Span, _position);
     }
 
     private Utf8RangeMatch Snapshot(Utf8SliceSearchOutcome outcome, bool useCaptureSlots, ref Utf8InvocationResultLedger results)

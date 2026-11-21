@@ -11,6 +11,8 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 /// (scalars + 1) * (4 + 8 * ceiling(states / 64)) payload bytes, plus complete modeled array headers/alignment.</summary>
 internal sealed class Utf8NonBacktrackingSearchState
 {
+    private static readonly Utf8NonBacktrackingSearchState NoMatches = new([], [], 0, 0);
+
     private readonly int[] _boundaries;
     private readonly ulong[] _viability;
     private readonly int _stride;
@@ -149,8 +151,20 @@ internal sealed class Utf8NonBacktrackingSearchState
     {
         state = null;
         invocation.Budget.ThrowIfCancellationRequested();
+        var first = 0;
+        var singleWord = program.Instructions.Length <= 64;
+        if (!singleWord)
+        {
+            var seek = Utf8SliceRunner.TrySeekInitialRegularStart(program, input, ref first, ref invocation);
+            if (seek != Utf8ExecutionLimitKind.None) return seek;
+            if (first < 0)
+            {
+                state = NoMatches;
+                return Utf8ExecutionLimitKind.None;
+            }
+        }
         var scalars = 0;
-        for (var edge = 0; edge < input.Length;)
+        for (var edge = first; edge < input.Length;)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
@@ -179,6 +193,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var boundaries = new int[(int)count];
+            boundaries[0] = first;
             var bits = new ulong[(int)cells];
             for (var index = 1; index < boundaries.Length; index++)
             {
@@ -191,7 +206,6 @@ internal sealed class Utf8NonBacktrackingSearchState
                 if (boundaries[index] < 0) throw new InvalidOperationException("The NonBacktracking batch requires validated scalar input.");
             }
             var result = new Utf8NonBacktrackingSearchState(boundaries, bits, stride, reservation);
-            var singleWord = stride == 1;
             var epsilon = singleWord ? default : Utf8SliceRunner.GetWideRegularEpsilonOrder(program);
             var scalar = default(Rune);
             for (var boundary = scalars; boundary >= 0; boundary--)
@@ -199,6 +213,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 var edge = boundaries[boundary];
                 var before = default(Rune);
                 if (boundary > 0) _ = Rune.DecodeFromUtf8(input[boundaries[boundary - 1]..], out before, out _);
+                else if (edge != 0) _ = Rune.DecodeLastFromUtf8(input[..edge], out before, out _);
                 if (singleWord)
                 {
                     var following = boundary < scalars ? bits[boundary + 1] : 0;
@@ -214,7 +229,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                     followingRow, currentRow, ref invocation);
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 // On the next reverse row this preceding scalar is current.
-                // The end row has no current scalar; boundary zero has no prior one.
+                // The end row has no current scalar; the physical start has no prior one.
                 scalar = before;
             }
             invocation.Budget.ThrowIfCancellationRequested();
@@ -276,11 +291,21 @@ internal sealed class Utf8NonBacktrackingSearchState
     internal bool CanMatch(int boundary, int pc)
         => (_viability[boundary * _stride + (pc >> 6)] & (1UL << (pc & 63))) != 0;
 
-    internal int ResolveByteOffset(int byteOffset)
+    internal int ResolveByteOffset(ReadOnlySpan<byte> input, int byteOffset)
     {
-        var index = Array.BinarySearch(_boundaries, byteOffset);
-        if (index < 0) throw new ArgumentOutOfRangeException(nameof(byteOffset), "The start must be a complete scalar boundary.");
-        return index;
+        if (_boundaries.Length != 0 && byteOffset >= _boundaries[0])
+        {
+            var index = Array.BinarySearch(_boundaries, byteOffset);
+            if (index >= 0) return index;
+        }
+        else if ((uint)byteOffset <= (uint)input.Length &&
+            (byteOffset == input.Length || (input[byteOffset] & 0xc0) != 0x80))
+        {
+            // Every skipped start is impossible. The first retained row,
+            // or the end of an empty table, represents any earlier floor.
+            return 0;
+        }
+        throw new ArgumentOutOfRangeException(nameof(byteOffset), "The start must be a complete scalar boundary.");
     }
 
     // Exclusive batch owners and failed setup release synchronously. Published
@@ -288,6 +313,7 @@ internal sealed class Utf8NonBacktrackingSearchState
     // dropping one view cannot invalidate another copy's table or accounting.
     internal void Release(ref Utf8SliceInvocation invocation)
     {
+        if (_reservation == 0) return;
         invocation.Ledger.Release(_reservation);
         _reservation = 0;
     }

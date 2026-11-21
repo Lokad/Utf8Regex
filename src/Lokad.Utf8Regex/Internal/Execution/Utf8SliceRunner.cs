@@ -974,7 +974,7 @@ internal static partial class Utf8SliceRunner
             if (batch is null) throw new InvalidOperationException("NonBacktracking preparation returned no state.");
             try
             {
-                var boundary = batch.ResolveByteOffset(fromByte);
+                var boundary = batch.ResolveByteOffset(input, fromByte);
                 while (true)
                 {
                     var found = batch.FindFirst(program, ref boundary, captureStarts, captureEnds, ref invocation);

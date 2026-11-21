@@ -166,7 +166,7 @@ internal ref partial struct Utf8OperationMatchCursor
             if (state is null) throw new InvalidOperationException("NonBacktracking preparation returned no state.");
             try
             {
-                _nonBacktrackingBoundary = state.ResolveByteOffset(startByte);
+                _nonBacktrackingBoundary = state.ResolveByteOffset(input, startByte);
             }
             catch { state.Release(ref _sliceInvocation); throw; }
             _nonBacktrackingState = state;
@@ -535,7 +535,7 @@ internal ref partial struct Utf8OperationMatchCursor
             _slicePositionByte = startByteOffset;
             _sliceOriginByte = startByteOffset;
             if (_nonBacktrackingState is { } batch)
-                _nonBacktrackingBoundary = batch.ResolveByteOffset(startByteOffset);
+                _nonBacktrackingBoundary = batch.ResolveByteOffset(_input, startByteOffset);
         }
         _preserveOffsetCurrent = true;
         _remaining = _input[startByteOffset..];

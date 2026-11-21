@@ -20,7 +20,9 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
         foreach (var hit in new[] { false, true })
         {
             var needle = new string('z', width);
-            var program = new Utf8Regex("(?<x>" + needle + ")", options: RegexOptions.NonBacktracking)                .Inspection.AvailableOwnedSliceProgram!;
+            // The other branch begins with a dot, so these rows cannot discard the prefix.
+            using var regex = new Utf8Regex("(?<x>" + needle + ")" + (width == 1 ? "" : "|.q"), RegexOptions.NonBacktracking);
+            var program = regex.Inspection.AvailableOwnedSliceProgram!;
             var prefixText = string.Concat(Enumerable.Repeat(scalar, prefix));
             var input = Encoding.UTF8.GetBytes(prefixText + (hit ? needle : ""));
             var owner = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
@@ -40,7 +42,8 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
                     Assert.Equal(Utf8ExecutionLimitKind.None, found.Breach);
                     Assert.Equal(hit, found.Found);
                     var candidateQuanta = (ulong)(prefix - origin + 1 + 63) / 64;
-                    Assert.Equal(candidateQuanta + (hit ? (ulong)width + 4 : 0), invocation.Budget.Steps);
+                    var replaySteps = (ulong)width + (width == 1 ? 4UL : 6UL);
+                    Assert.Equal(candidateQuanta + (hit ? replaySteps : 0), invocation.Budget.Steps);
                     if (hit)
                     {
                         Assert.Equal(Encoding.UTF8.GetByteCount(prefixText), found.StartByte);
@@ -72,7 +75,8 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [InlineData(true, true)]
     public void CandidateQuantaKeepBoundedInterruptionAndTableLoans(bool expire, bool wide)
     {
-        var program = new Utf8Regex("(?<x>" + new string('z', wide ? 70 : 1) + ")", options: RegexOptions.NonBacktracking)            .Inspection.AvailableOwnedSliceProgram!;
+        using var regex = new Utf8Regex(wide ? "(?<x>z{70})|.q" : "(?<x>z)", RegexOptions.NonBacktracking);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var input = Encoding.UTF8.GetBytes(new string('a', 128));
         var owner = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Timeout.InfiniteTimeSpan, default);
         Assert.True(owner.Ledger.TryReserve(13));
@@ -173,16 +177,16 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
         Assert.NotNull(state);
         var boundary = 0;
         var index = 0;
-        Assert.Equal(0, state.ResolveByteOffset(0));
+        Assert.Equal(0, state.ResolveByteOffset(input, 0));
         foreach (var scalar in text.EnumerateRunes())
         {
             for (var continuation = 1; continuation < scalar.Utf8SequenceLength; continuation++)
             {
                 var offset = boundary + continuation;
-                Assert.Throws<ArgumentOutOfRangeException>(() => state.ResolveByteOffset(offset));
+                Assert.Throws<ArgumentOutOfRangeException>(() => state.ResolveByteOffset(input, offset));
             }
             boundary += scalar.Utf8SequenceLength;
-            Assert.Equal(++index, state.ResolveByteOffset(boundary));
+            Assert.Equal(++index, state.ResolveByteOffset(input, boundary));
         }
         Assert.Equal(input.Length, boundary);
         state.Release(ref invocation);

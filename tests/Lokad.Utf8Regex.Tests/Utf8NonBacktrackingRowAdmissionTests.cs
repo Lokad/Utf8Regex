@@ -72,7 +72,7 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
                     Assert.NotNull(table);
                     Assert.Equal(steps, invocation.Budget.Steps);
                     Assert.Equal(states == 1, table.CanMatch(0, 0));
-                    Assert.Equal(scalars, table.ResolveByteOffset(input.Length));
+                    Assert.Equal(scalars, table.ResolveByteOffset(input, input.Length));
                     table.Release(ref invocation);
                 }
                 Assert.Equal(13UL, invocation.Ledger.ReservedBytes);

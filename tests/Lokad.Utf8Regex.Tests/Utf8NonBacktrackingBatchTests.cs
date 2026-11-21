@@ -54,6 +54,47 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal(input.Length, match.EndOffsetInBytes);
     }
 
+    [Fact]
+    public void TrimmedWideRowsKeepWordContextAndOriginalOffsets()
+    {
+        const RegexOptions options = RegexOptions.NonBacktracking | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        using var regex = new Utf8Regex(@"(?<first>\Ak+)|(?<joined>\Bk+)|x{72}", options);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        Assert.True(program.Instructions.Length > 64);
+        Assert.True(program.NonBacktrackingOrderedStartBytes.Count > 0);
+        var prefix = new string('!', 257) + "𐐀";
+        var input = Encoding.UTF8.GetBytes(prefix + "K!");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var cursor = regex.EnumerateMatches(input, 257);
+        var alias = cursor.GetEnumerator();
+        Assert.True(cursor.MoveNext());
+        Assert.Equal(new Utf8CaptureRange(start, start + 3), cursor.Current);
+        Assert.False(cursor.MoveNext());
+        Assert.True(alias.MoveNext());
+        Assert.Equal(new Utf8CaptureRange(start, start + 3), alias.Current);
+        Assert.Throws<ArgumentOutOfRangeException>(() => { var rejected = regex.EnumerateMatches(input, 258); rejected.MoveNext(); });
+
+        Assert.Equal(prefix + "[K]!", Encoding.UTF8.GetString(regex.Replace(input, "${first}[${joined}]"u8)));
+        using var detailed = regex.CreateMatchCursor(input, 257);
+        Assert.True(detailed.MoveNext(out var retained));
+        Assert.False(detailed.MoveNext(out _));
+        Assert.Equal("K"u8.ToArray(), retained.GetGroupMemory(regex.GroupNumberFromUtf8Name("joined"u8)).ToArray());
+    }
+
+    [Fact]
+    public void ProvedWideMissDoesNotNeedViabilityStorage()
+    {
+        using var regex = new Utf8Regex(@"(?<x>a{72})z", RegexOptions.NonBacktracking, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 16, MaxWorkingBytes = 128 },
+        });
+        var input = Encoding.UTF8.GetBytes(new string('!', 8192));
+        var cursor = regex.EnumerateMatches(input, 16);
+        Assert.False(cursor.MoveNext());
+        using var detailed = regex.CreateMatchCursor(input);
+        Assert.False(detailed.MoveNext(out _));
+    }
+
     [Theory]
     [InlineData(@"(?<x>a?)(?<y>b?)|(?<z>ab)", "ab a b é")]
     [InlineData(@"(?:a(?<x>b?)|(?<y>a?))(?<last>c?)", "abc a acc\n")]
@@ -202,12 +243,12 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8NonBacktrackingSearchState.TryCreate(program, input, ref invocation, out var table));
         Assert.NotNull(table);
         Assert.Equal(13UL + (empty ? 96UL : 112UL), invocation.Ledger.ReservedBytes);
-        Assert.Equal(0, table.ResolveByteOffset(0));
+        Assert.Equal(0, table.ResolveByteOffset(input, 0));
         if (!empty)
         {
-            Assert.Equal(1, table.ResolveByteOffset(4));
-            Assert.Equal(2, table.ResolveByteOffset(6));
-            Assert.Throws<ArgumentOutOfRangeException>(() => table.ResolveByteOffset(1));
+            Assert.Equal(1, table.ResolveByteOffset(input, 4));
+            Assert.Equal(2, table.ResolveByteOffset(input, 6));
+            Assert.Throws<ArgumentOutOfRangeException>(() => table.ResolveByteOffset(input, 1));
         }
         table.Release(ref invocation);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);

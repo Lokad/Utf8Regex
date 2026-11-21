@@ -623,7 +623,7 @@ internal static partial class Utf8SliceRunner
     private static bool IsWideRegularViable(ReadOnlySpan<ulong> viable, int pc)
         => (viable[pc >> 6] & (1UL << (pc & 63))) != 0;
 
-    private static Utf8ExecutionLimitKind TrySeekInitialRegularStart(Utf8SliceProgram program,
+    internal static Utf8ExecutionLimitKind TrySeekInitialRegularStart(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, ref int fromByte, ref Utf8SliceInvocation invocation)
     {
         var starts = program.NonBacktrackingOrderedStartBytes;
