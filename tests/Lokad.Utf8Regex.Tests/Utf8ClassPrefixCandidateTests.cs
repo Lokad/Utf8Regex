@@ -85,6 +85,30 @@ public sealed class Utf8ClassPrefixCandidateTests
             slots[1].EndOffsetInBytes - slots[1].StartOffsetInBytes)));
     }
 
+    [Fact]
+    public void RequiredDelimiterSkipsBroadAsciiStartsAndKeepsCaptures()
+    {
+        const string pattern = @"(?<local>[A-Za-z0-9._%+-]+)@[A-Za-z0-9.-]+\.[A-Za-z]{2,}";
+        var prefix = "é😀 " + new string('q', 8192) + " a@b.c 😀 ";
+        var input = Encoding.UTF8.GetBytes(prefix + "hunter@host.io aa@xx.io");
+        var floor = Encoding.UTF8.GetByteCount("é😀 ") + 1;
+        var first = Encoding.UTF8.GetByteCount(prefix);
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 512 }
+        });
+
+        using var cursor = regex.CreateMatchCursor(input, floor, token.Token);
+        Assert.True(cursor.MoveNext(out var selected));
+        Assert.Equal(new Utf8CaptureRange(first, first + "hunter@host.io".Length), selected.Value);
+        Assert.True(selected.GetGroupMemory(1).Span.SequenceEqual("hunter"u8));
+        Assert.True(cursor.MoveNext(out var later));
+        Assert.True(later.GetGroupMemory(1).Span.SequenceEqual("aa"u8));
+        Assert.False(cursor.MoveNext(out _));
+        Assert.True(selected.GetGroupMemory(1).Span.SequenceEqual("hunter"u8));
+    }
+
     [Theory]
     [InlineData(@"(?<value>\d+(?:\.\d+)?)", "", "𝟚.٣")]
     [InlineData(@"\b(?<value>(?:\d{1,3}\.){3}\d{1,3})\b", "é1.2.3.4,", "𝟘.١.2.３")]

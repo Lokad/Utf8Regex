@@ -587,7 +587,10 @@ internal static partial class Utf8SliceRunner
         var verifiedClassLiteralLength = 0;
         var screenedDelimiter = -1;
         var wideInput = input.Length - fromByte >= 256;
-        if (leading is < 0 or >= 128 && !seekLiteral && !seekBeginning && !program.RightToLeft &&
+        var needsClassWindow = leading is < 0 or >= 128;
+        var alignedByteDelimiter = program.LeadingClassDelimiter is { Direct: true, Literal: >= 0 } &&
+            candidatePlan.LiteralSearch is { Length: 1, IgnoreCase: false };
+        if ((needsClassWindow || alignedByteDelimiter) && !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
             (wideInput || candidatePlan.LiteralSearch is { Length: > 0, IgnoreCase: false } ||
                 candidatePlan.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral))
@@ -618,10 +621,11 @@ internal static partial class Utf8SliceRunner
                         }
                     }
                 }
-                // An aligned direct byte is already prepared at short starts,
-                // including the final advances of a cursor over a large input.
-                if (singleWindowAttempt || directClassLiteral && classSearch is { Length: 1 } ||
-                    wideInput && (directClassLiteral || classSearch is not null))
+                // One attempt per disjoint delimiter can replace a broad
+                // leading-byte proof, including on the final cursor advances.
+                if (singleWindowAttempt || needsClassWindow &&
+                    (directClassLiteral && classSearch is { Length: 1 } ||
+                     wideInput && (directClassLiteral || classSearch is not null)))
                     classLiteral = literal;
             }
             else if (leadingClass >= 0 && literalIndex >= 0 &&
@@ -632,7 +636,7 @@ internal static partial class Utf8SliceRunner
                     return new(false, -1, -1, null, null, proofBreach);
                 classAlternatives = GetAlignedDelimiterAlternatives(program, literalIndex, candidatePlan.RequiredPrefilterSearcher);
             }
-            if (classLiteral < 0 && classAlternatives is null &&
+            if (needsClassWindow && classLiteral < 0 && classAlternatives is null &&
                 GetRepeatPrefixSearch(program, candidatePlan, out repeatPrefix) is { } prefixSearch)
             {
                 classSearch = prefixSearch;
