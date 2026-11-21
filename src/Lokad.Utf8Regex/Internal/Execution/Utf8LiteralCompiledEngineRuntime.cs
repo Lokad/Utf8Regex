@@ -361,25 +361,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
 
     private int CountExactLiteral(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
     {
-        static int CountViaSpanSearch(ReadOnlySpan<byte> haystack, ReadOnlySpan<byte> needle)
-        {
-            var count = 0;
-            var index = 0;
-            while (index <= haystack.Length - needle.Length)
-            {
-                var found = haystack[index..].IndexOf(needle);
-                if (found < 0)
-                {
-                    break;
-                }
-
-                count++;
-                index += found + needle.Length;
-            }
-
-            return count;
-        }
-
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         if (budget.IsInfinite && _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
             literal.Length == 3 && literal[0] is >= 0xE0 and < 0xF0)
@@ -406,18 +387,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             // Reuse complete-sequence search instead of restarting a scalar
             // anchor and rechecking each prefix. The exact byte sequence
             // already identifies scalar boundaries in valid UTF-8.
-            return CountViaSpanSearch(input, literal);
-        }
-
-        if (budget.IsInfinite &&
-            _regexPlan.SearchPlan.Kind == Utf8SearchKind.ExactAsciiLiteral &&
-            literal.Length is >= 5 and <= 16)
-        {
-            // For five- to sixteen-byte exact literals, the runtime sequence search keeps one
-            // vectorized scan in flight instead of restarting an anchor-byte
-            // scan after every match. Short literals retain their specialized
-            // prepared tiers, and longer literals keep their existing policy.
-            return CountViaSpanSearch(input, literal);
+            return PreparedSubstringSearch.CountExactSequence(input, literal);
         }
 
         if (budget.IsInfinite && _regexPlan.SearchPlan.LiteralSearch is { } literalSearch)

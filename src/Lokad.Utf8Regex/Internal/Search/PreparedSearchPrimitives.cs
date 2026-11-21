@@ -189,6 +189,9 @@ internal readonly struct PreparedSubstringSearch
     internal int Count(ReadOnlySpan<byte> input)
     {
         if (Length == 0) throw new InvalidOperationException("Prepared counting requires a nonempty needle.");
+        // The runtime keeps a complete sequence search in flight. Prepared
+        // single-byte anchors can produce many more candidates for these lengths.
+        if (!IgnoreCase && Length is >= 5 and <= 16) return CountExactSequence(input, Needle);
 
         var count = 0;
         var index = 0;
@@ -208,6 +211,20 @@ internal readonly struct PreparedSubstringSearch
             index += found + Length;
         }
 
+        return count;
+    }
+
+    internal static int CountExactSequence(ReadOnlySpan<byte> input, ReadOnlySpan<byte> needle)
+    {
+        if (needle.IsEmpty) throw new InvalidOperationException("Exact sequence counting requires a nonempty needle.");
+        var count = 0;
+        while (input.Length >= needle.Length)
+        {
+            var found = input.IndexOf(needle);
+            if (found < 0) break;
+            count++;
+            input = input[(found + needle.Length)..];
+        }
         return count;
     }
 

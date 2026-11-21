@@ -181,6 +181,8 @@ public sealed class Pcre2LiteralGlobalOperationTests
     [InlineData("aa", "aaa", 0, 1)]
     [InlineData("é", "xéé", 1, 2)]
     [InlineData("abc", "abcabc", 1, 1)]
+    [InlineData("aaabaaab", "aaabaaabaaab", 0, 1)]
+    [InlineData("Twain", "éTwain，Twain😀", 2, 2)]
     public void LiteralCountPreservesNonOverlappingUnicodeAndStartSemantics(
         string pattern,
         string input,
@@ -190,6 +192,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
         var regex = new Utf8Pcre2Regex(pattern);
 
         Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(input), startOffsetInBytes));
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(input + new string('z', 1039)), startOffsetInBytes));
     }
 
     [Fact]
