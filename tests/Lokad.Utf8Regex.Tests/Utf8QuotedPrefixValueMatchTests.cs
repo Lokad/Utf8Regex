@@ -70,6 +70,17 @@ public sealed class Utf8QuotedPrefixValueMatchTests
         Utf8SliceSparseGroupTests.AssertOwnedOperations(new Utf8Regex(Pattern + "x"), new Regex(Pattern + "x"), ["\"abc\"x", "\"abc\"tail"]);
     }
 
+    [Theory]
+    [InlineData(@"\G(?:[^X](?<run>a)|X(?<escaped>b))", RegexOptions.None)]
+    [InlineData(@"\G(?:[^Y](?<run>a)|X(?<escaped>b))", RegexOptions.None)]
+    [InlineData(@"\G(?:[^X](?<run>a)|X(?<escaped>b))", RegexOptions.IgnoreCase)]
+    public void AsciiForkKeepsCapturePriorityAndOverlappingRetries(string pattern, RegexOptions options)
+    {
+        using var regex = new Utf8Regex(pattern, options);
+        Utf8SliceSparseGroupTests.AssertOwnedOperations(regex, new Regex(pattern, options),
+            ["Xa", "Xb", "xb", "éa", "😀a", "Ya", "XaXb", "X", ""]);
+    }
+
     [Fact]
     public void MatchObservesAlreadyCanceledTokenOnHitsAndMisses()
     {

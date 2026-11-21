@@ -1045,6 +1045,21 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
+    internal static void PrepareDisjointAsciiFork(Span<Utf8SliceInstruction> code, byte[][] setMasks,
+        int forkIndex, Utf8ConstructionBudget budget)
+    {
+        ref var fork = ref code[forkIndex];
+        if (fork is not { B: 0, C: 0, D: 0 } || fork.A <= forkIndex + 1 ||
+            code[forkIndex + 1] is not { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } set ||
+            code[fork.A] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } alternate)
+            return;
+
+        budget.ChargeWork(1);
+        var mask = setMasks[set.A];
+        if (mask.Length == 16 && (mask[alternate.A >> 3] & (1 << (alternate.A & 7))) != 0)
+            fork = new(fork.Kind, fork.A, 0, ~alternate.A, 0);
+    }
+
     internal static void MarkExcludedLoopStart(Span<Utf8SliceInstruction> code, byte[][] setMasks,
         int jumpIndex, Utf8ConstructionBudget budget)
     {

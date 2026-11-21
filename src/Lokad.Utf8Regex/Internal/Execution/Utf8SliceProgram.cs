@@ -494,6 +494,8 @@ internal sealed class Utf8SliceProgram
                 Utf8SliceRunner.PrepareScalarRepeatContinuation(instructions, setMasks, pc, budget);
             else if (instruction.Kind == Utf8SliceInstructionKind.Jump && !rightToLeft && !isNonBacktracking)
                 Utf8SliceRunner.MarkExcludedLoopStart(instructions, setMasks, pc, budget);
+            else if (instruction.Kind == Utf8SliceInstructionKind.Fork && !rightToLeft && !isNonBacktracking)
+                Utf8SliceRunner.PrepareDisjointAsciiFork(instructions, setMasks, pc, budget);
             readsCaptures |= instruction.Kind is Utf8SliceInstructionKind.Backref or Utf8SliceInstructionKind.TestGroup or
                 Utf8SliceInstructionKind.BalanceStart or Utf8SliceInstructionKind.BalancePop;
             if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart) captureIsOpen = true;
