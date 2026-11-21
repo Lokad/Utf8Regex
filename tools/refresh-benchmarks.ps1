@@ -118,7 +118,6 @@ try {
     }
     if ('PythonRe' -in $Phase) {
         Invoke-RefreshBenchmark python-semantic @('--verify-pythonre-semantic-digests')
-        Invoke-RefreshBenchmark python-raw @('--refresh-pythonre-benchmarks', '1', '5')
         Invoke-RefreshBenchmark python-paired @('--resume-pythonre-qualifications', '9', '17', '90')
         Invoke-RefreshBenchmark python-lifecycle @('--refresh-pythonre-lifecycle', '32', '5')
         Invoke-RefreshBenchmark python-scaling @('--refresh-pythonre-scaling', '5')
@@ -151,6 +150,12 @@ try {
         # revision/runtime. Existing fixtures own catalog/result/statistical rules.
         $core = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/README.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
         $python = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/PythonRe.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
+        $missingPython = @($python.CatalogCaseIds | Where-Object {
+            -not $python.Cases.Contains($_) -or $null -eq $python.Cases[$_].Qualification.PairedEvidence
+        })
+        if ($python.Cases.Count -ne $python.CatalogCaseIds.Count -or $missingPython.Count -ne 0) {
+            throw "The full PythonRe refresh requires paired evidence for every catalog case."
+        }
         $pcre2 = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/PCRE2.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
         $posix = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/Posix.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
         $environments = @($core.Sections.Values | ForEach-Object { $_.Cases.Values.Environment }) +

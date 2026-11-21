@@ -94,7 +94,10 @@ prevent Core qualification. Python comparison batches consume the result
 checksum after timing.
 
 Python uses a long-lived official CPython worker over `str`, with startup and
-compilation outside timing. The canonical PCRE2 comparison uses the interpreted UTF-mode matcher
+compilation outside timing. The paired pass creates the PythonRe catalog from a
+fresh checkout and saves each completed case for resumption. Use
+`--measure-pythonre-case` for focused .NET and decode-inclusive controls.
+The canonical PCRE2 comparison uses the interpreted UTF-mode matcher
 through benchmark-only PCRE.NET, with `NO_UTF_CHECK` on caller-valid text.
 Keep incompatible native rows marked with an exclusion reason. Compact PCRE2
 rows report `ReferenceMatchOptions` when recorded by the measured lane.

@@ -53,7 +53,7 @@ internal static partial class PythonReBenchmarkReporter
             .ToDictionary(static group => group.Key, static group => group.Count(), StringComparer.Ordinal);
         writer.WriteLine("## Benchmarks");
         writer.WriteLine();
-        writer.WriteLine("Public PythonRe operations over strict UTF-8, compared with official CPython `re` over an already-decoded `str`. Times are microseconds per operation; startup and pattern compilation are excluded. Required result materialization is included. CPython uses a long-lived worker. Decode-inclusive and .NET controls remain in the [summary and raw-evidence reference](../../bench/Snapshots/PythonRe.json).");
+        writer.WriteLine("Public PythonRe operations over caller-valid UTF-8, compared with official CPython `re` over an already-decoded `str`. Times are microseconds per operation. The paired pass includes required result materialization and measures after startup and pattern compilation. CPython uses a long-lived worker. Use `--measure-pythonre-case` for focused decode-inclusive and .NET controls.");
         writer.WriteLine();
         writer.WriteLine("Tables rank the paired `PythonRe / CPython re` ratio from highest to lowest within each operation group; lower is better. Both displayed times come from the same paired evidence when available. Status retains the paired 95% interval and harness-floor qualification: a point ratio alone does not establish a winner. Unqualified observations appear last without a qualified ratio.");
         writer.WriteLine();

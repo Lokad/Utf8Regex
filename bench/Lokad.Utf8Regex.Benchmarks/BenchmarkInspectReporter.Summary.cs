@@ -138,10 +138,23 @@ internal static partial class PythonReBenchmarkReporter
     private static string GetPythonReSnapshotPath() =>
         BenchmarkSummary.RawPath(Path.GetDirectoryName(FindRepositoryFile("README.md"))!, SnapshotFileName);
 
-    private static PythonReBenchmarkSnapshot LoadPythonReBenchmarkSnapshot()
+    private static PythonReBenchmarkSnapshot LoadPythonReBenchmarkSnapshot(bool startFreshIfMissing = false)
     {
+        var path = GetPythonReSnapshotPath();
+        if (startFreshIfMissing && !File.Exists(path))
+        {
+            return new PythonReBenchmarkSnapshot
+            {
+                SchemaVersion = PythonReBenchmarkSchemaVersion,
+                GeneratedAtUtc = DateTimeOffset.UtcNow,
+                CatalogSha256 = ComputePythonReCatalogSha256(),
+                CatalogCaseIds = GetPythonReCatalogCaseIds(),
+                Corpus = CaptureCorpusProvenance(),
+                Cases = new(StringComparer.Ordinal)
+            };
+        }
         var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(
-            File.ReadAllText(GetPythonReSnapshotPath(), Encoding.UTF8));
+            File.ReadAllText(path, Encoding.UTF8));
         return snapshot is { SchemaVersion: PythonReBenchmarkSchemaVersion }
             ? snapshot
             : throw new InvalidOperationException($"{SnapshotFileName} requires schema {PythonReBenchmarkSchemaVersion}.");
@@ -173,14 +186,15 @@ internal static partial class PythonReBenchmarkReporter
                 }),
                 InputSha256 = row.InputSha256,
                 ResultContract = pair?.ResultContract,
-                ManagedUs = pair?.ManagedMedianMicroseconds ?? row.PythonRe.MedianMicroseconds,
+                ManagedUs = pair?.ManagedMedianMicroseconds ?? row.PythonRe?.MedianMicroseconds ??
+                    throw new InvalidOperationException($"PythonRe case '{caseId}' has no measured timing."),
                 ReferenceUs = pair?.CpythonMedianMicroseconds ?? row.Cpython?.PredecodedRe.MedianMicroseconds,
                 Ratio = pair?.StrongRatioMedian,
                 Lower95 = pair?.StrongRatioLower95,
                 Upper95 = pair?.StrongRatioUpper95,
                 Status = row.Qualification?.Status ?? "Unqualified",
                 Reason = row.Qualification?.StatusReason,
-                ManagedBytes = pair?.ManagedMedianAllocatedBytes ?? row.PythonRe.MedianAllocatedBytes
+                ManagedBytes = pair?.ManagedMedianAllocatedBytes ?? row.PythonRe?.MedianAllocatedBytes
             });
         }
         foreach (var (id, row) in snapshot.Lifecycle)

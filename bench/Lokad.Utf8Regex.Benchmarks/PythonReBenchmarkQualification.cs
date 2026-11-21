@@ -132,7 +132,8 @@ internal static partial class PythonReBenchmarkReporter
         string caseId,
         int samples,
         bool cpythonFirst,
-        PythonReQualificationWriteMode writeMode)
+        PythonReQualificationWriteMode writeMode,
+        PythonReBenchmarkSnapshot? destination = null)
     {
 #if DEBUG
         Console.Error.WriteLine("PythonRe paired measurement requires a Release build.");
@@ -648,7 +649,7 @@ internal static partial class PythonReBenchmarkReporter
 
         if (writeMode == PythonReQualificationWriteMode.Snapshot)
         {
-            PersistPythonReQualification(caseId, benchmarkCase, context.InputBytes.Length, qualification, measuredAtUtc);
+            PersistPythonReQualification(benchmarkCase, context, qualification, destination);
             Console.WriteLine($"Snapshot           : {GetPythonReSnapshotPath()}");
         }
 
@@ -686,11 +687,11 @@ internal static partial class PythonReBenchmarkReporter
         var currentManaged = CaptureEnvironment();
         RequirePythonReLoadedSources(currentManaged);
         var currentManagedProductSha256 = ComputePythonReManagedProductSha256();
+        var snapshot = LoadPythonReBenchmarkSnapshot(startFreshIfMissing: true);
         var measured = 0;
         var skipped = 0;
         foreach (var benchmarkCase in PythonReBenchmarkCatalog.Cases)
         {
-            var snapshot = LoadPythonReBenchmarkSnapshot();
             snapshot.Cases.TryGetValue(benchmarkCase.Id, out var measurement);
             var freshness = GetPythonReQualificationFreshness(
                     benchmarkCase,
@@ -711,14 +712,6 @@ internal static partial class PythonReBenchmarkReporter
                 $"Qualification state  : {benchmarkCase.Id}: " +
                 PythonReQualificationFreshnessEvaluator.Format(freshness));
 
-            if (measurement is null)
-            {
-                Console.Error.WriteLine(
-                    $"PythonRe snapshot has no row for new catalog case '{benchmarkCase.Id}'. " +
-                    "Refresh that case before qualification.");
-                continue;
-            }
-
             if (measured >= maximumCases)
             {
                 break;
@@ -730,13 +723,14 @@ internal static partial class PythonReBenchmarkReporter
                 benchmarkCase.Id,
                 initialSamples,
                 cpythonFirst: false,
-                PythonReQualificationWriteMode.Snapshot);
+                PythonReQualificationWriteMode.Snapshot,
+                snapshot);
             if (result != 0)
             {
                 return result;
             }
 
-            measurement = LoadPythonReBenchmarkSnapshot().Cases[benchmarkCase.Id];
+            measurement = snapshot.Cases[benchmarkCase.Id];
             if (ShouldExtendPythonReQualification(measurement.Qualification, extendedSamples))
             {
                 Console.WriteLine(
@@ -745,7 +739,8 @@ internal static partial class PythonReBenchmarkReporter
                     benchmarkCase.Id,
                     extendedSamples,
                     cpythonFirst: false,
-                    PythonReQualificationWriteMode.Snapshot);
+                    PythonReQualificationWriteMode.Snapshot,
+                    snapshot);
                 if (result != 0)
                 {
                     return result;
@@ -755,8 +750,11 @@ internal static partial class PythonReBenchmarkReporter
             measured++;
         }
 
-        var remaining = LoadPythonReBenchmarkSnapshot().Cases.Values.Count(
-            measurement => measurement.Qualification?.PairedEvidence is null);
+        ExportBenchmarkSummary();
+        WritePythonReBenchmarkMarkdown();
+        var remaining = PythonReBenchmarkCatalog.Cases.Count(benchmarkCase =>
+            !snapshot.Cases.TryGetValue(benchmarkCase.Id, out var measurement) ||
+            measurement.Qualification?.PairedEvidence is null);
         Console.WriteLine(
             $"Qualification batch : measured={measured}; skipped={skipped}; " +
             $"remaining-unqualified={remaining}");
@@ -1933,46 +1931,43 @@ internal static partial class PythonReBenchmarkReporter
         PythonRePublicStatus.Unqualified => "Unqualified",        PythonRePublicStatus.Inconclusive => "Inconclusive",        PythonRePublicStatus.Equivalent => "Equivalent",        PythonRePublicStatus.ManagedFaster => "Managed faster",        PythonRePublicStatus.CpythonFaster => "CPython faster",        _ => throw new ArgumentOutOfRangeException(nameof(status))    };
 
     private static void PersistPythonReQualification(
-        string caseId,
         PythonReBenchmarkCase benchmarkCase,
-        int inputUtf8Bytes,
+        PythonReBenchmarkContext context,
         PythonReQualificationMeasurement qualification,
-        DateTimeOffset measuredAtUtc)
+        PythonReBenchmarkSnapshot? destination)
     {
-        var snapshotPath = GetPythonReSnapshotPath();
-        var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(snapshotPath));
-        if (snapshot is null || snapshot.SchemaVersion != PythonReBenchmarkSchemaVersion)
+        var snapshot = destination ?? LoadPythonReBenchmarkSnapshot(startFreshIfMissing: true);
+        var pair = qualification.PairedEvidence!;
+        var byteControl = PythonReBenchmarkCatalog.GetByteControlEligibility(benchmarkCase, context.InputBytes);
+        snapshot.Cases[benchmarkCase.Id] = new PythonReCaseMeasurement
         {
-            throw new InvalidOperationException(
-                $"PythonRe qualification requires a schema-{PythonReBenchmarkSchemaVersion} snapshot.");
-        }
-
-        if (!snapshot.Cases.TryGetValue(caseId, out var measurement))
-        {
-            throw new InvalidOperationException($"PythonRe snapshot does not contain case '{caseId}'.");
-        }
-
-        if (!measurement.Pattern.Equals(benchmarkCase.Pattern, StringComparison.Ordinal) ||
-            !measurement.Options.Equals(benchmarkCase.Options.ToString(), StringComparison.Ordinal) ||
-            !measurement.Operation.Equals(benchmarkCase.Operation.ToString(), StringComparison.Ordinal) ||
-            measurement.InputUtf8Bytes != inputUtf8Bytes)
-        {
-            throw new InvalidOperationException(
-                $"PythonRe snapshot case '{caseId}' does not match the current catalog definition.");
-        }
-
-        measurement.Qualification = qualification;
+            Pattern = benchmarkCase.Pattern,
+            Options = benchmarkCase.Options.ToString(),
+            Operation = benchmarkCase.Operation.ToString(),
+            InputUtf8Bytes = context.InputBytes.Length,
+            InputSha256 = Convert.ToHexString(SHA256.HashData(context.InputBytes)),
+            EffectiveIterations = pair.ManagedIterations,
+            Samples = pair.Samples.Length,
+            IncludesResultMaterialization = benchmarkCase.IncludesResultMaterialization,
+            Coverage = benchmarkCase.Coverage,
+            ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase),
+            ManagedRoute = context.DescribeManagedRoute(),
+            ByteControlEligible = byteControl.IsEligible,
+            ByteControlReason = byteControl.Reason,
+            Environment = pair.ManagedEnvironment,
+            Qualification = qualification
+        };
         WriteSnapshot(new PythonReBenchmarkSnapshot
         {
             SchemaVersion = PythonReBenchmarkSchemaVersion,
-            GeneratedAtUtc = measuredAtUtc,
-            CatalogSha256 = ComputePythonReCatalogSha256(),
+            GeneratedAtUtc = pair.MeasuredAtUtc,
+            CatalogSha256 = pair.CatalogSha256,
             CatalogCaseIds = GetPythonReCatalogCaseIds(),
             Corpus = CaptureCorpusProvenance(),
             Cases = snapshot.Cases,
             Lifecycle = snapshot.Lifecycle,
             ScalingFamilies = snapshot.ScalingFamilies
-        });
+        }, publishPresentation: destination is null);
     }
 
     private static string ComputePythonReCaseDefinitionSha256(

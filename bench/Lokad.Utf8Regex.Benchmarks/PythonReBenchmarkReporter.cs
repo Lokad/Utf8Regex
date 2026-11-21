@@ -199,29 +199,6 @@ internal static partial class PythonReBenchmarkReporter
             return true;
         }
 
-        if (args.Length >= 2 && args[0].Equals("--refresh-pythonre-benchmark-case", StringComparison.Ordinal))
-        {
-            exitCode = RefreshCase(
-                args[1],
-                ParsePositive(args, 2, 200),
-                ParsePositive(args, 3, 5));
-            return true;
-        }
-
-        if (args.Length >= 1 && args[0].Equals("--refresh-pythonre-benchmarks", StringComparison.Ordinal))
-        {
-            exitCode = Refresh(
-                ParsePositive(args, 1, 200),
-                ParsePositive(args, 2, 5));
-            return true;
-        }
-
-        if (args.Length >= 1 && args[0].Equals("--invalidate-pythonre-qualifications", StringComparison.Ordinal))
-        {
-            exitCode = InvalidatePythonReQualifications();
-            return true;
-        }
-
         if (args.Length >= 1 && args[0].Equals("--emit-pythonre-benchmark-markdown", StringComparison.Ordinal))
         {
             exitCode = EmitPythonReBenchmarkMarkdown();
@@ -264,141 +241,6 @@ internal static partial class PythonReBenchmarkReporter
 
         exitCode = 0;
         return false;
-    }
-
-    private static int Refresh(int iterations, int samples)
-    {
-        var previous = File.Exists(GetPythonReSnapshotPath()) ? LoadPythonReBenchmarkSnapshot() : null;
-        var cases = previous?.Cases ?? new(StringComparer.Ordinal);
-        var lifecycle = previous?.Lifecycle ?? new(StringComparer.Ordinal);
-        var scaling = previous?.ScalingFamilies ?? new(StringComparer.Ordinal);
-        var catalogHash = ComputePythonReCatalogSha256();
-        var caseIds = GetPythonReCatalogCaseIds();
-        var corpus = CaptureCorpusProvenance();
-        foreach (var benchmarkCase in PythonReBenchmarkCatalog.Cases)
-        {
-            Console.WriteLine();
-            var measurement = Measure(benchmarkCase, iterations, samples);
-            Print(benchmarkCase, measurement);
-            cases[benchmarkCase.Id] = measurement;
-            WriteSnapshot(new PythonReBenchmarkSnapshot
-            {
-                SchemaVersion = PythonReBenchmarkSchemaVersion,
-                GeneratedAtUtc = DateTimeOffset.UtcNow,
-                CatalogSha256 = catalogHash,
-                CatalogCaseIds = caseIds,
-                Corpus = corpus,
-                Cases = cases,
-                Lifecycle = lifecycle,
-                ScalingFamilies = scaling
-            }, publishPresentation: false);
-        }
-        ExportBenchmarkSummary();
-        WritePythonReBenchmarkMarkdown();
-        Console.WriteLine($"Snapshot           : {GetPythonReSnapshotPath()}");
-        return 0;
-    }
-
-    private static int RefreshCase(string id, int iterations, int samples)
-    {
-        var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
-            candidate => candidate.Id.Equals(id, StringComparison.Ordinal));
-        if (benchmarkCase is null)
-        {
-            Console.Error.WriteLine($"Unknown PythonRe benchmark case '{id}'.");
-            return 1;
-        }
-
-        if (!File.Exists(GetPythonReSnapshotPath()))
-        {
-            Console.Error.WriteLine($"PythonRe snapshot '{GetPythonReSnapshotPath()}' does not exist.");
-            return 1;
-        }
-
-        var snapshot = JsonSerializer.Deserialize<PythonReBenchmarkSnapshot>(File.ReadAllText(GetPythonReSnapshotPath()));
-        if (snapshot is null || snapshot.SchemaVersion != PythonReBenchmarkSchemaVersion)
-        {
-            Console.Error.WriteLine(
-                $"PythonRe selective refresh requires a schema-{PythonReBenchmarkSchemaVersion} snapshot. " +
-                "Historical schemas remain in repository history; they are not rewritten by current tooling.");
-            return 1;
-        }
-
-        Console.WriteLine();
-        var measurement = Measure(benchmarkCase, iterations, samples);
-        Print(benchmarkCase, measurement);
-        snapshot.Cases[id] = measurement;
-        WriteSnapshot(new PythonReBenchmarkSnapshot
-        {
-            SchemaVersion = PythonReBenchmarkSchemaVersion,
-            GeneratedAtUtc = DateTimeOffset.UtcNow,
-            CatalogSha256 = ComputePythonReCatalogSha256(),
-            CatalogCaseIds = GetPythonReCatalogCaseIds(),
-            Corpus = CaptureCorpusProvenance(),
-            Cases = snapshot.Cases,
-            Lifecycle = snapshot.Lifecycle,
-            ScalingFamilies = snapshot.ScalingFamilies
-        });
-        Console.WriteLine();
-        Console.WriteLine($"Snapshot           : {GetPythonReSnapshotPath()}");
-        return 0;
-    }
-
-    private static int InvalidatePythonReQualifications()
-    {
-        var snapshot = LoadPythonReBenchmarkSnapshot();
-        if (snapshot.SchemaVersion != PythonReBenchmarkSchemaVersion)
-        {
-            Console.Error.WriteLine(
-                $"PythonRe invalidation requires a schema-{PythonReBenchmarkSchemaVersion} snapshot.");
-            return 1;
-        }
-
-        var invalidated = 0;
-        foreach (var (caseId, measurement) in snapshot.Cases)
-        {
-            RefreshMeasurementMetadata(caseId, measurement);
-
-            if (measurement.Qualification?.PairedEvidence is null)
-            {
-                continue;
-            }
-
-            measurement.Qualification = PythonReQualificationMeasurement.CreateUnqualified(
-                "Paired evidence predates the current managed source revision.");
-            invalidated++;
-        }
-
-        WriteSnapshot(new PythonReBenchmarkSnapshot
-        {
-            SchemaVersion = PythonReBenchmarkSchemaVersion,
-            GeneratedAtUtc = DateTimeOffset.UtcNow,
-            CatalogSha256 = ComputePythonReCatalogSha256(),
-            CatalogCaseIds = GetPythonReCatalogCaseIds(),
-            Corpus = snapshot.Corpus,
-            Cases = snapshot.Cases,
-            Lifecycle = snapshot.Lifecycle,
-            ScalingFamilies = snapshot.ScalingFamilies
-        });
-        Console.WriteLine($"Invalidated {invalidated} PythonRe paired qualifications.");
-        return 0;
-    }
-
-    private static void RefreshMeasurementMetadata(string caseId, PythonReCaseMeasurement measurement)
-    {
-        var benchmarkCase = PythonReBenchmarkCatalog.Cases.SingleOrDefault(
-            candidate => candidate.Id.Equals(caseId, StringComparison.Ordinal)) ??
-            throw new InvalidOperationException($"PythonRe snapshot contains unknown case '{caseId}'.");
-        var context = new PythonReBenchmarkContext(benchmarkCase);
-        var byteControl = PythonReBenchmarkCatalog.GetByteControlEligibility(
-            benchmarkCase,
-            context.InputBytes);
-        measurement.ComparatorOwner = PythonReBenchmarkCatalog.GetComparatorOwner(benchmarkCase);
-        measurement.Coverage = benchmarkCase.Coverage;
-        measurement.ManagedRoute = context.DescribeManagedRoute();
-        measurement.ByteControlEligible = byteControl.IsEligible;
-        measurement.ByteControlReason = byteControl.Reason;
-        measurement.InputSha256 = Convert.ToHexString(SHA256.HashData(context.InputBytes));
     }
 
     private static void WriteSnapshot(PythonReBenchmarkSnapshot snapshot, bool publishPresentation = true)
@@ -993,8 +835,7 @@ internal static partial class PythonReBenchmarkReporter
             PythonRe = MeasureResultOperation(context.MeasurePythonReBatch, effectiveIterations, samples, pythonResult),
             DecodeThenRegex = MeasureResultOperation(count => context.MeasureRegexBatch(count, decode: true), effectiveIterations, samples, pythonResult),
             PredecodedRegex = MeasureResultOperation(count => context.MeasureRegexBatch(count, decode: false), effectiveIterations, samples, pythonResult),
-            Cpython = cpython,
-            Qualification = PythonReQualificationMeasurement.CreateHistoricalUnqualified()
+            Cpython = cpython
         };
     }
 
@@ -1292,9 +1133,9 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"Iterations         : {measurement.EffectiveIterations}");
         Console.WriteLine($"Samples            : {measurement.Samples}");
         PrintEnvironment(measurement.Environment);
-        PrintOperation("PythonRe", measurement.PythonRe);
-        PrintOperation("DecodeThenRegex", measurement.DecodeThenRegex);
-        PrintOperation("PredecodedRegex", measurement.PredecodedRegex);
+        PrintOperation("PythonRe", measurement.PythonRe!);
+        PrintOperation("DecodeThenRegex", measurement.DecodeThenRegex!);
+        PrintOperation("PredecodedRegex", measurement.PredecodedRegex!);
         if (measurement.Cpython is { } cpython)
         {
             PrintOperation("CPythonDecode", cpython.DecodeThenRe);
@@ -3614,18 +3455,16 @@ internal sealed class PythonReCaseMeasurement
     public bool ByteControlEligible { get; set; }
     public string ByteControlReason { get; set; } = string.Empty;
     public required PythonReBenchmarkEnvironment Environment { get; init; }
-    public required PythonReOperationMeasurement PythonRe { get; init; }
-    public required PythonReOperationMeasurement DecodeThenRegex { get; init; }
-    public required PythonReOperationMeasurement PredecodedRegex { get; init; }
+    // Historical independent measurements. New catalog rows use paired timings.
+    public PythonReOperationMeasurement? PythonRe { get; init; }
+    public PythonReOperationMeasurement? DecodeThenRegex { get; init; }
+    public PythonReOperationMeasurement? PredecodedRegex { get; init; }
     public CpythonBenchmarkMeasurement? Cpython { get; init; }
     public PythonReQualificationMeasurement? Qualification { get; set; }
 }
 
 internal sealed class PythonReQualificationMeasurement
 {
-    private const string HistoricalReason =
-        "Historical independent-median evidence predates paired qualification protocol v3.";
-
     public required string Status { get; init; }
     public required string StatusReason { get; init; }
     public required string EngineEvidenceBasis { get; init; }
@@ -3633,25 +3472,6 @@ internal sealed class PythonReQualificationMeasurement
     public string EngineConclusionReason { get; init; } = "No engine-comparable evidence is available.";
     public PythonRePairedEvidence? PairedEvidence { get; init; }
 
-    internal static PythonReQualificationMeasurement CreateHistoricalUnqualified() => new()
-    {
-        Status = "Unqualified",
-        StatusReason = HistoricalReason,
-        EngineEvidenceBasis = "Not engine-comparable",
-        EngineConclusion = "NotApplicable",
-        EngineConclusionReason = "Historical evidence has no engine-comparable control.",
-        PairedEvidence = null
-    };
-
-    internal static PythonReQualificationMeasurement CreateUnqualified(string reason) => new()
-    {
-        Status = "Unqualified",
-        StatusReason = reason,
-        EngineEvidenceBasis = "Not engine-comparable",
-        EngineConclusion = "NotApplicable",
-        EngineConclusionReason = reason,
-        PairedEvidence = null
-    };
 }
 
 internal sealed class PythonRePairedEvidence
