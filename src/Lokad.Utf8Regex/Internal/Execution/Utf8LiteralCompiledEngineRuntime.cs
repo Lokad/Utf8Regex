@@ -936,18 +936,14 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     {
         if (rightToLeft || !budget.IsInfinite || Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
             return Utf8BackendInstructionExecutor.MatchLiteralFamily(_regexPlan.SearchPlan, _search, input, budget, rightToLeft);
-        if (!rightToLeft &&
-            budget.IsInfinite &&
-            _smallAsciiLiteralFamilyPrimitive is { } primitive)
+        if (_smallAsciiLiteralFamilyPrimitive is { } primitive)
         {
             return primitive.TryFindFirst(input, out var primitiveIndex, out var primitiveLength)
                 ? new Utf8CaptureRange(primitiveIndex, (primitiveIndex) + (primitiveLength))
                 : default(Utf8CaptureRange);
         }
 
-        if (!rightToLeft &&
-            budget.IsInfinite &&
-            _smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
+        if (_smallAsciiLiteralFamily is { } smallAsciiLiteralFamily &&
             _smallAsciiLiteralFamilyFirstBytes.Count > 0)
         {
             return TryFindNextSmallAsciiLiteralFamily(input, 0, smallAsciiLiteralFamily, _smallAsciiLiteralFamilyFirstBytes, out var directIndex, out var directLength)
@@ -955,9 +951,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
                 : default(Utf8CaptureRange);
         }
 
-        if (!rightToLeft &&
-            budget.IsInfinite &&
-            _emittedLiteralFamilyCounter is not null)
+        if (_emittedLiteralFamilyCounter is not null)
         {
             if (!_emittedLiteralFamilyCounter.TryMatch(input, out var index, out var matchedByteLength))
             {
@@ -969,24 +963,19 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             return Utf8SliceBufferWork.CreateMatchRange(index, (index) + (matchedByteLength), ref invocation);
         }
 
-        if (!rightToLeft && budget.IsInfinite && TryGetExactAutomatonDirectSearch(out var exactSearch))
+        if (TryGetExactAutomatonDirectSearch(out var exactSearch))
         {
             return exactSearch.TryFindFirstMatchWithLength(input, out var index, out var matchedLength)
                 ? new Utf8CaptureRange(index, (index) + (matchedLength))
                 : default(Utf8CaptureRange);
         }
 
-        if (CanProjectLiteralFamilyAsAscii(input))
-        {
-            if (TryFindLiteralFamilyMatch(input, budget, rightToLeft, out var directMatch))
-            {
-                return directMatch;
-            }
-
-            return default(Utf8CaptureRange);
-        }
-
-        return Utf8BackendInstructionExecutor.MatchLiteralFamily(_regexPlan.SearchPlan, _search, input, budget, rightToLeft);
+        // TryMatchDirect already qualified the ASCII subject and literal family
+        // for this forward path.
+        budget.Step();
+        return Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, 0, out var match)
+            ? new Utf8CaptureRange(match.Index, match.Index + match.Length)
+            : default;
     }
 
     private bool TryGetExactAutomatonDirectSearch(out PreparedLiteralSetSearch search)
@@ -1060,47 +1049,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             return default(Utf8CaptureRange);
         }
         return new Utf8CaptureRange(index, (index) + (literal.Length));
-    }
-
-    internal bool CanProjectLiteralFamilyAsAscii(ReadOnlySpan<byte> input)
-    {
-        if (input.IndexOfAnyInRange((byte)0x80, byte.MaxValue) >= 0)
-        {
-            return false;
-        }
-
-        return _regexPlan.ExecutionKind switch
-        {
-            NativeExecutionKind.ExactUtf8Literals => _regexPlan.SearchPlan.Kind == Utf8SearchKind.ExactAsciiLiterals,
-            NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals => true,
-            _ => false,
-        };
-    }
-
-    private bool TryFindLiteralFamilyMatch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, bool rightToLeft, out Utf8CaptureRange match)
-    {
-        PreparedSearchMatch preparedMatch;
-        if (rightToLeft)
-        {
-            budget.Step();
-            if (!Utf8SearchExecutor.TryFindLastMatch(_regexPlan.SearchPlan, input, input.Length, out preparedMatch))
-            {
-                match = default(Utf8CaptureRange);
-                return false;
-            }
-        }
-        else
-        {
-            budget.Step();
-            if (!Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, 0, out preparedMatch))
-            {
-                match = default(Utf8CaptureRange);
-                return false;
-            }
-        }
-
-        match = new Utf8CaptureRange(preparedMatch.Index, (preparedMatch.Index) + (preparedMatch.Length));
-        return true;
     }
 
     internal int FindFirstLiteralViaSearch(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)

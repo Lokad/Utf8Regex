@@ -1,6 +1,5 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
-using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
@@ -36,52 +35,6 @@ internal static class Utf8MatchInspection
         => regex._packedNibbleLiteralFamilyCountStrategy is not null ? "PackedNibbleLiteralFamily"
             : regex.Inspection.CompiledEngineKind is Utf8CompiledEngineKind.ExactLiteral or Utf8CompiledEngineKind.LiteralFamily
                     ? $"{regex.Inspection.CompiledEngineKind}/{regex.Inspection.DebugCompiledEngineRuntimeType}" : "Unsupported";
-
-    public static bool DebugTryMatchCompiledAsciiLiteralFamilyRaw(
-        this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out int index, out int matchedByteLength)
-    {
-        var runtime = GetLiteralRuntime(inspection);
-        if (runtime is null || !runtime.CanProjectLiteralFamilyAsAscii(input))
-        {
-            index = -1;
-            matchedByteLength = 0;
-            return false;
-        }
-        if (!runtime._usesRightToLeft &&
-            runtime._smallAsciiLiteralFamilyPrimitive is { } primitive &&
-            primitive.TryFindFirst(input, out index, out matchedByteLength))
-            return true;
-        if (!runtime._usesRightToLeft &&
-            runtime._smallAsciiLiteralFamily is { } smallFamily &&
-            runtime._smallAsciiLiteralFamilyFirstBytes.Count > 0 &&
-            Utf8LiteralCompiledEngineRuntime.TryFindNextSmallAsciiLiteralFamily(input, 0, smallFamily,
-                runtime._smallAsciiLiteralFamilyFirstBytes, out index, out matchedByteLength))
-            return true;
-        if (!runtime._usesRightToLeft &&
-            runtime._emittedLiteralFamilyCounter is { } emitted &&
-            emitted.TryMatch(input, out index, out matchedByteLength))
-            return true;
-
-        PreparedSearchMatch match;
-        if (runtime._usesRightToLeft)
-        {
-            if (!Utf8SearchExecutor.TryFindLastMatch(inspection.SearchPlan, input, input.Length, out match))
-            {
-                index = -1;
-                matchedByteLength = 0;
-                return false;
-            }
-        }
-        else if (!Utf8SearchExecutor.TryFindNextMatch(inspection.SearchPlan, input, 0, out match))
-        {
-            index = -1;
-            matchedByteLength = 0;
-            return false;
-        }
-        index = match.Index;
-        matchedByteLength = match.Length;
-        return index >= 0;
-    }
 
     public static bool DebugTryIsMatchLiteralFamily(
         this Utf8Regex.Utf8RegexInspection inspection, ReadOnlySpan<byte> input, out bool isMatch)

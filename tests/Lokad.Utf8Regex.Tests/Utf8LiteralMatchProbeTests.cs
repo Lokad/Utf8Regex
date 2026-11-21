@@ -33,22 +33,14 @@ public sealed class Utf8LiteralMatchProbeTests
                     Assert.Equal(expected.Success, match.Success);
                     if (match.Success)
                     {
-                        Assert.Equal(expected.StartOffsetInBytes, match.StartOffsetInBytes);
-                        Assert.Equal((expected.EndOffsetInBytes - expected.StartOffsetInBytes), (match.EndOffsetInBytes - match.StartOffsetInBytes));
-                        Assert.Equal(expected.StartOffsetInBytes, match.StartOffsetInBytes);
-                        Assert.Equal((expected.EndOffsetInBytes - expected.StartOffsetInBytes), (match.EndOffsetInBytes - match.StartOffsetInBytes));
+                        Assert.Equal((expected.StartOffsetInBytes, expected.EndOffsetInBytes),
+                            (match.StartOffsetInBytes, match.EndOffsetInBytes));
                     }
                 }
                 if (regex.Inspection.DebugTryIsMatchExactLiteral(input, out var exact))
                     Assert.Equal(expected.Success, exact);
                 if (regex.Inspection.DebugTryIsMatchLiteralFamily(input, out var family))
                     Assert.Equal(expected.Success, family);
-                if (regex.Inspection.DebugTryMatchCompiledAsciiLiteralFamilyRaw(input, out var start, out var length))
-                {
-                    Assert.True(expected.Success);
-                    Assert.Equal(expected.StartOffsetInBytes, start);
-                    Assert.Equal((expected.EndOffsetInBytes - expected.StartOffsetInBytes), length);
-                }
             }
         }
     }
@@ -64,7 +56,7 @@ public sealed class Utf8LiteralMatchProbeTests
         var family = new Utf8Regex("cat|dog");
         Assert.True(family.Inspection.DebugTryIsMatchLiteralFamily("dog"u8, out found));
         Assert.True(found);
-        Assert.True(family.Inspection.DebugTryMatchCompiledAsciiLiteralFamilyRaw("dog"u8, out var start, out var length));
-        Assert.Equal((0, 3), (start, length));
+        Assert.True(family.TryMatchDirectWithoutValidation("dog"u8, out var familyMatch));
+        Assert.Equal((0, 3), (familyMatch.StartOffsetInBytes, familyMatch.EndOffsetInBytes));
     }
 }
