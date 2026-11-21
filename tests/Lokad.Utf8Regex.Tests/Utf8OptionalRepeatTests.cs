@@ -32,6 +32,24 @@ public sealed class Utf8OptionalRepeatTests
             ["", "a", "b", "c", "ab", "aab", "abb", "abc", "ac", "ad", "ébéb", "baabc aab"], options);
 
     [Theory]
+    [InlineData(@"\A[a-z]{1,2}[AZ]?[AZ]\z", "xBZ", false)]
+    [InlineData(@"\A[a-z]{1,2}[AZ]?[AZ]\z", "xZ", true)]
+    [InlineData(@"\A[a-z]{1,2}[AZ]??[AZ]\z", "xAZ", true)]
+    [InlineData(@"\A[a-z]{1,2}[AZ]?é\z", "xé", true)]
+    public void ShortAnchoredBooleanProofKeepsOptionalMaskHolesAndEndpoints(string pattern, string text, bool expected)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.IsMatch(input));
+        using var finite = new Utf8Regex(pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 }
+        });
+        using var cancellation = new CancellationTokenSource();
+        Assert.Equal(expected, finite.IsMatch(input, cancellation.Token));
+    }
+
+    [Theory]
     [InlineData(@"\A(a?)a\z", "a", "", 1)]
     [InlineData(@"\A(\n??)$", "\n", "", 0)]
     [InlineData(@"\A(\n??)\z", "\n", "\n", 1)]

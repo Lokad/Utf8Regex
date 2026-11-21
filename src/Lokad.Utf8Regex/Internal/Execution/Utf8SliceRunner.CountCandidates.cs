@@ -1335,8 +1335,9 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.RepeatLazy:
                     var minimum = entry.RepeatMinimum;
                     var singleAtom = IsSingleAtomRepeat(code, index - 1, entry);
-                    if (singleAtom && minimum == 0 && entry.RepeatMaximum == 1 &&
-                        GetUnfoldedAsciiRange(code[index], out var optionalLast) is >= 0 and var optionalFirst)
+                    if (singleAtom && minimum == 0 && entry.RepeatMaximum == 1 && code[index] is var optionalAtom &&
+                        optionalAtom is ({ Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } or
+                            { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }))
                     {
                         var repeatIndex = index - 1;
                         index = entry.A + 1;
@@ -1347,7 +1348,12 @@ internal static partial class Utf8SliceRunner
                             if (remaining == 0) return true;
                             remaining--;
                         }
-                        if ((uint)(input[position] - optionalFirst) > (uint)(optionalLast - optionalFirst)) continue;
+                        var value = input[position];
+                        var optionalFirst = GetUnfoldedAsciiRange(optionalAtom, out var optionalLast);
+                        if (optionalFirst >= 0
+                            ? (uint)(value - optionalFirst) > (uint)(optionalLast - optionalFirst)
+                            : value >= 128 || (program.SetMasks[optionalAtom.A][value >> 3] & (1 << (value & 7))) == 0)
+                            continue;
                         if (proveMatch && program.SkipsTerminalRewind(repeatIndex))
                         {
                             position++;
