@@ -29,44 +29,50 @@ internal ref struct Pcre2InvocationStateStack<T> where T : struct
     internal readonly T this[int index] => (uint)index < (uint)_count
         ? GetItems()[index] : throw new ArgumentOutOfRangeException(nameof(index));
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal bool TryPush(T value, ref Pcre2ResourceBudget budget)
     {
         if (_count >= _maximumCount) return false;
-        if (_items is null || _count == _items.Length)
+        var items = _items;
+        if (items is null || _count == items.Length) items = Grow(ref budget);
+        items[_count++] = value;
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private T[] Grow(ref Pcre2ResourceBudget budget)
+    {
+        var old = _items;
+        var capacity = old is null ? Math.Min(_initialCapacity, _maximumCount)
+            : Math.Min(old.Length <= Array.MaxLength / 2 ? old.Length * 2 : Array.MaxLength, _maximumCount);
+        if (capacity <= _count) budget.ThrowWorkingLimit();
+        var bytes = Utf8ConstructionBudget.ArrayBytes<T>(capacity);
+        budget.ReserveWorking(bytes);
+        var adopted = false;
+        try
         {
-            var old = _items;
-            var capacity = old is null ? Math.Min(_initialCapacity, _maximumCount)
-                : Math.Min(old.Length <= Array.MaxLength / 2 ? old.Length * 2 : Array.MaxLength, _maximumCount);
-            if (capacity <= _count) budget.ThrowWorkingLimit();
-            var bytes = Utf8ConstructionBudget.ArrayBytes<T>(capacity);
-            budget.ReserveWorking(bytes);
-            var adopted = false;
+            budget.ChargeWorkspaceStep();
+            var grown = Utf8ExactStatePool<T>.Rent(capacity, budget.CanRetainWorkspace);
+            if (_trackRents) _rentCount++;
             try
             {
-                budget.ChargeWorkspaceStep();
-                var grown = Utf8ExactStatePool<T>.Rent(capacity, budget.CanRetainWorkspace);
-                if (_trackRents) _rentCount++;
-                try
+                for (var offset = 0; offset < _count;)
                 {
-                    for (var offset = 0; offset < _count;)
-                    {
-                        budget.ChargeWorkspaceStep();
-                        var count = Math.Min(2048, _count - offset);
-                        if (old is not null) old.AsSpan(offset, count).CopyTo(grown.AsSpan(offset, count));
-                        offset += count;
-                    }
-                    _items = grown;
-                    budget.ReleaseWorking(_reservedBytes);
-                    _reservedBytes = bytes;
-                    adopted = true;
-                    if (old is not null) Utf8ExactStatePool<T>.Return(old, budget.CanRetainWorkspace);
+                    budget.ChargeWorkspaceStep();
+                    var count = Math.Min(2048, _count - offset);
+                    if (old is not null) old.AsSpan(offset, count).CopyTo(grown.AsSpan(offset, count));
+                    offset += count;
                 }
-                finally { if (!adopted) Utf8ExactStatePool<T>.Return(grown, budget.CanRetainWorkspace); }
+                _items = grown;
+                budget.ReleaseWorking(_reservedBytes);
+                _reservedBytes = bytes;
+                adopted = true;
+                if (old is not null) Utf8ExactStatePool<T>.Return(old, budget.CanRetainWorkspace);
+                return grown;
             }
-            finally { if (!adopted) budget.ReleaseWorking(bytes); }
+            finally { if (!adopted) Utf8ExactStatePool<T>.Return(grown, budget.CanRetainWorkspace); }
         }
-        GetItems()[_count++] = value;
-        return true;
+        finally { if (!adopted) budget.ReleaseWorking(bytes); }
     }
 
     internal T Pop()
