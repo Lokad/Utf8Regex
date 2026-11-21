@@ -252,7 +252,7 @@ public sealed class PythonReLeadingAsciiRangeTests
         foreach (var pattern in new[] {
             new string('(', 70) + "[a-z]+" + new string(')', 70),
             string.Concat(Enumerable.Repeat("(?>", 70)) + "[a-z]+" + new string(')', 70),
-            new string('(', 17) + "a" + string.Concat(Enumerable.Repeat("|b)", 17)) })
+            new string('(', 17) + "a" + string.Concat(Enumerable.Repeat("|bb)", 17)) })
         {
             Assert.False(PythonReScalarMatchState.TryGetLeadingAsciiRange(Compile(pattern), out _, out _, out _));
             Assert.True(new Utf8PythonRegex(pattern).IsMatch("123 alpha"u8));

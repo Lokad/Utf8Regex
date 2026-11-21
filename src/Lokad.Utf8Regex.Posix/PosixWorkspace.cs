@@ -119,6 +119,7 @@ internal partial struct PosixWorkspace
             {
                 case Utf8SliceInstructionKind.Literal:
                 case Utf8SliceInstructionKind.Dot:
+                case Utf8SliceInstructionKind.Set:
                 case Utf8SliceInstructionKind.CategorySet:
                     if (Rune.DecodeFromUtf8(input[at..], out var scalar, out var width) != OperationStatus.Done)
                     { failed = true; break; }
@@ -327,6 +328,7 @@ internal partial struct PosixWorkspace
                     if (instruction.A != 0 || boundary.Value != '\n')
                         return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, 0, code.Length - 1, ref invocation);
                     break;
+                case Utf8SliceInstructionKind.Set:
                 case Utf8SliceInstructionKind.CategorySet:
                     if (MatchesClass(boundary, instruction, ref invocation))
                         return FindReachableBoundaryCeiling(input, start, acceptedEnd, boundary, 0, code.Length - 1, ref invocation);
@@ -381,6 +383,7 @@ internal partial struct PosixWorkspace
                 {
                     case Utf8SliceInstructionKind.Literal:
                     case Utf8SliceInstructionKind.Dot:
+                    case Utf8SliceInstructionKind.Set:
                     case Utf8SliceInstructionKind.CategorySet:
                         var hit = instruction.Kind switch
                         {
@@ -438,6 +441,10 @@ internal partial struct PosixWorkspace
     private bool MatchesClass(Rune scalar, Utf8SliceInstruction instruction, ref Utf8SliceInvocation invocation)
     {
         var program = _program.Scalar;
+        if (instruction.Kind == Utf8SliceInstructionKind.Set)
+            return Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A],
+                instruction.C != 0, program.CaseBehavior) != (instruction.B != 0);
+
         var fold = (instruction.B & 2) != 0;
         var hit = Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], fold, program.CaseBehavior) ||
             Utf8SliceScalarClasses.MatchesMembers(scalar, instruction.C);

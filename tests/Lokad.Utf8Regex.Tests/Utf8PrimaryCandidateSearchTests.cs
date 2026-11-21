@@ -8,6 +8,28 @@ public sealed class Utf8PrimaryCandidateSearchTests
 {
     private const string Pattern = "(?<hit>A.{1,2}B|B.{1,2}A|A.{3,4}B|B.{3,4}A)";
 
+    [Fact]
+    public void AsciiChoiceWindowsRejectHolesAndPreserveCaptureSlots()
+    {
+        const string pattern = @"(?<head>a|z)(?<digits>\d{2})|(?<other>k|v)😀";
+        var input = "😀 m12 z37 a42 c17 v😀"u8.ToArray();
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 512, MaxWorkingBytes = 1 << 20 } });
+        Assert.Equal(3, regex.Count(input, source.Token));
+
+        var slots = new Utf8CaptureRange[4];
+        Assert.Equal(new Utf8CaptureRange(9, 12), regex.Match(input, 4, slots, source.Token));
+        Assert.Equal(new Utf8CaptureRange(9, 10), slots[1]);
+        Assert.Equal(new Utf8CaptureRange(10, 12), slots[2]);
+        Assert.False(slots[3].Success);
+
+        using var limited = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 1 } });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Count(input, source.Token)).ResourceKind);
+    }
+
     [Theory]
     [InlineData(2043)]
     [InlineData(2044)]

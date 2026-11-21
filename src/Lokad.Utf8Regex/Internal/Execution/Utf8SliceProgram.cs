@@ -194,9 +194,10 @@ internal sealed class Utf8SliceCategoryTable
 
 internal readonly struct Utf8SliceInstruction
 {
-    internal Utf8SliceInstruction(Utf8SliceInstructionKind kind, int a, int b, int c, int d)
+    internal Utf8SliceInstruction(Utf8SliceInstructionKind kind, int a, int b, int c, int d, bool isLiteralChoice = false)
     {
         Kind = kind;
+        IsLiteralChoice = isLiteralChoice;
         A = a;
         B = b;
         C = c;
@@ -204,6 +205,8 @@ internal readonly struct Utf8SliceInstruction
     }
 
     internal Utf8SliceInstructionKind Kind { get; }
+    // A leading set lowered from a choice retains the bounded prefix proof.
+    internal bool IsLiteralChoice { get; }
     internal int A { get; }
     // RepeatExit uses a positive B as an exclusive byte bound to the input end.
     // A nonzero RepeatEnd B packs three ASCII stop bytes for its guarded fallback.
@@ -1488,6 +1491,16 @@ internal static class Utf8SliceLowerer
                         request = new(GetConcatChild(concat.Children, frame.Index++), false, MirrorExecute, 0);
                         return true;
                     }
+                    break;
+                case Utf8SliceNode.AlternationNode { Branches:
+                    [[Utf8SliceNode.LiteralNode { FoldCase: false, Value: >= 0 and < 128 } firstByte],
+                     [Utf8SliceNode.LiteralNode { FoldCase: false, Value: >= 0 and < 128 } secondByte]] }:
+                    // Both alternatives consume one byte and share a continuation.
+                    var choiceMask = Budget.AllocateArray<byte>(16, false);
+                    choiceMask[firstByte.Value >> 3] |= (byte)(1 << (firstByte.Value & 7));
+                    choiceMask[secondByte.Value >> 3] |= (byte)(1 << (secondByte.Value & 7));
+                    SetMasks.Add(choiceMask);
+                    Emit(new(Utf8SliceInstructionKind.Set, SetMasks.Count - 1, 0, 0, GetAsciiRange(choiceMask), isLiteralChoice: true));
                     break;
                 case Utf8SliceNode.AlternationNode alternate:
                     if (alternate.Branches.Length == 0)

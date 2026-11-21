@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -118,7 +119,7 @@ internal static partial class Utf8SliceRunner
         }
         if (index >= code.Length || index >= 64) return (-1, 0, -1, 0, -1, false);
         var firstScalarIndex = index;
-        var first = GetUnfoldedAsciiRange(code[index], out var last);
+        var first = GetAsciiStartEnvelope(program, code[index], budget, out var last);
         if (first < 0)
         {
             if (GetUnfoldedUnicodeLeadRange(program, code[index], budget, out last) is >= 0 and var wide)
@@ -129,6 +130,7 @@ internal static partial class Utf8SliceRunner
             first = GetBranchedStartBytes(program, index, budget, ref remaining, out last);
             return (first, last, -1, 0, firstScalarIndex, true);
         }
+        if (code[index].IsLiteralChoice) return (first, last, -1, 0, firstScalarIndex, true);
         // Only straight-line mandatory entries can precede the next scalar.
         // Repeat-end/exit, optional entries and forks stay opaque: the next
         // instruction in storage need not be the next consumed scalar.
@@ -220,8 +222,23 @@ internal static partial class Utf8SliceRunner
 
     private static int GetStartRange(Utf8SliceProgram program, Utf8SliceInstruction atom,
         Utf8ConstructionBudget budget, out byte last)
-        => GetUnfoldedAsciiRange(atom, out last) is >= 0 and var ascii ? ascii :
+        => GetAsciiStartEnvelope(program, atom, budget, out last) is >= 0 and var ascii ? ascii :
             GetUnfoldedUnicodeLeadRange(program, atom, budget, out last);
+
+    private static int GetAsciiStartEnvelope(Utf8SliceProgram program, Utf8SliceInstruction atom,
+        Utf8ConstructionBudget budget, out byte last)
+    {
+        var first = GetUnfoldedAsciiRange(atom, out last);
+        if (first >= 0 || atom is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }) return first;
+
+        budget.ChargeWork(1);
+        if (!program.TryGetUnfoldedAsciiSet(atom, out var set, out _) || !set.HasValue) return -1;
+        // The exact mask still decides whether a candidate in this interval matches.
+        last = (byte)(set.High != 0 ? 127 - BitOperations.LeadingZeroCount(set.High)
+            : 63 - BitOperations.LeadingZeroCount(set.Low));
+        return set.Low != 0 ? BitOperations.TrailingZeroCount(set.Low)
+            : 64 + BitOperations.TrailingZeroCount(set.High);
+    }
 
     private static int GetUnfoldedAsciiRange(Utf8SliceInstruction instruction, out byte last)
     {
