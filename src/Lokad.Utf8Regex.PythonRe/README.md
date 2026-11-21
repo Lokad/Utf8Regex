@@ -261,127 +261,125 @@ Tables rank the paired `PythonRe / CPython re` ratio from highest to lowest with
 
 FindAllStrings, FindAllUtf8 and FindAllStringsFromOffset rows are historical measurements of the removed FindAllToUtf8 API. They are no longer refreshed and do not qualify current cursor materialization. Structural rows compose the retained cursor in benchmark host code.
 
-Snapshot SHA-256: `A4DDD3B7B608B8A5C46D684BE3B48C9E533E2202397FBC63600C2A858CD0896B`. Catalog SHA-256: `F6BD468373285EBCF911F7BC6EC28FEC18721E9397A5B4C544F3DDCA579BF38F`.
+Snapshot SHA-256: `E55FE20A183582CE6420AC2EC8345DD85C40CD6D5EC309A18ECA1738A861D54C`. Catalog SHA-256: `F6BD468373285EBCF911F7BC6EC28FEC18721E9397A5B4C544F3DDCA579BF38F`.
 
-Public Status: `53` managed faster, `1` equivalent, `11` CPython faster, `7` inconclusive, `4` unqualified.
+Public Status: `58` managed faster, `1` equivalent, `9` CPython faster, `6` inconclusive, `2` unqualified.
 
-Measured source `4b6446ebb3c6`: .NET 11.0.0; CPython 3.13.2. Selective refreshes retain each row's recorded identity.
+Measured source `698d2b68b6d5`: .NET 11.0.0; CPython 3.13.2. Selective refreshes retain each row's recorded identity.
 
 ### Direct matching
 
 | Case | Operation | PythonRe elapsed | CPython re elapsed | Status | Ratio (lower is better) |
 | --- | --- | ---: | ---: | --- | ---: |
-| `atomic/search-miss` | `Search` | 0.416 us | 0.284 us | CPython faster | 1.47x |
-| `backreference/named-fullmatch-miss` | `FullMatch` | 0.322 us | 0.222 us | CPython faster | 1.45x |
-| `anchor/fullmatch-miss` | `FullMatch` | 0.292 us | 0.208 us | CPython faster | 1.40x |
-| `lookbehind/search-miss` | `Search` | 0.331 us | 0.241 us | CPython faster | 1.38x |
-| `reluctant/search-hit` | `Search` | 0.541 us | 0.426 us | CPython faster | 1.27x |
-| `verbose/fullmatch-hit` | `FullMatch` | 0.423 us | 0.376 us | CPython faster | 1.12x |
-| `multiline/search-miss` | `Search` | 0.318 us | 0.287 us | CPython faster | 1.11x |
-| `common/date-miss` | `IsMatch` | 0.852 us | 0.849 us | Equivalent | 1.00x |
-| `scoped-inline/search-hit` | `Search` | 0.321 us | 0.369 us | Managed faster | 0.87x |
-| `backreference/fullmatch-hit` | `FullMatch` | 0.317 us | 0.368 us | Managed faster | 0.86x |
-| `leading-inline/search-hit` | `Search` | 0.346 us | 0.410 us | Managed faster | 0.85x |
-| `dotall/fullmatch-hit` | `FullMatch` | 0.318 us | 0.382 us | Managed faster | 0.83x |
-| `alternation/search-miss` | `Search` | 0.209 us | 0.260 us | Managed faster | 0.81x |
-| `unicode-category/search-miss` | `Search` | 0.188 us | 0.237 us | Managed faster | 0.79x |
-| `lookbehind/search-hit` | `Search` | 0.314 us | 0.404 us | Managed faster | 0.78x |
-| `prefix/match` | `Match` | 0.270 us | 0.356 us | Managed faster | 0.76x |
-| `ignorecase/search-hit` | `Search` | 0.310 us | 0.439 us | Managed faster | 0.71x |
-| `ignorecase/search-miss` | `Search` | 0.217 us | 0.309 us | Managed faster | 0.70x |
-| `multiline/search-hit` | `Search` | 0.266 us | 0.410 us | Managed faster | 0.65x |
-| `search-offset/literal-hit` | `SearchFromOffset` | 0.179 us | 0.299 us | Managed faster | 0.60x |
-| `greedy/search-miss` | `Search` | 0.142 us | 0.244 us | Managed faster | 0.59x |
-| `ascii-option/search-hit` | `Search` | 0.222 us | 0.383 us | Managed faster | 0.58x |
-| `possessive/search-miss` | `Search` | 0.134 us | 0.234 us | Managed faster | 0.58x |
-| `lookahead/search-hit` | `Search` | 0.192 us | 0.375 us | Managed faster | 0.51x |
-| `unicode-option/search-hit` | `Search` | 0.295 us | 0.640 us | Managed faster | 0.46x |
-| `unicode-literal/search-miss` | `Search` | 0.081 us | 0.310 us | Managed faster | 0.26x |
-| `literal/search-early` | `Search` | 0.076 us | 0.295 us | Managed faster | 0.26x |
-| `unicode/fullmatch` | `FullMatch` | 3.705 us | 26.039 us | Managed faster | 0.14x |
-| `literal/fullmatch` | `FullMatch` | 0.060 us | 0.425 us | Managed faster | 0.14x |
-| `unicode-literal/search-hit` | `Search` | 0.076 us | 0.636 us | Managed faster | 0.12x |
-| `supplementary/fullmatch-hit` | `FullMatch` | 0.060 us | 0.594 us | Managed faster | 0.10x |
-| `literal/search-miss` | `Search` | 1.056 us | 21.643 us | Managed faster | 0.05x |
-| `literal/search` | `Search` | 1.073 us | 21.967 us | Managed faster | 0.05x |
-| `literal/ismatch` | `IsMatch` | 1.042 us | 21.932 us | Managed faster | 0.05x |
-| `atomic/search-hit` | `Search` | 0.374 us | 0.404 us | Unqualified | — |
-| `common/ip-match` | `IsMatch` | 0.285 us | 0.321 us | Unqualified | — |
-| `lookahead/search-miss` | `Search` | 0.214 us | 0.221 us | Unqualified | — |
-| `possessive/search-hit` | `Search` | 0.353 us | 0.396 us | Unqualified | — |
+| `anchor/fullmatch-miss` | `FullMatch` | 0.278 us | 0.208 us | CPython faster | 1.33x |
+| `atomic/search-miss` | `Search` | 0.385 us | 0.290 us | CPython faster | 1.33x |
+| `backreference/named-fullmatch-miss` | `FullMatch` | 0.299 us | 0.227 us | CPython faster | 1.32x |
+| `lookbehind/search-miss` | `Search` | 0.294 us | 0.247 us | CPython faster | 1.19x |
+| `reluctant/search-hit` | `Search` | 0.512 us | 0.431 us | CPython faster | 1.18x |
+| `verbose/fullmatch-hit` | `FullMatch` | 0.395 us | 0.381 us | CPython faster | 1.04x |
+| `common/date-miss` | `IsMatch` | 0.798 us | 0.856 us | Managed faster | 0.93x |
+| `atomic/search-hit` | `Search` | 0.343 us | 0.405 us | Managed faster | 0.85x |
+| `possessive/search-hit` | `Search` | 0.329 us | 0.393 us | Managed faster | 0.84x |
+| `backreference/fullmatch-hit` | `FullMatch` | 0.301 us | 0.374 us | Managed faster | 0.80x |
+| `leading-inline/search-hit` | `Search` | 0.323 us | 0.414 us | Managed faster | 0.78x |
+| `lookahead/search-miss` | `Search` | 0.171 us | 0.224 us | Managed faster | 0.77x |
+| `scoped-inline/search-hit` | `Search` | 0.281 us | 0.374 us | Managed faster | 0.75x |
+| `dotall/fullmatch-hit` | `FullMatch` | 0.287 us | 0.385 us | Managed faster | 0.74x |
+| `prefix/match` | `Match` | 0.247 us | 0.357 us | Managed faster | 0.69x |
+| `lookbehind/search-hit` | `Search` | 0.274 us | 0.413 us | Managed faster | 0.66x |
+| `unicode-category/search-miss` | `Search` | 0.153 us | 0.240 us | Managed faster | 0.64x |
+| `alternation/search-miss` | `Search` | 0.166 us | 0.265 us | Managed faster | 0.63x |
+| `ignorecase/search-hit` | `Search` | 0.272 us | 0.437 us | Managed faster | 0.62x |
+| `ignorecase/search-miss` | `Search` | 0.182 us | 0.314 us | Managed faster | 0.58x |
+| `multiline/search-hit` | `Search` | 0.235 us | 0.416 us | Managed faster | 0.57x |
+| `search-offset/literal-hit` | `SearchFromOffset` | 0.154 us | 0.304 us | Managed faster | 0.51x |
+| `ascii-option/search-hit` | `Search` | 0.190 us | 0.391 us | Managed faster | 0.49x |
+| `greedy/search-miss` | `Search` | 0.117 us | 0.249 us | Managed faster | 0.47x |
+| `possessive/search-miss` | `Search` | 0.107 us | 0.239 us | Managed faster | 0.45x |
+| `unicode-option/search-hit` | `Search` | 0.271 us | 0.642 us | Managed faster | 0.42x |
+| `lookahead/search-hit` | `Search` | 0.158 us | 0.379 us | Managed faster | 0.42x |
+| `unicode-literal/search-miss` | `Search` | 0.083 us | 0.313 us | Managed faster | 0.26x |
+| `literal/search-early` | `Search` | 0.077 us | 0.302 us | Managed faster | 0.26x |
+| `unicode/fullmatch` | `FullMatch` | 4.671 us | 26.579 us | Managed faster | 0.18x |
+| `literal/fullmatch` | `FullMatch` | 0.060 us | 0.422 us | Managed faster | 0.14x |
+| `unicode-literal/search-hit` | `Search` | 0.076 us | 0.648 us | Managed faster | 0.12x |
+| `supplementary/fullmatch-hit` | `FullMatch` | 0.060 us | 0.598 us | Managed faster | 0.10x |
+| `literal/search-miss` | `Search` | 1.081 us | 22.017 us | Managed faster | 0.05x |
+| `literal/search` | `Search` | 1.090 us | 22.455 us | Managed faster | 0.05x |
+| `literal/ismatch` | `IsMatch` | 1.054 us | 22.063 us | Managed faster | 0.05x |
+| `common/ip-match` | `IsMatch` | 0.282 us | 0.320 us | Unqualified | — |
+| `multiline/search-miss` | `Search` | 0.284 us | 0.291 us | Unqualified | — |
 
 ### Detailed and scalar projections
 
 | Case | Operation | PythonRe elapsed | CPython re elapsed | Status | Ratio (lower is better) |
 | --- | --- | ---: | ---: | --- | ---: |
-| `capture/search-detailed` | `SearchDetailed` | 0.759 us | 1.652 us | Managed faster | 0.46x |
+| `capture/search-detailed` | `SearchDetailed` | 0.733 us | 1.713 us | Managed faster | 0.43x |
 
 ### Count, FindAll, and FindIter
 
 | Case | Operation | PythonRe elapsed | CPython re elapsed | Status | Ratio (lower is better) |
 | --- | --- | ---: | ---: | --- | ---: |
-| `findall/structural-many` | `FindAllStructural` | 102.271 us | 218.557 us | Managed faster | 0.47x |
-| `count/empty-progression` | `Count` | 144.003 us | 358.282 us | Managed faster | 0.41x |
-| `zero-width/count` | `Count` | 375.766 us | 1,088.424 us | Managed faster | 0.34x |
-| `count/from-offset` | `CountFromOffset` | 17.015 us | 49.661 us | Managed faster | 0.34x |
-| `family/count` | `Count` | 553.000 us | 2,497.797 us | Managed faster | 0.22x |
-| `iteration/finditer-detailed` | `FindIterDetailed` | 132.854 us | 641.915 us | Managed faster | 0.21x |
-| `unicode/count` | `Count` | 48.429 us | 417.156 us | Managed faster | 0.12x |
-| `class-run/count` | `Count` | 279.841 us | 2,607.995 us | Managed faster | 0.11x |
-| `count/one` | `Count` | 0.139 us | 1.949 us | Managed faster | 0.07x |
-| `count/zero` | `Count` | 0.305 us | 89.949 us | Managed faster | 0.00x |
-| `finditer/zero-detailed` | `FindIterDetailed` | 0.281 us | 139.880 us | Managed faster | 0.00x |
+| `findall/structural-many` | `FindAllStructural` | 100.224 us | 221.380 us | Managed faster | 0.45x |
+| `count/empty-progression` | `Count` | 151.729 us | 364.386 us | Managed faster | 0.41x |
+| `zero-width/count` | `Count` | 395.146 us | 1,094.566 us | Managed faster | 0.36x |
+| `count/from-offset` | `CountFromOffset` | 17.469 us | 49.671 us | Managed faster | 0.35x |
+| `family/count` | `Count` | 555.972 us | 2,500.429 us | Managed faster | 0.22x |
+| `iteration/finditer-detailed` | `FindIterDetailed` | 129.615 us | 646.612 us | Managed faster | 0.20x |
+| `unicode/count` | `Count` | 49.057 us | 422.266 us | Managed faster | 0.12x |
+| `class-run/count` | `Count` | 266.022 us | 2,573.364 us | Managed faster | 0.10x |
+| `count/one` | `Count` | 0.142 us | 1.966 us | Managed faster | 0.07x |
+| `count/zero` | `Count` | 0.296 us | 90.006 us | Managed faster | 0.00x |
+| `finditer/zero-detailed` | `FindIterDetailed` | 0.267 us | 142.292 us | Managed faster | 0.00x |
 
 ### Replace and Subn
 
 | Case | Operation | PythonRe elapsed | CPython re elapsed | Status | Ratio (lower is better) |
 | --- | --- | ---: | ---: | --- | ---: |
-| `replacement/limited-string` | `ReplaceStringLimited` | 1.017 us | 0.475 us | Inconclusive | 2.13x |
-| `replacement/empty-progression-string` | `ReplaceString` | 28.090 us | 23.243 us | CPython faster | 1.21x |
-| `replacement/named-template-string` | `ReplaceString` | 0.958 us | 0.923 us | CPython faster | 1.04x |
-| `replacement/unmatched-template-string` | `ReplaceString` | 41.162 us | 46.756 us | Managed faster | 0.88x |
-| `replacement/fixed-string` | `ReplaceString` | 144.021 us | 174.902 us | Managed faster | 0.82x |
-| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | 50.650 us | 63.617 us | Managed faster | 0.80x |
-| `replacement/subn-string` | `SubnString` | 71.749 us | 90.079 us | Managed faster | 0.80x |
-| `replacement/fixed-utf8` | `ReplaceUtf8` | 134.196 us | 176.323 us | Managed faster | 0.76x |
-| `replacement/subn-utf8` | `SubnUtf8` | 67.648 us | 89.890 us | Managed faster | 0.75x |
-| `replacement/evaluator-string` | `SubnEvaluatorString` | 202.367 us | 278.149 us | Managed faster | 0.73x |
-| `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | 195.992 us | 272.216 us | Managed faster | 0.72x |
-| `replacement/no-match-string` | `ReplaceString` | 1.589 us | 2.369 us | Inconclusive | 0.67x |
-| `replacement/one-template-string` | `ReplaceString` | 1.942 us | 16,242.247 us | Inconclusive | 0.00x |
+| `replacement/limited-string` | `ReplaceStringLimited` | 1.021 us | 0.473 us | Inconclusive | 2.16x |
+| `replacement/empty-progression-string` | `ReplaceString` | 30.860 us | 23.335 us | CPython faster | 1.32x |
+| `replacement/named-template-string` | `ReplaceString` | 0.929 us | 0.932 us | Equivalent | 1.00x |
+| `replacement/unmatched-template-string` | `ReplaceString` | 43.415 us | 47.321 us | Managed faster | 0.92x |
+| `replacement/fixed-string` | `ReplaceString` | 145.508 us | 176.068 us | Managed faster | 0.83x |
+| `replacement/evaluator-replace-string` | `ReplaceEvaluatorString` | 51.576 us | 64.109 us | Managed faster | 0.81x |
+| `replacement/subn-string` | `SubnString` | 72.534 us | 90.145 us | Managed faster | 0.80x |
+| `replacement/fixed-utf8` | `ReplaceUtf8` | 135.111 us | 177.856 us | Managed faster | 0.76x |
+| `replacement/evaluator-string` | `SubnEvaluatorString` | 202.038 us | 275.230 us | Managed faster | 0.73x |
+| `replacement/evaluator-utf8` | `SubnEvaluatorUtf8` | 201.810 us | 275.451 us | Managed faster | 0.73x |
+| `replacement/no-match-string` | `ReplaceString` | 1.669 us | 2.381 us | Inconclusive | 0.71x |
+| `replacement/subn-utf8` | `SubnUtf8` | 67.745 us | 100.798 us | Managed faster | 0.67x |
+| `replacement/one-template-string` | `ReplaceString` | 1.887 us | 16,201.226 us | Inconclusive | 0.00x |
 
 ### Split
 
 | Case | Operation | PythonRe elapsed | CPython re elapsed | Status | Ratio (lower is better) |
 | --- | --- | ---: | ---: | --- | ---: |
-| `split/limited` | `SplitStringsLimited` | 1.072 us | 0.567 us | Inconclusive | 1.96x |
-| `split/unicode` | `SplitStrings` | 48.070 us | 38.853 us | CPython faster | 1.24x |
-| `split/captures` | `SplitStrings` | 275.029 us | 260.697 us | CPython faster | 1.06x |
-| `split/no-captures` | `SplitStrings` | 224.831 us | 229.123 us | Inconclusive | 0.98x |
-| `split/zero-width` | `SplitStrings` | 72.099 us | 77.411 us | Managed faster | 0.94x |
-| `split/optional-capture` | `SplitStrings` | 56.783 us | 81.366 us | Managed faster | 0.70x |
-| `split/detailed` | `SplitDetailed` | 64.203 us | 134.827 us | Managed faster | 0.48x |
-| `split/one-separator` | `SplitStrings` | 0.888 us | 11.853 us | Inconclusive | 0.07x |
-| `split/no-separator` | `SplitStrings` | 1.153 us | 24.716 us | Inconclusive | 0.05x |
+| `split/limited` | `SplitStringsLimited` | 1.013 us | 0.566 us | Inconclusive | 1.83x |
+| `split/unicode` | `SplitStrings` | 47.442 us | 39.168 us | CPython faster | 1.21x |
+| `split/captures` | `SplitStrings` | 277.776 us | 262.721 us | CPython faster | 1.05x |
+| `split/no-captures` | `SplitStrings` | 222.531 us | 229.303 us | Managed faster | 0.97x |
+| `split/zero-width` | `SplitStrings` | 72.435 us | 76.781 us | Managed faster | 0.94x |
+| `split/optional-capture` | `SplitStrings` | 60.997 us | 81.538 us | Managed faster | 0.75x |
+| `split/detailed` | `SplitDetailed` | 75.611 us | 134.683 us | Managed faster | 0.56x |
+| `split/one-separator` | `SplitStrings` | 0.825 us | 11.999 us | Inconclusive | 0.07x |
+| `split/no-separator` | `SplitStrings` | 1.086 us | 24.919 us | Inconclusive | 0.04x |
 
 ### Real-corpus workloads
 
 | Case | Operation | PythonRe elapsed | CPython re elapsed | Status | Ratio (lower is better) |
 | --- | --- | ---: | ---: | --- | ---: |
-| `corpus/sherlock-ru` | `Count` | 69.828 us | 392.831 us | Managed faster | 0.18x |
-| `corpus/code-declarations` | `Count` | 79.943 us | 628.774 us | Managed faster | 0.13x |
-| `corpus/code-log-methods` | `Count` | 49.651 us | 570.326 us | Managed faster | 0.09x |
-| `corpus/mail-email-count` | `Count` | 969.456 us | 351,765.782 us | Managed faster | 0.00x |
+| `corpus/sherlock-ru` | `Count` | 67.670 us | 394.948 us | Managed faster | 0.17x |
+| `corpus/code-declarations` | `Count` | 77.066 us | 620.538 us | Managed faster | 0.12x |
+| `corpus/code-log-methods` | `Count` | 50.519 us | 571.095 us | Managed faster | 0.09x |
+| `corpus/mail-email-count` | `Count` | 978.673 us | 355,018.193 us | Managed faster | 0.00x |
 
 <details>
 <summary>Qualification, allocations and lifecycle evidence</summary>
 
 The full snapshot retains per-row confidence intervals, exclusion reasons, exact input/source/binary identities, allocation probes, CPython operation owners and managed routes. Finite limits and retained-output costs are separate from these ordinary rows. Byte-control ratios are representation-neutral engine diagnostics and do not set public Status.
 
-- `atomic/search-hit`: Removable harness floors are 0.12 %/8.39 % of the lanes.
-- `common/ip-match`: Removable harness floors are 0.18 %/10.58 % of the lanes.
-- `lookahead/search-miss`: Removable harness floors are 0.18 %/15.15 % of the lanes.
-- `possessive/search-hit`: Removable harness floors are 0.11 %/8.71 % of the lanes.
+- `common/ip-match`: Removable harness floors are 0.14 %/10.46 % of the lanes.
+- `multiline/search-miss`: Removable harness floors are 0.16 %/12.16 % of the lanes.
 
 ### Construction and first call
 
@@ -390,10 +388,10 @@ These recorded construction-only rows include former metadata-array copies and P
 
 | Family | PythonRe construction | CPython compile | PythonRe first search | CPython first search |
 | --- | ---: | ---: | ---: | ---: |
-| `captured` | 118.947 us / 49,777 B | 59.477 us | 116.316 us / 49,841 B | 58.305 us |
-| `fallback` | 168.028 us / 57,073 B | 41.641 us | 164.991 us / 57,073 B | 41.750 us |
-| `literal` | 106.206 us / 20,369 B | 24.469 us | 97.266 us / 20,369 B | 24.490 us |
-| `unicode` | 68.472 us / 26,569 B | 37.030 us | 77.428 us / 26,569 B | 35.886 us |
+| `captured` | 118.481 us / 49,769 B | 58.462 us | 137.853 us / 49,833 B | 61.432 us |
+| `fallback` | 170.262 us / 57,065 B | 42.891 us | 141.988 us / 57,065 B | 43.364 us |
+| `literal` | 110.231 us / 20,321 B | 24.030 us | 96.922 us / 20,321 B | 24.509 us |
+| `unicode` | 87.209 us / 26,521 B | 37.078 us | 80.662 us / 26,521 B | 35.104 us |
 
 ### Scaling evidence
 
