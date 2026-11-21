@@ -27,12 +27,18 @@ internal sealed class Utf8FundedStorage(IUtf8MemoryAllowance allowance, string n
     internal Use Enter()
     {
         var use = new Use(this);
+        AcquireUse();
+        return use;
+    }
+
+    // Synchronous callers can hold this use in their own try/finally.
+    internal void AcquireUse()
+    {
         lock (_gate)
         {
             if (_closed) throw new ObjectDisposedException(name);
             checked { _users++; }
         }
-        return use;
     }
 
     internal void Close()
@@ -47,7 +53,7 @@ internal sealed class Utf8FundedStorage(IUtf8MemoryAllowance allowance, string n
         if (release != 0) allowance.Release(release);
     }
 
-    private void Leave()
+    internal void ReleaseUse()
     {
         ulong release = 0;
         lock (_gate)
@@ -62,6 +68,6 @@ internal sealed class Utf8FundedStorage(IUtf8MemoryAllowance allowance, string n
     internal sealed class Use(Utf8FundedStorage owner) : IDisposable
     {
         private Utf8FundedStorage? _owner = owner;
-        public void Dispose() => Interlocked.Exchange(ref _owner, null)?.Leave();
+        public void Dispose() => Interlocked.Exchange(ref _owner, null)?.ReleaseUse();
     }
 }

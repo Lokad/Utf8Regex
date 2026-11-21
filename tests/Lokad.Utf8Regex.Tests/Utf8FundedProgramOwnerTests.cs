@@ -174,8 +174,10 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(0UL, account.Used);
     }
 
-    [Fact]
-    public async Task CloseDuringActiveWorkDefersProgramRefundAndRejectsNewCalls()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CloseDuringActiveWorkDefersProgramRefundAndRejectsNewCalls(bool exists)
     {
         var root = new SharedRoot(); var programs = new Account(root); var working = new Account(root);
         using var owner = Compile("needle", programs); var held = programs.Used;
@@ -191,7 +193,13 @@ public sealed class Utf8FundedProgramOwnerTests
                 if (paused) return; paused = true; entered.Set();
                 if (!resume.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("Host did not resume the active call.");
             });
-            try { return owner.Count(input, workingMemoryAllowance: working); } finally { session.Complete(); }
+            try
+            {
+                return exists
+                    ? owner.IsMatch(input, workingMemoryAllowance: working)
+                    : owner.Count(input, workingMemoryAllowance: working) == 1;
+            }
+            finally { session.Complete(); }
         }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         try
         {
@@ -200,7 +208,7 @@ public sealed class Utf8FundedProgramOwnerTests
             Assert.Throws<ObjectDisposedException>(() => owner.IsMatch(input));
         }
         finally { resume.Set(); await task; }
-        Assert.Equal(1, task.Result); Assert.Equal(0UL, root.Used);
+        Assert.True(task.Result); Assert.Equal(0UL, root.Used);
     }
 
     [Fact]

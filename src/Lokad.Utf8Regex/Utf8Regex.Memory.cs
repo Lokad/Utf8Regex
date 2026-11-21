@@ -59,22 +59,26 @@ public sealed partial class Utf8Regex
     private bool IsMatchFunded(ReadOnlySpan<byte> input, CancellationToken cancellationToken,
         IUtf8MemoryAllowance? workingMemoryAllowance)
     {
-        using var programUse = _programMemory?.Enter();
-        workingMemoryAllowance ??= _programMemory!.Allowance;
-        var invocation = Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+        var programMemory = _programMemory;
+        programMemory?.AcquireUse();
         try
         {
-            Utf8SliceBufferWork.Checkpoint(ref invocation);
-            var result = OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
-                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
-            FinishFundedInvocation(ref invocation);
-            return result;
+            workingMemoryAllowance ??= programMemory!.Allowance;
+            var invocation = Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+            try
+            {
+                Utf8SliceBufferWork.Checkpoint(ref invocation);
+                var result = OwnedSliceIsMatchFromByte(input, _ownedSliceProgram,
+                    _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
+                FinishFundedInvocation(ref invocation);
+                return result;
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+            { throw CreateExecutionResourceFailure(ref invocation); }
+            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(ReadOnlySpan<byte>.Empty); }
+            finally { invocation.Ledger.Release(invocation.Ledger.ReservedBytes); }
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw CreateExecutionResourceFailure(ref invocation); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(ReadOnlySpan<byte>.Empty); }
-        finally { invocation.Ledger.Release(invocation.Ledger.ReservedBytes); }
+        finally { programMemory?.ReleaseUse(); }
     }
 
     /// <summary>Counts matches with optional shared admission for temporary matching storage.</summary>
