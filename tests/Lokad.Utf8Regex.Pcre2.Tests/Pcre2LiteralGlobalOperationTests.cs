@@ -50,7 +50,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        foreach (var padding in new[] { 1023, 1024, 1025, 2025, 2047, 2048 })
+        foreach (var padding in new[] { 1023, 1024, 1025, 2042, 2043, 2047, 2048 })
         {
             var input = Encoding.UTF8.GetBytes("😀" + new string('x', padding) + pattern + " " + pattern);
             Assert.Equal(2, regex.Count(input, 4, Pcre2MatchOptions.None, token.Token));
@@ -91,14 +91,16 @@ public sealed class Pcre2LiteralGlobalOperationTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void ByteOnlySearchRetainsOriginalInterruption(bool cancel)
+    [InlineData("é", false)]
+    [InlineData("é", true)]
+    [InlineData("needle", false)]
+    [InlineData("needle", true)]
+    public void ByteOnlySearchRetainsOriginalInterruption(string pattern, bool cancel)
     {
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
         using var token = new CancellationTokenSource();
-        var regex = new Utf8Pcre2Regex("é", options: default, compileSettings: default, policy: new Utf8RegexPolicy
+        var regex = new Utf8Pcre2Regex(pattern, options: default, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -109,7 +111,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
             },
             MatchTimeout = TimeSpan.FromMilliseconds(20)
         });
-        var bytes = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + "é");
+        var bytes = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + pattern);
         var checkpoints = 0;
         // The matching loop reaches the existing hook every 64 charged steps.
         var session = Utf8SearchDiagnosticsSession.Start(step =>

@@ -92,10 +92,11 @@ internal static partial class Utf8SearchExecutor
         var first = search.Needle[0];
         var other = search.IgnoreCase && (uint)((first | 0x20) - 'a') <= 'z' - 'a'
             ? (byte)(first ^ 0x20) : first;
-        // A short exact needle has bounded verification cost inside the existing
-        // prepared searcher. Include its lookahead in the 2,048-byte window;
-        // longer/folded needles retain separately charged candidate comparisons.
+        // A short exact needle has bounded verification cost. Include its
+        // lookahead in the 2,048-byte window. Medium forward needles use a
+        // complete sequence search within that same charged window.
         var preparedWindow = !search.IgnoreCase && search.Length <= 32;
+        var sequenceWindow = preparedWindow && !reverse && search.Length is >= 5 and <= 16;
         var lookahead = preparedWindow ? search.Length - 1 : 0;
         while (low <= high)
         {
@@ -104,9 +105,10 @@ internal static partial class Utf8SearchExecutor
             var count = Math.Min(2048 - lookahead, high - low + 1);
             var blockStart = reverse ? high - count + 1 : low;
             var block = input.Slice(blockStart, count + lookahead);
-            var relative = preparedWindow
-                ? (reverse ? search.LastIndexOf(block) : search.IndexOf(block))
-                : (reverse ? block.LastIndexOfAny(first, other) : block.IndexOfAny(first, other));
+            int relative;
+            if (sequenceWindow) relative = block.IndexOf(search.Needle);
+            else if (preparedWindow) relative = reverse ? search.LastIndexOf(block) : search.IndexOf(block);
+            else relative = reverse ? block.LastIndexOfAny(first, other) : block.IndexOfAny(first, other);
             if (relative < 0)
             {
                 if (reverse) high -= count;
