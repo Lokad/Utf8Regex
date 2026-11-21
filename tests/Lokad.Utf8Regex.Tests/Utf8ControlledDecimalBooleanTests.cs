@@ -114,6 +114,16 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Fact]
+    public void RejectedShortAsciiDateWindowsSkipInteriorStarts()
+    {
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"\b\d{1,2}/\d{1,2}/\d{2,4}\b", RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 13, MaxWorkingBytes = 1 } });
+
+        Assert.False(regex.IsMatch("Today is 11/18/201A and tomorrow is 11/19/201A."u8, source.Token));
+    }
+
+    [Fact]
     public void ShortDecimalWindowReusesACompleteBooleanProof()
     {
         const string pattern = @"\b\d{1,2}/\d{1,2}/\d{2,4}\b";

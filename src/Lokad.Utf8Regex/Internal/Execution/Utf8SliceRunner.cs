@@ -780,7 +780,15 @@ internal static partial class Utf8SliceRunner
                     }
                 }
                 if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch, proofLimit))
+                {
+                    var remainingDigits = classWindowEnd - position;
+                    // The proved leading boundary excludes the interior of a
+                    // short ASCII digit run. Its delimiter is an excluded byte.
+                    if (reuseDecimalWindow && remainingDigits is > 0 and <= 4 &&
+                        !input.Slice(position, remainingDigits).ContainsAnyExceptInRange((byte)'0', (byte)'9'))
+                        position = classWindowEnd;
                     continue;
+                }
                 if (acceptedEnd >= 0)
                 {
                     // The candidate step admitted the bounded walk. Confirm
