@@ -848,7 +848,8 @@ internal static partial class Utf8SliceRunner
                 input.Length - literal.Length, false, ref invocation, out position);
         var breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
             candidatePlan.AlternateLiteralsUtf8 ?? [], false, input, position, input.Length,
-            false, ref invocation, out var candidate, out var found);
+            false, ref invocation, out var candidate, out var found,
+            candidatePlan.AlternateLiteralSearch?.SearchData ?? default);
         position = found ? candidate.Index : -1;
         if (found) familyLength = candidate.Length;
         return breach;

@@ -51,11 +51,8 @@ internal static partial class Utf8SearchExecutor
         // Preserve the existing pair and small complete-needle searches.
         if (literals.Length <= 8)
         {
-            var breach = literals.Length >= 3
-                ? TryFindSmallExactFamilyCandidate(literals, input, start, end, ref invocation,
-                    out var smallMatch, out var smallFound, plan.AlternateLiteralSearch?.SearchData ?? default)
-                : TryFindLiteralFamilyCandidate(literals, false, input, start, end, false,
-                    ref invocation, out smallMatch, out smallFound);
+            var breach = TryFindLiteralFamilyCandidate(literals, false, input, start, end, false,
+                ref invocation, out var smallMatch, out var smallFound, plan.AlternateLiteralSearch?.SearchData ?? default);
             if (breach == Utf8ExecutionLimitKind.None && smallFound) candidate = smallMatch.Index;
             return breach;
         }
@@ -132,11 +129,12 @@ internal static partial class Utf8SearchExecutor
 
     internal static Utf8ExecutionLimitKind TryFindLiteralFamilyCandidate(
         byte[][] literals, bool folded, ReadOnlySpan<byte> input, int start, int end,
-        bool reverse, ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found)
-        // Candidate searches have no union or confirmation predicates. Passing
-        // these facts directly avoids materializing a large empty search plan.
+        bool reverse, ref Utf8SliceInvocation invocation, out PreparedSearchMatch match, out bool found,
+        in AsciiExactLiteralSearchData prepared = default)
+        // The caller verifies the full regex. No boundary or suffix checks
+        // apply during discovery.
         => !folded && !reverse && literals.Length is >= 3 and <= 8
-            ? TryFindSmallExactFamilyCandidate(literals, input, start, end, ref invocation, out match, out found)
+            ? TryFindSmallExactFamilyCandidate(literals, input, start, end, ref invocation, out match, out found, prepared)
             : TryFindLiteralFamilyCore(literals, folded, false, null,
             Utf8BoundaryRequirement.None, Utf8BoundaryRequirement.None, null,
             input, start, end, reverse, ref invocation, out match, out found);
