@@ -130,11 +130,6 @@ public sealed partial class Utf8Regex
             return CountAtByteOffset(input, start);
         }
 
-        if (CanUseFusedCompiledUtf8LiteralCount() || CanUseFusedCompiledUtf8LiteralFamilyCount())
-        {
-            return _compiledEngineRuntime.Count(remaining, CreateExecutionBudget());
-        }
-
         return _compiledEngineRuntime.Count(remaining, CreateExecutionBudget());
     }
 

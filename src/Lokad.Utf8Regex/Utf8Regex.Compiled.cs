@@ -8,7 +8,6 @@ using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Replacement;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Intrinsics.X86;
 using System.Text.Unicode;
 
 namespace Lokad.Utf8Regex;
@@ -17,76 +16,6 @@ namespace Lokad.Utf8Regex;
 /// <summary>Compiled execution engines for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    private bool CanUseFusedCompiledUtf8LiteralCount()
-    {
-        if (CompiledEngineKind != Utf8CompiledEngineKind.ExactLiteral ||
-            _preparedRegex.ExecutionKind != NativeExecutionKind.ExactUtf8Literal ||
-            UsesRightToLeft() ||
-            _preparedRegex.SearchPlan.HasBoundaryRequirements ||
-            _preparedRegex.SearchPlan.HasTrailingLiteralRequirement ||
-            _preparedRegex.LiteralUtf8 is not { Length: > 0 } literal)
-        {
-            return false;
-        }
-
-        if (literal.Length % 3 != 0)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < literal.Length; i += 3)
-        {
-            var b0 = literal[i];
-            if (b0 < 0xE0 || b0 >= 0xF0)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private bool CanUseFusedCompiledUtf8LiteralFamilyCount()
-    {
-        // The fused family kernels are only evidenced with vector support: without SSSE3
-        // the route miscounts ordered alternations (observed 2 vs oracle 1 on a CJK
-        // alternation), so decline and let a verified fallback count instead.
-        if (!Sse2.IsSupported || !Ssse3.IsSupported)
-        {
-            return false;
-        }
-
-        if (CompiledEngineKind != Utf8CompiledEngineKind.LiteralFamily ||
-            _preparedRegex.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
-            UsesRightToLeft() ||
-            _preparedRegex.SearchPlan.HasBoundaryRequirements ||
-            _preparedRegex.SearchPlan.HasTrailingLiteralRequirement ||
-            _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is not { Length: > 0 } literals)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < literals.Length; i++)
-        {
-            var literal = literals[i];
-            if (literal.Length == 0 || literal.Length % 3 != 0)
-            {
-                return false;
-            }
-
-            for (var j = 0; j < literal.Length; j += 3)
-            {
-                var b0 = literal[j];
-                if (b0 < 0xE0 || b0 >= 0xF0)
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
     private bool CanUseFusedCompiledAsciiLiteralFamilyCount()
     {
         if (CompiledEngineKind != Utf8CompiledEngineKind.LiteralFamily ||

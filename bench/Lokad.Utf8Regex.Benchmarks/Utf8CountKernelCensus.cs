@@ -1,8 +1,6 @@
-using System.Buffers;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Text;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
@@ -31,17 +29,11 @@ internal static class Utf8CountKernelCensus
     {
         var literal = plan.LiteralUtf8;
         if (plan.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal) ||
-            literal is not { Length: > 0 })
+            literal is not { Length: > 0 } ||
+            literal.Length == 3 && literal[0] is >= 0xE0 and < 0xF0)
         {
             metrics = default;
             return false;
-        }
-
-        if (plan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            Utf8LiteralCompiledEngineRuntime.CanUseFusedValidatedBmpThreeByteLiteralCount(literal))
-        {
-            metrics = InspectValidatedThreeByteMetrics(input, literal);
-            return true;
         }
 
         if (plan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
@@ -83,44 +75,6 @@ internal static class Utf8CountKernelCensus
 
         metrics = InspectFullSequenceSearchMetrics(input, literal, "SequenceSearchFallback");
         return true;
-    }
-
-    private static Utf8SelectedCountKernelMetrics InspectValidatedThreeByteMetrics(
-        ReadOnlySpan<byte> input,
-        ReadOnlySpan<byte> literal)
-    {
-        var candidates = 0;
-        var matches = 0;
-        var index = 0;
-        var maxStart = input.Length - literal.Length;
-        while (index < input.Length)
-        {
-            if (Rune.DecodeFromUtf8(input[index..], out _, out var consumed) != OperationStatus.Done)
-            {
-                throw new InvalidOperationException("Selected Count metric replay received malformed UTF-8.");
-            }
-
-            if (index <= maxStart && input[index] == literal[0])
-            {
-                candidates++;
-                if (input.Slice(index, literal.Length).SequenceEqual(literal))
-                {
-                    matches++;
-                    index += literal.Length;
-                    continue;
-                }
-            }
-
-            index += consumed;
-        }
-
-        return new Utf8SelectedCountKernelMetrics(
-            "FusedValidatedBmpThreeByte",
-            "scalar starts matching the literal lead byte",
-            candidates,
-            candidates,
-            matches,
-            IncludesUtf8Validation: true);
     }
 
     private static Utf8SelectedCountKernelMetrics InspectCorrelatedTwoBytePrefixMetrics(
@@ -189,8 +143,7 @@ internal static class Utf8CountKernelCensus
             "starts matching literal bytes 0, 1, and 3",
             candidates,
             candidates,
-            matches,
-            IncludesUtf8Validation: false);
+            matches);
     }
 
     private static Utf8SelectedCountKernelMetrics InspectAnchoredMetrics(
@@ -232,8 +185,7 @@ internal static class Utf8CountKernelCensus
             $"byte 0x{anchorByte:X2} hits at literal offset {anchorIndex}",
             candidates,
             candidates,
-            matches,
-            IncludesUtf8Validation: false);
+            matches);
     }
 
     private static Utf8SelectedCountKernelMetrics InspectFullSequenceSearchMetrics(
@@ -260,8 +212,7 @@ internal static class Utf8CountKernelCensus
             "internal search candidates unavailable",
             Candidates: null,
             FullVerifications: null,
-            matches,
-            IncludesUtf8Validation: false);
+            matches);
     }
 
     private static Utf8SelectedCountKernelMetrics InspectPackedMetrics(ReadOnlySpan<byte> input, PreparedMultiLiteralCandidatePrefilter prefilter)
@@ -288,7 +239,6 @@ internal static class Utf8CountKernelCensus
             "packed-nibble correlated start lanes",
             candidates,
             fullVerifications,
-            matches,
-            IncludesUtf8Validation: false);
+            matches);
     }
 }

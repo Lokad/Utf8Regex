@@ -514,16 +514,6 @@ public sealed partial class Utf8Regex : IDisposable
             return _compiledEngineRuntime.Count(input, fastBudget);
         }
 
-        if (CanUseFusedCompiledUtf8LiteralCount() || CanUseFusedCompiledUtf8LiteralFamilyCount())
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(
-                CanUseFusedCompiledUtf8LiteralCount()
-                    ? Utf8ExecutionRoute.CompiledFusedUtf8LiteralCount
-                    : Utf8ExecutionRoute.CompiledFusedUtf8LiteralFamilyCount);
-            var fastBudget = CreateExecutionBudget();
-            return _compiledEngineRuntime.Count(input, fastBudget);
-        }
-
         return _compiledEngineRuntime.Count(input, CreateExecutionBudget());
     }
 

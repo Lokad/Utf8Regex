@@ -24,7 +24,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     private readonly PreparedMultiLiteralAutomatonSearch _leadingUtf8SegmentLiteralFamilyAutomaton;
     internal readonly PreparedSmallAsciiLiteralFamilySearch? _smallAsciiLiteralFamilyPrimitive;
     private readonly PreparedShortAsciiLiteralFamilyCounter _shortAsciiLiteralFamilyCounter;
-    private readonly PreparedBmpThreeByteLiteralFamilySearch _bmpThreeByteLiteralFamilySearch;
+    private readonly bool _hasThreeByteLiteralFamily;
     private readonly CompositeTrailingLiteralSearch? _compositeTrailingLiteralSearch;
 
     private const int SmallAsciiLiteralFamilyPrimitiveProbeBytes = 16 * 1024;
@@ -41,7 +41,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         _leadingUtf8SegmentLiteralFamilyAutomaton = state.LeadingAutomaton;
         _smallAsciiLiteralFamilyPrimitive = state.Primitive;
         _shortAsciiLiteralFamilyCounter = state.ShortCounter;
-        _bmpThreeByteLiteralFamilySearch = state.BmpSearch;
+        _hasThreeByteLiteralFamily = state.HasThreeByteLiteralFamily;
         _compositeTrailingLiteralSearch = state.CompositeSearch;
     }
 
@@ -226,8 +226,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             _regexPlan.ExecutionKind is not (NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal or
                 NativeExecutionKind.AsciiLiteralIgnoreCase) || _regexPlan.LiteralUtf8 is not { Length: > 0 })
             return false;
-        // Diagnostic/backend consumers borrow their caller's original deadline;
-        // the public front door also retains validation and its operation token.
+        // Backend consumers borrow their caller's deadline. Public operations
+        // that carry cancellation execute with their original token.
         invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
         return true;
     }
@@ -381,11 +381,10 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         }
 
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
-        if (budget.IsInfinite &&
-            _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
-            CanUseFusedValidatedBmpThreeByteLiteralCount(literal))
+        if (budget.IsInfinite && _regexPlan.ExecutionKind == NativeExecutionKind.ExactUtf8Literal &&
+            literal.Length == 3 && literal[0] is >= 0xE0 and < 0xF0)
         {
-            return CountExactUtf8LiteralValidatedThreeByte(input, literal);
+            return CountThreeByteScalar(input, literal);
         }
 
         if (budget.IsInfinite &&
@@ -405,8 +404,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             if (literal.Length > 16 && _regexPlan.SearchPlan.LiteralSearch is { HasExactAnchors: true } prepared)
                 return prepared.Count(input);
             // Reuse complete-sequence search instead of restarting a scalar
-            // anchor and rechecking each prefix. Earlier fused strategies keep
-            // their priority; controlled invocations use their metered paths.
+            // anchor and rechecking each prefix. The exact byte sequence
+            // already identifies scalar boundaries in valid UTF-8.
             return CountViaSpanSearch(input, literal);
         }
 
@@ -451,121 +450,24 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         return count;
     }
 
-    internal static bool CanUseFusedValidatedBmpThreeByteLiteralCount(ReadOnlySpan<byte> literal)
-    {
-        if (literal.Length == 0 || literal.Length % 3 != 0)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < literal.Length; i += 3)
-        {
-            var b0 = literal[i];
-            if (b0 < 0xE0 || b0 >= 0xF0)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    internal static int CountExactUtf8LiteralValidatedThreeByte(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal)
+    private static int CountThreeByteScalar(ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal)
     {
         var count = 0;
-        var index = 0;
-        var maxStart = input.Length - literal.Length;
-        var literalFirst = literal[0];
-
-        while (index < input.Length)
+        var first = literal[0];
+        var second = literal[1];
+        var third = literal[2];
+        for (var index = 0; index <= input.Length - 3;)
         {
-            var scalarStart = index;
-            var b0 = input[index];
-            if (b0 < 0x80)
-            {
-                index++;
-                continue;
-            }
-
-            if (b0 < 0xC2)
-            {
-                break;
-            }
-
-            if (b0 < 0xE0)
-            {
-                if (index + 1 >= input.Length || !IsContinuationByte(input[index + 1]))
-                {
-                    break;
-                }
-
-                index += 2;
-                continue;
-            }
-
-            if (b0 < 0xF0)
-            {
-                if (index + 2 >= input.Length)
-                {
-                    break;
-                }
-
-                var b1 = input[index + 1];
-                var b2 = input[index + 2];
-                var validSecond =
-                    b0 == 0xE0 ? b1 is >= 0xA0 and <= 0xBF :
-                    b0 == 0xED ? b1 is >= 0x80 and <= 0x9F :
-                    IsContinuationByte(b1);
-
-                if (!validSecond || !IsContinuationByte(b2))
-                {
-                    break;
-                }
-
-                if (scalarStart <= maxStart &&
-                    b0 == literalFirst &&
-                    input.Slice(scalarStart, literal.Length).SequenceEqual(literal))
-                {
-                    count++;
-                    index = scalarStart + literal.Length;
-                    continue;
-                }
-
-                index += 3;
-                continue;
-            }
-
-            if (b0 < 0xF5)
-            {
-                if (index + 3 >= input.Length)
-                {
-                    break;
-                }
-
-                var b1 = input[index + 1];
-                var b2 = input[index + 2];
-                var b3 = input[index + 3];
-                var validSecond =
-                    b0 == 0xF0 ? b1 is >= 0x90 and <= 0xBF :
-                    b0 == 0xF4 ? b1 is >= 0x80 and <= 0x8F :
-                    IsContinuationByte(b1);
-
-                if (!validSecond || !IsContinuationByte(b2) || !IsContinuationByte(b3))
-                {
-                    break;
-                }
-
-                index += 4;
-                continue;
-            }
-
-            break;
+            var lead = input[index];
+            if (lead == first && input[index + 1] == second && input[index + 2] == third) count++;
+            index += ScalarWidthFromLead(lead);
         }
-
         return count;
     }
 
-    private static bool IsContinuationByte(byte value) => (value & 0xC0) == 0x80;
+    // Both walks start at a scalar boundary in caller-valid UTF-8. Exact
+    // literal comparison verifies matches and the loop admits all byte reads.
+    private static int ScalarWidthFromLead(byte lead) => lead < 0x80 ? 1 : lead < 0xE0 ? 2 : lead < 0xF0 ? 3 : 4;
 
     private static int CountExactUtf8LiteralCorrelatedTwoBytePrefix(
         ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal)
@@ -863,11 +765,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             return CountLeadingUtf8SegmentLiteralFamilyHybrid(input, _leadingUtf8SegmentLiteralFamilyPrefilter, _leadingUtf8SegmentLiteralFamilyAutomaton, 2048);
         }
 
-        if (budget.IsInfinite &&
-            _bmpThreeByteLiteralFamilySearch.HasValue)
-        {
-            return CountExactUtf8LiteralFamilyValidated(input, _bmpThreeByteLiteralFamilySearch);
-        }
+        if (_hasThreeByteLiteralFamily)
+            return CountThreeByteLeadingLiteralFamily(input, _regexPlan.SearchPlan.AlternateLiteralsUtf8!);
 
         if (_regexPlan.SearchPlan.HasPreparedSearcher &&
             !_regexPlan.SearchPlan.HasTrailingLiteralRequirement)
@@ -894,6 +793,29 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             index = found + matchedByteLength;
         }
 
+        return count;
+    }
+
+    private static int CountThreeByteLeadingLiteralFamily(ReadOnlySpan<byte> input, byte[][] literals)
+    {
+        var count = 0;
+        for (var index = 0; index <= input.Length - 3;)
+        {
+            var lead = input[index];
+            var width = ScalarWidthFromLead(lead);
+            if (width == 3)
+            {
+                var remaining = input[index..];
+                foreach (var literal in literals)
+                {
+                    if (literal[0] != lead || !remaining.StartsWith(literal)) continue;
+                    width = literal.Length;
+                    count++;
+                    break;
+                }
+            }
+            index += width;
+        }
         return count;
     }
 
@@ -933,98 +855,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             }
 
             position = nextPosition;
-        }
-
-        return count;
-    }
-
-    private static int CountExactUtf8LiteralFamilyValidated(ReadOnlySpan<byte> input, PreparedBmpThreeByteLiteralFamilySearch search)
-    {
-        var count = 0;
-        var index = 0;
-
-        while (index < input.Length)
-        {
-            var scalarStart = index;
-            var b0 = input[index];
-            if (b0 < 0x80)
-            {
-                index++;
-                continue;
-            }
-
-            if (b0 < 0xC2)
-            {
-                break;
-            }
-
-            if (b0 < 0xE0)
-            {
-                if (index + 1 >= input.Length || !IsContinuationByte(input[index + 1]))
-                {
-                    break;
-                }
-
-                index += 2;
-                continue;
-            }
-
-            if (b0 < 0xF0)
-            {
-                if (index + 2 >= input.Length)
-                {
-                    break;
-                }
-
-                var b1 = input[index + 1];
-                var b2 = input[index + 2];
-                var validSecond =
-                    b0 == 0xE0 ? b1 is >= 0xA0 and <= 0xBF :
-                    b0 == 0xED ? b1 is >= 0x80 and <= 0x9F :
-                    IsContinuationByte(b1);
-
-                if (!validSecond || !IsContinuationByte(b2))
-                {
-                    break;
-                }
-
-                var matchedLength = search.TryGetMatchedLength(input, scalarStart, b0);
-                if (matchedLength > 0)
-                {
-                    count++;
-                    index = scalarStart + matchedLength;
-                    continue;
-                }
-
-                index += 3;
-                continue;
-            }
-
-            if (b0 < 0xF5)
-            {
-                if (index + 3 >= input.Length)
-                {
-                    break;
-                }
-
-                var b1 = input[index + 1];
-                var b2 = input[index + 2];
-                var b3 = input[index + 3];
-                var validSecond =
-                    b0 == 0xF0 ? b1 is >= 0x90 and <= 0xBF :
-                    b0 == 0xF4 ? b1 is >= 0x80 and <= 0x8F :
-                    IsContinuationByte(b1);
-
-                if (!validSecond || !IsContinuationByte(b2) || !IsContinuationByte(b3))
-                {
-                    break;
-                }
-
-                index += 4;
-                continue;
-            }
-
-            break;
         }
 
         return count;
@@ -1441,93 +1271,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     private InvalidOperationException UnexpectedExecutionKind()
     {
         return new InvalidOperationException($"Unexpected execution kind '{_regexPlan.ExecutionKind}' for the literal runtime.");
-    }
-}
-
-internal readonly partial struct PreparedBmpThreeByteLiteralFamilySearch
-{
-    private PreparedBmpThreeByteLiteralFamilySearch(byte[][] literals, byte[][] firstScalars, byte[][] secondScalars, byte[][] thirdScalars, int shortestLength)
-    {
-        Literals = literals;
-        FirstScalars = firstScalars;
-        SecondScalars = secondScalars;
-        ThirdScalars = thirdScalars;
-        ShortestLength = shortestLength;
-    }
-
-    public byte[][] Literals { get; }
-
-    public byte[][] FirstScalars { get; }
-
-    public byte[][] SecondScalars { get; }
-
-    public byte[][] ThirdScalars { get; }
-
-    public int ShortestLength { get; }
-
-    public bool HasValue => Literals is { Length: > 0 };
-
-    public int TryGetMatchedLength(ReadOnlySpan<byte> input, int index, byte firstByte)
-    {
-        if ((uint)index >= (uint)input.Length || ShortestLength > input.Length - index)
-        {
-            return 0;
-        }
-
-        if (!MatchesAnyScalar(input, index, firstByte, FirstScalars))
-        {
-            return 0;
-        }
-
-        if (SecondScalars.Length > 0 && !MatchesAnyScalar(input, index + 3, input[index + 3], SecondScalars))
-        {
-            return 0;
-        }
-
-        if (ThirdScalars.Length > 0 && !MatchesAnyScalar(input, index + 6, input[index + 6], ThirdScalars))
-        {
-            return 0;
-        }
-
-        for (var i = 0; i < Literals.Length; i++)
-        {
-            var literal = Literals[i];
-            if (literal[0] != firstByte || literal.Length > input.Length - index)
-            {
-                continue;
-            }
-
-            if (input.Slice(index, literal.Length).SequenceEqual(literal))
-            {
-                return literal.Length;
-            }
-        }
-
-        return 0;
-    }
-
-    private static bool MatchesAnyScalar(ReadOnlySpan<byte> input, int index, byte firstByte, byte[][] scalars)
-    {
-        if ((uint)index > (uint)(input.Length - 3))
-        {
-            return false;
-        }
-
-        for (var i = 0; i < scalars.Length; i++)
-        {
-            var scalar = scalars[i];
-            if (scalar[0] != firstByte)
-            {
-                continue;
-            }
-
-            if (input[index + 1] == scalar[1] && input[index + 2] == scalar[2])
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
 

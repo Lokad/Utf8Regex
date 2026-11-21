@@ -14,7 +14,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         byte[][]? SmallFamily, PreparedByteSearch FirstBytes,
         PreparedMultiLiteralCandidatePrefilter LeadingPrefilter,
         PreparedMultiLiteralAutomatonSearch LeadingAutomaton, PreparedSmallAsciiLiteralFamilySearch? Primitive,
-        PreparedShortAsciiLiteralFamilyCounter ShortCounter, PreparedBmpThreeByteLiteralFamilySearch BmpSearch,
+        PreparedShortAsciiLiteralFamilyCounter ShortCounter, bool HasThreeByteLiteralFamily,
         CompositeTrailingLiteralSearch? CompositeSearch);
 
     internal static Utf8LiteralCompiledEngineRuntime Create(Utf8CompiledEngineKind compiledEngineKind,
@@ -36,14 +36,14 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
                 ? counter : null;
             _ = TryCreateSmallAsciiLiteralFamily(regexPlan, usesRightToLeft, out var small, out var firstBytes);
             _ = TryCreateLeadingUtf8SegmentLiteralFamily(regexPlan, usesRightToLeft, out var prefilter, out var automaton);
-            _ = TryCreateBmpThreeByteLiteralFamilySearch(regexPlan, usesRightToLeft, out var bmp);
+            var threeByteFamily = !prefilter.HasValue && HasThreeByteLiteralFamily(regexPlan, usesRightToLeft, budget);
             var primitive = TryCreateSmallAsciiLiteralFamilyPrimitive(regexPlan, usesRightToLeft, out var prepared)
                 ? (PreparedSmallAsciiLiteralFamilySearch?)prepared : null;
             _ = TryCreateShortAsciiLiteralFamilyCounter(regexPlan, usesRightToLeft, out var shortCounter);
             var composite = CreateCompositeTrailingLiteralSearch(regexPlan, usesRightToLeft);
             var result = budget.AllocateObject(new ConstructionState(regexPlan, usesRightToLeft,
                 search, emitted, small, firstBytes, prefilter, automaton,
-                primitive, shortCounter, bmp, composite), static state => new Utf8LiteralCompiledEngineRuntime(state));
+                primitive, shortCounter, threeByteFamily, composite), static state => new Utf8LiteralCompiledEngineRuntime(state));
             budget.ChargeWork(0); // Check the original interruption authority before publication.
             scope.Complete();
             return result;
@@ -133,27 +133,18 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         finally { budget.LeaveDepth(); }
     }
 
-    private static bool TryCreateBmpThreeByteLiteralFamilySearch(Utf8PreparedRegex regexPlan, bool usesRightToLeft,
-        out PreparedBmpThreeByteLiteralFamilySearch search)
+    private static bool HasThreeByteLiteralFamily(Utf8PreparedRegex regexPlan, bool usesRightToLeft,
+        Utf8ConstructionBudget budget)
     {
-        search = default;
         if (usesRightToLeft || regexPlan.ExecutionKind != NativeExecutionKind.ExactUtf8Literals ||
             regexPlan.SearchPlan.HasBoundaryRequirements || regexPlan.SearchPlan.HasTrailingLiteralRequirement ||
             regexPlan.SearchPlan.AlternateLiteralsUtf8 is not { Length: > 0 } literals) return false;
-        using var scope = Utf8ConstructionScope.Enter();
-        var budget = scope.Budget;
-        budget.EnterDepth();
-        try
+        foreach (var literal in literals)
         {
-            foreach (var literal in literals)
-            {
-                budget.ChargeWork(1 + (ulong)literal.Length / 3);
-                if (!CanUseFusedValidatedBmpThreeByteLiteralCount(literal)) return false;
-            }
-            if (!PreparedBmpThreeByteLiteralFamilySearch.TryCreate(literals, out var prepared)) return false;
-            search = prepared; scope.Complete(); return true;
+            budget.ChargeWork(1);
+            if (literal.Length < 3 || literal[0] is < 0xE0 or >= 0xF0) return false;
         }
-        finally { budget.LeaveDepth(); }
+        return true;
     }
 
     private static bool TryCreateSmallAsciiLiteralFamilyPrimitive(Utf8PreparedRegex regexPlan, bool usesRightToLeft,

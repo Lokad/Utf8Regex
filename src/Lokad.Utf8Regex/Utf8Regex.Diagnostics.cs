@@ -71,12 +71,6 @@ public sealed partial class Utf8Regex
 
         public string? FallbackReason => _owner.FallbackReason;
 
-        public bool DebugCanUseFusedCompiledUtf8LiteralCount =>
-            _owner.CanUseFusedCompiledUtf8LiteralCount();
-
-        public bool DebugCanUseFusedCompiledUtf8LiteralFamilyCount =>
-            _owner.CanUseFusedCompiledUtf8LiteralFamilyCount();
-
         public bool DebugSupportsUtf8MatchProbe => CompiledRuntime?.SupportsUtf8MatchProbe ?? false;
 
         public int DebugReplacementCacheEntryCount => _owner._replacementCache.Count;

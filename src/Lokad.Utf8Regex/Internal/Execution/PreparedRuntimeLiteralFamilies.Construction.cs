@@ -3,69 +3,6 @@ using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Execution;
 
-internal readonly partial struct PreparedBmpThreeByteLiteralFamilySearch
-{
-    private readonly record struct ConstructionScalar(byte First, byte Second, byte Third);
-
-    public static bool TryCreate(byte[][] literals, out PreparedBmpThreeByteLiteralFamilySearch search)
-    {
-        search = default;
-        if (literals.Length == 0) return false;
-        using var scope = Utf8ConstructionScope.Enter();
-        var budget = scope.Budget;
-        budget.EnterDepth();
-        try
-        {
-            var shortest = PreparedMultiLiteralConstruction.GetShortestLength(literals, budget);
-            // The caller proves the BMP scalar shape. This shared helper retains
-            // three-byte membership guards; it does not establish UTF-8 validity.
-            if (shortest < 3) { scope.Complete(); return false; }
-            using var first = Utf8ConstructionBuffer<ConstructionScalar>.Create(budget);
-            using var second = shortest >= 6 ? Utf8ConstructionBuffer<ConstructionScalar>.Create(budget) : null;
-            using var third = shortest >= 9 ? Utf8ConstructionBuffer<ConstructionScalar>.Create(budget) : null;
-            foreach (var literal in literals)
-            {
-                budget.ChargeWork(1);
-                AddUnique(first, literal, 0, budget);
-                if (second is not null) AddUnique(second, literal, 3, budget);
-                if (third is not null) AddUnique(third, literal, 6, budget);
-            }
-            search = new(literals, Freeze(first, budget), second is null ? [] : Freeze(second, budget),
-                third is null ? [] : Freeze(third, budget), shortest);
-            scope.Complete();
-            return true;
-        }
-        finally { budget.LeaveDepth(); }
-    }
-
-    private static void AddUnique(Utf8ConstructionBuffer<ConstructionScalar> scalars, byte[] literal, int offset,
-        Utf8ConstructionBudget budget)
-    {
-        budget.ChargeWork(3);
-        var scalar = new ConstructionScalar(literal[offset], literal[offset + 1], literal[offset + 2]);
-        foreach (var existing in scalars)
-        {
-            budget.ChargeWork(3);
-            if (existing == scalar) return;
-        }
-        scalars.Add(scalar);
-    }
-
-    private static byte[][] Freeze(Utf8ConstructionBuffer<ConstructionScalar> scalars, Utf8ConstructionBudget budget)
-    {
-        var result = budget.AllocateArray<byte[]>(scalars.Count, false);
-        for (var index = 0; index < scalars.Count; index++)
-        {
-            var scalar = scalars[index];
-            var bytes = budget.AllocateArray<byte>(3, false);
-            budget.ChargeWork(3);
-            bytes[0] = scalar.First; bytes[1] = scalar.Second; bytes[2] = scalar.Third;
-            result[index] = bytes;
-        }
-        return result;
-    }
-}
-
 internal readonly partial struct PreparedShortAsciiLiteralFamilyCounter
 {
     public static bool TryCreate(byte[][] literals, out PreparedShortAsciiLiteralFamilyCounter counter)

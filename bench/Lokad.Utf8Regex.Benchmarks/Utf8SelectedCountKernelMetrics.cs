@@ -7,5 +7,4 @@ internal readonly record struct Utf8SelectedCountKernelMetrics(
     string CandidateDefinition,
     int? Candidates,
     int? FullVerifications,
-    int Matches,
-    bool IncludesUtf8Validation);
+    int Matches);

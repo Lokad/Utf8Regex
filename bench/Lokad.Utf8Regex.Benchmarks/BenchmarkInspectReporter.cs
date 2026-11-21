@@ -2083,11 +2083,6 @@ internal static partial class BenchmarkInspectReporter
         WriteCountPhaseComposition("Ordinary", medians, "OrdinarySelectedKernel", "ValidationThenOrdinaryKernel", "Utf8Regex");
         WriteCountPhaseComposition("Compiled", medians, "CompiledSelectedKernel", "ValidationThenCompiledKernel", "Utf8Compiled");
         Console.WriteLine("CompositionNote   : independently timed phase sums are attribution ceilings, not realizable speedups");
-        if (ordinaryMetrics.IncludesUtf8Validation || compiledMetrics.IncludesUtf8Validation)
-        {
-            Console.WriteLine("KernelScopeNote   : selected kernel includes UTF-8 validation; validation-plus-kernel is intentionally not a disjoint phase sum");
-        }
-
         return 0;
     }
 
@@ -2117,7 +2112,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"{label}Verifies    : {fullVerifications}");
         Console.WriteLine($"{label}MetricMatches: {metrics.Matches}");
         Console.WriteLine($"{label}Rejected    : {rejected}");
-        Console.WriteLine($"{label}KernelValidatesUtf8: {metrics.IncludesUtf8Validation}");
     }
 
     private static Dictionary<string, double> MeasureAlternatingCountAttribution(
@@ -2547,11 +2541,9 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine("UnicodeLiteral    : semantic fallback; exact-literal microkernels unavailable");
         }
 
-        var hasValidatedThreeByte = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralValidatedThreeByte(benchmarkCase.InputBytes, out _);
         var hasPreparedSearch = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralPreparedSearch(benchmarkCase.InputBytes, out _);
         var hasAnchorByte = isExactLiteral && regex.Inspection.DebugTryCountExactUtf8LiteralAnchored(benchmarkCase.InputBytes, out _);
 
-        Console.WriteLine($"HasValidatedThreeByte: {hasValidatedThreeByte}");
         Console.WriteLine($"HasPreparedSearch : {hasPreparedSearch}");
         Console.WriteLine($"HasAnchorByte     : {hasAnchorByte}");
         if (regex.Inspection.SearchPlan.AlternateLiteralsUtf8 is { Length: > 0 } alternateLiterals)
@@ -2568,15 +2560,6 @@ internal static partial class BenchmarkInspectReporter
         var strictUtf8 = new UTF8Encoding(false, true);
         Measure("StrictDecodeOnly", iterations, () => strictUtf8.GetString(benchmarkCase.InputBytes).Length);
         Measure("DefaultDecodeOnly", iterations, () => Encoding.UTF8.GetString(benchmarkCase.InputBytes).Length);
-
-        if (hasValidatedThreeByte)
-        {
-            Measure("ValidatedThreeByte", iterations, () =>
-            {
-                regex.Inspection.DebugTryCountExactUtf8LiteralValidatedThreeByte(benchmarkCase.InputBytes, out var count);
-                return count;
-            });
-        }
 
         if (hasPreparedSearch)
         {
