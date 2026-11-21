@@ -1205,9 +1205,13 @@ internal static partial class Utf8SliceRunner
         if (length == 0 || (uint)cursor >= (uint)instructions.Length ||
             instructions[cursor].Kind != Utf8SliceInstructionKind.Accept) return false;
 
-        var run = RunClassRepeat(program, repeatIndex, input, start, ref invocation, out var minimumEnd);
+        // Each reverse-search block checks the deadline before reading bytes.
+        // An empty window or a failed repeat still checks it before returning.
+        var run = RunClassRepeat(program, repeatIndex, input, start, ref invocation, out var minimumEnd,
+            checkExitDeadline: false);
         if (run.EndIndex < 0 || run.Breach != Utf8ExecutionLimitKind.None)
         {
+            invocation.Budget.CheckDeadline();
             outcome = new(false, -1, run.Breach, null, null);
             return true;
         }
