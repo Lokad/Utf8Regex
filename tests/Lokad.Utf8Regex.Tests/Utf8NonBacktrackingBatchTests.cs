@@ -314,10 +314,12 @@ public sealed class Utf8NonBacktrackingBatchTests
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
     }
 
-    [Fact]
-    public void EveryCaptureReplayCutoffRestoresWorkingStorage()
+    [Theory]
+    [InlineData("(?<x>a(?<x>b)c)")]
+    [InlineData("a{72}z|(?<x>a(?<x>b)c)")]
+    public void EveryCaptureReplayCutoffRestoresWorkingStorage(string pattern)
     {
-        var program = Program("(?<x>a(?<x>b)c)");
+        var program = Program(pattern);
         var baseline = new Utf8SliceInvocation(new(ulong.MaxValue, 0, 0), Regex.InfiniteMatchTimeout, default);
         Assert.True(baseline.Ledger.TryReserve(13));
         Assert.Equal(Utf8ExecutionLimitKind.None, Utf8NonBacktrackingSearchState.TryCreate(program, "abc"u8, ref baseline, out var measured));

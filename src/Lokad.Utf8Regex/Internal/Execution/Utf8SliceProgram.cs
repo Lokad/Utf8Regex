@@ -453,6 +453,8 @@ internal sealed class Utf8SliceProgram
                     FollowingDecimalContinuation = delimiter.LiteralIndex + 6;
             }
         }
+        if (isNonBacktracking && instructions.Length > 64)
+            NonBacktrackingWideMasks = Utf8SliceRunner.PrepareWideRegularMasks(this, Utf8ConstructionScope.CurrentBudget);
         if (!rightToLeft && NonBacktrackingOrderedClosures.Length != 0)
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
         else if (!rightToLeft && isNonBacktracking && !canMatchEmpty && instructions.Length > 64)
@@ -608,6 +610,7 @@ internal sealed class Utf8SliceProgram
     internal bool IsNonBacktracking { get; }
     internal int NonBacktrackingCaptureOpeningCount { get; }
     internal int[] NonBacktrackingEpsilonOrder { get; }
+    internal ulong[] NonBacktrackingWideMasks { get; } = [];
     internal ulong[] NonBacktrackingEpsilonAncestors { get; }
     internal ulong[] NonBacktrackingOrderedClosures { get; }
     internal byte[] NonBacktrackingOrderedLeaves { get; }

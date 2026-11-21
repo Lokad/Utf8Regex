@@ -192,6 +192,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             }
             var result = new Utf8NonBacktrackingSearchState(boundaries, bits, stride, reservation);
             var singleWord = stride == 1;
+            var epsilon = singleWord ? default : Utf8SliceRunner.GetWideRegularEpsilonOrder(program);
             var scalar = default(Rune);
             for (var boundary = scalars; boundary >= 0; boundary--)
             {
@@ -207,57 +208,11 @@ internal sealed class Utf8NonBacktrackingSearchState
                     scalar = before;
                     continue;
                 }
-                // Wide rows resolve dependencies in the existing epsilon order.
-                var instructionWork = 0;
-                foreach (var pc in program.NonBacktrackingEpsilonOrder)
-                {
-                    // One input-work quantum admits at most one packed word's
-                    // worth of cells. Atom work retains its separate charges.
-                    if ((instructionWork++ & 63) == 0)
-                    {
-                        breach = invocation.TryChargeInputStep();
-                        if (breach != Utf8ExecutionLimitKind.None) return breach;
-                    }
-                    var instruction = program.Instructions[pc];
-                    bool viable;
-                    switch (instruction.Kind)
-                    {
-                        case Utf8SliceInstructionKind.Accept:
-                            viable = true;
-                            break;
-                        case Utf8SliceInstructionKind.Fail:
-                            viable = false;
-                            break;
-                        case Utf8SliceInstructionKind.Fork:
-                            viable = result.CanMatch(boundary, pc + 1) || result.CanMatch(boundary, instruction.A);
-                            break;
-                        case Utf8SliceInstructionKind.Jump:
-                            viable = result.CanMatch(boundary, instruction.A);
-                            break;
-                        case Utf8SliceInstructionKind.CaptureStart:
-                        case Utf8SliceInstructionKind.CaptureEnd:
-                            viable = result.CanMatch(boundary, pc + 1);
-                            break;
-                        case Utf8SliceInstructionKind.Anchor:
-                            viable = result.CanMatch(boundary, pc + 1) &&
-                                Utf8SliceRunner.HoldsNonBacktrackingAnchor(instruction, input, edge);
-                            break;
-                        case Utf8SliceInstructionKind.Boundary:
-                            var beforeWord = boundary > 0 && Utf8SliceScalarClasses.IsBoundaryWord(before, program, instruction);
-                            var afterWord = boundary < scalars && Utf8SliceScalarClasses.IsBoundaryWord(scalar, program, instruction);
-                            viable = result.CanMatch(boundary, pc + 1) && (beforeWord != afterWord) == (instruction.A != 0);
-                            break;
-                        default:
-                            viable = boundary < scalars && result.CanMatch(boundary + 1, pc + 1) &&
-                                Utf8SliceRunner.MatchesNonBacktrackingAtom(program, instruction, scalar, ref invocation, out breach);
-                            if (breach != Utf8ExecutionLimitKind.None) return breach;
-                            break;
-                    }
-                    if (viable)
-                    {
-                        bits[boundary * stride + (pc >> 6)] |= 1UL << (pc & 63);
-                    }
-                }
+                var currentRow = bits.AsSpan(boundary * stride, stride);
+                var followingRow = boundary == scalars ? default : bits.AsSpan((boundary + 1) * stride, stride);
+                breach = Utf8SliceRunner.TryBuildWideRegularRow(program, epsilon, input, edge, scalar, before,
+                    followingRow, currentRow, ref invocation);
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
                 // On the next reverse row this preceding scalar is current.
                 // The end row has no current scalar; boundary zero has no prior one.
                 scalar = before;

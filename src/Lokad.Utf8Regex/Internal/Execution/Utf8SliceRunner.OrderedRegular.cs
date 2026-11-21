@@ -433,117 +433,46 @@ internal static partial class Utf8SliceRunner
     {
         var seek = TrySeekInitialRegularStart(program, input, ref fromByte, ref invocation);
         if (seek != Utf8ExecutionLimitKind.None || fromByte < 0) return new(0, seek);
-        var instructions = program.Instructions;
-        var order = program.NonBacktrackingEpsilonOrder.AsSpan();
-        var leafCount = FindWideRegularLeafCount(instructions, order);
-        var epsilon = order[leafCount..];
-        var wordCount = (instructions.Length - 1) / 64 + 1;
-        var maskLength = 4 * wordCount;
-        var useStack = instructions.Length <= 256;
+        var length = program.Instructions.Length;
+        var epsilon = GetWideRegularEpsilonOrder(program);
+        var maskLength = program.NonBacktrackingWideMasks.Length;
+        var wordCount = maskLength / 2;
+        var useStack = length <= 256;
         var bytes = useStack
-            ? GetOrderedRegularRowBytes(instructions.Length) + (ulong)(maskLength * Unsafe.SizeOf<ulong>())
-            : checked(2 * Utf8ConstructionBudget.ArrayBytes<int>(instructions.Length)
+            ? GetOrderedRegularRowBytes(length) + (ulong)(maskLength * Unsafe.SizeOf<ulong>())
+            : checked(2 * Utf8ConstructionBudget.ArrayBytes<int>(length)
                 + Utf8ConstructionBudget.ArrayBytes<ulong>(maskLength));
         var admission = invocation.TryReserveWorking(bytes);
         if (admission != Utf8ExecutionLimitKind.None) return new(0, admission);
 
         try
         {
-            Span<int> row = useStack ? stackalloc int[instructions.Length] : new int[instructions.Length];
-            Span<int> following = useStack ? stackalloc int[instructions.Length] : new int[instructions.Length];
+            Span<int> row = useStack ? stackalloc int[length] : new int[length];
+            Span<int> following = useStack ? stackalloc int[length] : new int[length];
             Span<ulong> masks = useStack ? stackalloc ulong[maskLength] : new ulong[maskLength];
-            if (useStack) masks.Clear();
-            var consumers = masks[..wordCount];
-            var accepts = masks.Slice(wordCount, wordCount);
-            var viable = masks.Slice(2 * wordCount, wordCount);
-            var followingViable = masks[(3 * wordCount)..];
-            for (var index = 0; index < leafCount; index++)
+            var viable = masks[..wordCount];
+            var followingViable = masks[wordCount..];
+            var accepts = program.NonBacktrackingWideMasks.AsSpan(wordCount);
+            for (var word = 0; word < accepts.Length; word++)
             {
-                if ((index & 63) == 0)
+                var step = invocation.TryChargeInputStep();
+                if (step != Utf8ExecutionLimitKind.None) return new(0, step);
+                for (var bits = accepts[word]; bits != 0; bits &= bits - 1)
                 {
-                    var step = invocation.TryChargeInputStep();
-                    if (step != Utf8ExecutionLimitKind.None) return new(0, step);
-                }
-                var pc = order[index];
-                var kind = instructions[pc].Kind;
-                if (kind == Utf8SliceInstructionKind.Accept)
-                {
-                    accepts[pc >> 6] |= 1UL << (pc & 63);
+                    var pc = (word << 6) + BitOperations.TrailingZeroCount(bits);
                     row[pc] = following[pc] = OrderedCountEmpty;
                 }
-                else if (kind != Utf8SliceInstructionKind.Fail)
-                    consumers[pc >> 6] |= 1UL << (pc & 63);
             }
 
             var edge = input.Length;
             var scalar = default(Rune);
-            var hasScalar = false;
             var followingCount = 0;
             while (true)
             {
                 var hasBefore = TryReadScalar(input, edge, true, out var before, out var width);
-                var cellsLeft = 0;
-                for (var word = 0; word < wordCount; word++)
-                {
-                    var successors = followingViable[word] >> 1;
-                    if (word + 1 < wordCount) successors |= followingViable[word + 1] << 63;
-                    var candidates = successors & consumers[word];
-                    // Charge a group of at most 64 feasible atoms, mask
-                    // words or epsilon operations. Tables meter their scans.
-                    var cells = Math.Max(1, BitOperations.PopCount(candidates));
-                    if (cells > cellsLeft)
-                    {
-                        var step = invocation.TryChargeInputStep();
-                        if (step != Utf8ExecutionLimitKind.None) return new(0, step);
-                        cellsLeft = 64;
-                    }
-                    cellsLeft -= cells;
-                    var live = accepts[word];
-                    for (; candidates != 0; candidates &= candidates - 1)
-                    {
-                        var bit = BitOperations.TrailingZeroCount(candidates);
-                        var pc = (word << 6) + bit;
-                        var hit = MatchesRegularAtom(program, instructions[pc], scalar, ref invocation, out var breach);
-                        if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-                        if (!hit) continue;
-                        var outcome = following[pc + 1];
-                        row[pc] = outcome == OrderedCountEmpty ? followingCount : outcome;
-                        live |= 1UL << bit;
-                    }
-                    viable[word] = live;
-                }
-
-                for (var index = 0; index < epsilon.Length; index++)
-                {
-                    if (cellsLeft == 0)
-                    {
-                        var step = invocation.TryChargeInputStep();
-                        if (step != Utf8ExecutionLimitKind.None) return new(0, step);
-                        cellsLeft = 64;
-                    }
-                    cellsLeft--;
-                    var pc = epsilon[index];
-                    ref readonly var instruction = ref instructions[pc];
-                    var successor = pc + 1;
-                    if (instruction.Kind == Utf8SliceInstructionKind.Fork)
-                    {
-                        var preferred = instruction.B == 0 ? pc + 1 : instruction.A;
-                        var other = instruction.B == 0 ? instruction.A : pc + 1;
-                        successor = IsWideRegularViable(viable, preferred) ? preferred : other;
-                    }
-                    else if (instruction.Kind == Utf8SliceInstructionKind.Jump) successor = instruction.A;
-                    if (!IsWideRegularViable(viable, successor)) continue;
-                    if (instruction.Kind == Utf8SliceInstructionKind.Anchor && !HoldsNonBacktrackingAnchor(instruction, input, edge))
-                        continue;
-                    if (instruction.Kind == Utf8SliceInstructionKind.Boundary)
-                    {
-                        var beforeWord = hasBefore && Utf8SliceScalarClasses.IsBoundaryWord(before, program, instruction);
-                        var afterWord = hasScalar && Utf8SliceScalarClasses.IsBoundaryWord(scalar, program, instruction);
-                        if ((beforeWord != afterWord) != (instruction.A != 0)) continue;
-                    }
-                    row[pc] = row[successor];
-                    viable[pc >> 6] |= 1UL << (pc & 63);
-                }
+                var breach = TryBuildWideRegularRow(program, epsilon, input, edge, scalar, before,
+                    edge == input.Length ? default : followingViable, viable, ref invocation, row, following, followingCount);
+                if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
 
                 var count = CountFromOrderedOutcome((viable[0] & 1) == 0 ? OrderedCountFail : row[0], followingCount);
                 if (edge == fromByte)
@@ -555,7 +484,6 @@ internal static partial class Utf8SliceRunner
                 if (!hasBefore) throw new InvalidOperationException("Ordered traversal requires a complete scalar.");
                 edge -= width;
                 scalar = before;
-                hasScalar = true;
                 followingCount = count;
                 var previous = following;
                 following = row;
@@ -566,6 +494,117 @@ internal static partial class Utf8SliceRunner
             }
         }
         finally { invocation.Ledger.Release(bytes); }
+    }
+
+    internal static ulong[] PrepareWideRegularMasks(Utf8SliceProgram program, Utf8ConstructionBudget budget)
+    {
+        var instructions = program.Instructions.AsSpan();
+        var order = program.NonBacktrackingEpsilonOrder.AsSpan();
+        var leafCount = FindWideRegularLeafCount(instructions, order);
+        var wordCount = (instructions.Length - 1) / 64 + 1;
+        var masks = budget.AllocateArray<ulong>(2 * wordCount, false);
+        // Each word records the consuming leaves and the unconditional accepts.
+        for (var index = 0; index < leafCount; index++)
+        {
+            if ((index & 63) == 0) budget.ChargeWork((ulong)Math.Min(64, leafCount - index));
+            var pc = order[index];
+            var kind = instructions[pc].Kind;
+            if (kind == Utf8SliceInstructionKind.Accept)
+                masks[wordCount + (pc >> 6)] |= 1UL << (pc & 63);
+            else if (kind != Utf8SliceInstructionKind.Fail)
+                masks[pc >> 6] |= 1UL << (pc & 63);
+        }
+        return masks;
+    }
+
+    internal static ReadOnlySpan<int> GetWideRegularEpsilonOrder(Utf8SliceProgram program)
+    {
+        var order = program.NonBacktrackingEpsilonOrder.AsSpan();
+        return order[FindWideRegularLeafCount(program.Instructions, order)..];
+    }
+
+    // Capture tables keep every viability row. Count also keeps suffix counts
+    // for the chosen successors, using the same viability and priority rules.
+    internal static Utf8ExecutionLimitKind TryBuildWideRegularRow(Utf8SliceProgram program,
+        ReadOnlySpan<int> epsilon, ReadOnlySpan<byte> input, int edge, Rune scalar, Rune before,
+        ReadOnlySpan<ulong> followingViable, Span<ulong> viable, ref Utf8SliceInvocation invocation,
+        Span<int> row = default, ReadOnlySpan<int> following = default, int followingCount = 0)
+    {
+        var instructions = program.Instructions;
+        var wordCount = viable.Length;
+        var masks = program.NonBacktrackingWideMasks.AsSpan();
+        var consumers = masks[..wordCount];
+        var accepts = masks[wordCount..];
+        var cellsLeft = 0;
+        for (var word = 0; word < wordCount; word++)
+        {
+            ulong successors = 0;
+            if (!followingViable.IsEmpty)
+            {
+                successors = followingViable[word] >> 1;
+                if (word + 1 < wordCount) successors |= followingViable[word + 1] << 63;
+            }
+            var candidates = successors & consumers[word];
+            // Charge a group of at most 64 feasible atoms, mask
+            // words or epsilon operations. Tables meter their scans.
+            var cells = Math.Max(1, BitOperations.PopCount(candidates));
+            if (cells > cellsLeft)
+            {
+                var step = invocation.TryChargeInputStep();
+                if (step != Utf8ExecutionLimitKind.None) return step;
+                cellsLeft = 64;
+            }
+            cellsLeft -= cells;
+            var live = accepts[word];
+            for (; candidates != 0; candidates &= candidates - 1)
+            {
+                var bit = BitOperations.TrailingZeroCount(candidates);
+                var pc = (word << 6) + bit;
+                var hit = MatchesRegularAtom(program, instructions[pc], scalar, ref invocation, out var breach);
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (!hit) continue;
+                if (!row.IsEmpty)
+                {
+                    var outcome = following[pc + 1];
+                    row[pc] = outcome == OrderedCountEmpty ? followingCount : outcome;
+                }
+                live |= 1UL << bit;
+            }
+            viable[word] = live;
+        }
+
+        for (var index = 0; index < epsilon.Length; index++)
+        {
+            if (cellsLeft == 0)
+            {
+                var step = invocation.TryChargeInputStep();
+                if (step != Utf8ExecutionLimitKind.None) return step;
+                cellsLeft = 64;
+            }
+            cellsLeft--;
+            var pc = epsilon[index];
+            ref readonly var instruction = ref instructions[pc];
+            var successor = pc + 1;
+            if (instruction.Kind == Utf8SliceInstructionKind.Fork)
+            {
+                var preferred = instruction.B == 0 ? pc + 1 : instruction.A;
+                var other = instruction.B == 0 ? instruction.A : pc + 1;
+                successor = IsWideRegularViable(viable, preferred) ? preferred : other;
+            }
+            else if (instruction.Kind == Utf8SliceInstructionKind.Jump) successor = instruction.A;
+            if (!IsWideRegularViable(viable, successor)) continue;
+            if (instruction.Kind == Utf8SliceInstructionKind.Anchor && !HoldsNonBacktrackingAnchor(instruction, input, edge))
+                continue;
+            if (instruction.Kind == Utf8SliceInstructionKind.Boundary)
+            {
+                var beforeWord = edge > 0 && Utf8SliceScalarClasses.IsBoundaryWord(before, program, instruction);
+                var afterWord = edge < input.Length && Utf8SliceScalarClasses.IsBoundaryWord(scalar, program, instruction);
+                if ((beforeWord != afterWord) != (instruction.A != 0)) continue;
+            }
+            if (!row.IsEmpty) row[pc] = row[successor];
+            viable[pc >> 6] |= 1UL << (pc & 63);
+        }
+        return Utf8ExecutionLimitKind.None;
     }
 
     private static int FindWideRegularLeafCount(ReadOnlySpan<Utf8SliceInstruction> instructions, ReadOnlySpan<int> order)
