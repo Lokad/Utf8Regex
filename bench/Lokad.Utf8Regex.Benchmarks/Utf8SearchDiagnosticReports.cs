@@ -60,7 +60,7 @@ internal static class Utf8SearchDiagnosticReports
     private static string FormatRoute(Utf8ExecutionRoute route) => route switch
     {
         Utf8ExecutionRoute.None => "<none>",
-        Utf8ExecutionRoute.CompiledFusedAsciiLiteralFamilyCount => "compiled_fused_ascii_literal_family_count",
+        Utf8ExecutionRoute.CompiledScalarBoundaryLiteralFamilyCount => "compiled_scalar_boundary_literal_family_count",
         Utf8ExecutionRoute.VectorAsciiLiteralCount => "vector_ascii_literal_count",
         Utf8ExecutionRoute.LiteralFamilyHybridEarliestAutomaton => "literal_family_hybrid_earliest_automaton",
         Utf8ExecutionRoute.LiteralFamilyPreparedNonOverlapping => "literal_family_prepared_non_overlapping",

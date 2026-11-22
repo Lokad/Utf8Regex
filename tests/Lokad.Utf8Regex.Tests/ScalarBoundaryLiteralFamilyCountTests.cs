@@ -1,10 +1,9 @@
-using System.Runtime.Intrinsics;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
+public sealed class ScalarBoundaryLiteralFamilyCountTests
 {
     private const string Pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
 
@@ -63,28 +62,22 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
     }
 
     [Fact]
-    public void CompiledPascalCaseFamilyFusesAsciiValidationWithCount()
+    public void CompiledFamilyConfirmsScalarBoundariesAtLiteralCandidates()
     {
-        var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        var input = Encoding.ASCII.GetBytes("LogTrace λ LogDebug_ LogInformation. LogWarning LogError");
+        using var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var input = "𐐀LogTrace LogDebug𐐀 \u200cLogInformation 😀LogError😀 LogWarning"u8;
+        Assert.Equal(2, regex.Count(input));
 
-        if (Vector256.IsHardwareAccelerated)
-        {
-            Assert.True(regex.Inspection.DebugHasFusedAsciiBoundaryLiteralFamilyCount);
-        }
-
-        Assert.Equal(4, regex.Count(input));
-
-        if (Vector256.IsHardwareAccelerated)
+        if (regex.Inspection.HasEmittedLiteralFamily)
         {
             Assert.Equal(
-                "compiled_fused_ascii_literal_family_count",
+                "compiled_scalar_boundary_literal_family_count",
                 regex.CollectCountDiagnostics(input).ExecutionRoute);
         }
     }
 
     [Fact]
-    public void FusedCountCoversEveryVectorLaneAndTheScalarTail()
+    public void CountHandlesBorrowedOffsetsAndTailPositions()
     {
         var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var expectedRegex = new Regex(
@@ -105,7 +98,7 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
     }
 
     [Fact]
-    public void FusedCountMatchesDotNetOnDeterministicAsciiSubjects()
+    public void CountMatchesDotNetOnDeterministicAsciiSubjects()
     {
         var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
         var expectedRegex = new Regex(
@@ -152,48 +145,26 @@ public sealed class FusedAsciiBoundaryLiteralFamilyCountTests
     }
 
     [Fact]
-    public void ValidNonAsciiInputRetainsTheGeneralSemanticRoute()
-    {
-        const string input = "é LogTrace λLogError LogWarning_ LogDebug.";
-        var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        var bytes = Encoding.UTF8.GetBytes(input);
-
-        Assert.Equal(
-            Regex.Count(input, Pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled),
-            regex.Count(bytes));
-        // Mixed structural subjects retain owned unit semantics; the ASCII
-        // fused route is still qualified by the dedicated ASCII witnesses.
-        Assert.Equal("<none>", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
-        var expected = Regex.Match(input, Pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        var actual = regex.Match(bytes);
-        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expected.Index)), actual.StartOffsetInBytes);
-        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(expected.Index, expected.Length)), (actual.EndOffsetInBytes - actual.StartOffsetInBytes));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
-    }
-
-    [Fact]
     public void FiniteTimeoutRetainsTheBudgetedCountRoute()
     {
         // This checks route selection, independently of host scheduling pauses.
         using var clock = Utf8DeadlineTestClock.Start();
-        var regex = new Utf8Regex(            Pattern, options:             RegexOptions.CultureInvariant | RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        using var regex = new Utf8Regex(Pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled, policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromSeconds(1)
         });
         var input = "LogTrace LogError"u8.ToArray();
 
-        Assert.False(regex.Inspection.DebugHasFusedAsciiBoundaryLiteralFamilyCount);
         Assert.Equal(2, regex.Count(input));
         Assert.True(clock.Reads > 0);
     }
 
-    [Theory]
-    [InlineData(@"\b(?:logTrace|logDebug|logInformation|logWarning)\b")]
-    [InlineData(@"\b(?:LogTrace|LogDebug|LogInformation)\b")]
-    public void SelectorRejectsUnprovenFamilyShapes(string pattern)
+    [Fact]
+    public void EcmaScriptUsesItsOwnWordMembership()
     {
-        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant | RegexOptions.Compiled);
-
-        Assert.False(regex.Inspection.DebugHasFusedAsciiBoundaryLiteralFamilyCount);
+        const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.ECMAScript;
+        const string input = "éLogTrace LogDebugé 😀LogError😀";
+        using var regex = new Utf8Regex(Pattern, options);
+        Assert.Equal(Regex.Count(input, Pattern, options), regex.Count(Encoding.UTF8.GetBytes(input)));
     }
 }

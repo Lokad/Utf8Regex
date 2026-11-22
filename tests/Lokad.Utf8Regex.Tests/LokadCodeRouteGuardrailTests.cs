@@ -39,7 +39,7 @@ public sealed class LokadCodeRouteGuardrailTests
     }
 
     [Fact]
-    public void CompiledMethodTokenFamilyUsesOwnedUnitsForMixedSubjects()
+    public void CompiledMethodTokenFamilyKeepsScalarBoundariesOnMixedSubjects()
     {
         const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
         const string input = "é LogTrace λLogError LogWarning_ LogDebug.";
@@ -51,9 +51,11 @@ public sealed class LokadCodeRouteGuardrailTests
         Assert.Equal(expected, regex.Count(bytes));
         Assert.Equal(expected > 0, regex.IsMatch(bytes));
         // Mixed subjects preserve scalar word boundaries and byte coordinates.
-        Assert.Equal("<none>", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
+        Assert.Equal("compiled_scalar_boundary_literal_family_count", regex.CollectCountDiagnostics(bytes).ExecutionRoute);
         var match = regex.Match(bytes);
-        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, Regex.Match(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled).Index)), match.StartOffsetInBytes);
+        var expectedMatch = Regex.Match(input, pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(input.AsSpan(0, expectedMatch.Index)), match.StartOffsetInBytes);
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(expectedMatch.Value), match.EndOffsetInBytes - match.StartOffsetInBytes);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 }

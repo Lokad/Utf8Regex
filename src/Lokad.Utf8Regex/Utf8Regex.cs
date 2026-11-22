@@ -36,7 +36,7 @@ public sealed partial class Utf8Regex : IDisposable
 
     private readonly Utf8RegexProgram _program;
     private readonly int _asciiLiteralCountAnchorOffset;
-    private readonly Utf8EmittedLiteralFamilyCounter? _fusedAsciiBoundaryLiteralFamilyCounter;
+    private readonly Utf8EmittedLiteralFamilyCounter? _scalarBoundaryLiteralFamilyCounter;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
     internal readonly Utf8PackedNibbleLiteralFamilyCountStrategy? _packedNibbleLiteralFamilyCountStrategy;
@@ -84,13 +84,6 @@ public sealed partial class Utf8Regex : IDisposable
                 preparedRegex.LiteralUtf8 is { } asciiLiteral
                     ? Utf8AsciiExactLiteralCountExecutor.SelectRarestAnchorOffset(asciiLiteral)
                     : -1;
-            if (matchTimeout == Regex.InfiniteMatchTimeout &&
-                (options & RegexOptions.RightToLeft) == 0 &&
-                _program.CompiledEngineRuntime is { } literalRuntime &&
-                literalRuntime._emittedLiteralFamilyCounter is { SupportsAsciiValidatedCount: true } boundaryLiteralFamilyCounter)
-            {
-                _fusedAsciiBoundaryLiteralFamilyCounter = boundaryLiteralFamilyCounter;
-            }
             _requiresKelvinSignFallback = RequiresKelvinSignFallback(_program.PreparedRegex);
             _invariantCyrillicLiteralCountStrategy =
                 Utf8InvariantCyrillicLiteralCountStrategy.TryCreate(
@@ -116,6 +109,12 @@ public sealed partial class Utf8Regex : IDisposable
             var ownedSliceProgram = preparedRegex.ScalarProgram
                 ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
             _ownedSliceProgram = ownedSliceProgram;
+            if (matchTimeout == Regex.InfiniteMatchTimeout && (options & RegexOptions.ECMAScript) == 0 &&
+                _program.CompiledEngineRuntime?._emittedLiteralFamilyCounter is { HasScalarBoundaryConfirmation: true } boundaryCounter &&
+                CanUseNativeLiteralSearch(ownedSliceProgram, maximumAlternatives: 8, allowBoundaries: true))
+            {
+                _scalarBoundaryLiteralFamilyCounter = boundaryCounter;
+            }
             var usesLiteralEngine = preparedRegex.HasLiteralPlan;
             var captureRoot = usesLiteralEngine || _anchoredLiteral.HasValue ? root : null;
             _hasCaptures = ownedSliceProgram.GroupCount != 0 &&
@@ -461,6 +460,14 @@ public sealed partial class Utf8Regex : IDisposable
             return count;
         }
 
+        if (!cancellationToken.CanBeCanceled && _scalarBoundaryLiteralFamilyCounter is { } boundaryCounter)
+        {
+            // Check the scalar neighbors of each exact literal candidate.
+            // Unrelated bytes cannot affect its boundary requirements.
+            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledScalarBoundaryLiteralFamilyCount);
+            return boundaryCounter.Count(input);
+        }
+
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceCount(input, ownedProgram, cancellationToken);
@@ -476,13 +483,6 @@ public sealed partial class Utf8Regex : IDisposable
         {
             Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.VectorAsciiLiteralCount);
             return asciiLiteralCount;
-        }
-
-        if (_fusedAsciiBoundaryLiteralFamilyCounter is { } fusedAsciiBoundaryLiteralFamilyCounter &&
-            fusedAsciiBoundaryLiteralFamilyCounter.TryCountAndValidateAscii(input, out var fusedBoundaryLiteralFamilyCount))
-        {
-            Utf8SearchDiagnosticsSession.Current?.MarkExecutionRoute(Utf8ExecutionRoute.CompiledFusedAsciiLiteralFamilyCount);
-            return fusedBoundaryLiteralFamilyCount;
         }
 
         if (_packedNibbleLiteralFamilyCountStrategy is { } packedNibbleLiteralFamilyCountStrategy)
