@@ -1534,8 +1534,12 @@ internal static partial class Utf8SliceRunner
         var code = program.Instructions;
         var repeat = code[index];
         var maximum = Math.Min(input.Length - position, repeat.RepeatMaximum);
+        var exit = code[repeat.A];
+        // A greedy run with an unconditional empty tail can keep its
+        // longest endpoint. Verify the tail in order for the final range.
         if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || maximum > remaining ||
-            !(program.SkipsTerminalRewind(index) || code[repeat.A].RepeatExitRejectsShorterEndpoints))
+            !(program.SkipsTerminalRewind(index) || exit.RepeatExitRejectsShorterEndpoints ||
+                repeat.RepeatMaximum == long.MaxValue && exit.RepeatExitAcceptsEmptyTail))
             return null;
 
         var atom = code[index + 1];

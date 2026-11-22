@@ -539,9 +539,9 @@ internal static partial class Utf8SliceRunner
                 return new(false, -1, -1, null, null, breach);
             invocation.Budget.ThrowIfCancellationRequested();
             var proofStart = -1;
-            if (seekBeginning && !collectHistory && captureStarts.Length == 0)
+            if (!collectHistory && captureStarts.Length == 0)
             {
-                if (first.D == 1 && input.Length <= 32)
+                if (first.D == 1 && input.Length - fromByte <= 32)
                     proofStart = 1;
                 else if (first.D < 0 && input.Length <= BranchedPrefixInstructionLimit)
                     proofStart = -first.D;

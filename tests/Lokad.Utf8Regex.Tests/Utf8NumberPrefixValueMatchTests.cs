@@ -133,6 +133,22 @@ public sealed class Utf8NumberPrefixValueMatchTests
     }
 
     [Theory]
+    [InlineData("123!", 0, 3)]
+    [InlineData("😀x12e-", 5, 2)]
+    [InlineData("😀x-12.34e-5!", 5, 9)]
+    public void ShortContiguousRangeFitsTheBoundedProof(string text, int origin, int length)
+    {
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        var actual = regex.Match(Encoding.UTF8.GetBytes(text), origin, [], cancellationToken: token.Token);
+        Assert.True(actual.Success);
+        Assert.Equal((origin, origin + length), (actual.StartOffsetInBytes, actual.EndOffsetInBytes));
+    }
+
+    [Theory]
     [InlineData("12.3e-4!", true)]
     [InlineData("wrong", false)]
     public void WorkDenialCannotPublishSuccessOrNoMatch(string text, bool success)

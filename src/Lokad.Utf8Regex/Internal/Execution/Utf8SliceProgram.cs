@@ -230,8 +230,8 @@ internal readonly struct Utf8SliceInstruction
     // A Literal at a fork entry can carry the destination after two equal
     // first literals fail the bounded prefix proof.
     // With negative Fork C, D can hold the packed captured prefix plus one.
-    // An absolute Beginning anchor stores 1 for the bounded repeat witness,
-    // or the negated start instruction for the unbounded repeat witness.
+    // A Beginning or Contiguous anchor stores 1 for the short repeat proof.
+    // An absolute Beginning can also store the negated start of a longer proof.
     internal int D { get; }
 
     // RepeatExit C records independent proofs about the continuation.
@@ -454,6 +454,11 @@ internal sealed class Utf8SliceProgram
                 if (ascii != 0 || proof != 0)
                     instructions[0] = new(first.Kind, first.A, first.B, ascii, proof);
             }
+            else if (first is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Contiguous } &&
+                !readsCaptures && repeatCount != 0 && instructions.Length <= 32 &&
+                instructions[1] is { Kind: Utf8SliceInstructionKind.RepeatGreedy } repeat &&
+                (instructions[repeat.A].RepeatExitAcceptsEmptyTail || instructions[repeat.A].RepeatExitRejectsShorterEndpoints))
+                instructions[0] = new(first.Kind, first.A, first.B, first.C, 1);
             else if (!ignoreCase && !canMatchEmpty && !hasContiguousAnchor)
                 LeadingByteCandidate = Utf8SliceRunner.FindLeadingByteCandidate(this, Utf8ConstructionScope.CurrentBudget);
         }
