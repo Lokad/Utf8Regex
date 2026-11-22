@@ -14,12 +14,14 @@ work in progress.
 
 Inputs are caller-valid, unchanged UTF-8 across all profiles; regex operations
 expose no validation mode. .NET receives predecoded text; a separate
-lane includes UTF-8 decoding. Matching options and capture results are checked
-before timing. The comparison includes public result handling with the .NET
-byte-coordinate lookup prepared outside timing. `MatchSlots` uses the public
-caller-buffer match from a byte offset and reads one range per participating
-group. `Cursor` reads complete capture histories. Archived `MatchCaptures` rows
-measure one cursor advance with histories.
+lane includes UTF-8 decoding. Ordinary Core and .NET lanes use an infinite
+timeout. Compare the controlled Core lanes with ordinary Core to assess the
+cost of deadlines, cancellation and resource limits. Matching options and
+capture results are checked before timing. The comparison includes public
+result handling with the .NET byte-coordinate lookup prepared outside timing.
+`MatchSlots` uses the public caller-buffer match from a byte offset and reads
+one range per participating group. `Cursor` reads complete capture histories.
+Archived `MatchCaptures` rows measure one cursor advance with histories.
 
 Run the existing Release driver, using the SDK from `global.json`:
 

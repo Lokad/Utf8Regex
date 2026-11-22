@@ -99,7 +99,8 @@ internal static partial class BenchmarkInspectReporter
                 InputContract = "Caller-valid unchanged UTF-8 / predecoded .NET text; Core performs no subject validation. DecodeThenRegex includes decoding.",
                 Scope = "24 representative patterns; structural neighbours and everyday patterns. Not exhaustive old-catalog coverage or adapter coverage.",
                 OutputContract = "MatchSlots reads last captures into caller slots. Cursor reads complete capture histories. Both return byte ranges, with the BCL coordinate map prepared outside timing. No string materialization. Construction consumes the same CultureInvariant Options mask on every producer, without metadata-array copies.",
-                Policy = "Token, 10-second deadline, 50M work steps, 4096 depth, 16 MiB working/result; caller working allowance in combined lane.",
+                Policy = "Ordinary Core and .NET lanes use an infinite timeout. Controlled Core lanes use a token, " +
+                    "10-second deadline, 50M work steps, 4096 depth, 16 MiB working/result and a caller working allowance in the combined lane.",
                 Results = results }, new JsonSerializerOptions { WriteIndented = true }) + "\n");
             Console.WriteLine($"Generality output: {path}; elapsed {started.Elapsed.TotalSeconds:F1}s.");
         }
@@ -132,14 +133,14 @@ internal static partial class BenchmarkInspectReporter
             for (var i = 0; i < text.Length; i++) _boundaries[i + 1] = _boundaries[i] + Encoding.UTF8.GetByteCount(text.AsSpan(i, 1));
             _start = text.Length / 2;
             _core = [Create(), Create(timeout: true), Create(limits: true), Create(timeout: true, limits: true), Create(timeout: true, limits: true, compiled: true)];
-            _oracle = new Regex(pattern, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(10));
-            _compiled = new Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled, TimeSpan.FromSeconds(10));
+            _oracle = new Regex(pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout);
+            _compiled = new Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled, Regex.InfiniteMatchTimeout);
             _numbers = _oracle.GetGroupNumbers();
         }
 
         private Utf8Regex Create(bool timeout = false, bool limits = false, bool compiled = false) => new(_pattern, options: RegexOptions.CultureInvariant | (compiled ? RegexOptions.Compiled : 0), policy: new Utf8RegexPolicy
         {
-            MatchTimeout = timeout ? TimeSpan.FromSeconds(10) : null,
+            MatchTimeout = timeout ? TimeSpan.FromSeconds(10) : Regex.InfiniteMatchTimeout,
             ResourcePolicy = limits ? Limits : default
         });
 
@@ -149,8 +150,8 @@ internal static partial class BenchmarkInspectReporter
             // Group-number copies would measure an unrelated public operation.
             if (operation == "Construct") return lane switch {
                 "Core" => (int)(Create().Options & RegexOptions.CultureInvariant),
-                "PredecodedRegex" => (int)(new Regex(_pattern, RegexOptions.CultureInvariant).Options & RegexOptions.CultureInvariant),
-                _ => (int)(new Regex(_pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled).Options & RegexOptions.CultureInvariant) };
+                "PredecodedRegex" => (int)(new Regex(_pattern, RegexOptions.CultureInvariant, Regex.InfiniteMatchTimeout).Options & RegexOptions.CultureInvariant),
+                _ => (int)(new Regex(_pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled, Regex.InfiniteMatchTimeout).Options & RegexOptions.CultureInvariant) };
             if (!lane.StartsWith("Core", StringComparison.Ordinal))
             {
                 var text = lane == "DecodeThenRegex" ? Encoding.UTF8.GetString(_input) : _text;
