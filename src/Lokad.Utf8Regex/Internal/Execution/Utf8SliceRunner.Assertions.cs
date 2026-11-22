@@ -254,7 +254,8 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8ExecutionLimitKind TryMatchInlineLiteralAssertion(ReadOnlySpan<Utf8SliceInstruction> code,
         int first, int end, int prefixLength, ReadOnlySpan<byte> input, int start, bool reverse,
-        int? requiredEnd, uint depth, ref Utf8SliceInvocation invocation, out bool matched)
+        int? requiredEnd, uint depth, ref Utf8SliceInvocation invocation, out bool matched,
+        bool checkExitDeadline = true)
     {
         matched = false;
         var breach = invocation.TryChargeStep();
@@ -265,10 +266,10 @@ internal static partial class Utf8SliceRunner
             return breach;
         }
 
-        // The prepared assertion has at most 32 instructions. The exit check
-        // covers this bounded read before the assertion can affect matching.
+        // At most 32 instructions are inspected. Guarded repeats use the
+        // instruction cadence inside the loop and check the deadline at exit.
         matched = MatchInlineLiteralAssertion(code, first, end, prefixLength, input, start, reverse, requiredEnd);
-        breach = invocation.TryChargeInputStep();
+        breach = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
         invocation.Budget.ThrowIfCancellationRequested();
         return breach;
     }

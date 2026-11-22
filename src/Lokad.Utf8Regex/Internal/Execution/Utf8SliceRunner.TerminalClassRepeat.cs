@@ -1644,10 +1644,10 @@ internal static partial class Utf8SliceRunner
             // while the next scalar's assertion is being evaluated.
             var depth = count >= minimum ? assertionDepth + 1 : assertionDepth;
             var breach = TryMatchInlineLiteralAssertion(code, repeatIndex + 2, guard.A - 2, guard.C - 1,
-                input, position, false, null, depth, ref invocation, out var matched);
+                input, position, false, null, depth, ref invocation, out var matched, checkExitDeadline: false);
             if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
             if (matched != (guard.D != 0)) break;
-            breach = invocation.TryChargeStep();
+            breach = ChargeRepeatBoundary(ref invocation, checkDeadline: false);
             if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
             if (!TryReadScalar(input, position, false, out var scalar, out var width)) break;
             breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);

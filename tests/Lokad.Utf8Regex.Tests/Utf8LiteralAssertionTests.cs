@@ -147,4 +147,20 @@ public sealed class Utf8LiteralAssertionTests
         }
         finally { session.Complete(); }
     }
+
+    [Fact]
+    public void GuardedRepeatChecksItsDeadlineBeforeLeavingTheLoop()
+    {
+        using var regex = new Utf8Regex(@"\A(?:(?!foo|goo)[a-z]){1,512}foo\z", policy: new()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("gox", 96)) + "foo");
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        Assert.True(regex.IsMatch(input));
+        var session = Utf8SearchDiagnosticsSession.Start(_ => ticks = 50);
+        try { Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input)); }
+        finally { session.Complete(); }
+    }
 }
