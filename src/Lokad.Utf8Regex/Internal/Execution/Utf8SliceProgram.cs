@@ -535,6 +535,7 @@ internal sealed class Utf8SliceProgram
                     nonBacktrackingOrderedForwardOnly = false;
                     break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
+                case Utf8SliceInstructionKind.RepeatLazy:
                 case Utf8SliceInstructionKind.RepeatExit:
                 case Utf8SliceInstructionKind.CaptureStart:
                 case Utf8SliceInstructionKind.CaptureEnd:

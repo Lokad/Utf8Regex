@@ -310,6 +310,39 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.Equal(0UL, account.Held);
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None, "é??")]
+    [InlineData(RegexOptions.None, "é*?")]
+    [InlineData(RegexOptions.None, "+?")]
+    [InlineData(RegexOptions.RightToLeft, "é??")]
+    [InlineData(RegexOptions.RightToLeft, "é*?")]
+    [InlineData(RegexOptions.RightToLeft, "+?")]
+    public void OrderedLazyScalarRepeatsPreferTheExitAndPublishItsCaptures(RegexOptions options, string repeat)
+    {
+        var reverse = options == RegexOptions.RightToLeft;
+        var gap = new string('q', 4099);
+        var hits = reverse ? "😀zéé" : "ééz😀";
+        var input = Encoding.UTF8.GetBytes(reverse ? hits + gap : gap + hits);
+        var alternative = reverse ? "z+é" : "éz+";
+        using var regex = new Utf8Regex($"(?<first>é{repeat})|(?<second>{alternative})", options,
+            new Utf8RegexPolicy
+            {
+                ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 256, MaxWorkingBytes = 4096 }
+            });
+        var start = reverse ? Encoding.UTF8.GetByteCount("😀zé") : gap.Length;
+        var expected = new Utf8CaptureRange(start, start + Encoding.UTF8.GetByteCount("é"));
+        var account = new Account();
+        using var source = new CancellationTokenSource();
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+
+        Assert.Equal(expected, regex.Match(input, captures: slots, cancellationToken: source.Token, workingMemoryAllowance: account));
+        Assert.Equal(expected, slots[1]);
+        Assert.False(slots[2].Success);
+        Assert.Equal(0UL, account.Held);
+        Assert.Equal(2, regex.Count(input, source.Token, account));
+        Assert.Equal(0UL, account.Held);
+    }
+
     [Fact]
     public void OrdinaryOrderedBooleanNeedsNoScratchLoanFromTheCaller()
     {

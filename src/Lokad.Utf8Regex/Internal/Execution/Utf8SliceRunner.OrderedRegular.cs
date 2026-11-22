@@ -11,6 +11,8 @@ internal static partial class Utf8SliceRunner
     private const int OrderedTagBits = 4;
     private const ulong OrderedTagMask = (1UL << OrderedTagBits) - 1;
     private const int OrderedLeafLimit = (int)OrderedTagMask;
+    // Scratch projection uses a target-first fork distinct from the ordinary VM's assertion fork.
+    private const int OrderedTargetFirst = -1;
 
     internal static bool CanPrepareOrdinaryOrderedSearch(
         ReadOnlySpan<Utf8SliceInstruction> instructions, Utf8ConstructionBudget budget)
@@ -26,8 +28,9 @@ internal static partial class Utf8SliceRunner
             {
                 // The ordinary lowerer emits these backward edges only for
                 // greedy loops with a body that consumes on every completion.
+                // The projection can also add loops after one scalar.
                 case Utf8SliceInstructionKind.Jump when instruction.B == 0:
-                case Utf8SliceInstructionKind.Fork when instruction.B == 0:
+                case Utf8SliceInstructionKind.Fork when instruction.B is 0 or OrderedTargetFirst:
                 case Utf8SliceInstructionKind.CaptureStart:
                 case Utf8SliceInstructionKind.CaptureEnd:
                 case Utf8SliceInstructionKind.Fail:
@@ -61,7 +64,8 @@ internal static partial class Utf8SliceRunner
         for (var pc = 0; pc < instructions.Length; pc++)
         {
             var repeat = instructions[pc];
-            if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy) continue;
+            if (repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy))
+                continue;
             var optional = repeat is { RepeatMinimum: 0, RepeatMaximum: 1 };
             if (instructions.Length - pc < 5 || !optional && (repeat.RepeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1) ||
                 !IsSingleAtomRepeat(instructions, pc, repeat) ||
@@ -70,19 +74,20 @@ internal static partial class Utf8SliceRunner
                     Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.Dot))
                 return [];
 
+            var priority = repeat.Kind == Utf8SliceInstructionKind.RepeatLazy ? OrderedTargetFirst : 0;
             if (repeat.RepeatMinimum == 0)
             {
-                projected[pc] = new(Utf8SliceInstructionKind.Fork, pc + 3, 0, 0, 0);
-                // Greedy optionals also prefer the atom, then leave after one hit.
+                projected[pc] = new(Utf8SliceInstructionKind.Fork, pc + 3, priority, 0, 0);
+                // Either optional order leaves after one hit.
                 projected[pc + 2] = new(Utf8SliceInstructionKind.Jump, optional ? pc + 3 : pc, 0, 0, 0);
                 projected[pc + 3] = new(Utf8SliceInstructionKind.Jump, pc + 4, 0, 0, 0);
             }
             else
             {
-                // Consume the first atom, then give the repeat edge priority
-                // over leaving. The original exit slot is local to the loop.
+                // Consume the first atom before deciding whether to continue.
+                // The original exit slot is local to the loop.
                 projected[pc] = new(Utf8SliceInstructionKind.Jump, pc + 1, 0, 0, 0);
-                projected[pc + 2] = new(Utf8SliceInstructionKind.Fork, pc + 4, 0, 0, 0);
+                projected[pc + 2] = new(Utf8SliceInstructionKind.Fork, pc + 4, priority, 0, 0);
                 projected[pc + 3] = new(Utf8SliceInstructionKind.Jump, pc + 1, 0, 0, 0);
             }
             pc += 3;
