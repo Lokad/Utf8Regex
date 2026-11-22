@@ -10,7 +10,14 @@ public sealed partial class Utf8PythonRegex : IDisposable
     private Utf8FundedStorage.Use? EnterProgramUse() => _programMemory?.Enter();
 
     private Utf8SliceInvocation CreateInvocation(CancellationToken token, IUtf8MemoryAllowance? workingMemoryAllowance = null)
-        => Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, token,
+    {
+        InitializeInvocation(out var invocation, token, workingMemoryAllowance);
+        return invocation;
+    }
+
+    private void InitializeInvocation(out Utf8SliceInvocation invocation, CancellationToken token,
+        IUtf8MemoryAllowance? workingMemoryAllowance = null)
+        => Utf8SliceInvocation.InitializeExclusive(out invocation, InvocationLimits, MatchTimeout, token,
             workingMemoryAllowance ?? _programMemory?.Allowance);
 
     /// <summary>Closes caller-funded program/cache storage after its last active users finish.</summary>

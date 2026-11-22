@@ -38,29 +38,34 @@ internal struct PythonReScalarMatchState
     private int _position;
 
     internal static void Initialize(out PythonReScalarMatchState state,
-        ReadOnlySpan<byte> input, Utf8SliceProgram program,
-        int startOffsetInBytes, TimeSpan timeout, object pattern,
-        scoped in Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, bool prepareSearch = true)
+        ReadOnlySpan<byte> input, Utf8SliceProgram program, int startOffsetInBytes, TimeSpan timeout,
+        object pattern, scoped in Utf8SliceInvocation invocation, Utf8Regex? candidateRegex, bool prepareSearch = true)
     {
         state = default;
-        state._program = program;
-        state._leadingAsciiLow = state._leadingAsciiHigh = -1;
-        state._delimiter = state._delimiterLeadingClass = -1;
-        state._timeoutSource = pattern;
-        state._timeout = timeout;
-        state._position = startOffsetInBytes;
-        state._slots = new Utf8SliceSlots([], []);
-        // Own one value copy; the caller only lends the source.
         state._invocation = invocation;
+        state.Initialize(input, program, startOffsetInBytes, timeout, pattern, candidateRegex, prepareSearch);
+    }
+
+    // The owner establishes the invocation in a fresh state before preparation.
+    internal void Initialize(ReadOnlySpan<byte> input, Utf8SliceProgram program,
+        int startOffsetInBytes, TimeSpan timeout, object pattern, Utf8Regex? candidateRegex, bool prepareSearch = true)
+    {
+        _program = program;
+        _leadingAsciiLow = _leadingAsciiHigh = -1;
+        _delimiter = _delimiterLeadingClass = -1;
+        _timeoutSource = pattern;
+        _timeout = timeout;
+        _position = startOffsetInBytes;
+        _slots = new Utf8SliceSlots([], []);
         try
         {
             // Python re consumes text. The caller supplies valid unchanged UTF-8;
             // admission/interruption still precede preparation and early results.
-            state.Checkpoint();
+            Checkpoint();
             if (program.RejectsByFinalAscii(input))
             {
-                if (state._invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw state.ResourceFailure();
-                state._finished = true;
+                if (_invocation.TryChargeInputStep() != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+                _finished = true;
                 return;
             }
             // Anchored calls cannot skip a rejected starting byte. Reuse the
@@ -74,30 +79,30 @@ internal struct PythonReScalarMatchState
                 (startOffsetInBytes == input.Length ||
                  (uint)(input[startOffsetInBytes] - startLow) > (uint)(startHigh - startLow)) ||
                 !program.CanMatchEmpty && !program.IgnoreCase && candidateRegex is { } required &&
-                required.RejectMissingExactRequiredLiteral(input, ref state._invocation))
+                required.RejectMissingExactRequiredLiteral(input, ref _invocation))
             {
-                state.Checkpoint();
-                state._finished = true;
+                Checkpoint();
+                _finished = true;
                 return;
             }
             // Anchored Match/FullMatch never seek a candidate. Their existing
             // operation intent avoids preparing hints they cannot consume.
             if (prepareSearch)
             {
-                if (CanUseCandidateRegex(program, candidateRegex)) state._candidateRegex = candidateRegex;
-                if (state._candidateRegex is null)
+                if (CanUseCandidateRegex(program, candidateRegex)) _candidateRegex = candidateRegex;
+                if (_candidateRegex is null)
                 {
                     if (TryGetLeadingAsciiRange(program, out var low, out var high, out var mayMatchUnicode))
                     {
-                        state._leadingAsciiLow = low;
-                        state._leadingAsciiHigh = high;
-                        state._leadingAsciiMayMatchUnicode = mayMatchUnicode;
-                        if (!mayMatchUnicode && TryGetLaterAsciiRange(program, low, high, ref state._invocation,
+                        _leadingAsciiLow = low;
+                        _leadingAsciiHigh = high;
+                        _leadingAsciiMayMatchUnicode = mayMatchUnicode;
+                        if (!mayMatchUnicode && TryGetLaterAsciiRange(program, low, high, ref _invocation,
                             out var distance, out var laterLow, out var laterHigh))
                         {
-                            state._laterAsciiDistance = distance;
-                            state._laterAsciiLow = (byte)laterLow;
-                            state._laterAsciiHigh = (byte)laterHigh;
+                            _laterAsciiDistance = distance;
+                            _laterAsciiLow = (byte)laterLow;
+                            _laterAsciiHigh = (byte)laterHigh;
                         }
                     }
                     // The program and subject extent are immutable for this
@@ -113,26 +118,26 @@ internal struct PythonReScalarMatchState
                         if (directClassLiteral &&
                             (program.Instructions[leadingClass] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } atom &&
                                 program.SetMasks[atom.A].Length == 16 ||
-                             state._leadingAsciiLow >= 0 && program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 }))
+                             _leadingAsciiLow >= 0 && program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 }))
                         {
-                            state._delimiter = delimiter;
-                            state._delimiterLeadingClass = leadingClass;
+                            _delimiter = delimiter;
+                            _delimiterLeadingClass = leadingClass;
                         }
                     }
                 }
             }
-            state._slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref state._invocation);
+            _slots = Utf8SliceRunner.RentSlots(program.GroupCount, ref _invocation);
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && state._invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { state.Dispose(); throw state.ResourceFailure(); }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && _invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+        { Dispose(); throw ResourceFailure(); }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
-            state.Dispose();
-            throw state.TimeoutFailure(input);
+            Dispose();
+            throw TimeoutFailure(input);
         }
         catch
         {
-            state.Dispose();
+            Dispose();
             throw;
         }
     }

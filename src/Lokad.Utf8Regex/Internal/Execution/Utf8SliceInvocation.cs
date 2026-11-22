@@ -37,17 +37,26 @@ internal struct Utf8SliceInvocation
         CancellationToken token, IUtf8MemoryAllowance? memoryAllowance = null)
         => new(limits, Utf8ExecutionDeadline.Start(timeout), token, memoryAllowance, share: false);
 
+    internal static void InitializeExclusive(out Utf8SliceInvocation invocation, Utf8ExecutionLimits limits,
+        TimeSpan timeout, CancellationToken token, IUtf8MemoryAllowance? memoryAllowance)
+        => Initialize(out invocation, limits, Utf8ExecutionDeadline.Start(timeout), token, memoryAllowance, share: false);
+
     private Utf8SliceInvocation(Utf8ExecutionLimits limits, Utf8ExecutionDeadline deadline, CancellationToken token,
         IUtf8MemoryAllowance? memoryAllowance, bool share = true)
+        => Initialize(out this, limits, deadline, token, memoryAllowance, share);
+
+    private static void Initialize(out Utf8SliceInvocation invocation, Utf8ExecutionLimits limits,
+        Utf8ExecutionDeadline deadline, CancellationToken token, IUtf8MemoryAllowance? memoryAllowance, bool share)
     {
-        _inlineBudget = new Utf8ExecutionBudget(limits, deadline, token);
-        _inlineLedger = new Utf8StorageLedger(memoryAllowance);
-        CheckpointHook = Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook;
-        AnchorOriginByte = -1;
+        invocation._inlineBudget = new Utf8ExecutionBudget(limits, deadline, token);
+        invocation._inlineLedger = new Utf8StorageLedger(memoryAllowance);
+        invocation.CheckpointHook = Lokad.Utf8Regex.Internal.Diagnostics.Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook;
+        invocation.AnchorOriginByte = -1;
         // Share from entry when a later value copy can make charges. Unlimited
         // scopes without funding or a hook can defer sharing until they fork.
-        _sharedWork = share && (!_inlineBudget.IsUnmetered || memoryAllowance is not null || CheckpointHook is not null)
-            ? new SharedInvocationState(_inlineBudget, _inlineLedger)
+        invocation._sharedWork = share &&
+            (!invocation._inlineBudget.IsUnmetered || memoryAllowance is not null || invocation.CheckpointHook is not null)
+            ? new SharedInvocationState(invocation._inlineBudget, invocation._inlineLedger)
             : null;
     }
 

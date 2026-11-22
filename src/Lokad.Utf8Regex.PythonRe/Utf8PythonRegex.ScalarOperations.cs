@@ -77,8 +77,9 @@ public sealed partial class Utf8PythonRegex
         }
         ValidateScalarStartOffset(input, startOffsetInBytes);
         // A one-shot search needs no cursor return or copy of its inline state.
-        PythonReScalarMatchState.Initialize(out var state, input, program, startOffsetInBytes,
-            MatchTimeout, this, CreateInvocation(cancellationToken), prepared);
+        var state = default(PythonReScalarMatchState);
+        InitializeInvocation(out state.WorkingInvocation, cancellationToken);
+        state.Initialize(input, program, startOffsetInBytes, MatchTimeout, this, prepared);
         try
         {
             var found = state.MoveNext(input, existenceOnly: true);
@@ -98,11 +99,11 @@ public sealed partial class Utf8PythonRegex
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         ValidateScalarStartOffset(input, startOffsetInBytes);
-        var invocation = CreateInvocation(cancellationToken, workingMemoryAllowance);
         // A single result borrows the input here. Construct the state in its
         // local so returning it through a value cursor does not copy it.
-        PythonReScalarMatchState.Initialize(out var state, input, ScalarProgram, startOffsetInBytes,
-            MatchTimeout, this, invocation, _utf8Regex, prepareSearch: kind == 0);
+        var state = default(PythonReScalarMatchState);
+        InitializeInvocation(out state.WorkingInvocation, cancellationToken, workingMemoryAllowance);
+        state.Initialize(input, ScalarProgram, startOffsetInBytes, MatchTimeout, this, _utf8Regex, prepareSearch: kind == 0);
         try
         {
             var completed = kind == 0 ? state.MoveNext(input) : state.MatchAtCurrentPosition(input, requireFullInput: kind == 2);
