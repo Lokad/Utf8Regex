@@ -978,7 +978,9 @@ internal static partial class Utf8SliceRunner
                 code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
             return;
         }
-        if (atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
+        var optionalAsciiLiteral = repeat is { RepeatMinimum: 0, RepeatMaximum: 1 } &&
+            atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 };
+        if (!optionalAsciiLiteral && atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
                          { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
                          { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
@@ -1025,13 +1027,15 @@ internal static partial class Utf8SliceRunner
         // among its arms. Both tests use the same repeat-exit certificate.
         var work = next.Kind == Utf8SliceInstructionKind.Fork ? 12 : 1;
         budget.ChargeWork((ulong)work + 2);
-        var mask = setMasks[atom.A].AsSpan();
-        var consumed = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
-            BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
-        if (ExcludesShorterRepeatEnds(code, continuation, consumed,
-            atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 }, ref work))
+        var consumed = optionalAsciiLiteral ? default(Utf8SearchAsciiSet).With((byte)atom.A) : ReadAsciiSet(setMasks[atom.A]);
+        if (ExcludesShorterRepeatEnds(code, setMasks, continuation, consumed,
+            optionalAsciiLiteral || atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 }, ref work))
             code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
     }
+
+    private static Utf8SearchAsciiSet ReadAsciiSet(ReadOnlySpan<byte> mask)
+        => Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
+            BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
 
     private static int FindRepeatRewindStarts(ReadOnlySpan<Utf8SliceInstruction> code, byte[][] setMasks,
         int continuation, Utf8ConstructionBudget budget)
@@ -1189,7 +1193,7 @@ internal static partial class Utf8SliceRunner
     }
 
     private static bool ExcludesShorterRepeatEnds(ReadOnlySpan<Utf8SliceInstruction> instructions,
-        int index, Utf8SearchAsciiSet consumedAscii, bool asciiOnly, ref int remaining)
+        byte[][] setMasks, int index, Utf8SearchAsciiSet consumedAscii, bool asciiOnly, ref int remaining)
     {
         // Each arm must reject the scalar at a shorter endpoint. An unfolded
         // hybrid mask describes all ASCII members but may also admit wider ones.
@@ -1202,10 +1206,16 @@ internal static partial class Utf8SliceRunner
                 case { Kind: Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd }:
                     continue;
                 case { Kind: Utf8SliceInstructionKind.Fork, B: 0 } when entry.A > index:
-                    if (!ExcludesShorterRepeatEnds(instructions, entry.A, consumedAscii, asciiOnly, ref remaining)) return false;
+                    if (!ExcludesShorterRepeatEnds(instructions, setMasks, entry.A, consumedAscii, asciiOnly, ref remaining)) return false;
+                    continue;
+                case { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
+                    RepeatMinimum: > 0 } when IsSingleAtomRepeat(instructions, index, entry):
                     continue;
                 case { Kind: Utf8SliceInstructionKind.Literal, B: 0 }:
                     return (uint)entry.A < 128 ? !consumedAscii.Contains((byte)entry.A) : asciiOnly;
+                case { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }:
+                    var next = ReadAsciiSet(setMasks[entry.A]);
+                    return ((next.Low & consumedAscii.Low) | (next.High & consumedAscii.High)) == 0;
                 case { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd }:
                     return true;
                 case { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.End }:

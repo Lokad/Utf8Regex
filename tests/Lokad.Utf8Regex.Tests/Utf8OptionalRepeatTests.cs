@@ -108,6 +108,8 @@ public sealed class Utf8OptionalRepeatTests
     [InlineData(@"\A([a-z][a-z0-9_]*)$", "AK_19\n")]
     [InlineData(@"(?m)\A([a-z\n]*)$", "A\nbc\n!")]
     [InlineData(@"\A(?<left>[a-f0-9]{2})(?<right>[a-f0-9]{2})$", "AbF0\n")]
+    [InlineData(@"\A#?([a-f0-9]{6}|[a-f0-9]{3})$", "#A0F\n")]
+    [InlineData(@"\A#?([#a]{2}|[b]{3})$", "#a")]
     public void ScalarRepeatPreservesEndpointsAndObservedCaptures(string pattern, string text)
     {
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
