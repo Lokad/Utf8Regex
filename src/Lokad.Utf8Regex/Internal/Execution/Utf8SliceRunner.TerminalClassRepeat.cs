@@ -606,6 +606,24 @@ internal static partial class Utf8SliceRunner
             atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0)
             return false;
         continuation = repeat.A + 1;
+        if (!existenceOnly &&
+            repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue } &&
+            atom is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } &&
+            (uint)start < (uint)input.Length && input[start] < 128)
+        {
+            var first = input[start];
+            var member = (program.SetMasks[atom.A][first >> 3] & (1 << (first & 7))) != 0;
+            if (member == (atom.B != 0))
+            {
+                // This complete ASCII predicate rejects the first scalar. Zero
+                // is the only endpoint, so the suffix cannot cause a rewind.
+                var emptyRunBreach = invocation.TryChargeInputStep();
+                if (emptyRunBreach == Utf8ExecutionLimitKind.None)
+                    emptyRunBreach = ChargeRepeatBoundary(ref invocation, checkDeadline: true);
+                outcome = (emptyRunBreach == Utf8ExecutionLimitKind.None ? start : -1, emptyRunBreach);
+                return true;
+            }
+        }
         if (repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: 1 } &&
             requiredEnd is null && (start == input.Length || input[start] != '\n') &&
             program.HasTerminalGreedyDot(continuation))

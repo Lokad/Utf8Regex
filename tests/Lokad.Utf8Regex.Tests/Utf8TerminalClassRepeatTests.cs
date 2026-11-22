@@ -72,6 +72,29 @@ public sealed class Utf8TerminalClassRepeatTests
         Assert.Equal(new Utf8CaptureRange(3 + Encoding.UTF8.GetByteCount(whitespace), end), captures[1]);
     }
 
+    [Theory]
+    [InlineData(@"\A\s*(?<value>[a ])!\z", "a!", 0)]
+    [InlineData(@"\A\s*(?<value>[a ])!\z", " a!", 1)]
+    [InlineData(@"\A\s*(?<value>[a ])!\z", "\u2003a!", 3)]
+    [InlineData(@"\A\S*(?<value>[a ])!\z", " !", 0)]
+    [InlineData(@"\A\S*(?<value>[a ])!\z", "a !", 1)]
+    public void GreedyHybridKeepsTheCaptureAfterAnEmptyOrConsumingRun(string pattern, string text, int captureStart)
+    {
+        var input = Encoding.UTF8.GetBytes(text);
+        using var funded = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = captureStart == 0 ? 1ul : 4096ul }
+        });
+        using var cancellation = new CancellationTokenSource();
+        var whole = new Utf8CaptureRange(0, input.Length);
+        Assert.Equal(whole, funded.Match(input, cancellationToken: cancellation.Token));
+
+        using var regex = Utf8Regex.Compile(pattern);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        Assert.Equal(whole, regex.Match(input, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(captureStart, captureStart + 1), captures[1]);
+    }
+
     [Fact]
     public void NullableTerminalCountKeepsRunsAcrossBlockAndScalarEdges()
     {
