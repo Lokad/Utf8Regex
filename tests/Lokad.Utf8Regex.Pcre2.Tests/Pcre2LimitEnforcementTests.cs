@@ -110,7 +110,7 @@ public sealed class Pcre2LimitEnforcementTests
     public static IEnumerable<object?[]> DepthRows()
     {
         yield return new object?[] { "(a)+(b)+", Pcre2CompileOptions.None, "aaabbb aaabbb", 2 };
-        yield return new object?[] { "((a)+)b", Pcre2CompileOptions.None, "aaab aaab", 2 };
+        yield return new object?[] { "(a+)+b", Pcre2CompileOptions.None, "aaab aaab", 2 };
     }
 
     [Theory]
@@ -189,6 +189,7 @@ public sealed class Pcre2LimitEnforcementTests
         yield return new object?[] { "^ERROR: .+$", Pcre2CompileOptions.Multiline, "ERROR: a\nERROR: b", 2 };
         yield return new object?[] { "(?<=abc)(|def)", Pcre2CompileOptions.None, "abcdefabcdef", 4 };
         yield return new object?[] { "cat|horse", Pcre2CompileOptions.None, "cat horse cat", 3 };
+        yield return new object?[] { "((a)+)b", Pcre2CompileOptions.None, "aaab aaab", 2 };
     }
 
     [Theory]
@@ -217,7 +218,7 @@ public sealed class Pcre2LimitEnforcementTests
     {
         yield return new object?[] { "(?:ab|a)+z", Pcre2CompileOptions.None, "abababz abababz", 2 };
         yield return new object?[] { "(?<=abc)(|def)", Pcre2CompileOptions.None, "abcdefabcdef", 4 };
-        yield return new object?[] { "(a)b+", Pcre2CompileOptions.None, "abb abb", 2 };
+        yield return new object?[] { @"([a-z]+)\1", Pcre2CompileOptions.None, "aaaa aa", 2 };
     }
 
     [Theory]
@@ -245,6 +246,7 @@ public sealed class Pcre2LimitEnforcementTests
     {
         yield return new object?[] { "^ERROR: .+$", Pcre2CompileOptions.Multiline, "ERROR: a\nERROR: b", 2 };
         yield return new object?[] { "[ab]+", Pcre2CompileOptions.None, "ab ab ab", 3 };
+        yield return new object?[] { "(a)b+", Pcre2CompileOptions.None, "ab abb abbb x ab", 4 };
         yield return new object?[] { "cat|horse", Pcre2CompileOptions.None, "cat horse cat", 3 };
         yield return new object?[] { "foo", Pcre2CompileOptions.None, "foo foo foo", 3 };
         yield return new object?[] { "^ERROR", Pcre2CompileOptions.Multiline, "ERROR a\nERROR b\nERROR c", 3 };

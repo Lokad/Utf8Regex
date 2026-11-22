@@ -4,12 +4,8 @@ using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
-// R06/R07 depth-boundary pins: depth tracks the peak backtracking-frame depth
-// over the whole call with a strict-greater breach comparison. Greedy loop
-// iterations with live captures each push a frame, so the peak (and the sufficient limit) grows
-// with input length: callers cannot pick a depth budget from the pattern
-// alone. Boundaries below were discovered behaviorally and are deterministic
-// per fixed pattern and input.
+// Count depth tracks the peak pending backtracking frames over the whole call.
+// A shorter input can leave fewer pending retries for the same program.
 public sealed class Pcre2DepthBoundaryTests
 {
     private static Utf8Pcre2Regex Create(string pattern, uint depthLimit)
@@ -25,8 +21,7 @@ public sealed class Pcre2DepthBoundaryTests
     }
 
     [Theory]
-    [InlineData("(a)+(b)+", "aaabbb aaabbb", 5, 2)]
-    [InlineData("((a)+)b", "aaab aaab", 3, 2)]
+    [InlineData("(a)+(b)+", "aaabbb aaabbb", 2, 2)]
     [InlineData("(a+)+b", "aaab", 2, 1)]
     public void CountSucceedsWhenDepthLimitEqualsPeak(string pattern, string inputText, uint peakDepth, int expected)
     {
@@ -34,8 +29,7 @@ public sealed class Pcre2DepthBoundaryTests
     }
 
     [Theory]
-    [InlineData("(a)+(b)+", "aaabbb aaabbb", 4)]
-    [InlineData("((a)+)b", "aaab aaab", 2)]
+    [InlineData("(a)+(b)+", "aaabbb aaabbb", 1)]
     [InlineData("(a+)+b", "aaab", 1)]
     public void CountBreachesWhenDepthLimitIsOneBelowPeak(string pattern, string inputText, uint depthLimit)
     {
@@ -43,13 +37,9 @@ public sealed class Pcre2DepthBoundaryTests
         Assert.Equal(Pcre2ErrorKind.DepthLimit, exception.ErrorKind);
     }
 
-    [Theory]
-    [InlineData("(a)+(b)+", "ab", 1)]
-    [InlineData("((a)+)b", "ab ab", 2)]
-    public void ShortInputsNeedLessDepth(string pattern, string inputText, int expected)
+    [Fact]
+    public void ShortInputsNeedLessDepth()
     {
-        // Same pattern families as above on minimal inputs at depth limit 1:
-        // the sufficient limit is an input-coupled peak, not a pattern constant.
-        Assert.Equal(expected, Create(pattern, 1).Count(Encoding.UTF8.GetBytes(inputText)));
+        Assert.Equal(1, Create("(a)+(b)+", 1).Count("ab"u8));
     }
 }

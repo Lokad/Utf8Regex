@@ -65,9 +65,11 @@ public sealed class Pcre2NonEmptyCountScopeTests
     [InlineData(1048576UL)]
     public void ActualScratchIsAdmittedAndReleasedOnSuccessOrStickyDenial(ulong working)
     {
-        var regex = Create("(a+)(b)", working: working);
+        var regex = Create(@"([a-z]+)\1", working: working);
+        var slice = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        Assert.True(slice.SliceProgram.ReadsCaptures);
         var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-        var input = Pcre2Runner.PrepareInput("aaab ab"u8, 0, ref invocation);
+        var input = Pcre2Runner.PrepareInput("aaaa aa"u8, 0, ref invocation);
         for (var attempt = 0; attempt < 2; attempt++)
         {
             if (working == 1)

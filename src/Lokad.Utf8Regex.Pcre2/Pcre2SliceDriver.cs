@@ -367,12 +367,9 @@ internal static class Pcre2SliceDriver
         scoped ref Utf8SliceInvocation invocation,
         in PreparedSearcher branchPrefixes = default)
     {
-        if (Utf8SliceRunner.TryCountTerminalScalar(program, input.Bytes, start.Value, ref invocation, out var terminal))
-        {
-            ThrowIfSliceBreached(terminal.Breach);
-            return terminal.Count;
-        }
-        var slots = RentProgramSlots(program, ref invocation);
+        // Count observes only the endpoints. The shared runner owns the
+        // terminal-scalar proof and only capture reads require slots here.
+        var slots = program.ReadsCaptures ? RentProgramSlots(program, ref invocation) : new Utf8SliceSlots([], []);
         try
         {
             var outcome = Utf8SliceRunner.CountFromBytes(program, input.Bytes, start.Value,
