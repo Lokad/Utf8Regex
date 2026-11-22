@@ -1045,7 +1045,10 @@ internal static partial class Utf8SliceRunner
             if (next is not { Kind: Utf8SliceInstructionKind.Anchor,
                 A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd }) return;
         }
-        else if (next is not { Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Literal, B: 0 })
+        else if (next is not { Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Literal, B: 0 } &&
+            !(repeat is { RepeatMinimum: 0, RepeatMaximum: 1 } &&
+              (optionalAsciiLiteral || atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 }) &&
+              next is { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy, RepeatMinimum: > 0 }))
             return;
 
         if (atom.Kind == Utf8SliceInstructionKind.Dot)
@@ -1064,9 +1067,14 @@ internal static partial class Utf8SliceRunner
             return;
         }
 
-        // A direct check needs one visit. A fork shares a bounded allowance
-        // among its arms. Both tests use the same repeat-exit certificate.
-        var work = next.Kind == Utf8SliceInstructionKind.Fork ? 12 : 1;
+        // A single-atom follower adds one visit for its repeat entry. A fork
+        // shares a bounded allowance among its arms.
+        var work = next.Kind switch
+        {
+            Utf8SliceInstructionKind.Fork => 12,
+            Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy => 2,
+            _ => 1,
+        };
         budget.ChargeWork((ulong)work + 2);
         var consumed = optionalAsciiLiteral ? default(Utf8SearchAsciiSet).With((byte)atom.A) : ReadAsciiSet(setMasks[atom.A]);
         if (ExcludesShorterRepeatEnds(code, setMasks, continuation, consumed,

@@ -75,6 +75,8 @@ public sealed class Utf8AnchoredProfileQualificationTests
         const string alias = @"\G\x2d?[0-9]+(?:\x2e[0-9]+)?(?:\x65[\x2b\x2d]?[0-9]+)?";
         Oracle(alias, RegexOptions.CultureInvariant, Subjects("01.-+eEx", 4).Concat(["-12.5e-2", "1.e2", "1e+", "1.2e+", "1e2.3"]));
         PublicRange(alias, RegexOptions.CultureInvariant, "-1.2e3😀", 6, false);
+        PublicRange(Number, RegexOptions.CultureInvariant, "-12.34e+56!", 10, false);
+        PublicRange(Number, RegexOptions.CultureInvariant, "-12.34e+😀", 6, false);
         var unicode = Number.Replace("[0-9]", @"\p{Nd}");
         PublicRange(unicode, RegexOptions.CultureInvariant, "١.٢e3😀", 7, false);
     }

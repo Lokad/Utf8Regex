@@ -14,6 +14,7 @@ public sealed class Utf8AdjacentSetRepeatTests
     [InlineData(@"(\s+)[0-9]", "π😀  7 xx \u20032")]
     [InlineData(@"([a-z]+)[0-9]+", "abc123 de45")]
     [InlineData(@"([a-z]{0,3})[0-9]{1,2}", "1 abc12 abcd34")]
+    [InlineData(@"\A([+0]?)([0-9]+)\z", "0")]
     [InlineData(@"\A([a-zA-Z]{1,4})([a-zA-Z]{2})!\z", "abcd!")]
     [InlineData(@"\A([a-zA-Z]{1,4}?)([a-zA-Z]{2})!\z", "abcd!")]
     [InlineData(@"\A(\d{1,4})(\d{2})!\z", "1234!")]
