@@ -484,7 +484,8 @@ internal static partial class Utf8SliceRunner
             return RunNonBacktracking(program, input, fromByte, captureStarts, captureEnds,
                 false, false, ref invocation);
         }
-        var remaining = program.RightToLeft ? fromByte : input.Length - fromByte;
+        var reverse = program.RightToLeft;
+        var remaining = reverse ? fromByte : input.Length - fromByte;
         if (CanSearchOrdinaryOrdered(program, remaining, candidatePlan, ref invocation) &&
             CanAdmitOrderedRows(program, ref invocation))
         {
@@ -492,7 +493,7 @@ internal static partial class Utf8SliceRunner
             if (!selected.Found || captureStarts.Length == 0 && !collectHistory) return selected;
             // Captures never affect discovery for this graph. Run the chosen
             // start on the original subject to publish ordinary capture history.
-            var origin = program.RightToLeft ? selected.EndByte : selected.StartByte;
+            var origin = reverse ? selected.EndByte : selected.StartByte;
             var replay = TryMatchAt(program, input, origin, captureStarts, captureEnds,
                 collectHistory, false, true, ref workspace, ref invocation);
             return replay.IsMatch
@@ -501,14 +502,15 @@ internal static partial class Utf8SliceRunner
                 : new(false, -1, -1, replay.Breach);
         }
         var first = program.Instructions[0];
-        var seekBeginning = !program.RightToLeft && first.Kind == Utf8SliceInstructionKind.Anchor &&
+        var seekBeginning = !reverse && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
+        var seekVeryEnd = reverse && first is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd };
         var atContiguousOrigin = first is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Contiguous } &&
-            !program.RightToLeft && invocation.AnchorOriginByte == fromByte;
-        if (seekBeginning && first.B == 0 || atContiguousOrigin)
+            !reverse && invocation.AnchorOriginByte == fromByte;
+        if (seekBeginning && first.B == 0 || seekVeryEnd || atContiguousOrigin)
         {
-            // An absolute beginning or an explicit contiguous origin admits
-            // one start. Keep its normal attempt and interruption checks.
+            // These anchors admit one origin in the search direction.
+            // Keep its normal attempt and interruption checks.
             if (seekBeginning && (fromByte != 0 || first.C != 0))
             {
                 var seekBreach = TrySeekBeginning(program, input, ref fromByte, ref invocation);
@@ -519,8 +521,10 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None)
                 return new(false, -1, -1, breach);
             invocation.Budget.ThrowIfCancellationRequested();
+            if (seekVeryEnd && fromByte != input.Length)
+                return new(false, -1, -1, Utf8ExecutionLimitKind.None);
             var proofStart = -1;
-            if (!collectHistory && captureStarts.Length == 0)
+            if (!reverse && !collectHistory && captureStarts.Length == 0)
             {
                 if (first.D == 1 && input.Length - fromByte <= 32)
                     proofStart = 1;
@@ -545,7 +549,8 @@ internal static partial class Utf8SliceRunner
             var outcome = TryMatchAt(program, input, fromByte, captureStarts, captureEnds,
                 collectHistory, false, true, ref workspace, ref invocation, existenceOnly);
             return outcome.IsMatch && outcome.Breach == Utf8ExecutionLimitKind.None
-                ? new(true, fromByte, outcome.EndIndex, Utf8ExecutionLimitKind.None, outcome.CaptureHistory)
+                ? new(true, reverse ? outcome.EndIndex : fromByte, reverse ? fromByte : outcome.EndIndex,
+                    Utf8ExecutionLimitKind.None, outcome.CaptureHistory)
                 : new(false, -1, -1, outcome.Breach);
         }
         return TryFindFirstByCandidateSearch(program, input, fromByte, captureStarts, captureEnds, collectHistory,

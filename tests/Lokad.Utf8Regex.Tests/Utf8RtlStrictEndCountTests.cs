@@ -28,6 +28,30 @@ public sealed class Utf8RtlStrictEndCountTests
         yield return [@"(?!x)a\z", "aaa", RegexOptions.None];
     }
 
+    [Fact]
+    public void FinderAdmitsTheSelectedEndOnceAndRejectsAnEarlierCeiling()
+    {
+        using var regex = new Utf8Regex(@"\k<g>(?<g>[aé])\z", options: RegexOptions.RightToLeft, policy: new()
+        {
+            ResourcePolicy = Limits(64)
+        });
+        var input = Encoding.UTF8.GetBytes(new string('a', 4096) + "éaa\n");
+        var end = input.Length - 1;
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+        using var token = new CancellationTokenSource();
+
+        var match = regex.Match(input, captures: slots, cancellationToken: token.Token, endOffsetInBytes: end);
+        Assert.Equal(new Utf8CaptureRange(end - 2, end), match);
+        Assert.Equal(new Utf8CaptureRange(end - 1, end), slots[1]);
+        Assert.False(regex.Match(input, end - 1, slots, token.Token, endOffsetInBytes: end).Success);
+        Assert.False(slots[0].Success);
+        Assert.False(slots[1].Success);
+        var cursor = regex.EnumerateMatches(input.AsSpan(0, end), cancellationToken: token.Token);
+        Assert.True(cursor.MoveNext());
+        Assert.Equal(match, cursor.Current);
+        Assert.False(cursor.MoveNext());
+    }
+
     [Theory]
     [MemberData(nameof(Cases))]
     public void PublicCountsKeepScalarOffsetsContextAndRetainedCaptures(string pattern, string text, RegexOptions extra)
