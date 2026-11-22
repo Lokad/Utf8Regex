@@ -625,7 +625,13 @@ public sealed partial class Utf8Regex : IDisposable
 
     private Utf8CaptureRange MatchCore(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
     {
-        if (HasFiniteExecutionLimits) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
+        if (HasFiniteExecutionLimits || !_preparedRegex.HasLiteralPlan)
+            return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
+        return MatchLiteral(input, cancellationToken);
+    }
+
+    private Utf8CaptureRange MatchLiteral(ReadOnlySpan<byte> input, CancellationToken cancellationToken)
+    {
         if (CanStartNativeLiteralInvocation(cancellationToken))
             return MatchNativeLiteral(input, cancellationToken);
         if (input.Length > MaximumFoldedSearchLiteralLength && _requiresKelvinSignFallback &&
