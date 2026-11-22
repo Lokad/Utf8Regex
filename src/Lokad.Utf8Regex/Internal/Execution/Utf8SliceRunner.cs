@@ -524,18 +524,26 @@ internal static partial class Utf8SliceRunner
             if (seekVeryEnd && fromByte != input.Length)
                 return new(false, -1, -1, Utf8ExecutionLimitKind.None);
             var proofStart = -1;
+            var proofLimit = BranchedPrefixInstructionLimit;
             if (!reverse && !collectHistory && captureStarts.Length == 0)
             {
                 if (first.D == 1 && input.Length - fromByte <= 32)
                     proofStart = 1;
-                else if (first.D < 0 && input.Length <= BranchedPrefixInstructionLimit)
+                else if (first.D < 0 && input.Length <= SingleOriginPrefixInstructionLimit)
+                {
                     proofStart = -first.D;
+                    // The anchor admits one proof. Keep the smaller allowance
+                    // on short inputs and when searching multiple origins.
+                    if (input.Length > BranchedPrefixInstructionLimit)
+                        proofLimit = SingleOriginPrefixInstructionLimit;
+                }
             }
             if (proofStart >= 0)
             {
                 // The admitted short witness starts after the confirmed anchor.
                 // Unknown instructions still enter the original attempt.
-                var possible = MayMatchBranchedAsciiPrefix(program, input, fromByte, proofStart, out var acceptedEnd, proveMatch: true);
+                var possible = MayMatchBranchedAsciiPrefix(program, input, fromByte, proofStart, out var acceptedEnd,
+                    proveMatch: true, instructionLimit: proofLimit);
                 if (!possible || acceptedEnd >= 0)
                 {
                     breach = invocation.TryReserveWorking(0);

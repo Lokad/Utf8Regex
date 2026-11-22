@@ -1629,6 +1629,7 @@ internal static partial class Utf8SliceRunner
     }
 
     private const int BranchedPrefixInstructionLimit = 96;
+    private const int SingleOriginPrefixInstructionLimit = 256;
 
     internal static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int position, int index, out int acceptedEnd, bool proveMatch = false,

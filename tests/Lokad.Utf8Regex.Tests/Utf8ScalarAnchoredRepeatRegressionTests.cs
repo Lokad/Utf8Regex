@@ -74,4 +74,18 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
             Utf8MatchSequence.AssertRange(actual, text, oracle.Index, oracle.Length);
         }
     }
+
+    [Fact]
+    public void SingleOriginProofChecksALongerLineWithinTheSamePublicWorkLimit()
+    {
+        const string pattern = @"^\s*(\[\|\s*)?///\s?(?<doc>.*)$";
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 4, MaxWorkingBytes = 4096 } });
+        using var source = new CancellationTokenSource();
+        var text = " [|  ///" + new string('x', 128) + "😀";
+
+        Assert.Equal(new Utf8CaptureRange(0, Encoding.UTF8.GetByteCount(text)),
+            regex.Match(Encoding.UTF8.GetBytes(text + "\n"), cancellationToken: source.Token));
+        Assert.False(regex.Match(Encoding.UTF8.GetBytes(text + "\nx"), cancellationToken: source.Token).Success);
+    }
 }

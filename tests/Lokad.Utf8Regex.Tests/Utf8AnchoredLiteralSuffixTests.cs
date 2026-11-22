@@ -12,10 +12,10 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [Fact]
     public void FinalScalarScreenRejectsBeforeWorkingAdmission()
     {
-        // A long label reaches the scalar verifier. Both tails start at A,
-        // so the hit needs a retry after the letter-only arm rejects the digit.
+        // A label beyond the single-origin proof's ceiling reaches the scalar verifier.
+        // Both tails start at A, so the hit needs a retry after the letter-only arm rejects the digit.
         const string pattern = @"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[A-Z][0-9])\]?$";
-        var prefix = new string('a', 128) + ".A";
+        var prefix = new string('a', 512) + ".A";
         var hit = Encoding.UTF8.GetBytes(prefix + "1\n");
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
