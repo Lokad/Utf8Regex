@@ -595,18 +595,28 @@ internal static partial class Utf8SliceRunner
         var screenedDelimiter = -1;
         var wideInput = input.Length - fromByte >= 256;
         var needsClassWindow = leading is < 0 or >= 128;
-        if ((needsClassWindow || candidatePlan.LiteralSearch is { Length: 1, IgnoreCase: false } &&
+        var leadingDecimalBoundary = first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
+            program.LeadingScalarIsDecimal;
+        var exactNeedle = candidatePlan.Kind == Utf8SearchKind.AsciiFoldedByteLiteral ? null : candidatePlan.LiteralUtf8;
+        if ((needsClassWindow || exactNeedle is { Length: 1 } &&
                 program.LeadingClassDelimiter is { Direct: true, Literal: >= 0 }) &&
             !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
-            (wideInput || candidatePlan.LiteralSearch is { Length: > 0, IgnoreCase: false } ||
+            (wideInput || exactNeedle is { Length: > 0 } ||
                 candidatePlan.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral))
         {
             var (literal, windowClass, literalIndex, gapMaximum, direct) = program.LeadingClassDelimiter;
             leadingClass = windowClass;
             classGapMaximum = gapMaximum;
             directClassLiteral = direct;
-            if (leadingClass >= 0 && literal >= 0)
+            if (needsClassWindow && directClassLiteral && leadingDecimalBoundary && leadingClass == leadingScalarIndex &&
+                screenedLiteral < fromByte && exactNeedle is [var delimiter] && delimiter == literal)
+            {
+                // A leading boundary admits only a bounded direct class window.
+                // The window seeks this byte directly and verifies every start.
+                classLiteral = literal;
+            }
+            else if (leadingClass >= 0 && literal >= 0)
             {
                 classSearch = GetAlignedDelimiterSearch(program, literalIndex, literal, candidatePlan);
                 if (directClassLiteral && classSearch is { } aligned)
@@ -655,8 +665,7 @@ internal static partial class Utf8SliceRunner
         // lands at an ASCII digit or a wider scalar to classify below.
         var hasClassWindow = classLiteral >= 0 || classAlternatives is not null;
         if (hasClassWindow && leading >= 128) leading = -1;
-        var screenDecimalWindow = hasClassWindow && first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
-            leadingClass == leadingScalarIndex && program.LeadingScalarIsDecimal;
+        var screenDecimalWindow = hasClassWindow && leadingDecimalBoundary && leadingClass == leadingScalarIndex;
         var followingWindow = screenDecimalWindow && directClassLiteral && classLiteral >= 0 &&
             !Utf8AsciiBytePredicates.IsDigit((byte)classLiteral)
             ? program.FollowingDecimalLiteralWindow : default;
