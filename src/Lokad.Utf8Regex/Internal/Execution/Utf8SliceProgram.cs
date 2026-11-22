@@ -198,6 +198,7 @@ internal readonly struct Utf8SliceInstruction
     internal const int RepeatExitRejectsShorterFlag = 1;
     internal const int RepeatExitAcceptsEmptyTailFlag = 2;
     internal const int RepeatExitBeforeTerminalDotFlag = 4;
+    internal const int RepeatExitUnobservedDecimalFlag = 8;
 
     internal Utf8SliceInstruction(Utf8SliceInstructionKind kind, int a, int b, int c, int d, bool isLiteralChoice = false)
     {
@@ -232,6 +233,7 @@ internal readonly struct Utf8SliceInstruction
     internal bool RepeatExitRejectsShorterEndpoints => (C & RepeatExitRejectsShorterFlag) != 0;
     internal bool RepeatExitAcceptsEmptyTail => (C & RepeatExitAcceptsEmptyTailFlag) != 0;
     internal bool RepeatExitBeforeTerminalDot => (C & RepeatExitBeforeTerminalDotFlag) != 0;
+    internal bool RepeatExitUnobservedDecimal => (C & RepeatExitUnobservedDecimalFlag) != 0;
 
     // A RepeatExit can pack up to three required ASCII starters for rewind.
     internal int RepeatExitRewindStarts => D;
@@ -505,7 +507,7 @@ internal sealed class Utf8SliceProgram
         {
             var instruction = instructions[pc];
             if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && !rightToLeft && !isNonBacktracking)
-                Utf8SliceRunner.PrepareScalarRepeatContinuation(instructions, setMasks, pc, budget);
+                Utf8SliceRunner.PrepareScalarRepeatContinuation(instructions, setMasks, categorySetMembers, pc, budget);
             else if (instruction.Kind == Utf8SliceInstructionKind.Jump && !rightToLeft && !isNonBacktracking)
                 Utf8SliceRunner.MarkExcludedLoopStart(instructions, setMasks, pc, budget);
             else if (instruction.Kind == Utf8SliceInstructionKind.Fork && !rightToLeft && !isNonBacktracking)
@@ -740,8 +742,12 @@ internal sealed class Utf8SliceProgram
 
     // The lowerer includes every ASCII member for this single positive table.
     internal uint GetCompleteAsciiCategoryMask(in Utf8SliceInstruction atom)
+        => GetCompleteAsciiCategoryMask(atom, CategorySetMembers);
+
+    internal static uint GetCompleteAsciiCategoryMask(in Utf8SliceInstruction atom,
+        Utf8SliceNode.CategorySetMember[][] categorySetMembers)
         => atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
-            CategorySetMembers[atom.D] is [{ Negated: false, Table: {
+            categorySetMembers[atom.D] is [{ Negated: false, Table: {
                 Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
 
     internal bool TryGetUnfoldedAsciiSet(in Utf8SliceInstruction atom, out Utf8SearchAsciiSet ascii, out bool asciiOnly)

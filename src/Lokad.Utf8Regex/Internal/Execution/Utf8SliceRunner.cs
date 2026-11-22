@@ -1535,11 +1535,15 @@ internal static partial class Utf8SliceRunner
                             // tail allows the greedy range path to keep its maximum
                             // run. Boolean calls can still stop at the minimum.
                             var exit = instructions[instruction.A];
-                            if (exit.RepeatExitRejectsShorterEndpoints ||
+                            var unobservedDecimal = exit.RepeatExitUnobservedDecimal && captureStarts.Length == 0;
+                            if (exit.RepeatExitRejectsShorterEndpoints || unobservedDecimal ||
                                 cursor.RequiredEnd is null && (program.SkipsTerminalRewind(programIndex) ||
                                     !existenceOnly && exit.RepeatExitAcceptsEmptyTail))
                             {
-                                repeated = RunClassRepeat(program, programIndex, input, inputIndex, ref invocation);
+                                repeated = unobservedDecimal
+                                    ? RunClassRepeat(program, instruction, instructions[programIndex + 2], input, inputIndex,
+                                        ref invocation, out _)
+                                    : RunClassRepeat(program, programIndex, input, inputIndex, ref invocation);
                                 continuation = instruction.A + 1;
                                 ranWithoutRewind = true;
                             }

@@ -980,11 +980,21 @@ internal static partial class Utf8SliceRunner
     }
 
     internal static void PrepareScalarRepeatContinuation(Span<Utf8SliceInstruction> code, byte[][] setMasks,
-        int repeatIndex, Utf8ConstructionBudget budget)
+        Utf8SliceNode.CategorySetMember[][] categories, int repeatIndex, Utf8ConstructionBudget budget)
     {
         var repeat = code[repeatIndex];
         if (!IsSingleAtomRepeat(code, repeatIndex, repeat))
+        {
+            if (repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
+                repeat.A < code.Length - 1 && HasCapturedScalarBody(code, repeatIndex, repeat.A) &&
+                code[repeat.A - 1] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == repeatIndex &&
+                code[repeat.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } capturedExit && capturedExit.A == repeat.B &&
+                IsDecimalDigitSet(code[repeatIndex + 2], setMasks, categories) &&
+                HasDisjointDecimalContinuation(code, repeat.A + 1, setMasks, categories, budget))
+                code[repeat.A] = new(capturedExit.Kind, capturedExit.A, capturedExit.B,
+                    capturedExit.C | Utf8SliceInstruction.RepeatExitUnobservedDecimalFlag, capturedExit.D);
             return;
+        }
         var atom = code[repeatIndex + 1];
         var continuation = repeat.A + 1;
         var exit = code[repeat.A];
@@ -1066,6 +1076,65 @@ internal static partial class Utf8SliceRunner
     private static Utf8SearchAsciiSet ReadAsciiSet(ReadOnlySpan<byte> mask)
         => Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
             BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
+
+    private static bool HasDisjointDecimalContinuation(ReadOnlySpan<Utf8SliceInstruction> code, int index,
+        byte[][] masks, Utf8SliceNode.CategorySetMember[][] categories, Utf8ConstructionBudget budget)
+    {
+        // A shorter endpoint faces another digit. An optional disjoint atom
+        // must take its empty path there, and plain captures consume nothing.
+        for (var remaining = 16; remaining > 0 && index < code.Length; remaining--)
+        {
+            budget.ChargeWork(1);
+            var next = code[index];
+            switch (next)
+            {
+                case { Kind: Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd }:
+                    index++;
+                    break;
+                case { Kind: Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy,
+                    RepeatMinimum: 0, RepeatMaximum: 1 } when IsSingleAtomRepeat(code, index, next) &&
+                        ExcludesDecimalScalar(code[index + 1], masks, categories, budget):
+                    index = next.A + 1;
+                    break;
+                case { Kind: Utf8SliceInstructionKind.Anchor,
+                    A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd }:
+                    return true;
+                default:
+                    return ExcludesDecimalScalar(next, masks, categories, budget);
+            }
+        }
+        return false;
+    }
+
+    private static bool ExcludesDecimalScalar(in Utf8SliceInstruction atom, byte[][] masks,
+        Utf8SliceNode.CategorySetMember[][] categories, Utf8ConstructionBudget budget)
+    {
+        if (atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 })
+            return Rune.TryCreate(atom.A, out var literal) && !Rune.IsDigit(literal);
+        if (atom is not ({ Kind: Utf8SliceInstructionKind.Set, B: 0 } or
+            { Kind: Utf8SliceInstructionKind.CategorySet, B: 0 or 2, C: 0 })) return false;
+        if ((BinaryPrimitives.ReadUInt64LittleEndian(masks[atom.A]) & Utf8AsciiBytePredicates.DecimalMask) != 0)
+            return false;
+        if (atom.Kind == Utf8SliceInstructionKind.Set) return true;
+        if (categories[atom.D] is not [{ Negated: false, Table: { ClassProgram: null,
+                ScalarPredicate: null, Ranges.Length: <= 8 } table }] ||
+            (table.Mask & (1u << (int)UnicodeCategory.DecimalDigitNumber)) != 0) return false;
+
+        // Folding preserves decimal membership. Check only small explicit
+        // ranges, including wider case aliases such as Kelvin and dotted I.
+        var ranges = table.Ranges.AsSpan();
+        var remaining = 32;
+        for (var index = 0; index < ranges.Length; index += 2)
+        {
+            var width = ranges[index + 1] - ranges[index];
+            if ((uint)width > (uint)remaining) return false;
+            budget.ChargeWork((ulong)width);
+            remaining -= width;
+            for (var value = ranges[index]; value < ranges[index + 1]; value++)
+                if (Rune.TryCreate(value, out var scalar) && Rune.IsDigit(scalar)) return false;
+        }
+        return true;
+    }
 
     private static int FindRepeatRewindStarts(ReadOnlySpan<Utf8SliceInstruction> code, byte[][] setMasks,
         int continuation, Utf8ConstructionBudget budget)
@@ -1492,8 +1561,7 @@ internal static partial class Utf8SliceRunner
 
         var atomIndex = exit - 2;
         var guard = code[repeatIndex + 1];
-        if (omitCaptures && exit - repeatIndex == 5 && guard.Kind == Utf8SliceInstructionKind.CaptureStart &&
-            code[exit - 2] is { Kind: Utf8SliceInstructionKind.CaptureEnd } close && close.A == guard.A)
+        if (omitCaptures && HasCapturedScalarBody(code, repeatIndex, exit))
         {
             // Empty capture slots mean these ordinary markers have no observer.
             // The body consumes one scalar, with no other effects or alternatives.
@@ -1510,6 +1578,10 @@ internal static partial class Utf8SliceRunner
             Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid ||
             code[atomIndex] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } ? (atomIndex, true) : (-1, false);
     }
+
+    private static bool HasCapturedScalarBody(ReadOnlySpan<Utf8SliceInstruction> code, int repeatIndex, int exit)
+        => exit - repeatIndex == 5 && code[repeatIndex + 1] is { Kind: Utf8SliceInstructionKind.CaptureStart } open &&
+            code[exit - 2] is { Kind: Utf8SliceInstructionKind.CaptureEnd } close && close.A == open.A;
 
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunGuardedClassRepeat(Utf8SliceProgram program,
         int repeatIndex, int atomIndex, ReadOnlySpan<byte> input, int start, uint assertionDepth,

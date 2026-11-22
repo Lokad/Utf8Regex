@@ -113,6 +113,7 @@ public sealed class Utf8OptionalRepeatTests
     [InlineData(@"^///\s?(?<doc>.*)$", "///\ndoc😀")]
     [InlineData(@"\G///(?<doc>[^\n]*)\n", "///first😀\nlast\n")]
     [InlineData(@"\G///(?<doc>(?s:.)*)\n", "///first😀\nlast\n")]
+    [InlineData(@"^(?<row>(?<digit>\d)+):?\d[a-z]$", "١٢3K")]
     public void ScalarRepeatPreservesEndpointsAndObservedCaptures(string pattern, string text)
     {
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;

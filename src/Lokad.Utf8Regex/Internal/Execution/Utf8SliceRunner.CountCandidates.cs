@@ -276,10 +276,12 @@ internal static partial class Utf8SliceRunner
         => input[position] >= 128 && TryReadScalar(input, position, false, out var scalar, out _) && !Rune.IsDigit(scalar);
 
     private static bool IsDecimalDigitSet(Utf8SliceProgram program, in Utf8SliceInstruction atom)
-        => atom.Kind == Utf8SliceInstructionKind.CategorySet &&
-            TryGetPositiveCategorySet(program, atom, out var categories, out var low, out var high) &&
-            categories == 1u << (int)UnicodeCategory.DecimalDigitNumber &&
-            low == Utf8AsciiBytePredicates.DecimalMask && high == 0;
+        => IsDecimalDigitSet(atom, program.SetMasks, program.CategorySetMembers);
+
+    private static bool IsDecimalDigitSet(in Utf8SliceInstruction atom, byte[][] masks,
+        Utf8SliceNode.CategorySetMember[][] categories)
+        => Utf8SliceProgram.GetCompleteAsciiCategoryMask(atom, categories) == 1u << (int)UnicodeCategory.DecimalDigitNumber &&
+            ReadAsciiSet(masks[atom.A]) is { Low: Utf8AsciiBytePredicates.DecimalMask, High: 0 };
 
     private static bool CanSkipShortRepeatChain(Utf8SliceProgram program)
     {

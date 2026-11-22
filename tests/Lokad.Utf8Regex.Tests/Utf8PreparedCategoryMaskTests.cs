@@ -70,6 +70,15 @@ public sealed class Utf8PreparedCategoryMaskTests
     }
 
     [Fact]
+    public void DisjointDecimalRunsWithOmittedCapturesNeedNoRewindStorage()
+    {
+        using var regex = new Utf8Regex(@"^[a-z]((\d)+):?[a-z]((\d)+)$", RegexOptions.Compiled | RegexOptions.IgnoreCase,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 1 } });
+        using var source = new CancellationTokenSource();
+        Assert.Equal(new Utf8CaptureRange(0, 12), regex.Match("K١𝟙A٢"u8, cancellationToken: source.Token));
+    }
+
+    [Fact]
     public void LoweringDoesNotMutateMasksBorrowedByOtherTrees()
     {
         var mask = new byte[16]; mask['+' >> 3] = (byte)(1 << ('+' & 7));
