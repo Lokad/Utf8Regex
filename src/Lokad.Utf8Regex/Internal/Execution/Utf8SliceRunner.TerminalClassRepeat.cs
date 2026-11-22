@@ -961,16 +961,28 @@ internal static partial class Utf8SliceRunner
         int repeatIndex, Utf8ConstructionBudget budget)
     {
         var repeat = code[repeatIndex];
-        if (!IsSingleAtomRepeat(code, repeatIndex, repeat) || repeat.RepeatMinimum == repeat.RepeatMaximum)
+        if (!IsSingleAtomRepeat(code, repeatIndex, repeat))
             return;
         var atom = code[repeatIndex + 1];
+        var continuation = repeat.A + 1;
+        var exit = code[repeat.A];
+        if (repeat.RepeatMinimum == repeat.RepeatMaximum)
+        {
+            if (repeat.RepeatMinimum is < 2 or > 16 || atom is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
+                return;
+
+            // An exact count admits one endpoint. Keep the Boolean shortcut
+            // when the continuation has an unconditional empty path.
+            budget.ChargeWork((ulong)Math.Min(32, code.Length - continuation));
+            if (!CanAcceptEmptyTail(code, continuation))
+                code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
+            return;
+        }
         if (atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
                          { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
                          { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
 
-        var continuation = repeat.A + 1;
-        var exit = code[repeat.A];
         if (repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0 } &&
             atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
         {
