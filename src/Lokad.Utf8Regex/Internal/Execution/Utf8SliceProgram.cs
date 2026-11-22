@@ -219,6 +219,8 @@ internal readonly struct Utf8SliceInstruction
     internal int C { get; }
     // For a positive unfolded Set, packed ASCII interval endpoints:
     // low byte is first+1, high byte is last; zero means no exact interval.
+    // A Literal at a fork entry can carry the destination after two equal
+    // first literals fail the bounded prefix proof.
     internal int D { get; }
 
     // On a RepeatExit, C marks a greedy ASCII run whose following arms
@@ -501,7 +503,7 @@ internal sealed class Utf8SliceProgram
             else if (instruction.Kind == Utf8SliceInstructionKind.Jump && !rightToLeft && !isNonBacktracking)
                 Utf8SliceRunner.MarkExcludedLoopStart(instructions, setMasks, pc, budget);
             else if (instruction.Kind == Utf8SliceInstructionKind.Fork && !rightToLeft && !isNonBacktracking)
-                Utf8SliceRunner.PrepareDisjointAsciiFork(instructions, setMasks, pc, budget);
+                Utf8SliceRunner.PrepareAsciiFork(instructions, setMasks, pc, budget);
             readsCaptures |= instruction.Kind is Utf8SliceInstructionKind.Backref or Utf8SliceInstructionKind.TestGroup or
                 Utf8SliceInstructionKind.BalanceStart or Utf8SliceInstructionKind.BalancePop;
             if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart) captureIsOpen = true;

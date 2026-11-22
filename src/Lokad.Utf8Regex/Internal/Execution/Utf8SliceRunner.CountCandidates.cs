@@ -1316,6 +1316,14 @@ internal static partial class Utf8SliceRunner
                             if (MayMatchBranchedAsciiPrefix(program, input, edge, next,
                                 ref remaining, proveMatch, out acceptedEnd)) return true;
                         }
+                        else if (literal.D != 0 && remaining >= 2)
+                        {
+                            // Both fallthrough arms reject this byte. Keep the
+                            // visit charges for the second fork and its literal.
+                            remaining -= 2;
+                            index = literal.D;
+                            continue;
+                        }
                     }
                     else if (MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, out acceptedEnd))
                         return true;
