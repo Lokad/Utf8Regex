@@ -1554,10 +1554,10 @@ internal static partial class Utf8SliceRunner
                                 cursor.RequiredEnd is null && (program.SkipsTerminalRewind(programIndex) ||
                                     !existenceOnly && exit.RepeatExitAcceptsEmptyTail))
                             {
-                                repeated = unobservedDecimal
-                                    ? RunClassRepeat(program, instruction, instructions[programIndex + 2], input, inputIndex,
-                                        ref invocation, out _)
-                                    : RunClassRepeat(program, programIndex, input, inputIndex, ref invocation);
+                                // The unobserved decimal body opens a capture before its atom.
+                                var repeatAtomIndex = programIndex + (unobservedDecimal ? 2 : 1);
+                                repeated = RunClassRepeat(program, instruction, instructions[repeatAtomIndex], input, inputIndex,
+                                    ref invocation, out _);
                                 continuation = instruction.A + 1;
                                 ranWithoutRewind = true;
                             }
