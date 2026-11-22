@@ -215,6 +215,7 @@ internal readonly struct Utf8SliceInstruction
     // A normal Fork can carry exclusive remaining byte bounds in C and D
     // for the fall-through and target respectively. Zero leaves an arm unknown.
     // A negative C on a normal Fork encodes a disjoint loop exit byte as ~C.
+    // A RepeatEnd can mark a proved consuming body for ordered discovery.
     internal int C { get; }
     // For a positive unfolded Set, packed ASCII interval endpoints:
     // low byte is first+1, high byte is last; zero means no exact interval.
@@ -1763,7 +1764,10 @@ internal static class Utf8SliceLowerer
                         return true;
                     }
                     var stopBytes = FindGuardedRepeatStopBytes(repeat, frame.Mark);
-                    Emit(new(Utf8SliceInstructionKind.RepeatEnd, frame.Mark, stopBytes, 0, 0));
+                    var orderedBodyConsumes = repeat is { Lazy: true, Maximum: long.MaxValue, Minimum: <= 1 } &&
+                        Instructions.Count < 64 && Instructions.Count - frame.Mark > 2 &&
+                        Facts[repeat.Body].Minimum > 0;
+                    Emit(new(Utf8SliceInstructionKind.RepeatEnd, frame.Mark, stopBytes, orderedBodyConsumes ? 1 : 0, 0));
                     var repeatExit = Instructions.Count;
                     Emit(new(Utf8SliceInstructionKind.RepeatExit, frame.RepeatId, 0, 0, 0));
                     var repeatKind = repeat.Lazy ? Utf8SliceInstructionKind.RepeatLazy : Utf8SliceInstructionKind.RepeatGreedy;

@@ -344,6 +344,52 @@ public sealed class Utf8CaptureSlotMatchTests
     }
 
     [Fact]
+    public void OrderedLazyCompoundRepeatReplaysThePreferredIteration()
+    {
+        var input = Encoding.UTF8.GetBytes("😀éaay!" + new string('q', 8192));
+        using var regex = new Utf8Regex("(?<piece>éa|a)+?(?<tail>[zy])|v[zy]",
+            RegexOptions.RightToLeft | RegexOptions.Compiled, new Utf8RegexPolicy
+            {
+                ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 256, MaxWorkingBytes = 4096 }
+            });
+        using var source = new CancellationTokenSource();
+        var account = new Account();
+        var slots = new Utf8CaptureRange[3];
+        var expected = new Utf8CaptureRange(7, 9);
+
+        Assert.Equal(expected, regex.Match(input, captures: slots, cancellationToken: source.Token, workingMemoryAllowance: account));
+        Assert.Equal(new Utf8CaptureRange(7, 8), slots[1]);
+        Assert.Equal(new Utf8CaptureRange(8, 9), slots[2]);
+        Assert.Equal(0UL, account.Held);
+
+        using (var cursor = regex.CreateMatchCursor(input, cancellationToken: source.Token, workingMemoryAllowance: account))
+        {
+            Assert.True(cursor.MoveNext(out var match));
+            Assert.Equal(expected, match.Value);
+            Assert.Equal(slots[1], Assert.Single(match.GetCaptures(1).ToArray()));
+            Assert.False(cursor.MoveNext(out _));
+        }
+        Assert.Equal(0UL, account.Held);
+    }
+
+    [Theory]
+    [InlineData("éa|a")]
+    [InlineData("éa|")]
+    public void CompoundLazyStarCanExitBeforeTakingAnIteration(string body)
+    {
+        var gap = new string('q', 260);
+        var input = Encoding.UTF8.GetBytes(gap + "😀éay" + gap);
+        using var regex = new Utf8Regex($"(?<piece>{body})*?(?<tail>[zy])|v[zy]", RegexOptions.RightToLeft);
+        var slots = new Utf8CaptureRange[3];
+        var expected = new Utf8CaptureRange(gap.Length + 7, gap.Length + 8);
+
+        Assert.Equal(expected, regex.Match(input, captures: slots));
+        Assert.False(slots[1].Success);
+        Assert.Equal(expected, slots[2]);
+        Assert.Equal(1, regex.Count(input));
+    }
+
+    [Fact]
     public void OrdinaryOrderedBooleanNeedsNoScratchLoanFromTheCaller()
     {
         var prefix = string.Concat(Enumerable.Repeat("ab", 160)) + " z! ";

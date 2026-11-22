@@ -67,30 +67,39 @@ internal static partial class Utf8SliceRunner
             if (repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy))
                 continue;
             var optional = repeat is { RepeatMinimum: 0, RepeatMaximum: 1 };
-            if (instructions.Length - pc < 5 || !optional && (repeat.RepeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1) ||
-                !IsSingleAtomRepeat(instructions, pc, repeat) ||
-                instructions[pc + 1].Kind is not (Utf8SliceInstructionKind.Literal or
+            var exit = repeat.A;
+            if (exit < pc + 3 || exit >= instructions.Length - 1 ||
+                !optional && (repeat.RepeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1) ||
+                instructions[exit - 1] is not { Kind: Utf8SliceInstructionKind.RepeatEnd } end || end.A != pc ||
+                instructions[exit] is not { Kind: Utf8SliceInstructionKind.RepeatExit } finish || finish.A != repeat.B)
+                return [];
+
+            var single = exit == pc + 3;
+            if (single
+                ? instructions[pc + 1].Kind is not (Utf8SliceInstructionKind.Literal or
                     Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid or
-                    Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.Dot))
+                    Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.Dot)
+                : end.C == 0)
                 return [];
 
             var priority = repeat.Kind == Utf8SliceInstructionKind.RepeatLazy ? OrderedTargetFirst : 0;
             if (repeat.RepeatMinimum == 0)
             {
-                projected[pc] = new(Utf8SliceInstructionKind.Fork, pc + 3, priority, 0, 0);
-                // Either optional order leaves after one hit.
-                projected[pc + 2] = new(Utf8SliceInstructionKind.Jump, optional ? pc + 3 : pc, 0, 0, 0);
-                projected[pc + 3] = new(Utf8SliceInstructionKind.Jump, pc + 4, 0, 0, 0);
+                projected[pc] = new(Utf8SliceInstructionKind.Fork, exit, priority, 0, 0);
+                // Either optional order leaves after one complete body.
+                projected[exit - 1] = new(Utf8SliceInstructionKind.Jump, optional ? exit : pc, 0, 0, 0);
+                projected[exit] = new(Utf8SliceInstructionKind.Jump, exit + 1, 0, 0, 0);
             }
             else
             {
-                // Consume the first atom before deciding whether to continue.
+                // Complete the first body before deciding whether to continue.
                 // The original exit slot is local to the loop.
                 projected[pc] = new(Utf8SliceInstructionKind.Jump, pc + 1, 0, 0, 0);
-                projected[pc + 2] = new(Utf8SliceInstructionKind.Fork, pc + 4, priority, 0, 0);
-                projected[pc + 3] = new(Utf8SliceInstructionKind.Jump, pc + 1, 0, 0, 0);
+                projected[exit - 1] = new(Utf8SliceInstructionKind.Fork, exit + 1, priority, 0, 0);
+                projected[exit] = new(Utf8SliceInstructionKind.Jump, pc + 1, 0, 0, 0);
             }
-            pc += 3;
+            // Compound bodies can contain their own eligible repeats.
+            if (single) pc = exit;
         }
         return CanPrepareOrdinaryOrderedSearch(projected, budget)
             ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(projected, out ancestors, out ordered) : [];
