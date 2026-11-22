@@ -272,9 +272,10 @@ public sealed class LokadPublicRouteGuardrailTests
                                 new string('3', thirdWidth) +
                                 suffix;
 
-                            Assert.Equal(
-                                oracle.IsMatch(input),
-                                regex.IsMatch(System.Text.Encoding.UTF8.GetBytes(input)));
+                            var bytes = System.Text.Encoding.UTF8.GetBytes(input);
+                            var expectedCount = oracle.Count(input);
+                            Assert.Equal(expectedCount != 0, regex.IsMatch(bytes));
+                            Assert.Equal(expectedCount, regex.Count(bytes));
                         }
                     }
                 }

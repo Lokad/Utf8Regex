@@ -1104,6 +1104,9 @@ internal static partial class Utf8SliceRunner
         var shortRepeatWindow = whitespaceLiteral < 0 && leadingScalarIndex > 0 && leadingFirst < 128
             ? program.LeadingRepeatLiteralWindow : default;
         var seekDecimal = shortRepeatWindow.Min != 0 && leadingFirst < 0 && program.LeadingScalarIsDecimal;
+        var proveDecimalMatch = seekDecimal && !program.RightToLeft && leadingScalarIndex == 2 &&
+            first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
+            captureStarts.Length == 0 && !program.ReadsCaptures && program.Instructions.Length <= 32;
         if (seekDecimal)
         {
             leadingFirst = '0';
@@ -1288,6 +1291,14 @@ internal static partial class Utf8SliceRunner
                     }
                     if (extra != 0)
                         verifiedPrefix = (prefixContinuation + 5, prefixBytes + extra);
+                }
+                // The bounded proof can count a complete ordered endpoint.
+                // An undecided result still enters the scalar matcher.
+                if (proveDecimalMatch && input[position] < 128 &&
+                    !MayMatchBranchedAsciiPrefix(program, input, position, 0, out provedEnd, proveMatch: true))
+                {
+                    position++;
+                    continue;
                 }
                 var outcome = provedEnd >= 0
                     ? new Utf8SliceMatchOutcome(true, provedEnd, invocation.TryReserveWorking(0))
