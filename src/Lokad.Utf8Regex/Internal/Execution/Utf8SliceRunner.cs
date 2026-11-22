@@ -1543,6 +1543,17 @@ internal static partial class Utf8SliceRunner
                                 continuation = instruction.A + 1;
                                 ranWithoutRewind = true;
                             }
+                            else if (exit.RepeatExitBeforeTerminalDot && cursor.RequiredEnd is null &&
+                                (inputIndex == input.Length || input[inputIndex] != '\n'))
+                            {
+                                var breach = TryMatchOptionalScalar(program, instructions[programIndex + 1],
+                                    input, inputIndex, ref invocation, out var width);
+                                if (breach != Utf8ExecutionLimitKind.None)
+                                { failure = breach; goto Failure; }
+                                inputIndex += width;
+                                programIndex = instruction.A + 1;
+                                break;
+                            }
                             else
                             {
                                 ranWithoutRewind = TryRunClassRepeatWithoutRewind(program, programIndex, input,

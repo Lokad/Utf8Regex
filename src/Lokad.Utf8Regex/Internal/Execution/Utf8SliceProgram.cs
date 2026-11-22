@@ -196,6 +196,7 @@ internal readonly struct Utf8SliceInstruction
 {
     internal const int RepeatExitRejectsShorterFlag = 1;
     internal const int RepeatExitAcceptsEmptyTailFlag = 2;
+    internal const int RepeatExitBeforeTerminalDotFlag = 4;
 
     internal Utf8SliceInstruction(Utf8SliceInstructionKind kind, int a, int b, int c, int d, bool isLiteralChoice = false)
     {
@@ -229,6 +230,7 @@ internal readonly struct Utf8SliceInstruction
     // RepeatExit C records independent proofs about the continuation.
     internal bool RepeatExitRejectsShorterEndpoints => (C & RepeatExitRejectsShorterFlag) != 0;
     internal bool RepeatExitAcceptsEmptyTail => (C & RepeatExitAcceptsEmptyTailFlag) != 0;
+    internal bool RepeatExitBeforeTerminalDot => (C & RepeatExitBeforeTerminalDotFlag) != 0;
 
     // A RepeatExit can pack up to three required ASCII starters for rewind.
     internal int RepeatExitRewindStarts => D;
@@ -726,25 +728,6 @@ internal sealed class Utf8SliceProgram
         var (mask, anchor) = TerminalRepeatsWithoutRewind;
         var distance = anchor - repeatIndex;
         return mask != 0 && (uint)distance < 64 && (mask & (1UL << distance)) != 0;
-    }
-
-    internal bool HasTerminalGreedyDot(int continuation)
-    {
-        var (mask, anchor) = TerminalRepeatsWithoutRewind;
-        if (mask == 0 || continuation >= anchor) return false;
-        var code = Instructions.AsSpan();
-        var dot = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, continuation);
-        if (!SkipsTerminalRewind(dot) ||
-            code[dot] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy,
-                RepeatMinimum: 0, RepeatMaximum: long.MaxValue } repeat ||
-            code[dot + 1].Kind != Utf8SliceInstructionKind.Dot)
-            return false;
-
-        // The terminal proof identifies the final anchor after capture ends.
-        // With no intervening consumption the dot reaches the same boundary
-        // from either side of a non-LF scalar. Preserve the greedy capture start.
-        return Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, repeat.A + 1) == anchor &&
-            IsAbsoluteEndConstraint(code[anchor]);
     }
 
     internal bool RejectsByFinalAscii(ReadOnlySpan<byte> input)

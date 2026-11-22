@@ -518,7 +518,13 @@ internal static partial class Utf8SliceRunner
                 // At a shorter endpoint the next scalar belongs to the repeat.
                 // An ASCII-only side makes the ASCII intersection decisive.
                 else if ((asciiOnly || firstAsciiOnly) && (first.Low & atom.Low) == 0 && (first.High & atom.High) == 0)
+                {
                     rewindFree |= 1UL << (end - repeatIndex);
+                    if (terminal.Kind == Utf8SliceInstructionKind.Anchor && instruction.Kind == Utf8SliceInstructionKind.Dot &&
+                        repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue } &&
+                        Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, pc + 1) == end)
+                        MarkOptionalBeforeTerminalDot(code, repeatIndex, budget);
+                }
 
                 // An adjacent alternative may jump over this repeat to the
                 // same continuation. Save that already proved first-byte set.
@@ -545,6 +551,34 @@ internal static partial class Utf8SliceRunner
         }
         return (rewindFree, end);
     }
+
+    private static void MarkOptionalBeforeTerminalDot(Span<Utf8SliceInstruction> code, int dot,
+        Utf8ConstructionBudget budget)
+    {
+        var continuation = dot;
+        for (var skipped = 0; skipped < 31 && continuation > 0 &&
+            code[continuation - 1].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd; skipped++)
+        {
+            budget.ChargeWork(1);
+            continuation--;
+        }
+
+        var exitIndex = continuation - 1;
+        var optionalIndex = exitIndex - 3;
+        if (optionalIndex < 0 || code[optionalIndex] is not
+            { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: 1 } optional ||
+            !IsSingleAtomRepeat(code, optionalIndex, optional) || !IsScalarRepeatAtom(code[optionalIndex + 1])) return;
+
+        // The prepared terminal dot reaches the same end on either side of
+        // one non-LF scalar. The VM still publishes the greedy captures.
+        var exit = code[exitIndex];
+        code[exitIndex] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitBeforeTerminalDotFlag, exit.D);
+    }
+
+    private static bool IsScalarRepeatAtom(in Utf8SliceInstruction atom)
+        => atom is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } or
+            { Kind: Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.Shorthand or
+                Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid };
 
     private static int FindEquivalentTerminalRepeat(Utf8SliceProgram program, ReadOnlySpan<Utf8SliceInstruction> code,
         int end, Utf8ConstructionBudget budget)
@@ -602,10 +636,7 @@ internal static partial class Utf8SliceRunner
             repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) ||
             !IsSingleAtomRepeat(instructions, repeatIndex, repeat)) return false;
         var atom = instructions[repeatIndex + 1];
-        if (atom.Kind is not (Utf8SliceInstructionKind.Literal or Utf8SliceInstructionKind.Dot or Utf8SliceInstructionKind.Set or
-                Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid) ||
-            atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0)
-            return false;
+        if (!IsScalarRepeatAtom(atom)) return false;
         continuation = repeat.A + 1;
         if (!existenceOnly &&
             repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue } &&
@@ -624,16 +655,6 @@ internal static partial class Utf8SliceRunner
                 outcome = (emptyRunBreach == Utf8ExecutionLimitKind.None ? start : -1, emptyRunBreach);
                 return true;
             }
-        }
-        if (repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: 1 } &&
-            requiredEnd is null && (start == input.Length || input[start] != '\n') &&
-            program.HasTerminalGreedyDot(continuation))
-        {
-            // The terminal dot reaches the same end on either side of one
-            // non-LF scalar. Run the greedy choice and leave captures to the VM.
-            var optionalBreach = TryMatchOptionalScalar(program, atom, input, start, ref invocation, out var width);
-            outcome = (optionalBreach == Utf8ExecutionLimitKind.None ? start + width : -1, optionalBreach);
-            return true;
         }
         if (requiredEnd is null && (existenceOnly || repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy) &&
             CanAcceptEmptyTail(instructions, continuation))
