@@ -95,15 +95,14 @@ public sealed class Pcre2AsciiIpv4CountTests
         Assert.Equal(1, captured.Count("00.11.22.255"u8));
         var regex = Create();
         Assert.Equal(1, regex.Count("00.11.22.255"u8, 0, Pcre2MatchOptions.NotBol));
-        var denied = new Utf8Pcre2Regex(Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        var tiny = new Utf8Pcre2Regex(Pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
                 MaxWorkingBytes = 1
             }
         });
-        Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => denied.Count("00.11.22.255"u8)).ErrorKind);
+        Assert.Equal(1, tiny.Count("00.11.22.255"u8));
         var ordinary = new Utf8Pcre2Regex(Pattern);
         Assert.Equal(0, ordinary.Count("x 00.11.22.255"u8, 0, Pcre2MatchOptions.Anchored));
         Assert.Equal(1, ordinary.Count("00.11.22.255 00.11.22.255"u8, 0, Pcre2MatchOptions.Anchored));

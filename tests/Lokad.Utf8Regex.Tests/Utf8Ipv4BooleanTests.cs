@@ -95,7 +95,7 @@ public sealed class Utf8Ipv4BooleanTests
     [InlineData("012.200.033.199")]
     [InlineData("250.250.250.250")]
     [InlineData("😀012.200.033.199")]
-    public void CompleteBranchProofFitsBooleanAndRangeWorkAndStorageLimits(string text)
+    public void CompleteBranchProofFitsBooleanRangeAndCountLimits(string text)
     {
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
@@ -106,6 +106,19 @@ public sealed class Utf8Ipv4BooleanTests
         var expected = Regex.Match(text, Pattern);
         Assert.True(regex.IsMatch(input, token.Token));
         Utf8MatchSequence.AssertRange(regex.Match(input, cancellationToken: token.Token), text, expected.Index, expected.Length);
+        Assert.Equal(1, regex.Count(input, token.Token));
+    }
+
+    [Fact]
+    public void CompleteBranchCountContinuesFromTheOrderedEndWithinItsWorkingLimit()
+    {
+        var text = "😀" + string.Concat(Enumerable.Repeat("012.200.033.199 250.255.251.254 ", 24));
+        using var token = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        Assert.Equal(Regex.Count(text, Pattern), regex.Count(Encoding.UTF8.GetBytes(text), token.Token));
     }
 
     [Theory]
@@ -184,8 +197,10 @@ public sealed class Utf8Ipv4BooleanTests
         Assert.True(regex.IsMatch("012.200.033.199"u8));
     }
 
-    [Fact]
-    public void PublicationObservesCancellationFromItsLastDeadlinePoll()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PublicationObservesCancellationFromItsLastDeadlinePoll(bool count)
     {
         var reads = 0; var cancelAt = int.MaxValue;
         using var token = new CancellationTokenSource();
@@ -195,9 +210,11 @@ public sealed class Utf8Ipv4BooleanTests
             MatchTimeout = TimeSpan.FromSeconds(1),
             ResourcePolicy = Funded
         });
-        Assert.True(regex.IsMatch("012.200.033.199"u8, token.Token));
+        int Run() => count ? regex.Count("012.200.033.199"u8, token.Token)
+            : regex.IsMatch("012.200.033.199"u8, token.Token) ? 1 : 0;
+        Assert.Equal(1, Run());
         cancelAt = reads; reads = 0;
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch("012.200.033.199"u8, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => Run()).CancellationToken);
         Assert.Equal(cancelAt, reads);
     }
 }

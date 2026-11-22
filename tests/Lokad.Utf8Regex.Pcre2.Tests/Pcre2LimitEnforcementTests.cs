@@ -216,7 +216,6 @@ public sealed class Pcre2LimitEnforcementTests
 
     public static IEnumerable<object?[]> MeteredHeapRows()
     {
-        yield return new object?[] { "(?:ab|a)+z", Pcre2CompileOptions.None, "abababz abababz", 2 };
         yield return new object?[] { "(?<=abc)(|def)", Pcre2CompileOptions.None, "abcdefabcdef", 4 };
         yield return new object?[] { @"([a-z]+)\1", Pcre2CompileOptions.None, "aaaa aa", 2 };
     }
@@ -244,6 +243,7 @@ public sealed class Pcre2LimitEnforcementTests
 
     public static IEnumerable<object?[]> WorkspaceFreeHeapRows()
     {
+        yield return new object?[] { "(?:ab|a)+z", Pcre2CompileOptions.None, "abababz abababz", 2 };
         yield return new object?[] { "^ERROR: .+$", Pcre2CompileOptions.Multiline, "ERROR: a\nERROR: b", 2 };
         yield return new object?[] { "[ab]+", Pcre2CompileOptions.None, "ab ab ab", 3 };
         yield return new object?[] { "(a)b+", Pcre2CompileOptions.None, "ab abb abbb x ab", 4 };
@@ -257,9 +257,7 @@ public sealed class Pcre2LimitEnforcementTests
     [MemberData(nameof(WorkspaceFreeHeapRows))]
     public void TinyHeapLimitSucceedsOnWorkspaceFreePaths(string pattern, Pcre2CompileOptions options, string inputText, int expected)
     {
-        // Direct paths (literal scan, character scan, Utf8-kind delegation)
-        // rent no metered working bytes, so a one-byte heap budget admits
-        // their full counts.
+        // These counts can finish with no metered working storage.
         var limits = new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 };
         var regex = new Utf8Pcre2Regex(pattern, options: options, compileSettings: default, policy: new Utf8RegexPolicy
         {

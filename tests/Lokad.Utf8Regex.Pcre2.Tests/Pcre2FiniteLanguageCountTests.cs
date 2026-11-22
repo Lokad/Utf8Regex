@@ -76,11 +76,11 @@ public sealed class Pcre2FiniteLanguageCountTests
     {
         foreach (var allowance in new[] { 1UL << 20, 1UL })
         {
-            // The preferred "ab" arm consumes the byte needed by the suffix.
-            // The scalar VM must keep "a" available for a real retry.
-            var regex = Create("((ab)|(a)|(c)|(d))b", new() { HeapLimitInBytes = allowance });
+            // Both arms reach the lookahead. The preferred "ab" fails it,
+            // and the scalar VM must keep "a" available for a real retry.
+            var regex = Create("((ab)|(a)|(c)|(d))(?=b[XY])", new() { HeapLimitInBytes = allowance });
             var invocation = Pcre2SliceDriver.CreateInvocation(regex.DebugCompiledProgram.Request, default);
-            var input = Pcre2Runner.PrepareInput("ab ab"u8, 0, ref invocation);
+            var input = Pcre2Runner.PrepareInput("abX abY"u8, 0, ref invocation);
             if (allowance == 1)
             {
                 Pcre2MatchException? failure = null;
@@ -97,6 +97,7 @@ public sealed class Pcre2FiniteLanguageCountTests
                 Assert.True(Pcre2GlobalOperationDriver.TryCount(regex.DebugCompiledProgram, ref input,
                     new Utf8BytePosition(0), Pcre2MatchOptions.None, ref invocation, out var count));
                 Assert.Equal(2, count);
+                Assert.True(invocation.Budget.PeakDepth > 0);
             }
             Assert.True(invocation.Budget.PeakWorkingBytes > 0);
             Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
@@ -119,8 +120,7 @@ public sealed class Pcre2FiniteLanguageCountTests
         var tinyTerminal = Create("((ab)|(a)|(c)|(d))", new() { HeapLimitInBytes = 1 });
         Assert.Equal(2, tinyTerminal.Count("ab a"u8)); // The preferred arm can accept without a retry.
         var tiny = Create("((ab)|(a)|(c)|(d))b", new() { HeapLimitInBytes = 1 });
-        Assert.Equal(Pcre2ErrorKind.HeapLimit,
-            Assert.Throws<Pcre2MatchException>(() => tiny.Count("ab ab"u8)).ErrorKind);
+        Assert.Equal(2, tiny.Count("ab ab"u8)); // The bounded proof can resolve this retry.
         var depth = Create("(?:(a|aa)+)b", new() { DepthLimit = 1 });
         Assert.Equal(Pcre2ErrorKind.DepthLimit,
             Assert.Throws<Pcre2MatchException>(() => depth.Count("aaaab"u8)).ErrorKind);

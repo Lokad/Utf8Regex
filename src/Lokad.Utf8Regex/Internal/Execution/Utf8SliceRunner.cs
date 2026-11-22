@@ -1121,11 +1121,16 @@ internal static partial class Utf8SliceRunner
                 repeatMinimum = (int)repeat.RepeatMinimum;
         }
         var whitespaceWindowEnd = -1;
+        // Only a proof from the actual candidate can supply a whole match.
+        // A delimiter window can still move that start before verification.
+        var proveBranchedMatch = leadingScalarIndex == 0 && program.GroupCount == 0 &&
+            captureStarts.Length == 0 && whitespaceLiteral < 0;
         var workspace = new AttemptWorkspace();
         try
         {
             while (true)
             {
+                var provedEnd = -1;
                 if (leadingFirst >= 0)
                 {
                     var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leadingFirst, leadingLast, seekDecimal,
@@ -1142,7 +1147,8 @@ internal static partial class Utf8SliceRunner
                         (leadingPrefix.IsEmpty && leadingSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingSecond) > (uint)(leadingSecondLast - leadingSecond))) ||
                         (branchWindow.Min != 0 && !HasAsciiLiteralInWindow(input, position, branchWindow)) ||
-                        !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex, out _) :
+                        !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex,
+                            out provedEnd, proveBranchedMatch) :
                             MatchesStraightAsciiPrefix(program, input, position, 0))))
                     {
                         // The delimiter window retains wider decimals. Each
@@ -1254,8 +1260,10 @@ internal static partial class Utf8SliceRunner
                     if (extra != 0)
                         verifiedPrefix = (prefixContinuation + 5, prefixBytes + extra);
                 }
-                var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true,
-                    ref workspace, ref invocation, verifiedPrefix: verifiedPrefix);
+                var outcome = provedEnd >= 0
+                    ? new Utf8SliceMatchOutcome(true, provedEnd, invocation.TryReserveWorking(0), null, null)
+                    : TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true,
+                        ref workspace, ref invocation, verifiedPrefix: verifiedPrefix);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, outcome.Breach);
                 invocation.Budget.ThrowIfCancellationRequested();

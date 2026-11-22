@@ -206,28 +206,26 @@ public sealed class PythonReFiniteLiteralFamilyCountTests
         Assert.Equal(6, retained.Value.StartOffsetInBytes);
     }
     [Fact]
-    public void NinthAlternativeStillUsesAdmittedScalarExecution()
+    public void NinthAlternativeUsesTheBoundedScalarProof()
     {
         var pattern = string.Join('|', Literals) + "|wolf";
-        var input = Encoding.UTF8.GetBytes(string.Join(' ', Literals) + " wolf");
-        var bounded = new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
+        using var core = new global::Lokad.Utf8Regex.Utf8Regex(pattern);
+        Assert.False(core.CanCountNativeLiteralForResult);
+        var input = Encoding.UTF8.GetBytes("π😀" + string.Join(' ', Literals) + " wolf");
+        Utf8PythonRegex Create(ulong work) => new(pattern, options: PythonReCompileOptions.None, policy: new()
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
             {
-                MaxWorkSteps = 1_000_000,
+                MaxWorkSteps = work,
                 MaxDepth = 1,
                 MaxWorkingBytes = 1,
                 MaxResultBytes = 1
             }
         });
-        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => bounded.Count(input)).ResourceKind);
-        Assert.Equal(9, new Utf8PythonRegex(pattern, options: PythonReCompileOptions.None, policy: new Utf8RegexPolicy()
-        {
-            MatchTimeout = Regex.InfiniteMatchTimeout,
-            ResourcePolicy = Generous
-        }).Count(input));
+        Assert.Equal(9, Create(1_000_000).Count(input, startOffsetInBytes: 6));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Create(1).Count(input, startOffsetInBytes: 6)).ResourceKind);
     }
     [Theory]
     [InlineData(2)]
