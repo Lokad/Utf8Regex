@@ -1712,13 +1712,14 @@ internal static partial class Utf8SliceRunner
         // Hybrid mask. Its shorthand bits still classify non-ASCII scalars.
         var hybrid = atom is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 };
         var asciiNegated = hybrid && atom.B != 0;
-        ReadOnlySpan<byte> exactAsciiMask = unboundedAsciiSet || unbounded && hybrid ? program.SetMasks[atom.A] : [];
-        var asciiWord = unboundedAsciiSet && IsAsciiWordMask(exactAsciiMask);
-        if (unbounded && (unboundedAsciiSet || hybrid))
+        ReadOnlySpan<byte> exactAsciiMask = unbounded && (hybrid || atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 })
+            ? program.SetMasks[atom.A] : [];
+        var asciiWord = !hybrid && !exactAsciiMask.IsEmpty && IsAsciiWordMask(exactAsciiMask);
+        if (unbounded && (unboundedAsciiSet || hybrid || asciiWord))
         {
             var blockSize = asciiWord ? 2048 : 64;
-            // The mask walk stops at any wider scalar. Hybrid repeats test it
-            // before resuming the next bounded block.
+            // The complete word mask includes all ASCII folds. Hybrid and
+            // folded repeats still classify wide scalars before the next block.
             while (position < input.Length)
             {
                 var breach = invocation.TryChargeInputStep();
@@ -1732,7 +1733,7 @@ internal static partial class Utf8SliceRunner
                     continue;
                 }
                 position += stop;
-                if (!hybrid || input[position] < 128 || !TryReadScalar(input, position, false, out var scalar, out var width))
+                if (unboundedAsciiSet || input[position] < 128 || !TryReadScalar(input, position, false, out var scalar, out var width))
                     break;
                 breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
                 if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
@@ -1753,13 +1754,6 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> asciiMask = hybrid ||
             atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
             atom.B == 0 && atom.C == 0 ? program.SetMasks[atom.A] : [];
-        if (unbounded && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: not 0 })
-        {
-            // The full ASCII word mask already includes every ASCII case
-            // equivalent. Wider scalars still use the folded predicate.
-            var foldedMask = program.SetMasks[atom.A];
-            if (IsAsciiWordMask(foldedMask)) asciiMask = foldedMask;
-        }
         while (count < maximum)
         {
             var breach = invocation.TryChargeStep();
