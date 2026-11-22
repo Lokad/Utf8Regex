@@ -12,17 +12,21 @@ public sealed partial class Utf8Regex
         IUtf8MemoryAllowance? workingMemoryAllowance = null, int? endOffsetInBytes = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        using var programUse = _programMemory?.Enter();
-        workingMemoryAllowance ??= _programMemory?.Allowance;
+        var programMemory = _programMemory;
         if (startOffsetInBytes is null && captures.IsEmpty &&
-            workingMemoryAllowance is null && endOffsetInBytes is null)
+            workingMemoryAllowance is null && endOffsetInBytes is null && programMemory is null)
         {
             try { return MatchCore(input, cancellationToken); }
             catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
         }
-        var start = startOffsetInBytes ?? (UsesRightToLeft() ? endOffsetInBytes ?? input.Length : 0);
-        return MatchCaptureSlotsCore(input, start, captures, cancellationToken,
-            workingMemoryAllowance, endOffsetInBytes);
+        programMemory?.AcquireUse();
+        try
+        {
+            var start = startOffsetInBytes ?? (UsesRightToLeft() ? endOffsetInBytes ?? input.Length : 0);
+            return MatchCaptureSlotsCore(input, start, captures, cancellationToken,
+                workingMemoryAllowance ?? programMemory?.Allowance, endOffsetInBytes);
+        }
+        finally { programMemory?.ReleaseUse(); }
     }
 
     private Utf8CaptureRange MatchCaptureSlotsCore(ReadOnlySpan<byte> input, int startOffsetInBytes,

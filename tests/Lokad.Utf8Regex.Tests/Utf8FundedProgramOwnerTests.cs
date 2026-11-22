@@ -94,6 +94,38 @@ public sealed class Utf8FundedProgramOwnerTests
         Assert.Equal(result, output[0]);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MatchKeepsProgramStorageThroughReentrantClose(bool explicitAllowance)
+    {
+        var root = new SharedRoot();
+        var programs = new Account(root);
+        var working = new Account(root);
+        using var owner = Compile(@"(?<=é)(a+)", programs);
+        var held = programs.Used;
+        var active = explicitAllowance ? working : programs;
+        var closed = false;
+        active.AfterGrant = () =>
+        {
+            if (closed) return;
+            closed = true;
+            owner.Dispose();
+            Assert.True(root.Used > held);
+            Assert.Equal(explicitAllowance ? held : root.Used, programs.Used);
+            Assert.Throws<ObjectDisposedException>(() => owner.Match("éaaa"u8));
+        };
+
+        var captures = new Utf8CaptureRange[2];
+        var match = owner.Match("éaaa"u8, captures: captures,
+            workingMemoryAllowance: explicitAllowance ? working : null);
+        Assert.True(closed);
+        Assert.Equal(new Utf8CaptureRange(2, 5), match);
+        Assert.Equal(match, captures[0]);
+        Assert.Equal(match, captures[1]);
+        Assert.Equal(0UL, root.Used);
+    }
+
     [Fact]
     public void SeparateProgramAndWorkingChildrenShareOneRootAndRefundDeterministically()
     {
