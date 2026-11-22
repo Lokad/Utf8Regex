@@ -1282,10 +1282,12 @@ internal static partial class Utf8SliceRunner
 
     // This check eliminates impossible starts. A caller without capture output
     // can also reuse an Accept reached through completely verified, ordered atoms.
-    private static bool MayMatchBranchedAsciiPrefix(Utf8SliceProgram program,
-        ReadOnlySpan<byte> input, int position, int index, ref int remaining, bool proveMatch, out int acceptedEnd)
+    private const int BranchedPrefixRejected = -2;
+    private const int BranchedPrefixUndecided = -1;
+
+    private static int ProbeBranchedAsciiPrefix(Utf8SliceProgram program,
+        ReadOnlySpan<byte> input, int position, int index, ref int remaining, bool proveMatch)
     {
-        acceptedEnd = -1;
         var code = program.Instructions;
         while (remaining > 0 && (uint)index < (uint)code.Length)
         {
@@ -1295,8 +1297,8 @@ internal static partial class Utf8SliceRunner
             switch (entry.Kind)
             {
                 case Utf8SliceInstructionKind.Literal:
-                    if (entry.B != 0 || (uint)entry.A >= 128) return true;
-                    if ((uint)position >= (uint)input.Length || input[position] != entry.A) return false;
+                    if (entry.B != 0 || (uint)entry.A >= 128) return BranchedPrefixUndecided;
+                    if ((uint)position >= (uint)input.Length || input[position] != entry.A) return BranchedPrefixRejected;
                     position++;
                     continue;
                 case Utf8SliceInstructionKind.Set when entry is { B: 0, C: 0, D: not 0 }:
@@ -1304,14 +1306,13 @@ internal static partial class Utf8SliceRunner
                     var firstByte = (entry.D & 255) - 1;
                     var lastByte = (byte)(entry.D >> 8);
                     if ((uint)position >= (uint)input.Length ||
-                        (uint)(input[position] - firstByte) > (uint)(lastByte - firstByte)) return false;
+                        (uint)(input[position] - firstByte) > (uint)(lastByte - firstByte)) return BranchedPrefixRejected;
                     position++;
                     continue;
                 case Utf8SliceInstructionKind.Set:
                     break;
                 case Utf8SliceInstructionKind.Accept:
-                    if (proveMatch) acceptedEnd = position;
-                    return true;
+                    return proveMatch ? position : BranchedPrefixUndecided;
                 case Utf8SliceInstructionKind.CaptureStart:
                 case Utf8SliceInstructionKind.CaptureEnd:
                     continue;
@@ -1321,7 +1322,7 @@ internal static partial class Utf8SliceRunner
                     index = entry.A;
                     continue;
                 case Utf8SliceInstructionKind.Fork when entry.B == 0 && entry.A > index:
-                    if (remaining == 0) return true;
+                    if (remaining == 0) return BranchedPrefixUndecided;
                     if (entry is { C: < 0, D: > 0 } && remaining >= 3 &&
                         position < input.Length && input[position] == ~entry.C)
                     {
@@ -1354,8 +1355,11 @@ internal static partial class Utf8SliceRunner
                                     next++;
                                     edge++;
                                 }
-                                if (possible && MayMatchBranchedAsciiPrefix(program, input, edge, next,
-                                    ref remaining, proveMatch, out acceptedEnd)) return true;
+                                if (possible)
+                                {
+                                    var end = ProbeBranchedAsciiPrefix(program, input, edge, next, ref remaining, proveMatch);
+                                    if (end != BranchedPrefixRejected) return end;
+                                }
                                 if (afterSibling == 0 || remaining < 2) break;
 
                                 // Preparation proved that this sibling starts with
@@ -1378,22 +1382,25 @@ internal static partial class Utf8SliceRunner
                             continue;
                         }
                     }
-                    else if (MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, out acceptedEnd))
-                        return true;
+                    else
+                    {
+                        var end = ProbeBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch);
+                        if (end != BranchedPrefixRejected) return end;
+                    }
                     index = entry.A;
                     continue;
                 case Utf8SliceInstructionKind.Anchor:
                 case Utf8SliceInstructionKind.Boundary:
-                    if (!proveMatch) return true;
+                    if (!proveMatch) return BranchedPrefixUndecided;
                     if (entry.Kind == Utf8SliceInstructionKind.Anchor)
                     {
-                        if (entry.A is not ((int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd)) return true;
-                        if (!MatchesEndAnchor(input, position, entry)) return false;
+                        if (entry.A is not ((int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd)) return BranchedPrefixUndecided;
+                        if (!MatchesEndAnchor(input, position, entry)) return BranchedPrefixRejected;
                     }
                     else
                     {
-                        if (!Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary)) return true;
-                        if (boundary != (entry.A != 0)) return false;
+                        if (!Utf8ScalarWordBoundary.TryGetAsciiBoundary(input, position, out var boundary)) return BranchedPrefixUndecided;
+                        if (boundary != (entry.A != 0)) return BranchedPrefixRejected;
                     }
                     continue;
                 case Utf8SliceInstructionKind.RepeatGreedy:
@@ -1411,12 +1418,12 @@ internal static partial class Utf8SliceRunner
                         if (proveMatch)
                         {
                             // The complete repeat proof admits one byte before testing it.
-                            if (remaining == 0) return true;
+                            if (remaining == 0) return BranchedPrefixUndecided;
                             remaining--;
                         }
                         var value = input[position];
                         if (value >= 128 && optionalAtom.Kind == Utf8SliceInstructionKind.Hybrid)
-                            return true;
+                            return BranchedPrefixUndecided;
                         var optionalFirst = GetUnfoldedAsciiRange(optionalAtom, out var optionalLast);
                         if (optionalFirst >= 0
                             ? (uint)(value - optionalFirst) > (uint)(optionalLast - optionalFirst)
@@ -1429,8 +1436,8 @@ internal static partial class Utf8SliceRunner
                         }
                         var lazy = proveMatch && entry.Kind == Utf8SliceInstructionKind.RepeatLazy;
                         var preferred = lazy ? position : position + 1;
-                        if (MayMatchBranchedAsciiPrefix(program, input, preferred, index, ref remaining, proveMatch, out acceptedEnd))
-                            return true;
+                        var end = ProbeBranchedAsciiPrefix(program, input, preferred, index, ref remaining, proveMatch);
+                        if (end != BranchedPrefixRejected) return end;
                         if (lazy) position++;
                         continue;
                     }
@@ -1440,16 +1447,16 @@ internal static partial class Utf8SliceRunner
                         code[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }))
                     {
                         var proof = TryMatchPrefixRepeat(program, input, position, index, entry, ref remaining,
-                            out acceptedEnd, out var continueAt);
+                            out var end, out var continueAt);
                         if (proof.HasValue)
                         {
-                            if (continueAt < 0) return proof.Value;
+                            if (continueAt < 0) return proof.Value ? end : BranchedPrefixRejected;
                             position = continueAt;
                             index = entry.A + 1;
                             continue;
                         }
                     }
-                    if (minimum == 0) return true;
+                    if (minimum == 0) return BranchedPrefixUndecided;
                     // A required body always starts here. After a nontrivial loop,
                     // its end stays unknown. Skip only a proved fixed-width atom.
                     if (minimum != entry.RepeatMaximum || minimum > remaining || !singleAtom)
@@ -1464,25 +1471,25 @@ internal static partial class Utf8SliceRunner
                     entry = ref code[atomIndex];
                     break;
                 default:
-                    return true;
+                    return BranchedPrefixUndecided;
             }
             if (entry is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } && (uint)entry.A < 128)
             {
                 if (width > input.Length - position ||
                     (width == 1 ? input[position] != entry.A : input.Slice(position, width).ContainsAnyExcept((byte)entry.A)))
-                    return false;
+                    return BranchedPrefixRejected;
             }
             else if (entry is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } && program.SetMasks[entry.A].Length == 16)
             {
-                if (width > input.Length - position) return false;
+                if (width > input.Length - position) return BranchedPrefixRejected;
                 var mask = program.SetMasks[entry.A];
                 foreach (var value in input.Slice(position, width))
-                    if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) return false;
+                    if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) return BranchedPrefixRejected;
             }
-            else return true;
+            else return BranchedPrefixUndecided;
             position += width;
         }
-        return true;
+        return BranchedPrefixUndecided;
     }
 
     // Keep complete repeat verification out of the rejection walk used
@@ -1575,8 +1582,12 @@ internal static partial class Utf8SliceRunner
             var last = lazy ? consumed : minimum;
             var step = lazy ? 1 : -1;
             for (var count = lazy ? minimum : consumed; count != last; count += step)
-                if (MayMatchBranchedAsciiPrefix(program, input, position + count, continuation, ref remaining, true, out acceptedEnd))
-                    return true;
+            {
+                var end = ProbeBranchedAsciiPrefix(program, input, position + count, continuation, ref remaining, true);
+                if (end == BranchedPrefixRejected) continue;
+                acceptedEnd = end;
+                return true;
+            }
             consumed = last;
         }
         continueAt = position + consumed;
@@ -1634,6 +1645,8 @@ internal static partial class Utf8SliceRunner
         // Share one instruction and scalar allowance across the arms. The
         // caller meters this bounded check with each candidate search step.
         var remaining = instructionLimit;
-        return MayMatchBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch, out acceptedEnd);
+        var end = ProbeBranchedAsciiPrefix(program, input, position, index, ref remaining, proveMatch);
+        acceptedEnd = Math.Max(BranchedPrefixUndecided, end);
+        return end != BranchedPrefixRejected;
     }
 }
