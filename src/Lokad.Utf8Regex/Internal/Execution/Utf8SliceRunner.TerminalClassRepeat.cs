@@ -606,6 +606,18 @@ internal static partial class Utf8SliceRunner
             atom.Kind == Utf8SliceInstructionKind.Literal && atom.B != 0)
             return false;
         continuation = repeat.A + 1;
+        if (repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: 1 } &&
+            requiredEnd is null && (start == input.Length || input[start] != '\n') &&
+            program.HasTerminalGreedyDot(continuation))
+        {
+            // The terminal dot reaches the same end on either side of one
+            // non-LF scalar. Run the greedy choice and leave captures to the VM.
+            var optionalBreach = TryMatchOptionalScalar(program, atom, input, start, ref invocation, out var width);
+            outcome = optionalBreach == Utf8ExecutionLimitKind.None
+                ? new(true, start + width, optionalBreach, null, null)
+                : new(false, -1, optionalBreach, null, null);
+            return true;
+        }
         if (requiredEnd is null && (existenceOnly || repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy) &&
             CanAcceptEmptyTail(instructions, continuation))
         {
@@ -1706,6 +1718,21 @@ internal static partial class Utf8SliceRunner
         else high &= high - 1;
         second = (byte)(low != 0 ? BitOperations.TrailingZeroCount(low) : 64 + BitOperations.TrailingZeroCount(high));
         return true;
+    }
+
+    private static Utf8ExecutionLimitKind TryMatchOptionalScalar(Utf8SliceProgram program,
+        in Utf8SliceInstruction atom, ReadOnlySpan<byte> input, int start,
+        ref Utf8SliceInvocation invocation, out int width)
+    {
+        width = 0;
+        var breach = invocation.TryChargeStep();
+        if (breach == Utf8ExecutionLimitKind.None &&
+            TryReadScalar(input, start, false, out var scalar, out var scalarWidth))
+        {
+            breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
+            if (hit) width = scalarWidth;
+        }
+        return breach;
     }
 
     private static Utf8ExecutionLimitKind TryMatchScalarClass(Utf8SliceProgram program,

@@ -717,6 +717,8 @@ internal sealed class Utf8SliceProgram
 
     internal bool HasTerminalGreedyDot(int continuation)
     {
+        var (mask, anchor) = TerminalRepeatsWithoutRewind;
+        if (mask == 0 || continuation >= anchor) return false;
         var code = Instructions.AsSpan();
         var dot = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, continuation);
         if (!SkipsTerminalRewind(dot) ||
@@ -728,7 +730,6 @@ internal sealed class Utf8SliceProgram
         // The terminal proof identifies the final anchor after capture ends.
         // With no intervening consumption the dot reaches the same boundary
         // from either side of a non-LF scalar. Preserve the greedy capture start.
-        var anchor = TerminalRepeatsWithoutRewind.Anchor;
         return Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, repeat.A + 1) == anchor &&
             IsAbsoluteEndConstraint(code[anchor]);
     }
