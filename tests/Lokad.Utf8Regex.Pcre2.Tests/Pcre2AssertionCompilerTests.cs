@@ -236,29 +236,29 @@ public sealed class Pcre2AssertionCompilerTests
     [Fact]
     public void WarmedCaptureFreeLookaheadIsMatchDoesNotAllocate()
     {
-        // R03 lookaround slice: "(?=ab|ac)ab" IsMatch now rides the shared slice runner (which rents ledger-charged slots per call), so the warmed zero-allocation pin moves to a lookahead shape that stays on the generic backtracking VM (possessive bodies decline the slice; atomic and named bodies would route owned or allocate).
-        var regex = new Utf8Pcre2Regex("(?=(?:ab|ac)++)a");
-        var input = "xxab"u8;
-        for (var index = 0; index < 32; index++)
+        // Earlier tests can fill the retention allowance with other buffer sizes.
+        // Warm this VM shape from an empty pool in the isolated collection.
+        Utf8ExactStatePool.Clear();
+        try
         {
-            Assert.True(regex.IsMatch(input));
-        }
+            using var regex = new Utf8Pcre2Regex("(?=(?:ab|ac)++)a");
+            Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+            var input = "xxab"u8;
+            for (var index = 0; index < 288; index++)
+                Assert.True(regex.IsMatch(input));
 
-        for (var index = 0; index < 256; index++)
-        {
-            Assert.True(regex.IsMatch(input));
-        }
+            var matches = 0;
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var index = 0; index < 256; index++)
+            {
+                if (regex.IsMatch(input)) matches++;
+            }
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
-        var matches = 0;
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var index = 0; index < 256; index++)
-        {
-            if (regex.IsMatch(input)) matches++;
+            Assert.Equal(256, matches);
+            Assert.Equal(0, allocated);
         }
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        Assert.Equal(256, matches);
-        Assert.Equal(0, allocated);
+        finally { Utf8ExactStatePool.Clear(); }
     }
 
     [Fact]
