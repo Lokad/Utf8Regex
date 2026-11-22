@@ -50,7 +50,6 @@ internal struct PythonReScalarMatchState
         state._timeout = timeout;
         state._position = startOffsetInBytes;
         state._slots = new Utf8SliceSlots([], []);
-        state._workspace = new Utf8SliceRunner.AttemptWorkspace();
         // Own one value copy; the caller only lends the source.
         state._invocation = invocation;
         try

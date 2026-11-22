@@ -31,7 +31,6 @@ public sealed class Utf8DeferredRepeatStateTests
         var workspace = new Utf8SliceRunner.AttemptWorkspace();
         try
         {
-            Assert.Empty(workspace.Counts);
             var first = Utf8SliceRunner.TryMatchAt(program, "aaaa"u8, 0, [], [], false, false, true,
                 ref workspace, ref invocation);
             Assert.True(first.IsMatch);

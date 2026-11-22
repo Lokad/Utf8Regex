@@ -2338,17 +2338,6 @@ internal static partial class Utf8SliceRunner
         internal bool Initialized;
         private ulong _reservation;
 
-        public AttemptWorkspace()
-        {
-            Counts = [];
-            Positions = [];
-            Heads = [];
-            Stacks = default;
-            AssertionContinuations = default;
-            Initialized = false;
-            _reservation = 0;
-        }
-
         internal Utf8ExecutionLimitKind Initialize(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
         {
             // Fused repeats use scalar locals. Root repeat vectors are acquired
@@ -2366,6 +2355,9 @@ internal static partial class Utf8SliceRunner
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 Heads = new int[balanceGroups];
             }
+            else Heads = [];
+            // These tables are read only after the first attempt is admitted.
+            Counts = Positions = [];
             Initialized = true;
             return Utf8ExecutionLimitKind.None;
         }
