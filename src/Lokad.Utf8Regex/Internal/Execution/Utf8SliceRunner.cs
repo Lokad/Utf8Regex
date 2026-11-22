@@ -619,13 +619,7 @@ internal static partial class Utf8SliceRunner
                     {
                         requiredClassSuffix = GetRequiredHybridSuffix(program.Instructions, literalIndex + aligned.Length);
                         if (existenceOnly && !collectHistory && CanReuseLeadingClassWindow(program, leadingClass, literalIndex))
-                        {
                             verifiedClassLiteralLength = aligned.Length;
-                            // The prefilter already searched this exact needle
-                            // from byte zero. A later floor may exclude its hit.
-                            if (aligned.Length > 1 && screenedLiteral >= fromByte)
-                                screenedDelimiter = screenedLiteral;
-                        }
                     }
                 }
                 // One attempt per disjoint delimiter can replace a broad
@@ -633,7 +627,14 @@ internal static partial class Utf8SliceRunner
                 if (singleWindowAttempt || needsClassWindow &&
                     (directClassLiteral && classSearch is { Length: 1 } ||
                      wideInput && (directClassLiteral || classSearch is not null)))
+                {
                     classLiteral = literal;
+                    // Reuse the prefilter's first hit only for the same
+                    // aligned needle and a floor that still admits it.
+                    if (directClassLiteral && screenedLiteral >= fromByte && classSearch is { } selected &&
+                        ReferenceEquals(candidatePlan.RequiredPrefilterSearcher.LiteralSearch.Needle, selected.Needle))
+                        screenedDelimiter = screenedLiteral;
+                }
             }
             else if (leadingClass >= 0 && literalIndex >= 0 &&
                 candidatePlan.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral)

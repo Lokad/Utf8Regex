@@ -4,6 +4,22 @@ namespace Lokad.Utf8Regex.PythonRe.Tests;
 
 public sealed class PythonLiteralAssertionTests
 {
+    [Fact]
+    public void LookaheadDelimiterPreservesCaptureRangesAcrossCursorAdvances()
+    {
+        var prefix = new string('!', 288) + "::😀";
+        var input = Encoding.UTF8.GetBytes(prefix + "first:::second::");
+        using var regex = new Utf8PythonRegex("(?P<word>[a-z]+)(?=::)", options: PythonReCompileOptions.None);
+        using var cursor = regex.CreateMatchCursor(input, mode: Utf8PythonMatchMode.Search);
+
+        Assert.True(cursor.MoveNext(out var first));
+        Assert.True(cursor.MoveNext(out var second));
+        Assert.False(cursor.MoveNext(out _));
+        Assert.Equal(Encoding.UTF8.GetByteCount(prefix), first.Value.StartOffsetInBytes);
+        Assert.Equal("first", Encoding.UTF8.GetString(first.GetGroupMemory(1).Span));
+        Assert.Equal("second", Encoding.UTF8.GetString(second.GetValueMemory().Span));
+    }
+
     [Theory]
     [InlineData("(?:(?P<x>foo)(?=bar)baz|(?P<y>foo)bar)")]
     [InlineData("(?:(?P<x>foo)(?!bar)bar|(?P<y>foo)bar)")]

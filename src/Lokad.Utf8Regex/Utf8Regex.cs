@@ -389,10 +389,8 @@ public sealed partial class Utf8Regex : IDisposable
             if (breach != Utf8ExecutionLimitKind.None) throw invocation.Budget.CreateResourceFailure();
             return found;
         }
-        var knownDelimiter = screenedLiteral >= 0 && ReferenceEquals(prefilter.LiteralSearch.Needle, search.LiteralUtf8)
-            ? screenedLiteral : -1;
         var outcome = FindOwnedSliceValue(program, input, startByte, ref invocation, search,
-            existenceOnly: true, screenedLiteral: knownDelimiter);
+            existenceOnly: true, screenedLiteral: screenedLiteral);
         if (outcome.Breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
         invocation.Budget.ThrowIfCancellationRequested();

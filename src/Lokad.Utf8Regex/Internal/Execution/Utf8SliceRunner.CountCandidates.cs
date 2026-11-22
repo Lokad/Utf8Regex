@@ -466,6 +466,12 @@ internal static partial class Utf8SliceRunner
         }
         // Capture markers do not consume input. The scalar-class run can
         // still meet its delimiter directly when they sit between the two.
+        // A positive inline assertion also requires its exact first byte
+        // at this edge. Keep its literal index inside the assertion so the
+        // window cannot verify a consuming prefix through the fork.
+        if (leadingClass >= 0 && index < 63 && index < code.Length - 1 &&
+            code[index] is { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: > 1, D: 1 })
+            index++;
         if (leadingClass >= 0 && index < 64 && index < code.Length &&
             code[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } direct &&
             (uint)direct.A < 128)
@@ -529,9 +535,17 @@ internal static partial class Utf8SliceRunner
 
     private static PreparedSubstringSearch? GetAlignedDelimiterSearch(Utf8SliceProgram program, int index, int literal,
         in Utf8SearchPlan candidatePlan)
-        => candidatePlan.LiteralSearch is { IgnoreCase: false } search &&
-            (search.Length == 1 ? search.Needle[0] == literal : LiteralStartsAtInstruction(program, index, search.Needle))
-            ? search : null;
+    {
+        if (candidatePlan.LiteralSearch is { IgnoreCase: false } search &&
+            (search.Length == 1 ? search.Needle[0] == literal : LiteralStartsAtInstruction(program, index, search.Needle)))
+            return search;
+
+        ref readonly var required = ref candidatePlan.RequiredPrefilterSearcher;
+        return index > 0 && required.Kind == PreparedSearcherKind.ExactLiteral &&
+            program.Instructions[index - 1] is { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: > 1, D: 1 } &&
+            LiteralStartsAtInstruction(program, index, required.LiteralSearch.Needle)
+            ? required.LiteralSearch : null;
+    }
 
     private static (int First, int Second) GetRequiredHybridSuffix(ReadOnlySpan<Utf8SliceInstruction> code, int index)
     {

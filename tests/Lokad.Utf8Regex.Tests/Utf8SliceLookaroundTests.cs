@@ -196,6 +196,49 @@ public sealed class Utf8SliceLookaroundTests
         finally { session.Complete(); }
     }
 
+    [Fact]
+    public void PositiveLookaheadSeeksALateDelimiterWithinAFiniteWorkLimit()
+    {
+        var text = string.Concat(Enumerable.Repeat("lengthy-word Ω documentable ", 16)) + "été:";
+        var input = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8Regex(@"\p{L}+(?=:)", RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128 }
+        });
+
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(1, regex.Count(input));
+        Utf8MatchSequence.AssertRange(regex.Match(input), text, text.Length - 4, 3);
+    }
+
+    [Theory]
+    [InlineData(@"\p{L}+(?=::)", ":::étude:::abc::")]
+    [InlineData(@"\p{L}+(?=aaa)", "aaa éxaaa!zabaaa")]
+    [InlineData(@"\b\d{1,2}(?=::)", "98::x١٢:: ٤::")]
+    [InlineData(@"(?<word>\p{L}+)(?=::)::(?<value>\d+)", "::absent😀étude::19!end::03")]
+    public void PositiveLookaheadWindowsKeepOverlapOriginsAndCaptures(string pattern, string tail)
+    {
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        var text = new string('!', 288) + tail;
+        var input = Encoding.UTF8.GetBytes(text);
+        var oracle = new Regex(pattern, options);
+        using var regex = new Utf8Regex(pattern, options);
+        Assert.Equal(oracle.IsMatch(text), regex.IsMatch(input));
+        Assert.Equal(oracle.Count(text), regex.Count(input));
+
+        var first = oracle.Match(text);
+        Assert.True(first.Success);
+        Utf8MatchSequence.AssertRange(regex.Match(input), text, first.Index, first.Length);
+        var origin = first.Index + first.Length;
+        var next = oracle.Match(text, origin);
+        Assert.True(next.Success);
+        var slots = new Utf8CaptureRange[regex.CaptureGroupCount + 1];
+        var actual = regex.Match(input, Encoding.UTF8.GetByteCount(text.AsSpan(0, origin)), slots);
+        Utf8MatchSequence.AssertRange(actual, text, next.Index, next.Length);
+        for (var group = 1; group < next.Groups.Count; group++)
+            Utf8MatchSequence.AssertRange(slots[group], text, next.Groups[group].Index, next.Groups[group].Length);
+    }
+
     public static IEnumerable<object?[]> AstralIsMatchCases()
     {
         var astral = char.ConvertFromUtf32(0x1F600);
