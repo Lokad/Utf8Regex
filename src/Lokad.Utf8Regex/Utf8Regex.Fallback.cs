@@ -78,11 +78,11 @@ public sealed partial class Utf8Regex
     private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
         => _requiresKelvinSignFallback && ContainsKelvinSign(input);
 
-    // Only unlimited one-shot calls reach this probe. A byte hit in the
-    // bounded prefix can win without screening the irrelevant subject suffix.
-    private const int EarlyFoldedPrefixLength = 64;
+    private const int MaximumFoldedSearchLiteralLength = 64;
 
-    private bool TryFindEarlyFoldedMatch(ReadOnlySpan<byte> input, CancellationToken token, out Utf8CaptureRange match)
+    // One-shot calls without interruption or resource controls can look for
+    // both literal starts and Kelvin aliases in the same byte scan.
+    private bool TryResolveFoldedLiteralMatch(ReadOnlySpan<byte> input, CancellationToken token, out Utf8CaptureRange match)
     {
         match = default;
         if (token.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout ||
@@ -93,20 +93,34 @@ public sealed partial class Utf8Regex
 
         ref readonly var plan = ref _preparedRegex.SearchPlan;
         if (plan is not { Kind: Utf8SearchKind.AsciiFoldedByteLiteral, HasBoundaryRequirements: false,
-                HasTrailingLiteralRequirement: false, LiteralUtf8: { Length: > 0 and <= EarlyFoldedPrefixLength } literal })
+                HasTrailingLiteralRequirement: false, LiteralUtf8: { Length: > 0 and <= MaximumFoldedSearchLiteralLength } literal })
             return false;
 
-        var window = input[..EarlyFoldedPrefixLength];
+        var kelvinLead = "K"u8[0];
         var first = literal[0];
         var other = (uint)((first | 0x20) - 'a') <= 'z' - 'a' ? (byte)(first ^ 0x20) : first;
-        var start = window.IndexOfAny(first, other, "K"u8[0]);
-        // An earlier match of the same fixed scalar length can overlap this
-        // ASCII hit. Any Kelvin alias in that match must precede the hit,
-        // so a preceding Kelvin lead byte leaves the normal matcher in charge.
-        if ((uint)start > (uint)(window.Length - literal.Length) ||
-            !System.Text.Ascii.EqualsIgnoreCase(window.Slice(start, literal.Length), literal) ||
-            GetOwnedSliceProgram(ReadOnlySpan<byte>.Empty) is not null) return false;
-        match = new Utf8CaptureRange(start, start + literal.Length);
+        var lastStart = input.Length - literal.Length;
+        var found = -1;
+        for (var floor = 0; floor < input.Length;)
+        {
+            var offset = input[floor..].IndexOfAny(first, other, kelvinLead);
+            if (offset < 0) break;
+            var start = floor + offset;
+            // An alias can complete a candidate that started earlier. Leave
+            // all such leads to existing discovery, including dense nonaliases.
+            if (input[start] == kelvinLead) return false;
+            if (start <= lastStart && System.Text.Ascii.EqualsIgnoreCase(input.Slice(start, literal.Length), literal))
+            {
+                found = start;
+                break;
+            }
+            floor = start + 1;
+        }
+
+        // An earlier match consumes the same number of scalars. If it
+        // overlaps the confirmed ASCII hit, its Kelvin alias must precede it.
+        if (GetOwnedSliceProgram(ReadOnlySpan<byte>.Empty) is not null) return false;
+        if (found >= 0) match = new Utf8CaptureRange(found, found + literal.Length);
         return true;
     }
 

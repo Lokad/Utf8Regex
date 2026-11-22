@@ -78,7 +78,7 @@ public sealed class Utf8LiteralMatchProbeTests
     }
 
     [Fact]
-    public void EarlyFoldedMatchPreservesKelvinOrderAndScalarBoundaries()
+    public void FoldedStarterScanPreservesKelvinOrderAndScalarBoundaries()
     {
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
         using var folded = new Utf8Regex("kilo", options);
@@ -93,6 +93,14 @@ public sealed class Utf8LiteralMatchProbeTests
         using var overlapping = new Utf8Regex("kk", options);
         var earlierAlias = Encoding.UTF8.GetBytes("KKK" + tail);
         Assert.Equal(new Utf8CaptureRange(0, 4), overlapping.Match(earlierAlias));
+
+        using var lateAlias = new Utf8Regex("abcdk", options);
+        var aliasAtEnd = Encoding.UTF8.GetBytes(new string('!', 96) + "ABCDK");
+        Assert.True(lateAlias.IsMatch(aliasAtEnd));
+        Assert.Equal(new Utf8CaptureRange(96, 103), lateAlias.Match(aliasAtEnd));
+
+        var decoys = Encoding.UTF8.GetBytes("K!€" + new string('!', 96) + "KILO");
+        Assert.Equal(new Utf8CaptureRange(101, 105), folded.Match(decoys));
 
         using var word = new Utf8Regex(@"\bkilo\b", options);
         var noBoundary = Encoding.UTF8.GetBytes(new string('!', 60) + "KILOé" + new string('!', 96));
