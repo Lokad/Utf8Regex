@@ -1455,35 +1455,7 @@ internal static class Pcre2BacktrackingRunner
                             (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 && inputIndex == reportedStartOffsetInBytes ||
                             (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0 &&
                             candidate == firstMatchingPosition && inputIndex == reportedStartOffsetInBytes;
-                        if (!acceptEmptyDisallowed)
-                        {
-                            ThrowIfDisallowedNonMonotoneLookaroundReset(
-                                program,
-                                isAssertion,
-                                matchBoundaryWasReset,
-                                reportedStartOffsetInBytes,
-                                candidate,
-                                inputIndex);
-                            var acceptedCaptures = MaterializeCaptureResult(
-                                captureMaterialization,
-                                program.CaptureSlotCount,
-                                reportedStartOffsetInBytes,
-                                inputIndex,
-                                captureStarts,
-                                captureEnds,
-                                ref projectionInput, ref budget, destination);
-                            failure = default;
-                            match = new Pcre2BacktrackingMatch(
-                                true,
-                                reportedStartOffsetInBytes,
-                                inputIndex,
-                                candidate,
-                                inputIndex,
-                                matchBoundaryWasReset,
-                                acceptedCaptures,
-                                GetMark(program, currentMarkId));
-                            return true;
-                        }
+                        if (!acceptEmptyDisallowed) goto PublishMatch;
                         break;
 
                     case Pcre2BacktrackingInstructionKind.ControlFail:
@@ -1546,35 +1518,7 @@ internal static class Pcre2BacktrackingRunner
                             (matchOptions & Pcre2MatchOptions.EndAnchored) != 0;
                         var emptyDisallowed = (matchOptions & Pcre2MatchOptions.NotEmpty) != 0 && inputIndex == reportedStartOffsetInBytes ||
                             (matchOptions & Pcre2MatchOptions.NotEmptyAtStart) != 0 && candidate == firstMatchingPosition && inputIndex == reportedStartOffsetInBytes;
-                        if ((!endAnchored || inputIndex == input.Length) && !emptyDisallowed)
-                        {
-                            ThrowIfDisallowedNonMonotoneLookaroundReset(
-                                program,
-                                isAssertion,
-                                matchBoundaryWasReset,
-                                reportedStartOffsetInBytes,
-                                candidate,
-                                inputIndex);
-                            var captures = MaterializeCaptureResult(
-                                captureMaterialization,
-                                program.CaptureSlotCount,
-                                reportedStartOffsetInBytes,
-                                inputIndex,
-                                captureStarts,
-                                captureEnds,
-                                ref projectionInput, ref budget, destination);
-                            match = new Pcre2BacktrackingMatch(
-                                true,
-                                reportedStartOffsetInBytes,
-                                inputIndex,
-                                candidate,
-                                inputIndex,
-                                matchBoundaryWasReset,
-                                captures,
-                                GetMark(program, currentMarkId));
-                            failure = default;
-                            return true;
-                        }
+                        if ((!endAnchored || inputIndex == input.Length) && !emptyDisallowed) goto PublishMatch;
                         break;
 
                     default:
@@ -1618,6 +1562,34 @@ internal static class Pcre2BacktrackingRunner
                     return false;
                 }
             }
+
+        PublishMatch:
+            ThrowIfDisallowedNonMonotoneLookaroundReset(
+                program,
+                isAssertion,
+                matchBoundaryWasReset,
+                reportedStartOffsetInBytes,
+                candidate,
+                inputIndex);
+            var captures = MaterializeCaptureResult(
+                captureMaterialization,
+                program.CaptureSlotCount,
+                reportedStartOffsetInBytes,
+                inputIndex,
+                captureStarts,
+                captureEnds,
+                ref projectionInput, ref budget, destination);
+            match = new Pcre2BacktrackingMatch(
+                true,
+                reportedStartOffsetInBytes,
+                inputIndex,
+                candidate,
+                inputIndex,
+                matchBoundaryWasReset,
+                captures,
+                GetMark(program, currentMarkId));
+            failure = default;
+            return true;
         }
         finally
         {
