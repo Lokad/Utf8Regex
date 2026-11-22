@@ -279,6 +279,11 @@ See the [release notes](../../CHANGELOG.md) for upgrades and version history.
 The [PCRE2 summary](../../bench/Snapshots/Pcre2.json) records the measured source,
 runtime and comparator qualification for each byte-operation row.
 
+The `simple/ab-plus` Count ratio reflects the archived paired run. In fixed-CPU
+replays with matching results and native settings, the native Count median
+ranged from 0.34 to 1.07 µs across processes. Running a Count workload first
+reproduced the faster timing with the same benchmark binary.
+
 <!-- BEGIN GENERATED PCRE2 BENCHMARKS -->
 ## Benchmarks
 
