@@ -723,8 +723,16 @@ internal static partial class Utf8SliceRunner
         var classStart = position;
         var classMaximum = leadingClass >= 0 ? program.Instructions[leadingClass - 1].RepeatMaximum : 0;
         var ascii = default(Utf8SearchAsciiSet);
-        var hasAsciiMask = directClassLiteral && (classMaximum == long.MaxValue || classMaximum <= 4) &&
-            program.TryGetUnfoldedAsciiSet(code[leadingClass], out ascii, out _);
+        var hasAsciiMask = false;
+        if (directClassLiteral && (classMaximum == long.MaxValue || classMaximum <= 4))
+        {
+            if (program.LeadingScalarIsDecimal && leadingClass == program.LeadingByteCandidate.InstructionIndex)
+            {
+                ascii = Utf8SearchAsciiSet.FromMasks(Utf8AsciiBytePredicates.DecimalMask, 0);
+                hasAsciiMask = true;
+            }
+            else hasAsciiMask = program.TryGetUnfoldedAsciiSet(code[leadingClass], out ascii, out _);
+        }
         for (long remaining = classMaximum; remaining > 0 && position > floor; remaining--)
         {
             var breach = invocation.TryChargeInputStep();

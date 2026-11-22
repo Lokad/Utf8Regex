@@ -762,13 +762,18 @@ internal static partial class Utf8SliceRunner
             if (leadingPrefix.IsEmpty && leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                 (uint)(input[position + 1] - second) > (uint)(secondLast - second)))
                 continue;
-            // A delimiter window can include interior digits and the
-            // delimiter itself. ASCII starts must be digits and cannot
-            // follow another ASCII word byte. The VM checks wider neighbors.
-            if (screenDecimalWindow && (position == input.Length || input[position] < 128 &&
-                (!Utf8AsciiBytePredicates.IsDigit(input[position]) ||
-                    position > 0 && Utf8AsciiBytePredicates.IsWord(input[position - 1]))))
-                continue;
+            var provedAsciiBoundary = false;
+            if (screenDecimalWindow)
+            {
+                if (position == input.Length) continue;
+                if (input[position] < 128)
+                {
+                    if (!Utf8AsciiBytePredicates.IsDigit(input[position])) continue;
+                    var previous = position == 0 ? (byte)0 : input[position - 1];
+                    if (Utf8AsciiBytePredicates.IsWord(previous)) continue;
+                    provedAsciiBoundary = previous < 128;
+                }
+            }
             if (seekDecimal && IsNonDecimalWideStart(input, position))
                 continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
@@ -788,9 +793,9 @@ internal static partial class Utf8SliceRunner
                 if (reuseDecimalWindow && position < classWindowEnd)
                 {
                     // Rewind already admitted a nonempty decimal run ending at
-                    // this excluded delimiter. Check its leading boundary and
-                    // start the bounded proof at the repeat's continuation.
-                    if (!MatchesBoundary(program, first, input, position)) continue;
+                    // this excluded delimiter. Confirm any remaining Unicode
+                    // boundary and start the proof at the continuation.
+                    if (!provedAsciiBoundary && !MatchesBoundary(program, first, input, position)) continue;
                     proofPosition = classWindowEnd;
                     proofStart = program.Instructions[1].A + 1;
                     if (followingWindowEnd > 0)
