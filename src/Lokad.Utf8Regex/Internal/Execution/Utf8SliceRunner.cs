@@ -1515,7 +1515,7 @@ internal static partial class Utf8SliceRunner
                         if (counts.Length == 0 || counts[repeatId] == -1 && positions[repeatId] == -1)
                         {
                             count = 0;
-                            Utf8SliceMatchOutcome repeated;
+                            (int EndIndex, Utf8ExecutionLimitKind Breach) repeated;
                             int continuation;
                             bool ranWithoutRewind;
                             // Both proofs verify the atom and exit during preparation.
@@ -1523,8 +1523,7 @@ internal static partial class Utf8SliceRunner
                             if ((cursor.RequiredEnd is null && program.SkipsTerminalRewind(programIndex)) ||
                                 instructions[instruction.A].RepeatExitRejectsShorterEndpoints)
                             {
-                                var run = RunClassRepeat(program, programIndex, input, inputIndex, ref invocation);
-                                repeated = new(run.EndIndex >= 0, run.EndIndex, run.Breach, null, null);
+                                repeated = RunClassRepeat(program, programIndex, input, inputIndex, ref invocation);
                                 continuation = instruction.A + 1;
                                 ranWithoutRewind = true;
                             }
@@ -1536,8 +1535,9 @@ internal static partial class Utf8SliceRunner
                             }
                             if (ranWithoutRewind)
                             {
-                                if (repeated.Breach != Utf8ExecutionLimitKind.None) return repeated;
-                                if (repeated.IsMatch)
+                                if (repeated.Breach != Utf8ExecutionLimitKind.None)
+                                { failure = repeated.Breach; goto Failure; }
+                                if (repeated.EndIndex >= 0)
                                 {
                                     inputIndex = repeated.EndIndex;
                                     // Fusion never activates the repeat counters.

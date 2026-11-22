@@ -591,9 +591,9 @@ internal static partial class Utf8SliceRunner
 
     private static bool TryRunClassRepeatWithoutRewind(Utf8SliceProgram program, int repeatIndex,
         ReadOnlySpan<byte> input, int start, int? requiredEnd, ref Utf8SliceInvocation invocation,
-        out Utf8SliceMatchOutcome outcome, out int continuation, bool existenceOnly)
+        out (int EndIndex, Utf8ExecutionLimitKind Breach) outcome, out int continuation, bool existenceOnly)
     {
-        outcome = default;
+        outcome = (-1, Utf8ExecutionLimitKind.None);
         continuation = 0;
         var instructions = program.Instructions;
         var repeat = instructions[repeatIndex];
@@ -613,9 +613,7 @@ internal static partial class Utf8SliceRunner
             // The terminal dot reaches the same end on either side of one
             // non-LF scalar. Run the greedy choice and leave captures to the VM.
             var optionalBreach = TryMatchOptionalScalar(program, atom, input, start, ref invocation, out var width);
-            outcome = optionalBreach == Utf8ExecutionLimitKind.None
-                ? new(true, start + width, optionalBreach, null, null)
-                : new(false, -1, optionalBreach, null, null);
+            outcome = (optionalBreach == Utf8ExecutionLimitKind.None ? start + width : -1, optionalBreach);
             return true;
         }
         if (requiredEnd is null && (existenceOnly || repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy) &&
@@ -623,16 +621,14 @@ internal static partial class Utf8SliceRunner
         {
             // The unconditional empty path makes shorter greedy endpoints
             // unnecessary. Value results still run the tail in normal order.
-            var run = RunClassRepeat(program, repeatIndex, input, start, ref invocation, minimumOnly: existenceOnly);
-            outcome = new(run.EndIndex >= 0, run.EndIndex, run.Breach, null, null);
+            outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation, minimumOnly: existenceOnly);
             if (existenceOnly) continuation = instructions.Length - 1;
             return true;
         }
         // A fixed count excludes shorter endpoints.
         if (repeat.RepeatMinimum == repeat.RepeatMaximum)
         {
-            var fixedRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
-            outcome = new(fixedRepeat.EndIndex >= 0, fixedRepeat.EndIndex, fixedRepeat.Breach, null, null);
+            outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             return true;
         }
         var tail = repeatIndex + 4;
@@ -657,8 +653,7 @@ internal static partial class Utf8SliceRunner
             var end = input.Length - suffixWidth;
             if (end < 0 || (uint)start > (uint)end ||
                 (input[start] & 0xC0) == 0x80 || (input[end] & 0xC0) == 0x80) return true;
-            var endRepeat = RunClassRepeat(program, repeatIndex, input[..end], start, ref invocation);
-            outcome = new(endRepeat.EndIndex >= 0, endRepeat.EndIndex, endRepeat.Breach, null, null);
+            outcome = RunClassRepeat(program, repeatIndex, input[..end], start, ref invocation);
             return true;
         }
         if (repeat.Kind == Utf8SliceInstructionKind.RepeatLazy && atom.Kind == Utf8SliceInstructionKind.Dot &&
@@ -696,8 +691,7 @@ internal static partial class Utf8SliceRunner
             suffix.Kind == Utf8SliceInstructionKind.AtomicCommit ||
             suffix is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd })
         {
-            var terminalRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
-            outcome = new(terminalRepeat.EndIndex >= 0, terminalRepeat.EndIndex, terminalRepeat.Breach, null, null);
+            outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             return true;
         }
         if (requiredEnd is null && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
@@ -712,8 +706,7 @@ internal static partial class Utf8SliceRunner
             {
                 // Greedy DotAll reaches EOF, where this complete end tail always
                 // succeeds. Required assertion endpoints and consuming tails stay opaque.
-                var endRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
-                outcome = new(endRepeat.EndIndex >= 0, endRepeat.EndIndex, endRepeat.Breach, null, null);
+                outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
                 return true;
             }
         }
@@ -727,7 +720,7 @@ internal static partial class Utf8SliceRunner
             var proofBreach = invocation.TryChargeStep();
             if (proofBreach != Utf8ExecutionLimitKind.None)
             {
-                outcome = new(false, -1, proofBreach, null, null);
+                outcome = (-1, proofBreach);
                 return true;
             }
             var window = input.Slice(start, Math.Min(input.Length - start, (int)repeat.RepeatMaximum));
@@ -741,7 +734,7 @@ internal static partial class Utf8SliceRunner
                 proofBreach = TryMatchScalarClass(program, atom, new Rune(value), ref invocation, out var consumesNonword);
                 if (proofBreach != Utf8ExecutionLimitKind.None)
                 {
-                    outcome = new(false, -1, proofBreach, null, null);
+                    outcome = (-1, proofBreach);
                     return true;
                 }
                 onlyWordCanBeConsumed = !consumesNonword;
@@ -749,8 +742,7 @@ internal static partial class Utf8SliceRunner
             }
             if (onlyWordCanBeConsumed)
             {
-                var wordRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
-                outcome = new(wordRepeat.EndIndex >= 0, wordRepeat.EndIndex, wordRepeat.Breach, null, null);
+                outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
                 return true;
             }
         }
@@ -780,11 +772,10 @@ internal static partial class Utf8SliceRunner
                 // ASCII set at only one scalar. Check that member directly.
                 var proofBreach = invocation.TryChargeStep();
                 if (proofBreach != Utf8ExecutionLimitKind.None)
-                { outcome = new(false, -1, proofBreach, null, null); return true; }
+                { outcome = (-1, proofBreach); return true; }
                 var value = atom.A;
                 if ((uint)value < 128 && (mask[value >> 3] & (1 << (value & 7))) != 0) return false;
-                var literalRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
-                outcome = new(literalRepeat.EndIndex >= 0, literalRepeat.EndIndex, literalRepeat.Breach, null, null);
+                outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
                 return true;
             }
             if (atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 } or
@@ -797,13 +788,12 @@ internal static partial class Utf8SliceRunner
                 {
                     var proofBreach = invocation.TryChargeStep();
                     if (proofBreach != Utf8ExecutionLimitKind.None)
-                    { outcome = new(false, -1, proofBreach, null, null); return true; }
+                    { outcome = (-1, proofBreach); return true; }
                     var bits = BinaryPrimitives.ReadUInt64LittleEndian(own[offset..]);
                     if (atom.B != 0) bits = ~bits;
                     if ((bits & BinaryPrimitives.ReadUInt64LittleEndian(mask[offset..])) != 0) return false;
                 }
-                var maskRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
-                outcome = new(maskRepeat.EndIndex >= 0, maskRepeat.EndIndex, maskRepeat.Breach, null, null);
+                outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
                 return true;
             }
             Func<int, bool>? predicate = null;
@@ -839,15 +829,14 @@ internal static partial class Utf8SliceRunner
                     }
                     if (proofBreach != Utf8ExecutionLimitKind.None)
                     {
-                        outcome = new(false, -1, proofBreach, null, null);
+                        outcome = (-1, proofBreach);
                         return true;
                     }
                     if (overlaps) return false;
                     bits &= bits - 1;
                 }
             }
-            var setRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
-            outcome = new(setRepeat.EndIndex >= 0, setRepeat.EndIndex, setRepeat.Breach, null, null);
+            outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             return true;
         }
         if (following.Kind is Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid &&
@@ -855,8 +844,7 @@ internal static partial class Utf8SliceRunner
             TryGetPositiveCategorySet(program, following, out var nextCategories, out var nextLow, out var nextHigh) &&
             (ownCategories & nextCategories) == 0 && (ownLow & nextLow) == 0 && (ownHigh & nextHigh) == 0)
         {
-            var classRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
-            outcome = new(classRepeat.EndIndex >= 0, classRepeat.EndIndex, classRepeat.Breach, null, null);
+            outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
             return true;
         }
         var leadingBoundary = -1;
@@ -899,7 +887,7 @@ internal static partial class Utf8SliceRunner
             breach = TryMatchScalarClass(program, atom, new Rune(excludedScalar), ref invocation, out includesLiteral);
         if (breach != Utf8ExecutionLimitKind.None)
         {
-            outcome = new(false, -1, breach, null, null);
+            outcome = (-1, breach);
             return true;
         }
         if (includesLiteral)
@@ -912,7 +900,7 @@ internal static partial class Utf8SliceRunner
                 // Four bytes per scalar is a conservative upper bound on its reach.
                 breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None)
-                { outcome = new(false, -1, breach, null, null); return true; }
+                { outcome = (-1, breach); return true; }
                 Span<byte> prefix = stackalloc byte[8];
                 prefix[0] = (byte)suffix.A;
                 var prefixLength = 1;
@@ -930,7 +918,7 @@ internal static partial class Utf8SliceRunner
                 breach = invocation.TryChargeInputStep();
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (breach != Utf8ExecutionLimitKind.None || !possible)
-                { outcome = new(false, -1, breach, null, null); return true; }
+                { outcome = (-1, breach); return true; }
             }
             return TryRunGreedyRepeatTerminalLiteral(program, repeatIndex, tail, leadingBoundary, input, start,
                 requiredEnd, ref invocation, out outcome);
@@ -942,13 +930,12 @@ internal static partial class Utf8SliceRunner
                 breach = TryMatchScalarClass(program, atom, new Rune(alternateScalar), ref invocation, out includesLiteral);
             if (breach != Utf8ExecutionLimitKind.None)
             {
-                outcome = new(false, -1, breach, null, null);
+                outcome = (-1, breach);
                 return true;
             }
             if (includesLiteral) return false;
         }
-        var finalRepeat = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
-        outcome = new(finalRepeat.EndIndex >= 0, finalRepeat.EndIndex, finalRepeat.Breach, null, null);
+        outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
         return true;
     }
 
@@ -1191,14 +1178,14 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static Utf8SliceMatchOutcome FindLazyDotLiteral(ReadOnlySpan<byte> input, int position,
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) FindLazyDotLiteral(ReadOnlySpan<byte> input, int position,
         byte literal, bool singleline, ref Utf8SliceInvocation invocation)
     {
         while (position < input.Length)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None)
-                return new(false, -1, breach, null, null);
+                return (-1, breach);
             var length = Math.Min(2048, input.Length - position);
             var block = input.Slice(position, length);
             var relative = singleline ? block.IndexOf(literal) : block.IndexOfAny(literal, (byte)'\n');
@@ -1208,18 +1195,18 @@ internal static partial class Utf8SliceRunner
                 // ASCII endpoints cannot land inside a valid UTF-8 scalar.
                 // LF itself is a valid endpoint if the literal consumes it.
                 var found = block[relative] == literal;
-                return new(found, found ? position + relative : -1, Utf8ExecutionLimitKind.None, null, null);
+                return (found ? position + relative : -1, Utf8ExecutionLimitKind.None);
             }
             position += length;
         }
-        return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+        return (-1, Utf8ExecutionLimitKind.None);
     }
 
     private static bool TryRunGreedyRepeatTerminalLiteral(Utf8SliceProgram program, int repeatIndex, int tail, int leadingBoundary,
         ReadOnlySpan<byte> input, int start, int? requiredEnd, ref Utf8SliceInvocation invocation,
-        out Utf8SliceMatchOutcome outcome)
+        out (int EndIndex, Utf8ExecutionLimitKind Breach) outcome)
     {
-        outcome = default;
+        outcome = (-1, Utf8ExecutionLimitKind.None);
         // Prove the literal through Accept before discarding rewind choices.
         // Capture boundaries still execute in the VM at the selected endpoint.
         if (program.HasBalancing) return false;
@@ -1259,7 +1246,7 @@ internal static partial class Utf8SliceRunner
         if (run.EndIndex < 0 || run.Breach != Utf8ExecutionLimitKind.None)
         {
             invocation.Budget.CheckDeadline();
-            outcome = new(false, -1, run.Breach, null, null);
+            outcome = (-1, run.Breach);
             return true;
         }
 
@@ -1280,7 +1267,7 @@ internal static partial class Utf8SliceRunner
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None)
             {
-                outcome = new(false, -1, breach, null, null);
+                outcome = (-1, breach);
                 return true;
             }
             var first = Math.Max(minimumEnd, last - (2048 - length));
@@ -1304,7 +1291,7 @@ internal static partial class Utf8SliceRunner
         }
         invocation.Budget.ThrowIfCancellationRequested();
         invocation.Budget.CheckDeadline();
-        outcome = new(selected >= 0, selected, Utf8ExecutionLimitKind.None, null, null);
+        outcome = (selected, Utf8ExecutionLimitKind.None);
         return true;
     }
 
