@@ -18,7 +18,7 @@ public sealed partial class Utf8Regex
 
     private Utf8AnalyzedReplacement AnalyzeReplacement(ReadOnlySpan<byte> replacement)
         => Utf8FrontEndReplacementAnalyzer.Analyze(replacement, _groupNumbers, _groupNames,
-            (Options & System.Text.RegularExpressions.RegexOptions.ECMAScript) != 0);
+            (Options & System.Text.RegularExpressions.RegexOptions.ECMAScript) != 0, _wholeLiteralCaptureNumber);
 
     private Utf8AnalyzedReplacement PrepareBorrowedReplacement(ReadOnlySpan<byte> replacement, ReplacementPreparationControl control)
     {

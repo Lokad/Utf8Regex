@@ -245,8 +245,6 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
     [InlineData("unknown-literal")]
     [InlineData("numeric")]
     [InlineData("literal-text")]
-    [InlineData("rewrite-simple")]
-    [InlineData("rewrite-tree")]
     public void StandaloneFactoriesKeepEveryWorkCutoffAndInterruptionInTheParentOwner(string stage)
     {
         var operation = Stage(stage);
@@ -345,17 +343,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
             case "unknown-literal": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a${x}$0012z"u8);
             case "numeric": return () => Utf8FrontEndReplacementAnalyzer.Analyze("a$1z"u8, [0, 1], ["zero", "one"]);
             case "literal-text": return () => Utf8FrontEndReplacementAnalyzer.Analyze("é😀$literalé"u8);
-            default:
-                var regex = new Utf8Regex(stage == "rewrite-simple" ? "(abc)" : "((?:ab|cd))");
-                var plan = Utf8FrontEndReplacementAnalyzer.Analyze("x$1$1z"u8, [0, 1], ["zero", "one"]).Plan;
-                var method = typeof(Utf8Regex).GetMethod("RewriteWholeLiteralCapturePlan", BindingFlags.Instance | BindingFlags.NonPublic)
-                    ?? throw new InvalidOperationException();
-                return () =>
-                {
-                    try { return method.Invoke(regex, [plan]) ?? throw new InvalidOperationException(); }
-                    catch (TargetInvocationException failure) when (failure.InnerException is not null)
-                    { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure.InnerException).Throw(); throw; }
-                };
+            default: throw new ArgumentOutOfRangeException(nameof(stage));
         }
     }
 }

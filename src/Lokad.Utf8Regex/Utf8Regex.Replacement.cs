@@ -45,7 +45,7 @@ public sealed partial class Utf8Regex
             return true;
         }
 
-        var plan = RewriteWholeLiteralCapturePlan(replacement.Plan);
+        var plan = replacement.Plan;
         // A folded match can differ from the pattern bytes. Each replacement
         // must use the actual subject bytes for the whole match.
         if (_preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase)
@@ -203,40 +203,8 @@ public sealed partial class Utf8Regex
 
     private bool TryGetNativeReplacementPlan(Utf8AnalyzedReplacement replacement, out Utf8ReplacementPlan plan)
     {
-        plan = RewriteWholeLiteralCapturePlan(replacement.Plan);
+        plan = replacement.Plan;
         return !replacement.IsLiteral && Utf8NativeReplacementExecutor.CanExecute(plan);
-    }
-
-    private Utf8ReplacementPlan RewriteWholeLiteralCapturePlan(Utf8ReplacementPlan plan)
-    {
-        var captureNumber = _wholeLiteralCaptureNumber;
-        if (captureNumber == 0) return plan;
-        using var owner = Utf8ConstructionScope.Enter();
-        using var storage = Utf8ConstructionSession.Create(owner.Budget);
-
-        Utf8ConstructionBuffer<Utf8ReplacementInstruction>? rewritten = null;
-        for (var i = 0; i < plan.Instructions.Count; i++)
-        {
-            storage.Budget.ChargeWork(1);
-            var instruction = plan.Instructions[i];
-            if (instruction.Kind == Utf8ReplacementInstructionKind.Group && instruction.GroupNumber == captureNumber)
-            {
-                if (rewritten is null)
-                {
-                    rewritten = storage.Buffer<Utf8ReplacementInstruction>();
-                    for (var j = 0; j < plan.Instructions.Count; j++)
-                    {
-                        storage.Budget.ChargeWork(1);
-                        rewritten.Add(plan.Instructions[j]);
-                    }
-                }
-                rewritten[i] = Utf8ReplacementInstruction.WholeMatch();
-            }
-        }
-        if (rewritten is null) return plan;
-        var result = Utf8ReplacementPlan.Create(storage, rewritten.Span);
-        storage.Complete(); owner.Complete();
-        return result;
     }
 
     private static int GetWholeLiteralCaptureNumber(Utf8TreeNode? root)

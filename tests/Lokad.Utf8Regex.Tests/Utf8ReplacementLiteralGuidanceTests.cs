@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -53,6 +54,22 @@ public sealed class Utf8ReplacementLiteralGuidanceTests
         var input = Encoding.UTF8.GetBytes(text);
         Assert.Equal(expected, Encoding.UTF8.GetString(regex.Replace(input, Encoding.UTF8.GetBytes(template))));
         Assert.Equal(Encoding.UTF8.GetBytes(expected), regex.Replace(input, Encoding.UTF8.GetBytes(template)));
+    }
+
+    [Fact]
+    public void CachedWholeCaptureTemplateWorksWithTheScalarWriter()
+    {
+        using var regex = new Utf8Regex("(?<word>cat|cater)", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        ReadOnlySpan<byte> input = "😀cater cat"u8;
+        ReadOnlySpan<byte> template = "[${word}:$1]"u8;
+        ReadOnlySpan<byte> expected = "😀[cat:cat]er [cat:cat]"u8;
+        Assert.Equal(expected.ToArray(), regex.Replace(input, template));
+
+        using var cancellation = new CancellationTokenSource();
+        Span<byte> destination = stackalloc byte[64];
+        Assert.Equal(OperationStatus.Done,
+            regex.TryReplace(input, template, destination, out var written, cancellation.Token));
+        Assert.Equal(expected.ToArray(), destination[..written].ToArray());
     }
 
     [Fact]
