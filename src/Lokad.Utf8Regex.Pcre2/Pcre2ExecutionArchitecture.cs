@@ -2771,9 +2771,12 @@ internal struct Pcre2ResourceBudget
     }
 
     // One-shot dispatch can enter the shared VM using the same owner and hook.
-    internal static Pcre2ResourceBudget CreateExclusive(Pcre2CompileRequest request,
+    internal Pcre2ResourceBudget(Pcre2CompileRequest request,
         CancellationToken token, IUtf8MemoryAllowance? allowance = null)
-        => new(request.DefaultLimits, Pcre2SliceDriver.CreateExclusiveInvocation(request, token, allowance), diagnostics: null);
+    {
+        Limits = request.DefaultLimits;
+        Utf8SliceInvocation.InitializeExclusive(out _invocation, Limits.ToSliceLimits(), request.MatchTimeout, token, allowance);
+    }
 
     internal Utf8Pcre2ExecutionLimits Limits { get; }
 

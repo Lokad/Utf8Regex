@@ -158,7 +158,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     private bool IsMatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions,
         CancellationToken cancellationToken, IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
-        var budget = Pcre2ResourceBudget.CreateExclusive(_program.Request, cancellationToken, workingMemoryAllowance);
+        var budget = new Pcre2ResourceBudget(_program.Request, cancellationToken, workingMemoryAllowance);
         ref var invocation = ref budget.WorkingInvocation;
         try
         {
@@ -268,7 +268,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     private Utf8Pcre2ValueMatch MatchCore(ReadOnlySpan<byte> input, int startOffsetInBytes, Pcre2MatchOptions matchOptions, CancellationToken cancellationToken,
         IUtf8MemoryAllowance? workingMemoryAllowance, scoped Span<Utf8Pcre2CaptureRange> output)
     {
-        var budget = Pcre2ResourceBudget.CreateExclusive(_program.Request, cancellationToken, workingMemoryAllowance);
+        var budget = new Pcre2ResourceBudget(_program.Request, cancellationToken, workingMemoryAllowance);
         ref var invocation = ref budget.WorkingInvocation;
         try
         {
@@ -322,7 +322,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         scoped Span<Utf8Pcre2CaptureRange> output, Pcre2MatchOptions matchOptions, CancellationToken token,
         IUtf8MemoryAllowance? workingMemoryAllowance)
     {
-        var budget = Pcre2ResourceBudget.CreateExclusive(_program.Request, token, workingMemoryAllowance);
+        var budget = new Pcre2ResourceBudget(_program.Request, token, workingMemoryAllowance);
         budget.WorkingInvocation.CheckpointHook = null;
         try
         {

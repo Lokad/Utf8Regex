@@ -75,7 +75,7 @@ public sealed class Pcre2ValueInvocationAuthorityTests
         var regex = new Utf8Pcre2Regex(pattern);
         var input = Encoding.UTF8.GetBytes(text);
         var compiled = regex.DebugCompiledProgram;
-        var budget = Pcre2ResourceBudget.CreateExclusive(compiled.Request, source.Token);
+        var budget = new Pcre2ResourceBudget(compiled.Request, source.Token);
         var subject = Pcre2Runner.PrepareInput(input, 0, ref budget.WorkingInvocation);
         source.Cancel();
         Exception? failure = null;
