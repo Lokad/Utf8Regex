@@ -1,4 +1,7 @@
+using System.Buffers;
+using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Replacement;
 
@@ -9,6 +12,40 @@ public sealed class Utf8ReplacementRangeAdmissionTests
 {
     // Complete modeled extent uses the actual production range layout.
     private static ulong Bytes(int count) => count == 0 ? 0 : 32UL + (((ulong)System.Runtime.CompilerServices.Unsafe.SizeOf<Utf8ReplacementRange>() * (ulong)count + 15) & ~15UL);
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ControlledBoundaryReplacementAdmitsRangeGrowthBeforeWriting(bool workingLimit)
+    {
+        const string pattern = @"\b(?:cat|dog)\b";
+        var subject = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("écat|😀dog😀 ", 129)));
+        var expected = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("écat|😀#😀 ", 129)));
+        var destination = new byte[expected.Length];
+        var rangeCapacity = Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementRange>(128) +
+            Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementRange>(256);
+        if (!workingLimit)
+            rangeCapacity += Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementRange>(16) +
+                Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementRange>(32) +
+                Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementRange>(64);
+        var kind = workingLimit ? Utf8ResourceLimitKind.ExecutionWorkingBytes : Utf8ResourceLimitKind.ExecutionResultBytes;
+        using var denied = Create(rangeCapacity - 1);
+        using var permitted = Create(rangeCapacity);
+        destination.AsSpan().Fill(0x5a);
+
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.TryReplace(subject, "#"u8, destination, out _));
+        Assert.Equal(kind, failure.ResourceKind);
+        Assert.Equal(rangeCapacity, failure.Requested);
+        Assert.All(destination, value => Assert.Equal((byte)0x5a, value));
+        Assert.Equal(OperationStatus.Done, permitted.TryReplace(subject, "#"u8, destination, out var written));
+        Assert.Equal(expected.Length, written);
+        Assert.Equal(expected, destination);
+
+        Utf8Regex Create(ulong capacity) => new(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = workingLimit ? new() { MaxWorkingBytes = capacity } : new() { MaxResultBytes = capacity }
+        });
+    }
 
     [Theory]
     [InlineData(0)] [InlineData(16)] [InlineData(2048)]

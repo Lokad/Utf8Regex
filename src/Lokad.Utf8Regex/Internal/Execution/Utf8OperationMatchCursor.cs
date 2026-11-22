@@ -15,6 +15,8 @@ internal ref partial struct Utf8OperationMatchCursor
     [UnscopedRef]
     internal Utf8InvocationBufferControl WorkingBufferControl => new(ref _sliceInvocation);
 
+    internal void ChargeResultBytes(ulong bytes) => Utf8SliceBufferWork.ChargeResultBytes(bytes, ref _sliceInvocation);
+
     internal void CheckCancellationAtEntry() => _sliceInvocation.Budget.ThrowIfCancellationRequested();
 
     internal ulong DebugInvocationSteps => _sliceInvocation.Budget.Steps;

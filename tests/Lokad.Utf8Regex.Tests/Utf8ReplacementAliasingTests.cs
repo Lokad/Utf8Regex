@@ -88,12 +88,14 @@ public sealed class Utf8ReplacementAliasingTests
     }
 
     [Theory]
-    [InlineData("#", "écat|😀#😀|dog\u200c|#")]
-    [InlineData("<$&>", "écat|😀<cat>😀|dog\u200c|<dog>")]
-    [InlineData("<${word}>", "écat|😀<cat>😀|dog\u200c|<dog>")]
-    public void BoundaryLiteralReplacementUsesScalarNeighborsWithAnAliasedTemplate(string template, string result)
+    [InlineData("#", "écat|😀#😀|dog\u200c|#", false)]
+    [InlineData("#", "écat|😀#😀|dog\u200c|#", true)]
+    [InlineData("<$&>", "écat|😀<cat>😀|dog\u200c|<dog>", false)]
+    [InlineData("<${word}>", "écat|😀<cat>😀|dog\u200c|<dog>", false)]
+    public void BoundaryLiteralReplacementUsesScalarNeighborsWithAnAliasedTemplate(string template, string result, bool finite)
     {
-        using var regex = new Utf8Regex(@"\b(?<word>cat|dog)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        using var regex = new Utf8Regex(@"\b(?<word>cat|dog)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            finite ? new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = 4096 } } : null);
         var subject = "écat|😀cat😀|dog\u200c|dog"u8;
         var replacement = Encoding.UTF8.GetBytes(template);
         var expected = Encoding.UTF8.GetBytes(result);

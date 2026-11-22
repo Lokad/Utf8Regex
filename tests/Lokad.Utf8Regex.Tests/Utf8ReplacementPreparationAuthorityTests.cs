@@ -87,6 +87,35 @@ public sealed class Utf8ReplacementPreparationAuthorityTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void BoundaryReplacementChecksOriginalInterruptionBeforePublishing(bool expire)
+    {
+        using var token = new CancellationTokenSource();
+        var timeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout;
+        using var regex = new Utf8Regex(@"\b(?:cat|dog)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            new() { MatchTimeout = timeout });
+        var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("écat|😀dog😀 ", 128)));
+        var destination = new byte[input.Length];
+        destination.AsSpan().Fill(0x5a);
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var diagnostics = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            if (steps < 64) return;
+            if (expire) ticks = 25;
+            else token.Cancel();
+        });
+        Exception? failure;
+        try { failure = Record.Exception(() => regex.TryReplace(input, "#"u8, destination, out _, token.Token)); }
+        finally { diagnostics.Complete(); }
+
+        if (expire) Assert.Equal(timeout, Assert.IsType<RegexMatchTimeoutException>(failure).MatchTimeout);
+        else Assert.Equal(token.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
+        Assert.All(destination, value => Assert.Equal((byte)0x5a, value));
+    }
+
+    [Theory]
     [InlineData(false)] [InlineData(true)]
     public void TimeoutOnlyCallsIncludePreparationWithoutForcingAToken(bool destinationOutput)
     {

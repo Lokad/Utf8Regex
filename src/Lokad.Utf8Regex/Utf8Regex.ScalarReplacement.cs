@@ -28,6 +28,11 @@ public sealed partial class Utf8Regex
         Utf8AnalyzedReplacement replacement, Utf8SliceReplacementResultKind resultKind, Span<byte> destination,
         Utf8SliceInvocation initialInvocation)
     {
+        if (resultKind == Utf8SliceReplacementResultKind.Destination && replacement.IsLiteral &&
+            !initialInvocation.IsUnmetered && CanUseControlledScalarBoundaryLiteralSearch(program) &&
+            !input.Overlaps(destination))
+            return ReplaceControlledBoundaryLiteral(input, replacement.LiteralUtf8, destination, initialInvocation);
+
         // A range costs less than staging a large literal for each hit. The
         // prepared template owns its bytes, so only subject overlap can
         // prevent direct publication. Short and structured templates use the
@@ -148,6 +153,19 @@ public sealed partial class Utf8Regex
             ranges.Dispose(new Utf8InvocationBufferControl(ref invocation));
             scope?.Release();
         }
+    }
+
+    private Utf8SliceReplacementResult ReplaceControlledBoundaryLiteral(ReadOnlySpan<byte> input,
+        ReadOnlySpan<byte> replacement, Span<byte> destination, Utf8SliceInvocation invocation)
+    {
+        var cursor = Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, invocation, byteFloor: 0);
+        try
+        {
+            var success = Utf8CursorReplaceEngine.TryReplace(input, replacement, destination, ref cursor, out var written);
+            return new([], success ? OperationStatus.Done : OperationStatus.DestinationTooSmall, written);
+        }
+        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && cursor.HasResourceLimitBreach)
+        { throw cursor.CreateExecutionResourceFailure(); }
     }
 
     // Subject preparation is complete. A miss needs only final bytes; keep

@@ -12,9 +12,10 @@ internal static class Utf8CursorReplaceEngine
         try
         {
             var reverse = cursor.IsRightToLeft;
-            var outputLength = BuildRanges(input.Length, replacement.Length, ref cursor, ref ledger);
+            var outputLength = checked((int)BuildRanges(input.Length, replacement.Length, ref cursor, ref ledger));
             replacementCount = ledger.Count;
-            var output = Utf8InvocationOutput.AllocateBytes(outputLength.Value, cursor.WorkingBufferControl, out outputReservation);
+            cursor.ChargeResultBytes(Utf8ConstructionBudget.ArrayBytes<byte>(outputLength));
+            var output = Utf8InvocationOutput.AllocateBytes(outputLength, cursor.WorkingBufferControl, out outputReservation);
             if (ledger.Count == 0) Utf8InvocationOutput.Copy(input, output, cursor.WorkingBufferControl);
             else Utf8ReplacementOutput.CopyLiteralRanges(input, replacement, output,
                 ledger.WrittenRanges, reverse, cursor.WorkingBufferControl);
@@ -35,20 +36,17 @@ internal static class Utf8CursorReplaceEngine
         {
             var reverse = cursor.IsRightToLeft;
             var outputLength = BuildRanges(input.Length, replacement.Length, ref cursor, ref ledger);
-            if (ledger.Count == 0)
+            if (outputLength > destination.Length)
             {
-                return Utf8ReplacementOutput.TryCopyUnchanged(input, destination, out bytesWritten, cursor.WorkingBufferControl);
-            }
-
-            if (outputLength.Value > destination.Length)
-            {
+                Utf8InvocationOutput.Checkpoint(cursor.WorkingBufferControl);
                 bytesWritten = 0;
                 return false;
             }
 
-            Utf8ReplacementOutput.CopyLiteralRanges(input, replacement, destination,
+            if (ledger.Count == 0) Utf8InvocationOutput.Copy(input, destination, cursor.WorkingBufferControl);
+            else Utf8ReplacementOutput.CopyLiteralRanges(input, replacement, destination,
                 ledger.WrittenRanges, reverse, cursor.WorkingBufferControl);
-            bytesWritten = outputLength.Value;
+            bytesWritten = (int)outputLength;
             return true;
         }
         finally
@@ -57,16 +55,18 @@ internal static class Utf8CursorReplaceEngine
         }
     }
 
-    private static Utf8ReplacementOutputLength BuildRanges(
+    private static long BuildRanges(
         int inputLength, int replacementLength, ref Utf8OperationMatchCursor cursor, ref Utf8ReplacementRangeLedger ledger)
     {
-        var outputLength = new Utf8ReplacementOutputLength(inputLength);
+        var outputLength = (long)inputLength;
         while (cursor.MoveNext())
         {
             var match = cursor.CurrentValueMatch;
-
-            ledger.Add(new Utf8ReplacementRange(match.StartOffsetInBytes, (match.EndOffsetInBytes - match.StartOffsetInBytes)), cursor.WorkingBufferControl);
-            outputLength.ReplaceRange((match.EndOffsetInBytes - match.StartOffsetInBytes), replacementLength);
+            var matchLength = match.EndOffsetInBytes - match.StartOffsetInBytes;
+            var growth = ledger.PendingGrowthBytes;
+            if (growth != 0) cursor.ChargeResultBytes(growth);
+            ledger.Add(new Utf8ReplacementRange(match.StartOffsetInBytes, matchLength), cursor.WorkingBufferControl);
+            outputLength += (long)replacementLength - matchLength;
         }
 
         return outputLength;
