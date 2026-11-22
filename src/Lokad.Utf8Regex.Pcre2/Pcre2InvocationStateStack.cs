@@ -95,7 +95,10 @@ internal ref struct Pcre2InvocationStateStack<T> where T : struct
 
     internal void Dispose(ref Pcre2ResourceBudget budget)
     {
-        if (_items is { } items) Utf8ExactStatePool<T>.Return(items, budget.CanRetainWorkspace);
+        // Failed growth refunds its new reservation before returning control.
+        // Without an acquired array there is no stack loan to release.
+        if (_items is not { } items) return;
+        Utf8ExactStatePool<T>.Return(items, budget.CanRetainWorkspace);
         _items = null;
         _count = 0;
         budget.ReleaseWorking(_reservedBytes);
