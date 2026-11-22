@@ -326,6 +326,15 @@ internal static partial class BenchmarkInspectReporter
                     var comparatorAllocation = MeasurePcre2QualificationAllocation(
                         comparatorAllocationProbeIterations,
                         comparatorAction);
+                    var operations = context.Utf8Pcre2Regex.DebugCompiledProgram.Operations;
+                    var managedRoute = operation switch
+                    {
+                        Utf8Pcre2BenchmarkOperation.IsMatch => operations.IsMatch.Kind,
+                        Utf8Pcre2BenchmarkOperation.Count => operations.Count.Kind,
+                        Utf8Pcre2BenchmarkOperation.EnumerateMatches => operations.Enumerate.Kind,
+                        Utf8Pcre2BenchmarkOperation.Replace => operations.Replace.Kind,
+                        _ => throw new ArgumentOutOfRangeException(nameof(operation))
+                    };
 
                     return new Pcre2PairedMeasurementJson
                     {
@@ -381,7 +390,7 @@ internal static partial class BenchmarkInspectReporter
                         BootstrapSeed = Pcre2QualificationBootstrapSeed,
                         BootstrapResamples = Pcre2QualificationBootstrapResamples,
                         ResultChecksum = expected.ToString(),
-                        ManagedRoute = context.Utf8Pcre2Regex.DebugExecutionKindName,
+                        ManagedRoute = managedRoute.ToString(),
                         ManagedPlan = context.Utf8Pcre2Regex.DebugDescribeExecutionPlan(),
                         Status = status,
                         StatusReason = statusReason
