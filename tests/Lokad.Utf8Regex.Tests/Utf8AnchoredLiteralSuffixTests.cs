@@ -12,18 +12,22 @@ public sealed class Utf8AnchoredLiteralSuffixTests
     [Fact]
     public void FinalScalarScreenRejectsBeforeWorkingAdmission()
     {
-        // Both tails can start at A. The successful case needs the saved
-        // alternative after the letter-only arm rejects the digit.
+        // A long label reaches the scalar verifier. Both tails start at A,
+        // so the hit needs a retry after the letter-only arm rejects the digit.
         const string pattern = @"\A(?:[a-z]+\.)+(?:[A-Z]{2,3}|[A-Z][0-9])\]?$";
+        var prefix = new string('a', 128) + ".A";
+        var hit = Encoding.UTF8.GetBytes(prefix + "1\n");
         using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy { MaxWorkingBytes = 1 }
         });
         using var token = new CancellationTokenSource();
-        Assert.False(regex.IsMatch("abc.A#\n"u8, token.Token));
-        Assert.Equal(0, regex.Count("abc.A#"u8, token.Token));
+        using var unrestricted = new Utf8Regex(pattern);
+        Assert.True(unrestricted.IsMatch(hit, token.Token));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(prefix + "#\n"), token.Token));
+        Assert.Equal(0, regex.Count(Encoding.UTF8.GetBytes(prefix + "#"), token.Token));
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkingBytes,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch("abc.A1\n"u8, token.Token)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(hit, token.Token)).ResourceKind);
     }
 
     [Theory]
