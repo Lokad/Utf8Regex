@@ -1383,10 +1383,8 @@ internal static partial class Utf8SliceRunner
                     }
                     if (proveMatch && singleAtom)
                     {
-                        var proof = TryMatchShortPrefixRepeat(program, input, position, index, entry, ref remaining,
+                        var proof = TryMatchPrefixRepeat(program, input, position, index, entry, ref remaining,
                             out acceptedEnd, out var continueAt);
-                        if (!proof.HasValue)
-                            proof = TryMatchGreedyPrefixRepeat(program, input, position, index - 1, ref remaining, out continueAt);
                         if (proof.HasValue)
                         {
                             if (continueAt < 0) return proof.Value;
@@ -1436,7 +1434,7 @@ internal static partial class Utf8SliceRunner
     // Leave the final endpoint for the caller's loop. Competing endpoints
     // still try their continuations before choosing the next one.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool? TryMatchShortPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
+    private static bool? TryMatchPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
         int atomIndex, Utf8SliceInstruction repeat, ref int remaining, out int acceptedEnd, out int continueAt)
     {
         acceptedEnd = -1;
@@ -1459,7 +1457,8 @@ internal static partial class Utf8SliceRunner
             return true;
         }
 
-        if (repeat.RepeatMaximum > 4) return null;
+        if (repeat.RepeatMaximum > 4)
+            return TryMatchGreedyPrefixRepeat(program, input, position, atomIndex - 1, ref remaining, out continueAt);
         Func<int, bool>? additionalAsciiMember = null;
         if (!program.TryGetUnfoldedAsciiSet(atom, out var ascii, out var asciiOnly))
         {
