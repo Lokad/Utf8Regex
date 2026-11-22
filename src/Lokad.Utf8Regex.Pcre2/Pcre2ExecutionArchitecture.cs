@@ -1878,7 +1878,7 @@ internal static class Pcre2GlobalOperationDriver
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         out Pcre2GlobalMatchCursor cursor,
-        Pcre2ResourceBudget budget)
+        scoped in Pcre2ResourceBudget budget)
     {
 
         if (compiledProgram.Operations.Enumerate is Pcre2SameStartLiteralDirectProgram sameStartLiteralProgram)
@@ -1952,7 +1952,7 @@ internal ref struct Pcre2GlobalMatchCursor
     private Pcre2LiteralFamilyGlobalMatchCursor _literalFamily;
     private Pcre2DirectGlobalMatchCursor _direct;
 
-    private Pcre2GlobalMatchCursor(Pcre2DirectGlobalMatchCursor direct)
+    private Pcre2GlobalMatchCursor(scoped in Pcre2DirectGlobalMatchCursor direct)
     {
         _kind = Pcre2GlobalCursorKind.Direct;
         _literalFamily = default;
@@ -1983,14 +1983,14 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget budget) =>
+        scoped in Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateLiteral(program, input, start, matchOptions, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateLiteralFamily(
         Pcre2LiteralFamilyDirectProgram program,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
-        Pcre2ResourceBudget budget) =>
+        scoped in Pcre2ResourceBudget budget) =>
         new(new Pcre2LiteralFamilyGlobalMatchCursor(program, input, start, budget));
 
     internal static Pcre2GlobalMatchCursor CreateSameStartLiteral(
@@ -1998,7 +1998,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget budget) =>
+        scoped in Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateSameStartLiteral(program, input, start, request, budget));
 
     internal static Pcre2GlobalMatchCursor CreateBacktracking(
@@ -2019,7 +2019,7 @@ internal ref struct Pcre2GlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget budget) =>
+        scoped in Pcre2ResourceBudget budget) =>
         new(Pcre2DirectGlobalMatchCursor.CreateBacktracking(
             program,
             candidateSearch,
@@ -2103,7 +2103,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget budget)
+        scoped in Pcre2ResourceBudget budget)
     {
         _kind = kind;
         _literalProgram = literalProgram;
@@ -2130,7 +2130,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget budget) =>
+        scoped in Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.Literal,
             program,
@@ -2148,7 +2148,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8ValidatedInput input,
         Utf8BytePosition start,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget budget) =>
+        scoped in Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.SameStartLiteral,
             literalProgram: null,
@@ -2168,7 +2168,7 @@ internal ref struct Pcre2DirectGlobalMatchCursor
         Utf8BytePosition start,
         Pcre2MatchOptions matchOptions,
         Pcre2CompileRequest request,
-        Pcre2ResourceBudget budget) =>
+        scoped in Pcre2ResourceBudget budget) =>
         new(
             Pcre2DirectGlobalCursorKind.Backtracking,
             literalProgram: null,
@@ -2368,7 +2368,7 @@ internal ref struct Pcre2LiteralFamilyGlobalMatchCursor
         Pcre2LiteralFamilyDirectProgram program,
         Utf8ValidatedInput input,
         Utf8BytePosition start,
-        Pcre2ResourceBudget budget)
+        scoped in Pcre2ResourceBudget budget)
     {
         _enumerator = program.Regex.ByteOffsetExecution.EnumeratePreparedMatches(input, start);
         _input = input;
@@ -2752,7 +2752,7 @@ internal struct Pcre2ResourceBudget
 
     internal Pcre2ResourceBudget(
         Utf8Pcre2ExecutionLimits limits,
-        Utf8SliceInvocation invocation,
+        in Utf8SliceInvocation invocation,
         bool collectDiagnostics)
         : this(limits, invocation, collectDiagnostics ? new Pcre2ExecutionDiagnosticsCollector() : null)
     {
@@ -2761,7 +2761,7 @@ internal struct Pcre2ResourceBudget
     }
 
     private Pcre2ResourceBudget(Utf8Pcre2ExecutionLimits limits,
-        Utf8SliceInvocation invocation, Pcre2ExecutionDiagnosticsCollector? diagnostics)
+        in Utf8SliceInvocation invocation, Pcre2ExecutionDiagnosticsCollector? diagnostics)
     {
         Limits = limits;
         _invocation = invocation;
