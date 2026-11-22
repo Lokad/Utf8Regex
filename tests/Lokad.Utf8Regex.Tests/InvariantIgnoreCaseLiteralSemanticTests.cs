@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
@@ -95,6 +96,50 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         Assert.Equal(expected.Success, regex.IsMatch(input));
         Assert.Equal(expected.Success, actual.Success);
         if (expected.Success) Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
+    }
+
+    [Fact]
+    public void FiniteFoldedSearchChargesBlocksAndKeepsTheEarliestMatch()
+    {
+        using var regex = new Utf8Regex("key", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 64 } });
+        using var source = new CancellationTokenSource();
+        var prefix = "kex" + new string('x', 16 * 1024 - 4);
+        var input = Encoding.UTF8.GetBytes(prefix + "KEY key");
+
+        Assert.True(regex.IsMatch(input, source.Token));
+        Assert.Equal(new Utf8CaptureRange(prefix.Length, prefix.Length + 5), regex.Match(input, cancellationToken: source.Token));
+        Assert.Equal(2, regex.Count(input, source.Token));
+
+        var distant = Encoding.UTF8.GetBytes(new string('x', 256 * 1024) + "KEY");
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(distant, source.Token));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+        Assert.Equal(65UL, failure.Requested);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FoldedStarterScanUsesTheOriginalInterruptionAuthority(bool expire)
+    {
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var source = new CancellationTokenSource();
+        using var regex = new Utf8Regex("key", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+            new() { MatchTimeout = expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout });
+        var input = Encoding.UTF8.GetBytes(new string('x', 256 * 1024) + "KEY");
+        var entered = false;
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            entered = true;
+            if (expire) clock.Advance(250); else source.Cancel();
+        });
+        try
+        {
+            if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input, source.Token));
+            else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, source.Token)).CancellationToken);
+            Assert.True(entered);
+        }
+        finally { session.Complete(); }
     }
 
     [Theory]

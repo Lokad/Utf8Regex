@@ -575,6 +575,7 @@ internal static partial class Utf8SliceRunner
     {
         var first = program.Instructions[0];
         var (leading, leadingLast, second, secondLast, leadingScalarIndex, fromBranch, sparsePair) = program.LeadingByteCandidate;
+        var includeKelvin = leading == 'K' && program.LeadingByteAdmitsKelvin;
         // Prefer a straight ASCII proof. Prepared literal search can be more
         // selective than a branch interval or the lead of a wider scalar.
         var seekLiteral = (leading is < 0 or >= 128 || fromBranch) && !seekBeginning && CanSeekExactPrefix(program, candidatePlan);
@@ -751,12 +752,12 @@ internal static partial class Utf8SliceRunner
                         new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
             }
             if (leading >= 0 && ((uint)position >= (uint)input.Length ||
-                !MayStartAtByte(input[position], leading, leadingLast, sparsePair) &&
+                !MayStartAtByte(input[position], leading, leadingLast, sparsePair, includeKelvin) &&
                 !(seekDecimal && input[position] is >= 0xc2 and <= 0xf4) ||
                 !leadingPrefix.IsEmpty && !input[position..].StartsWith(leadingPrefix)))
             {
                 var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leading, leadingLast, seekDecimal,
-                    ref invocation, leadingPrefix, sparsePair);
+                    ref invocation, leadingPrefix, sparsePair, includeKelvin);
                 if (seekBreach != Utf8ExecutionLimitKind.None)
                     return new(false, -1, -1, seekBreach);
                 if (position < 0)
@@ -1061,6 +1062,7 @@ internal static partial class Utf8SliceRunner
         var (leadingFirst, leadingLast, leadingSecond, leadingSecondLast, leadingScalarIndex, _, sparsePair) = seekLiteral
             ? (-1, (byte)0, -1, (byte)0, -1, false, false)
             : program.LeadingByteCandidate;
+        var includeKelvin = leadingFirst == 'K' && program.LeadingByteAdmitsKelvin;
         var checkBranchedPrefix = leadingFirst is >= 0 and < 128 && program.Instructions[leadingScalarIndex] is
             { Kind: Utf8SliceInstructionKind.Fork } or { IsLiteralChoice: true };
         if (checkBranchedPrefix && input.Length - fromByte >= 256 && program.RequiredUnanchoredFinalByte is { } finalByte)
@@ -1179,7 +1181,7 @@ internal static partial class Utf8SliceRunner
                 if (leadingFirst >= 0)
                 {
                     var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leadingFirst, leadingLast, seekDecimal,
-                        ref invocation, leadingPrefix, sparsePair);
+                        ref invocation, leadingPrefix, sparsePair, includeKelvin);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());

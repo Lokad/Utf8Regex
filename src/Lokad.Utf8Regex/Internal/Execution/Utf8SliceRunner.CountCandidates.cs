@@ -380,11 +380,11 @@ internal static partial class Utf8SliceRunner
 
     private static Utf8ExecutionLimitKind TrySeekLeadingByte(ReadOnlySpan<byte> input, ref int position,
         byte first, byte last, bool decimalSet, ref Utf8SliceInvocation invocation,
-        scoped ReadOnlySpan<byte> exactPrefix = default, bool sparsePair = false)
+        scoped ReadOnlySpan<byte> exactPrefix = default, bool sparsePair = false, bool includeKelvin = false)
     {
         if (invocation.IsUnmetered && invocation.CheckpointHook is null)
         {
-            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(input[position..], first, last, decimalSet, sparsePair)
+            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(input[position..], first, last, decimalSet, sparsePair, includeKelvin)
                 : input[position..].IndexOf(exactPrefix);
             position = relative < 0 ? -1 : position + relative;
             return Utf8ExecutionLimitKind.None;
@@ -398,7 +398,8 @@ internal static partial class Utf8SliceRunner
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var length = Math.Min(2048, input.Length - position);
             var block = input.Slice(position, length);
-            var relative = exactPrefix.IsEmpty ? IndexOfLeadingByte(block, first, last, decimalSet, sparsePair) : block.IndexOf(exactPrefix);
+            var relative = exactPrefix.IsEmpty
+                ? IndexOfLeadingByte(block, first, last, decimalSet, sparsePair, includeKelvin) : block.IndexOf(exactPrefix);
             if (relative >= 0) { position += relative; return Utf8ExecutionLimitKind.None; }
             position += length - overlap;
         }
@@ -406,13 +407,16 @@ internal static partial class Utf8SliceRunner
         return Utf8ExecutionLimitKind.None;
     }
 
-    private static int IndexOfLeadingByte(ReadOnlySpan<byte> input, byte first, byte last, bool decimalSet, bool sparsePair)
+    private static int IndexOfLeadingByte(ReadOnlySpan<byte> input, byte first, byte last, bool decimalSet, bool sparsePair,
+        bool includeKelvin)
         => decimalSet ? Utf8AsciiBytePredicates.DecimalOrScalarLead.IndexOf(input)
+            : includeKelvin ? input.IndexOfAny(first, last, "K"u8[0])
             : sparsePair ? input.IndexOfAny(first, last)
             : first == last ? input.IndexOf(first) : input.IndexOfAnyInRange(first, last);
 
-    private static bool MayStartAtByte(byte value, int first, byte last, bool sparsePair)
-        => sparsePair ? value == first || value == last : (uint)(value - first) <= (uint)(last - first);
+    private static bool MayStartAtByte(byte value, int first, byte last, bool sparsePair, bool includeKelvin)
+        => sparsePair ? value == first || value == last || includeKelvin && value == "K"u8[0]
+            : (uint)(value - first) <= (uint)(last - first);
 
     // Locate the tail after a proved whitespace repeat, optional initial class
     // run and bounded gap. Return the direct ASCII delimiter when present.

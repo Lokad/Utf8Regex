@@ -481,8 +481,23 @@ internal sealed class Utf8SliceProgram
                         index == 1 && instructions[repeat.A].RepeatExitAcceptsEmptyTail))
                     instructions[0] = new(first.Kind, first.A, first.B, first.C, index == 1 ? 1 : -1);
             }
-            else if (!ignoreCase && !canMatchEmpty && !hasContiguousAnchor)
-                LeadingByteCandidate = Utf8SliceRunner.FindLeadingByteCandidate(this, Utf8ConstructionScope.CurrentBudget);
+            else if (!canMatchEmpty && !hasContiguousAnchor)
+            {
+                if (caseBehavior == Utf8ScalarCaseBehavior.Invariant &&
+                    first is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 })
+                {
+                    // The lowered invariant K/k mask still needs scalar
+                    // folding. Its only wider equivalent is Kelvin.
+                    Utf8ConstructionScope.ChargeWork(1);
+                    var mask = SetMasks[first.A].AsSpan();
+                    const ulong kelvinLetters = (1UL << ('K' - 64)) | (1UL << ('k' - 64));
+                    if (BinaryPrimitives.ReadUInt64LittleEndian(mask) == 0 &&
+                        BinaryPrimitives.ReadUInt64LittleEndian(mask[sizeof(ulong)..]) == kelvinLetters)
+                        LeadingByteCandidate = ('K', (byte)'k', -1, 0, 0, false, true);
+                }
+                else if (!ignoreCase || first is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
+                    LeadingByteCandidate = Utf8SliceRunner.FindLeadingByteCandidate(this, Utf8ConstructionScope.CurrentBudget);
+            }
         }
         if (!rightToLeft && !isNonBacktracking && !ignoreCase && !hasContiguousAnchor && repeatCount != 0)
         {
@@ -717,6 +732,8 @@ internal sealed class Utf8SliceProgram
     internal bool HasSingleCapturePerGroup { get; }
     internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch, bool SparsePair) LeadingByteCandidate { get; }
         = (-1, 0, -1, 0, -1, false, false);
+    internal bool LeadingByteAdmitsKelvin => LeadingByteCandidate is { First: 'K', InstructionIndex: 0, SparsePair: true } &&
+        Instructions[0] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 };
     internal (int Literal, int LeadingClass, int LiteralIndex, long GapMaximum, bool Direct) LeadingClassDelimiter { get; }
         = (-1, -1, -1, 0, false);
     internal bool LeadingScalarIsDecimal { get; }

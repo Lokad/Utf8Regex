@@ -110,7 +110,15 @@ internal static partial class Utf8SliceRunner
     {
         if (remaining < 256 || program.NonBacktrackingOrderedClosures.Length == 0) return false;
         var depth = invocation.Budget.Limits.MaxDepth;
-        if (program.RepeatCount == 0) return depth == 0;
+        if (program.RepeatCount == 0)
+        {
+            // Short complete folded literals have bounded verification and
+            // a selective starter that includes the invariant wide alias.
+            return depth == 0 && !(search.Kind == Utf8SearchKind.AsciiFoldedByteLiteral &&
+                search.LiteralUtf8 is { Length: > 0 and <= 32 } needle &&
+                program.Instructions.Length == needle.Length + 1 &&
+                program.LeadingByteCandidate is { First: >= 0 and < 128, InstructionIndex: 0 });
+        }
 
         // Keep more selective prepared forward starts. Tight depth limits retain
         // the scalar path, which can admit less than a complete frontier.
