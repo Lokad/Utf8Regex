@@ -95,6 +95,9 @@ targets 75 ms batches with one calibration confirmation. Samples below 20 ms
 prevent Core qualification. Python comparison batches consume the result
 checksum after timing.
 
+Core and PythonRe attribution commands use caller-valid UTF-8 and report
+selected kernels alongside public operations. These timings are independent.
+
 Python uses a long-lived official CPython worker over `str`, with startup and
 compilation outside timing. The paired pass creates the PythonRe catalog from a
 fresh checkout and saves each completed case for resumption. Use

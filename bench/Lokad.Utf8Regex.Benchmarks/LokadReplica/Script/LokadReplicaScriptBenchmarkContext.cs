@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Diagnostics;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
@@ -157,19 +156,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         };
     }
 
-    public int ExecuteUtf8PrefixWellFormedOnly()
-    {
-        EnsurePrefixMatchLoop();
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            Utf8Validation.ThrowIfInvalidOnly(sample);
-            total += sample.Length;
-        }
-
-        return total;
-    }
-
     public int ExecuteUtf8PrefixPrefilterOnly()
     {
         EnsurePrefixMatchLoop();
@@ -270,13 +256,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return BenchmarkCase.Id == "lokad/imports/module-imports"
             ? (Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(InputBytes, ImportPrefix, ImportOptionalSegment, out var count) ? count : Regex.Count(InputString))
             : 0;
-    }
-
-    public int ExecuteUtf8CountWellFormedOnly()
-    {
-        EnsureCountModel();
-        Utf8Validation.ThrowIfInvalidOnly(InputBytes);
-        return InputBytes.Length;
     }
 
     public int ExecuteUtf8CountPrefilterOnly()

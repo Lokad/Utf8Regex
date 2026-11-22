@@ -2,10 +2,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using System.Text.Unicode;
 using Lokad.Utf8Regex;
 using Lokad.Utf8Regex.Internal.Execution;
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.PythonRe;
 
 namespace Lokad.Utf8Regex.Benchmarks;
@@ -76,21 +74,20 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"InputBytes        : {input.Length}");
         Console.WriteLine($"Iterations        : {effectiveIterations} (requested {requestedIterations})");
         Console.WriteLine($"Samples           : {samples}");
-        Console.WriteLine("AttributionProtocol: AlternatingSearchPhasesV1");
+        Console.WriteLine("AttributionProtocol: AlternatingSearchPhasesV2");
+        Console.WriteLine("Input contract    : caller-valid UTF-8");
         Console.WriteLine("WarmupPerLane     : at least 250 ms and 64 calls");
         Console.WriteLine($"ExpectedResult    : {EncodeSearchAttributionOutcome(adapterOutcome)}");
         Console.WriteLine($"ExecutionKind     : {core.Inspection.ExecutionKind}");
         Console.WriteLine($"CompiledEngine    : {core.Inspection.CompiledEngineKind}");
         Console.WriteLine($"EngineRuntime     : {core.Inspection.DebugCompiledEngineRuntimeType}");
         Console.WriteLine(hasKernel
-            ? "KernelLane        : separable selected kernel without validation"
-            : "KernelLane        : unavailable for selected route (validation plus public lanes only)");
+            ? "KernelLane        : separable selected kernel"
+            : "KernelLane        : unavailable for selected route");
         WriteSearchAttributionSnapshotContext(caseId);
 
         var lanes = new List<PythonReSearchAttributionLane>
         {
-            new("ThrowIfInvalidOnly", () => ExecuteSearchAttributionValidationOnly(input), input.Length),
-            new("BclIsValidOnly", () => ExecuteBclIsValidOnly(input), input.Length),
             new("PrefilterOnly", () => ExecutePrefilterOnly(core, input), ExecutePrefilterOnly(core, input)),
         };
 
@@ -99,10 +96,6 @@ internal static partial class PythonReBenchmarkReporter
             lanes.Add(new PythonReSearchAttributionLane(
                 "CoreKernel",
                 () => ExecuteCoreSearchKernel(core, input, benchmarkCase.Operation),
-                EncodeSearchAttributionOutcome(kernelOutcome)));
-            lanes.Add(new PythonReSearchAttributionLane(
-                "ValidationThenKernel",
-                () => ExecuteSearchAttributionValidationThenKernel(core, input, benchmarkCase.Operation),
                 EncodeSearchAttributionOutcome(kernelOutcome)));
         }
 
@@ -115,8 +108,7 @@ internal static partial class PythonReBenchmarkReporter
             () => EncodeSearchAttributionOutcome(ExecuteAdapterSearchAttribution(adapter, input, benchmarkCase.Operation)),
             EncodeSearchAttributionOutcome(adapterOutcome)));
 
-        var medians = MeasureAlternatingSearchAttribution(lanes, effectiveIterations, samples);
-        WriteSearchAttributionComposition(medians, hasKernel);
+        MeasureAlternatingSearchAttribution(lanes, effectiveIterations, samples);
         return 0;
     }
 
@@ -222,26 +214,6 @@ internal static partial class PythonReBenchmarkReporter
         return EncodeSearchAttributionOutcome(outcome);
     }
 
-    private static int ExecuteSearchAttributionValidationThenKernel(
-        Utf8Regex core,
-        byte[] input,
-        PythonReBenchmarkOperation operation)
-    {
-        Utf8Validation.ThrowIfInvalidOnly(input);
-        return ExecuteCoreSearchKernel(core, input, operation);
-    }
-
-    private static int ExecuteSearchAttributionValidationOnly(byte[] input)
-    {
-        Utf8Validation.ThrowIfInvalidOnly(input);
-        return input.Length;
-    }
-
-    private static int ExecuteBclIsValidOnly(byte[] input)
-    {
-        return Utf8.IsValid(input) ? input.Length : 0;
-    }
-
     private static int ExecutePrefilterOnly(Utf8Regex core, byte[] input)
     {
         return Utf8PrefilterReplay.Rejects(core.Inspection.PreparedRegex.SearchPlan, input) ? 1 : 0;
@@ -249,7 +221,8 @@ internal static partial class PythonReBenchmarkReporter
 
     private static int EncodeSearchAttributionOutcome((bool Success, int Start, int End) outcome)
     {
-        return outcome.Success ? checked((outcome.Start + 1) * 1000003 ^ outcome.End) : 0;
+        // Preflight compares the complete ranges before timing.
+        return outcome.Success ? unchecked((outcome.Start + 1) * 1_000_003 ^ outcome.End) : 0;
     }
 
     private static void RequireSearchAttributionOutcome(
@@ -299,7 +272,7 @@ internal static partial class PythonReBenchmarkReporter
             $"order={evidence.OrderEffect:F3}");
     }
 
-    private static Dictionary<string, double> MeasureAlternatingSearchAttribution(
+    private static void MeasureAlternatingSearchAttribution(
         List<PythonReSearchAttributionLane> lanes,
         int iterations,
         int samples)
@@ -329,7 +302,6 @@ internal static partial class PythonReBenchmarkReporter
             }
         }
 
-        var medians = new Dictionary<string, double>(lanes.Count, StringComparer.Ordinal);
         for (var laneIndex = 0; laneIndex < lanes.Count; laneIndex++)
         {
             var elapsed = elapsedByLane[laneIndex];
@@ -337,7 +309,6 @@ internal static partial class PythonReBenchmarkReporter
             var medianMicroseconds = elapsed[elapsed.Length / 2].TotalMicroseconds / iterations;
             var minimumMicroseconds = elapsed[0].TotalMicroseconds / iterations;
             var maximumMicroseconds = elapsed[elapsed.Length - 1].TotalMicroseconds / iterations;
-            medians.Add(lanes[laneIndex].Label, medianMicroseconds);
             Console.WriteLine(
                 $"{lanes[laneIndex].Label,-32}: " +
                 $"{medianMicroseconds:F3} us/op | " +
@@ -345,7 +316,6 @@ internal static partial class PythonReBenchmarkReporter
                 $"result={lanes[laneIndex].ExpectedResult} | warmupCalls={warmupCalls[laneIndex]}");
         }
 
-        return medians;
     }
 
     private static int WarmupSearchAttributionLane(Func<int> action)
@@ -380,24 +350,5 @@ internal static partial class PythonReBenchmarkReporter
         return (stopwatch.Elapsed, sink);
     }
 
-    private static void WriteSearchAttributionComposition(Dictionary<string, double> medians, bool hasKernel)
-    {
-        if (hasKernel &&
-            medians.TryGetValue("ThrowIfInvalidOnly", out var validation) &&
-            medians.TryGetValue("CoreKernel", out var kernel) &&
-            medians.TryGetValue("ValidationThenKernel", out var validationThenKernel) &&
-            medians.TryGetValue("AdapterPublic", out var adapterPublic))
-        {
-            Console.WriteLine($"Composition       : validation {validation:F3} + kernel {kernel:F3} = {validation + kernel:F3} vs measured validation-then-kernel {validationThenKernel:F3} vs public {adapterPublic:F3}");
-        }
-
-        if (medians.TryGetValue("PrefilterOnly", out var prefilter) &&
-            medians.TryGetValue("AdapterPublic", out var adapterOnly))
-        {
-            Console.WriteLine($"PrefilterShare      : prefilter {prefilter:F3} of public {adapterOnly:F3}");
-        }
-
-        Console.WriteLine("CompositionNote   : independently timed phase sums are attribution ceilings, not realizable speedups");
-    }
 }
 

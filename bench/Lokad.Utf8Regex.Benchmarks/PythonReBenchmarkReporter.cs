@@ -4,7 +4,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.PythonRe;
@@ -532,19 +531,14 @@ internal static partial class PythonReBenchmarkReporter
         var rawExact = context.SupportsExactLiteralOneShotReplay
             ? context.ExecuteCoreRawOneShot()
             : expected;
-        var validatedExact = context.SupportsExactLiteralOneShotReplay
-            ? context.ExecuteValidatedCoreRawOneShot()
-            : expected;
         var predecoded = context.ExecutePredecodedOneShot();
         if (expected != direct ||
             expected != rawExact ||
-            expected != validatedExact ||
             expected != predecoded)
         {
             throw new InvalidOperationException(
                 $"PythonRe one-shot phase diagnostic '{id}' produced incomparable results: " +
                 $"public={expected}, direct={direct}, raw-exact={rawExact}, " +
-                $"validated-exact={validatedExact}, " +
                 $"predecoded={predecoded}.");
         }
 
@@ -558,16 +552,14 @@ internal static partial class PythonReBenchmarkReporter
         Console.WriteLine($"Samples            : {samples}");
         Console.WriteLine($"CpuPolicy          : {processorScope.Policy}");
         Console.WriteLine($"CpuAffinityMask    : {processorScope.AffinityMask}");
-        Console.WriteLine("Phase model        : cumulative controls; phase timings are not additive");
+        Console.WriteLine("Input contract     : caller-valid UTF-8 / predecoded .NET text");
         var phaseWarmupCalls = context.InputBytes.Length <= 32 * 1_024 ? 250_000 : 1_024;
         PythonReOperationMeasurement MeasurePhase<T>(Func<T> operation) =>
             MeasureRetainedOperation(operation, effectiveIterations, samples, phaseWarmupCalls);
-        PrintOperation("ValidationOnly", MeasurePhase(context.ExecuteOneShotValidation));
         PrintOperation("Utf8DecodeOnly", MeasurePhase(context.DecodeInput));
         if (context.SupportsExactLiteralOneShotReplay)
         {
             PrintOperation("RawExactLiteral", MeasurePhase(context.ExecuteCoreRawOneShot));
-            PrintOperation("ValidatedExactLiteral", MeasurePhase(context.ExecuteValidatedCoreRawOneShot));
         }
 
         PrintOperation("CoreDirect", MeasurePhase(context.ExecuteCoreDirectOneShot));
@@ -2025,13 +2017,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
 
     internal string DecodeInput() => s_strictUtf8.GetString(InputBytes);
 
-    internal int ExecuteOneShotValidation()
-    {
-        EnsureOneShotPhases();
-        Utf8Validation.ThrowIfInvalidOnly(InputBytes);
-        return InputBytes.Length;
-    }
-
     internal PythonReBenchmarkValueResult ExecuteCoreRawOneShot()
     {
         if (!SupportsExactLiteralOneShotReplay)
@@ -2046,17 +2031,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
         }
 
         return ProjectCoreOneShot(match);
-    }
-
-    internal PythonReBenchmarkValueResult ExecuteValidatedCoreRawOneShot()
-    {
-        if (!SupportsExactLiteralOneShotReplay)
-        {
-            throw new InvalidOperationException("The exact-literal one-shot replay is unavailable.");
-        }
-
-        Utf8Validation.ThrowIfInvalidOnly(InputBytes);
-        return ExecuteCoreRawOneShot();
     }
 
     internal PythonReBenchmarkValueResult ExecuteCoreDirectOneShot()
@@ -2284,7 +2258,6 @@ PythonReBenchmarkReporter.MaterializeDetailedMatches(_pythonRegex, InputBytes)),
                 "The bounded exact-literal replacement replay is not available for this case.");
         }
 
-        Utf8Validation.ThrowIfInvalidOnly(InputBytes);
         var maximumReplacementCount = _case.Coverage.ReplacementCount == 0
             ? int.MaxValue
             : _case.Coverage.ReplacementCount;

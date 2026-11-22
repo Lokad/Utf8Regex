@@ -26,18 +26,6 @@ public class ShortPublicMatchMicroCostBenchmarks
     public void Setup() => _context = new LokadPublicBenchmarkContext(CaseId);
 
     [Benchmark(OperationsPerInvoke = RepeatCount)]
-    public int WellFormedOnly()
-    {
-        var total = 0;
-        for (var i = 0; i < RepeatCount; i++)
-        {
-            total += _context.ExecuteUtf8WellFormedOnly();
-        }
-
-        return total;
-    }
-
-    [Benchmark(OperationsPerInvoke = RepeatCount)]
     public int PrefilterOnly()
     {
         var total = 0;
@@ -165,18 +153,6 @@ public class ShortPrefixLoopMicroCostBenchmarks
 
     [GlobalSetup]
     public void Setup() => _context = new LokadReplicaScriptBenchmarkContext(LokadReplicaScriptBenchmarkCatalog.Get(CaseId));
-
-    [Benchmark(OperationsPerInvoke = RepeatCount)]
-    public int WellFormedOnly()
-    {
-        var total = 0;
-        for (var i = 0; i < RepeatCount; i++)
-        {
-            total += _context.ExecuteUtf8PrefixWellFormedOnly();
-        }
-
-        return total;
-    }
 
     [Benchmark(OperationsPerInvoke = RepeatCount)]
     public int PrefilterOnly()

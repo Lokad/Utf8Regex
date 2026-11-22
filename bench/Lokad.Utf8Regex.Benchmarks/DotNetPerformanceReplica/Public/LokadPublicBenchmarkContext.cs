@@ -1,9 +1,7 @@
 using System.Text;
-using System.Text.Unicode;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.Diagnostics;
-using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.Benchmarks;
 
@@ -147,14 +145,6 @@ internal sealed class LokadPublicBenchmarkContext
         {
             throw new InvalidOperationException($"The first match range differs for {CaseId}.");
         }
-    }
-
-    public int ExecuteUtf8IsValidOnly() => Utf8.IsValid(InputBytes) ? InputBytes.Length : 0;
-
-    public int ExecuteUtf8WellFormedOnly()
-    {
-        Utf8Validation.ThrowIfInvalidOnly(InputBytes);
-        return InputBytes.Length;
     }
 
     public int ExecuteUtf8PrefilterOnly() => Utf8PrefilterReplay.Rejects(Utf8Regex.Inspection.SearchPlan, InputBytes) ? 0 : 1;
