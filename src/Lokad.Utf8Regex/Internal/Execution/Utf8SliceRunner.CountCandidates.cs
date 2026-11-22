@@ -1473,8 +1473,11 @@ internal static partial class Utf8SliceRunner
 
         if (repeat.RepeatMaximum > 4)
             return TryMatchGreedyPrefixRepeat(program, input, position, atomIndex - 1, ref remaining, out continueAt);
+        var decimalDigits = atom.IsDecimalDigitSet;
+        var ascii = default(Utf8SearchAsciiSet);
+        var asciiOnly = false;
         Func<int, bool>? additionalAsciiMember = null;
-        if (!program.TryGetUnfoldedAsciiSet(atom, out var ascii, out var asciiOnly))
+        if (!decimalDigits && !program.TryGetUnfoldedAsciiSet(atom, out ascii, out asciiOnly))
         {
             if (atom is not { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } ||
                 program.CategorySetMembers[atom.D] is not
@@ -1495,12 +1498,17 @@ internal static partial class Utf8SliceRunner
         if (maximum > remaining) return true;
         remaining -= maximum;
         var consumed = 0;
+        if (decimalDigits)
+        {
+            var stop = input.Slice(position, maximum).IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+            consumed = stop < 0 ? maximum : stop;
+        }
         while (consumed < maximum)
         {
             var value = input[position + consumed];
             if (value >= 128 && !asciiOnly)
             {
-                if (minimum != repeat.RepeatMaximum || !atom.IsDecimalDigitSet)
+                if (minimum != repeat.RepeatMaximum || !decimalDigits)
                     return true;
 
                 // A fixed decimal repeat has one end. Decode the remaining scalars under the same small bound.
@@ -1514,7 +1522,7 @@ internal static partial class Utf8SliceRunner
                 continueAt = end;
                 return true;
             }
-            if (!ascii.Contains(value) && additionalAsciiMember?.Invoke(value) != true) break;
+            if (decimalDigits || !ascii.Contains(value) && additionalAsciiMember?.Invoke(value) != true) break;
             consumed++;
         }
         if (consumed < minimum) return false;
