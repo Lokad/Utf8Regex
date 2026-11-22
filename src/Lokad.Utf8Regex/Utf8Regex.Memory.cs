@@ -64,7 +64,7 @@ public sealed partial class Utf8Regex
         try
         {
             workingMemoryAllowance ??= programMemory!.Allowance;
-            var invocation = Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+            Utf8SliceInvocation.InitializeExclusive(out var invocation, InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
             try
             {
                 Utf8SliceBufferWork.Checkpoint(ref invocation);
