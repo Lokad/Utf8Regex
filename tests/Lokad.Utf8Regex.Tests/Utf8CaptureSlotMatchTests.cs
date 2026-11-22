@@ -343,11 +343,13 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.Equal(0UL, account.Held);
     }
 
-    [Fact]
-    public void OrderedLazyCompoundRepeatReplaysThePreferredIteration()
+    [Theory]
+    [InlineData("+?", 7, 8)]
+    [InlineData("+", 4, 7)]
+    public void OrderedCompoundRepeatReplaysThePreferredIterations(string repeat, int start, int pieceEnd)
     {
         var input = Encoding.UTF8.GetBytes("😀éaay!" + new string('q', 8192));
-        using var regex = new Utf8Regex("(?<piece>éa|a)+?(?<tail>[zy])|v[zy]",
+        using var regex = new Utf8Regex($"(?<piece>éa|a){repeat}(?<tail>[zy])|v[zy]",
             RegexOptions.RightToLeft | RegexOptions.Compiled, new Utf8RegexPolicy
             {
                 ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 256, MaxWorkingBytes = 4096 }
@@ -355,10 +357,12 @@ public sealed class Utf8CaptureSlotMatchTests
         using var source = new CancellationTokenSource();
         var account = new Account();
         var slots = new Utf8CaptureRange[3];
-        var expected = new Utf8CaptureRange(7, 9);
+        var expected = new Utf8CaptureRange(start, 9);
+        var piece = new Utf8CaptureRange(start, pieceEnd);
+        Utf8CaptureRange[] history = repeat == "+" ? [new(7, 8), piece] : [piece];
 
         Assert.Equal(expected, regex.Match(input, captures: slots, cancellationToken: source.Token, workingMemoryAllowance: account));
-        Assert.Equal(new Utf8CaptureRange(7, 8), slots[1]);
+        Assert.Equal(piece, slots[1]);
         Assert.Equal(new Utf8CaptureRange(8, 9), slots[2]);
         Assert.Equal(0UL, account.Held);
 
@@ -366,7 +370,7 @@ public sealed class Utf8CaptureSlotMatchTests
         {
             Assert.True(cursor.MoveNext(out var match));
             Assert.Equal(expected, match.Value);
-            Assert.Equal(slots[1], Assert.Single(match.GetCaptures(1).ToArray()));
+            Assert.Equal(history, match.GetCaptures(1).ToArray());
             Assert.False(cursor.MoveNext(out _));
         }
         Assert.Equal(0UL, account.Held);

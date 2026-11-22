@@ -1764,7 +1764,7 @@ internal static class Utf8SliceLowerer
                         return true;
                     }
                     var stopBytes = FindGuardedRepeatStopBytes(repeat, frame.Mark);
-                    var orderedBodyConsumes = repeat is { Lazy: true, Maximum: long.MaxValue, Minimum: <= 1 } &&
+                    var orderedBodyConsumes = repeat is { Maximum: long.MaxValue, Minimum: <= 1 } &&
                         Instructions.Count < 64 && Instructions.Count - frame.Mark > 2 &&
                         Facts[repeat.Body].Minimum > 0;
                     Emit(new(Utf8SliceInstructionKind.RepeatEnd, frame.Mark, stopBytes, orderedBodyConsumes ? 1 : 0, 0));
