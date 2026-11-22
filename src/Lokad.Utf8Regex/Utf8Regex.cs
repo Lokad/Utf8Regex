@@ -284,11 +284,10 @@ public sealed partial class Utf8Regex : IDisposable
                 _preparedRegex.ExecutionKind is (NativeExecutionKind.ExactUtf8Literal or NativeExecutionKind.ExactUtf8Literals) ||
              ShouldUseKelvinSignFallback(input) ||
              _hasCaptures && _ownedSliceProgram.HasUnicodePatternAtoms ||
-             // Exact byte literals already preserve scalar endpoints. Native
-             // boundary/class predicates need scalar qualification before they
-             // can serve mixed subjects without the shared owned VM.
+             // The prepared boundary-only literal route decodes just the
+             // neighboring scalars. Other native predicates still need ASCII.
              (!scalarAlignedLiteral ||
-                 _preparedRegex.SearchPlan.HasBoundaryRequirements) &&
+                 _preparedRegex.SearchPlan.HasBoundaryRequirements && !_canUseUnmeteredScalarBoundaryLiterals) &&
                 !Utf8InputAnalyzer.IsAscii(input))
             return _ownedSliceProgram;
         return null;

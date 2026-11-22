@@ -13,6 +13,7 @@ public sealed class Utf8ReplacementAliasingTests
     [InlineData("aa", "aa-b-aa-c", "", "-b--c", 0, 2)]
     [InlineData("a", "a-é-a-😀", "😀", "😀-é-😀-😀", 1, 0)]
     [InlineData("(a)", "a-b-a-c", "<$1>", "<a>-b-<a>-c", 0, 0)]
+    [InlineData(@"\b(?<word>cat|dog)\b", "écat|😀cat😀|dog\u200c|dog", "<${word}>", "écat|😀<cat>😀|dog\u200c|<dog>", 0, 4)]
     [InlineData("z", "a-é-😀", "LONG", "a-é-😀", 0, 2)]
     public void ReplacementPreservesOverlappingSubject(string pattern, string text, string template,
         string expected, int inputStart, int destinationStart)
@@ -84,6 +85,32 @@ public sealed class Utf8ReplacementAliasingTests
         Assert.Equal(OperationStatus.Done, status);
         Assert.Equal(expected.Length, written);
         Assert.True(expected.SequenceEqual(storage));
+    }
+
+    [Theory]
+    [InlineData("#", "écat|😀#😀|dog\u200c|#")]
+    [InlineData("<$&>", "écat|😀<cat>😀|dog\u200c|<dog>")]
+    [InlineData("<${word}>", "écat|😀<cat>😀|dog\u200c|<dog>")]
+    public void BoundaryLiteralReplacementUsesScalarNeighborsWithAnAliasedTemplate(string template, string result)
+    {
+        using var regex = new Utf8Regex(@"\b(?<word>cat|dog)\b", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        var subject = "écat|😀cat😀|dog\u200c|dog"u8;
+        var replacement = Encoding.UTF8.GetBytes(template);
+        var expected = Encoding.UTF8.GetBytes(result);
+        Assert.Equal(expected, regex.Replace(subject, replacement));
+
+        var destination = new byte[expected.Length];
+        replacement.CopyTo(destination, 0);
+        var original = destination.ToArray();
+        var status = regex.TryReplace(subject, destination.AsSpan(0, replacement.Length), destination.AsSpan(1), out var written);
+        Assert.Equal(OperationStatus.DestinationTooSmall, status);
+        Assert.Equal(0, written);
+        Assert.Equal(original, destination);
+
+        status = regex.TryReplace(subject, destination.AsSpan(0, replacement.Length), destination, out written);
+        Assert.Equal(OperationStatus.Done, status);
+        Assert.Equal(expected.Length, written);
+        Assert.Equal(expected, destination);
     }
 
     [Fact]
