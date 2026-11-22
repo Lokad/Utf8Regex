@@ -20,7 +20,7 @@ public sealed class Utf8PosixMatchCursor : IDisposable
         CancellationToken token, IUtf8MemoryAllowance? allowance, Utf8FundedStorage.Use? programUse = null)
     {
         _programUse = programUse;
-        _invocation = regex.StartInvocation(token, allowance);
+        regex.InitializeInvocation(out _invocation, token, allowance);
         _regex = regex; _input = input; _position = start;
         try
         {

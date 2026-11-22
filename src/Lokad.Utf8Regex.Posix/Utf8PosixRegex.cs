@@ -94,7 +94,7 @@ public sealed class Utf8PosixRegex : IDisposable
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var programUse = _programMemory?.Enter();
-        var invocation = StartInvocation(cancellationToken, workingMemoryAllowance);
+        InitializeInvocation(out var invocation, cancellationToken, workingMemoryAllowance);
         PosixWorkspace workspace = default;
         try
         {
@@ -114,7 +114,7 @@ public sealed class Utf8PosixRegex : IDisposable
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var programUse = _programMemory?.Enter();
-        var invocation = StartInvocation(cancellationToken, workingMemoryAllowance);
+        InitializeInvocation(out var invocation, cancellationToken, workingMemoryAllowance);
         var output = OutputWindow(captures);
         PosixWorkspace workspace = default;
         try
@@ -138,7 +138,7 @@ public sealed class Utf8PosixRegex : IDisposable
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var programUse = _programMemory?.Enter();
-        var invocation = StartInvocation(cancellationToken, workingMemoryAllowance);
+        InitializeInvocation(out var invocation, cancellationToken, workingMemoryAllowance);
         PosixWorkspace workspace = default;
         try
         {
@@ -170,11 +170,13 @@ public sealed class Utf8PosixRegex : IDisposable
         catch { programUse?.Dispose(); throw; }
     }
 
-    internal Utf8SliceInvocation StartInvocation(CancellationToken token, IUtf8MemoryAllowance? allowance)
+    internal void InitializeInvocation(out Utf8SliceInvocation invocation, CancellationToken token,
+        IUtf8MemoryAllowance? allowance)
     {
         token.ThrowIfCancellationRequested();
         // The call or reference cursor owns the budget and lends it by reference.
-        return Utf8SliceInvocation.CreateExclusive(_limits, MatchTimeout, token, allowance ?? _programMemory?.Allowance);
+        Utf8SliceInvocation.InitializeExclusive(out invocation, _limits, MatchTimeout, token,
+            allowance ?? _programMemory?.Allowance);
     }
 
     internal void InitializeWorkspace(out PosixWorkspace workspace, ref Utf8SliceInvocation invocation, bool captureHistory = true)
