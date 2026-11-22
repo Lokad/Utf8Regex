@@ -1521,7 +1521,41 @@ internal static partial class Utf8SliceRunner
         }
 
         if (repeat.RepeatMaximum > 4)
-            return TryMatchGreedyPrefixRepeat(program, input, position, atomIndex - 1, ref remaining, out continueAt);
+        {
+            var available = Math.Min(input.Length - position, repeat.RepeatMaximum);
+            var exit = program.Instructions[repeat.A];
+            // A greedy run with an unconditional empty tail can keep its
+            // longest endpoint. Verify the tail in order for the final range.
+            if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || available > remaining ||
+                !(program.SkipsTerminalRewind(atomIndex - 1) || exit.RepeatExitRejectsShorterEndpoints ||
+                    repeat.RepeatMaximum == long.MaxValue && exit.RepeatExitAcceptsEmptyTail))
+                return null;
+
+            var suffix = input.Slice(position, (int)available);
+            int stop;
+            if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMinimum <= 1 && repeat.RepeatMaximum == long.MaxValue)
+                stop = atom.A == 0 ? suffix.IndexOf((byte)'\n') : -1;
+            else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
+                stop = suffix.IndexOfAnyExceptInRange((byte)first, last);
+            else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
+            {
+                // A wider scalar can extend a hybrid run, leaving its endpoint
+                // undecided after the complete ASCII mask stops.
+                stop = ScanAsciiMask(suffix, program.SetMasks[atom.A], category: false);
+                if (atom.Kind == Utf8SliceInstructionKind.Hybrid &&
+                    (uint)stop < (uint)suffix.Length && suffix[stop] >= 128) return null;
+            }
+            else return null;
+
+            // The dot proof needs at most one scalar. A LF stop is aligned in
+            // UTF-8, and a nonempty run suffices for that minimum.
+            var length = stop < 0 ? suffix.Length : stop;
+            if (length < repeat.RepeatMinimum) return false;
+            remaining -= Math.Min(suffix.Length, length + 1);
+            continueAt = position + length;
+            return true;
+        }
         var decimalDigits = atom.IsDecimalDigitSet;
         var ascii = default(Utf8SearchAsciiSet);
         var asciiOnly = false;
@@ -1590,48 +1624,6 @@ internal static partial class Utf8SliceRunner
             }
             consumed = last;
         }
-        continueAt = position + consumed;
-        return true;
-    }
-
-    private static bool? TryMatchGreedyPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        int position, int index, ref int remaining, out int continueAt)
-    {
-        continueAt = -1;
-        var code = program.Instructions;
-        var repeat = code[index];
-        var maximum = Math.Min(input.Length - position, repeat.RepeatMaximum);
-        var exit = code[repeat.A];
-        // A greedy run with an unconditional empty tail can keep its
-        // longest endpoint. Verify the tail in order for the final range.
-        if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || maximum > remaining ||
-            !(program.SkipsTerminalRewind(index) || exit.RepeatExitRejectsShorterEndpoints ||
-                repeat.RepeatMaximum == long.MaxValue && exit.RepeatExitAcceptsEmptyTail))
-            return null;
-
-        var atom = code[index + 1];
-        var suffix = input.Slice(position, (int)maximum);
-        int stop;
-        if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMinimum <= 1 && repeat.RepeatMaximum == long.MaxValue)
-            stop = atom.A == 0 ? suffix.IndexOf((byte)'\n') : -1;
-        else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
-            stop = suffix.IndexOfAnyExceptInRange((byte)first, last);
-        else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
-            { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
-        {
-            // The unfolded mask contains every ASCII member. A wider scalar
-            // can extend a hybrid run, leaving its endpoint undecided.
-            stop = ScanAsciiMask(suffix, program.SetMasks[atom.A], category: false);
-            if (atom.Kind == Utf8SliceInstructionKind.Hybrid &&
-                (uint)stop < (uint)suffix.Length && suffix[stop] >= 128) return null;
-        }
-        else return null;
-
-        // The dot proof needs at most one scalar. A LF stop is aligned in
-        // UTF-8, and a nonempty run suffices for that minimum.
-        var consumed = stop < 0 ? suffix.Length : stop;
-        if (consumed < repeat.RepeatMinimum) return false;
-        remaining -= Math.Min(suffix.Length, consumed + 1);
         continueAt = position + consumed;
         return true;
     }
