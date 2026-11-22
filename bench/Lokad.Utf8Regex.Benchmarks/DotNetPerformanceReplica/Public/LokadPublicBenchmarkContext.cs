@@ -149,12 +149,6 @@ internal sealed class LokadPublicBenchmarkContext
 
     public int ExecuteUtf8PrefilterOnly() => Utf8PrefilterReplay.Rejects(Utf8Regex.Inspection.SearchPlan, InputBytes) ? 0 : 1;
 
-    public int ExecuteUtf8DirectHookOnly()
-    {
-        Utf8Regex.TryMatchDirectWithoutValidation(InputBytes, out var match);
-        return MeasureMatch(match);
-    }
-
     public int ExecuteUtf8DirectBoolOnly()
     {
         return Utf8Regex.TryIsMatchAnchoredLiteral(InputBytes, out var isMatch) && isMatch

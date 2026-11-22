@@ -361,37 +361,24 @@ public sealed class Utf8RegexConstructionTests
             ]);
     }
 
-    [Fact]
-    public void CompiledHelperIdentifierCanMatchWithoutValidation()
+    [Theory]
+    [InlineData("123alpha9", 3, 9)]
+    [InlineData("éalpha", 2, 7)]
+    public void CompiledHelperIdentifierReturnsByteRanges(string input, int start, int end)
     {
         var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", options: RegexOptions.Compiled);
 
-        var match = regex.Match("123alpha9"u8);
-
-        Assert.True(match.Success);
-        Assert.True(match.Success);
-        Assert.Equal(3, match.StartOffsetInBytes);
-        Assert.Equal(6, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(Encoding.UTF8.GetBytes(input)));
     }
 
     [Fact]
-    public void CompiledHelperIdentifierCanRejectWithoutValidation()
+    public void CompiledHelperIdentifierRejectsInputWithoutAnIdentifier()
     {
         var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", options: RegexOptions.Compiled);
 
         var match = regex.Match("123__"u8);
 
         Assert.False(match.Success);
-    }
-
-    [Fact]
-    public void CompiledHelperIdentifierNeedsValidationForNonAsciiBeforeAsciiMatch()
-    {
-        var regex = new Utf8Regex("[a-zA-Z][a-zA-Z0-9]*", options: RegexOptions.Compiled);
-
-        var handled = regex.TryMatchDirectWithoutValidation("éalpha"u8, out _);
-
-        Assert.False(handled);
     }
 
     [Fact]
@@ -521,26 +508,10 @@ public sealed class Utf8RegexConstructionTests
     }
 
     [Fact]
-    public void CompiledMatchUsesDirectDocLinePath()
+    public void CompiledDocLineIncludesTheNewlineInItsByteRange()
     {
         var regex = new Utf8Regex("\\G///[^\\n]*\\n", options: RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        var match = regex.Match("/// doc line\n"u8.ToArray());
-
-        Assert.True(match.Success);
-        Assert.True(match.Success);
-        Assert.Equal(13, (match.EndOffsetInBytes - match.StartOffsetInBytes));
-        Assert.Equal(13, (match.EndOffsetInBytes - match.StartOffsetInBytes));
-    }
-
-    [Fact]
-    public void CompiledDocLineDirectHookHandlesMatchWithoutValidation()
-    {
-        var regex = new Utf8Regex("\\G///[^\\n]*\\n", options: RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.Compiled);
-        var match = regex.Match("/// doc line\n"u8);
-
-        Assert.True(match.Success);
-        Assert.True(match.Success);
-        Assert.Equal(13, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        Assert.Equal(new Utf8CaptureRange(0, 13), regex.Match("/// doc line\n"u8));
     }
 
     [Fact]
@@ -1798,22 +1769,18 @@ public sealed class Utf8RegexConstructionTests
         return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
-    [Fact]
-    public void CompiledExactAsciiLiteralFamilyCanMatchWithoutValidation()
+    [Theory]
+    [InlineData("xxx magna yyy", 4, 9)]
+    [InlineData("magna café", 0, 5)]
+    [InlineData("😀 café magna", 11, 16)]
+    public void ExactAsciiLiteralFamilyReportsByteRanges(string input, int start, int end)
     {
-        var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.None);
-
-        var handled = regex.TryMatchDirectWithoutValidation("xxx magna yyy"u8, out var match);
-
-        Assert.True(handled);
-        Assert.True(match.Success);
-        Assert.True(match.Success);
-        Assert.Equal(4, match.StartOffsetInBytes);
-        Assert.Equal(5, (match.EndOffsetInBytes - match.StartOffsetInBytes));
+        using var regex = new Utf8Regex("tempus|magna|semper");
+        Assert.Equal(new Utf8CaptureRange(start, end), regex.Match(Encoding.UTF8.GetBytes(input)));
     }
 
     [Fact]
-    public void CompiledExactAsciiLiteralFamilyCanMatchWithoutValidationOnLongCorpus()
+    public void ExactAsciiLiteralFamilySelectsTheFirstMatchOnALongCorpus()
     {
         const string paragraph =
             "Vitae magna tempus nibh, sed semper arcu posuere a. " +
@@ -1826,40 +1793,8 @@ public sealed class Utf8RegexConstructionTests
             builder.Append(paragraph);
         }
 
-        var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.None);
-        var bytes = Encoding.UTF8.GetBytes(builder.ToString());
-
-        var handled = regex.TryMatchDirectWithoutValidation(bytes, out var match);
-
-        Assert.True(handled);
-        Assert.True(match.Success);
-        Assert.True(match.Success);
-    }
-
-    [Fact]
-    public void ExactAsciiLiteralFamilyDirectMatchAcceptsNonAsciiSuffix()
-    {
-        var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.None);
-        var bytes = Encoding.UTF8.GetBytes("magna café");
-
-        var handled = regex.TryMatchDirectWithoutValidation(bytes, out var match);
-
-        Assert.True(handled);
-        Assert.True(match.Success);
-        Assert.Equal(0, match.StartOffsetInBytes);
-        Assert.Equal(5, (match.EndOffsetInBytes - match.StartOffsetInBytes));
-    }
-
-    [Fact]
-    public void ExactAsciiLiteralFamilyDirectMatchReportsByteOffsetsAfterMixedPrefix()
-    {
-        var regex = new Utf8Regex("tempus|magna|semper", options: RegexOptions.None);
-        var bytes = Encoding.UTF8.GetBytes("😀 café magna");
-
-        Assert.True(regex.TryMatchDirectWithoutValidation(bytes, out var direct));
-        Assert.True(direct.Success);
-        Assert.Equal((11, 16), (direct.StartOffsetInBytes, direct.EndOffsetInBytes));
-        Assert.Equal(direct, regex.Match(bytes));
+        using var regex = new Utf8Regex("tempus|magna|semper");
+        Assert.Equal(new Utf8CaptureRange(6, 11), regex.Match(Encoding.UTF8.GetBytes(builder.ToString())));
     }
 
     [Theory]
@@ -1867,35 +1802,17 @@ public sealed class Utf8RegexConstructionTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void AsciiLiteralFamilyCanReportDefinitiveUnvalidatedMiss(bool ignoreCase, bool compiled)
+    public void AsciiLiteralFamiliesRejectUnmatchedInput(bool ignoreCase, bool compiled)
     {
         var options = RegexOptions.CultureInvariant |
             (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
             (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("tempus|magna|semper", options: options);
-
-        var handled = regex.TryMatchDirectWithoutValidation("xxx nihil yyy"u8, out var match);
-
-        Assert.True(handled);
-        Assert.False(match.Success);
-    }
-
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void LargerAsciiLiteralFamilyCanReportDefinitiveUnvalidatedMiss(bool ignoreCase, bool compiled)
-    {
-        var options = RegexOptions.CultureInvariant |
-            (ignoreCase ? RegexOptions.IgnoreCase : RegexOptions.None) |
-            (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("alpha|bravo|charlie|delta|echo", options: options);
-
-        var handled = regex.TryMatchDirectWithoutValidation("xxx foxtrot yyy"u8, out var match);
-
-        Assert.True(handled);
-        Assert.False(match.Success);
+        foreach (var pattern in new[] { "tempus|magna|semper", "alpha|bravo|charlie|delta|echo" })
+        {
+            using var regex = new Utf8Regex(pattern, options);
+            Assert.False(regex.IsMatch("xxx nihil yyy"u8));
+            Assert.False(regex.Match("xxx nihil yyy"u8).Success);
+        }
     }
 
     [Theory]

@@ -56,24 +56,20 @@ public sealed class Utf8LiteralMatchProbeTests
         var family = new Utf8Regex("cat|dog");
         Assert.True(family.Inspection.DebugTryIsMatchLiteralFamily("dog"u8, out found));
         Assert.True(found);
-        Assert.True(family.TryMatchDirectWithoutValidation("dog"u8, out var familyMatch));
-        Assert.Equal((0, 3), (familyMatch.StartOffsetInBytes, familyMatch.EndOffsetInBytes));
+        Assert.Equal(new Utf8CaptureRange(0, 3), family.Match("dog"u8));
     }
 
     [Fact]
-    public void DirectFoldedMatchUsesTheExistingScalarSelection()
+    public void FoldedMatchReturnsByteRangesForAsciiAndKelvinMatches()
     {
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
         using var folded = new Utf8Regex("kilo", options);
-        Assert.True(folded.TryMatchDirectWithoutValidation("😀KILOé"u8, out var direct));
-        Assert.Equal(new Utf8CaptureRange(4, 8), direct);
-        Assert.Equal(direct, folded.Match("😀KILOé"u8));
+        Assert.Equal(new Utf8CaptureRange(4, 8), folded.Match("😀KILOé"u8));
         Assert.True(folded.IsMatch("😀KILOé"u8));
-        Assert.False(folded.TryMatchDirectWithoutValidation("KILO KILO"u8, out _));
         Assert.Equal(new Utf8CaptureRange(0, 6), folded.Match("KILO KILO"u8));
 
         using var word = new Utf8Regex(@"\bkilo\b", options);
-        Assert.False(word.TryMatchDirectWithoutValidation("éKILO"u8, out _));
+        Assert.False(word.Match("éKILO"u8).Success);
         Assert.False(word.IsMatch("éKILO"u8));
     }
 

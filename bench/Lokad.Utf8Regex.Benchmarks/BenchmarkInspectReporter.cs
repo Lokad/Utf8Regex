@@ -1660,7 +1660,6 @@ internal static partial class BenchmarkInspectReporter
         }
 
         Measure("PrefilterOnly", iterations, context.ExecuteUtf8PrefixPrefilterOnly);
-        Measure("DirectMatchHook", iterations, context.ExecuteUtf8PrefixDirectHookOnly);
         Measure("DirectUrlMatcher", iterations, context.ExecuteLokadScriptDirectUrlMatcher);
         Measure("CompiledMatchOnly", iterations, context.ExecuteUtf8PrefixCompiledMatchOnly);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
@@ -1702,7 +1701,6 @@ internal static partial class BenchmarkInspectReporter
             Console.WriteLine($"FallbackReason    : {context.Utf8Regex.Inspection.FallbackReason}");
         }
 
-        Measure("DirectMatchHook", iterations, context.ExecuteUtf8PrefixDirectHookOnly);
         Measure("CompiledMatchOnly", iterations, context.ExecuteUtf8PrefixCompiledMatchOnly);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
@@ -2179,7 +2177,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
 
         Measure("PrefilterOnly", iterations, context.ExecuteUtf8PrefilterOnly);
-        Measure("DirectHook", iterations, context.ExecuteUtf8DirectHookOnly);
         if (context.Utf8Regex.Inspection.SearchPlan.HasStructuralCandidates)
         {
             Measure("FallbackSearchStartsOnly", iterations, context.ExecuteUtf8FallbackSearchStartsOnly);
@@ -2213,7 +2210,6 @@ internal static partial class BenchmarkInspectReporter
         Console.WriteLine($"CompiledEngine    : {context.Utf8Regex.Inspection.CompiledEngineKind}");
 
         Measure("PrefilterOnly", iterations, context.ExecuteUtf8PrefixPrefilterOnly);
-        Measure("DirectHook", iterations, context.ExecuteUtf8PrefixDirectHookOnly);
         Measure("CompiledProbe", iterations, context.ExecuteUtf8PrefixCompiledMatchOnly);
         Measure("Utf8Regex", iterations, context.ExecuteUtf8Regex);
         Measure("Utf8Compiled", iterations, context.ExecuteUtf8Compiled);
@@ -2259,8 +2255,6 @@ internal static partial class BenchmarkInspectReporter
         WriteIsMatchDiagnostics("Baseline", baselineDiagnostics);
         WriteIsMatchDiagnostics("Compiled", compiledDiagnostics);
 
-        Measure("DirectMatchProbe", iterations, () => context.Utf8Regex.TryMatchDirectWithoutValidation(context.InputBytes, out _) ? 1 : 0);
-        Measure("CompiledDirectMatchProbe", iterations, () => context.CompiledUtf8Regex.TryMatchDirectWithoutValidation(context.InputBytes, out _) ? 1 : 0);
         if (context.Utf8Regex.Inspection.SearchPlan.HasStructuralCandidates)
         {
             Measure("FallbackSearchStartsOnly", iterations, context.ExecuteUtf8FallbackSearchStartsOnly);
@@ -2403,27 +2397,6 @@ internal static partial class BenchmarkInspectReporter
             });
         }
 
-        Measure("DirectMatchProbe", iterations, () =>
-        {
-            var handled = regex.TryMatchDirectWithoutValidation(benchmarkCase.InputBytes, out var match);
-            if (!handled)
-            {
-                return -1;
-            }
-
-            return match.Success ? 1 : 0;
-        });
-        Measure("CompiledDirectMatchProbe", iterations, () =>
-        {
-            var handled = compiledUtf8Regex.TryMatchDirectWithoutValidation(benchmarkCase.InputBytes, out var match);
-            if (!handled)
-            {
-                return -1;
-            }
-
-            return match.Success ? 1 : 0;
-        });
-
         Measure("MatchProbe", iterations, () =>
             Utf8MatchInspection.IsMatchCompiled(regex, benchmarkCase.InputBytes) ? 1 : 0);
         Measure("CompiledMatchProbe", iterations, () =>
@@ -2487,16 +2460,6 @@ internal static partial class BenchmarkInspectReporter
         {
             var asciiMiss = new byte[benchmarkCase.InputBytes.Length];
             asciiMiss.AsSpan().Fill((byte)'x');
-            Measure("AsciiMissDirectProbe", iterations, () =>
-            {
-                var handled = regex.TryMatchDirectWithoutValidation(asciiMiss, out var match);
-                if (!handled)
-                {
-                    return -1;
-                }
-
-                return match.Success ? 1 : 0;
-            });
             Measure("AsciiMissRuntimeFamilyIsMatch", iterations, () =>
             {
                 var handled = regex.Inspection.DebugTryIsMatchLiteralFamily(asciiMiss, out var isMatch);

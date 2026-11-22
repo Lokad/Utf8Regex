@@ -4,18 +4,9 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex;
 
-// byte-offset adapters and direct probes, split from the matching facade along the operation-adapter ownership boundary.
-/// <summary>Byte-offset operation adapters and direct probes for <see cref="Utf8Regex"/>.</summary>
+/// <summary>Byte-offset adapters and direct matching for <see cref="Utf8Regex"/>.</summary>
 public sealed partial class Utf8Regex
 {
-    internal bool TryMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
-    {
-        if (GetOwnedSliceProgram(input) is null)
-            return TryMatchSelectedDirect(input, out match);
-        match = default;
-        return false;
-    }
-
     // Selection already accounts for boundary, folding and timeout requirements.
     private bool TryMatchSelectedDirect(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {

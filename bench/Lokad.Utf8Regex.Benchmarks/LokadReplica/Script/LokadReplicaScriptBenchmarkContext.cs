@@ -304,22 +304,6 @@ internal sealed class LokadReplicaScriptBenchmarkContext
         return total;
     }
 
-    public int ExecuteUtf8PrefixDirectHookOnly()
-    {
-        EnsurePrefixMatchLoop();
-        var total = 0;
-        foreach (var sample in SampleBytes)
-        {
-            Utf8Regex.TryMatchDirectWithoutValidation(sample, out var match);
-            if (match.Success)
-            {
-                total += match.Success ? (match.EndOffsetInBytes - match.StartOffsetInBytes) : (match.EndOffsetInBytes - match.StartOffsetInBytes);
-            }
-        }
-
-        return total;
-    }
-
     private int ExecuteImportLineVerifierModel()
     {
         return Utf8QuotedLineSegmentExecutor.TryCountViaLineWalk(InputBytes, ImportPrefix, ImportOptionalSegment, out var count)

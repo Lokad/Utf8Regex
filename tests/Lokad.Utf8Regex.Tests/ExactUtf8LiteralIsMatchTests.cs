@@ -61,8 +61,6 @@ public sealed class ExactUtf8LiteralIsMatchTests
         var finiteOracle = new Regex("café", RegexOptions.CultureInvariant, timeout);
         var rightToLeftOracle = new Regex("café", rightToLeftOptions);
 
-        Assert.False(finite.TryMatchDirectWithoutValidation(inputBytes, out _));
-        Assert.False(finiteLookahead.TryMatchDirectWithoutValidation("fooqux foobar"u8, out _));
         Assert.Equal(finiteOracle.IsMatch(input), finite.IsMatch(inputBytes));
         AssertMatchParity(finiteOracle, finite, input, inputBytes);
         AssertParity(

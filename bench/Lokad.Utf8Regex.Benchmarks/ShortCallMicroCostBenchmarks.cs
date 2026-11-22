@@ -38,40 +38,6 @@ public class ShortPublicMatchMicroCostBenchmarks
     }
 
     [Benchmark(OperationsPerInvoke = RepeatCount)]
-    public int DirectHook()
-    {
-        var total = 0;
-        for (var i = 0; i < RepeatCount; i++)
-        {
-            total += _context.ExecuteUtf8DirectHookOnly();
-        }
-
-        return total;
-    }
-
-    [Benchmark(OperationsPerInvoke = RepeatCount)]
-    public int DirectFixedLengthOnly()
-    {
-        var total = 0;
-        for (var i = 0; i < RepeatCount; i++)
-        {
-        }
-
-        return total;
-    }
-
-    [Benchmark(OperationsPerInvoke = RepeatCount)]
-    public int DirectFixedAlternationOnly()
-    {
-        var total = 0;
-        for (var i = 0; i < RepeatCount; i++)
-        {
-        }
-
-        return total;
-    }
-
-    [Benchmark(OperationsPerInvoke = RepeatCount)]
     public int CompiledProbe()
     {
         var total = 0;
@@ -161,18 +127,6 @@ public class ShortPrefixLoopMicroCostBenchmarks
         for (var i = 0; i < RepeatCount; i++)
         {
             total += _context.ExecuteUtf8PrefixPrefilterOnly();
-        }
-
-        return total;
-    }
-
-    [Benchmark(OperationsPerInvoke = RepeatCount)]
-    public int DirectHook()
-    {
-        var total = 0;
-        for (var i = 0; i < RepeatCount; i++)
-        {
-            total += _context.ExecuteUtf8PrefixDirectHookOnly();
         }
 
         return total;
