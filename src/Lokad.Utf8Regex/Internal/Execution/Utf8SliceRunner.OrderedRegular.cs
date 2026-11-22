@@ -627,10 +627,13 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> input, ref int fromByte, ref Utf8SliceInvocation invocation)
     {
         var starts = program.NonBacktrackingOrderedStartBytes;
-        if (program.RightToLeft || starts.Count == 0 || fromByte < input.Length && starts.Contains(input[fromByte]))
+        var reverse = program.RightToLeft;
+        if (starts.Count == 0 || IsPossibleRegularStart(input, fromByte, starts, reverse))
             return Utf8ExecutionLimitKind.None;
-        var breach = TrySeekRegularStart(input, ref fromByte, starts, ref invocation);
-        if (breach == Utf8ExecutionLimitKind.None && fromByte == input.Length)
+        var breach = reverse
+            ? TrySeekReverseRegularStart(input, ref fromByte, starts, ref invocation)
+            : TrySeekRegularStart(input, ref fromByte, starts, ref invocation);
+        if (breach == Utf8ExecutionLimitKind.None && fromByte == (reverse ? 0 : input.Length))
         {
             invocation.Budget.ThrowIfCancellationRequested();
             invocation.Budget.CheckDeadline();
@@ -686,8 +689,8 @@ internal static partial class Utf8SliceRunner
             Span<OrderedRegularTransition> table = stackalloc OrderedRegularTransition[cache ? capacity : 0];
             table.Clear();
             var closures = program.NonBacktrackingOrderedClosures;
-            // Only forward traversal has a prepared set of UTF-8 lead bytes.
-            var starts = !reverse && remaining >= 64 ? program.NonBacktrackingOrderedStartBytes : default;
+            var starts = remaining >= 64 ? program.NonBacktrackingOrderedStartBytes : default;
+            var finalEdge = reverse ? 0 : input.Length;
             var conditionMask = program.NonBacktrackingOrderedConditions;
             var current = new OrderedRegularFrontier();
             var bestStart = -1;
@@ -695,10 +698,12 @@ internal static partial class Utf8SliceRunner
             var position = fromByte;
             while (true)
             {
-                if (current.Count == 0 && bestStart < 0 && starts.Count != 0 && position < input.Length &&
-                    !starts.Contains(input[position]))
+                if (current.Count == 0 && bestStart < 0 && starts.Count != 0 && position != finalEdge &&
+                    !IsPossibleRegularStart(input, position, starts, reverse))
                 {
-                    breach = TrySeekRegularStart(input, ref position, starts, ref invocation);
+                    breach = reverse
+                        ? TrySeekReverseRegularStart(input, ref position, starts, ref invocation)
+                        : TrySeekRegularStart(input, ref position, starts, ref invocation);
                     if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
                 }
                 breach = invocation.TryChargeInputStep();
@@ -835,6 +840,36 @@ internal static partial class Utf8SliceRunner
             var candidate = starts.IndexOf(block);
             if (candidate >= 0) { position += candidate; break; }
             position += block.Length;
+        }
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    private static bool IsPossibleRegularStart(ReadOnlySpan<byte> input, int edge, in PreparedByteSearch starts, bool reverse)
+    {
+        if (!reverse) return edge < input.Length && starts.Contains(input[edge]);
+        return TryGetScalarWidthEndingAt(input, edge, out var width) && starts.Contains(input[edge - width]);
+    }
+
+    private static Utf8ExecutionLimitKind TrySeekReverseRegularStart(ReadOnlySpan<byte> input, ref int edge,
+        in PreparedByteSearch starts, ref Utf8SliceInvocation invocation)
+    {
+        while (edge > 0)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var blockStart = Math.Max(0, edge - 2048);
+            var candidate = starts.LastIndexOf(input[blockStart..edge]);
+            if (candidate >= 0)
+            {
+                var lead = blockStart + candidate;
+                // A block can cut through the candidate scalar. Decode against
+                // the subject and return its right edge for mirrored execution.
+                if (!TryReadScalar(input, lead, false, out _, out var width))
+                    throw new InvalidOperationException("Ordered traversal requires a complete scalar.");
+                edge = lead + width;
+                return Utf8ExecutionLimitKind.None;
+            }
+            edge = blockStart;
         }
         return Utf8ExecutionLimitKind.None;
     }

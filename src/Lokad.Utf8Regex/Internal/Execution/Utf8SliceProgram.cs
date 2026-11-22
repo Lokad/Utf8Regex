@@ -455,7 +455,7 @@ internal sealed class Utf8SliceProgram
         }
         if (isNonBacktracking && instructions.Length > 64)
             NonBacktrackingWideMasks = Utf8SliceRunner.PrepareWideRegularMasks(this, Utf8ConstructionScope.CurrentBudget);
-        if (!rightToLeft && NonBacktrackingOrderedClosures.Length != 0)
+        if (NonBacktrackingOrderedClosures.Length != 0)
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
         else if (!rightToLeft && isNonBacktracking && !canMatchEmpty && instructions.Length > 64)
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetWideRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);

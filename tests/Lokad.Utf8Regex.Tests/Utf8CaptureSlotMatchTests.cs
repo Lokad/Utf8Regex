@@ -257,6 +257,31 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.False(regex.Match(input.AsSpan(0, prefix.Length)).Success);
     }
 
+    [Theory]
+    [InlineData(2046, "")]
+    [InlineData(2044, "è")]
+    public void OrderedRightToLeftSearchUsesCompleteScalarsAcrossStarterBlocks(int padding, string otherLeadMatch)
+    {
+        const string hits = "aaé bb😀";
+        var prefix = hits + otherLeadMatch + new string('q', padding);
+        var ceiling = Encoding.UTF8.GetByteCount(prefix);
+        var input = Encoding.UTF8.GetBytes(prefix + "bb😀");
+        using var regex = new Utf8Regex("(a+é|b+😀)", RegexOptions.RightToLeft, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 256, MaxWorkingBytes = 4096 }
+        });
+        var slots = new Utf8CaptureRange[2];
+        var account = new Account();
+        using var source = new CancellationTokenSource();
+        var expected = new Utf8CaptureRange(5, Encoding.UTF8.GetByteCount(hits));
+
+        Assert.Equal(expected, regex.Match(input, ceiling, slots, source.Token, workingMemoryAllowance: account));
+        Assert.Equal(expected, slots[1]);
+        Assert.Equal(0UL, account.Held);
+        Assert.Equal(2, regex.Count(input.AsSpan(0, ceiling), source.Token, workingMemoryAllowance: account));
+        Assert.Equal(0UL, account.Held);
+    }
+
     [Fact]
     public void OrdinaryOrderedBooleanNeedsNoScratchLoanFromTheCaller()
     {
