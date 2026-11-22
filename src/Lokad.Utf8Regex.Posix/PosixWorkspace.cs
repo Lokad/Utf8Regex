@@ -65,7 +65,6 @@ internal partial struct PosixWorkspace
         for (var candidate = fromByte; candidate <= lastCandidate;)
         {
             Charge(ref invocation);
-            Reset(state, ref invocation);
             // The first atom is required. Its decoded width is useful both
             // when the candidate fails and when its folded run can consume it.
             var firstWidth = 0;
@@ -109,6 +108,7 @@ internal partial struct PosixWorkspace
     private bool MatchAt(ReadOnlySpan<byte> input, scoped Span<int> state, int start, int firstWidth, bool existenceOnly, bool captureHistory,
         ref Utf8SliceInvocation invocation, out int end)
     {
+        Reset(state, ref invocation);
         var code = _program.Scalar.Instructions;
         var pc = 0; var at = start; end = -1;
         var maximumEnd = input.Length;

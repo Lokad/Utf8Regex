@@ -140,7 +140,6 @@ internal sealed partial class PosixProgram
         var greedyRuns = scalar.RepeatCount > 0 && CanSelectGreedyRuns(scalar, captureTags.AsSpan(1), budget,
             out canReplayDirectly, out firstRunAtom, out terminalLineEndRepeat);
         var directGreedyRuns = greedyRuns && canReplayDirectly;
-        var firstRequiredRunAtom = greedyRuns && (!directGreedyRuns || scalar.IgnoreCase) ? firstRunAtom : -1;
         if (!firstAcceptanceIsLongest)
             firstAcceptanceIsLongest = greedyRuns || CanSelectRepeatedLiteralCapture(scalar, budget);
         if (!firstAcceptanceIsLongest) PreferLongerScalarAlternatives(scalar.Instructions, budget);
@@ -161,6 +160,10 @@ internal sealed partial class PosixProgram
             }
         }
         var startsAtInputStart = RequiresInputStart(scalar.Instructions, budget);
+        // Unanchored discovery can reject starts before entering the matcher.
+        // A direct, case-sensitive run at byte zero already checks its first byte.
+        var firstRequiredRunAtom = greedyRuns && (!directGreedyRuns || scalar.IgnoreCase || !startsAtInputStart)
+            ? firstRunAtom : -1;
         var result = budget.AllocateObject((scalar, parentTags, captureTags, firstAcceptanceIsLongest, directGreedyRuns, useCaptureOffsets, firstRequiredRunAtom,
                 startsAtInputStart, terminalLineEndRepeat, chart.Nodes, chart.Classes),
             static x => new PosixProgram(x.scalar, x.parentTags, x.captureTags, x.firstAcceptanceIsLongest, x.directGreedyRuns, x.useCaptureOffsets,

@@ -6,6 +6,31 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixGreedyAsciiRunTests
 {
     [Fact]
+    public void DisjointRunsSkipRejectedStartsWithoutInitializingCaptureState()
+    {
+        const string pattern = "([[:alpha:]]+)([0-9]+)";
+        using var regex = new Utf8PosixRegex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 576 }
+        });
+        var input = Encoding.UTF8.GetBytes(new string('!', 512) + "😀sku007");
+        var captures = new Utf8CaptureRange[3];
+        var whole = new Utf8CaptureRange(516, 522);
+        Assert.Equal(whole, regex.Match(input, captures: captures));
+        Assert.Equal(whole, captures[0]);
+        Assert.Equal(new Utf8CaptureRange(516, 519), captures[1]);
+        Assert.Equal(new Utf8CaptureRange(519, 522), captures[2]);
+
+        using var limited = new Utf8PosixRegex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 512 }
+        });
+        var refused = Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input, captures: captures));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, refused.ResourceKind);
+        Assert.All(captures, capture => Assert.False(capture.Success));
+    }
+
+    [Fact]
     public void AbsoluteStartSearchStaysWithinOneAttempt()
     {
         using var plain = new Utf8PosixRegex("^([[:alpha:]]+)([0-9]+)$", policy: new Utf8RegexPolicy
@@ -217,7 +242,7 @@ public sealed class PosixGreedyAsciiRunTests
     {
         foreach (var pattern in new[] { "(k*)([0-9]+)", "(k*)([K]*)", "([k]+)([K]+)", "(k|kk)(k*)", "(k)+([0-9]+)" })
             Assert.Equal(-1, PosixProgram.Compile(pattern, PosixCompileOptions.IgnoreCase).FirstRequiredRunAtom);
-        Assert.Equal(-1, PosixProgram.Compile("([a-z]+)([0-9]+)", default).FirstRequiredRunAtom);
+        Assert.Equal(-1, PosixProgram.Compile("^([a-z]+)([0-9]+)", default).FirstRequiredRunAtom);
     }
 
     [Theory]
