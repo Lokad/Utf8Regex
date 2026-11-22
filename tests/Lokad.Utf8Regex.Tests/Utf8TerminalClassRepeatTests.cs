@@ -89,6 +89,27 @@ public sealed class Utf8TerminalClassRepeatTests
     }
 
     [Theory]
+    [InlineData(@"\AX(.+)", "\n", false)]
+    [InlineData(@"\AX((?s:.+))", "\n", true)]
+    [InlineData(@"\AX([^!\n]+)", "!", false)]
+    public void ByteStopRepeatPublishesScalarAlignedCaptureAcrossBlocks(string pattern, string stop, bool crossesStop)
+    {
+        var run = "😀" + new string('a', 2042) + "𐐀";
+        var input = Encoding.UTF8.GetBytes("X" + run + stop + "é");
+        using var regex = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 16, MaxWorkingBytes = 4096 }
+        });
+        using var source = new CancellationTokenSource();
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        var end = crossesStop ? input.Length : 1 + Encoding.UTF8.GetByteCount(run);
+
+        Assert.Equal(new Utf8CaptureRange(0, end), regex.Match(input, captures: captures, cancellationToken: source.Token));
+        Assert.Equal(new Utf8CaptureRange(1, end), captures[1]);
+        Assert.Equal(crossesStop, regex.Match(Encoding.UTF8.GetBytes("X" + stop), cancellationToken: source.Token).Success);
+    }
+
+    [Theory]
     [InlineData(15)]
     [InlineData(16)]
     [InlineData(17)]

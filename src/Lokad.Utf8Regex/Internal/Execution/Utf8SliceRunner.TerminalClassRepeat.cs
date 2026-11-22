@@ -1478,6 +1478,12 @@ internal static partial class Utf8SliceRunner
     {
         var minimum = repeat.RepeatMinimum;
         var maximum = minimumOnly ? minimum : repeat.RepeatMaximum;
+        var dot = atom.Kind == Utf8SliceInstructionKind.Dot;
+        var unbounded = minimum <= 1 && maximum == long.MaxValue;
+        if (unbounded && TryGetAsciiRepeatStops(program, atom, out var first, out var second))
+            return RunUnboundedByteStops(input, start, minimum != 0, dot && atom.A != 0, first, second,
+                ref invocation, out minimumEnd, checkExitDeadline);
+
         if (maximum is >= 2 and <= 16 && atom is { B: 0, C: 0 } &&
             (atom.Kind == Utf8SliceInstructionKind.Set || maximum <= 4 && atom.Kind == Utf8SliceInstructionKind.CategorySet))
         {
@@ -1501,8 +1507,6 @@ internal static partial class Utf8SliceRunner
         minimumEnd = start;
         var position = start;
         var count = 0;
-        var dot = atom.Kind == Utf8SliceInstructionKind.Dot;
-        var unbounded = minimum <= 1 && maximum == long.MaxValue;
         var unboundedAsciiSet = unbounded && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 };
         byte asciiLast = 0;
         var asciiFirst = unboundedAsciiSet ? GetUnfoldedAsciiRange(atom, out asciiLast) : -1;
@@ -1525,22 +1529,18 @@ internal static partial class Utf8SliceRunner
         var asciiNegated = hybrid && atom.B != 0;
         ReadOnlySpan<byte> exactAsciiMask = unboundedAsciiSet || unbounded && hybrid ? program.SetMasks[atom.A] : [];
         var asciiWord = unboundedAsciiSet && IsAsciiWordMask(exactAsciiMask);
-        if (unbounded && (TryGetAsciiRepeatStops(program, atom, out var first, out var second) || unboundedAsciiSet || hybrid))
+        if (unbounded && (unboundedAsciiSet || hybrid))
         {
-            var dotAll = dot && atom.A != 0;
-            var scanMask = !exactAsciiMask.IsEmpty && !asciiWord;
-            var blockSize = scanMask ? 64 : 2048;
+            var blockSize = asciiWord ? 2048 : 64;
             // The mask walk stops at any wider scalar. Hybrid repeats test it
-            // before resuming the next bounded block. Dot and the byte-stop
-            // searches can cross a scalar inside their block.
+            // before resuming the next bounded block.
             while (position < input.Length)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
                 var block = input.Slice(position, Math.Min(blockSize, input.Length - position));
                 var stop = asciiWord ? Utf8AsciiBytePredicates.WordSearch.IndexOfAnyExcept(block) :
-                    scanMask ? ScanAsciiMask(block, exactAsciiMask, category: false, asciiNegated) :
-                    IndexOfRepeatStop(block, dotAll, first, second);
+                    ScanAsciiMask(block, exactAsciiMask, category: false, asciiNegated);
                 if ((uint)stop >= (uint)block.Length)
                 {
                     position += block.Length;
@@ -1604,6 +1604,29 @@ internal static partial class Utf8SliceRunner
         if (terminal != Utf8ExecutionLimitKind.None) return (-1, terminal);
         return count >= minimum ? (position, Utf8ExecutionLimitKind.None)
             : (-1, Utf8ExecutionLimitKind.None);
+    }
+
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunUnboundedByteStops(ReadOnlySpan<byte> input,
+        int start, bool requiresScalar, bool dotAll, byte first, byte second, ref Utf8SliceInvocation invocation,
+        out int minimumEnd, bool checkExitDeadline)
+    {
+        minimumEnd = start;
+        var position = start;
+        while (position < input.Length)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+            var length = Math.Min(2048, input.Length - position);
+            // A block can split a scalar. Only an ASCII stop or the subject
+            // end determines the run's endpoint.
+            var stop = IndexOfRepeatStop(input.Slice(position, length), dotAll, first, second);
+            if (stop >= 0) { position += stop; break; }
+            position += length;
+        }
+        var terminal = ChargeRepeatBoundary(ref invocation, checkExitDeadline);
+        if (terminal != Utf8ExecutionLimitKind.None || requiresScalar && position == start) return (-1, terminal);
+        if (requiresScalar) minimumEnd = AdvancePastScalar(input, start, reverse: false);
+        return (position, Utf8ExecutionLimitKind.None);
     }
 
     private static int ScanAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category, bool negated = false)
