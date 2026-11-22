@@ -1017,8 +1017,9 @@ internal static partial class Utf8SliceRunner
                          { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
 
-        if (repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0 } &&
-            atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
+        if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } &&
+            (repeat.RepeatMinimum != 0 && atom.C == 0 ||
+                repeat.RepeatMaximum == long.MaxValue && continuation == code.Length - 1))
         {
             // Every visited instruction moves forward. The same bounded proof
             // used by execution can be paid once before publishing the program.
