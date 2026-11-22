@@ -512,14 +512,6 @@ public sealed partial class Utf8Regex : IDisposable
 
     private int OwnedSliceCountFromByte(ReadOnlySpan<byte> input, Utf8SliceProgram program, int startByte, ref Utf8SliceInvocation invocation)
     {
-        // Count publishes no capture values. Reuse the complete scalar-run proof
-        // before expanded branch search or acquiring unused capture slots.
-        if (Utf8SliceRunner.TryCountTerminalScalar(program, input, startByte, ref invocation, out var terminal))
-        {
-            if (terminal.Breach != Utf8ExecutionLimitKind.None)
-                throw new InvalidOperationException("Terminal class count breached the invocation budget.");
-            return terminal.Count;
-        }
         // Literal search needs no capture slots or continuation frames. A
         // boundary can use this sliced-input path only at the subject origin.
         if ((HasFiniteExecutionLimits || invocation.Ledger.HasMemoryAllowance) &&
@@ -530,6 +522,14 @@ public sealed partial class Utf8Regex : IDisposable
             if (breach != Utf8ExecutionLimitKind.None)
                 throw new InvalidOperationException("Native literal count breached the invocation budget.");
             return count;
+        }
+        // A complete scalar run, including a grouped repeat, can be counted
+        // without preparing capture slots or entering candidate search.
+        if (Utf8SliceRunner.TryCountTerminalScalar(program, input, startByte, ref invocation, out var terminal))
+        {
+            if (terminal.Breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Terminal class count breached the invocation budget.");
+            return terminal.Count;
         }
         // Borrow the same validated invocation for invariant folded literals.
         // Their only non-ASCII alias is Kelvin; keep that case on the scalar VM.
