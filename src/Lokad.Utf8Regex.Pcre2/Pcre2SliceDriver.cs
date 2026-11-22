@@ -201,6 +201,10 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
 internal static class Pcre2SliceDriver
 {
+    // Count borrows immutable empty inputs when it has no prepared search.
+    private static readonly Utf8SearchPlan s_emptyCountSearchPlan = default;
+    private static readonly PreparedSearcher s_emptyCountBranchPrefixes = default;
+
     // Attempt-origin alignment for absolute-origin assertions (`^`): the end
     // of input is always aligned, and any byte below it is aligned unless it
     // opens a UTF-8 continuation byte.
@@ -314,9 +318,9 @@ internal static class Pcre2SliceDriver
         // across matches instead of renting/releasing it on every MoveNext.
         if (!program.CanMatchEmpty && !program.RightToLeft)
         {
-            var branchPrefixes = candidates.Kind == Pcre2CandidateSearchKind.BranchLeadingLiterals
-                ? candidates.Searcher : default;
-            return CountNonEmpty(program, default, ref input, start, ref invocation, branchPrefixes);
+            ref readonly var branchPrefixes = ref (candidates.Kind == Pcre2CandidateSearchKind.BranchLeadingLiterals
+                ? ref candidates.Searcher : ref s_emptyCountBranchPrefixes);
+            return CountNonEmpty(program, in s_emptyCountSearchPlan, ref input, start, ref invocation, in branchPrefixes);
         }
 
         var cursor = new Pcre2SliceGlobalMatchCursor(
