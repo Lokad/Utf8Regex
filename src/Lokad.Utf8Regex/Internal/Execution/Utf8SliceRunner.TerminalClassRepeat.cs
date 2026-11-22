@@ -1039,9 +1039,17 @@ internal static partial class Utf8SliceRunner
 
         if (atom.Kind == Utf8SliceInstructionKind.Dot)
         {
-            if (next.Kind != Utf8SliceInstructionKind.Fork) return;
-            var starts = FindRepeatRewindStarts(code, setMasks, continuation, budget);
-            if (starts != 0) code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C, starts);
+            if (next.Kind == Utf8SliceInstructionKind.Fork)
+            {
+                var starts = FindRepeatRewindStarts(code, setMasks, continuation, budget);
+                if (starts != 0) code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C, starts);
+            }
+            else if (atom.A == 0 && next is { Kind: Utf8SliceInstructionKind.Literal, A: '\n' })
+            {
+                // The dot rejects LF, so only its last endpoint can see this delimiter.
+                budget.ChargeWork(1);
+                code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
+            }
             return;
         }
 

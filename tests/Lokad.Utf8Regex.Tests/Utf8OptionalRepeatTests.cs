@@ -111,6 +111,8 @@ public sealed class Utf8OptionalRepeatTests
     [InlineData(@"\A#?([a-f0-9]{6}|[a-f0-9]{3})$", "#A0F\n")]
     [InlineData(@"\A#?([#a]{2}|[b]{3})$", "#a")]
     [InlineData(@"^///\s?(?<doc>.*)$", "///\ndoc😀")]
+    [InlineData(@"\G///(?<doc>[^\n]*)\n", "///first😀\nlast\n")]
+    [InlineData(@"\G///(?<doc>(?s:.)*)\n", "///first😀\nlast\n")]
     public void ScalarRepeatPreservesEndpointsAndObservedCaptures(string pattern, string text)
     {
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
