@@ -766,13 +766,17 @@ internal static partial class Utf8SliceRunner
             if (leadingPrefix.IsEmpty && leading >= 0 && second >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                 (uint)(input[position + 1] - second) > (uint)(secondLast - second)))
                 continue;
+            var reuseRewoundDigits = reuseDecimalWindow && position < classWindowEnd;
             var provedAsciiBoundary = false;
             if (screenDecimalWindow)
             {
                 if (position == input.Length) continue;
                 if (input[position] < 128)
                 {
-                    if (!Utf8AsciiBytePredicates.IsDigit(input[position])) continue;
+                    // The aligned direct rewind already classified every scalar
+                    // between this start and the excluded delimiter.
+                    if (!(verifyFollowingWindow && reuseRewoundDigits) &&
+                        !Utf8AsciiBytePredicates.IsDigit(input[position])) continue;
                     var previous = position == 0 ? (byte)0 : input[position - 1];
                     if (Utf8AsciiBytePredicates.IsWord(previous)) continue;
                     provedAsciiBoundary = previous < 128;
@@ -809,7 +813,7 @@ internal static partial class Utf8SliceRunner
                     var proofStart = proveDecimalPrefix ? 0 : leadingScalarIndex;
                     var proofPosition = position;
                     var proofLimit = BranchedPrefixInstructionLimit;
-                    if (reuseDecimalWindow && position < classWindowEnd)
+                    if (reuseRewoundDigits)
                     {
                         // Rewind already admitted a nonempty decimal run ending at
                         // this excluded delimiter. Confirm any remaining Unicode
