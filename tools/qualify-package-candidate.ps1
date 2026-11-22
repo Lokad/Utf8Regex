@@ -2,13 +2,18 @@
 .SYNOPSIS
 Create one immutable common-version package candidate with detached consumers.
 .DESCRIPTION
-Requires clean source and a new version; builds/packs selected profiles and writes artifacts/nuget plus qualification evidence. Does not publish.
+Requires clean source and a new candidate version. Builds and packs selected
+profiles, verifies detached consumers and writes the qualification evidence.
+Copies packages and symbols to artifacts/nuget unless -StageOnly is specified.
 .NOTES
 Core and PythonRe are selected by default. Each adapter pins the exact Core
 version. -SkipBuild uses matching configuration and source binaries for both
 frameworks. Detached fixtures verify local package assets and API snapshots
 while excluding tests marked SourceOnly. Core-only qualification runs without
 adapters or the benchmark executable.
+
+-StageOnly retains the qualified packages in the candidate's private feed.
+Use this when an older local package occupies a delivery path.
 
 Keep records in artifacts/package-candidates/<version> and preserve prior
 package bytes. Platform, performance and original consumer acceptance are
@@ -20,7 +25,8 @@ param(
     [string[]] $Profiles = @("Core", "PythonRe"),
     [ValidateSet("Debug", "Release")]
     [string] $Configuration = "Release",
-    [switch] $SkipBuild
+    [switch] $SkipBuild,
+    [switch] $StageOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -61,11 +67,13 @@ foreach ($adapter in @("PythonRe", "Pcre2", "Posix")) {
         $testProjects += "Lokad.Utf8Regex.$adapter.Tests"
     }
 }
-foreach ($packageId in $packages) {
-    foreach ($extension in @("nupkg", "snupkg")) {
-        $destination = Join-Path $nugetRoot "$packageId.$version.$extension"
-        if (Test-Path -LiteralPath $destination) {
-            throw "A package output already exists: $destination. Use a new version for new bytes."
+if (!$StageOnly) {
+    foreach ($packageId in $packages) {
+        foreach ($extension in @("nupkg", "snupkg")) {
+            $destination = Join-Path $nugetRoot "$packageId.$version.$extension"
+            if (Test-Path -LiteralPath $destination) {
+                throw "A package output already exists: $destination. Use -StageOnly to qualify in the private feed."
+            }
         }
     }
 }
@@ -274,12 +282,15 @@ $patterns
     [void] (New-Item -ItemType Directory -Path (Split-Path -Parent $candidateRoot) -Force)
     if (Test-Path -LiteralPath $candidateRoot) { throw "Candidate appeared during qualification; refusing to overwrite it." }
     [IO.Directory]::Move($attemptRoot, $candidateRoot)
-    [void] [IO.Directory]::CreateDirectory($nugetRoot)
-    foreach ($package in Get-ChildItem -LiteralPath (Join-Path $candidateRoot "feed") -File) {
-        [IO.File]::Copy($package.FullName, (Join-Path $nugetRoot $package.Name), $false)
-    }
     Write-Host "Qualified immutable package candidate: $candidateRoot"
-    Write-Host "NuGet packages and symbols: $nugetRoot"
+    $candidateFeed = Join-Path $candidateRoot "feed"
+    if (!$StageOnly) {
+        [void] [IO.Directory]::CreateDirectory($nugetRoot)
+        foreach ($package in Get-ChildItem -LiteralPath $candidateFeed -File) {
+            [IO.File]::Copy($package.FullName, (Join-Path $nugetRoot $package.Name), $false)
+        }
+    }
+    Write-Host "NuGet packages and symbols: $(if ($StageOnly) { $candidateFeed } else { $nugetRoot })"
 }
 finally {
     if ($transcriptStarted) { [void] (Stop-Transcript) }

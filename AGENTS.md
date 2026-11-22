@@ -38,9 +38,10 @@ Follow the profile contracts and the ignored root PLAN.md.
 - Reserve complete build, platform and package matrices for delivery boundaries.
   Use `tools/qualify-package-candidate.ps1` with clean source, a fresh common
   version and exact Core pins. Keep published and staged bytes immutable.
-- Packages go to `artifacts/nuget/`. Keep package, platform, performance and
-  original consumer checks distinct. NuGet uses the self-contained package
-  README. [Package qualification](tools/qualify-package-candidate.ps1) ·
+- Packages go to `artifacts/nuget/`. Use `-StageOnly` to qualify in the private
+  candidate feed when the delivery paths are occupied. Keep package, platform,
+  performance and original consumer checks distinct. NuGet uses the
+  self-contained package README. [Package qualification](tools/qualify-package-candidate.ps1) ·
   [Package README](docs/nuget/README.md)
 - Push authorized scoped commits. Space GitHub CI status queries minutes apart
   and continue useful work while CI runs.
