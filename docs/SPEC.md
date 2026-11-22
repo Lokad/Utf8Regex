@@ -200,7 +200,9 @@ and library version. Recheck finite policies when upgrading.
 
 Exact backreferences compare captured bytes in admitted blocks of up to
 2,048 bytes, starting at the right edge in RTL mode. Folded backreferences
-compare scalar equivalents.
+compare scalar equivalents. Fixed RTL dot repeats can admit ASCII suffixes
+in blocks of up to 2,048 bytes. Each accepted ASCII byte counts as one
+scalar. Wider scalars consume one repetition each.
 
 The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result

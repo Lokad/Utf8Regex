@@ -69,6 +69,29 @@ public sealed class Utf8RtlStrictEndCountTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FixedReverseDotKeepsScalarCountsAcrossAsciiBlocks(bool dotAll)
+    {
+        var options = RegexOptions.RightToLeft | (dotAll ? RegexOptions.Singleline : RegexOptions.None);
+        using var regex = new Utf8Regex(@"(?<g>.{4093})\z", options, policy: new()
+        {
+            ResourcePolicy = Limits(64)
+        });
+        var prefix = "é\n" + new string('a', 2046) + "😀";
+        var input = Encoding.UTF8.GetBytes(prefix + new string('a', 2046) + "\nmore");
+        var end = input.Length - 5;
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+        using var token = new CancellationTokenSource();
+
+        var match = regex.Match(input, end, slots, token.Token, endOffsetInBytes: end);
+        Assert.Equal(new Utf8CaptureRange(3, end), match);
+        Assert.Equal(match, slots[1]);
+        input[end - 2046] = (byte)'\n';
+        Assert.Equal(dotAll, regex.Match(input, end, slots, token.Token, endOffsetInBytes: end).Success);
+    }
+
+    [Theory]
     [MemberData(nameof(Cases))]
     public void PublicCountsKeepScalarOffsetsContextAndRetainedCaptures(string pattern, string text, RegexOptions extra)
     {

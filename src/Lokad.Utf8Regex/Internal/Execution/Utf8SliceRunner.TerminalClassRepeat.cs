@@ -1824,15 +1824,40 @@ internal static partial class Utf8SliceRunner
         in Utf8SliceInstruction atom, ReadOnlySpan<byte> input, int start, long remaining, ref Utf8SliceInvocation invocation)
     {
         var position = start;
-        for (; remaining > 0; remaining--)
+        var dot = atom.Kind == Utf8SliceInstructionKind.Dot;
+        var dotAll = atom.A != 0;
+        while (remaining > 0)
         {
+            if (dot && remaining >= 32 && position >= 32 && position <= input.Length &&
+                (BinaryPrimitives.ReadUInt32LittleEndian(input.Slice(position - sizeof(uint), sizeof(uint))) & 0x80808080u) == 0)
+            {
+                var blockBreach = invocation.TryChargeInputStep();
+                if (blockBreach != Utf8ExecutionLimitKind.None) return (-1, blockBreach);
+                var length = (int)Math.Min(remaining, Math.Min(position, 2048));
+                var block = input.Slice(position - length, length);
+                // Every byte after the last non-ASCII byte is a whole scalar.
+                // The left cut may be inside a scalar that the next iteration decodes.
+                var ascii = block[(block.LastIndexOfAnyInRange((byte)128, byte.MaxValue) + 1)..];
+                if (!dotAll && ascii.LastIndexOf((byte)'\n') >= 0) break;
+                position -= ascii.Length;
+                remaining -= ascii.Length;
+                continue;
+            }
             var breach = invocation.TryChargeStep();
             if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
             if (!TryReadScalar(input, position, true, out var scalar, out var width)) break;
-            breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
-            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
-            if (!hit) break;
+            if (dot)
+            {
+                if (!dotAll && scalar.Value == '\n') break;
+            }
+            else
+            {
+                breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
+                if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+                if (!hit) break;
+            }
             position -= width;
+            remaining--;
         }
         var terminal = ChargeRepeatBoundary(ref invocation, checkDeadline: true);
         return (remaining == 0 && terminal == Utf8ExecutionLimitKind.None ? position : -1, terminal);
