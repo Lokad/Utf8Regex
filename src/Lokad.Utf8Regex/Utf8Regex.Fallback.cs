@@ -78,6 +78,38 @@ public sealed partial class Utf8Regex
     private bool ShouldUseKelvinSignFallback(ReadOnlySpan<byte> input)
         => _requiresKelvinSignFallback && ContainsKelvinSign(input);
 
+    // Only unlimited one-shot calls reach this probe. A byte hit in the
+    // bounded prefix can win without screening the irrelevant subject suffix.
+    private const int EarlyFoldedPrefixLength = 64;
+
+    private bool TryFindEarlyFoldedMatch(ReadOnlySpan<byte> input, CancellationToken token, out Utf8CaptureRange match)
+    {
+        match = default;
+        if (token.CanBeCanceled || MatchTimeout != Regex.InfiniteMatchTimeout ||
+            _hasCaptures || _anchoredLiteral.HasValue || UsesRightToLeft() ||
+            (Options & RegexOptions.CultureInvariant) == 0 ||
+            Utf8SearchDiagnosticsSession.Current?.SliceCheckpointHook is not null)
+            return false;
+
+        ref readonly var plan = ref _preparedRegex.SearchPlan;
+        if (plan is not { Kind: Utf8SearchKind.AsciiFoldedByteLiteral, HasBoundaryRequirements: false,
+                HasTrailingLiteralRequirement: false, LiteralUtf8: { Length: > 0 and <= EarlyFoldedPrefixLength } literal })
+            return false;
+
+        var window = input[..EarlyFoldedPrefixLength];
+        var first = literal[0];
+        var other = (uint)((first | 0x20) - 'a') <= 'z' - 'a' ? (byte)(first ^ 0x20) : first;
+        var start = window.IndexOfAny(first, other, "K"u8[0]);
+        // An earlier match of the same fixed scalar length can overlap this
+        // ASCII hit. Any Kelvin alias in that match must precede the hit,
+        // so a preceding Kelvin lead byte leaves the normal matcher in charge.
+        if ((uint)start > (uint)(window.Length - literal.Length) ||
+            !System.Text.Ascii.EqualsIgnoreCase(window.Slice(start, literal.Length), literal) ||
+            GetOwnedSliceProgram(ReadOnlySpan<byte>.Empty) is not null) return false;
+        match = new Utf8CaptureRange(start, start + literal.Length);
+        return true;
+    }
+
     private static bool ContainsKelvinSign(ReadOnlySpan<byte> input)
         => input.IndexOf("K"u8) >= 0;
 

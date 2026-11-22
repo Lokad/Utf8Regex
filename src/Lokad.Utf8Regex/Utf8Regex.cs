@@ -324,6 +324,8 @@ public sealed partial class Utf8Regex : IDisposable
                 throw new InvalidOperationException($"Native literal execution exceeded {breach}.");
             return found;
         }
+        if (input.Length > EarlyFoldedPrefixLength && _requiresKelvinSignFallback &&
+            TryFindEarlyFoldedMatch(input, cancellationToken, out _)) return true;
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceIsMatch(input, ownedProgram, cancellationToken);
@@ -628,6 +630,8 @@ public sealed partial class Utf8Regex : IDisposable
         if (HasFiniteExecutionLimits) return OwnedSliceMatch(input, _ownedSliceProgram, cancellationToken);
         if (CanStartNativeLiteralInvocation(cancellationToken))
             return MatchNativeLiteral(input, cancellationToken);
+        if (input.Length > EarlyFoldedPrefixLength && _requiresKelvinSignFallback &&
+            TryFindEarlyFoldedMatch(input, cancellationToken, out var early)) return early;
         if (GetOwnedSliceProgram(input, cancellationToken) is { } ownedProgram)
         {
             return OwnedSliceMatch(input, ownedProgram, cancellationToken);
