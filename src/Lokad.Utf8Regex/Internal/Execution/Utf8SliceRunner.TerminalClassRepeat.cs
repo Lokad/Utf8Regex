@@ -511,7 +511,7 @@ internal static partial class Utf8SliceRunner
                 {
                     // Every shorter nonempty decimal run ends between two
                     // Unicode word scalars. The boundary cannot succeed there.
-                    if (repeat.RepeatMinimum == 0 || !IsDecimalDigitSet(program, code[repeatIndex + 1])) break;
+                    if (repeat.RepeatMinimum == 0 || !code[repeatIndex + 1].IsDecimalDigitSet) break;
                     rewindFree |= 1UL << (end - repeatIndex);
                     wordBoundary = false;
                 }
@@ -989,7 +989,7 @@ internal static partial class Utf8SliceRunner
                 repeat.A < code.Length - 1 && HasCapturedScalarBody(code, repeatIndex, repeat.A) &&
                 code[repeat.A - 1] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == repeatIndex &&
                 code[repeat.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } capturedExit && capturedExit.A == repeat.B &&
-                IsDecimalDigitSet(code[repeatIndex + 2], setMasks, categories) &&
+                code[repeatIndex + 2].IsDecimalDigitSet &&
                 HasDisjointDecimalContinuation(code, repeat.A + 1, setMasks, categories, budget))
                 code[repeat.A] = new(capturedExit.Kind, capturedExit.A, capturedExit.B,
                     capturedExit.C | Utf8SliceInstruction.RepeatExitUnobservedDecimalFlag, capturedExit.D);
@@ -1702,7 +1702,7 @@ internal static partial class Utf8SliceRunner
             return ascii.EndIndex == start && minimum != 0 ? (-1, ascii.Breach) : ascii;
         }
         if (unbounded && atom.Kind == Utf8SliceInstructionKind.CategorySet &&
-            (input.Length - start >= 64 || StartsWithFourAsciiDigits(input, start)) && IsDecimalDigitSet(program, atom))
+            (input.Length - start >= 64 || StartsWithFourAsciiDigits(input, start)) && atom.IsDecimalDigitSet)
         {
             var digits = RunUnboundedDecimalDigits(input, start, ref invocation, checkExitDeadline);
             if (minimum != 0 && digits.EndIndex > start) minimumEnd = AdvancePastScalar(input, start, reverse: false);

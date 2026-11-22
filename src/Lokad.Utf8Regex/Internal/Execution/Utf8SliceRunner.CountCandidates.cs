@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -269,19 +268,8 @@ internal static partial class Utf8SliceRunner
         return (set.D & 255) - 1;
     }
 
-    internal static bool IsLeadingDecimalSet(Utf8SliceProgram program, int index)
-        => index >= 0 && IsDecimalDigitSet(program, program.Instructions[index]);
-
     private static bool IsNonDecimalWideStart(ReadOnlySpan<byte> input, int position)
         => input[position] >= 128 && TryReadScalar(input, position, false, out var scalar, out _) && !Rune.IsDigit(scalar);
-
-    private static bool IsDecimalDigitSet(Utf8SliceProgram program, in Utf8SliceInstruction atom)
-        => IsDecimalDigitSet(atom, program.SetMasks, program.CategorySetMembers);
-
-    private static bool IsDecimalDigitSet(in Utf8SliceInstruction atom, byte[][] masks,
-        Utf8SliceNode.CategorySetMember[][] categories)
-        => Utf8SliceProgram.GetCompleteAsciiCategoryMask(atom, categories) == 1u << (int)UnicodeCategory.DecimalDigitNumber &&
-            ReadAsciiSet(masks[atom.A]) is { Low: Utf8AsciiBytePredicates.DecimalMask, High: 0 };
 
     private static bool CanSkipShortRepeatChain(Utf8SliceProgram program)
     {
@@ -1468,7 +1456,7 @@ internal static partial class Utf8SliceRunner
         var continuation = repeat.A + 1;
         if (repeat.RepeatMaximum == long.MaxValue && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
             input.Length - position <= Math.Min(32, remaining) && program.SkipsTerminalRewind(atomIndex - 1) &&
-            IsDecimalDigitSet(program, atom))
+            atom.IsDecimalDigitSet)
         {
             // Only a proved greedy endpoint can continue. A wider scalar
             // may still be a decimal digit and needs the original scalar VM.
@@ -1511,7 +1499,7 @@ internal static partial class Utf8SliceRunner
             var value = input[position + consumed];
             if (value >= 128 && !asciiOnly)
             {
-                if (minimum != repeat.RepeatMaximum || !IsDecimalDigitSet(program, atom))
+                if (minimum != repeat.RepeatMaximum || !atom.IsDecimalDigitSet)
                     return true;
 
                 // A fixed decimal repeat has one end. Decode the remaining scalars under the same small bound.

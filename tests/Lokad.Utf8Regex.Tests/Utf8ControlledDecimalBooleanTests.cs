@@ -84,6 +84,20 @@ public sealed class Utf8ControlledDecimalBooleanTests
     }
 
     [Theory]
+    [InlineData(@"[\p{Nd}X]", "X/2001", true)]
+    [InlineData(@"[\p{Nd}X]", "x/2001", true)]
+    [InlineData(@"[\p{Nd}X]", "Y/2001", false)]
+    [InlineData(@"[^\p{Nd}]", "X/2001", true)]
+    [InlineData(@"[^\p{Nd}]", "٢/2001", false)]
+    public void DecimalCategoryProofRespectsAdditionalMembersAndNegation(string set, string text, bool expected)
+    {
+        using var regex = new Utf8Regex("^" + set + @"{1,2}/\d{4}$", RegexOptions.Compiled | RegexOptions.IgnoreCase,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 } });
+        using var token = new CancellationTokenSource();
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text), token.Token));
+    }
+
+    [Theory]
     [InlineData(@"\b(\d{1,2})/\d{1,2}/(\d{2,4})\b")]
     [InlineData(@"\b(\d{1,2}?)/\d{1,2}?/(\d{2,4}?)\b")]
     public void TerminalUnicodeBoundaryProvesMandatoryDecimalRuns(string pattern)

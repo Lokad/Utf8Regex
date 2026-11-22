@@ -201,10 +201,12 @@ internal readonly struct Utf8SliceInstruction
     internal const int RepeatExitUnobservedDecimalFlag = 8;
     internal const int LeadingCaptureMarkerLimit = 31;
 
-    internal Utf8SliceInstruction(Utf8SliceInstructionKind kind, int a, int b, int c, int d, bool isLiteralChoice = false)
+    internal Utf8SliceInstruction(Utf8SliceInstructionKind kind, int a, int b, int c, int d,
+        bool isLiteralChoice = false, bool isDecimalDigitSet = false)
     {
         Kind = kind;
         IsLiteralChoice = isLiteralChoice;
+        IsDecimalDigitSet = isDecimalDigitSet;
         A = a;
         B = b;
         C = c;
@@ -214,6 +216,8 @@ internal readonly struct Utf8SliceInstruction
     internal Utf8SliceInstructionKind Kind { get; }
     // A leading set lowered from a choice retains the bounded prefix proof.
     internal bool IsLiteralChoice { get; }
+    // A positive Nd category with no other members has exact ASCII digits.
+    internal bool IsDecimalDigitSet { get; }
     internal int A { get; }
     // RepeatExit uses a positive B as an exclusive byte bound to the input end.
     // A nonzero RepeatEnd B packs three ASCII stop bytes for its guarded fallback.
@@ -472,11 +476,7 @@ internal sealed class Utf8SliceProgram
             LeadingClassDelimiter = (literal, leadingClass, literalIndex, gapMaximum, direct);
         }
         var leadingIndex = LeadingByteCandidate.InstructionIndex;
-        if (leadingIndex >= 0 && instructions[leadingIndex].Kind == Utf8SliceInstructionKind.CategorySet)
-        {
-            Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
-            LeadingScalarIsDecimal = Utf8SliceRunner.IsLeadingDecimalSet(this, leadingIndex);
-        }
+        LeadingScalarIsDecimal = leadingIndex >= 0 && instructions[leadingIndex].IsDecimalDigitSet;
         if (leadingIndex > 0 && repeatCount != 0)
         {
             Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
@@ -488,12 +488,8 @@ internal sealed class Utf8SliceProgram
             Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
             FollowingDecimalLiteralWindow = Utf8SliceRunner.GetShortRepeatLiteralWindow(this, delimiter.LiteralIndex + 2);
             if (FollowingDecimalLiteralWindow is { Min: > 0, Literal: var next } &&
-                !Utf8AsciiBytePredicates.IsDigit(next))
-            {
-                Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
-                if (Utf8SliceRunner.IsLeadingDecimalSet(this, delimiter.LiteralIndex + 2))
-                    FollowingDecimalContinuation = delimiter.LiteralIndex + 6;
-            }
+                !Utf8AsciiBytePredicates.IsDigit(next) && instructions[delimiter.LiteralIndex + 2].IsDecimalDigitSet)
+                FollowingDecimalContinuation = delimiter.LiteralIndex + 6;
         }
         if (isNonBacktracking && instructions.Length > 64)
             NonBacktrackingWideMasks = Utf8SliceRunner.PrepareWideRegularMasks(this, Utf8ConstructionScope.CurrentBudget);
@@ -766,12 +762,8 @@ internal sealed class Utf8SliceProgram
 
     // The lowerer includes every ASCII member for this single positive table.
     internal uint GetCompleteAsciiCategoryMask(in Utf8SliceInstruction atom)
-        => GetCompleteAsciiCategoryMask(atom, CategorySetMembers);
-
-    internal static uint GetCompleteAsciiCategoryMask(in Utf8SliceInstruction atom,
-        Utf8SliceNode.CategorySetMember[][] categorySetMembers)
         => atom is { Kind: Utf8SliceInstructionKind.CategorySet, B: 0, C: 0 } &&
-            categorySetMembers[atom.D] is [{ Negated: false, Table: {
+            CategorySetMembers[atom.D] is [{ Negated: false, Table: {
                 Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
 
     internal bool TryGetUnfoldedAsciiSet(in Utf8SliceInstruction atom, out Utf8SearchAsciiSet ascii, out bool asciiOnly)
@@ -782,6 +774,11 @@ internal sealed class Utf8SliceProgram
         {
             asciiOnly = (uint)atom.A < 128;
             if (asciiOnly) ascii = ascii.With((byte)atom.A);
+            return true;
+        }
+        if (atom.IsDecimalDigitSet)
+        {
+            ascii = Utf8SearchAsciiSet.FromMasks(Utf8AsciiBytePredicates.DecimalMask, 0);
             return true;
         }
         if (atom is not { Kind: Utf8SliceInstructionKind.Set, C: 0 } && GetCompleteAsciiCategoryMask(atom) == 0)
@@ -1838,6 +1835,7 @@ internal static class Utf8SliceLowerer
                     var categorySetMaskIndex = SetMasks.Count;
                     var categoryMask = categorySet.Mask16;
                     var foldCategorySet = categorySet.FoldCase;
+                    var isDecimalDigitSet = false;
                     var pureCategory = categorySet.Categories is [{ Negated: false, Table: {
                         Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
                     if (!categorySet.Negated && pureCategory == 1u << (int)UnicodeCategory.DecimalDigitNumber)
@@ -1847,7 +1845,10 @@ internal static class Utf8SliceLowerer
                         // Decimal digits have no case equivalents. An explicit
                         // member outside the digits retains its original folding.
                         if ((low & ~Utf8AsciiBytePredicates.DecimalMask) == 0 && high == 0)
+                        {
                             foldCategorySet = false;
+                            isDecimalDigitSet = categorySet.Members.Length == 0;
+                        }
                         var complete = low | Utf8AsciiBytePredicates.DecimalMask;
                         if (!foldCategorySet && complete != low)
                         {
@@ -1888,7 +1889,8 @@ internal static class Utf8SliceLowerer
                         categorySetMaskIndex,
                         (categorySet.Negated ? 1 : 0) | (foldCategorySet ? 2 : 0),
                         categorySetMemberBits,
-                        categorySetMemberIndex));
+                        categorySetMemberIndex,
+                        isDecimalDigitSet: isDecimalDigitSet));
                     break;
                 case Utf8SliceNode.BackrefNode backref:
                     if (backref.Slot < 0 || backref.Slot >= GroupCount)
