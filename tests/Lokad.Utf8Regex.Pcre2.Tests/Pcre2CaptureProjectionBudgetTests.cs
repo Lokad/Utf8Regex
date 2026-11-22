@@ -37,14 +37,14 @@ public sealed class Pcre2ResultControlTests
             {
                 if (!allow && groupBytes > 0)
                 {
-                    try { groups = Pcre2Runner.PublishCaptures(slots, 1, 7, starts, ends, ref input, ref budget); Assert.Fail("Expected physical aggregate denial."); }
+                    try { groups = Pcre2Runner.PublishCaptures(slots, 1, 7, new(starts, ends), ref input, ref budget); Assert.Fail("Expected physical aggregate denial."); }
                     catch (Pcre2MatchException failure) { Assert.Equal(Pcre2ErrorKind.HeapLimit, failure.ErrorKind); }
                     Assert.Null(groups);
                     Assert.Equal(7UL, budget.ReservedWorkingBytes);
                 }
                 else
                 {
-                    groups = Pcre2Runner.PublishCaptures(slots, 1, 7, starts, ends, ref input, ref budget);
+                    groups = Pcre2Runner.PublishCaptures(slots, 1, 7, new(starts, ends), ref input, ref budget);
                     Assert.Equal(slots, groups.Length);
                     Assert.Equal(7 + groupBytes, budget.HeapBytes);
                     Assert.Equal(7 + groupBytes, budget.ReservedWorkingBytes);
@@ -77,7 +77,7 @@ public sealed class Pcre2ResultControlTests
             {
                 try
                 {
-                    var groups = Pcre2Runner.PublishCaptures(slots, 0, subject.Length, starts, ends, ref input, ref budget);
+                    var groups = Pcre2Runner.PublishCaptures(slots, 0, subject.Length, new(starts, ends), ref input, ref budget);
                     Pcre2BacktrackingCaptureResult.FromProjectedGroups(groups).DetachProjectedWorking(ref budget);
                     completed = true;
                 }
@@ -175,7 +175,7 @@ public sealed class Pcre2ResultControlTests
         var budget = Budget(1UL << 20);
         int[] starts = [0, 1];
         int[] ends = [subject.Length, subject.Length - 2];
-        var groups = Pcre2Runner.PublishCaptures(2, 0, subject.Length, starts, ends, ref input, ref budget);
+        var groups = Pcre2Runner.PublishCaptures(2, 0, subject.Length, new(starts, ends), ref input, ref budget);
         Assert.Equal((0,subject.Length),(groups[0].StartOffsetInBytes,groups[0].EndOffsetInBytes));
         Assert.Equal((1,subject.Length - 2),(groups[1].StartOffsetInBytes,groups[1].EndOffsetInBytes));
         Pcre2BacktrackingCaptureResult.FromProjectedGroups(groups).DetachProjectedWorking(ref budget);

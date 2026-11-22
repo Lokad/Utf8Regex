@@ -32,7 +32,7 @@ internal ref struct Pcre2BacktrackingWorkspace
         var repeatCapacity = restoreRepeats ? Capacity(repeatCount) : 0;
         var captureCapacity = restoreCaptures ? Capacity(captureSlotCount) : 0;
         var repeatStateCapacity = Capacity(checked(repeatCount * 2));
-        var captureStateCapacity = Capacity(checked(captureSlotCount * 5));
+        var captureStateCapacity = Capacity(checked(captureSlotCount * Pcre2CaptureState.WordCount));
         var bytes = checked(Utf8ConstructionBudget.ArrayBytes<int>(repeatStateCapacity) +
             Utf8ConstructionBudget.ArrayBytes<int>(captureStateCapacity) +
             Utf8ConstructionBudget.ArrayBytes<int>(captureCapacity) +

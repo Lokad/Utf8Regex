@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
@@ -42,13 +44,13 @@ internal readonly record struct Pcre2RepeatMutation(
     int PreviousCount,
     int PreviousPosition);
 
-internal readonly record struct Pcre2CaptureMutation(
-    int Slot,
-    int PreviousStart,
-    int PreviousEnd,
-    int PreviousOpenStart,
-    int PreviousOwner,
-    int PreviousOpenOwner);
+internal readonly record struct Pcre2CaptureState(
+    int Start, int End, int OpenStart, int Owner, int OpenOwner)
+{
+    internal static int WordCount => Unsafe.SizeOf<Pcre2CaptureState>() / sizeof(int);
+}
+
+internal readonly record struct Pcre2CaptureMutation(int Slot, Pcre2CaptureState Previous);
 
 internal readonly record struct Pcre2SubroutineCallFrame(
     int ReturnInstruction,
@@ -323,8 +325,7 @@ internal static class Pcre2BacktrackingRunner
                     firstMatchingPosition.Value,
                     matchOptions,
                     captureMaterialization,
-                    ReadOnlySpan<int>.Empty,
-                    ReadOnlySpan<int>.Empty,
+                    default,
                     0,
                     false,
                     ref budget,
@@ -691,8 +692,7 @@ internal static class Pcre2BacktrackingRunner
         int firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
         Pcre2CaptureMaterialization captureMaterialization,
-        ReadOnlySpan<int> initialCaptureStarts,
-        ReadOnlySpan<int> initialCaptureEnds,
+        ReadOnlySpan<Pcre2CaptureState> initialCaptures,
         int depthBase,
         bool isAssertion,
         ref Pcre2ResourceBudget budget,
@@ -705,7 +705,7 @@ internal static class Pcre2BacktrackingRunner
         try
         {
             return TryMatchAt(program, input, ref projectionInput, candidate, firstMatchingPosition,
-                matchOptions, captureMaterialization, initialCaptureStarts, initialCaptureEnds,
+                matchOptions, captureMaterialization, initialCaptures,
                 depthBase, isAssertion, ref budget, ref frames, ref repeatMutations, ref workspace, out match, out failure);
         }
         finally { workspace.Dispose(ref budget); repeatMutations.Dispose(ref budget); frames.Dispose(ref budget); }
@@ -719,8 +719,7 @@ internal static class Pcre2BacktrackingRunner
         int firstMatchingPosition,
         Pcre2MatchOptions matchOptions,
         Pcre2CaptureMaterialization captureMaterialization,
-        ReadOnlySpan<int> initialCaptureStarts,
-        ReadOnlySpan<int> initialCaptureEnds,
+        ReadOnlySpan<Pcre2CaptureState> initialCaptures,
         int depthBase,
         bool isAssertion,
         ref Pcre2ResourceBudget budget,
@@ -744,7 +743,7 @@ internal static class Pcre2BacktrackingRunner
         var atomicCheckpoints = new Pcre2InvocationStateStack<Pcre2AtomicCheckpoint>(frameLimit, collectsDiagnostics);
         var markMutations = new Pcre2InvocationStateStack<Pcre2MarkMutation>(int.MaxValue, collectsDiagnostics);
         var markTrail = new Pcre2InvocationStateStack<Pcre2MarkTrailEntry>(int.MaxValue, collectsDiagnostics);
-        var retainCaptures = captureMaterialization != Pcre2CaptureMaterialization.None || !initialCaptureStarts.IsEmpty;
+        var retainCaptures = captureMaterialization != Pcre2CaptureMaterialization.None || !initialCaptures.IsEmpty;
         var greedyOptionalTail = !isAssertion && matchOptions == Pcre2MatchOptions.None
             ? program.GreedyOptionalTail : int.MaxValue;
         var needsCaptureState = program.CaptureReadSlot != 0 || retainCaptures;
@@ -777,34 +776,24 @@ internal static class Pcre2BacktrackingRunner
             }
         }
 
-        Span<int> captureStarts = default, captureEnds = default, captureOpenStarts = default;
-        Span<int> captureOwners = default, captureOpenOwners = default, captureRestoreGenerations = default;
+        Span<Pcre2CaptureState> captureState = default;
+        Span<int> captureRestoreGenerations = default;
         if (captureSlots != 0)
         {
-            var captureState = rentedCaptureState.AsSpan(0, captureSlots * 5);
-            captureState.Fill(-1);
-            captureStarts = captureState[..captureSlots];
-            captureEnds = captureState.Slice(captureSlots, captureSlots);
-            captureOpenStarts = captureState.Slice(captureSlots * 2, captureSlots);
-            captureOwners = captureState.Slice(captureSlots * 3, captureSlots);
-            captureOpenOwners = captureState[(captureSlots * 4)..];
+            var words = rentedCaptureState.AsSpan(0, captureSlots * Pcre2CaptureState.WordCount);
+            words.Fill(-1);
+            captureState = MemoryMarshal.Cast<int, Pcre2CaptureState>(words);
             if (rentedCaptureRestoreGenerations is not null)
             {
                 captureRestoreGenerations = rentedCaptureRestoreGenerations.AsSpan(0, captureSlots);
                 captureRestoreGenerations.Clear();
             }
         }
-        if (!initialCaptureStarts.IsEmpty)
+        // Assertions inherit closed ranges. Open captures and ownership stay local.
+        for (var slot = 0; slot < initialCaptures.Length; slot++)
         {
-            initialCaptureStarts.CopyTo(captureStarts);
-            initialCaptureEnds.CopyTo(captureEnds);
-            for (var slot = 1; slot < captureStarts.Length; slot++)
-            {
-                if (captureStarts[slot] >= 0)
-                {
-                    captureOwners[slot] = 0;
-                }
-            }
+            var previous = initialCaptures[slot];
+            captureState[slot] = new(previous.Start, previous.End, -1, slot != 0 && previous.Start >= 0 ? 0 : -1, -1);
         }
 
 
@@ -1033,18 +1022,19 @@ internal static class Pcre2BacktrackingRunner
                                 inputIndex, firstMatchingPosition, matchOptions, ref budget, out inputIndex))
                             break;
                         var tokenCaptureSlot = instruction.CaptureSlot;
-                        if (!captureStarts.IsEmpty && (onlyCaptureSlot == 0 || tokenCaptureSlot == onlyCaptureSlot))
+                        if (!captureState.IsEmpty && (onlyCaptureSlot == 0 || tokenCaptureSlot == onlyCaptureSlot))
                         {
                             var slot = tokenCaptureSlot;
                             var depth = subroutineCalls.Count;
                             var recordRollback = frames.Count != 0 || depth != 0;
-                            if (captureStarts[slot] >= 0 && captureOwners[slot] > depth ||
-                                captureOpenStarts[slot] >= 0 && captureOpenOwners[slot] > depth)
+                            ref var current = ref captureState[slot];
+                            if (current.Start >= 0 && current.Owner > depth ||
+                                current.OpenStart >= 0 && current.OpenOwner > depth)
                             {
                                 // The normal open would be blocked by a deeper
                                 // owner. Only an opening at this depth can close.
-                                tokenStart = captureOpenStarts[slot];
-                                if (tokenStart < 0 || captureOpenOwners[slot] != depth)
+                                tokenStart = current.OpenStart;
+                                if (tokenStart < 0 || current.OpenOwner != depth)
                                 {
                                     instructionIndex++;
                                     continue;
@@ -1053,8 +1043,7 @@ internal static class Pcre2BacktrackingRunner
                                     ref subroutineCalls, ref captureMutations);
                             }
 
-                            SetCapture(slot, tokenStart, inputIndex, -1, depth, -1,
-                                captureStarts, captureEnds, captureOpenStarts, captureOwners, captureOpenOwners,
+                            SetCapture(slot, ref current, new(tokenStart, inputIndex, -1, depth, -1),
                                 ref captureMutations, ref budget, recordRollback);
                         }
                         instructionIndex++;
@@ -1062,15 +1051,16 @@ internal static class Pcre2BacktrackingRunner
 
                     case Pcre2BacktrackingInstructionKind.CaptureStart:
                         var startCaptureSlot = instruction.CaptureSlot;
-                        if (captureStarts.IsEmpty || onlyCaptureSlot != 0 && startCaptureSlot != onlyCaptureSlot)
+                        if (captureState.IsEmpty || onlyCaptureSlot != 0 && startCaptureSlot != onlyCaptureSlot)
                         {
                             instructionIndex++;
                             continue;
                         }
 
                         var currentCallDepth = subroutineCalls.Count;
-                        if (captureStarts[startCaptureSlot] >= 0 && captureOwners[startCaptureSlot] > currentCallDepth ||
-                            captureOpenStarts[startCaptureSlot] >= 0 && captureOpenOwners[startCaptureSlot] > currentCallDepth)
+                        ref var opening = ref captureState[startCaptureSlot];
+                        if (opening.Start >= 0 && opening.Owner > currentCallDepth ||
+                            opening.OpenStart >= 0 && opening.OpenOwner > currentCallDepth)
                         {
                             instructionIndex++;
                             continue;
@@ -1078,16 +1068,8 @@ internal static class Pcre2BacktrackingRunner
 
                         SetCapture(
                             startCaptureSlot,
-                            captureStarts[startCaptureSlot],
-                            captureEnds[startCaptureSlot],
-                            inputIndex,
-                            captureOwners[startCaptureSlot],
-                            currentCallDepth,
-                            captureStarts,
-                            captureEnds,
-                            captureOpenStarts,
-                            captureOwners,
-                            captureOpenOwners,
+                            ref opening,
+                            new(opening.Start, opening.End, inputIndex, opening.Owner, currentCallDepth),
                             ref captureMutations,
                             ref budget,
                             recordRollback: frames.Count != 0 || subroutineCalls.Count != 0);
@@ -1096,15 +1078,15 @@ internal static class Pcre2BacktrackingRunner
 
                     case Pcre2BacktrackingInstructionKind.CaptureEnd:
                         var endCaptureSlot = instruction.CaptureSlot;
-                        if (captureStarts.IsEmpty || onlyCaptureSlot != 0 && endCaptureSlot != onlyCaptureSlot)
+                        if (captureState.IsEmpty || onlyCaptureSlot != 0 && endCaptureSlot != onlyCaptureSlot)
                         {
                             instructionIndex++;
                             continue;
                         }
 
                         var endCallDepth = subroutineCalls.Count;
-                        if (captureOpenStarts[endCaptureSlot] < 0 ||
-                            captureOpenOwners[endCaptureSlot] != endCallDepth)
+                        ref var closing = ref captureState[endCaptureSlot];
+                        if (closing.OpenStart < 0 || closing.OpenOwner != endCallDepth)
                         {
                             instructionIndex++;
                             continue;
@@ -1114,16 +1096,8 @@ internal static class Pcre2BacktrackingRunner
                             ref subroutineCalls, ref captureMutations);
                         SetCapture(
                             endCaptureSlot,
-                            captureOpenStarts[endCaptureSlot],
-                            inputIndex,
-                            -1,
-                            captureOpenOwners[endCaptureSlot],
-                            -1,
-                            captureStarts,
-                            captureEnds,
-                            captureOpenStarts,
-                            captureOwners,
-                            captureOpenOwners,
+                            ref closing,
+                            new(closing.OpenStart, inputIndex, -1, endCallDepth, -1),
                             ref captureMutations,
                             ref budget,
                             recordRollback: recordClose);
@@ -1131,12 +1105,12 @@ internal static class Pcre2BacktrackingRunner
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.Backreference:
-                        var captureSlot = instruction.CaptureSlot;
-                        if (captureStarts[captureSlot] >= 0 && captureEnds[captureSlot] >= captureStarts[captureSlot] &&
+                        ref readonly var referencedCapture = ref captureState[instruction.CaptureSlot];
+                        if (referencedCapture.Start >= 0 && referencedCapture.End >= referencedCapture.Start &&
                             TryMatchBackreference(
                                 input,
-                                captureStarts[captureSlot],
-                                captureEnds[captureSlot],
+                                referencedCapture.Start,
+                                referencedCapture.End,
                                 inputIndex,
                                 instruction.BackreferenceOptions,
                                 ref budget,
@@ -1152,7 +1126,8 @@ internal static class Pcre2BacktrackingRunner
                         var selectedSlot = 0;
                         foreach (var slot in duplicateSlots)
                         {
-                            if (captureStarts[slot] >= 0 && captureEnds[slot] >= captureStarts[slot])
+                            ref readonly var current = ref captureState[slot];
+                            if (current.Start >= 0 && current.End >= current.Start)
                             {
                                 selectedSlot = slot;
                                 break;
@@ -1161,8 +1136,8 @@ internal static class Pcre2BacktrackingRunner
 
                         if (selectedSlot != 0 && TryMatchBackreference(
                                 input,
-                                captureStarts[selectedSlot],
-                                captureEnds[selectedSlot],
+                                captureState[selectedSlot].Start,
+                                captureState[selectedSlot].End,
                                 inputIndex,
                                 instruction.BackreferenceOptions,
                                 ref budget,
@@ -1185,8 +1160,7 @@ internal static class Pcre2BacktrackingRunner
                                     inputIndex,
                                     firstMatchingPosition,
                                     matchOptions,
-                                    captureStarts,
-                                    captureEnds,
+                                    captureState,
                                     depthBase + frames.Count + subroutineCalls.Count + 1,
                                     ref budget,
                                     out assertionCaptures,
@@ -1202,11 +1176,7 @@ internal static class Pcre2BacktrackingRunner
                                 MergeAssertionCaptures(
                                     assertionCaptures,
                                     subroutineCalls.Count,
-                                    captureStarts,
-                                    captureEnds,
-                                    captureOpenStarts,
-                                    captureOwners,
-                                    captureOpenOwners,
+                                    captureState,
                                     ref captureMutations,
                                     ref budget);
                                 MergeAssertionMark(
@@ -1285,11 +1255,7 @@ internal static class Pcre2BacktrackingRunner
                             returnCall,
                             counts,
                             positions,
-                            captureStarts,
-                            captureEnds,
-                            captureOpenStarts,
-                            captureOwners,
-                            captureOpenOwners,
+                            captureState,
                             repeatRestoreGenerations,
                             captureRestoreGenerations,
                             ref subroutineRestoreGeneration,
@@ -1305,7 +1271,7 @@ internal static class Pcre2BacktrackingRunner
                         var conditionMet = condition.Kind switch
                         {
                             Pcre2BacktrackingConditionKind.CaptureSet =>
-                                IsAnyCaptureSet(condition.CaptureSlots, captureStarts, captureEnds),
+                                IsAnyCaptureSet(condition.CaptureSlots, captureState),
                             Pcre2BacktrackingConditionKind.RecursionAny => subroutineCalls.Count != 0,
                             Pcre2BacktrackingConditionKind.RecursionSlot =>
                                 subroutineCalls.Contains(condition.SubroutineSlot, ref budget),
@@ -1324,8 +1290,7 @@ internal static class Pcre2BacktrackingRunner
                                     inputIndex,
                                     firstMatchingPosition,
                                     matchOptions,
-                                    captureStarts,
-                                    captureEnds,
+                                    captureState,
                                     depthBase + frames.Count + subroutineCalls.Count + 1,
                                     ref budget,
                                     out conditionalCaptures,
@@ -1351,11 +1316,7 @@ internal static class Pcre2BacktrackingRunner
                             MergeAssertionCaptures(
                                 conditionalCaptures,
                                 subroutineCalls.Count,
-                                captureStarts,
-                                captureEnds,
-                                captureOpenStarts,
-                                captureOwners,
-                                captureOpenOwners,
+                                captureState,
                                 ref captureMutations,
                                 ref budget);
 
@@ -1418,11 +1379,7 @@ internal static class Pcre2BacktrackingRunner
                         CloseOpenCaptures(
                             inputIndex,
                             subroutineCalls.Count,
-                            captureStarts,
-                            captureEnds,
-                            captureOpenStarts,
-                            captureOwners,
-                            captureOpenOwners,
+                            captureState,
                             ref captureMutations,
                             ref budget);
                         if (subroutineCalls.Count != 0)
@@ -1435,11 +1392,7 @@ internal static class Pcre2BacktrackingRunner
                                 acceptedCall,
                                 counts,
                                 positions,
-                                captureStarts,
-                                captureEnds,
-                                captureOpenStarts,
-                                captureOwners,
-                                captureOpenOwners,
+                                captureState,
                                 repeatRestoreGenerations,
                                 captureRestoreGenerations,
                                 ref subroutineRestoreGeneration,
@@ -1536,11 +1489,7 @@ internal static class Pcre2BacktrackingRunner
                         ref markTrail,
                         counts,
                         positions,
-                        captureStarts,
-                        captureEnds,
-                        captureOpenStarts,
-                        captureOwners,
-                        captureOpenOwners,
+                        captureState,
                         ref reportedStartOffsetInBytes,
                         ref matchBoundaryWasReset,
                         ref currentMarkId,
@@ -1576,8 +1525,7 @@ internal static class Pcre2BacktrackingRunner
                 program.CaptureSlotCount,
                 reportedStartOffsetInBytes,
                 inputIndex,
-                captureStarts,
-                captureEnds,
+                captureState,
                 ref projectionInput, ref budget, destination);
             match = new Pcre2BacktrackingMatch(
                 true,
@@ -1636,8 +1584,7 @@ internal static class Pcre2BacktrackingRunner
         int inputIndex,
         int outerFirstMatchingPosition,
         Pcre2MatchOptions outerMatchOptions,
-        ReadOnlySpan<int> captureStarts,
-        ReadOnlySpan<int> captureEnds,
+        ReadOnlySpan<Pcre2CaptureState> captureState,
         int depth,
         ref Pcre2ResourceBudget budget,
         out Pcre2CaptureByteRange[] captures,
@@ -1649,14 +1596,14 @@ internal static class Pcre2BacktrackingRunner
         var isLookbehind = assertionKind is Pcre2AssertionKind.PositiveLookbehind or Pcre2AssertionKind.NegativeLookbehind;
         var nestedOptions = outerMatchOptions & (Pcre2MatchOptions.NotBol | Pcre2MatchOptions.NotEol);
         nestedOptions |= Pcre2MatchOptions.Anchored;
-        var captureMaterialization = !captureStarts.IsEmpty && assertionProgram.HasCaptureWrites
+        var captureMaterialization = !captureState.IsEmpty && assertionProgram.HasCaptureWrites
             ? Pcre2CaptureMaterialization.AssertionRanges
             : Pcre2CaptureMaterialization.None;
 
         if (!isLookbehind)
         {
             budget.ChargeCandidate();
-            if (captureStarts.IsEmpty && TryMatchStatelessLookahead(assertionProgram, input, inputIndex,
+            if (captureState.IsEmpty && TryMatchStatelessLookahead(assertionProgram, input, inputIndex,
                     outerFirstMatchingPosition, nestedOptions, ref budget, out var probeMatched))
             {
                 captures = [];
@@ -1673,8 +1620,7 @@ internal static class Pcre2BacktrackingRunner
                 outerFirstMatchingPosition,
                 nestedOptions,
                 captureMaterialization,
-                captureStarts,
-                captureEnds,
+                captureState,
                 depth,
                 true,
                 ref budget,
@@ -1721,8 +1667,7 @@ internal static class Pcre2BacktrackingRunner
                     outerFirstMatchingPosition,
                     nestedOptions,
                     captureMaterialization,
-                    captureStarts,
-                    captureEnds,
+                    captureState,
                     depth,
                     true,
                     ref budget,
@@ -1823,14 +1768,13 @@ internal static class Pcre2BacktrackingRunner
 
     private static bool IsAnyCaptureSet(
         ReadOnlySpan<int> slots,
-        ReadOnlySpan<int> captureStarts,
-        ReadOnlySpan<int> captureEnds)
+        ReadOnlySpan<Pcre2CaptureState> captureState)
     {
         foreach (var slot in slots)
         {
-            if ((uint)slot < (uint)captureStarts.Length &&
-                captureStarts[slot] >= 0 &&
-                captureEnds[slot] >= captureStarts[slot])
+            if ((uint)slot < (uint)captureState.Length &&
+                captureState[slot].Start >= 0 &&
+                captureState[slot].End >= captureState[slot].Start)
             {
                 return true;
             }
@@ -1845,11 +1789,7 @@ internal static class Pcre2BacktrackingRunner
     private static void MergeAssertionCaptures(
         ReadOnlySpan<Pcre2CaptureByteRange> assertionCaptures,
         int callDepth,
-        Span<int> captureStarts,
-        Span<int> captureEnds,
-        Span<int> captureOpenStarts,
-        Span<int> captureOwners,
-        Span<int> captureOpenOwners,
+        Span<Pcre2CaptureState> captureState,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
         ref Pcre2ResourceBudget budget)
     {
@@ -1864,16 +1804,8 @@ internal static class Pcre2BacktrackingRunner
 
             SetCapture(
                 slot,
-                capture.StartOffsetInBytes,
-                capture.EndOffsetInBytes,
-                -1,
-                callDepth,
-                -1,
-                captureStarts,
-                captureEnds,
-                captureOpenStarts,
-                captureOwners,
-                captureOpenOwners,
+                ref captureState[slot],
+                new(capture.StartOffsetInBytes, capture.EndOffsetInBytes, -1, callDepth, -1),
                 ref captureMutations,
                 ref budget, recordRollback: true);
         }
@@ -1911,33 +1843,22 @@ internal static class Pcre2BacktrackingRunner
     private static void CloseOpenCaptures(
         int inputIndex,
         int callDepth,
-        Span<int> captureStarts,
-        Span<int> captureEnds,
-        Span<int> captureOpenStarts,
-        Span<int> captureOwners,
-        Span<int> captureOpenOwners,
+        Span<Pcre2CaptureState> captureState,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
         ref Pcre2ResourceBudget budget)
     {
-        for (var slot = 1; slot < captureOpenStarts.Length; slot++)
+        for (var slot = 1; slot < captureState.Length; slot++)
         {
-            if (captureOpenStarts[slot] < 0 || captureOpenOwners[slot] != callDepth)
+            ref var current = ref captureState[slot];
+            if (current.OpenStart < 0 || current.OpenOwner != callDepth)
             {
                 continue;
             }
 
             SetCapture(
                 slot,
-                captureOpenStarts[slot],
-                inputIndex,
-                -1,
-                callDepth,
-                -1,
-                captureStarts,
-                captureEnds,
-                captureOpenStarts,
-                captureOwners,
-                captureOpenOwners,
+                ref current,
+                new(current.OpenStart, inputIndex, -1, callDepth, -1),
                 ref captureMutations,
                 ref budget, recordRollback: true);
         }
@@ -1982,11 +1903,7 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2InvocationStateStack<Pcre2MarkTrailEntry> markTrail,
         Span<int> counts,
         Span<int> positions,
-        Span<int> captureStarts,
-        Span<int> captureEnds,
-        Span<int> captureOpenStarts,
-        Span<int> captureOwners,
-        Span<int> captureOpenOwners,
+        Span<Pcre2CaptureState> captureState,
         ref int reportedStartOffsetInBytes,
         ref bool matchBoundaryWasReset,
         ref int currentMarkId,
@@ -2007,11 +1924,7 @@ internal static class Pcre2BacktrackingRunner
             RollbackCaptures(
                 frame.CaptureCheckpoint,
                 ref captureMutations,
-                captureStarts,
-                captureEnds,
-                captureOpenStarts,
-                captureOwners,
-                captureOpenOwners,
+                captureState,
                 ref budget);
             subroutineCalls.Restore(frame.CallCheckpoint);
             atomicCheckpoints.Truncate(frame.AtomicCheckpoint);
@@ -2131,11 +2044,7 @@ internal static class Pcre2BacktrackingRunner
         Pcre2SubroutineCallFrame call,
         Span<int> counts,
         Span<int> positions,
-        Span<int> captureStarts,
-        Span<int> captureEnds,
-        Span<int> captureOpenStarts,
-        Span<int> captureOwners,
-        Span<int> captureOpenOwners,
+        Span<Pcre2CaptureState> captureState,
         Span<int> repeatRestoreGenerations,
         Span<int> captureRestoreGenerations,
         ref int restoreGeneration,
@@ -2196,16 +2105,8 @@ internal static class Pcre2BacktrackingRunner
 
             SetCapture(
                 mutation.Slot,
-                mutation.PreviousStart,
-                mutation.PreviousEnd,
-                mutation.PreviousOpenStart,
-                mutation.PreviousOwner,
-                mutation.PreviousOpenOwner,
-                captureStarts,
-                captureEnds,
-                captureOpenStarts,
-                captureOwners,
-                captureOpenOwners,
+                ref captureState[mutation.Slot],
+                mutation.Previous,
                 ref captureMutations,
                 ref budget, recordRollback: true);
         }
@@ -2334,59 +2235,33 @@ internal static class Pcre2BacktrackingRunner
 
     private static void SetCapture(
         int slot,
-        int start,
-        int end,
-        int openStart,
-        int owner,
-        int openOwner,
-        Span<int> starts,
-        Span<int> ends,
-        Span<int> openStarts,
-        Span<int> owners,
-        Span<int> openOwners,
+        scoped ref Pcre2CaptureState current,
+        Pcre2CaptureState value,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> mutations,
         ref Pcre2ResourceBudget budget,
         bool recordRollback)
     {
         // Future frames checkpoint the current capture values. Only existing
         // backtracking frames or subroutine returns need an earlier value.
-        if (recordRollback && !mutations.TryPush(new Pcre2CaptureMutation(
-                slot,
-                starts[slot],
-                ends[slot],
-                openStarts[slot],
-                owners[slot],
-                openOwners[slot]), ref budget))
+        if (recordRollback && !mutations.TryPush(new(slot, current), ref budget))
         {
             throw new Pcre2MatchException("The PCRE2 heap limit was exceeded.", Pcre2ErrorKind.HeapLimit);
         }
 
-        starts[slot] = start;
-        ends[slot] = end;
-        openStarts[slot] = openStart;
-        owners[slot] = owner;
-        openOwners[slot] = openOwner;
+        current = value;
     }
 
     internal static void RollbackCaptures(
         int checkpoint,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> mutations,
-        Span<int> starts,
-        Span<int> ends,
-        Span<int> openStarts,
-        Span<int> owners,
-        Span<int> openOwners,
+        Span<Pcre2CaptureState> captureState,
         ref Pcre2ResourceBudget budget)
     {
         for (var remaining = mutations.Count - checkpoint; remaining > 0; remaining--)
         {
             if ((remaining & 63) == 0) budget.ChargeWorkspaceStep();
             var mutation = mutations.Pop();
-            starts[mutation.Slot] = mutation.PreviousStart;
-            ends[mutation.Slot] = mutation.PreviousEnd;
-            openStarts[mutation.Slot] = mutation.PreviousOpenStart;
-            owners[mutation.Slot] = mutation.PreviousOwner;
-            openOwners[mutation.Slot] = mutation.PreviousOpenOwner;
+            captureState[mutation.Slot] = mutation.Previous;
         }
     }
 
@@ -2457,7 +2332,7 @@ internal static class Pcre2BacktrackingRunner
 
     private static Pcre2CaptureByteRange[] MaterializeCaptures(
         int captureSlotCount, int matchStart, int matchEnd,
-        ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds,
+        ReadOnlySpan<Pcre2CaptureState> captureState,
         ref Pcre2ResourceBudget budget)
     {
         var bytes = Utf8ConstructionBudget.ArrayBytes<Pcre2CaptureByteRange>(captureSlotCount);
@@ -2471,8 +2346,8 @@ internal static class Pcre2BacktrackingRunner
             for (var slot = 1; slot < captureSlotCount; slot++)
             {
                 if ((slot & 63) == 0) budget.ChargeWorkspaceStep();
-                var start = captureStarts[slot];
-                var end = captureEnds[slot];
+                var start = captureState[slot].Start;
+                var end = captureState[slot].End;
                 captures[slot] = start >= 0 && end >= start
                     ? new Pcre2CaptureByteRange(true, start, end)
                     : new Pcre2CaptureByteRange(false, 0, 0);
@@ -2498,39 +2373,37 @@ internal static class Pcre2BacktrackingRunner
         int captureSlotCount,
         int matchStart,
         int matchEnd,
-        ReadOnlySpan<int> captureStarts,
-        ReadOnlySpan<int> captureEnds,
+        ReadOnlySpan<Pcre2CaptureState> captureState,
         ref Utf8ValidatedInput input, ref Pcre2ResourceBudget budget,
         scoped Span<Utf8Pcre2CaptureRange> destination = default)
     {
         if (materialization == Pcre2CaptureMaterialization.ByteFinalSlots && !destination.IsEmpty)
         {
-            WriteByteGroups(destination, matchStart, matchEnd, captureStarts, captureEnds, input.Bytes, ref budget);
+            WriteByteGroups(destination, matchStart, matchEnd, new(captureState), input.Bytes, ref budget);
             return default;
         }
         return materialization switch
         {
             Pcre2CaptureMaterialization.AssertionRanges =>
                 Pcre2BacktrackingCaptureResult.FromAssertionRanges(
-                    MaterializeCaptures(captureSlotCount, matchStart, matchEnd, captureStarts, captureEnds, ref budget)),
+                    MaterializeCaptures(captureSlotCount, matchStart, matchEnd, captureState, ref budget)),
             Pcre2CaptureMaterialization.ProjectedFinalSlots =>
                 Pcre2BacktrackingCaptureResult.FromProjectedGroups(
                     Pcre2Runner.PublishCaptures(
                         captureSlotCount,
                         matchStart,
                         matchEnd,
-                        captureStarts,
-                        captureEnds,
+                        new(captureState),
                         ref input, ref budget)),
             Pcre2CaptureMaterialization.ByteFinalSlots =>
                 Pcre2BacktrackingCaptureResult.FromByteGroups(MaterializeByteGroups(captureSlotCount,
-                    matchStart, matchEnd, captureStarts, captureEnds, input.Bytes, ref budget)),
+                    matchStart, matchEnd, new(captureState), input.Bytes, ref budget)),
             _ => default,
         };
     }
 
     internal static Utf8Pcre2CaptureRange[] MaterializeByteGroups(int count, int matchStart, int matchEnd,
-        ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds, ReadOnlySpan<byte> input,
+        scoped Pcre2CaptureRanges captureRanges, ReadOnlySpan<byte> input,
         ref Pcre2ResourceBudget budget, int slotOffset = 0, bool normalizeDirection = false)
     {
         var bytes = Utf8ConstructionBudget.ArrayBytes<Utf8Pcre2CaptureRange>(count);
@@ -2541,7 +2414,7 @@ internal static class Pcre2BacktrackingRunner
         {
             control.ChargeWorkspaceStep();
             var groups = new Utf8Pcre2CaptureRange[count];
-            WriteByteGroups(groups, matchStart, matchEnd, captureStarts, captureEnds, input, ref budget, slotOffset, normalizeDirection);
+            WriteByteGroups(groups, matchStart, matchEnd, captureRanges, input, ref budget, slotOffset, normalizeDirection);
             return groups;
         }
         catch { control.ReleaseWorking(bytes); throw; }
@@ -2550,15 +2423,14 @@ internal static class Pcre2BacktrackingRunner
     // Caller-owned ranges and immutable arrays share the same publication work.
     // A caller destination is not producer-owned result storage.
     internal static void WriteByteGroups(scoped Span<Utf8Pcre2CaptureRange> destination, int matchStart, int matchEnd,
-        ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds, ReadOnlySpan<byte> input,
+        scoped Pcre2CaptureRanges captureRanges, ReadOnlySpan<byte> input,
         ref Pcre2ResourceBudget budget, int slotOffset = 0, bool normalizeDirection = false)
     {
         var control = new Pcre2ResultControl(ref budget);
         for (var slot = 0; slot < destination.Length; slot++)
         {
             if ((slot & 63) == 0) control.ChargeWorkspaceStep();
-            var start = slot == 0 ? matchStart : captureStarts[slot + slotOffset];
-            var end = slot == 0 ? matchEnd : captureEnds[slot + slotOffset];
+            var (start, end) = slot == 0 ? (matchStart, matchEnd) : captureRanges[slot + slotOffset];
             if (normalizeDirection && start >= 0 && end >= 0 && start > end) (start, end) = (end, start);
             var success = slot == 0 || start >= 0 && end >= start;
             var wellFormed = success && start <= end &&

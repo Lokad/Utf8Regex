@@ -49,12 +49,12 @@ internal static partial class Pcre2Runner
         if (!destination.IsEmpty)
         {
             Pcre2BacktrackingRunner.WriteByteGroups(destination, match.StartOffsetInBytes, match.EndOffsetInBytes,
-                [], [], input.Bytes, ref budget);
+                default, input.Bytes, ref budget);
             return new(true, match.StartOffsetInBytes, match.EndOffsetInBytes,
                 match.ConsumedStartOffsetInBytes, match.ConsumedEndOffsetInBytes, match.MatchBoundaryWasReset, default, null);
         }
         var groups = Pcre2BacktrackingRunner.MaterializeByteGroups(1, match.StartOffsetInBytes,
-            match.EndOffsetInBytes, [], [], input.Bytes, ref budget);
+            match.EndOffsetInBytes, default, input.Bytes, ref budget);
         return new(true, match.StartOffsetInBytes, match.EndOffsetInBytes,
             match.ConsumedStartOffsetInBytes, match.ConsumedEndOffsetInBytes, match.MatchBoundaryWasReset,
             Pcre2BacktrackingCaptureResult.FromByteGroups(groups), null);
@@ -96,12 +96,12 @@ internal static partial class Pcre2Runner
         }
         if (!destination.IsEmpty)
         {
-            Pcre2BacktrackingRunner.WriteByteGroups(destination, begin, end, slots.Starts, slots.Ends,
+            Pcre2BacktrackingRunner.WriteByteGroups(destination, begin, end, new(slots.Starts, slots.Ends),
                 input.Bytes, ref budget, -1, true);
             return new(true, begin, end, begin, end, false, default, null);
         }
         var groups = Pcre2BacktrackingRunner.MaterializeByteGroups(checked(program.GroupCount + 1),
-            begin, end, slots.Starts, slots.Ends, input.Bytes, ref budget, -1, true);
+            begin, end, new(slots.Starts, slots.Ends), input.Bytes, ref budget, -1, true);
         return new(true, begin, end, begin, end, false, Pcre2BacktrackingCaptureResult.FromByteGroups(groups), null);
     }
 }

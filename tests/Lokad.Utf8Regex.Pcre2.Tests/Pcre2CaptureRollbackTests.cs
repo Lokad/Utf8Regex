@@ -164,26 +164,25 @@ public sealed class Pcre2CaptureRollbackTests
         var invocation = new Utf8SliceInvocation(limits.ToSliceLimits(), TimeSpan.FromMilliseconds(20), cancellation.Token);
         var budget = new Pcre2ResourceBudget(limits, invocation, collectDiagnostics: false);
         var journal = new Pcre2InvocationStateStack<Pcre2CaptureMutation>(65, trackRents: false);
-        int[] starts = [-1], ends = [-1], openStarts = [-1], owners = [-1], openOwners = [-1];
+        Pcre2CaptureState[] captureState = [new(-1, -1, -1, -1, -1)];
         try
         {
             for (var index = 0; index < 65; index++)
-                Assert.True(journal.TryPush(new(0, index, index + 1, -1, -1, -1), ref budget));
+                Assert.True(journal.TryPush(new(0, new(index, index + 1, -1, -1, -1)), ref budget));
 
             if (cancel) cancellation.Cancel();
             else ticks = 25;
             Exception? failure = null;
             try
             {
-                Pcre2BacktrackingRunner.RollbackCaptures(0, ref journal, starts, ends, openStarts,
-                    owners, openOwners, ref budget);
+                Pcre2BacktrackingRunner.RollbackCaptures(0, ref journal, captureState, ref budget);
             }
             catch (Exception error) { failure = error; }
 
             // The first mutation is restored. The 64-entry checkpoint
             // observes the interruption before touching the next one.
             Assert.Equal(64, journal.Count);
-            Assert.Equal((64, 65), (starts[0], ends[0]));
+            Assert.Equal((64, 65), (captureState[0].Start, captureState[0].End));
             if (cancel)
                 Assert.Equal(cancellation.Token, Assert.IsType<OperationCanceledException>(failure).CancellationToken);
             else
