@@ -87,27 +87,37 @@ public sealed partial class Utf8Regex
         IUtf8MemoryAllowance? workingMemoryAllowance = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        using var programUse = _programMemory?.Enter();
-        workingMemoryAllowance ??= _programMemory?.Allowance;
-        if (workingMemoryAllowance is null)
-        {
-            try { return CountCore(input, cancellationToken); }
-            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
-        }
-        var invocation = Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+        if (workingMemoryAllowance is not null || _programMemory is not null)
+            return CountFunded(input, cancellationToken, workingMemoryAllowance);
+
+        try { return CountCore(input, cancellationToken); }
+        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(input); }
+    }
+
+    private int CountFunded(ReadOnlySpan<byte> input, CancellationToken cancellationToken,
+        IUtf8MemoryAllowance? workingMemoryAllowance)
+    {
+        var programMemory = _programMemory;
+        programMemory?.AcquireUse();
         try
         {
-            Utf8SliceBufferWork.Checkpoint(ref invocation);
-            var result = OwnedSliceCountFromByte(input, _ownedSliceProgram,
-                _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
-            FinishFundedInvocation(ref invocation);
-            return result;
+            workingMemoryAllowance ??= programMemory!.Allowance;
+            var invocation = Utf8SliceInvocation.CreateExclusive(InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+            try
+            {
+                Utf8SliceBufferWork.Checkpoint(ref invocation);
+                var result = OwnedSliceCountFromByte(input, _ownedSliceProgram,
+                    _ownedSliceProgram.RightToLeft ? input.Length : 0, ref invocation);
+                FinishFundedInvocation(ref invocation);
+                return result;
+            }
+            catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
+                invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
+            { throw CreateExecutionResourceFailure(ref invocation); }
+            catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(ReadOnlySpan<byte>.Empty); }
+            finally { invocation.Ledger.Release(invocation.Ledger.ReservedBytes); }
         }
-        catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException &&
-            invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
-        { throw CreateExecutionResourceFailure(ref invocation); }
-        catch (Utf8ExecutionDeadlineExpiredException) { throw CreateMatchTimeoutException(ReadOnlySpan<byte>.Empty); }
-        finally { invocation.Ledger.Release(invocation.Ledger.ReservedBytes); }
+        finally { programMemory?.ReleaseUse(); }
     }
 
     private void FinishFundedInvocation(ref Utf8SliceInvocation invocation)
