@@ -1250,7 +1250,8 @@ internal static partial class Utf8SliceRunner
         return (uint)index < (uint)code.Length &&
             code[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMaximum: long.MaxValue } repeat &&
             code[repeat.A].RepeatExitRejectsShorterEndpoints &&
-            GetUnfoldedAsciiRange(code[index + 1], out _) >= 0 ? index : -1;
+            (code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } ||
+             GetUnfoldedAsciiRange(code[index + 1], out _) >= 0) ? index : -1;
     }
 
     // This check eliminates impossible starts. A caller without capture output
@@ -1288,7 +1289,9 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.CaptureStart:
                 case Utf8SliceInstructionKind.CaptureEnd:
                     continue;
-                case Utf8SliceInstructionKind.Jump when entry.A >= index:
+                // A delimited loop has consumed its required delimiter
+                // before returning to its body. Every visit is still bounded.
+                case Utf8SliceInstructionKind.Jump when entry.A >= index || proveMatch && entry.B > 0:
                     index = entry.A;
                     continue;
                 case Utf8SliceInstructionKind.Fork when entry.B == 0 && entry.A > index:
@@ -1382,8 +1385,8 @@ internal static partial class Utf8SliceRunner
                     {
                         var proof = TryMatchShortPrefixRepeat(program, input, position, index, entry, ref remaining,
                             out acceptedEnd, out var continueAt);
-                        if (!proof.HasValue && entry.RepeatMaximum == long.MaxValue)
-                            proof = TryMatchUnboundedPrefixRepeat(program, input, position, index - 1, ref remaining, out continueAt);
+                        if (!proof.HasValue)
+                            proof = TryMatchGreedyPrefixRepeat(program, input, position, index - 1, ref remaining, out continueAt);
                         if (proof.HasValue)
                         {
                             if (continueAt < 0) return proof.Value;
@@ -1517,23 +1520,26 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static bool? TryMatchUnboundedPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+    private static bool? TryMatchGreedyPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int position, int index, ref int remaining, out int continueAt)
     {
         continueAt = -1;
         var code = program.Instructions;
         var repeat = code[index];
-        if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || input.Length - position > remaining ||
+        var maximum = Math.Min(input.Length - position, repeat.RepeatMaximum);
+        if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || maximum > remaining ||
             !(program.SkipsTerminalRewind(index) || code[repeat.A].RepeatExitRejectsShorterEndpoints))
             return null;
 
         var atom = code[index + 1];
-        var suffix = input[position..];
+        var suffix = input.Slice(position, (int)maximum);
         int stop;
-        if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMinimum <= 1)
+        if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMinimum <= 1 && repeat.RepeatMaximum == long.MaxValue)
             stop = atom.A == 0 ? suffix.IndexOf((byte)'\n') : -1;
         else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
             stop = suffix.IndexOfAnyExceptInRange((byte)first, last);
+        else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
+            stop = ScanAsciiMask(suffix, program.SetMasks[atom.A], category: false);
         else return null;
 
         // The dot proof needs at most one scalar. A LF stop is aligned in

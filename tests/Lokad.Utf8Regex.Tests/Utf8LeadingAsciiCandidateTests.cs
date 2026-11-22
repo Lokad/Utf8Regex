@@ -10,6 +10,21 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8LeadingAsciiCandidateTests
 {
     [Theory]
+    [InlineData("a_b@northwind-control.net\n", true)]
+    [InlineData("a_b@northwind-control.eu.int", true)]
+    [InlineData("a_b@northwind-control.n", false)]
+    public void AnchoredClassRunsProveBothOutcomesUnderAFiniteWorkLimit(string text, bool expected)
+    {
+        const string pattern = @"^([a-z_]+)@([a-z-]+\.)+[a-z]{2,12}$";
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
+    }
+
+    [Theory]
     [InlineData(0)] [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
     public void LongerStraightPrefixMissAvoidsUnneededVmStorage(int padding)
     {
