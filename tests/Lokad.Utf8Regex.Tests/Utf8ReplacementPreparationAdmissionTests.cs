@@ -32,9 +32,9 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
     {
         using var owner = Utf8ConstructionScope.Enter();
         var result = Utf8FrontEndReplacementAnalyzer.Analyze("a${missing}$1$1z"u8, [0, 1], ["zero", "one"]);
-        Assert.NotEmpty(result.Plan.Instructions);
+        Assert.False(result.Plan.Instructions.IsEmpty);
         Assert.True(owner.Budget.ReservedBytes >= 256ul +
-            Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementInstruction>(result.Plan.Instructions.Count));
+            Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementInstruction>(result.Plan.Instructions.Length));
     }
 
 
@@ -232,7 +232,7 @@ public sealed class Utf8ReplacementPreparationAdmissionTests
         Assert.True(result.ContainsGroupReferences);
         Assert.True(result.ContainsNamedGroups);
         Assert.False(result.ContainsSpecialSubstitutions);
-        Assert.Single(result.Plan.Instructions);
+        Assert.Equal(1, result.Plan.Instructions.Length);
         Assert.Same(result.Plan.Instructions[0].LiteralUtf8, result.LiteralUtf8);
         Assert.Equal("${missing}$00123", System.Text.Encoding.UTF8.GetString(result.LiteralUtf8));
         var regex = new Utf8Regex("(a)(b)(c)(d)(e)(f)(g)(h)(i)(j)(k)(l)");

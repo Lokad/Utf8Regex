@@ -26,9 +26,9 @@ public sealed class Utf8ReplacementCacheChargeTests
         { [value.Plan] = 48 };
         void Array<T>(T[]? array) { if (array is { Length: > 0 }) seen.TryAdd(array, ArrayBytes<T>(array.Length)); }
         Array(value.LiteralUtf8);
-        Array((Utf8ReplacementInstruction[])value.Plan.Instructions);
         foreach (var instruction in value.Plan.Instructions) Array(instruction.LiteralUtf8);
-        return seen.Values.Aggregate(0UL, static (total, bytes) => total + bytes);
+        return seen.Values.Aggregate(ArrayBytes<Utf8ReplacementInstruction>(value.Plan.Instructions.Length),
+            static (total, bytes) => total + bytes);
     }
 
     [Theory]
@@ -54,7 +54,7 @@ public sealed class Utf8ReplacementCacheChargeTests
             var result = cache.GetOrAdd(key, value, static (_, value) => value, default(Utf8ConstructionTextNoControl), storage);
             Assert.Same(value.Plan, result.Plan); Assert.Equal(allow ? 1 : 0, cache.Count);
             Assert.Equal(allow ? maximum : 0UL, cache.PayloadBytes);
-            cache.Clear(); Assert.Equal(value.Plan.Instructions.Count, result.Plan.Instructions.Count);
+            cache.Clear(); Assert.Equal(value.Plan.Instructions.Length, result.Plan.Instructions.Length);
         }
     }
 

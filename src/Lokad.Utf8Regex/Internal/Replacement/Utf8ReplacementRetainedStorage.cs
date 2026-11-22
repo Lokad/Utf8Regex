@@ -10,16 +10,16 @@ internal readonly struct Utf8ReplacementRetainedStorage : IUtf8RetainedStorage<b
         where TControl : struct, IUtf8ConstructionTextControl
     {
         var budget = Utf8ConstructionScope.CurrentBudget;
+        var instructions = value.Plan.Instructions;
         ulong total = 0;
         charge = 0;
         // This closed program has no recursive storage. Each slot contributes
         // independently; shared literals intentionally receive no discount.
         if (!Add(Utf8ConstructionBudget.ArrayBytes<byte>(value.LiteralUtf8.Length)
-            + Utf8ConstructionBudget.ObjectBytes<IReadOnlyList<Utf8ReplacementInstruction>>()
-            + Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementInstruction>(value.Plan.Instructions.Count))) return false;
-        for (var index = 0; index < value.Plan.Instructions.Count; index++)
+            + Utf8ConstructionBudget.ObjectBytes<Utf8ReplacementInstruction[]>()
+            + Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementInstruction>(instructions.Length))) return false;
+        foreach (var instruction in instructions)
         {
-            var instruction = value.Plan.Instructions[index];
             if (!Add(Utf8ConstructionBudget.ArrayBytes<byte>(instruction.LiteralUtf8?.Length ?? 0))) return false;
         }
         charge = total;

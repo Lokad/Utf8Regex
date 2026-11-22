@@ -4,9 +4,11 @@ namespace Lokad.Utf8Regex.Internal.Replacement;
 
 internal sealed class Utf8ReplacementPlan
 {
+    private readonly Utf8ReplacementInstruction[] _instructions;
+
     private Utf8ReplacementPlan(Utf8ReplacementInstruction[] instructions)
     {
-        Instructions = instructions;
+        _instructions = instructions;
     }
 
     internal static Utf8ReplacementPlan Create(Utf8ConstructionSession storage, ReadOnlySpan<Utf8ReplacementInstruction> instructions)
@@ -17,5 +19,5 @@ internal sealed class Utf8ReplacementPlan
         return storage.Budget.AllocateObject(copied, static value => new Utf8ReplacementPlan(value));
     }
 
-    public IReadOnlyList<Utf8ReplacementInstruction> Instructions { get; }
+    internal ReadOnlySpan<Utf8ReplacementInstruction> Instructions => _instructions;
 }

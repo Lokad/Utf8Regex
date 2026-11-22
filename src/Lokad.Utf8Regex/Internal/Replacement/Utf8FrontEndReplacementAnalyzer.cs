@@ -12,11 +12,12 @@ internal static class Utf8FrontEndReplacementAnalyzer
         var plan = Utf8ReplacementPlanLowerer.Lower(storage, resolved.Span, wholeLiteralCaptureNumber);
         // Resolution merges adjacent literals. Reuse the admitted encoded fragment
         // instead of resolving, materializing and encoding the template a second time.
-        var literal = plan.Instructions.Count == 0 ||
-            (plan.Instructions.Count == 1 && plan.Instructions[0].Kind == Utf8ReplacementInstructionKind.Literal);
+        var instructions = plan.Instructions;
+        var literal = instructions.IsEmpty ||
+            (instructions.Length == 1 && instructions[0].Kind == Utf8ReplacementInstructionKind.Literal);
         var result = literal
             ? Utf8AnalyzedReplacement.Literal(pattern, plan,
-                plan.Instructions.Count == 0 ? [] : plan.Instructions[0].LiteralUtf8)
+                instructions.IsEmpty ? [] : instructions[0].LiteralUtf8)
             : Utf8AnalyzedReplacement.Structured(pattern, plan);
         storage.Complete(); owner.Complete();
         return result;
