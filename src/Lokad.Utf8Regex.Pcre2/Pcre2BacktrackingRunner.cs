@@ -18,6 +18,7 @@ internal enum Pcre2BacktrackingResumeAction : byte
 
 // A control frame stores its THEN target in Instruction and its SKIP
 // name in RepeatIdOrNameId. Its input offset is already the SKIP position.
+// A lazy-repeat retry starts its next iteration at the saved input offset.
 // A class-repeat frame stores the last tried endpoint in InputOffsetInBytes
 // and the number of shorter choices in RepeatCount.
 internal readonly record struct Pcre2BacktrackingFrame(
@@ -34,8 +35,7 @@ internal readonly record struct Pcre2BacktrackingFrame(
     Pcre2BacktrackingResumeAction ResumeAction = Pcre2BacktrackingResumeAction.None,
     Pcre2ControlVerbKind ControlVerb = default,
     int RepeatIdOrNameId = 0,
-    int RepeatCount = 0,
-    int RepeatPosition = 0);
+    int RepeatCount = 0);
 
 internal readonly record struct Pcre2RepeatMutation(
     int RepeatId,
@@ -921,8 +921,7 @@ internal static class Pcre2BacktrackingRunner
                                             matchBoundaryWasReset,
                                             Pcre2BacktrackingResumeAction.EnterRepeat,
                                             RepeatIdOrNameId: repeatId,
-                                            RepeatCount: count + 1,
-                                            RepeatPosition: inputIndex),
+                                            RepeatCount: count + 1),
                                         depthBase,
                                         subroutineCalls.Count,
                                         ref budget);
@@ -2060,7 +2059,7 @@ internal static class Pcre2BacktrackingRunner
                 SetRepeat(
                     frame.RepeatIdOrNameId,
                     frame.RepeatCount,
-                    frame.RepeatPosition,
+                    resumeOffset,
                     counts,
                     positions,
                     ref repeatMutations,

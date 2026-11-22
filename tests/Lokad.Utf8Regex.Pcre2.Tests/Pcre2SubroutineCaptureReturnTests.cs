@@ -6,6 +6,24 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2SubroutineCaptureReturnTests
 {
+    [Fact]
+    public void LazyCallRepeatResumesAtTheSavedScalarBoundary()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?<x>(?&unit){1,4}?)Z\z(?(DEFINE)(?<unit>é😀|a))",
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64, MaxWorkingBytes = 16 << 10 } });
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
+        Assert.Contains(program.Instructions, instruction => instruction is
+            { Kind: Pcre2BacktrackingInstructionKind.Repeat, Preference: Pcre2RepeatPreference.Lazy });
+        using var source = new CancellationTokenSource();
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[3];
+
+        var match = regex.Match("é😀é😀aZ"u8, captures: captures, cancellationToken: source.Token);
+
+        Assert.Equal((0, 14), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.Equal((0, 13), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.False(captures[2].Success);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
