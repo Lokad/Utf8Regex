@@ -15,6 +15,8 @@ namespace Lokad.Utf8Regex.Posix;
 // Pass this owner by reference; no borrowed span or result aliases its buffers.
 internal partial struct PosixWorkspace
 {
+    private const int AsciiScanBlockSize = 64;
+
     private PosixProgram _program;
     private ulong _stateBytes;
     private int _openOffset;
@@ -62,6 +64,13 @@ internal partial struct PosixWorkspace
         var firstAtomIndex = _program.FirstRequiredRunAtom;
         var firstAtom = firstAtomIndex >= 0 ? _program.Scalar.Instructions[firstAtomIndex] : default;
         var lastCandidate = _program.StartsAtInputStart ? 0 : input.Length;
+        var canSkipAscii = firstAtomIndex >= 0 && firstAtom.B == 0 &&
+            lastCandidate - fromByte >= AsciiScanBlockSize && PreparedByteSetState.CanScanAsciiMask;
+        // This case-sensitive run proof admits an ASCII literal or a positive
+        // ASCII mask. A wide scalar cannot satisfy either predicate.
+        ReadOnlySpan<byte> starterMask = canSkipAscii && firstAtom.Kind == Utf8SliceInstructionKind.CategorySet
+            ? _program.Scalar.SetMasks[firstAtom.A] : default;
+        var rejectedAsciiStarts = 0;
         for (var candidate = fromByte; candidate <= lastCandidate;)
         {
             Charge(ref invocation);
@@ -69,11 +78,33 @@ internal partial struct PosixWorkspace
             // when the candidate fails and when its folded run can consume it.
             var firstWidth = 0;
             var possible = firstAtomIndex < 0;
-            if (!possible && Rune.DecodeFromUtf8(input[candidate..], out var firstScalar, out var width) == OperationStatus.Done)
+            if (canSkipAscii && candidate < input.Length)
+            {
+                var firstByte = input[candidate];
+                if (firstByte < 128)
+                {
+                    firstWidth = 1;
+                    possible = starterMask.IsEmpty ? firstByte == firstAtom.A :
+                        (starterMask[firstByte >> 3] & (1 << (firstByte & 7))) != 0;
+                }
+            }
+            else if (!possible && Rune.DecodeFromUtf8(input[candidate..], out var firstScalar, out var width) == OperationStatus.Done)
             {
                 firstWidth = width;
                 possible = firstAtom.Kind == Utf8SliceInstructionKind.Literal ? MatchesLiteral(firstScalar, firstAtom.A) :
                     MatchesClass(firstScalar, firstAtom, ref invocation);
+            }
+            if (canSkipAscii)
+            {
+                if (possible || firstWidth != 1) rejectedAsciiStarts = 0;
+                else if (++rejectedAsciiStarts == 4 && lastCandidate - candidate > AsciiScanBlockSize)
+                {
+                    // Dense starts use scalar discovery. After several rejected
+                    // ASCII starts, search from the next untested boundary.
+                    candidate += 1 + SkipRejectedAscii(input[(candidate + 1)..], firstAtom.A, starterMask, ref invocation);
+                    rejectedAsciiStarts = 0;
+                    continue;
+                }
             }
             if (possible && MatchAt(input, state, candidate, firstWidth, existenceOnly, captureHistory && !generalCaptures, ref invocation, out end))
             {
@@ -442,16 +473,34 @@ internal partial struct PosixWorkspace
         }
     }
 
+    private static int SkipRejectedAscii(ReadOnlySpan<byte> input, int literal, ReadOnlySpan<byte> mask,
+        ref Utf8SliceInvocation invocation)
+    {
+        Span<byte> rejected = stackalloc byte[16];
+        if (mask.IsEmpty)
+        {
+            rejected.Fill(byte.MaxValue);
+            rejected[literal >> 3] ^= (byte)(1 << (literal & 7));
+        }
+        else
+        {
+            for (var index = 0; index < rejected.Length; index++)
+                rejected[index] = (byte)(mask[index] ^ byte.MaxValue);
+        }
+
+        // The ASCII mask scanner also stops at a wide scalar's leading byte.
+        return ScanAsciiRun(input, -1, rejected, ref invocation);
+    }
+
     private static int ScanAsciiRun(ReadOnlySpan<byte> input, int literal, ReadOnlySpan<byte> mask,
         ref Utf8SliceInvocation invocation)
     {
-        const int blockSize = 64;
         var consumed = 0;
         while (consumed < input.Length)
         {
             // Admit a bounded input block and check its deadline before searching.
             Check(invocation.TryChargeInputStep(), ref invocation);
-            var block = input.Slice(consumed, Math.Min(blockSize, input.Length - consumed));
+            var block = input.Slice(consumed, Math.Min(AsciiScanBlockSize, input.Length - consumed));
             if (literal >= 0)
             {
                 var stop = block.IndexOfAnyExcept((byte)literal);
