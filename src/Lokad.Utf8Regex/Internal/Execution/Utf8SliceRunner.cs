@@ -2958,41 +2958,43 @@ internal static partial class Utf8SliceRunner
         var referStart = Math.Min(captureStarts[instruction.A], captureEnds[instruction.A]);
         var referEnd = Math.Max(captureStarts[instruction.A], captureEnds[instruction.A]);
         var referLength = referEnd - referStart;
-        if (program.RightToLeft)
+        var reverse = program.RightToLeft;
+        if (instruction.B == 0)
+        {
+            var available = reverse ? inputIndex : input.Length - inputIndex;
+            if (referLength > available) return new(false, -1, Utf8ExecutionLimitKind.None);
+
+            // Scalar-aligned captures have a single UTF-8 encoding. Use the
+            // same bounded ordinal comparison as the literal search paths.
+            var start = reverse ? inputIndex - referLength : inputIndex;
+            var end = reverse ? start : inputIndex + referLength;
+            var breach = Utf8SearchExecutor.TryCompareLiteral(input.Slice(start, referLength),
+                input.Slice(referStart, referLength), false, ref invocation, out var equal, reverse);
+            return new(equal, equal ? end : -1, breach);
+        }
+
+        if (reverse)
         {
             // Mirrored captures record their right edge at opening and left
             // edge at closing. Compare both spans from their own scalar ends.
-            if (instruction.B != 0)
-            {
-                var capIndex = referEnd;
-                var backIndex = inputIndex;
-                while (capIndex > referStart)
-                {
-                    var charge = invocation.TryChargeStep();
-                    if (charge != Utf8ExecutionLimitKind.None) return new(false, -1, charge);
-                    if (backIndex <= 0 ||
-                        !TryReadScalar(input, capIndex, true, out var captureScalar, out var capWidth) ||
-                        capIndex - capWidth < referStart ||
-                        !TryReadScalar(input, backIndex, true, out var inputScalar, out var inWidth) ||
-                        !BackreferenceScalarsEqual(program, instruction, captureScalar, inputScalar))
-                        return new(false, -1, Utf8ExecutionLimitKind.None);
-                    capIndex -= capWidth;
-                    backIndex -= inWidth;
-                }
-                return new(true, backIndex, Utf8ExecutionLimitKind.None);
-            }
-            if (referLength > inputIndex) return new(false, -1, Utf8ExecutionLimitKind.None);
-            for (var compared = 0; compared < referLength; compared++)
+            var capIndex = referEnd;
+            var backIndex = inputIndex;
+            while (capIndex > referStart)
             {
                 var charge = invocation.TryChargeStep();
                 if (charge != Utf8ExecutionLimitKind.None) return new(false, -1, charge);
-                if (input[referEnd - 1 - compared] != input[inputIndex - 1 - compared])
+                if (backIndex <= 0 ||
+                    !TryReadScalar(input, capIndex, true, out var captureScalar, out var capWidth) ||
+                    capIndex - capWidth < referStart ||
+                    !TryReadScalar(input, backIndex, true, out var inputScalar, out var inWidth) ||
+                    !BackreferenceScalarsEqual(program, instruction, captureScalar, inputScalar))
                     return new(false, -1, Utf8ExecutionLimitKind.None);
+                capIndex -= capWidth;
+                backIndex -= inWidth;
             }
-            return new(true, inputIndex - referLength, Utf8ExecutionLimitKind.None);
+            return new(true, backIndex, Utf8ExecutionLimitKind.None);
         }
-
-        if (instruction.B != 0)
+        else
         {
             // Each side advances by its own UTF-8 scalar width (for example k
             // versus Kelvin), using the same existing profile equivalence.
@@ -3013,17 +3015,6 @@ internal static partial class Utf8SliceRunner
             }
             return new(true, backIndex, Utf8ExecutionLimitKind.None);
         }
-        // A scalar-aligned capture has one strict UTF-8 encoding. Retain the
-        // original work charge before every ordinal byte comparison.
-        if (referLength > input.Length - inputIndex) return new(false, -1, Utf8ExecutionLimitKind.None);
-        for (var compared = 0; compared < referLength; compared++)
-        {
-            var charge = invocation.TryChargeStep();
-            if (charge != Utf8ExecutionLimitKind.None) return new(false, -1, charge);
-            if (input[referStart + compared] != input[inputIndex + compared])
-                return new(false, -1, Utf8ExecutionLimitKind.None);
-        }
-        return new(true, inputIndex + referLength, Utf8ExecutionLimitKind.None);
     }
 
     private static bool BackreferenceScalarsEqual(Utf8SliceProgram program,

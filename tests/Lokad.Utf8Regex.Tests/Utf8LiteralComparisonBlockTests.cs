@@ -35,6 +35,12 @@ public sealed class Utf8LiteralComparisonBlockTests
             Assert.False(equal);
             Assert.Equal(blocks, mismatch.Budget.Steps);
             Assert.Equal(0UL, mismatch.Ledger.ReservedBytes);
+
+            var reverse = new Utf8SliceInvocation(new(1, 0, 0), Regex.InfiniteMatchTimeout, default);
+            Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryCompareLiteral(input.AsSpan(offset), literal,
+                folded, ref reverse, out equal, reverse: true));
+            Assert.False(equal);
+            Assert.Equal(1UL, reverse.Budget.Steps);
         }
     }
 

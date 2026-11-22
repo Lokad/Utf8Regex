@@ -137,7 +137,7 @@ internal static partial class Utf8SearchExecutor
 
     internal static Utf8ExecutionLimitKind TryCompareLiteral(
         ReadOnlySpan<byte> input, ReadOnlySpan<byte> literal, bool ignoreCase,
-        ref Utf8SliceInvocation invocation, out bool equal)
+        ref Utf8SliceInvocation invocation, out bool equal, bool reverse = false)
     {
         equal = false;
         if (input.Length < literal.Length) return Utf8ExecutionLimitKind.None;
@@ -146,8 +146,9 @@ internal static partial class Utf8SearchExecutor
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var count = Math.Min(2048, literal.Length - offset);
-            var actual = input.Slice(offset, count);
-            var expected = literal.Slice(offset, count);
+            var start = reverse ? literal.Length - offset - count : offset;
+            var actual = input.Slice(start, count);
+            var expected = literal.Slice(start, count);
             if (!ignoreCase)
             {
                 if (!actual.SequenceEqual(expected)) return Utf8ExecutionLimitKind.None;

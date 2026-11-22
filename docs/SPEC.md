@@ -198,6 +198,10 @@ and interruption checks. Depth includes logical assertion state even when
 the engine allocates no continuation. Charges vary with the execution route
 and library version. Recheck finite policies when upgrading.
 
+Exact backreferences compare captured bytes in admitted blocks of up to
+2,048 bytes, starting at the right edge in RTL mode. Folded backreferences
+compare scalar equivalents.
+
 The engine admits covered storage before acquisition. It covers capture
 and projection arrays, cursor tables, output staging and finalized result
 storage. A shared or temporary allocation may count more than once.
