@@ -207,7 +207,7 @@ public sealed class Pcre2BackslashCCompilerTests
     }
 
     [Fact]
-    public void ReplacementCanRemoveEveryCodeUnitWithoutAcceptingMalformedInput()
+    public void ReplacementCanReplaceEveryByteOfAMultibyteScalar()
     {
         var regex = Create(@"\C");
 

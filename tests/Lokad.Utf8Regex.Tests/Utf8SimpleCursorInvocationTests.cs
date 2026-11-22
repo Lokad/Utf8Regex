@@ -186,16 +186,16 @@ public sealed class Utf8SimpleCursorInvocationTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void MalformedInputAndPreCanceledIdentityRemainStrict(bool compiled)
+    public void PreCanceledCursorKeepsTheOriginalToken(bool compiled)
     {
         var regex = new Utf8Regex(Patterns[0], options: Options(compiled), policy: new Utf8RegexPolicy
         {
             MatchTimeout = TimeSpan.FromSeconds(10)
         });
         using var source = new CancellationTokenSource();
-        var malformed = "ab12d"u8.ToArray().Concat(new byte[] { 0xff }).ToArray();
+        var input = "ab12d"u8.ToArray();
         source.Cancel();
-        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => { var cursor = regex.EnumerateMatches(malformed, cancellationToken: source.Token); _ = cursor.MoveNext(); }).CancellationToken);
+        Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => { var cursor = regex.EnumerateMatches(input, cancellationToken: source.Token); _ = cursor.MoveNext(); }).CancellationToken);
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 

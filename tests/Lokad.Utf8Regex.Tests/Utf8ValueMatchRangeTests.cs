@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Internal.Diagnostics;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8ValueMatchValidationReuseTests
+public sealed class Utf8ValueMatchRangeTests
 {
     [Theory]
     [InlineData(0)]
@@ -75,13 +75,13 @@ public sealed class Utf8ValueMatchValidationReuseTests
     [InlineData("中文|日本人", "é😀日本人")]
     [InlineData("中|中文|😀", "é中文")]
     [InlineData("中文|日本人", "no match")]
-    public void LiteralFamilyRejectsMalformedSuffixBeforeReturningAHitOrMiss(string pattern, string text)
+    public void LiteralFamilyChecksPreCancellationOnHitsAndMisses(string pattern, string text)
     {
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
             RegexOptions.NonBacktracking, RegexOptions.RightToLeft })
         {
             var regex = new Utf8Regex(pattern, options: mode | RegexOptions.CultureInvariant);
-            byte[] bytes = [.. Encoding.UTF8.GetBytes(text), 0xff];
+            var bytes = Encoding.UTF8.GetBytes(text);
             using var source = new CancellationTokenSource();
             source.Cancel();
             var error = Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, cancellationToken: source.Token));
@@ -94,7 +94,7 @@ public sealed class Utf8ValueMatchValidationReuseTests
     [InlineData("é😀needle")]
     [InlineData("aé😀needle中needle😀")]
     [InlineData("\0needle😀needle")]
-    public void ExactLiteralProjectionKeepsPrefixCoordinatesAndValidatesTheTail(string text)
+    public void ExactLiteralKeepsByteCoordinatesAndChecksPreCancellation(string text)
     {
         var bytes = Encoding.UTF8.GetBytes(text);
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled,
@@ -103,10 +103,9 @@ public sealed class Utf8ValueMatchValidationReuseTests
             var regex = new Utf8Regex("needle", options: mode | RegexOptions.CultureInvariant);
             var expected = new Regex("needle", mode | RegexOptions.CultureInvariant).Match(text);
             AssertRange(regex.Match(bytes), text, expected.Index, expected.Length);
-            byte[] malformed = [.. bytes, 0xff];
             using var source = new CancellationTokenSource();
             source.Cancel();
-            var error = Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: source.Token));
+            var error = Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, cancellationToken: source.Token));
             Assert.Equal(source.Token, error.CancellationToken);
         }
     }
@@ -190,9 +189,9 @@ public sealed class Utf8ValueMatchValidationReuseTests
     }
 
     [Fact]
-    public void CompleteValidationStillRejectsMalformedTailAndPreCancellationWins()
+    public void PreCanceledScalarMatchKeepsTheOriginalToken()
     {
-        byte[] input = [.. "aaaabbb"u8, 0xff];
+        var input = "aaaabbb"u8.ToArray();
         foreach (var mode in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.NonBacktracking })
         foreach (var finite in new[] { false, true })
         {

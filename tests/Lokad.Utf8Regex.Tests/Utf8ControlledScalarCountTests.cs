@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8GenericCountValidationTests
+public sealed class Utf8ControlledScalarCountTests
 {
     private static Utf8Regex Create(string pattern, RegexOptions options = RegexOptions.None)
         => new(pattern, options: options | RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
@@ -39,10 +39,10 @@ public sealed class Utf8GenericCountValidationTests
     [InlineData(2046)]
     [InlineData(2047)]
     [InlineData(2048)]
-    public void GenericMissStillValidatesWholeSubjectAndReportsOriginalByteOffset(int prefixLength)
+    public void GenericMissAcrossScanBlockReturnsZero(int prefixLength)
     {
         var regex = Create("a(?=b)");
-        var valid = Encoding.UTF8.GetBytes(new string('x', prefixLength) + "😀é");
-        Assert.Equal(0, regex.Count(valid));
+        var input = Encoding.UTF8.GetBytes(new string('x', prefixLength) + "😀é");
+        Assert.Equal(0, regex.Count(input));
     }
 }

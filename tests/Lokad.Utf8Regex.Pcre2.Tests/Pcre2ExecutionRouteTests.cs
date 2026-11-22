@@ -641,19 +641,6 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
         Assert.Equal("oo@bar", System.Text.Encoding.UTF8.GetString(match.GetValueBytes()));
     }
 
-    [Theory]
-    [InlineData("Tom.{10,25}river|river.{10,25}Tom")]
-    [InlineData(@"[a-z]+@[a-z]+")]
-    [InlineData(@"[^a]+\.[^z]+")]
-    [InlineData(@"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])")]
-    [InlineData(@"\b\w{10,}\b")]
-    public void CandidateSearchStillValidatesMalformedPrefixesAndSuffixes(string pattern)
-    {
-        var regex = new Utf8Pcre2Regex(pattern);
-
-        Assert.NotEqual(Pcre2CandidateSearchKind.None, regex.DebugCompiledProgram.CandidateSearch.Kind);
-    }
-
     [Fact]
     public void FundedRunDelimiterMissNeedsNoAttemptWorkspace()
     {

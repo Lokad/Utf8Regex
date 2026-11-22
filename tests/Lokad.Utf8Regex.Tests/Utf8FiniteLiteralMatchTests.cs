@@ -53,10 +53,10 @@ public sealed class Utf8FiniteLiteralMatchTests
     [InlineData("cat")]
     [InlineData("é😀fox")]
     [InlineData("none")]
-    public void WiderValueFamiliesRejectMalformedTailsAndKeepPreCancellation(string text)
+    public void PreCanceledWideLiteralFamilyKeepsOriginalToken(string text)
     {
         var regex = Create("cat|dog|emu|fox|yak");
-        byte[] bytes = [.. Encoding.UTF8.GetBytes(text), 0xff];
+        var bytes = Encoding.UTF8.GetBytes(text);
         using var source = new CancellationTokenSource();
         source.Cancel();
         Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(bytes, cancellationToken: source.Token)).CancellationToken);

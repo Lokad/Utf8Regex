@@ -152,7 +152,7 @@ public sealed class Utf8UnobservedValueCaptureTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void OriginalInterruptionAndMalformedTailsRemainAuthoritative(bool boolean, bool expire)
+    public void CaptureFreeSearchObservesOriginalCancellationAndDeadline(bool boolean, bool expire)
     {
         var regex = new Utf8Regex("abcdef([0-9]+)", options: RegexOptions.None, policy: new Utf8RegexPolicy
         {

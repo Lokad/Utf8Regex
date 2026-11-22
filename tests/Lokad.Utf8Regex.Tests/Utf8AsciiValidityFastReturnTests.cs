@@ -33,7 +33,7 @@ public sealed class Utf8AsciiValidityFastReturnTests
     [InlineData("\u0800\uD7FF")]
     [InlineData("😀\U0010FFFF")]
     [InlineData("K")]
-    public void LateUnicodeAndMalformedSuffixKeepCompleteSubjectValidation(string suffix)
+    public void StandaloneValidationReportsMalformedSuffixOffsetsAfterUnicode(string suffix)
     {
         foreach (var length in new[] { 0, 15, 16, 31, 32, 63, 64, 255, 256, 2047, 2048, 65536 })
         {

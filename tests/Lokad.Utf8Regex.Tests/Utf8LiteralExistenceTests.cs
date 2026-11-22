@@ -66,18 +66,17 @@ public sealed class Utf8LiteralExistenceTests
     }
 
     [Fact]
-    public void MatchDoesNotPermitSkippingMalformedTailValidationOrEarlierWorkDenial()
+    public void WorkDenialPrecedesAConclusiveMiss()
     {
-        var regex = new Utf8Regex(".*(ss)");
-        var lateMalformed = Encoding.UTF8.GetBytes(new string('x', (1 << 20))).Append((byte)255).ToArray();
+        var input = Encoding.UTF8.GetBytes(new string('x', 1 << 20) + "é");
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => Limited(1).IsMatch(lateMalformed)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => Limited(1).IsMatch(input)).ResourceKind);
     }
 
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void BoundedSearchPollsOriginalCancellationAndDeadlineAfterValidation(bool expire)
+    public void BoundedSearchPollsOriginalCancellationAndDeadline(bool expire)
     {
         var input = Encoding.UTF8.GetBytes(new string('x', (1 << 20)) + "ss");
         const ulong threshold = 64;

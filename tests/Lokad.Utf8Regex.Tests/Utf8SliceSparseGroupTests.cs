@@ -197,24 +197,17 @@ public sealed class Utf8SliceSparseGroupTests
             foreach (var template in new[] { "Q", "$&", "<$1>|$" + "{5}|$12|$" + "{12}|$" + "{x}|$2147483647",
                 "$00|$01|$" + "{012}|$+", "$" + (char)96 + "|$'|$_", "\ud83d$" + "{12}\ude00" })
             {
-                // The comparator receives the scalar form of each literal;
-                // string APIs no longer retain halves across substitutions.
-                var expected = Utf8ScalarCaptureFixture.Subject.Restore(oracle.Replace(subject.Projected, Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(template))));
+                // The comparator receives the same UTF-8 template text, including
+                // the replacement characters for isolated UTF-16 surrogates.
+                var utf8Template = Encoding.UTF8.GetBytes(template);
+                var expected = Utf8ScalarCaptureFixture.Subject.Restore(oracle.Replace(subject.Projected, Encoding.UTF8.GetString(utf8Template)));
                 var expectedBytes = Encoding.UTF8.GetBytes(expected);
-                Assert.Equal(expectedBytes, regex.Replace(input, Encoding.UTF8.GetBytes(template), source.Token));
+                Assert.Equal(expectedBytes, regex.Replace(input, utf8Template, source.Token));
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Byte template " + template);
                 var destination = new byte[expectedBytes.Length + 1];
-                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, Encoding.UTF8.GetBytes(template), destination, out var written, source.Token));
+                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, utf8Template, destination, out var written, source.Token));
                 Assert.Equal(expectedBytes, destination.AsSpan(0, written).ToArray());
                 Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Destination template " + template);
-                var utf8Template = Encoding.UTF8.GetBytes(template);
-                var expectedUtf8Template = Encoding.UTF8.GetBytes(Utf8ScalarCaptureFixture.Subject.Restore(oracle.Replace(subject.Projected, Encoding.UTF8.GetString(utf8Template))));
-                Assert.Equal(expectedUtf8Template, regex.Replace(input, utf8Template, source.Token));
-                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "UTF-8 template");
-                var utf8Destination = new byte[expectedUtf8Template.Length + 1];
-                Assert.Equal(OperationStatus.Done, regex.TryReplace(input, utf8Template, utf8Destination, out var utf8Written, source.Token));
-                Assert.Equal(expectedUtf8Template, utf8Destination.AsSpan(0, utf8Written).ToArray());
-                Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "UTF-8 destination template");
             }
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "Templates");
             Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);

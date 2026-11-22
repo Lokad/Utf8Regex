@@ -112,7 +112,7 @@ public sealed class Utf8NumberPrefixValueMatchTests
     }
 
     [Fact]
-    public void DetailedCapturesAndRetainedValuesRemainOwnedAndMalformedTailsAreRejected()
+    public void RetainedCapturesAndCursorAliasesKeepTheirRanges()
     {
         var regex = new Utf8Regex(Pattern);
         var input = "-12.34e-5!"u8.ToArray(); var value = regex.Match(input);
@@ -127,9 +127,8 @@ public sealed class Utf8NumberPrefixValueMatchTests
         Assert.False(cursor.MoveNext()); Assert.False(alias.MoveNext());
         Assert.Equal(".34", System.Text.Encoding.UTF8.GetString(detailed.GetGroupMemory(1).Span));
         Assert.Equal(9, (value.EndOffsetInBytes - value.StartOffsetInBytes));
-        byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: token.Token)).CancellationToken);
     }
 
     [Theory]

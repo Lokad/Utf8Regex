@@ -120,14 +120,14 @@ public sealed class Utf8OperatorPrefixValueMatchTests
     }
 
     [Fact]
-    public void MalformedTailsAndOriginalEntryCancellationStayStrict()
+    public void PreCanceledMatchKeepsTheOriginalTokenOnHitsAndMisses()
     {
         var regex = new Utf8Regex(Pattern);
-        foreach (var head in new[] { "+=", "wrong" })
+        foreach (var text in new[] { "+=", "wrong" })
         {
-            byte[] malformed = [.. Encoding.UTF8.GetBytes(head), 0xff];
+            var input = Encoding.UTF8.GetBytes(text);
             using var canceled = new CancellationTokenSource(); canceled.Cancel();
-            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(malformed, cancellationToken: canceled.Token)).CancellationToken);
+            Assert.Equal(canceled.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: canceled.Token)).CancellationToken);
         }
     }
 

@@ -90,7 +90,7 @@ public sealed class Utf8AsciiLiteralRunTests
     }
 
     [Fact]
-    public void BorrowedOffsetAndMalformedSuffixRemainAuthoritative()
+    public void CursorRetainsCapturesFromTheBorrowedSlice()
     {
         var regex = new Utf8Regex("item-([0-9]+)");
         var bytes = Encoding.UTF8.GetBytes("é😀item-12 item-345中");

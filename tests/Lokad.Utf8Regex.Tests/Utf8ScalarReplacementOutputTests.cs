@@ -6,6 +6,19 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8ScalarReplacementOutputTests
 {
+    [Fact]
+    public void BothOutputFormsExpandTheCaptureTemplate()
+    {
+        using var regex = new Utf8Regex("^([0-9]{4})$", RegexOptions.CultureInvariant);
+        var expected = "<1234>"u8.ToArray();
+        Assert.Equal(expected, regex.Replace("1234"u8, "<$1>"u8));
+
+        var destination = new byte[expected.Length];
+        Assert.Equal(OperationStatus.Done, regex.TryReplace("1234"u8, "<$1>"u8, destination, out var written));
+        Assert.Equal(expected.Length, written);
+        Assert.Equal(expected, destination);
+    }
+
     [Theory]
     [InlineData(RegexOptions.None)]
     [InlineData(RegexOptions.Compiled)]

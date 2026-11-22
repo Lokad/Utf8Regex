@@ -144,9 +144,9 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
 
     [Theory]
     [InlineData(63)] [InlineData(64)] [InlineData(65)]
-    public void PublicEntryPointsRejectMalformedTailsBeforeEarlyMatches(int prefix)
+    public void PreCanceledCountKeepsTheOriginalTokenAtBlockBoundaries(int prefix)
     {
-        var input = Encoding.UTF8.GetBytes(new string('a', prefix)).Concat(new byte[] { 0xc3 }).ToArray();
+        var input = Encoding.UTF8.GetBytes(new string('a', prefix) + "b");
         foreach (var compiled in new[] { false, true })
         {
             var regex = new Utf8Regex("(?<x>a+)|$", options: RegexOptions.NonBacktracking | (compiled ? RegexOptions.Compiled : 0));

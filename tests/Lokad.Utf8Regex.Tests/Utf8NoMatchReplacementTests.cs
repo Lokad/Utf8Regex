@@ -94,7 +94,7 @@ public sealed class Utf8NoMatchReplacementTests
     }
 
     [Fact]
-    public void MissStillValidatesSubjectTemplateAndOriginalToken()
+    public void ReplacementMissStillValidatesTheTemplateAndChecksCancellation()
     {
         var regex = Create(RegexOptions.None, 1 << 20);
         Assert.Throws<ArgumentException>(() => regex.Replace("dog"u8, [0xff]));

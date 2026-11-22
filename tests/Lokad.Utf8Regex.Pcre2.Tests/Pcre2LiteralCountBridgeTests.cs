@@ -76,16 +76,16 @@ public sealed class Pcre2LiteralCountBridgeTests
     }
 
     [Fact]
-    public void ExplicitOptionsMalformedTailsAndRetainedCapturesKeepTheirContracts()
+    public void ExplicitOptionsAndByteOffsetsPreserveRetainedCaptures()
     {
         var regex = Create("(a)(b)");
-        ReadOnlySpan<byte> retained2Input = "😀ab ab"u8;
-        var retained2Captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
-        var retained = regex.Match(retained2Input, startOffsetInBytes: 4, captures: retained2Captures);
+        ReadOnlySpan<byte> input = "😀ab ab"u8;
+        var captures = new Utf8Pcre2CaptureRange[regex.CaptureGroupCount + 1];
+        Assert.True(regex.Match(input, startOffsetInBytes: 4, captures: captures).Success);
         Assert.Equal(1, regex.Count("😀ab ab"u8, 4, Pcre2MatchOptions.Anchored));
         Assert.Equal(2, regex.Count("😀ab ab"u8, 4));
-        Assert.Equal("a", System.Text.Encoding.UTF8.GetString((retained2Captures[1].Success ? retained2Input.Slice(retained2Captures[1].StartOffsetInBytes, retained2Captures[1].EndOffsetInBytes - retained2Captures[1].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
-        Assert.Equal("b", System.Text.Encoding.UTF8.GetString((retained2Captures[2].Success ? retained2Input.Slice(retained2Captures[2].StartOffsetInBytes, retained2Captures[2].EndOffsetInBytes - retained2Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
+        Assert.Equal((4, 5), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal((5, 6), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀ab"u8, 1));
     }
 

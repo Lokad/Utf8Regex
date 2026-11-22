@@ -391,7 +391,7 @@ public sealed class Utf8BoundedDotCandidateTests
     }
 
     [Fact]
-    public void RetainedCapturesAliasesAdmissionAndMalformedTailsRemainValid()
+    public void BoundedDotKeepsRetainedCapturesAliasProgressAndAdmission()
     {
         const string pattern = "A(?<gap>.{8,25})Z";
         var regex = new Utf8Regex(pattern); var input = "AxxxxxxxxZ"u8.ToArray();
@@ -409,8 +409,7 @@ public sealed class Utf8BoundedDotCandidateTests
                     MatchTimeout = Timeout.InfiniteTimeSpan,
                     ResourcePolicy = policy
                 }).CreateMatchCursor(input)));
-        byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(malformed, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
     }
 }

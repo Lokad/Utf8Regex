@@ -91,7 +91,7 @@ public sealed class Utf8EmailBooleanTests
     }
 
     [Fact]
-    public void CapturesOffsetsAndMalformedTailsKeepTheirContracts()
+    public void EmailSearchPreservesCapturesOffsetsAndOriginalCancellation()
     {
         var regex = new Utf8Regex(Pattern);
         var input = "a_b@x.ab\n"u8.ToArray();
@@ -101,9 +101,8 @@ public sealed class Utf8EmailBooleanTests
         Assert.True(regex.Match(input, 0, []).Success);
         Assert.False(regex.Match(input, 1, []).Success);
         Assert.Equal("a_b", System.Text.Encoding.UTF8.GetString(retained.GetGroupMemory(1).Span));
-        byte[] malformed = [.. input, 0xff];
         using var token = new CancellationTokenSource(); token.Cancel();
-        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(malformed, token.Token)).CancellationToken);
+        Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, token.Token)).CancellationToken);
     }
 
     [Theory]

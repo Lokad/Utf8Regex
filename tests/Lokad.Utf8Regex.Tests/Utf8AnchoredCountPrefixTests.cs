@@ -109,7 +109,7 @@ public sealed class Utf8AnchoredCountPrefixTests
     }
 
     [Fact]
-    public void DerivedStartFloorsKeepOriginalLineContextAndMalformedTailsFail()
+    public void DerivedStartFloorsKeepOriginalLineContext()
     {
         const string text = "é😀\nabc\r\nxabc\nabc";
         var input = Encoding.UTF8.GetBytes(text);

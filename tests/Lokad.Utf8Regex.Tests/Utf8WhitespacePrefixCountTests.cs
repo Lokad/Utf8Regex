@@ -50,7 +50,7 @@ public sealed class Utf8WhitespacePrefixCountTests
     }
 
     [Fact]
-    public void ControlsAndMalformedTailsRemainEnforced()
+    public void CountObservesWorkDenialAndOriginalCancellation()
     {
         const string pattern = @"(\s*)#x";
         var input = Encoding.UTF8.GetBytes(new string('z', 300) + "\u00a0 #x");

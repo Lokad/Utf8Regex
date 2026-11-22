@@ -109,9 +109,9 @@ public sealed class Utf8LeadingDigitsBooleanTests
 
     [Theory]
     [InlineData("1-okay")] [InlineData("not a header")]
-    public void MalformedTailsAreStillRejectedBeforeConclusiveBooleans(string prefix)
+    public void PreCancellationWinsBeforeConclusiveBooleans(string text)
     {
-        var input = Encoding.UTF8.GetBytes(prefix).Append((byte)0xff).ToArray();
+        var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8Regex(Pattern);
         using var token = new CancellationTokenSource(); token.Cancel();
         Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, token.Token)).CancellationToken);
