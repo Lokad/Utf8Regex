@@ -7,6 +7,33 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2LiteralCountBridgeTests
 {
+    [Fact]
+    public void FoldedCountKeepsByteOffsetsNonoverlapAndMatchFlags()
+    {
+        using var regex = new Utf8Pcre2Regex("Aa", Pcre2CompileOptions.Caseless);
+        Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
+        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
+        using var token = new CancellationTokenSource();
+        Assert.Equal(3, regex.Count("😀aAaAa\nAa"u8, 4));
+        Assert.Equal(2, regex.Count("😀aAaAa\nAa"u8, 6, cancellationToken: token.Token));
+        Assert.Equal(0, regex.Count("😀aAaAa\nAa"u8, 12));
+        Assert.Equal(0, regex.Count([]));
+        Assert.Equal(2, regex.Count("😀aAaAa\nAa"u8, 4, Pcre2MatchOptions.Anchored));
+        Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀ab"u8, 1));
+    }
+
+    [Theory]
+    [InlineData("ki", "Ki Ki kİ", 2, false)]
+    [InlineData("si", "ſI Si sı", 2, false)]
+    [InlineData("ii", "İi Ii ıi", 1, true)]
+    [InlineData("(?-i:a)B", "AB aB ab", 2, false)]
+    public void FoldedCountRequiresTheCompletePcre2CaseFiber(string pattern, string text, int expected, bool prepared)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Caseless);
+        Assert.Equal(prepared, regex.DebugCompiledProgram.Operations.Count is Pcre2LiteralDirectProgram);
+        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text)));
+    }
+
     [Theory]
     [InlineData("(a)(b)", "π😀ab abxab", 6, 3)]
     [InlineData("(cat|horse|dog)", "π😀horse catdog", 6, 3)]
@@ -63,17 +90,19 @@ public sealed class Pcre2LiteralCountBridgeTests
     }
 
     [Theory]
-    [InlineData("(a)(b)", "ab Xab ab", 3)]
-    [InlineData("(a|aa)", "aaaa", 4)]
-    [InlineData("(😀)(é)", "😀é x😀é", 2)]
-    public void EverySmallWorkCutoffEitherDeniesOrReturnsTheCompleteCount(string pattern, string text, int expected)
+    [InlineData("(a)(b)", "ab Xab ab", 3, Pcre2CompileOptions.None)]
+    [InlineData("(a|aa)", "aaaa", 4, Pcre2CompileOptions.None)]
+    [InlineData("(😀)(é)", "😀é x😀é", 2, Pcre2CompileOptions.None)]
+    [InlineData("Ab", "ab XAB aB", 3, Pcre2CompileOptions.Caseless)]
+    public void EverySmallWorkCutoffEitherDeniesOrReturnsTheCompleteCount(string pattern, string text, int expected,
+        Pcre2CompileOptions options)
     {
         var bytes = Encoding.UTF8.GetBytes(text);
         var admitted = false;
         var denied = false;
         for (uint work = 1; work <= 96; work++)
         {
-            var regex = Create(pattern, new() { MatchLimit = work, DepthLimit = 1024, HeapLimitInBytes = 1048576, ResultLimitInBytes = 1048576 });
+            using var regex = Create(pattern, new() { MatchLimit = work, DepthLimit = 1024, HeapLimitInBytes = 1048576, ResultLimitInBytes = 1048576 }, options);
             try { Assert.Equal(expected, regex.Count(bytes)); admitted = true; }
             catch (Pcre2MatchException error)
             {
@@ -173,18 +202,27 @@ public sealed class Pcre2LiteralCountBridgeTests
         Assert.Equal("b", System.Text.Encoding.UTF8.GetString((retained3Captures[2].Success ? retained3Input.Slice(retained3Captures[2].StartOffsetInBytes, retained3Captures[2].EndOffsetInBytes - retained3Captures[2].StartOffsetInBytes) : ReadOnlySpan<byte>.Empty)));
     }
 
-    [Fact]
-    public void PublicTimeoutKeepsTheProfileFailureVocabulary()
+    [Theory]
+    [InlineData("(a)(b)", Pcre2CompileOptions.None, false)]
+    [InlineData("Ab", Pcre2CompileOptions.Caseless, false)]
+    [InlineData("Ab", Pcre2CompileOptions.Caseless, true)]
+    public void PublicInterruptionKeepsTheProfileFailureVocabulary(string pattern, Pcre2CompileOptions options,
+        bool cancel)
     {
         long ticks = 0;
         var armed = false;
         var reads = 0;
+        using var token = new CancellationTokenSource();
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
         {
-            if (armed && ++reads == 100) ticks = 25;
+            if (armed && ++reads == 100)
+            {
+                if (cancel) token.Cancel();
+                else ticks = 25;
+            }
             return ticks;
         });
-        var regex = new Utf8Pcre2Regex("(a)(b)", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+        using var regex = new Utf8Pcre2Regex(pattern, options, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {
@@ -194,7 +232,11 @@ public sealed class Pcre2LiteralCountBridgeTests
         });
         var bytes = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat("ab ", 1000)));
         armed = true;
-        Assert.Equal(Pcre2ErrorKind.Timeout, Assert.Throws<Pcre2MatchException>(() => regex.Count(bytes)).ErrorKind);
+        if (cancel)
+            Assert.Equal(token.Token, Assert.Throws<OperationCanceledException>(() =>
+                regex.Count(bytes, cancellationToken: token.Token)).CancellationToken);
+        else
+            Assert.Equal(Pcre2ErrorKind.Timeout, Assert.Throws<Pcre2MatchException>(() => regex.Count(bytes)).ErrorKind);
         Assert.True(reads >= 100);
     }
 
@@ -211,8 +253,9 @@ public sealed class Pcre2LiteralCountBridgeTests
             Pcre2MatchOptions.None, token.Token));
     }
 
-    private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null) =>
-        new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
+    private static Utf8Pcre2Regex Create(string pattern, Utf8Pcre2ExecutionLimits? limits = null,
+        Pcre2CompileOptions options = Pcre2CompileOptions.None) =>
+        new(pattern, options, compileSettings: default, policy: new Utf8RegexPolicy
         {
             ResourcePolicy = new Utf8ResourcePolicy
             {

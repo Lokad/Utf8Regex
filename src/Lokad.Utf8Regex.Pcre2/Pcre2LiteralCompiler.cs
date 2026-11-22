@@ -25,10 +25,11 @@ internal sealed class Pcre2LiteralProgram
         Pcre2LiteralAnchor startAnchor,
         bool endAnchored,
         bool hasExplicitEndAssertion,
-        bool hasExplicitCrOrLf)
+        bool hasExplicitCrOrLf,
+        bool ignoreCase = false)
     {
         _literalUtf8 = literalUtf8; // The compiler transfers its admitted UTF-8 buffer.
-        Search = new PreparedSubstringSearch(_literalUtf8, ignoreCase: false);
+        Search = new PreparedSubstringSearch(_literalUtf8, ignoreCase);
         StartAnchor = startAnchor;
         EndAnchored = endAnchored;
         HasExplicitEndAssertion = hasExplicitEndAssertion;
@@ -47,7 +48,7 @@ internal sealed class Pcre2LiteralProgram
     internal bool HasExplicitCrOrLf { get; }
 
     internal bool CanCountDirectly(int inputLength) =>
-        inputLength >= DirectCountThresholdBytes &&
+        (inputLength >= DirectCountThresholdBytes || Search.IgnoreCase) &&
         _literalUtf8.Length != 0 &&
         StartAnchor == Pcre2LiteralAnchor.None &&
         !EndAnchored;
@@ -103,6 +104,47 @@ internal static class Pcre2LiteralCompiler
         Pcre2CompileOptions.Extended |
         Pcre2CompileOptions.ExtendedMore |
         Pcre2CompileOptions.FirstLine;
+
+    // A whole nonempty folded literal can count without the VM when each
+    // token's PCRE2 case fiber is exactly its ASCII fold.
+    internal static Pcre2LiteralProgram? CompileCaselessCount(IPcre2BacktrackingNode root, in Pcre2CompileRequest request)
+    {
+        const Pcre2CompileOptions countOptions = Pcre2CompileOptions.Caseless | Pcre2CompileOptions.Anchored |
+            Pcre2CompileOptions.EndAnchored | Pcre2CompileOptions.FirstLine;
+        if ((request.Options & countOptions) != Pcre2CompileOptions.Caseless) return null;
+
+        var children = (root as Pcre2SequenceBacktrackingNode)?.Children;
+        var length = children?.Length ?? 1;
+        if (length is 0 or > 32) return null;
+        var budget = Utf8ConstructionScope.CurrentBudget;
+        budget.ChargeWork((ulong)length);
+        Span<byte> literal = stackalloc byte[length];
+        for (var index = 0; index < length; index++)
+        {
+            var node = children is null ? root : children[index];
+            if (node is not Pcre2TokenBacktrackingNode
+                { Token: { Kind: Pcre2CharacterTokenKind.Literal, Literal.IsAscii: true } token } ||
+                (token.Options & Pcre2CharacterOptions.Caseless) == 0)
+                return null;
+
+            var value = (char)token.Literal.Value;
+            var folded = AsciiSearch.FoldCase((byte)value);
+            var equivalents = Pcre2CharacterSemantics.GetBmpCaseEquivalents(value);
+            foreach (var equivalent in equivalents)
+                if (equivalent >= 128 || AsciiSearch.FoldCase((byte)equivalent) != folded)
+                    return null;
+            if (char.IsAsciiLetter(value) && !equivalents.Contains((char)(value ^ 0x20)))
+                return null;
+            literal[index] = folded;
+        }
+
+        if (request.SkipsCrLfContinuation && literal[0] == '\n') return null;
+        var bytes = budget.AllocateArray<byte>(length, false);
+        literal.CopyTo(bytes);
+        return budget.AllocateObject(bytes, static folded => new Pcre2LiteralProgram(folded,
+            Pcre2LiteralAnchor.None, endAnchored: false, hasExplicitEndAssertion: false,
+            hasExplicitCrOrLf: folded.AsSpan().IndexOfAny((byte)'\r', (byte)'\n') >= 0, ignoreCase: true));
+    }
 
     // A fully consuming exact literal can prove a leading positive lookahead.
     // Only the Boolean route may ignore the writes of an enclosed capture.

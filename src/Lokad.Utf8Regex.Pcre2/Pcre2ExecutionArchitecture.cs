@@ -600,6 +600,9 @@ internal static class Pcre2CompiledProgramOverlay
         var candidateSearch = Pcre2CandidateSearchAnalyzer.Compile(root, request);
         var partialProbe = Pcre2PartialProbeCompiler.Compile(root, request);
         operations = WithSlice(request, root, backtrackingProgram, preparedCore, operations);
+        if (operations.Count is Pcre2BacktrackingDirectProgram &&
+            Pcre2LiteralCompiler.CompileCaselessCount(root, request) is { } caselessCount)
+            operations = operations with { Count = new Pcre2LiteralDirectProgram(caselessCount) };
         var core = Pcre2ProgramInvariant.GetCoreRegex(operations.IsMatch) ??
             Pcre2ProgramInvariant.GetCoreRegex(operations.Count) ??
             Pcre2ProgramInvariant.GetCoreRegex(operations.Match) ??
@@ -1806,7 +1809,7 @@ internal static class Pcre2GlobalOperationDriver
         if (program is not Pcre2SliceDirectProgram &&
             TryCreateCursor(compiledProgram, input, start, matchOptions, out cursor, budget))
         {
-            reuseBacktrackingScratch = program is Pcre2BacktrackingDirectProgram;
+            reuseBacktrackingScratch = compiledProgram.Operations.Enumerate is Pcre2BacktrackingDirectProgram;
         }
         else
         {

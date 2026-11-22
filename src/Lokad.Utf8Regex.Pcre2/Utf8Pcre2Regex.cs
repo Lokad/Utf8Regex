@@ -223,9 +223,6 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                 literal.Program.CanCountDirectly(input.Length - startOffsetInBytes))
             {
                 Pcre2Runner.CheckInput(input, startOffsetInBytes, ref invocation);
-                if (startOffsetInBytes < input.Length && (input[startOffsetInBytes] & 0xC0) == 0x80)
-                    throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes), startOffsetInBytes,
-                        "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
                 int count;
                 if (invocation.IsUnmetered && invocation.CheckpointHook is null)
                     count = literal.Program.CountNonOverlapping(input[startOffsetInBytes..]);
