@@ -163,4 +163,42 @@ public sealed class Utf8LiteralAssertionTests
         try { Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input)); }
         finally { session.Complete(); }
     }
+
+    [Theory]
+    [InlineData("(?=b)b", "b", true, false)]
+    [InlineData("(?=b)b", "c", false, false)]
+    [InlineData("(?=b)(?=(?<next>b))b", "b", true, false)]
+    [InlineData("(?=b)b", "b", true, true)]
+    public void InlineLookaheadChecksInterruptionBeforeLeavingItsSegment(
+        string suffix, string tail, bool expected, bool cancelAtClockRead)
+    {
+        var prefix = new string('a', 96);
+        using var regex = new Utf8Regex(@"\A" + prefix + suffix, RegexOptions.Compiled, new()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
+        });
+        Assert.Contains(regex.Inspection.AvailableOwnedSliceProgram!.Instructions,
+            op => op is { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: > 0 });
+        var input = Encoding.UTF8.GetBytes(prefix + tail);
+        using var cancel = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() =>
+        {
+            if (!cancelAtClockRead) return ticks;
+            if (ticks != 0) cancel.Cancel();
+            return 0;
+        });
+        Assert.Equal(expected, regex.IsMatch(input, cancel.Token));
+
+        var session = Utf8SearchDiagnosticsSession.Start(_ => ticks = 50);
+        try
+        {
+            if (cancelAtClockRead)
+                Assert.Equal(cancel.Token,
+                    Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, cancel.Token)).CancellationToken);
+            else
+                Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input, cancel.Token));
+        }
+        finally { session.Complete(); }
+    }
 }

@@ -1323,7 +1323,9 @@ internal static partial class Utf8SliceRunner
         var instructions = program.Instructions;
         var programIndex = cursor.ProgramIndex;
         var inputIndex = cursor.InputIndex;
+        var checkedInlineAssertion = false;
         Utf8ExecutionLimitKind failure;
+        Utf8SliceMatchOutcome outcome;
         while (true)
         {
             var failed = resumeFailure;
@@ -1462,9 +1464,11 @@ internal static partial class Utf8SliceRunner
                     {
                         // Both forward-lookahead layouts end their body two
                         // instructions before the failed-body target.
+                        checkedInlineAssertion = true;
                         var assertionBreach = TryMatchInlineLiteralAssertion(instructions,
                             programIndex + 1, instruction.A - 2, instruction.C - 1, input, inputIndex,
-                            false, null, (uint)stacks.FrameCount + 1, ref invocation, out var matched);
+                            false, null, (uint)stacks.FrameCount + 1, ref invocation, out var matched,
+                            checkExitDeadline: false);
                         if (assertionBreach != Utf8ExecutionLimitKind.None)
                             { failure = assertionBreach; goto Failure; }
                         failed = matched != (instruction.D != 0);
@@ -2055,7 +2059,8 @@ internal static partial class Utf8SliceRunner
                     {
                         var referenced = RunBackreference(program, instruction, input,
                             captureStarts, captureEnds, inputIndex, ref invocation);
-                        if (referenced.Breach != Utf8ExecutionLimitKind.None) return referenced;
+                        if (referenced.Breach != Utf8ExecutionLimitKind.None)
+                        { failure = referenced.Breach; goto Failure; }
                         if (referenced.IsMatch)
                         {
                             inputIndex = referenced.EndIndex;
@@ -2158,7 +2163,8 @@ internal static partial class Utf8SliceRunner
                     cursor.ProgramIndex = programIndex;
                     cursor.InputIndex = inputIndex;
                     suspended = true;
-                    return default;
+                    outcome = default;
+                    goto Finish;
                 }
                 case Utf8SliceInstructionKind.BalanceStart:
                     // Retain the body's opening without testing its source yet:
@@ -2256,7 +2262,8 @@ internal static partial class Utf8SliceRunner
 
                     // Publication belongs to RunFrom after assertion continuations
                     // close, so metadata denial cannot strand owned history roots.
-                    return new Utf8SliceMatchOutcome(true, inputIndex, Utf8ExecutionLimitKind.None);
+                    outcome = new(true, inputIndex, Utf8ExecutionLimitKind.None);
+                    goto Finish;
                 default:
                     throw new InvalidOperationException($"Unsupported slice instruction {instruction.Kind}.");
             }
@@ -2335,7 +2342,16 @@ internal static partial class Utf8SliceRunner
             }
         }
     Failure:
-        return new(false, -1, failure);
+        outcome = new(false, -1, failure);
+    Finish:
+        // Inline assertions share the instruction cadence during retries.
+        // Check before returning an outcome or handing off to another segment.
+        if (checkedInlineAssertion)
+        {
+            invocation.Budget.CheckDeadline();
+            invocation.Budget.ThrowIfCancellationRequested();
+        }
+        return outcome;
     }
 
     private static bool SetRepeat(
