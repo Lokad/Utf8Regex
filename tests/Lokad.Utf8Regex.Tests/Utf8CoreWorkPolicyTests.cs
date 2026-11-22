@@ -78,6 +78,22 @@ public sealed class Utf8CoreWorkPolicyTests
         }
     }
 
+    [Fact]
+    public void ShortAsciiRunPublishesItsGreedyByteRangeWithinTheWorkLimit()
+    {
+        const string pattern = "[a-zA-Z][a-zA-Z0-9]*";
+        const RegexOptions options = RegexOptions.Compiled;
+        var input = "😀9beta123😀tail"u8.ToArray();
+        using var source = new CancellationTokenSource();
+        using var admitted = Create(pattern, 5, options);
+        using var denied = Create(pattern, 4, options);
+
+        var match = admitted.Match(input, cancellationToken: source.Token);
+        Assert.True(match.Success);
+        Assert.Equal((5, 12), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        AssertWorkFailure(() => denied.Match(input, cancellationToken: source.Token), 4);
+    }
+
     [Theory]
     [InlineData("abc", "xxabcxx")]
     [InlineData("^[-+]?[0-9]+$", "+123")]

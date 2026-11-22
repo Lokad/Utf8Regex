@@ -568,6 +568,19 @@ internal static partial class Utf8SliceRunner
         if (seekLiteral) leading = -1;
         var checkBranchedPrefix = leading is >= 0 and < 128 && program.Instructions[leadingScalarIndex] is
             { Kind: Utf8SliceInstructionKind.Fork } or { IsLiteralChoice: true };
+        // The bounded prefix proof can publish the greedy endpoint of a
+        // straight ASCII set and terminal repeat without entering the VM.
+        var checkStraightRepeat = leading is >= 0 and < 128 && leadingScalarIndex == 0 &&
+            !existenceOnly && !collectHistory && input.Length - fromByte <= 64 &&
+            program.Instructions is
+            [
+                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 },
+                { Kind: Utf8SliceInstructionKind.RepeatGreedy, A: 4, HasSingleAtomBody: true, RepeatMaximum: long.MaxValue },
+                { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 },
+                { Kind: Utf8SliceInstructionKind.RepeatEnd },
+                { Kind: Utf8SliceInstructionKind.RepeatExit, RepeatExitAcceptsEmptyTail: true },
+                { Kind: Utf8SliceInstructionKind.Accept }
+            ];
         var lastProbedStart = input.Length - candidatePlan.MinRequiredLength;
         var leadingClass = -1;
         var classLiteral = -1;
@@ -759,7 +772,7 @@ internal static partial class Utf8SliceRunner
                 continue;
             if (shortRepeatWindow.Min != 0 && !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal))
                 continue;
-            if (checkBranchedPrefix || shortDecimalHead || proveDecimalWindow && input[position] < 128)
+            if (checkBranchedPrefix || checkStraightRepeat || shortDecimalHead || proveDecimalWindow && input[position] < 128)
             {
                 // Starts only advance in these forward searches. The
                 // input step above also covers stopping after the last one.
