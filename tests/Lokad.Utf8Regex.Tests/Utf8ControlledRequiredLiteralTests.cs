@@ -9,11 +9,13 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8ControlledRequiredLiteralTests
 {
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void MissingRequiredLiteralNeedsNoVmWorkingCapacity(bool count)
+    [InlineData(@"[a-z]+@[a-z]+\.[a-z]+", false)]
+    [InlineData(@"[a-z]+@[a-z]+\.[a-z]+", true)]
+    [InlineData(@"\p{L}+(?=:)", false)]
+    [InlineData(@"\p{L}+(?=::|->)", true)]
+    public void MissingRequiredLiteralNeedsNoVmWorkingCapacity(string pattern, bool count)
     {
-        var regex = new Utf8Regex(@"[a-z]+@[a-z]+\.[a-z]+", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        var regex = new Utf8Regex(pattern, options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Regex.InfiniteMatchTimeout,
             ResourcePolicy = new()
@@ -40,6 +42,9 @@ public sealed class Utf8ControlledRequiredLiteralTests
     [InlineData("(?<=foo)bar", "foobar", 1)]
     [InlineData("foo(?=bar)", "foobar", 1)]
     [InlineData("bar(?!foo)", "bar", 1)]
+    [InlineData(@"\p{L}+(?=:)?", "name", 1)]
+    [InlineData(@"\p{L}+(?!:)", "name", 1)]
+    [InlineData(@"\p{L}+(?=:)|\p{N}+", "123", 1)]
     [InlineData("(?i:ab)+@end", "ABab@end", 1)]
     [InlineData("(?<x>é+)😀fin", "éé😀fin é😀fin", 2)]
     [InlineData(@"[^a]+\.[^z]+", "This regex has the potential to be optimized further", 0)]
@@ -82,6 +87,24 @@ public sealed class Utf8ControlledRequiredLiteralTests
         });
         Assert.True(regex.Match("éfoobar"u8, 5, []).Success);
         Assert.Equal(1, Utf8MatchSequence.Count(regex.EnumerateMatches("éfoobar"u8, 5)));
+    }
+
+    [Theory]
+    [InlineData(@"\p{L}+(?=:)", "😀été:", 4, 9)]
+    [InlineData(@"(?<=Ω:)\p{L}+", "Ω:é?", 3, 5)]
+    public void RequiredAssertionBytesCanLieOutsideTheMatch(string pattern, string text, int start, int end)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1024 }
+        });
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.True(regex.Inspection.SearchPlan.RequiredPrefilterSearcher.HasValue);
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(1, regex.Count(input));
+        var range = regex.Match(input, start, []);
+        Assert.True(range.Success);
+        Assert.Equal((start, end), (range.StartOffsetInBytes, range.EndOffsetInBytes));
     }
 
     [Theory]

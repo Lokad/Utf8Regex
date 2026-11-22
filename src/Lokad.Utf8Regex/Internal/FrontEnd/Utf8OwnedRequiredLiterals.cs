@@ -4,8 +4,9 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 // byte-sorted branches; dirty top-level alternatives keep a whole family
 // that covers a mandatory family in every branch. Families are disjunctions:
 // intersecting individual members cannot prove that a match contains one.
-// Nested dirty alternatives and opaque nodes contribute nothing. Selection uses
-// UTF-8 byte length as a heuristic, never as a scalar matching width.
+// A required positive assertion can contribute bytes elsewhere in the subject.
+// Negative assertions and opaque nodes contribute nothing. Selection uses UTF-8
+// byte length as a heuristic, never as a scalar matching width or an origin.
 internal static class Utf8OwnedRequiredLiterals
 {
     private readonly record struct Frame(Utf8TreeNode Node, int NextChild, bool Entered);
@@ -110,6 +111,7 @@ internal static class Utf8OwnedRequiredLiterals
                 var childCount = node.Kind switch
                 {
                     Utf8TreeNodeKind.Capture or Utf8TreeNodeKind.Group or Utf8TreeNodeKind.Atomic or Utf8TreeNodeKind.Concatenate => node.ChildCount,
+                    Utf8TreeNodeKind.PositiveLookaround when node.ChildCount == 1 => 1,
                     Utf8TreeNodeKind.Loop or Utf8TreeNodeKind.Lazyloop when node.M > 0 && node.ChildCount == 1 => 1,
                     _ => 0,
                 };

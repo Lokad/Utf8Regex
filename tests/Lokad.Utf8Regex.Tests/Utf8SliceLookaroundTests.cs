@@ -1,5 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Lokad.Utf8Regex.Internal.Diagnostics;
+using Lokad.Utf8Regex.Internal.Execution;
 
 namespace Lokad.Utf8Regex.Tests;
 
@@ -176,14 +178,22 @@ public sealed class Utf8SliceLookaroundTests
     [Fact]
     public void OwnedCatastrophicLookaheadIsMatchTimesOut()
     {
-        var input = Encoding.UTF8.GetBytes(new string('a', 30));
-        var regex = new Utf8Regex("(?=(a+)+b)a", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
+        // The required b occurs in the subject, separated from the candidate run.
+        var input = Encoding.UTF8.GetBytes(new string('a', 30) + "!b");
+        using var regex = new Utf8Regex("(?=(a+)+b)a", options: RegexOptions.CultureInvariant, policy: new Utf8RegexPolicy
         {
-            MatchTimeout = TimeSpan.FromMilliseconds(1)
+            MatchTimeout = TimeSpan.FromMilliseconds(20)
         });
         Assert.True(regex.Inspection.DebugUsesOwnedSliceProgram);
-        Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
-        Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null, "pattern=(?=(a+)+b)a");
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        var session = Utf8SearchDiagnosticsSession.Start(_ => ticks = 50);
+        try
+        {
+            Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input));
+            Assert.Equal(50, ticks);
+        }
+        finally { session.Complete(); }
     }
 
     public static IEnumerable<object?[]> AstralIsMatchCases()

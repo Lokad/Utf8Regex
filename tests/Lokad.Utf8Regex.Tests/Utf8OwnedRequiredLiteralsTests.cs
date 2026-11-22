@@ -51,6 +51,8 @@ public sealed class Utf8OwnedRequiredLiteralsTests
                 ("(?i:ab)|cd", RegexOptions.CultureInvariant),
                 ("(?i:😀)x", RegexOptions.CultureInvariant),
                 ("😀|🙏", RegexOptions.CultureInvariant),
+                (@"\p{L}+(?=r)", RegexOptions.CultureInvariant),
+                (@"(?<=foo)\p{L}+", RegexOptions.CultureInvariant),
             });
         var subjects = new[] { "", "a", "b", "ab", "abc", "cd", "abcd", "ef", "abcde", "abab", "ababcd", "abababcdcd",
             "abXcd", "ac", "ad", "bd", "bc", "def", "foobar", "abar", "bbar", "cfoo", "dbar", "dbaz", "AB", "Abcd",
@@ -82,7 +84,9 @@ public sealed class Utf8OwnedRequiredLiteralsTests
                 Assert.Equal(Utf8ExecutionLimitKind.None, match.Breach);
                 if (!match.IsMatch) continue;
                 observed++;
-                var value = input.AsSpan(Math.Min(boundary, match.EndIndex), Math.Abs(boundary - match.EndIndex));
+                // An assertion can read context outside the consumed range.
+                var value = program.SawLookaround ? input.AsSpan() :
+                    input.AsSpan(Math.Min(boundary, match.EndIndex), Math.Abs(boundary - match.EndIndex));
                 var covered = false;
                 foreach (var member in family) if (value.IndexOf(member) >= 0) { covered = true; break; }
                 Assert.True(covered, $"Uncovered required family: {row.Pattern} / {options}: {Encoding.UTF8.GetString(value)}");
@@ -160,7 +164,7 @@ public sealed class Utf8OwnedRequiredLiteralsTests
         yield return new object?[] { "^ab", RegexOptions.CultureInvariant, new string[] { "ab" } };
         yield return new object?[] { "ab$", RegexOptions.CultureInvariant, new string[] { "ab" } };
         yield return new object?[] { "\u005Cbab\u005CB", RegexOptions.CultureInvariant, new string[] { "ab" } };
-        yield return new object?[] { "(?=ab)cd", RegexOptions.CultureInvariant, new string[] { "cd" } };
+        yield return new object?[] { "(?=ab)cd", RegexOptions.CultureInvariant, new string[] { "ab" } };
         yield return new object?[] { "(?!ab)cd", RegexOptions.CultureInvariant, new string[] { "cd" } };
         yield return new object?[] { "(a)\u005C1", RegexOptions.CultureInvariant, new string[] { "a" } };
         yield return new object?[] { "[ab]cd", RegexOptions.CultureInvariant, new string[] { "cd" } };
