@@ -1820,15 +1820,14 @@ internal static partial class Utf8SliceRunner
         if (window.Length >= Vector128<byte>.Count && !category && !negated && PreparedByteSetState.CanScanAsciiMask)
             return PreparedByteSetState.ScanAsciiMaskPrefix(window, mask);
 
-        var membership = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
-            BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
         var consumed = 0;
         foreach (var value in window)
         {
             // A wider candidate still needs the scalar predicate. An earlier
             // ASCII miss already ends a repeat with a complete ASCII mask.
             if (value >= 128) return category ? -1 : consumed;
-            if (membership.Contains(value) == negated) break;
+            var member = (mask[value >> 3] & (1 << (value & 7))) != 0;
+            if (member == negated) break;
             consumed++;
         }
         return consumed;
