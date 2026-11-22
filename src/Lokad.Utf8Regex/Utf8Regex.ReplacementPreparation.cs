@@ -16,6 +16,10 @@ public sealed partial class Utf8Regex
         internal bool IsUncontrolled => Deadline.IsInfinite && !Token.CanBeCanceled;
     }
 
+    private Utf8AnalyzedReplacement AnalyzeReplacement(ReadOnlySpan<byte> replacement)
+        => Utf8FrontEndReplacementAnalyzer.Analyze(replacement, _groupNumbers, _groupNames,
+            (Options & System.Text.RegularExpressions.RegexOptions.ECMAScript) != 0);
+
     private Utf8AnalyzedReplacement PrepareBorrowedReplacement(ReadOnlySpan<byte> replacement, ReplacementPreparationControl control)
     {
         using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
@@ -24,8 +28,7 @@ public sealed partial class Utf8Regex
         var budget = construction.Budget;
         if (control.IsUncontrolled)
         {
-            var prepared = Utf8FrontEndReplacementAnalyzer.Analyze(replacement, _groupNumbers, _groupNames,
-                (Options & System.Text.RegularExpressions.RegexOptions.ECMAScript) != 0);
+            var prepared = AnalyzeReplacement(replacement);
             construction.Complete(); return prepared;
         }
         var previousToken = budget.CancellationToken;
@@ -48,8 +51,7 @@ public sealed partial class Utf8Regex
         try
         {
             control.Check();
-            var result = Utf8FrontEndReplacementAnalyzer.Analyze(replacement, _groupNumbers, _groupNames,
-                (Options & System.Text.RegularExpressions.RegexOptions.ECMAScript) != 0);
+            var result = AnalyzeReplacement(replacement);
             control.Check();
             construction.Complete();
             return result;
@@ -111,14 +113,16 @@ public sealed partial class Utf8Regex
 
     private Utf8AnalyzedReplacement PrepareNativeReplacement(ReadOnlySpan<byte> validatedTemplate, ReplacementPreparationControl control)
     {
+        // The synchronous cache factory already shares this byte limit and
+        // interruption control. The analyzer owns the parser's rollback scope.
         using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
             ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
             : Utf8ConstructionScope.Enter();
         if (control.IsUncontrolled)
         {
             var key = FreezeNativeReplacement(validatedTemplate, construction.Budget, control);
-            var result = _replacementCache.GetOrAdd(key, (Self: this, Control: control),
-                static (source, state) => state.Self.PrepareBorrowedReplacement(source, state.Control), control);
+            var result = _replacementCache.GetOrAdd(key, this,
+                static (source, regex) => regex.AnalyzeReplacement(source), control);
             construction.Complete();
             return result;
         }
@@ -148,8 +152,8 @@ public sealed partial class Utf8Regex
                 // Source was validated before route selection. The major key
                 // array and nested parser overlap share this admission owner.
                 var key = FreezeNativeReplacement(validatedTemplate, budget, control);
-                var result = _replacementCache.GetOrAdd(key, (Self: this, Control: control),
-                    static (source, state) => state.Self.PrepareBorrowedReplacement(source, state.Control), control);
+                var result = _replacementCache.GetOrAdd(key, this,
+                    static (source, regex) => regex.AnalyzeReplacement(source), control);
                 control.Check();
                 construction.Complete();
                 return result;
