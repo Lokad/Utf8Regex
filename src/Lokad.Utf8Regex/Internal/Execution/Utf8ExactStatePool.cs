@@ -73,11 +73,14 @@ internal static class Utf8ExactStatePool
                 }
                 if (taken && s_items is { } cache)
                     for (var index = 0; index < s_count; index++)
-                        if (cache[index].Value is T[] items && items.GetType() == typeof(T[]) && items.Length == capacity)
+                    {
+                        var value = cache[index].Value!;
+                        if (value.Length == capacity && value is T[] items && items.GetType() == typeof(T[]))
                         {
                             RemoveAt(cache, index);
                             return items;
                         }
+                    }
             }
             finally { if (taken) s_gate.Exit(); }
         }
@@ -86,10 +89,10 @@ internal static class Utf8ExactStatePool
 
     internal static void Return<T>(T[] items, bool retain)
     {
+        if (!retain || !CanPool(items.Length)) return;
         // Reference arrays are covariant. A pooled leaf must have the exact
         // requested element type so later borrowers can write any T safely.
         if (items.GetType() != typeof(T[])) return;
-        if (!retain || !CanPool(items.Length)) return;
         var extent = Utf8ConstructionBudget.ArrayBytes<T>(items.Length);
         if (extent > (ulong)Utf8ExactStatePool<T>.MaximumRetainedBytes) return;
         var bytes = (int)extent;
