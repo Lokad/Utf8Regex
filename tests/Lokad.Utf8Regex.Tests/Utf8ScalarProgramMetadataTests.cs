@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
 
@@ -29,6 +30,27 @@ public sealed class Utf8ScalarProgramMetadataTests
             default: Assert.NotEmpty(program.Instructions); break;
         }
 
+    }
+
+    [Fact]
+    public void AssertionKeepsCapturesWithoutPreparingSearchForItsBody()
+    {
+        using var regex = new Utf8Regex("(?=(?<ahead>a+é|b?😀))(?<unit>[ab])", RegexOptions.RightToLeft);
+        var body = Assert.Single(regex.Inspection.AvailableOwnedSliceProgram.Assertions).Body;
+        Assert.Empty(body.NonBacktrackingOrderedClosures);
+        Assert.Empty(body.NonBacktrackingEpsilonOrder);
+        ReadOnlySpan<byte> input = "!aaé b😀"u8;
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[3];
+
+        var first = new Utf8CaptureRange(1, 2);
+        Assert.Equal(first, regex.Match(input, 2, captures));
+        Assert.Equal(new Utf8CaptureRange(1, 5), captures[1]);
+        Assert.Equal(first, captures[2]);
+
+        var second = new Utf8CaptureRange(6, 7);
+        Assert.Equal(second, regex.Match(input, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(6, input.Length), captures[1]);
+        Assert.Equal(second, captures[2]);
     }
 
     [Fact]
@@ -119,6 +141,7 @@ public sealed class Utf8ScalarProgramMetadataTests
             body.HasBalancing, body.IgnoreCase, body.HasContiguousAnchor, body.HasConditionalTest, body.RightToLeft,
             body.SawLookaround, body.CanMatchEmpty, body.CaptureCatalog,
             body.UsesInterpretedLazyLoopSemantics, body.UsesLiteralClassBracketSyntax, body.CaseBehavior,
-            body.IsNonBacktracking, body.NonBacktrackingCaptureOpeningCount, body.NonBacktrackingEpsilonOrder, body.NonBacktrackingEpsilonAncestors, body.BackreferenceLowerings),
+            body.IsNonBacktracking, body.NonBacktrackingCaptureOpeningCount, body.NonBacktrackingEpsilonOrder, body.NonBacktrackingEpsilonAncestors,
+            body.BackreferenceLowerings, isRoot: true),
     };
 }

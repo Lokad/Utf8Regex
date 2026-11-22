@@ -372,7 +372,8 @@ internal sealed class Utf8SliceProgram
         string[] groupNames,
         bool requiresUnicodeWordBoundary,
         bool requiresUnicodeShorthand,
-        bool requiresUnicodeCategory)
+        bool requiresUnicodeCategory,
+        bool isRoot)
     {
         Instructions = instructions;
         IsNonBacktracking = isNonBacktracking;
@@ -413,6 +414,12 @@ internal sealed class Utf8SliceProgram
         RequiresUnicodeWordBoundary = requiresUnicodeWordBoundary;
         RequiresUnicodeShorthand = requiresUnicodeShorthand;
         RequiresUnicodeCategory = requiresUnicodeCategory;
+        if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
+            TerminalRepeatsWithoutRewind = Utf8SliceRunner.FindTerminalRepeatsWithoutRewind(this, Utf8ConstructionScope.CurrentBudget);
+        // An assertion executes at an edge chosen by its parent. It uses the
+        // repeat proofs inside RunSegment and never searches for its own origin.
+        if (!isRoot) return;
+
         // Instructions and flags are complete before publishing the program.
         // Keep this bounded, allocation-free proof off repeated match attempts.
         TerminalRoot = Utf8SliceRunner.ClassifyTerminalRoot(this);
@@ -459,8 +466,6 @@ internal sealed class Utf8SliceProgram
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetOrderedRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
         else if (!rightToLeft && isNonBacktracking && !canMatchEmpty && instructions.Length > 64)
             NonBacktrackingOrderedStartBytes = Utf8SliceRunner.GetWideRegularStartBytes(this, Utf8ConstructionScope.CurrentBudget);
-        if (!rightToLeft && !isNonBacktracking && repeatCount != 0)
-            TerminalRepeatsWithoutRewind = Utf8SliceRunner.FindTerminalRepeatsWithoutRewind(this, Utf8ConstructionScope.CurrentBudget);
         // An absolute start confines an empty match to byte zero. A terminal
         // anchor can then still exclude the last scalar on nonempty extents.
         if (!rightToLeft && !isNonBacktracking && (!canMatchEmpty || instructions is
@@ -472,7 +477,7 @@ internal sealed class Utf8SliceProgram
     }
 
     internal static Utf8SliceProgram Create(Utf8SliceInstruction[] instructions, byte[][] setMasks, Utf8SliceNode.CategorySetMember[][] categorySetMembers, int repeatCount, int groupCount, bool requiresUnicodeWordBoundary, bool requiresUnicodeShorthand, bool requiresUnicodeCategory, Utf8SliceAssertion[] assertions, bool hasNonFixedLookbehind, string[] groupNames, bool hasMixedNamedGroups, bool hasBalancing, bool ignoreCase, bool hasContiguousAnchor, bool hasConditionalTest, bool rightToLeft, bool sawLookaround, bool canMatchEmpty, Utf8CaptureCatalog? captureCatalog, bool usesInterpretedLazyLoopSemantics, bool usesLiteralClassBracketSyntax, Utf8ScalarCaseBehavior caseBehavior, bool isNonBacktracking, int nonBacktrackingCaptureOpeningCount, int[] nonBacktrackingEpsilonOrder, ulong[] nonBacktrackingEpsilonAncestors, Func<int, int>[] backreferenceLowerings,
-        (ulong[]? Closures, byte[]? Leaves, uint Conditions) nonBacktrackingOrdered = default)
+        bool isRoot, (ulong[]? Closures, byte[]? Leaves, uint Conditions) nonBacktrackingOrdered = default)
     {
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -604,7 +609,8 @@ internal sealed class Utf8SliceProgram
             groupNames,
             requiresUnicodeWordBoundary,
             requiresUnicodeShorthand,
-            requiresUnicodeCategory);
+            requiresUnicodeCategory,
+            isRoot);
         construction.Complete(); return result;
     }
 
@@ -1291,13 +1297,11 @@ internal static class Utf8SliceLowerer
         ulong[] epsilonAncestors = [];
         (ulong[] Closures, byte[] Leaves, uint Conditions) ordered = ([], [], 0);
         var prepareEpsilon = lowerer.NonBacktracking ||
-            lowerer.HasCounterlessAlternationLoop && lowerer.RepeatCount == 0 &&
+            isRoot && lowerer.HasCounterlessAlternationLoop && lowerer.RepeatCount == 0 &&
             Utf8SliceRunner.CanPrepareOrdinaryOrderedSearch(instructions, lowerer.Budget);
-        // Mirrored assertion bodies run at a fixed edge. Only the mirrored
-        // root can use ordered search across multiple starting positions.
         var epsilonOrder = prepareEpsilon
             ? Utf8NonBacktrackingSearchState.BuildEpsilonOrder(instructions, out epsilonAncestors, out ordered)
-            : (isRoot || !lowerer.MirrorExecute) && lowerer.RepeatCount != 0 && lowerer.HasAlternation
+            : isRoot && lowerer.RepeatCount != 0 && lowerer.HasAlternation
                 ? Utf8SliceRunner.BuildOrdinaryRepeatClosures(instructions, lowerer.Budget, out epsilonAncestors, out ordered)
                 : [];
         return Utf8SliceProgram.Create(
@@ -1314,7 +1318,7 @@ internal static class Utf8SliceLowerer
             isRoot && usesInterpretedLazyLoopSemantics, isRoot && usesLiteralClassBracketSyntax, lowerer.CaseBehavior,
             lowerer.NonBacktracking, lowerer.CaptureOpeningCount,
             epsilonOrder, epsilonAncestors,
-            lowerer.BackreferenceLowerings.Take(), ordered);
+            lowerer.BackreferenceLowerings.Take(), isRoot, ordered);
     }
 
     private static void MarkBoundedEndTails(Span<Utf8SliceInstruction> code, Utf8ConstructionBudget budget)
