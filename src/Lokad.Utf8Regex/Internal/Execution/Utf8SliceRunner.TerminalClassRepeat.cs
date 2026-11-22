@@ -1278,7 +1278,28 @@ internal static partial class Utf8SliceRunner
             // A plain back edge and its literal exit are disjoint at this
             // byte. A delimited back edge still needs its own viability check.
             if (jump.B == 0)
+            {
                 code[jumpIndex - 1] = new(fork.Kind, fork.A, 0, ~exit.A, 0);
+                budget.ChargeWork(5);
+                var body = jump.A;
+                var end = jumpIndex - 1;
+                if (code[body] is { Kind: Utf8SliceInstructionKind.CaptureStart } opening)
+                {
+                    if (code[end - 1] is not { Kind: Utf8SliceInstructionKind.CaptureEnd } closing ||
+                        opening.A != closing.A) return;
+                    body++;
+                    end--;
+                }
+                // The disjoint inner fork takes a single ASCII set atom on
+                // its preferred arm. Only that arm returns here in bulk.
+                if (body < end - 3 &&
+                    code[body] is { Kind: Utf8SliceInstructionKind.Fork, B: 0, C: < 0, D: 0 } branch &&
+                    branch.A == body + 3 &&
+                    code[body + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 1, C: 0 } atom &&
+                    code[body + 2] is { Kind: Utf8SliceInstructionKind.Jump, B: 0 } overAlternate &&
+                    overAlternate.A == end)
+                    code[jumpIndex] = new(jump.Kind, jump.A, jump.B, jump.C, atom.A + 1);
+            }
             else
                 code[jumpIndex] = new(jump.Kind, jump.A, jump.B, exit.A + 1, jump.D);
         }

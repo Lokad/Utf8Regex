@@ -1531,6 +1531,23 @@ internal static partial class Utf8SliceRunner
                     programIndex += 1 + verifiedPrefix;
                     break;
                 case Utf8SliceInstructionKind.Jump:
+                    if (instruction.D != 0 && captureStarts.Length == 0 && !cursor.RequiredEnd.HasValue && inputIndex < input.Length)
+                    {
+                        // These complete iterations have no retry or observed
+                        // capture effects. Resume at the loop choice before
+                        // the first excluded byte, wider scalar, or next block.
+                        var scanBreach = invocation.TryChargeInputStep();
+                        if (scanBreach != Utf8ExecutionLimitKind.None)
+                        { failure = scanBreach; goto Failure; }
+                        var block = input.Slice(inputIndex, Math.Min(64, input.Length - inputIndex));
+                        var consumed = ScanAsciiMask(block, program.SetMasks[instruction.D - 1], category: false, negated: true);
+                        if (consumed != 0)
+                        {
+                            inputIndex += consumed;
+                            programIndex--;
+                            break;
+                        }
+                    }
                     programIndex = instruction.A;
                     break;
                 case Utf8SliceInstructionKind.RepeatGreedy:

@@ -82,6 +82,29 @@ public sealed class Utf8QuotedPrefixValueMatchTests
     }
 
     [Fact]
+    public void PlainRunBlocksKeepEscapesWiderScalarsAndWorkLimits()
+    {
+        using var regex = new Utf8Regex(Pattern, RegexOptions.Compiled);
+        foreach (var length in new[] { 1, 63, 64, 65, 66, 127, 128, 129, 130 })
+        {
+            var input = Encoding.UTF8.GetBytes("😀\"" + new string('a', length) + "\\\"😀\"tail");
+            var result = regex.Match(input, 4, []);
+            Assert.Equal(new Utf8CaptureRange(4, length + 12), result);
+            var captures = new Utf8CaptureRange[2];
+            Assert.Equal(result, regex.Match(input, 4, captures));
+            Assert.Equal(result, captures[0]);
+            Assert.Equal(new Utf8CaptureRange(length + 7, length + 11), captures[1]);
+        }
+
+        var longInput = Encoding.UTF8.GetBytes("\"" + new string('a', 8192) + "\"");
+        using var admitted = new Utf8Regex(Pattern, policy: new() { ResourcePolicy = Policy with { MaxWorkSteps = 512 } });
+        using var refused = new Utf8Regex(Pattern, policy: new() { ResourcePolicy = Policy with { MaxWorkSteps = 64 } });
+        Assert.Equal(new Utf8CaptureRange(0, longInput.Length), admitted.Match(longInput));
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => refused.Match(longInput));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, failure.ResourceKind);
+    }
+
+    [Fact]
     public void MatchObservesAlreadyCanceledTokenOnHitsAndMisses()
     {
         using var regex = new Utf8Regex(Pattern);
@@ -93,6 +116,37 @@ public sealed class Utf8QuotedPrefixValueMatchTests
             var error = Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: canceled.Token));
             Assert.Equal(canceled.Token, error.CancellationToken);
         }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PlainRunBlocksCheckInterruptionBeforeContinuing(bool expire)
+    {
+        var input = Encoding.UTF8.GetBytes("\"" + new string('a', 8192) + "\"");
+        using var regex = new Utf8Regex(Pattern, policy: new()
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = Policy
+        });
+        using var source = new CancellationTokenSource();
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        ulong checkpoint = 0;
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            checkpoint = steps;
+            if (expire) ticks = 100; else source.Cancel();
+        });
+        try
+        {
+            if (expire)
+                Assert.Equal(regex.MatchTimeout, Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input, cancellationToken: source.Token)).MatchTimeout);
+            else
+                Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: source.Token)).CancellationToken);
+            Assert.Equal(64UL, checkpoint);
+        }
+        finally { session.Complete(); }
     }
 
     [Theory]

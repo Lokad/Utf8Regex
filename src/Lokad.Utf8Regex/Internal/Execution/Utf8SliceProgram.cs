@@ -235,6 +235,7 @@ internal readonly struct Utf8SliceInstruction
     // A Literal at a fork entry can carry the destination after two equal
     // first literals fail the bounded prefix proof.
     // With negative Fork C, D can hold the packed captured prefix plus one.
+    // A proved backward Jump can hold the negated ASCII body mask index plus one.
     // A Beginning or Contiguous anchor stores 1 for the short repeat proof.
     // An absolute Beginning can also store the negated start of a longer proof.
     internal int D { get; }
