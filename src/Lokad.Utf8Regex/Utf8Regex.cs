@@ -808,7 +808,9 @@ public sealed partial class Utf8Regex : IDisposable
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);
             invocation.ShareStorageForCursor();
-            var cursor = new Utf8OperationMatchCursor(program, input, invocation);
+            var cursor = !invocation.IsUnmetered && CanUseControlledScalarBoundaryLiteralSearch(program)
+                ? Utf8CompiledOperationCursorFactory.CreateInvocationMatchCursor(_preparedRegex, input, invocation, byteFloor: 0)
+                : new Utf8OperationMatchCursor(program, input, invocation);
             return new Utf8ValueMatchEnumerator(cursor);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
@@ -968,7 +970,7 @@ public sealed partial class Utf8Regex : IDisposable
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try
         {
-            var literals = !invocation.IsUnmetered && !program.IsNonBacktracking && HasScalarBoundaryLiteralSearch(program)
+            var literals = !invocation.IsUnmetered && CanUseControlledScalarBoundaryLiteralSearch(program)
                 ? _preparedRegex : null;
             return Utf8OwnedSplitPreparation.Create(program, input, count, ref invocation, literals)
                 .WithTimeoutMapping(this);

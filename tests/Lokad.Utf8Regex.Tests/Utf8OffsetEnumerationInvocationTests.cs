@@ -220,6 +220,7 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     [Theory]
     [InlineData("abc")]
     [InlineData("(?:abc|abab)")]
+    [InlineData(@"\b(?:abc|abab)\b")]
     [InlineData("^abc")]
     [InlineData("abc$")]
     [InlineData(@"abc\z")]
@@ -300,10 +301,47 @@ public sealed class Utf8OffsetEnumerationInvocationTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ControlledBoundaryCursorsKeepOriginalContextAndRetainRanges(bool useOffset)
+    {
+        const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        var input = "éLogTrace|😀LogTrace😀|LogWarning\u200c|LogError"u8;
+        var cursor = regex.EnumerateMatches(input, useOffset ? 2 : null, source.Token);
+        Assert.False(cursor.DebugIsOwnedSlice);
+        var copy = cursor;
+        Assert.True(cursor.MoveNext());
+        var first = new Utf8CaptureRange(15, 23);
+        Assert.Equal(first, cursor.Current);
+        var work = cursor.DebugInvocationSteps;
+        Assert.Equal(work, copy.DebugInvocationSteps);
+        Assert.True(copy.MoveNext());
+        Assert.Equal(first, copy.Current);
+        Assert.True(cursor.DebugInvocationSteps > work);
+        Assert.True(cursor.MoveNext());
+        Assert.Equal(new Utf8CaptureRange(42, 50), cursor.Current);
+
+        source.Cancel();
+        var canceled = false;
+        try { copy.MoveNext(); }
+        catch (OperationCanceledException error)
+        {
+            Assert.Equal(source.Token, error.CancellationToken);
+            canceled = true;
+        }
+        Assert.True(canceled);
+        Assert.Equal(first, copy.Current);
+    }
+
+    [Theory]
     [InlineData("abc")]
     [InlineData("é")]
     [InlineData("(?:ab|xy)")]
-
     public void NativeFactoryKeepsPriorWorkAndBorrowedAdmission(string pattern)
     {
         var prepared = Prepared(new Utf8Regex(pattern, options: RegexOptions.CultureInvariant));

@@ -451,21 +451,22 @@ internal ref partial struct Utf8OperationMatchCursor
 
     // Literal-family cursors keep one original invocation.
     internal Utf8OperationMatchCursor(ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, Utf8SliceInvocation invocation)
-        : this(input, regexPlan, regexPlan.ExecutionKind, invocation.Budget.Deadline)
-    {
-        _sliceInvocation = invocation;
-    }
+        : this(input, regexPlan, regexPlan.ExecutionKind, invocation) { }
 
     public Utf8OperationMatchCursor(
         ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, NativeExecutionKind executionKind, Utf8ExecutionDeadline budget)
+        : this(input, regexPlan, executionKind, new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None)) { }
+
+    private Utf8OperationMatchCursor(
+        ReadOnlySpan<byte> input, Utf8PreparedRegex regexPlan, NativeExecutionKind executionKind, Utf8SliceInvocation invocation)
     {
         ref readonly var searchPlan = ref regexPlan.SearchPlan;
         _plans = regexPlan.OperationMatchCursorPlans;
         _smallAsciiLiteralFamilySearch = default;
         _literal = null;
         _input = input;
-        _budget = budget;
-        _sliceInvocation = new(Utf8ExecutionLimits.Unlimited, budget, CancellationToken.None);
+        _budget = invocation.Budget.Deadline;
+        _sliceInvocation = invocation;
         _program = searchPlan.SearchOperation;
         _remaining = input;
         _consumed = 0;

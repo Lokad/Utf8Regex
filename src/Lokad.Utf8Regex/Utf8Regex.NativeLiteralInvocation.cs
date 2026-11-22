@@ -79,6 +79,9 @@ public sealed partial class Utf8Regex
             CanUseNativeLiteralSearch(program, maximumAlternatives: 8, allowBoundaries: true);
     }
 
+    private bool CanUseControlledScalarBoundaryLiteralSearch(Utf8SliceProgram program) =>
+        !program.IsNonBacktracking && HasScalarBoundaryLiteralSearch(program);
+
     // Shared semantic eligibility, independent of the optional Core owner's
     // policy. An adapter can supply finite limits through its borrowed invocation.
     private bool CanUseNativeLiteralSearch(Utf8SliceProgram program, int maximumAlternatives = 3, bool allowBoundaries = false) =>

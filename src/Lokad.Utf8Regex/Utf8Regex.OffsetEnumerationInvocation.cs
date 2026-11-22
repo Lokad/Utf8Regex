@@ -18,7 +18,10 @@ public sealed partial class Utf8Regex
             if (!Utf8ValidatedInput.IsScalarBoundary(input, startOffsetInBytes))
                 throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
             Utf8OperationMatchCursor cursor;
-            if (!HasFiniteExecutionLimits && CanUseNativeOffsetCursor(ref invocation, out var anchored))
+            var anchored = false;
+            if (HasFiniteExecutionLimits
+                ? CanUseControlledScalarBoundaryLiteralSearch(program)
+                : CanUseNativeOffsetCursor(ref invocation, out anchored))
             {
                 cursor = anchored
                     ? new Utf8OperationMatchCursor(input, _anchoredLiteral.LiteralUtf8 ?? throw new InvalidOperationException("An anchored plan needs its literal."), _anchoredLiteral.Kind, invocation).WithLiteralStartFloor(startOffsetInBytes)
