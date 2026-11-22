@@ -53,6 +53,22 @@ public sealed class Utf8RtlStrictEndCountTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FixedScalarRepeatNeedsNoWorkingStorage(bool dotAll)
+    {
+        var options = RegexOptions.RightToLeft | (dotAll ? RegexOptions.Singleline : RegexOptions.None);
+        using var regex = new Utf8Regex(@"\A.{128}\z", options, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4096, MaxWorkingBytes = 1 }
+        });
+        using var token = new CancellationTokenSource();
+        var prefix = new string('a', 126) + "😀";
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(prefix + "é"), token.Token));
+        Assert.Equal(dotAll, regex.IsMatch(Encoding.UTF8.GetBytes(prefix + "\n"), token.Token));
+    }
+
+    [Theory]
     [MemberData(nameof(Cases))]
     public void PublicCountsKeepScalarOffsetsContextAndRetainedCaptures(string pattern, string text, RegexOptions extra)
     {

@@ -632,10 +632,19 @@ internal static partial class Utf8SliceRunner
         continuation = 0;
         var instructions = program.Instructions;
         var repeat = instructions[repeatIndex];
-        if (program.RightToLeft || instructions.Length - repeatIndex < 5 || !repeat.HasSingleAtomBody) return false;
+        var reverse = program.RightToLeft;
+        if (instructions.Length - repeatIndex < 5 || !repeat.HasSingleAtomBody ||
+            reverse && repeat.RepeatMinimum != repeat.RepeatMaximum) return false;
         var atom = instructions[repeatIndex + 1];
         if (!IsScalarRepeatAtom(atom)) return false;
         continuation = repeat.A + 1;
+        if (reverse)
+        {
+            // A fixed number of pure scalar atoms has one reverse endpoint.
+            // Capture markers outside the repeat still run in the caller.
+            outcome = RunFixedReverseClassRepeat(program, atom, input, start, repeat.RepeatMinimum, ref invocation);
+            return true;
+        }
         if (!existenceOnly &&
             repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue } &&
             atom is { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } &&
@@ -1809,6 +1818,24 @@ internal static partial class Utf8SliceRunner
         if (terminal != Utf8ExecutionLimitKind.None) return (-1, terminal);
         return count >= minimum ? (position, Utf8ExecutionLimitKind.None)
             : (-1, Utf8ExecutionLimitKind.None);
+    }
+
+    private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunFixedReverseClassRepeat(Utf8SliceProgram program,
+        in Utf8SliceInstruction atom, ReadOnlySpan<byte> input, int start, long remaining, ref Utf8SliceInvocation invocation)
+    {
+        var position = start;
+        for (; remaining > 0; remaining--)
+        {
+            var breach = invocation.TryChargeStep();
+            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+            if (!TryReadScalar(input, position, true, out var scalar, out var width)) break;
+            breach = TryMatchScalarClass(program, atom, scalar, ref invocation, out var hit);
+            if (breach != Utf8ExecutionLimitKind.None) return (-1, breach);
+            if (!hit) break;
+            position -= width;
+        }
+        var terminal = ChargeRepeatBoundary(ref invocation, checkDeadline: true);
+        return (remaining == 0 && terminal == Utf8ExecutionLimitKind.None ? position : -1, terminal);
     }
 
     private static (int EndIndex, Utf8ExecutionLimitKind Breach) RunUnboundedByteStops(ReadOnlySpan<byte> input,
