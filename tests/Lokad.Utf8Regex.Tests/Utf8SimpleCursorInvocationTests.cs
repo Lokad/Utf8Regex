@@ -102,19 +102,19 @@ public sealed class Utf8SimpleCursorInvocationTests
     public static IEnumerable<object[]> PhaseCases()
     {
         foreach (var compiled in new[] { false, true })
-            foreach (var phase in new[] { "validation", "search", "verifier" })
-                foreach (var expire in new[] { false, true }) yield return [compiled, phase, expire];
+            foreach (var verifyCandidate in new[] { false, true })
+                foreach (var expire in new[] { false, true }) yield return [compiled, verifyCandidate, expire];
     }
 
     [Theory]
     [MemberData(nameof(PhaseCases))]
-    public void MatchingAndFirstPublicationObserveOriginalInterruption(bool compiled, string phase, bool expire)
+    public void SearchAndVerificationObserveOriginalInterruption(bool compiled, bool verifyCandidate, bool expire)
     {
         using var clock = Utf8DeadlineTestClock.Start();
-        // Stay inside the existing speculative preparation budget. Sixty
-        // repeated tokens still reach a checkpoint during this verifier.
-        var pattern = phase == "verifier" ? @"(?:ab[0-9]{60}|ab[A-Z])" : @"ab[0-9]{1,2}d";
-        var text = phase == "verifier" ? "ab" + new string('1', 60) : phase == "projection" ? new string('é', 160000) + "ab12d" : new string('x', 320000);
+        // The lookahead requires verification after the bounded prefix walk.
+        // Its candidate starts at byte zero, where the repeat reaches a checkpoint.
+        var pattern = verifyCandidate ? @"(?:ab[0-9]{60}(?=[A-Z])|ab[A-Z])" : @"ab[0-9]{1,2}d";
+        var text = verifyCandidate ? "ab" + new string('1', 60) + "Z" : new string('x', 320000);
         var input = Encoding.UTF8.GetBytes(text);
         var regex = new Utf8Regex(pattern, options: Options(compiled), policy: new Utf8RegexPolicy
         {
