@@ -50,7 +50,7 @@ public sealed class Pcre2LiteralGlobalOperationTests
             },
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
-        foreach (var padding in new[] { 1023, 1024, 1025, 2042, 2043, 2047, 2048 })
+        foreach (var padding in new[] { 0, 2, 1023, 1024, 1025, 2042, 2043, 2047, 2048 })
         {
             var input = Encoding.UTF8.GetBytes("😀" + new string('x', padding) + pattern + " " + pattern);
             Assert.Equal(2, regex.Count(input, 4, Pcre2MatchOptions.None, token.Token));

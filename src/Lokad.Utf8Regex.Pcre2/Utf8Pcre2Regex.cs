@@ -218,9 +218,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
             // Literal Count needs only byte-boundary admission and original
             // controls; it builds no interoperability metadata.
             if (matchOptions == Pcre2MatchOptions.None &&
-                _program.Operations.Count is Pcre2LiteralDirectProgram literal &&
-                (uint)startOffsetInBytes <= (uint)input.Length &&
-                literal.Program.CanCountDirectly(input.Length - startOffsetInBytes))
+                _program.Operations.Count is Pcre2LiteralDirectProgram { Program.CanCountDirectly: true } literal)
             {
                 Pcre2Runner.CheckInput(input, startOffsetInBytes, ref invocation);
                 int count;

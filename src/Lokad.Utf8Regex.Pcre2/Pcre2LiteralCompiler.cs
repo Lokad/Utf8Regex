@@ -17,7 +17,6 @@ internal enum Pcre2LiteralAnchor : byte
 
 internal sealed class Pcre2LiteralProgram
 {
-    private const int DirectCountThresholdBytes = 1024;
     private readonly byte[] _literalUtf8;
 
     internal Pcre2LiteralProgram(
@@ -47,8 +46,7 @@ internal sealed class Pcre2LiteralProgram
     internal bool HasExplicitEndAssertion { get; }
     internal bool HasExplicitCrOrLf { get; }
 
-    internal bool CanCountDirectly(int inputLength) =>
-        (inputLength >= DirectCountThresholdBytes || Search.IgnoreCase) &&
+    internal bool CanCountDirectly =>
         _literalUtf8.Length != 0 &&
         StartAnchor == Pcre2LiteralAnchor.None &&
         !EndAnchored;

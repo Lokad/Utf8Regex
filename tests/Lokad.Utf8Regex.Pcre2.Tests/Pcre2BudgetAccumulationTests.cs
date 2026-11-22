@@ -5,11 +5,10 @@ using Lokad.Utf8Regex.Pcre2;
 namespace Lokad.Utf8Regex.Pcre2.Tests;
 
 // Finite work spans the public call and all advances. These fixture limits
-// include byte-start admission, discovery and byte-result publication.
+// include byte-start admission, discovery and operation completion.
 public sealed class Pcre2BudgetAccumulationTests
 {
-    // Routes every operation through the native literal cursor (verified via
-    // DebugDescribeExecutionPlan during authoring).
+    // Count uses prepared literal search. Enumeration publishes each byte range.
     private const string Pattern = "(?#comment)ab";
     private const string InputText = "xxab xxab xxab";
 
@@ -28,13 +27,14 @@ public sealed class Pcre2BudgetAccumulationTests
     [Fact]
     public void CountSucceedsWithEnoughAdmittedWork()
     {
-        Assert.Equal(3, Create(7).Count(Encoding.UTF8.GetBytes(InputText)));
+        // One admission step, three search steps and one completion step.
+        Assert.Equal(3, Create(5).Count(Encoding.UTF8.GetBytes(InputText)));
     }
 
     [Fact]
     public void CountBreachesWhenLimitIsOneShort()
     {
-        var exception = Assert.Throws<Pcre2MatchException>(() => Create(6).Count(Encoding.UTF8.GetBytes(InputText)));
+        var exception = Assert.Throws<Pcre2MatchException>(() => Create(4).Count(Encoding.UTF8.GetBytes(InputText)));
         Assert.Equal(Pcre2ErrorKind.MatchLimit, exception.ErrorKind);
     }
 
