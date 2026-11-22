@@ -567,6 +567,19 @@ internal static partial class Utf8SliceRunner
                 ? new(true, fromByte, outcome.EndIndex, outcome.CaptureStarts, outcome.CaptureLengths, Utf8ExecutionLimitKind.None)
                 : new(false, -1, -1, null, null, outcome.Breach);
         }
+        return TryFindFirstByCandidateSearch(program, input, fromByte, captureStarts, captureEnds, collectHistory,
+            ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral, seekBeginning);
+    }
+
+    // Single-origin matches and ordered search do not need the candidate
+    // scanner's search windows, delimiter state or per-candidate proofs.
+    private static Utf8SliceSearchOutcome TryFindFirstByCandidateSearch(
+        Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
+        int[] captureStarts, int[] captureEnds, bool collectHistory,
+        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan,
+        bool existenceOnly, int screenedLiteral, bool seekBeginning)
+    {
+        var first = program.Instructions[0];
         var (leading, leadingLast, second, secondLast, leadingScalarIndex, fromBranch, sparsePair) = program.LeadingByteCandidate;
         // Prefer a straight ASCII proof. Prepared literal search can be more
         // selective than a branch interval or the lead of a wider scalar.
