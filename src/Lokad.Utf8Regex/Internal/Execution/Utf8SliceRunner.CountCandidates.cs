@@ -1289,9 +1289,9 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.CaptureStart:
                 case Utf8SliceInstructionKind.CaptureEnd:
                     continue;
-                // A delimited loop has consumed its required delimiter
-                // before returning to its body. Every visit is still bounded.
-                case Utf8SliceInstructionKind.Jump when entry.A >= index || proveMatch && entry.B > 0:
+                case Utf8SliceInstructionKind.Jump:
+                    // A jump only changes the instruction cursor. The shared
+                    // allowance above also counts backward edges.
                     index = entry.A;
                     continue;
                 case Utf8SliceInstructionKind.Fork when entry.B == 0 && entry.A > index:

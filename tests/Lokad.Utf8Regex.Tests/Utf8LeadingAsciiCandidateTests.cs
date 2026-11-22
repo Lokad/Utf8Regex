@@ -24,6 +24,21 @@ public sealed class Utf8LeadingAsciiCandidateTests
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text), source.Token));
     }
 
+    [Fact]
+    public void AnchoredCounterlessLoopSpendsTheSharedProofAllowance()
+    {
+        using var regex = new Utf8Regex(@"\A([a-z_]+)@(?:q[ab]|[xy][cz])+!\z", RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4 }
+        });
+        using var source = new CancellationTokenSource();
+        Assert.True(regex.IsMatch("a_b@qaxc!"u8, source.Token));
+        Assert.False(regex.IsMatch("a_b@qaxb!"u8, source.Token));
+        var longer = Encoding.UTF8.GetBytes("a_b@" + string.Concat(Enumerable.Repeat("qa", 24)) + "!");
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() => regex.IsMatch(longer, source.Token));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
+    }
+
     [Theory]
     [InlineData(0)] [InlineData(2047)] [InlineData(2048)] [InlineData(4095)]
     public void LongerStraightPrefixMissAvoidsUnneededVmStorage(int padding)
