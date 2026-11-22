@@ -763,26 +763,37 @@ internal static class Pcre2BacktrackingRunner
         var rentedCaptureState = workspace.CaptureState;
         var rentedCaptureRestoreGenerations = workspace.CaptureRestoreGenerations;
         var rentedRepeatRestoreGenerations = workspace.RepeatRestoreGenerations;
-        var repeatState = rentedRepeatState.AsSpan(0, repeatSlots * 2);
-        var captureState = rentedCaptureState.AsSpan(0, captureSlots * 5);
-        repeatState.Fill(-1);
-        captureState.Fill(-1);
+        Span<int> counts = default, positions = default, repeatRestoreGenerations = default;
+        if (repeatSlots != 0)
+        {
+            var repeatState = rentedRepeatState.AsSpan(0, repeatSlots * 2);
+            repeatState.Fill(-1);
+            counts = repeatState[..repeatSlots];
+            positions = repeatState[repeatSlots..];
+            if (rentedRepeatRestoreGenerations is not null)
+            {
+                repeatRestoreGenerations = rentedRepeatRestoreGenerations.AsSpan(0, repeatSlots);
+                repeatRestoreGenerations.Clear();
+            }
+        }
 
-        var counts = repeatState[..repeatSlots];
-        var positions = repeatState[repeatSlots..];
-        var captureStarts = captureState[..captureSlots];
-        var captureEnds = captureState.Slice(captureSlots, captureSlots);
-        var captureOpenStarts = captureState.Slice(captureSlots * 2, captureSlots);
-        var captureOwners = captureState.Slice(captureSlots * 3, captureSlots);
-        var captureOpenOwners = captureState[(captureSlots * 4)..];
-        var captureRestoreGenerations = rentedCaptureRestoreGenerations is null
-            ? Span<int>.Empty
-            : rentedCaptureRestoreGenerations.AsSpan(0, captureSlots);
-        var repeatRestoreGenerations = rentedRepeatRestoreGenerations is null
-            ? Span<int>.Empty
-            : rentedRepeatRestoreGenerations.AsSpan(0, repeatSlots);
-        captureRestoreGenerations.Clear();
-        repeatRestoreGenerations.Clear();
+        Span<int> captureStarts = default, captureEnds = default, captureOpenStarts = default;
+        Span<int> captureOwners = default, captureOpenOwners = default, captureRestoreGenerations = default;
+        if (captureSlots != 0)
+        {
+            var captureState = rentedCaptureState.AsSpan(0, captureSlots * 5);
+            captureState.Fill(-1);
+            captureStarts = captureState[..captureSlots];
+            captureEnds = captureState.Slice(captureSlots, captureSlots);
+            captureOpenStarts = captureState.Slice(captureSlots * 2, captureSlots);
+            captureOwners = captureState.Slice(captureSlots * 3, captureSlots);
+            captureOpenOwners = captureState[(captureSlots * 4)..];
+            if (rentedCaptureRestoreGenerations is not null)
+            {
+                captureRestoreGenerations = rentedCaptureRestoreGenerations.AsSpan(0, captureSlots);
+                captureRestoreGenerations.Clear();
+            }
+        }
         if (!initialCaptureStarts.IsEmpty)
         {
             initialCaptureStarts.CopyTo(captureStarts);
