@@ -47,6 +47,24 @@ public sealed class Utf8ReplacementRangeAdmissionTests
         });
     }
 
+    [Fact]
+    public void ControlledBoundaryReplacementChargesItsFinalArrayInAdditionToRanges()
+    {
+        var expected = "écat|😀#😀"u8.ToArray();
+        var capacity = Utf8ConstructionBudget.ArrayBytes<Utf8ReplacementRange>(16) +
+            Utf8ConstructionBudget.ArrayBytes<byte>(expected.Length);
+        using var denied = Create(capacity - 1);
+        using var permitted = Create(capacity);
+
+        var failure = Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Replace("écat|😀dog😀"u8, "#"u8));
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionResultBytes, failure.ResourceKind);
+        Assert.Equal(capacity, failure.Requested);
+        Assert.Equal(expected, permitted.Replace("écat|😀dog😀"u8, "#"u8));
+
+        static Utf8Regex Create(ulong limit) => new(@"\b(?:cat|dog)\b", RegexOptions.CultureInvariant | RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxResultBytes = limit } });
+    }
+
     [Theory]
     [InlineData(0)] [InlineData(16)] [InlineData(2048)]
     public void FullGrowthOverlapIsAdmittedBeforeRentAndDeniedGrowthKeepsOldRanges(int count)

@@ -135,9 +135,8 @@ public sealed class Utf8OutputExtentAdmissionTests
             var start = displacement < 0 ? 37 : 0;
             expected.AsSpan(start, length).CopyTo(expected.AsSpan(start + displacement, length));
             var invocation = new Utf8SliceInvocation(new(32, 0, 0), Regex.InfiniteMatchTimeout, CancellationToken.None);
-            Assert.True(Utf8ReplacementOutput.TryCopyUnchanged(actual.AsSpan(start, length),
-                actual.AsSpan(start + displacement, length), out var written, new Utf8InvocationBufferControl(ref invocation)));
-            Assert.Equal(length, written);
+            Utf8InvocationOutput.Copy(actual.AsSpan(start, length), actual.AsSpan(start + displacement, length),
+                new Utf8InvocationBufferControl(ref invocation));
             Assert.Equal(expected, actual);
             Assert.Equal((ulong)((length + 4095) / 4096 + 1), invocation.Budget.Steps);
         }

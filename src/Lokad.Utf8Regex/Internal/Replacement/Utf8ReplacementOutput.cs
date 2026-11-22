@@ -101,21 +101,4 @@ internal static class Utf8ReplacementOutput
 
         sink.Append(input[sourcePosition..], control);
     }
-
-    internal static bool TryCopyUnchanged<TControl>(
-        ReadOnlySpan<byte> input,
-        Span<byte> destination,
-        out int bytesWritten, scoped TControl control)
-        where TControl : IUtf8InvocationBufferControl, allows ref struct
-    {
-        if (input.Length > destination.Length)
-        {
-            bytesWritten = 0;
-            return false;
-        }
-
-        Utf8InvocationOutput.Copy(input, destination, control);
-        bytesWritten = input.Length;
-        return true;
-    }
 }

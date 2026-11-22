@@ -152,8 +152,9 @@ host-defined substitutions. Host copying and decoding belong to the caller.
 bytes and leaves the destination unchanged. Overlap is supported and
 overlapping input requires staging. Other failures throw. Interruption or
 work exhaustion during final copying can leave a partial destination.
-Eligible literal replacements can stage match ranges and then copy into a
-disjoint destination. Range capacity counts toward working and result limits.
+Eligible literal replacements can stage match ranges and copy into one
+result array or a disjoint destination. Range and result array capacities
+count toward working and result limits.
 
 ## Cancellation, deadlines and resource limits
 
