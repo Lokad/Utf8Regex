@@ -81,7 +81,7 @@ internal static class Utf8BackendInstructionExecutor
     {
         if (!reverse && !invocation.IsUnmetered &&
             plan.AlternateLiteralsUtf8 is not { Length: > 0 } &&
-            plan.LiteralSearch is { Length: > 0, IgnoreCase: false } search &&
+            plan.LiteralSearch is { Length: > 0 } search &&
             !plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
         {
             // Pure Count publishes no match/capture object. Keep the same

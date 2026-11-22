@@ -8,15 +8,17 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NativeCountPublicationTests
 {
     [Theory]
-    [InlineData("", 0, false)]
-    [InlineData("", 0, true)]
-    [InlineData("miss", 0, false)]
-    [InlineData("miss", 0, true)]
-    [InlineData("needle needle", 2, false)]
-    [InlineData("needle needle", 2, true)]
-    public void FinalCounterCheckpointCannotPublishAfterInterruption(string text, int expected, bool expire)
+    [InlineData("", 0, false, RegexOptions.None)]
+    [InlineData("", 0, true, RegexOptions.None)]
+    [InlineData("miss", 0, false, RegexOptions.None)]
+    [InlineData("miss", 0, true, RegexOptions.None)]
+    [InlineData("needle needle", 2, false, RegexOptions.None)]
+    [InlineData("needle needle", 2, true, RegexOptions.None)]
+    [InlineData("NEEDLE néedle needle", 2, false, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [InlineData("NEEDLE néedle needle", 2, true, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    public void FinalCounterCheckpointCannotPublishAfterInterruption(string text, int expected, bool expire, RegexOptions options)
     {
-        var plan = new Utf8Regex("needle").Inspection.SearchPlan;
+        var plan = new Utf8Regex("needle", options).Inspection.SearchPlan;
         var input = Encoding.UTF8.GetBytes(text);
         var limits = new Utf8ExecutionLimits(10000, 0, 1000);
         var measured = new Utf8SliceInvocation(limits, Regex.InfiniteMatchTimeout, default);
