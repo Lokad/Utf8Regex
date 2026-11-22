@@ -334,7 +334,7 @@ public sealed partial class Utf8Regex : IDisposable
             return directIsMatch;
         }
 
-        if (TryMatchDirectWithoutValidation(input, out var directMatch))
+        if (TryMatchSelectedDirect(input, out var directMatch))
         {
             return directMatch.Success;
         }
@@ -633,7 +633,7 @@ public sealed partial class Utf8Regex : IDisposable
             return OwnedSliceMatch(input, ownedProgram, cancellationToken);
         }
 
-        if (TryMatchDirectWithoutValidation(input, out var directMatch))
+        if (TryMatchSelectedDirect(input, out var directMatch))
         {
             return directMatch;
         }

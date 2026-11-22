@@ -10,22 +10,23 @@ public sealed partial class Utf8Regex
 {
     internal bool TryMatchDirectWithoutValidation(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
+        if (GetOwnedSliceProgram(input) is null)
+            return TryMatchSelectedDirect(input, out match);
+        match = default;
+        return false;
+    }
 
+    // Selection already accounts for boundary, folding and timeout requirements.
+    private bool TryMatchSelectedDirect(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
+    {
         if (TryMatchAnchoredLiteral(input, out match))
         {
             return true;
         }
 
-        if (MatchTimeout != Regex.InfiniteMatchTimeout)
-        {
-            match = default(Utf8CaptureRange);
-            return false;
-        }
-
         if (_program.CompiledEngineRuntime is { } runtime)
-            return runtime.TryMatchDirect(input, budget: Utf8ExecutionDeadline.Infinite, out match);
+            return runtime.TryMatchDirect(input, out match);
 
-        match = default(Utf8CaptureRange);
         return false;
     }
 

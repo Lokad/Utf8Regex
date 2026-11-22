@@ -1,4 +1,3 @@
-using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Diagnostics;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -274,15 +273,8 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
         return true;
     }
 
-    public bool TryMatchDirect(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8CaptureRange match)
+    public bool TryMatchDirect(ReadOnlySpan<byte> input, out Utf8CaptureRange match)
     {
-        if (!budget.IsInfinite ||
-            (_smallAsciiLiteralFamilyPrimitive is null && !SupportsAsciiDirectMatch))
-        {
-            match = default(Utf8CaptureRange);
-            return false;
-        }
-
         if (_smallAsciiLiteralFamilyPrimitive is { } primitive)
         {
             // ASCII needles cannot overlap a multibyte scalar in valid UTF-8.
@@ -293,16 +285,37 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
             return true;
         }
 
-        if (!Utf8InputAnalyzer.IsAscii(input))
+        if (!SupportsDirectMatch)
         {
-            match = default(Utf8CaptureRange);
+            match = default;
             return false;
         }
 
-        return TryMatchAsciiDirect(input, budget, out match);
+        if (_compositeTrailingLiteralSearch is { } compositeSearch)
+        {
+            match = MatchCompositeTrailingLiteral(input, compositeSearch);
+            return true;
+        }
+
+        var budget = Utf8ExecutionDeadline.Infinite;
+        match = _regexPlan.ExecutionKind switch
+        {
+            NativeExecutionKind.ExactAsciiLiteral => MatchExactAsciiLiteral(
+                input,
+                budget,
+                _usesRightToLeft),
+            NativeExecutionKind.ExactUtf8Literal => MatchExactUtf8Literal(input, budget, _usesRightToLeft),
+            NativeExecutionKind.AsciiLiteralIgnoreCase => MatchAsciiLiteralIgnoreCase(input, budget, _usesRightToLeft),
+            NativeExecutionKind.ExactUtf8Literals when _regexPlan.SearchPlan.Kind == Utf8SearchKind.ExactAsciiLiterals
+                => MatchLiteralFamily(input, budget, _usesRightToLeft),
+            NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals => MatchLiteralFamily(input, budget, _usesRightToLeft),
+            _ => default(Utf8CaptureRange),
+        };
+
+        return true;
     }
 
-    private bool SupportsAsciiDirectMatch =>
+    private bool SupportsDirectMatch =>
         _regexPlan.ExecutionKind switch
         {
             NativeExecutionKind.ExactAsciiLiteral => true,
@@ -317,32 +330,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
                 !_regexPlan.SearchPlan.HasTrailingLiteralRequirement,
             _ => false,
         };
-
-    private bool TryMatchAsciiDirect(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget, out Utf8CaptureRange match)
-    {
-        if (budget.IsInfinite && _compositeTrailingLiteralSearch is { } compositeSearch)
-        {
-            match = MatchCompositeTrailingLiteral(input, compositeSearch);
-            return true;
-        }
-
-        match = _regexPlan.ExecutionKind switch
-        {
-            NativeExecutionKind.ExactAsciiLiteral => MatchExactAsciiLiteral(
-                input,
-                budget,
-                _usesRightToLeft),
-            NativeExecutionKind.ExactUtf8Literal when IsAllAscii(_regexPlan.LiteralUtf8)
-                => MatchAsciiAlignedExactUtf8Literal(input, budget),
-            NativeExecutionKind.AsciiLiteralIgnoreCase => MatchAsciiLiteralIgnoreCase(input, budget, _usesRightToLeft),
-            NativeExecutionKind.ExactUtf8Literals when _regexPlan.SearchPlan.Kind == Utf8SearchKind.ExactAsciiLiterals
-                => MatchLiteralFamily(input, budget, _usesRightToLeft),
-            NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals => MatchLiteralFamily(input, budget, _usesRightToLeft),
-            _ => default(Utf8CaptureRange),
-        };
-
-        return true;
-    }
 
     private static bool IsAllAscii(byte[]? bytes)
     {
@@ -940,8 +927,7 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
                 : default(Utf8CaptureRange);
         }
 
-        // TryMatchDirect already qualified the ASCII subject and literal family
-        // for this forward path.
+        // The caller has selected byte matching for this subject.
         budget.Step();
         return Utf8SearchExecutor.TryFindNextMatch(_regexPlan.SearchPlan, input, 0, out var match)
             ? new Utf8CaptureRange(match.Index, match.Index + match.Length)
@@ -984,20 +970,6 @@ internal sealed partial class Utf8LiteralCompiledEngineRuntime
     {
         var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
         var index = rightToLeft
-            ? FindLastLiteralViaSearch(input, budget)
-            : FindFirstLiteralViaSearch(input, budget);
-        if (index < 0)
-        {
-            return default(Utf8CaptureRange);
-        }
-
-        return new Utf8CaptureRange(index, (index) + (literal.Length));
-    }
-
-    private Utf8CaptureRange MatchAsciiAlignedExactUtf8Literal(ReadOnlySpan<byte> input, Utf8ExecutionDeadline budget)
-    {
-        var literal = _regexPlan.LiteralUtf8 ?? throw UnexpectedExecutionKind();
-        var index = _usesRightToLeft
             ? FindLastLiteralViaSearch(input, budget)
             : FindFirstLiteralViaSearch(input, budget);
         if (index < 0)
