@@ -738,11 +738,12 @@ internal static class Pcre2BacktrackingRunner
             : Math.Max(0, configuredFrameLimit - depthBase);
         var initialFrameRents = frames.RentCount;
         var initialRepeatRents = repeatMutations.RentCount;
-        var captureMutations = new Pcre2InvocationStateStack<Pcre2CaptureMutation>(int.MaxValue, budget.CollectsDiagnostics);
-        var subroutineCalls = new Pcre2SubroutineCalls(frameLimit, budget.CollectsDiagnostics);
-        var atomicCheckpoints = new Pcre2InvocationStateStack<Pcre2AtomicCheckpoint>(frameLimit, budget.CollectsDiagnostics);
-        var markMutations = new Pcre2InvocationStateStack<Pcre2MarkMutation>(int.MaxValue, budget.CollectsDiagnostics);
-        var markTrail = new Pcre2InvocationStateStack<Pcre2MarkTrailEntry>(int.MaxValue, budget.CollectsDiagnostics);
+        var collectsDiagnostics = budget.CollectsDiagnostics;
+        var captureMutations = new Pcre2InvocationStateStack<Pcre2CaptureMutation>(int.MaxValue, collectsDiagnostics);
+        var subroutineCalls = new Pcre2SubroutineCalls(frameLimit, collectsDiagnostics);
+        var atomicCheckpoints = new Pcre2InvocationStateStack<Pcre2AtomicCheckpoint>(frameLimit, collectsDiagnostics);
+        var markMutations = new Pcre2InvocationStateStack<Pcre2MarkMutation>(int.MaxValue, collectsDiagnostics);
+        var markTrail = new Pcre2InvocationStateStack<Pcre2MarkTrailEntry>(int.MaxValue, collectsDiagnostics);
         var retainCaptures = captureMaterialization != Pcre2CaptureMaterialization.None || !initialCaptureStarts.IsEmpty;
         var greedyOptionalTail = !isAssertion && matchOptions == Pcre2MatchOptions.None
             ? program.GreedyOptionalTail : int.MaxValue;
@@ -1610,35 +1611,28 @@ internal static class Pcre2BacktrackingRunner
         }
         finally
         {
-            var frameRents = frames.RentCount - initialFrameRents;
-            var frameGrowths = initialFrameRents == 0 ? Math.Max(0, frameRents - 1) : frameRents;
-            var repeatRents = repeatMutations.RentCount - initialRepeatRents;
-            var repeatGrowths = initialRepeatRents == 0 ? Math.Max(0, repeatRents - 1) : repeatRents;
-            var stackRents = frameRents +
-                repeatRents +
-                captureMutations.RentCount +
-                subroutineCalls.RentCount +
-                atomicCheckpoints.RentCount +
-                markMutations.RentCount +
-                markTrail.RentCount;
-            var stackGrowths = frameGrowths +
-                repeatGrowths +
-                Math.Max(0, captureMutations.RentCount - 1) +
-                Math.Max(0, subroutineCalls.RentCount - 1) +
-                Math.Max(0, atomicCheckpoints.RentCount - 1) +
-                Math.Max(0, markMutations.RentCount - 1) +
-                Math.Max(0, markTrail.RentCount - 1);
-            var fixedRents = !acquiredWorkspace ? 0 : (rentedRepeatState is null ? 0 : 1) +
-                (rentedCaptureState is null ? 0 : 1) +
-                (rentedCaptureRestoreGenerations is null ? 0 : 1) +
-                (rentedRepeatRestoreGenerations is null ? 0 : 1);
-            budget.RecordWorkspacePoolTraffic(
-                (ulong)fixedRents,
-                (ulong)frameRents,
-                (ulong)repeatRents,
-                (ulong)captureMutations.RentCount,
-                (ulong)(stackRents - frameRents - repeatRents - captureMutations.RentCount),
-                (ulong)stackGrowths);
+            if (collectsDiagnostics)
+            {
+                var frameRents = frames.RentCount - initialFrameRents;
+                var frameGrowths = initialFrameRents == 0 ? Math.Max(0, frameRents - 1) : frameRents;
+                var repeatRents = repeatMutations.RentCount - initialRepeatRents;
+                var repeatGrowths = initialRepeatRents == 0 ? Math.Max(0, repeatRents - 1) : repeatRents;
+                var controlRents = subroutineCalls.RentCount + atomicCheckpoints.RentCount +
+                    markMutations.RentCount + markTrail.RentCount;
+                var stackGrowths = frameGrowths +
+                    repeatGrowths +
+                    Math.Max(0, captureMutations.RentCount - 1) +
+                    Math.Max(0, subroutineCalls.RentCount - 1) +
+                    Math.Max(0, atomicCheckpoints.RentCount - 1) +
+                    Math.Max(0, markMutations.RentCount - 1) +
+                    Math.Max(0, markTrail.RentCount - 1);
+                var fixedRents = !acquiredWorkspace ? 0 : (rentedRepeatState is null ? 0 : 1) +
+                    (rentedCaptureState is null ? 0 : 1) +
+                    (rentedCaptureRestoreGenerations is null ? 0 : 1) +
+                    (rentedRepeatRestoreGenerations is null ? 0 : 1);
+                budget.RecordWorkspacePoolTraffic((ulong)fixedRents, (ulong)frameRents, (ulong)repeatRents,
+                    (ulong)captureMutations.RentCount, (ulong)controlRents, (ulong)stackGrowths);
+            }
             markTrail.Dispose(ref budget);
             markMutations.Dispose(ref budget);
             atomicCheckpoints.Dispose(ref budget);
