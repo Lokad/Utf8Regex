@@ -1242,10 +1242,16 @@ internal static partial class Utf8SliceRunner
             code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == index &&
             code[entry.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == entry.B;
 
-    private static int FindAnchoredRepeatProofStart(Utf8SliceProgram program, int length)
+    internal static int PrepareAnchoredRepeatProof(Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
-        if (length > BranchedPrefixInstructionLimit || program.ReadsCaptures) return -1;
         var code = program.Instructions;
+        // Admit the bounded marker walk before inspecting the instructions.
+        budget.ChargeWork(program.GroupCount == 0 || program.ReadsCaptures ? 1UL :
+            (ulong)Math.Min(code.Length, 1 + Utf8SliceInstruction.LeadingCaptureMarkerLimit));
+        if (program.GroupCount == 0 && program.SkipsTerminalRewind(1) && code[1].RepeatMaximum <= 4)
+            return 1;
+        if (program.ReadsCaptures) return 0;
+
         // An unobserved opening capture does not change the repeat. Reuse
         // the lowered proof that all delimiter arms reject a shorter end.
         var index = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 1);
@@ -1253,7 +1259,7 @@ internal static partial class Utf8SliceRunner
             code[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMaximum: long.MaxValue } repeat &&
             code[repeat.A].RepeatExitRejectsShorterEndpoints &&
             (code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } ||
-             GetUnfoldedAsciiRange(code[index + 1], out _) >= 0) ? index : -1;
+             GetUnfoldedAsciiRange(code[index + 1], out _) >= 0) ? -index : 0;
     }
 
     // This check eliminates impossible starts. A caller without capture output

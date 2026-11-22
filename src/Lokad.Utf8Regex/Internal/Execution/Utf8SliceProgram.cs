@@ -199,6 +199,7 @@ internal readonly struct Utf8SliceInstruction
     internal const int RepeatExitAcceptsEmptyTailFlag = 2;
     internal const int RepeatExitBeforeTerminalDotFlag = 4;
     internal const int RepeatExitUnobservedDecimalFlag = 8;
+    internal const int LeadingCaptureMarkerLimit = 31;
 
     internal Utf8SliceInstruction(Utf8SliceInstructionKind kind, int a, int b, int c, int d, bool isLiteralChoice = false)
     {
@@ -222,12 +223,15 @@ internal readonly struct Utf8SliceInstruction
     // for the fall-through and target respectively. Zero leaves an arm unknown.
     // A negative C on a normal Fork encodes a disjoint target byte as ~C.
     // A RepeatEnd can mark a proved consuming body for ordered discovery.
+    // A leading Beginning anchor records a required first ASCII byte plus one.
     internal int C { get; }
     // For a positive unfolded Set, packed ASCII interval endpoints:
     // low byte is first+1, high byte is last; zero means no exact interval.
     // A Literal at a fork entry can carry the destination after two equal
     // first literals fail the bounded prefix proof.
     // With negative Fork C, D can hold the packed captured prefix plus one.
+    // An absolute Beginning anchor stores 1 for the bounded repeat witness,
+    // or the negated start instruction for the unbounded repeat witness.
     internal int D { get; }
 
     // RepeatExit C records independent proofs about the continuation.
@@ -261,7 +265,7 @@ internal readonly struct Utf8SliceInstruction
 
     internal static int SkipLeadingCaptureMarkers(ReadOnlySpan<Utf8SliceInstruction> instructions, int index)
     {
-        for (var skipped = 0; skipped < 31 && (uint)index < (uint)instructions.Length &&
+        for (var skipped = 0; skipped < LeadingCaptureMarkerLimit && (uint)index < (uint)instructions.Length &&
             instructions[index].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd; skipped++)
             index++;
         return index;
@@ -436,9 +440,22 @@ internal sealed class Utf8SliceProgram
         // Keep this bounded, allocation-free proof off repeated match attempts.
         TerminalRoot = Utf8SliceRunner.ClassifyTerminalRoot(this);
         HasSingleCapturePerGroup = CanReadCapturesFromSlots();
-        if (!rightToLeft && !isNonBacktracking && !ignoreCase && !canMatchEmpty && !hasContiguousAnchor &&
-            instructions is not [{ Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning }, ..])
-            LeadingByteCandidate = Utf8SliceRunner.FindLeadingByteCandidate(this, Utf8ConstructionScope.CurrentBudget);
+        if (!rightToLeft && !isNonBacktracking)
+        {
+            var first = instructions[0];
+            if (first is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning })
+            {
+                var ascii = !ignoreCase && !canMatchEmpty && instructions.Length > 1 &&
+                    instructions[1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal
+                    ? literal.A + 1 : 0;
+                var proof = first.B == 0 && repeatCount != 0
+                    ? Utf8SliceRunner.PrepareAnchoredRepeatProof(this, Utf8ConstructionScope.CurrentBudget) : 0;
+                if (ascii != 0 || proof != 0)
+                    instructions[0] = new(first.Kind, first.A, first.B, ascii, proof);
+            }
+            else if (!ignoreCase && !canMatchEmpty && !hasContiguousAnchor)
+                LeadingByteCandidate = Utf8SliceRunner.FindLeadingByteCandidate(this, Utf8ConstructionScope.CurrentBudget);
+        }
         if (!rightToLeft && !isNonBacktracking && !ignoreCase && !hasContiguousAnchor && repeatCount != 0)
         {
             // The class/delimiter shape is independent of the subject and its

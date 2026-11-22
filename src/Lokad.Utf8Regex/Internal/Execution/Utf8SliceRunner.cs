@@ -528,7 +528,7 @@ internal static partial class Utf8SliceRunner
         {
             // An absolute beginning or an explicit contiguous origin admits
             // one start. Keep its normal attempt and interruption checks.
-            if (seekBeginning)
+            if (seekBeginning && (fromByte != 0 || first.C != 0))
             {
                 var seekBreach = TrySeekBeginning(program, input, ref fromByte, ref invocation);
                 if (seekBreach != Utf8ExecutionLimitKind.None || fromByte < 0)
@@ -541,11 +541,10 @@ internal static partial class Utf8SliceRunner
             var proofStart = -1;
             if (seekBeginning && existenceOnly && !collectHistory)
             {
-                if (program.GroupCount == 0 && program.SkipsTerminalRewind(1) &&
-                    program.Instructions[1].RepeatMaximum <= 4 && input.Length <= 32)
+                if (first.D == 1 && input.Length <= 32)
                     proofStart = 1;
-                else if (captureStarts.Length == 0)
-                    proofStart = FindAnchoredRepeatProofStart(program, input.Length);
+                else if (first.D < 0 && captureStarts.Length == 0 && input.Length <= BranchedPrefixInstructionLimit)
+                    proofStart = -first.D;
             }
             if (proofStart >= 0)
             {
@@ -877,12 +876,9 @@ internal static partial class Utf8SliceRunner
     internal static Utf8ExecutionLimitKind TrySeekBeginning(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation)
     {
-        var instructions = program.Instructions;
-        var leadingLiteral = !program.IgnoreCase && !program.CanMatchEmpty &&
-            instructions.Length > 1 &&
-            instructions[1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0 } leading &&
-            (uint)leading.A < 0x80 ? leading.A : -1;
-        if (instructions[0].B == 0)
+        var anchor = program.Instructions[0];
+        var leadingLiteral = anchor.C - 1;
+        if (anchor.B == 0)
         {
             if (position != 0)
             {
