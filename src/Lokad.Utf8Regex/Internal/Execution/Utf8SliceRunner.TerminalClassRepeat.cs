@@ -965,7 +965,7 @@ internal static partial class Utf8SliceRunner
             return;
         var atom = code[repeatIndex + 1];
         if (atom is not ({ Kind: Utf8SliceInstructionKind.Dot } or
-                         { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                         { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
                          { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
             return;
 
@@ -989,26 +989,35 @@ internal static partial class Utf8SliceRunner
             budget.ChargeWork(1);
             continuation++;
         }
-        if (continuation >= code.Length || code[continuation] is not
-            { Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Literal, B: 0 })
+        if (continuation >= code.Length) return;
+        var next = code[continuation];
+        if (atom is { Kind: Utf8SliceInstructionKind.Set, C: not 0 })
+        {
+            // Case folding leaves LF unchanged, so the mask determines
+            // whether a shorter endpoint could satisfy a direct end anchor.
+            if (next is not { Kind: Utf8SliceInstructionKind.Anchor,
+                A: (int)Utf8SliceAnchorKind.End or (int)Utf8SliceAnchorKind.VeryEnd }) return;
+        }
+        else if (next is not { Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Literal, B: 0 })
             return;
 
         if (atom.Kind == Utf8SliceInstructionKind.Dot)
         {
-            if (code[continuation].Kind != Utf8SliceInstructionKind.Fork) return;
+            if (next.Kind != Utf8SliceInstructionKind.Fork) return;
             var starts = FindRepeatRewindStarts(code, setMasks, continuation, budget);
             if (starts != 0) code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C, starts);
             return;
         }
 
-        // A direct literal needs one visit. A fork shares a bounded allowance
+        // A direct check needs one visit. A fork shares a bounded allowance
         // among its arms. Both tests use the same repeat-exit certificate.
-        var work = code[continuation].Kind == Utf8SliceInstructionKind.Literal ? 1 : 12;
+        var work = next.Kind == Utf8SliceInstructionKind.Fork ? 12 : 1;
         budget.ChargeWork((ulong)work + 2);
         var mask = setMasks[atom.A].AsSpan();
         var consumed = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
             BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
-        if (ExcludesShorterRepeatEnds(code, continuation, consumed, atom.Kind == Utf8SliceInstructionKind.Set, ref work))
+        if (ExcludesShorterRepeatEnds(code, continuation, consumed,
+            atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 }, ref work))
             code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
     }
 

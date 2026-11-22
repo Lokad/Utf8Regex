@@ -105,6 +105,8 @@ public sealed class Utf8OptionalRepeatTests
     [InlineData(@"\A(?<unit>\d)+\d\z", "1١3")]
     [InlineData(@"\A(?<unit>\d)+\k<unit>\z", "1١١")]
     [InlineData(@"\A(?<unit>[a-z]){2,4}b\z", "Abbb")]
+    [InlineData(@"\A([a-z][a-z0-9_]*)$", "AK_19\n")]
+    [InlineData(@"(?m)\A([a-z\n]*)$", "A\nbc\n!")]
     public void ScalarRepeatPreservesEndpointsAndObservedCaptures(string pattern, string text)
     {
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
