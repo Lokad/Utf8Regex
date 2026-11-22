@@ -44,13 +44,23 @@ internal sealed class Utf8NonBacktrackingSearchState
         ordered = ([], [], 0);
         using var construction = Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
-        var colors = budget.AllocateArray<byte>(instructions.Length, false);
+        var wide = instructions.Length > 64;
+        var colorStorage = wide ? budget.AllocateArray<byte>(instructions.Length, false) : [];
+        Span<byte> colors = wide ? colorStorage : stackalloc byte[instructions.Length];
+        if (!wide)
+        {
+            budget.ChargeWork((ulong)instructions.Length);
+            colors.Clear();
+        }
         try
         {
-            var order = budget.AllocateArray<int>(instructions.Length, false);
+            // Only the wide graph keeps the whole order. Compact graphs keep
+            // just the condition entries after building their packed closures.
+            var result = wide ? budget.AllocateArray<int>(instructions.Length, false) : [];
+            Span<int> order = wide ? result : stackalloc int[instructions.Length];
+            if (!wide) budget.ChargeWork((ulong)instructions.Length);
             var written = 0;
             var epsilonStart = instructions.Length;
-            var wide = instructions.Length > 64;
             using var frames = new Utf8ConstructionBuffer<(int Pc, bool Complete)>(budget);
             for (var pc = 0; pc < instructions.Length; pc++)
             {
@@ -124,24 +134,22 @@ internal sealed class Utf8NonBacktrackingSearchState
                 foreach (var pc in order)
                     if (instructions[pc].Kind is Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary)
                         order[kept++] = pc;
-                var compact = kept == 0 ? [] : budget.AllocateArray<int>(kept, false);
-                order.AsSpan(0, kept).CopyTo(compact);
-                budget.ReleaseArray(order, false);
-                order = compact;
+                result = kept == 0 ? [] : budget.AllocateArray<int>(kept, false);
+                order[..kept].CopyTo(result);
             }
             else
             {
                 // Leaves have no same-row dependencies. Keep them together
                 // and preserve the dependency order among epsilon operations.
                 budget.ChargeWork((ulong)(order.Length - epsilonStart));
-                order.AsSpan(epsilonStart).Reverse();
+                order[epsilonStart..].Reverse();
             }
             construction.Complete();
-            return order;
+            return result;
         }
         finally
         {
-            budget.ReleaseArray(colors, false);
+            budget.ReleaseArray(colorStorage, false);
         }
     }
 
