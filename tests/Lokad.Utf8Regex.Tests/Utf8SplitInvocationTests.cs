@@ -64,10 +64,46 @@ public sealed class Utf8SplitInvocationTests
 
     public static IEnumerable<object[]> LifetimeCases()
     {
-        foreach (var pattern in new[] { "ab", "", "(.)", @"(ab)\1" })
+        foreach (var pattern in new[] { "ab", "", "(.)", @"(ab)\1", @"\b(?:ab|cat|dog)\b" })
         foreach (var compiled in new[] { false, true })
         foreach (var rtl in new[] { false, true })
         foreach (var count in new[] { 0, 1, 2 }) yield return [pattern, compiled, rtl, count];
+    }
+
+    [Fact]
+    public void ControlledBoundarySplitsShareWorkWithIndependentPositions()
+    {
+        const string pattern = @"\b(?:LogTrace|LogDebug|LogInformation|LogWarning|LogError)\b";
+        using var regex = new Utf8Regex(pattern, policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxDepth = 1, MaxWorkingBytes = 1, MaxResultBytes = 1 }
+        });
+        using var source = new CancellationTokenSource();
+        var input = "éLogTrace|😀LogTrace😀|LogWarning\u200c|LogError"u8;
+        var cursor = regex.EnumerateSplits(input, count: 0, cancellationToken: source.Token);
+        var copy = cursor;
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((0, 15), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+        var firstWork = cursor.DebugInvocationSteps;
+        Assert.Equal(firstWork, copy.DebugInvocationSteps);
+        Assert.True(copy.MoveNext());
+        Assert.Equal((0, 15), (copy.Current.IndexInBytes, copy.Current.LengthInBytes));
+        Assert.True(cursor.DebugInvocationSteps > firstWork);
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((23, 19), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+        Assert.True(cursor.MoveNext());
+        Assert.Equal((50, 0), (cursor.Current.IndexInBytes, cursor.Current.LengthInBytes));
+        Assert.False(cursor.MoveNext());
+        Assert.Equal(0UL, cursor.DebugPeakWorkingBytes);
+        Assert.Equal((0, 15), (copy.Current.IndexInBytes, copy.Current.LengthInBytes));
+
+        using var limited = new Utf8Regex(pattern, policy: new() { ResourcePolicy = new() { MaxWorkSteps = 3 } });
+        var error = Assert.Throws<Utf8ResourceLimitExceededException>(() =>
+        {
+            var splits = limited.EnumerateSplits("LogTrace"u8);
+            splits.MoveNext();
+        });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps, error.ResourceKind);
     }
 
     [Theory]

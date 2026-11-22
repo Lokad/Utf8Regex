@@ -70,6 +70,15 @@ public sealed partial class Utf8Regex
         return true;
     }
 
+    private bool HasScalarBoundaryLiteralSearch(Utf8SliceProgram program)
+    {
+        ref readonly var searchPlan = ref _preparedRegex.SearchPlan;
+        return (Options & RegexOptions.ECMAScript) == 0 &&
+            searchPlan is { HasBoundaryRequirements: true, HasTrailingLiteralRequirement: false } &&
+            searchPlan.SearchOperation.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements &&
+            CanUseNativeLiteralSearch(program, maximumAlternatives: 8, allowBoundaries: true);
+    }
+
     // Shared semantic eligibility, independent of the optional Core owner's
     // policy. An adapter can supply finite limits through its borrowed invocation.
     private bool CanUseNativeLiteralSearch(Utf8SliceProgram program, int maximumAlternatives = 3, bool allowBoundaries = false) =>

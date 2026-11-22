@@ -110,12 +110,8 @@ public sealed partial class Utf8Regex : IDisposable
             var ownedSliceProgram = preparedRegex.ScalarProgram
                 ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
             _ownedSliceProgram = ownedSliceProgram;
-            ref readonly var searchPlan = ref preparedRegex.SearchPlan;
-            if (matchTimeout == Regex.InfiniteMatchTimeout && (options & RegexOptions.ECMAScript) == 0 &&
-                _program.CompiledEngineRuntime is { } literalRuntime &&
-                searchPlan is { HasBoundaryRequirements: true, HasTrailingLiteralRequirement: false } &&
-                searchPlan.SearchOperation.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements &&
-                CanUseNativeLiteralSearch(ownedSliceProgram, maximumAlternatives: 8, allowBoundaries: true))
+            if (matchTimeout == Regex.InfiniteMatchTimeout &&
+                _program.CompiledEngineRuntime is { } literalRuntime && HasScalarBoundaryLiteralSearch(ownedSliceProgram))
             {
                 _canUseUnmeteredScalarBoundaryLiterals = true;
                 _scalarBoundaryLiteralFamilyCounter = literalRuntime._emittedLiteralFamilyCounter;
@@ -972,7 +968,9 @@ public sealed partial class Utf8Regex : IDisposable
         var invocation = new Utf8SliceInvocation(InvocationLimits, MatchTimeout, token);
         try
         {
-            return Utf8OwnedSplitPreparation.Create(program, input, count, ref invocation)
+            var literals = !invocation.IsUnmetered && !program.IsNonBacktracking && HasScalarBoundaryLiteralSearch(program)
+                ? _preparedRegex : null;
+            return Utf8OwnedSplitPreparation.Create(program, input, count, ref invocation, literals)
                 .WithTimeoutMapping(this);
         }
         catch (InvalidOperationException error) when (error is not Utf8ResourceLimitExceededException && invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
