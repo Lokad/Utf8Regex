@@ -1393,30 +1393,40 @@ internal static partial class Utf8SliceRunner
                     }
                     break;
                 case Utf8SliceInstructionKind.Set:
-                    // A nonzero range operand proves a complete positive ASCII
-                    // interval. One checked byte decides it in either direction.
+                {
+                    var reverse = program.RightToLeft;
+                    var offset = reverse ? inputIndex - 1 : inputIndex;
+                    if ((uint)offset >= (uint)input.Length) { failed = true; break; }
+
+                    var value = input[offset];
+                    var width = 1;
+                    bool matches;
                     if (instruction.D != 0)
                     {
-                        var rangeOffset = program.RightToLeft ? inputIndex - 1 : inputIndex;
+                        // This operand describes the complete positive ASCII interval.
                         var firstByte = (instruction.D & 255) - 1;
                         var lastByte = instruction.D >> 8;
-                        if ((uint)rangeOffset < (uint)input.Length &&
-                            (uint)(input[rangeOffset] - firstByte) <= (uint)(lastByte - firstByte))
-                        {
-                            inputIndex = program.RightToLeft ? rangeOffset : rangeOffset + 1;
-                            programIndex++;
-                        }
-                        else failed = true;
-                        break;
+                        matches = (uint)(value - firstByte) <= (uint)(lastByte - firstByte);
                     }
-                    if (TryReadScalar(input, inputIndex, program.RightToLeft, out var setScalar, out var setWidth) &&
-                        Utf8SliceScalarClasses.MatchesMask(setScalar, program.SetMasks[instruction.A], instruction.C != 0, program.CaseBehavior) != (instruction.B != 0))
+                    else if (value < 128 && instruction.C == 0)
                     {
-                        inputIndex += program.RightToLeft ? -setWidth : setWidth;
+                        // An ASCII byte is already a complete unfolded scalar.
+                        var mask = program.SetMasks[instruction.A];
+                        matches = ((mask[value >> 3] & (1 << (value & 7))) != 0) != (instruction.B != 0);
+                    }
+                    else
+                    {
+                        matches = TryReadScalar(input, inputIndex, reverse, out var scalar, out width) &&
+                            Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], instruction.C != 0, program.CaseBehavior) != (instruction.B != 0);
+                    }
+                    if (matches)
+                    {
+                        inputIndex += reverse ? -width : width;
                         programIndex++;
                     }
                     else failed = true;
                     break;
+                }
 
                 case Utf8SliceInstructionKind.Fork:
                     if (instruction is { B: 1, C: > 0 })
