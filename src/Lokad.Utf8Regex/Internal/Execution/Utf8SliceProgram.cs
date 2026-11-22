@@ -448,8 +448,9 @@ internal sealed class Utf8SliceProgram
                 var ascii = !ignoreCase && !canMatchEmpty && instructions.Length > 1 &&
                     instructions[1] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal
                     ? literal.A + 1 : 0;
-                var proof = first.B == 0 && repeatCount != 0
-                    ? Utf8SliceRunner.PrepareAnchoredRepeatProof(this, Utf8ConstructionScope.CurrentBudget) : 0;
+                var proof = first.D;
+                if (proof == 0 && first.B == 0 && repeatCount != 0)
+                    proof = Utf8SliceRunner.PrepareAnchoredRepeatProof(this, Utf8ConstructionScope.CurrentBudget);
                 if (ascii != 0 || proof != 0)
                     instructions[0] = new(first.Kind, first.A, first.B, ascii, proof);
             }
@@ -1302,7 +1303,7 @@ internal static class Utf8SliceLowerer
 
         var instructions = lowerer.Instructions.Take();
         if (!lowerer.MirrorExecute && !lowerer.NonBacktracking && lowerer.RepeatCount != 0)
-            MarkBoundedEndTails(instructions, lowerer.Budget);
+            MarkBoundedEndTails(instructions, lowerer.HasAlternation, lowerer.Budget);
         if (lowerer.HasNullableNonBacktrackingLoop && lowerer.NonBacktrackingScopes is { } scopes)
         {
             var lifted = Utf8NonBacktrackingLoopGraph.Lift(instructions, scopes, lowerer.Budget);
@@ -1336,7 +1337,7 @@ internal static class Utf8SliceLowerer
             lowerer.BackreferenceLowerings.Take(), isRoot, ordered);
     }
 
-    private static void MarkBoundedEndTails(Span<Utf8SliceInstruction> code, Utf8ConstructionBudget budget)
+    private static void MarkBoundedEndTails(Span<Utf8SliceInstruction> code, bool hasAlternation, Utf8ConstructionBudget budget)
     {
         if (code.Length < 2 || code[^1].Kind != Utf8SliceInstructionKind.Accept) return;
         var end = Utf8SliceProgram.FindTerminalEnd(code[..^1]);
@@ -1348,6 +1349,7 @@ internal static class Utf8SliceLowerer
         var start = Math.Max(0, end - precedingInstructions);
         Span<int> limits = stackalloc int[end - start + 1];
         limits[^1] = code[end].A == (int)Utf8SliceAnchorKind.VeryEnd ? 1 : 2;
+        var shortAsciiAlternation = hasAlternation && code.Length <= 32;
         for (var index = end - 1; index >= start; index--)
         {
             budget.ChargeWork(1);
@@ -1355,6 +1357,7 @@ internal static class Utf8SliceLowerer
             var next = limits[index - start + 1];
             long limit = 0;
             var width = ScalarMaximumBytes(instruction);
+            shortAsciiAlternation &= width <= 1;
             if (width != 0 && next != 0)
                 limit = (long)next + width;
             else switch (instruction.Kind)
@@ -1390,6 +1393,12 @@ internal static class Utf8SliceLowerer
             }
             limits[index - start] = limit <= int.MaxValue ? (int)limit : 0;
         }
+
+        // Reuse the short anchored proof when both ends bound a small
+        // ASCII alternation. Wider consumers stay on the original path.
+        if (shortAsciiAlternation && end > 0 && limits[1] is > 0 and <= 32 &&
+            code[0] is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning, B: 0 } begin)
+            code[0] = new(begin.Kind, begin.A, begin.B, begin.C, 1);
 
         static int ScalarMaximumBytes(Utf8SliceInstruction instruction) => instruction switch
         {

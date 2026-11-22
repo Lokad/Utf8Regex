@@ -89,19 +89,27 @@ public sealed class Utf8HexColorValueMatchTests
         finally { CultureInfo.CurrentCulture = original; }
     }
 
-    [Fact]
-    public void ValueRangePreservesFundedResultsAndWorkAdmission()
+    [Theory]
+    [InlineData("#ABC123", 7)]
+    [InlineData("#ABC\n", 4)]
+    [InlineData("#ABCD", 0)]
+    public void ValueRangePreservesFundedResultsAndWorkAdmission(string text, int length)
     {
+        var input = Encoding.ASCII.GetBytes(text);
         var tight = new Utf8Regex(Color, options: Fold, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
             ResourcePolicy = Funded with
             {
-                MaxWorkingBytes = 8 << 20,
+                MaxWorkSteps = 4,
+                MaxDepth = 1,
+                MaxWorkingBytes = 1,
                 MaxResultBytes = 1
             }
         });
-        Assert.Equal(7, (tight.Match("#ABC123"u8).EndOffsetInBytes - tight.Match("#ABC123"u8).StartOffsetInBytes));
+        var match = tight.Match(input);
+        Assert.Equal(length != 0, match.Success);
+        if (match.Success) Assert.Equal((0, length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
         var denied = new Utf8Regex(Color, options: Fold, policy: new Utf8RegexPolicy
         {
             MatchTimeout = Timeout.InfiniteTimeSpan,
@@ -111,7 +119,7 @@ public sealed class Utf8HexColorValueMatchTests
             }
         });
         Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
-            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match("#ABC123"u8)).ResourceKind);
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => denied.Match(input)).ResourceKind);
     }
 
     [Theory]
