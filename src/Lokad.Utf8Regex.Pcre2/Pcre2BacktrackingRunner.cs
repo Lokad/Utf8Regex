@@ -2397,7 +2397,7 @@ internal static class Pcre2BacktrackingRunner
         openOwners[slot] = openOwner;
     }
 
-    private static void RollbackCaptures(
+    internal static void RollbackCaptures(
         int checkpoint,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> mutations,
         Span<int> starts,
