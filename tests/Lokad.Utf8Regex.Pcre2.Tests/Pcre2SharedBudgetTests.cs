@@ -185,8 +185,10 @@ public sealed class Pcre2SharedBudgetTests
         var original = new Pcre2ResourceBudget(new() { MatchLimit = 1000 }, Timeout.InfiniteTimeSpan, true);
         original.ChargeCandidate();
         var alias = original;
-        original.ChargeBacktracking(Pcre2BacktrackingInstructionKind.Token, Pcre2CharacterTokenKind.Literal);
-        alias.ChargeBacktracking(Pcre2BacktrackingInstructionKind.Token, Pcre2CharacterTokenKind.CharacterClass);
+        original.ChargeBacktracking(Pcre2BacktrackingInstruction.CreateToken(
+            Pcre2CharacterToken.CreateLiteral(default, default)));
+        alias.ChargeBacktracking(Pcre2BacktrackingInstruction.CreateToken(
+            Pcre2CharacterToken.CreateClass(Pcre2CharacterClass.Empty, default)));
         Assert.Equal(1UL, original.CandidateSteps); Assert.Equal(1UL, alias.CandidateSteps);
         Assert.Equal(1UL, original.BacktrackingSteps); Assert.Equal(1UL, alias.BacktrackingSteps);
         Assert.Equal(2UL, original.Diagnostics.VmTokenSteps);

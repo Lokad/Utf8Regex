@@ -2823,14 +2823,12 @@ internal struct Pcre2ResourceBudget
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void ChargeBacktracking(
-        Pcre2BacktrackingInstructionKind instructionKind,
-        Pcre2CharacterTokenKind tokenKind)
+    internal void ChargeBacktracking(in Pcre2BacktrackingInstruction instruction)
     {
         if (_diagnostics is { } diagnostics)
         {
             BacktrackingSteps++;
-            diagnostics.RecordBacktrackingInstruction(instructionKind, tokenKind);
+            diagnostics.RecordBacktrackingInstruction(instruction.Kind, instruction.Token.Kind);
         }
         Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.TryChargeStep());
     }

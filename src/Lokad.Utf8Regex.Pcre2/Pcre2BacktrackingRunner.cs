@@ -821,7 +821,7 @@ internal static class Pcre2BacktrackingRunner
             while (true)
             {
                 ref readonly var instruction = ref program.Instructions[instructionIndex];
-                budget.ChargeBacktracking(instruction.Kind, instruction.Token.Kind);
+                budget.ChargeBacktracking(in instruction);
                 switch (instruction.Kind)
                 {
                     case Pcre2BacktrackingInstructionKind.Token:
@@ -1785,7 +1785,7 @@ internal static class Pcre2BacktrackingRunner
         budget.ReserveWorking(0);
         foreach (ref readonly var instruction in instructions)
         {
-            budget.ChargeBacktracking(instruction.Kind, instruction.Token.Kind);
+            budget.ChargeBacktracking(in instruction);
             if (instruction.Kind is Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureToken)
             {
                 if (!Pcre2CharacterRunner.TryMatchToken(instruction.Token, program.Request, input,
