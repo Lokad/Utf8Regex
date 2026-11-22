@@ -202,6 +202,37 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.False(cursor.MoveNext(out _));
     }
 
+    [Theory]
+    [InlineData(400)]
+    [InlineData(16_384)]
+    public void OrderedFrontierObservesDeadlineDuringTraversalAndBeforePublication(int length)
+    {
+        using var regex = new Utf8Regex(@"[a-z]+ing|[a-z]+ed|[a-z]+ly", policy: new Utf8RegexPolicy
+        {
+            MatchTimeout = TimeSpan.FromMilliseconds(50),
+            ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 4096 }
+        });
+        var input = Encoding.UTF8.GetBytes(new string('a', length) + "ing");
+        var output = new[] { new Utf8CaptureRange(0, 1) };
+        var account = new Account();
+        ulong lastCheckpoint = 0;
+        using var clock = Utf8DeadlineTestClock.Start();
+        var session = Utf8SearchDiagnosticsSession.Start(steps =>
+        {
+            lastCheckpoint = steps;
+            clock.Advance(50);
+        });
+        try
+        {
+            Assert.Throws<RegexMatchTimeoutException>(() =>
+                regex.Match(input, 0, output, workingMemoryAllowance: account));
+        }
+        finally { session.Complete(); }
+        Assert.False(output[0].Success);
+        Assert.Equal(0UL, account.Held);
+        Assert.InRange(lastCheckpoint, 1UL, 4096UL);
+    }
+
     [Fact]
     public void OrderedSingleAtomRepeatsKeepCapturesAndRefundFundedSearch()
     {

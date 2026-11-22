@@ -721,7 +721,9 @@ internal static partial class Utf8SliceRunner
                         : TrySeekRegularStart(input, ref position, starts, ref invocation);
                     if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 }
-                breach = invocation.TryChargeInputStep();
+                // A frontier has at most fifteen leaves. Charge each row on the
+                // VM deadline cadence. Bulk seeks and predicates own their checks.
+                breach = invocation.TryChargeStep();
                 if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 // Active starts precede the new start. A saved acceptance
                 // eliminates future starts, while earlier threads can extend it.
