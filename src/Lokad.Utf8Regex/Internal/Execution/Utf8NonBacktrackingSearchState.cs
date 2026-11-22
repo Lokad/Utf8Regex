@@ -364,13 +364,13 @@ internal sealed class Utf8NonBacktrackingSearchState
                     if (position < input.Length && !starts.Contains(input[position]))
                     {
                         var seek = Utf8SliceRunner.TrySeekRegularStart(input, ref position, starts, ref invocation);
-                        if (seek != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, seek);
+                        if (seek != Utf8ExecutionLimitKind.None) return new(false, -1, -1, seek);
                     }
                     if (position == input.Length)
                     {
                         invocation.Budget.ThrowIfCancellationRequested();
                         invocation.Budget.CheckDeadline();
-                        return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
+                        return new(false, -1, -1, Utf8ExecutionLimitKind.None);
                     }
                 }
                 var commit = AlignedEnd(input, position, windowBytes);
@@ -378,7 +378,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 if (starts.Count != 0)
                 {
                     var scan = invocation.TryChargeInputStep();
-                    if (scan != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, scan);
+                    if (scan != Utf8ExecutionLimitKind.None) return new(false, -1, -1, scan);
                     // The first byte at position is a candidate. Stop admitting
                     // starts after the last candidate, but skip the whole window.
                     var last = starts.LastIndexOf(input[position..commit]);
@@ -395,11 +395,11 @@ internal sealed class Utf8NonBacktrackingSearchState
                     var bytes = Utf8ConstructionBudget.ArrayBytes<int>(capacity)
                         + Utf8ConstructionBudget.ArrayBytes<ulong>(capacity);
                     var admission = invocation.TryReserveWorking(bytes);
-                    if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
+                    if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
                     try
                     {
                         admission = invocation.TryChargeInputStep();
-                        if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
+                        if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
                         window = new(new int[capacity], new ulong[capacity], 1, bytes);
                     }
                     finally { if (window is null) invocation.Ledger.Release(bytes); }
@@ -407,7 +407,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 var end = AlignedEnd(input, startEnd, lookahead);
                 var build = BuildPackedRangeRows(program, input, position, end, window._boundaries,
                     window._viability, ref invocation, out boundary);
-                if (build != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, build);
+                if (build != Utf8ExecutionLimitKind.None) return new(false, -1, -1, build);
                 window._windowEnd = commit;
                 window._startLimit = startEnd == input.Length ? window._boundaries.Length :
                     Array.BinarySearch(window._boundaries, boundary, window._boundaries.Length - boundary, startEnd);
@@ -437,7 +437,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         Array.Fill(slots.Starts, -1);
         Array.Fill(slots.Ends, -1);
         var breach = invocation.TryReserveWorking(bytes);
-        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
         var completed = false;
         try
         {
@@ -448,7 +448,7 @@ internal sealed class Utf8NonBacktrackingSearchState
 
             breach = BuildPackedRangeRows(program, input, from, end, boundaries, rows, ref invocation,
                 out var boundary);
-            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
 
             if ((rows[boundary] & 1) == 0)
                 throw new InvalidOperationException("The selected NonBacktracking range is not viable.");
@@ -517,7 +517,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                 if ((visited++ & 63) == 0)
                 {
                     var breach = invocation.TryChargeInputStep();
-                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 }
                 if (CanMatch(boundary, 0)) break;
             }
@@ -525,17 +525,17 @@ internal sealed class Utf8NonBacktrackingSearchState
             {
                 invocation.Budget.ThrowIfCancellationRequested();
                 invocation.Budget.CheckDeadline();
-                return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
+                return new(false, -1, -1, Utf8ExecutionLimitKind.None);
             }
             var recordCaptures = captureStarts.Length != 0;
             var openingCount = recordCaptures ? program.NonBacktrackingCaptureOpeningCount : 0;
             // Keep the existing working admission for either storage location.
             var bytes = Utf8ConstructionBudget.ArrayBytes<int>(openingCount);
             var admission = invocation.TryReserveWorking(bytes);
-            if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
+            if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
             reservation = bytes;
             admission = invocation.TryChargeInputStep();
-            if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, admission);
+            if (admission != Utf8ExecutionLimitKind.None) return new(false, -1, -1, admission);
             var useStack = openingCount is > 0 and <= 32;
             Span<int> openings = useStack ? stackalloc int[openingCount]
                 : openingCount == 0 ? [] : new int[openingCount];
@@ -566,7 +566,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         while (true)
         {
             var breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             var instruction = program.Instructions[pc];
             switch (instruction.Kind)
             {
@@ -600,7 +600,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                     var startByte = boundaries[start];
                     var endByte = boundaries[boundary];
                     boundary += start == boundary ? 1 : 0;
-                    return new(true, startByte, endByte, null, null, Utf8ExecutionLimitKind.None);
+                    return new(true, startByte, endByte, Utf8ExecutionLimitKind.None);
                 default:
                     boundary++;
                     pc++;

@@ -124,7 +124,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
             _invocation.AnchorOriginByte = _origin;
             if (program.GroupCount == 0 && _regex!.TryFindNativeLiteralForResult(_input.Span, _position,
                     ref _invocation, out var found, out var start, out var end, forCoreCursor: true))
-                outcome = new(found, start, end, null, null, Utf8ExecutionLimitKind.None);
+                outcome = new(found, start, end, Utf8ExecutionLimitKind.None);
             else outcome = program.IsNonBacktracking
                 ? FindNonBacktracking(program)
                 : Utf8SliceRunner.TryFindFirst(program, _input.Span, _position, _slots.Starts, _slots.Ends,
@@ -169,7 +169,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
         finally
         {
             results.Release(ref _invocation);
-            Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref _invocation);
+            Utf8SliceRunner.ReleaseHistory(outcome.CaptureHistory, ref _invocation);
             // Close only after transient reservations/roots have finished.
             if (exhausted) Close(Status.Ended);
         }
@@ -214,7 +214,7 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                 if ((slot & 255) == 0) Checkpoint();
                 if (_slots.Ends[slot] >= 0) count++;
             }
-        else if (outcome.CaptureStarts is { } history)
+        else if (outcome.CaptureHistory is { } history)
             for (var slot = 0; slot < history.Length; slot++)
             { if ((slot & 255) == 0) Checkpoint(); count = checked(count + history[slot].Length); }
         var offsets = numbers.Length == 1 ? null
@@ -232,12 +232,11 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                 var end = _slots.Ends[slot - 1];
                 if (end >= 0) captures[written++] = new(_slots.Starts[slot - 1], end);
             }
-            else if (outcome.CaptureStarts is { } starts && outcome.CaptureLengths is { } lengths)
-                for (var capture = 0; capture < starts[slot - 1].Length; capture++)
+            else if (outcome.CaptureHistory is { } groupHistories)
+                foreach (var (start, end) in groupHistories[slot - 1])
                 {
                     if ((written & 255) == 0) Checkpoint();
-                    var start = starts[slot - 1][capture];
-                    captures[written++] = new(start, checked(start + lengths[slot - 1][capture]));
+                    captures[written++] = new(start, end);
                 }
             offsets[slot + 1] = written;
         }

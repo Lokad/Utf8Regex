@@ -120,20 +120,20 @@ internal static partial class Utf8SliceRunner
             var singleBreach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (singleBreach != Utf8ExecutionLimitKind.None)
-                return new(false, -1, singleBreach, null, null);
+                return new(false, -1, singleBreach);
             if (!TryReadScalar(input, start, false, out var scalar, out var width) ||
                 !Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[single.A], false, program.CaseBehavior))
-                return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                return new(false, -1, Utf8ExecutionLimitKind.None);
             singleBreach = invocation.TryChargeInputStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (singleBreach != Utf8ExecutionLimitKind.None)
-                return new(false, -1, singleBreach, null, null);
+                return new(false, -1, singleBreach);
             if (captureStarts.Length != 0)
             {
                 captureStarts[0] = start;
                 captureEnds[0] = start + width;
             }
-            return new(true, start + width, Utf8ExecutionLimitKind.None, null, null);
+            return new(true, start + width, Utf8ExecutionLimitKind.None);
         }
         var repeatIndex = code.Length - 6;
         var prefixLength = repeatIndex - 1;
@@ -148,7 +148,7 @@ internal static partial class Utf8SliceRunner
         var breach = invocation.TryChargeStep();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None)
-            return new(false, -1, breach, null, null);
+            return new(false, -1, breach);
         var firstEnd = start;
         if (slot != 0)
         {
@@ -158,39 +158,39 @@ internal static partial class Utf8SliceRunner
             var firstLow = GetUnfoldedAsciiRange(code[2], out var firstHigh);
             var first = RunUnboundedAsciiRange(input, start, (byte)firstLow, firstHigh, ref invocation);
             if (first.EndIndex <= start || first.Breach != Utf8ExecutionLimitKind.None)
-                return new(false, -1, first.Breach, null, null);
+                return new(false, -1, first.Breach);
             firstEnd = first.EndIndex;
             breach = invocation.TryChargeStep();
             invocation.Budget.ThrowIfCancellationRequested();
             if (breach != Utf8ExecutionLimitKind.None)
-                return new(false, -1, breach, null, null);
+                return new(false, -1, breach);
         }
         var literalLength = prefixLength - literalStart;
         if (input.Length - firstEnd < literalLength)
-            return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+            return new(false, -1, Utf8ExecutionLimitKind.None);
         for (var index = 0; index < literalLength; index++)
             if (input[firstEnd + index] != code[literalStart + index].A)
-                return new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                return new(false, -1, Utf8ExecutionLimitKind.None);
         var captureStart = firstEnd + literalLength;
         var lastLow = GetUnfoldedAsciiRange(code[repeatIndex + 1], out var lastHigh);
         var last = minimumOnly ? RunClassRepeat(program, repeatIndex, input, captureStart, ref invocation, minimumOnly: true)
             : RunUnboundedAsciiRange(input, captureStart, (byte)lastLow, lastHigh, ref invocation);
         if (last.EndIndex <= captureStart || last.Breach != Utf8ExecutionLimitKind.None)
-            return new(false, -1, last.Breach, null, null);
+            return new(false, -1, last.Breach);
         if (slot != 0 && captureStarts.Length != 0 &&
             (!stacks.PushTrail(0, captureEnds[0], firstEnd, false, ref invocation) ||
              !stacks.PushTrail(1, captureEnds[1], last.EndIndex, false, ref invocation)))
-            return new(false, -1, stacks.Breach, null, null);
+            return new(false, -1, stacks.Breach);
         breach = invocation.TryChargeStep();
         invocation.Budget.ThrowIfCancellationRequested();
         if (breach != Utf8ExecutionLimitKind.None)
-            return new(false, -1, breach, null, null);
+            return new(false, -1, breach);
         if (captureStarts.Length != 0)
         {
             if (slot != 0) { captureStarts[0] = start; captureEnds[0] = firstEnd; }
             captureStarts[slot] = captureStart; captureEnds[slot] = last.EndIndex;
         }
-        return new(true, last.EndIndex, Utf8ExecutionLimitKind.None, null, null);
+        return new(true, last.EndIndex, Utf8ExecutionLimitKind.None);
     }
 
     private static bool CanRunTerminalClassRepeat(Utf8SliceProgram program)
@@ -455,7 +455,7 @@ internal static partial class Utf8SliceRunner
         // A complete greedy atom has no other positive endpoint when its
         // longest match is empty. The profile caller owns scalar advancement.
         var found = outcome.EndIndex >= 0 && (!requireNonEmpty || outcome.EndIndex != start);
-        return new(found, found ? outcome.EndIndex : -1, outcome.Breach, null, null);
+        return new(found, found ? outcome.EndIndex : -1, outcome.Breach);
     }
 
     internal static (ulong Mask, int Anchor) FindTerminalRepeatsWithoutRewind(Utf8SliceProgram program, Utf8ConstructionBudget budget)

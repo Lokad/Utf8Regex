@@ -405,7 +405,7 @@ internal struct PythonReScalarMatchState
                     if (!found) { _finished = true; return false; }
                     _position = start;
                     _invocation.AnchorOriginByte = start;
-                    outcome = new Utf8SliceMatchOutcome(true, end, Utf8ExecutionLimitKind.None, null, null);
+                    outcome = new Utf8SliceMatchOutcome(true, end, Utf8ExecutionLimitKind.None);
                 }
                 else
                 {
@@ -479,7 +479,7 @@ internal struct PythonReScalarMatchState
                     else if (_retryNonEmpty && _program.GroupCount == 0 && !_program.IsNonBacktracking &&
                         _program.Instructions is { Length: 2 } code &&
                         code[0].Kind == Utf8SliceInstructionKind.Boundary && code[1].Kind == Utf8SliceInstructionKind.Accept)
-                        outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                        outcome = new(false, -1, Utf8ExecutionLimitKind.None);
                     // A complete greedy scalar repeat returned empty only
                     // because it could not consume here. Its nonempty retry
                     // cannot succeed. Lazy repeats and tails can choose an
@@ -493,7 +493,7 @@ internal struct PythonReScalarMatchState
                         repeatCode[2] is { Kind: Utf8SliceInstructionKind.RepeatEnd, A: 0 } &&
                         repeatCode[3].Kind == Utf8SliceInstructionKind.RepeatExit && repeatCode[3].A == repeat.B &&
                         repeatCode[4].Kind == Utf8SliceInstructionKind.Accept)
-                        outcome = new(false, -1, Utf8ExecutionLimitKind.None, null, null);
+                        outcome = new(false, -1, Utf8ExecutionLimitKind.None);
                     else
                     {
                         // The candidate checkpoint funds the same bounded proof
@@ -503,7 +503,7 @@ internal struct PythonReScalarMatchState
                         var possible = !proveWindow || Utf8SliceRunner.MayMatchBranchedAsciiPrefix(
                             _program, input, _position, 0, out provedEnd, proveMatch: true);
                         outcome = !possible || provedEnd >= 0
-                            ? new(possible, provedEnd, Utf8ExecutionLimitKind.None, null, null)
+                            ? new(possible, provedEnd, Utf8ExecutionLimitKind.None)
                             : Utf8SliceRunner.TryMatchAt(_program, input, _position,
                                 _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation,
                                 existenceOnly, requireFullInput: requireFullInput);

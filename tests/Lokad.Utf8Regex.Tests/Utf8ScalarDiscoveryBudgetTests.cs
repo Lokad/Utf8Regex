@@ -109,22 +109,20 @@ public sealed class Utf8ScalarDiscoveryBudgetTests
                 Assert.Equal((start, end), (outcome.StartByte, outcome.EndByte));
                 if (histories)
                 {
-                    Assert.Equal(captureStarts, outcome.CaptureStarts?[0]);
-                    Assert.Equal(captureLengths, outcome.CaptureLengths?[0]);
+                    Assert.Equal(captureStarts.Zip(captureLengths, static (start, length) => (start, start + length)),
+                        outcome.CaptureHistory?[0]);
                     Assert.Equal(13UL + Utf8SliceHistoryAdmissionTests.HistoryBytes(
-                        outcome.CaptureStarts ?? throw new InvalidOperationException(),
-                        outcome.CaptureLengths ?? throw new InvalidOperationException()), invocation.Ledger.ReservedBytes);
+                        outcome.CaptureHistory ?? throw new InvalidOperationException()), invocation.Ledger.ReservedBytes);
                 }
             }
             else
             {
                 Assert.False(outcome.Found);
-                Assert.Null(outcome.CaptureStarts);
-                Assert.Null(outcome.CaptureLengths);
+                Assert.Null(outcome.CaptureHistory);
             }
             return outcome.Breach;
         }
-        finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation); }
+        finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureHistory, ref invocation); }
     }
 
     [Fact]

@@ -18,21 +18,20 @@ public sealed class Utf8SliceHistoryAdmissionTests
         var invocation = Invocation(new(ulong.MaxValue, 0, 0));
         var first = Utf8SliceRunner.TryFindFirst(program, input, reverse ? input.Length : 0, new int[1], new int[1], true, ref invocation);
         Assert.True(first.Found);
-        var firstStarts = first.CaptureStarts ?? throw new InvalidOperationException();
-        var firstLengths = first.CaptureLengths ?? throw new InvalidOperationException();
-        Assert.Equal(reverse ? [6, 2, 0] : [0, 2, 6], firstStarts[0]);
-        Assert.Equal(reverse ? [1, 4, 2] : [2, 4, 1], firstLengths[0]);
-        var firstBytes = HistoryBytes(firstStarts, firstLengths);
+        var firstHistory = first.CaptureHistory ?? throw new InvalidOperationException();
+        (int Start, int End)[] expected = reverse ? [(6, 7), (2, 6), (0, 2)] : [(0, 2), (2, 6), (6, 7)];
+        Assert.Equal(expected, firstHistory[0]);
+        var firstBytes = HistoryBytes(firstHistory);
         Assert.Equal(13UL + firstBytes, invocation.Ledger.ReservedBytes);
         var second = Utf8SliceRunner.TryFindFirst(program, "b"u8, reverse ? 1 : 0, new int[1], new int[1], true, ref invocation);
         Assert.True(second.Found);
-        Assert.Equal(reverse ? [6, 2, 0] : [0, 2, 6], firstStarts[0]);
-        Assert.Equal(13UL + firstBytes + HistoryBytes(second.CaptureStarts ?? throw new InvalidOperationException(),
-            second.CaptureLengths ?? throw new InvalidOperationException()), invocation.Ledger.ReservedBytes);
-        Utf8SliceRunner.ReleaseHistory(firstStarts, firstLengths, ref invocation);
-        Utf8SliceRunner.ReleaseHistory(second.CaptureStarts, second.CaptureLengths, ref invocation);
+        Assert.Equal(expected, firstHistory[0]);
+        Assert.Equal(13UL + firstBytes + HistoryBytes(second.CaptureHistory ?? throw new InvalidOperationException()),
+            invocation.Ledger.ReservedBytes);
+        Utf8SliceRunner.ReleaseHistory(firstHistory, ref invocation);
+        Utf8SliceRunner.ReleaseHistory(second.CaptureHistory, ref invocation);
         Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal(reverse ? [1, 4, 2] : [2, 4, 1], firstLengths[0]);
+        Assert.Equal(expected, firstHistory[0]);
     }
 
     private static Utf8SliceInvocation Invocation(Utf8ExecutionLimits limits)
@@ -43,12 +42,11 @@ public sealed class Utf8SliceHistoryAdmissionTests
     }
 
     // Independently census the modeled complete escaping graph, excluding shared empty arrays.
-    internal static ulong HistoryBytes(int[][] starts, int[][] lengths)
+    internal static ulong HistoryBytes((int Start, int End)[][] history)
     {
         static ulong ArrayExtent(int count, int width) => count == 0 ? 0 : 32UL + ((ulong)count * (ulong)width + 15) / 16 * 16;
-        var bytes = ArrayExtent(starts.Length, IntPtr.Size) + ArrayExtent(lengths.Length, IntPtr.Size);
-        foreach (var leaf in starts) bytes += ArrayExtent(leaf.Length, sizeof(int));
-        foreach (var leaf in lengths) bytes += ArrayExtent(leaf.Length, sizeof(int));
+        var bytes = ArrayExtent(history.Length, IntPtr.Size);
+        foreach (var leaf in history) bytes += ArrayExtent(leaf.Length, sizeof(int) * 2);
         return bytes;
     }
 }

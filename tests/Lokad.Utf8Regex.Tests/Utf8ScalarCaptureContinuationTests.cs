@@ -48,9 +48,9 @@ public sealed class Utf8ScalarCaptureContinuationTests
             true, ref baseline, collectHistory: true);
         Assert.True(outcome.IsMatch);
         Assert.Equal(2, outcome.EndIndex);
-        Assert.Equal(new[] { 0 }, outcome.CaptureStarts?[0]);
-        Assert.Equal(new[] { 1 }, outcome.CaptureStarts?[1]);
-        Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref baseline);
+        Assert.Equal(new[] { (0, 1) }, outcome.CaptureHistory?[0]);
+        Assert.Equal(new[] { (1, 2) }, outcome.CaptureHistory?[1]);
+        Utf8SliceRunner.ReleaseHistory(outcome.CaptureHistory, ref baseline);
         Assert.Equal(7UL, baseline.Ledger.ReservedBytes);
         baseline.Ledger.Release(7);
         var limits = Enumerable.Range(1, checked((int)baseline.Budget.Steps - 1))
@@ -64,8 +64,7 @@ public sealed class Utf8ScalarCaptureContinuationTests
                 true, ref denied, collectHistory: true);
             Assert.False(failed.IsMatch);
             Assert.Equal(limit.MaxWorkSteps == 0 ? Utf8ExecutionLimitKind.WorkingBytes : Utf8ExecutionLimitKind.WorkSteps, failed.Breach);
-            Assert.Null(failed.CaptureStarts);
-            Assert.Null(failed.CaptureLengths);
+            Assert.Null(failed.CaptureHistory);
             Assert.Equal(7UL, denied.Ledger.ReservedBytes);
             denied.Ledger.Release(7);
         }

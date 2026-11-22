@@ -252,8 +252,7 @@ public sealed class Utf8CoreResultPolicyTests
         Assert.False(denied.Found);
         Assert.Equal(alias.Budget.ResultBytes, invocation.Budget.ResultBytes);
         Assert.Equal(0UL, invocation.Ledger.ReservedBytes);
-        Assert.Equal(first.CaptureStarts![0], retained.CaptureStarts![0]);
-        Assert.Equal(first.CaptureLengths![0], retained.CaptureLengths![0]);
+        Assert.Equal(first.CaptureHistory![0], retained.CaptureHistory![0]);
 
         Utf8SliceSearchOutcome Collect(ref Utf8SliceInvocation state)
         {
@@ -262,7 +261,7 @@ public sealed class Utf8CoreResultPolicyTests
             try { return outcome = Utf8SliceRunner.TryFindFirst(program, "aa"u8, 0, slots.Starts, slots.Ends, true, ref state); }
             finally
             {
-                Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref state);
+                Utf8SliceRunner.ReleaseHistory(outcome.CaptureHistory, ref state);
                 Utf8SliceRunner.ReleaseSlots(slots, ref state);
             }
         }

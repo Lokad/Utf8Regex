@@ -57,8 +57,7 @@ internal static class Utf8ScalarCaptureWitness
             Assert.Equal(expected.Success && expected.Index == start, outcome.IsMatch);
             if (!outcome.IsMatch)
             {
-                Assert.Null(outcome.CaptureStarts);
-                Assert.Null(outcome.CaptureLengths);
+                Assert.Null(outcome.CaptureHistory);
                 return;
             }
             Assert.Equal(expected.Index + expected.Length, outcome.EndIndex);
@@ -66,15 +65,15 @@ internal static class Utf8ScalarCaptureWitness
             for (var slot = 0; slot < program.GroupCount; slot++)
             {
                 var captures = expected.Groups[program.GroupNumbers[slot + 1]].Captures;
-                Assert.Equal(captures.Select(static capture => capture.Index), outcome.CaptureStarts?[slot]);
-                Assert.Equal(captures.Select(static capture => capture.Length), outcome.CaptureLengths?[slot]);
+                Assert.Equal(captures.Select(static capture => (capture.Index, capture.Index + capture.Length)),
+                    outcome.CaptureHistory?[slot]);
                 Assert.Equal(captures.Count == 0 ? -1 : captures[^1].Index, starts[slot]);
                 Assert.Equal(captures.Count == 0 ? -1 : captures[^1].Index + captures[^1].Length, ends[slot]);
             }
         }
         finally
         {
-            Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation);
+            Utf8SliceRunner.ReleaseHistory(outcome.CaptureHistory, ref invocation);
             Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
             invocation.Ledger.Release(7);
         }

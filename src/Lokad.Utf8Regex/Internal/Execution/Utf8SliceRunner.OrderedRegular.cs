@@ -683,7 +683,7 @@ internal static partial class Utf8SliceRunner
         if (program.RepeatCount != 0 && !program.IsNonBacktracking)
         {
             var depth = invocation.Budget.TryNoteDepth((uint)(leaves.Length - 1));
-            if (depth != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, depth);
+            if (depth != Utf8ExecutionLimitKind.None) return new(false, -1, -1, depth);
         }
         var originCapacity = GetOrderedRegularRowCapacity(program);
         var originBytes = GetOrderedRegularRowBytes(originCapacity);
@@ -696,7 +696,7 @@ internal static partial class Utf8SliceRunner
             (limit == 0 || total <= limit && invocation.Ledger.ReservedBytes <= limit - total);
         var reserved = cache ? total : originBytes;
         var breach = invocation.TryReserveWorking(reserved);
-        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
         try
         {
             Span<int> origins = stackalloc int[originCapacity];
@@ -719,10 +719,10 @@ internal static partial class Utf8SliceRunner
                     breach = reverse
                         ? TrySeekReverseRegularStart(input, ref position, starts, ref invocation)
                         : TrySeekRegularStart(input, ref position, starts, ref invocation);
-                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 }
                 breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 // Active starts precede the new start. A saved acceptance
                 // eliminates future starts, while earlier threads can extend it.
                 if (bestStart < 0)
@@ -740,7 +740,7 @@ internal static partial class Utf8SliceRunner
                     {
                         breach = AddOrderedConditionLeaves(program, input, position, tags & OrderedTagMask,
                             origins[source], nextOrigins, ref expanded, ref seenConditions, ref invocation);
-                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                     }
                     var unexpanded = origins;
                     origins = nextOrigins;
@@ -772,7 +772,7 @@ internal static partial class Utf8SliceRunner
                         }
                         if (!hasScalar) continue;
                         var hit = MatchesNonBacktrackingAtom(program, instruction, scalar, ref invocation, out breach);
-                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                         if (!hit) continue;
                         for (var closure = closures[pc + 1]; closure != 0; closure >>= OrderedTagBits)
                             if (next.Frontier.TryAppend(closure & OrderedTagMask))
@@ -791,8 +791,8 @@ internal static partial class Utf8SliceRunner
                     invocation.Budget.ThrowIfCancellationRequested();
                     invocation.Budget.CheckDeadline();
                     return reverse
-                        ? new(bestStart >= 0, bestEnd, bestStart, null, null, Utf8ExecutionLimitKind.None)
-                        : new(bestStart >= 0, bestStart, bestEnd, null, null, Utf8ExecutionLimitKind.None);
+                        ? new(bestStart >= 0, bestEnd, bestStart, Utf8ExecutionLimitKind.None)
+                        : new(bestStart >= 0, bestStart, bestEnd, Utf8ExecutionLimitKind.None);
                 }
 
                 // The cache stores origin indexes. Every call's raw byte
@@ -901,7 +901,7 @@ internal static partial class Utf8SliceRunner
         var replay = TryMatchAt(program, subject, selected.StartByte,
             slots.Starts, slots.Ends, true, ref invocation);
         if (replay.Breach != Utf8ExecutionLimitKind.None)
-            return new(false, -1, -1, null, null, replay.Breach);
+            return new(false, -1, -1, replay.Breach);
         if (!replay.IsMatch || replay.EndIndex != selected.EndByte)
             throw new InvalidOperationException("NonBacktracking capture replay changed the selected range.");
         return selected;

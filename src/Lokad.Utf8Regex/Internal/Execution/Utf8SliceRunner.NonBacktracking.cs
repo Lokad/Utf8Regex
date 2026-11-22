@@ -158,25 +158,25 @@ internal static partial class Utf8SliceRunner
             {
                 var seek = TrySeekInitialRegularStart(program, input, ref fromByte, ref invocation);
                 if (seek != Utf8ExecutionLimitKind.None || fromByte < 0)
-                    return new(false, -1, -1, null, null, seek);
+                    return new(false, -1, -1, seek);
             }
             var breach = workspace.Initialize(program, captureStarts.Length != 0, ref invocation);
-            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+            if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
             var bestStart = -1;
             var bestEnd = -1;
             var position = fromByte;
             while (true)
             {
                 breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (bestStart < 0 && (!anchored || position == fromByte))
                 {
                     breach = workspace.Seed(program, input, position, ref invocation);
-                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 }
                 breach = workspace.ClearVisited(ref invocation);
-                if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 var hasScalar = TryReadScalar(input, position, false, out var scalar, out var width);
                 for (var thread = 0; thread < workspace.Current.Count; thread++)
                 {
@@ -190,29 +190,29 @@ internal static partial class Utf8SliceRunner
                         bestEnd = position;
                         breach = NonBacktrackingWorkspace.Copy(workspace.Current.Registers.AsSpan(thread * workspace.RegisterCount, workspace.RegisterCount),
                             workspace.Best, ref invocation);
-                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                         // Lower-priority threads can no longer determine a match.
                         break;
                     }
                     if (!hasScalar) continue;
                     var hit = MatchesNonBacktrackingAtom(program, instruction, scalar, ref invocation, out breach);
-                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                     if (!hit) continue;
                     breach = workspace.AddClosure(program, input, pc + 1, position + width, start,
                         workspace.Current.Registers.AsSpan(thread * workspace.RegisterCount, workspace.RegisterCount),
                         workspace.Next, ref invocation);
-                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                 }
                 if (bestStart >= 0 && workspace.Next.Count == 0)
                 {
                     breach = workspace.Project(program, captureStarts, captureEnds, ref invocation);
-                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, null, null, breach);
+                    if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                     invocation.Budget.ThrowIfCancellationRequested();
                     completed = true;
-                    return new(true, bestStart, bestEnd, null, null, Utf8ExecutionLimitKind.None);
+                    return new(true, bestStart, bestEnd, Utf8ExecutionLimitKind.None);
                 }
                 if (!hasScalar || anchored && workspace.Next.Count == 0)
-                    return new(false, -1, -1, null, null, Utf8ExecutionLimitKind.None);
+                    return new(false, -1, -1, Utf8ExecutionLimitKind.None);
                 (workspace.Current, workspace.Next) = (workspace.Next, workspace.Current);
                 workspace.Next.Count = 0;
                 position += width;

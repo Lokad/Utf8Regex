@@ -75,36 +75,32 @@ public sealed partial class Utf8Regex
                 var outcome = batch is null
                     ? Utf8SliceRunner.TryFindFirst(program, input, position, slots.Starts, slots.Ends, false, ref workspace, ref invocation)
                     : batch.FindFirst(program, ref boundary, slots.Starts, slots.Ends, ref invocation);
-                try
+                if (outcome.Breach != Utf8ExecutionLimitKind.None)
+                    throw new InvalidOperationException("Owned replacement execution exceeded the invocation budget.");
+                if (!outcome.Found) break;
+                anyMatch = true;
+                if (writer is null)
                 {
-                    if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                        throw new InvalidOperationException("Owned replacement execution exceeded the invocation budget.");
-                    if (!outcome.Found) break;
-                    anyMatch = true;
-                    if (writer is null)
-                    {
-                        var matchLength = outcome.EndByte - outcome.StartByte;
-                        var growth = ranges.PendingGrowthBytes;
-                        if (growth != 0) Utf8SliceBufferWork.ChargeResultBytes(growth, ref invocation);
-                        ranges.Add(new(outcome.StartByte, matchLength), new Utf8InvocationBufferControl(ref invocation));
-                        outputLength += (long)replacement.LiteralUtf8.Length - matchLength;
-                    }
-                    else
-                    {
-                        if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, outcome.StartByte - edgeByte));
-                        expansion.Append(input, outcome, slots, writer, ref invocation);
-                        scope!.Retain(writer);
-                        if (program.RightToLeft)
-                        {
-                            writer.Append(input.Slice(outcome.EndByte, edgeByte - outcome.EndByte));
-                            writer.MarkPiece();
-                        }
-                    }
-                    edgeByte = program.RightToLeft ? outcome.StartByte : outcome.EndByte;
-                    position = outcome.EndByte > outcome.StartByte ? edgeByte : Utf8SliceRunner.AdvancePastScalar(input, edgeByte, program.RightToLeft);
-                    if (outcome.EndByte > outcome.StartByte) anchor = edgeByte;
+                    var matchLength = outcome.EndByte - outcome.StartByte;
+                    var growth = ranges.PendingGrowthBytes;
+                    if (growth != 0) Utf8SliceBufferWork.ChargeResultBytes(growth, ref invocation);
+                    ranges.Add(new(outcome.StartByte, matchLength), new Utf8InvocationBufferControl(ref invocation));
+                    outputLength += (long)replacement.LiteralUtf8.Length - matchLength;
                 }
-                finally { Utf8SliceRunner.ReleaseHistory(outcome.CaptureStarts, outcome.CaptureLengths, ref invocation); }
+                else
+                {
+                    if (!program.RightToLeft) writer.Append(input.Slice(edgeByte, outcome.StartByte - edgeByte));
+                    expansion.Append(input, outcome, slots, writer, ref invocation);
+                    scope!.Retain(writer);
+                    if (program.RightToLeft)
+                    {
+                        writer.Append(input.Slice(outcome.EndByte, edgeByte - outcome.EndByte));
+                        writer.MarkPiece();
+                    }
+                }
+                edgeByte = program.RightToLeft ? outcome.StartByte : outcome.EndByte;
+                position = outcome.EndByte > outcome.StartByte ? edgeByte : Utf8SliceRunner.AdvancePastScalar(input, edgeByte, program.RightToLeft);
+                if (outcome.EndByte > outcome.StartByte) anchor = edgeByte;
             }
             // Discovery has finished. Avoid retaining scratch into final-output
             // overlap; finally also covers failures and interruption.
