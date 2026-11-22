@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -243,22 +245,29 @@ public sealed class Pcre2AssertionCompilerTests
         {
             using var regex = new Utf8Pcre2Regex("(?=(?:ab|ac)++)a");
             Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
-            var input = "xxab"u8;
-            for (var index = 0; index < 288; index++)
-                Assert.True(regex.IsMatch(input));
+            // Warm the measured call site through delayed tiering.
+            var warmup = Stopwatch.StartNew();
+            do { _ = MeasureLookaheadBatch(regex, out _); }
+            while (warmup.ElapsedMilliseconds < 1_000);
 
-            var matches = 0;
-            var before = GC.GetAllocatedBytesForCurrentThread();
-            for (var index = 0; index < 256; index++)
-            {
-                if (regex.IsMatch(input)) matches++;
-            }
-            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
+            var allocated = MeasureLookaheadBatch(regex, out var matches);
             Assert.Equal(256, matches);
             Assert.Equal(0, allocated);
         }
         finally { Utf8ExactStatePool.Clear(); }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long MeasureLookaheadBatch(Utf8Pcre2Regex regex, out int matches)
+    {
+        var input = "xxab"u8;
+        matches = 0;
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var index = 0; index < 256; index++)
+        {
+            if (regex.IsMatch(input)) matches++;
+        }
+        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
     [Fact]
