@@ -185,6 +185,39 @@ public sealed class Utf8SliceIgnoreCaseTests
     }
 
     [Theory]
+    [InlineData("en-US")]
+    [InlineData("tr-TR")]
+    public void FoldedWordRepeatUsesAsciiMembershipAndWiderAliases(string culture)
+    {
+        var savedCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo(culture);
+            const string pattern = @"\G(?<body>[A-Za-z0-9_]*)";
+            const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.Compiled;
+            var oracle = new Regex(pattern, options, Regex.InfiniteMatchTimeout);
+            using var regex = new Utf8Regex(pattern, options,
+                new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 } });
+            using var token = new CancellationTokenSource();
+            Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+            foreach (var suffix in Enumerable.Range(0, 128).Select(value => ((char)value).ToString())
+                .Concat(["K", "İ", "ı", "😀"]))
+            {
+                var text = "éK_0" + suffix + "B!";
+                var expected = oracle.Match(text, 1);
+                var end = 2 + Encoding.UTF8.GetByteCount(text.AsSpan(1, expected.Length));
+                var range = new Utf8CaptureRange(2, end);
+                Assert.Equal(range, regex.Match(Encoding.UTF8.GetBytes(text), 2, captures, token.Token));
+                Assert.Equal(range, captures[1]);
+            }
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = savedCulture;
+        }
+    }
+
+    [Theory]
     [InlineData("a+", "AA AA", 2)]
     [InlineData("[a-z]+", "AB cD", 2)]
     public void OwnedSplitMatchesOracle(string pattern, string inputText, int expected)

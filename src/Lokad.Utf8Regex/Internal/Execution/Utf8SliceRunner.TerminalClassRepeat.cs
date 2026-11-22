@@ -1731,6 +1731,13 @@ internal static partial class Utf8SliceRunner
         ReadOnlySpan<byte> asciiMask = hybrid ||
             atom.Kind is Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet &&
             atom.B == 0 && atom.C == 0 ? program.SetMasks[atom.A] : [];
+        if (unbounded && atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: not 0 })
+        {
+            // The full ASCII word mask already includes every ASCII case
+            // equivalent. Wider scalars still use the folded predicate.
+            var foldedMask = program.SetMasks[atom.A];
+            if (IsAsciiWordMask(foldedMask)) asciiMask = foldedMask;
+        }
         while (count < maximum)
         {
             var breach = invocation.TryChargeStep();
