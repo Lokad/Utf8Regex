@@ -118,9 +118,26 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void FoldedStarterScanUsesTheOriginalInterruptionAuthority(bool expire)
+    [InlineData("kk", "kKKkK", 2044)]
+    [InlineData("abck", "abcK € abCK ABcK", 2045)]
+    [InlineData("abcdk", "ABCDK", 2042)]
+    [InlineData("key", "€ KEY € KeX", 2046)]
+    public void FiniteFoldedCountKeepsCompletedMatchesAndUnresolvedOverlaps(string pattern, string suffix, int padding)
+    {
+        const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        using var regex = new Utf8Regex(pattern, options,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 64 } });
+        using var source = new CancellationTokenSource();
+        var text = new string('x', padding) + suffix;
+        Assert.Equal(Regex.Count(text, pattern, options), regex.Count(Encoding.UTF8.GetBytes(text), source.Token));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public void FoldedStarterScanUsesTheOriginalInterruptionAuthority(bool expire, bool count)
     {
         using var clock = Utf8DeadlineTestClock.Start();
         using var source = new CancellationTokenSource();
@@ -135,11 +152,17 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
         });
         try
         {
-            if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.IsMatch(input, source.Token));
-            else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() => regex.IsMatch(input, source.Token)).CancellationToken);
+            if (expire) Assert.Throws<RegexMatchTimeoutException>(Run);
+            else Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(Run).CancellationToken);
             Assert.True(entered);
         }
         finally { session.Complete(); }
+
+        void Run()
+        {
+            if (count) _ = regex.Count(input, source.Token);
+            else _ = regex.IsMatch(input, source.Token);
+        }
     }
 
     [Theory]

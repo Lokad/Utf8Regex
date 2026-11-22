@@ -78,10 +78,10 @@ internal static partial class Utf8SearchExecutor
 
     internal static Utf8ExecutionLimitKind TryFindLiteralCandidate(
         in PreparedSubstringSearch search, ReadOnlySpan<byte> input, int low, int high,
-        bool reverse, ref Utf8SliceInvocation invocation, out int candidate)
+        bool reverse, ref Utf8SliceInvocation invocation, out int candidate, bool stopAtKelvin = false)
     {
         candidate = -1;
-        if (invocation.IsUnmetered && invocation.CheckpointHook is null)
+        if (!stopAtKelvin && invocation.IsUnmetered && invocation.CheckpointHook is null)
         {
             var slice = input.Slice(low, high - low + search.Length);
             var relative = reverse ? search.LastIndexOf(slice) : search.IndexOf(slice);
@@ -98,25 +98,44 @@ internal static partial class Utf8SearchExecutor
         var preparedWindow = !search.IgnoreCase && search.Length <= 32;
         var sequenceWindow = preparedWindow && !reverse && search.Length is >= 5 and <= 16;
         var lookahead = preparedWindow ? search.Length - 1 : 0;
-        while (low <= high)
+        if (stopAtKelvin)
+        {
+            // Still look for an alias beyond the last possible ASCII start.
+            // It can complete a candidate whose ASCII comparison failed.
+            lookahead = "K"u8.Length - 1;
+        }
+        var last = stopAtKelvin ? input.Length - 1 : high;
+        while (low <= last)
         {
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            var count = Math.Min(2048 - lookahead, high - low + 1);
-            var blockStart = reverse ? high - count + 1 : low;
-            var block = input.Slice(blockStart, count + lookahead);
+            var count = Math.Min(2048 - lookahead, last - low + 1);
+            var blockStart = reverse ? last - count + 1 : low;
+            var blockLength = stopAtKelvin ? Math.Min(count + lookahead, input.Length - blockStart) : count + lookahead;
+            var block = input.Slice(blockStart, blockLength);
             int relative;
-            if (sequenceWindow) relative = block.IndexOf(search.Needle);
+            if (stopAtKelvin) relative = IndexOfFoldedCandidateOrKelvin(block, count, first, other);
+            else if (sequenceWindow) relative = block.IndexOf(search.Needle);
             else if (preparedWindow) relative = reverse ? search.LastIndexOf(block) : search.IndexOf(block);
             else relative = reverse ? block.LastIndexOfAny(first, other) : block.IndexOfAny(first, other);
             if (relative < 0)
             {
-                if (reverse) high -= count;
+                if (reverse) last -= count;
                 else low += count;
                 continue;
             }
 
             var found = blockStart + relative;
+            if (stopAtKelvin && input[found] == "K"u8[0])
+            {
+                candidate = found;
+                return Utf8ExecutionLimitKind.None;
+            }
+            if (stopAtKelvin && found > high)
+            {
+                low = found + 1;
+                continue;
+            }
             var equal = true;
             if (!preparedWindow)
             {
@@ -129,10 +148,27 @@ internal static partial class Utf8SearchExecutor
                 candidate = found;
                 return Utf8ExecutionLimitKind.None;
             }
-            if (reverse) high = found - 1;
+            if (reverse) last = found - 1;
             else low = found + 1;
         }
         return Utf8ExecutionLimitKind.None;
+    }
+
+    private static int IndexOfFoldedCandidateOrKelvin(ReadOnlySpan<byte> block, int count, byte first, byte other)
+    {
+        var starts = block[..count];
+        var relative = starts.IndexOfAny(first, other, "K"u8[0]);
+        if (relative < 0 || starts[relative] != "K"u8[0]) return relative;
+
+        if (block[relative..].StartsWith("K"u8)) return relative;
+        // An unrelated scalar shares this lead. Search for a real alias only
+        // up to the next ASCII candidate so dense matches do not rescan a block.
+        var next = relative + 1;
+        var ascii = starts[next..].IndexOfAny(first, other);
+        var end = ascii >= 0 ? next + ascii : block.Length;
+        var alias = block[next..end].IndexOf("K"u8);
+        if (alias >= 0) return next + alias;
+        return ascii >= 0 ? next + ascii : -1;
     }
 
     internal static Utf8ExecutionLimitKind TryCompareLiteral(

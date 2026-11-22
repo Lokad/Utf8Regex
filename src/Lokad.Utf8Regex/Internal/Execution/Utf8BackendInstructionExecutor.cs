@@ -84,29 +84,7 @@ internal static class Utf8BackendInstructionExecutor
             plan.LiteralSearch is { Length: > 0 } search &&
             !plan.HasBoundaryRequirements && !plan.HasTrailingLiteralRequirement)
         {
-            // Pure Count publishes no match/capture object. Keep the same
-            // bounded, metered candidate/comparison kernel, without rebuilding
-            // a generic match and confirming absent boundary requirements.
-            count = 0;
-            var foundCount = 0;
-            var start = 0;
-            var last = input.Length - search.Length;
-            while (start <= last)
-            {
-                var breach = Utf8SearchExecutor.TryFindLiteralCandidate(search, input, start, last,
-                    false, ref invocation, out var candidate);
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
-                if (candidate < 0) break;
-                // The bounded candidate search/comparison admitted this O(1)
-                // count update. Keep the terminal checkpoint before publication.
-                foundCount++;
-                Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
-                start = candidate + search.Length;
-            }
-            var terminal = invocation.TryChargeInputStep();
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (terminal == Utf8ExecutionLimitKind.None) count = foundCount;
-            return terminal;
+            return TryCountSingleLiteral(search, input, ref invocation, out count, out _);
         }
         count = 0;
         var total = 0;
@@ -122,6 +100,42 @@ internal static class Utf8BackendInstructionExecutor
             if (reverse) high = match.Index;
             else low = match.Index + match.Length;
         }
+    }
+
+    // Count has no range to publish. On a folded alias, keep completed
+    // matches and return the earliest unresolved start to the scalar VM.
+    internal static Utf8ExecutionLimitKind TryCountSingleLiteral(in PreparedSubstringSearch search,
+        ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation, out int count, out int resume,
+        bool stopAtKelvin = false)
+    {
+        count = 0;
+        resume = -1;
+        var foundCount = 0;
+        var start = 0;
+        var last = input.Length - search.Length;
+        while (start <= (stopAtKelvin ? input.Length - 1 : last))
+        {
+            var breach = Utf8SearchExecutor.TryFindLiteralCandidate(search, input, start, last,
+                false, ref invocation, out var candidate, stopAtKelvin);
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            if (candidate < 0) break;
+            if (stopAtKelvin && input[candidate] == "K"u8[0])
+            {
+                // An earlier ASCII comparison can have failed where this
+                // first alias starts. Keep that overlap without replaying
+                // starts consumed by a completed match.
+                resume = Math.Max(start, candidate - search.Length + 1);
+                while ((input[resume] & 0xC0) == 0x80) resume++;
+                break;
+            }
+            foundCount++;
+            Utf8SearchDiagnosticsSession.Current?.CountSearchCandidate();
+            start = candidate + search.Length;
+        }
+        var terminal = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (terminal == Utf8ExecutionLimitKind.None) count = foundCount;
+        return terminal;
     }
 
     public static Utf8CaptureRange MatchLiteralFamily(

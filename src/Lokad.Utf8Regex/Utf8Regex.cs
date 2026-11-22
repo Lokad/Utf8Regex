@@ -531,8 +531,9 @@ public sealed partial class Utf8Regex : IDisposable
                 throw new InvalidOperationException("Terminal class count breached the invocation budget.");
             return terminal.Count;
         }
-        // Borrow the same validated invocation for invariant folded literals.
-        // Their only non-ASCII alias is Kelvin; keep that case on the scalar VM.
+        var countedPrefix = 0;
+        // Invariant folded literals can share the native search until an
+        // actual Kelvin sign requires scalar confirmation.
         if (startByte == 0 && ReferenceEquals(program, _ownedSliceProgram) &&
             _preparedRegex.ExecutionKind is NativeExecutionKind.AsciiLiteralIgnoreCase or NativeExecutionKind.AsciiLiteralIgnoreCaseLiterals &&
             (Options & RegexOptions.CultureInvariant) != 0 && !_hasCaptures &&
@@ -543,26 +544,18 @@ public sealed partial class Utf8Regex : IDisposable
             (Options & RegexOptions.NonBacktracking) == 0 &&
             !_preparedRegex.SearchPlan.HasBoundaryRequirements && !_preparedRegex.SearchPlan.HasTrailingLiteralRequirement)
         {
-            var containsKelvin = false;
-            if (_requiresKelvinSignFallback)
+            if (_requiresKelvinSignFallback && !invocation.IsUnmetered &&
+                _preparedRegex.ExecutionKind == NativeExecutionKind.AsciiLiteralIgnoreCase &&
+                _preparedRegex.SearchPlan.LiteralSearch is { Length: > 0 and <= 32 } literal)
             {
-                for (var offset = 0; offset < input.Length;)
-                {
-                    var scanBreach = invocation.TryChargeInputStep();
-                    if (scanBreach != Utf8ExecutionLimitKind.None)
-                        throw new InvalidOperationException("Folded literal screening exceeded the invocation budget.");
-                    var length = Math.Min(2048, input.Length - offset);
-                    // Two lookahead bytes preserve a three-byte scalar crossing
-                    // the admitted window. Every search remains bounded.
-                    if (ContainsKelvinSign(input.Slice(offset, Math.Min(length + 2, input.Length - offset))))
-                    {
-                        containsKelvin = true;
-                        break;
-                    }
-                    offset += length;
-                }
+                var breach = Utf8BackendInstructionExecutor.TryCountSingleLiteral(literal, input, ref invocation,
+                    out countedPrefix, out var resume, stopAtKelvin: true);
+                if (breach != Utf8ExecutionLimitKind.None)
+                    throw new InvalidOperationException("Folded literal count exceeded the invocation budget.");
+                if (resume < 0) return countedPrefix;
+                startByte = resume;
             }
-            if (!containsKelvin)
+            else if (!_requiresKelvinSignFallback || !HasMeteredKelvinSign(input, ref invocation))
             {
                 var breach = Utf8BackendInstructionExecutor.TryCountNativeLiteralMatches(
                     _preparedRegex.SearchPlan, input, false, ref invocation, out var count);
@@ -571,7 +564,7 @@ public sealed partial class Utf8Regex : IDisposable
                 return count;
             }
         }
-        if (RejectMissingRequiredInput(input, program, ref invocation, out _)) return 0;
+        if (RejectMissingRequiredInput(input, program, ref invocation, out _)) return countedPrefix;
         var slots = new Utf8SliceSlots([], []);
         try
         {
@@ -583,12 +576,28 @@ public sealed partial class Utf8Regex : IDisposable
                 throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
             }
 
-            return outcome.Count;
+            return countedPrefix + outcome.Count;
         }
         finally
         {
             Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
         }
+    }
+
+    private static bool HasMeteredKelvinSign(ReadOnlySpan<byte> input, ref Utf8SliceInvocation invocation)
+    {
+        // Include two lookahead bytes for a three-byte scalar at the edge.
+        const int blockSize = 2048;
+        for (var offset = 0; offset < input.Length;)
+        {
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None)
+                throw new InvalidOperationException("Folded literal screening exceeded the invocation budget.");
+            var length = Math.Min(blockSize, input.Length - offset);
+            if (ContainsKelvinSign(input.Slice(offset, Math.Min(length + 2, input.Length - offset)))) return true;
+            offset += length;
+        }
+        return false;
     }
 
     // Whole-match operations need slots only when execution reads them.
