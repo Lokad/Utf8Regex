@@ -114,6 +114,37 @@ public sealed class ExactUtf8LiteralFamilyBoundaryTests
         }
     }
 
+    [Fact]
+    public void BorrowedBoundaryFamilyCursorsKeepScalarRangesAndSplitLimits()
+    {
+        using var regex = new Utf8Regex(@"\b(?<word>cat|dog)\b", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+        var input = "écat|😀cat😀|dog\u200c|dog"u8;
+        var matches = regex.EnumerateMatches(input);
+        Assert.False(matches.DebugIsOwnedSlice);
+        var copy = matches;
+        Assert.True(matches.MoveNext());
+        Assert.Equal(new Utf8CaptureRange(10, 13), matches.Current);
+        Assert.True(matches.MoveNext());
+        Assert.Equal(new Utf8CaptureRange(25, 28), matches.Current);
+        Assert.False(matches.MoveNext());
+        Assert.True(copy.MoveNext());
+        Assert.Equal(new Utf8CaptureRange(10, 13), copy.Current);
+
+        var views = new List<(int, int)>();
+        foreach (var split in regex.EnumerateSplits(input, count: 0))
+            views.Add((split.IndexInBytes, split.LengthInBytes));
+        Assert.Equal(new[] { (0, 10), (13, 12), (28, 0) }, views);
+        views.Clear();
+        foreach (var split in regex.EnumerateSplits(input, count: 2))
+            views.Add((split.IndexInBytes, split.LengthInBytes));
+        Assert.Equal(new[] { (0, 10), (13, 15) }, views);
+
+        var whole = regex.EnumerateSplits(input, count: 1);
+        Assert.True(whole.MoveNext());
+        Assert.True(input.SequenceEqual(whole.Current.GetValueBytes()));
+        Assert.False(whole.MoveNext());
+    }
+
     [Theory]
     [InlineData("😀that😀", true)]
     [InlineData("there éthat", false)]

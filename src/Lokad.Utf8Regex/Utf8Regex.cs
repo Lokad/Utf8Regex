@@ -36,6 +36,7 @@ public sealed partial class Utf8Regex : IDisposable
 
     private readonly Utf8RegexProgram _program;
     private readonly int _asciiLiteralCountAnchorOffset;
+    private readonly bool _canUseUnmeteredScalarBoundaryLiterals;
     private readonly Utf8EmittedLiteralFamilyCounter? _scalarBoundaryLiteralFamilyCounter;
     private readonly bool _requiresKelvinSignFallback;
     private readonly Utf8InvariantCyrillicLiteralCountStrategy? _invariantCyrillicLiteralCountStrategy;
@@ -109,11 +110,15 @@ public sealed partial class Utf8Regex : IDisposable
             var ownedSliceProgram = preparedRegex.ScalarProgram
                 ?? throw new InvalidOperationException("Owned preparation must produce a scalar program.");
             _ownedSliceProgram = ownedSliceProgram;
+            ref readonly var searchPlan = ref preparedRegex.SearchPlan;
             if (matchTimeout == Regex.InfiniteMatchTimeout && (options & RegexOptions.ECMAScript) == 0 &&
-                _program.CompiledEngineRuntime?._emittedLiteralFamilyCounter is { HasScalarBoundaryConfirmation: true } boundaryCounter &&
+                _program.CompiledEngineRuntime is { } literalRuntime &&
+                searchPlan is { HasBoundaryRequirements: true, HasTrailingLiteralRequirement: false } &&
+                searchPlan.SearchOperation.Confirmation.Kind == Utf8ConfirmationKind.BoundaryRequirements &&
                 CanUseNativeLiteralSearch(ownedSliceProgram, maximumAlternatives: 8, allowBoundaries: true))
             {
-                _scalarBoundaryLiteralFamilyCounter = boundaryCounter;
+                _canUseUnmeteredScalarBoundaryLiterals = true;
+                _scalarBoundaryLiteralFamilyCounter = literalRuntime._emittedLiteralFamilyCounter;
             }
             var usesLiteralEngine = preparedRegex.HasLiteralPlan;
             var captureRoot = usesLiteralEngine || _anchoredLiteral.HasValue ? root : null;
@@ -769,7 +774,9 @@ public sealed partial class Utf8Regex : IDisposable
             }
         }
 
-        if (GetOwnedSliceProgram(input) is { } ownedProgram)
+        // Exact byte candidates are scalar-aligned. The prepared cursor
+        // confirms the scalar neighbors at each candidate boundary.
+        if (!_canUseUnmeteredScalarBoundaryLiterals && GetOwnedSliceProgram(input) is { } ownedProgram)
         {
             return OwnedSliceEnumerateMatches(input, ownedProgram, CancellationToken.None)
                 .WithTimeoutMapping(input, this);
@@ -890,6 +897,12 @@ public sealed partial class Utf8Regex : IDisposable
     private Utf8ValueSplitEnumerator EnumerateSplitsWithoutToken(ReadOnlySpan<byte> input, int count)
     {
         if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (_canUseUnmeteredScalarBoundaryLiterals)
+        {
+            return Utf8CompiledOperationCursorFactory.CreateSplitEnumerator(
+                _preparedRegex, input, count == 0 ? int.MaxValue : count, Utf8ExecutionDeadline.Infinite)
+                .WithTimeoutMapping(this);
+        }
         if (GetOwnedSliceProgram(input) is { } ownedProgram)
             return OwnedSliceEnumerateSplits(input, ownedProgram, count == 0 ? int.MaxValue : count, CancellationToken.None);
         // Eligible literal RTL splits use the reverse cursor and return

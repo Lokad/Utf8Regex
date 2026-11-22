@@ -146,8 +146,6 @@ internal sealed class Utf8EmittedLiteralFamilyCounter
 
     internal int Count(ReadOnlySpan<byte> input) => _count.Callback(this, input);
 
-    internal bool HasScalarBoundaryConfirmation => CanUseScalarBoundaryOnlyConfirmation(_plan, _confirmation);
-
     internal bool IsMatch(ReadOnlySpan<byte> input) => _isMatch.Callback(this, input);
 
     internal bool TryMatch(ReadOnlySpan<byte> input, out int index, out int matchedLength) => _tryMatch.Callback(this, input, out index, out matchedLength);
