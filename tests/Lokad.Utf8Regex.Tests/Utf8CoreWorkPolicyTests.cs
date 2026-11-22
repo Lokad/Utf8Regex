@@ -94,6 +94,15 @@ public sealed class Utf8CoreWorkPolicyTests
         AssertWorkFailure(() => denied.Match(input, cancellationToken: source.Token), 4);
     }
 
+    [Fact]
+    public void ShortAsciiRunConfirmsHeadMembershipAndMinimumBeforePublishing()
+    {
+        using var regex = Create("[a-cx-z][0-9]{2,}", 32, RegexOptions.Compiled);
+        var match = regex.Match("😀p987x2y34Ωz56"u8);
+        Assert.True(match.Success);
+        Assert.Equal((10, 13), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+    }
+
     [Theory]
     [InlineData("abc", "xxabcxx")]
     [InlineData("^[-+]?[0-9]+$", "+123")]

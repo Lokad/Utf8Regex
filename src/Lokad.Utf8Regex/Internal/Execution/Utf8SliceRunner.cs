@@ -777,37 +777,53 @@ internal static partial class Utf8SliceRunner
                 // Starts only advance in these forward searches. The
                 // input step above also covers stopping after the last one.
                 if (position > lastProbedStart) break;
-                var proveDecimalPrefix = shortDecimalHead || proveDecimalWindow;
-                // A conclusive proof from instruction zero already gives the
-                // first ordered range when there are no captures to publish.
-                var proveMatch = proveDecimalPrefix || !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
-                var proofStart = proveDecimalPrefix ? 0 : leadingScalarIndex;
-                var proofPosition = position;
-                var proofLimit = BranchedPrefixInstructionLimit;
-                if (reuseDecimalWindow && position < classWindowEnd)
+                int acceptedEnd;
+                if (checkStraightRepeat && program.GroupCount == 0)
                 {
-                    // Rewind already admitted a nonempty decimal run ending at
-                    // this excluded delimiter. Confirm any remaining Unicode
-                    // boundary and start the proof at the continuation.
-                    if (!provedAsciiBoundary && !MatchesBoundary(program, first, input, position)) continue;
-                    proofPosition = classWindowEnd;
-                    proofStart = program.Instructions[1].A + 1;
-                    if (followingWindowEnd > 0)
-                    {
-                        proofPosition = followingWindowEnd;
-                        proofStart = program.FollowingDecimalContinuation;
-                        proofLimit -= followingWindow.Max + 3;
-                    }
+                    // The checked instruction shape has just two consuming
+                    // atoms. Confirm the exact head mask and the greedy tail.
+                    var value = input[position];
+                    var head = program.SetMasks[first.A];
+                    if (value >= 128 || (head[value >> 3] & (1 << (value & 7))) == 0) continue;
+                    var repeatMask = program.SetMasks[program.Instructions[2].A];
+                    var length = ScanAsciiMask(input[(position + 1)..], repeatMask, category: false);
+                    if (length < program.Instructions[1].RepeatMinimum) continue;
+                    acceptedEnd = position + 1 + length;
                 }
-                if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch, proofLimit))
+                else
                 {
-                    var remainingDigits = classWindowEnd - position;
-                    // The proved leading boundary excludes the interior of a
-                    // short ASCII digit run. Its delimiter is an excluded byte.
-                    if (reuseDecimalWindow && remainingDigits is > 0 and <= 4 &&
-                        !input.Slice(position, remainingDigits).ContainsAnyExceptInRange((byte)'0', (byte)'9'))
-                        position = classWindowEnd;
-                    continue;
+                    var proveDecimalPrefix = shortDecimalHead || proveDecimalWindow;
+                    // A conclusive proof from instruction zero already gives the
+                    // first ordered range when there are no captures to publish.
+                    var proveMatch = proveDecimalPrefix || !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
+                    var proofStart = proveDecimalPrefix ? 0 : leadingScalarIndex;
+                    var proofPosition = position;
+                    var proofLimit = BranchedPrefixInstructionLimit;
+                    if (reuseDecimalWindow && position < classWindowEnd)
+                    {
+                        // Rewind already admitted a nonempty decimal run ending at
+                        // this excluded delimiter. Confirm any remaining Unicode
+                        // boundary and start the proof at the continuation.
+                        if (!provedAsciiBoundary && !MatchesBoundary(program, first, input, position)) continue;
+                        proofPosition = classWindowEnd;
+                        proofStart = program.Instructions[1].A + 1;
+                        if (followingWindowEnd > 0)
+                        {
+                            proofPosition = followingWindowEnd;
+                            proofStart = program.FollowingDecimalContinuation;
+                            proofLimit -= followingWindow.Max + 3;
+                        }
+                    }
+                    if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out acceptedEnd, proveMatch, proofLimit))
+                    {
+                        var remainingDigits = classWindowEnd - position;
+                        // The proved leading boundary excludes the interior of a
+                        // short ASCII digit run. Its delimiter is an excluded byte.
+                        if (reuseDecimalWindow && remainingDigits is > 0 and <= 4 &&
+                            !input.Slice(position, remainingDigits).ContainsAnyExceptInRange((byte)'0', (byte)'9'))
+                            position = classWindowEnd;
+                        continue;
+                    }
                 }
                 if (acceptedEnd >= 0)
                 {
