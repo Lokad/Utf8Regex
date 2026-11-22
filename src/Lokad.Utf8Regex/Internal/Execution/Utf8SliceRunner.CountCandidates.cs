@@ -1260,11 +1260,17 @@ internal static partial class Utf8SliceRunner
             return 1;
         if (program.ReadsCaptures) return 0;
 
-        // An unobserved opening capture does not change the repeat. Reuse
-        // the lowered proof that all delimiter arms reject a shorter end.
+        // An unobserved opening capture does not change the repeat.
         var index = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 1);
-        return (uint)index < (uint)code.Length &&
-            code[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMaximum: long.MaxValue } repeat &&
+        if ((uint)index >= (uint)code.Length || code[index] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy } repeat)
+            return 0;
+        if (index != 1 && code.Length <= 32 && repeat.RepeatMinimum is >= 1 and <= 4 &&
+            repeat.RepeatMinimum == repeat.RepeatMaximum && IsSingleAtomRepeat(code, index, repeat) &&
+            code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
+            return 1;
+
+        // The lowered delimiter proof prevents an unbounded run from rewinding.
+        return repeat.RepeatMaximum == long.MaxValue &&
             code[repeat.A].RepeatExitRejectsShorterEndpoints &&
             (code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } ||
              GetUnfoldedAsciiRange(code[index + 1], out _) >= 0) ? -index : 0;
@@ -1397,7 +1403,10 @@ internal static partial class Utf8SliceRunner
                         if (lazy) position++;
                         continue;
                     }
-                    if (proveMatch && singleAtom)
+                    // A fixed ASCII set repeat has one endpoint. Verify its
+                    // byte mask below without trying competing repeat lengths.
+                    if (proveMatch && singleAtom && (minimum != entry.RepeatMaximum ||
+                        code[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }))
                     {
                         var proof = TryMatchPrefixRepeat(program, input, position, index, entry, ref remaining,
                             out acceptedEnd, out var continueAt);

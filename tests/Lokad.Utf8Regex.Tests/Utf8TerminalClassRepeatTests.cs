@@ -73,6 +73,41 @@ public sealed class Utf8TerminalClassRepeatTests
     }
 
     [Theory]
+    [InlineData("Af029C", true)]
+    [InlineData("Af029C\n", true)]
+    [InlineData("Af029C\n\n", false)]
+    [InlineData("Af029", false)]
+    [InlineData("Af029G", false)]
+    [InlineData("Af02😀", false)]
+    public void ShortAnchoredSetRepeatsKeepTheRangeAndCaptureSlots(string text, bool success)
+    {
+        const string pattern = @"^(?<r>[a-f0-9]{2})(?<g>[a-f0-9]{2})(?<b>[a-f0-9]{2})$";
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        var input = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8Regex(pattern, options);
+        using var funded = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 4, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        using var cancellation = new CancellationTokenSource();
+        Utf8CaptureRange expected = success ? new(0, 6) : default;
+        Assert.Equal(expected, funded.Match(input, cancellationToken: cancellation.Token));
+
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[4];
+        Assert.Equal(expected, regex.Match(input, captures: captures));
+        Assert.Equal(expected, captures[0]);
+        for (var i = 0; i < 3; i++)
+            Assert.Equal(success ? new Utf8CaptureRange(i * 2, i * 2 + 2) : default, captures[i + 1]);
+
+        using var limited = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1 }
+        });
+        Assert.Equal(Utf8ResourceLimitKind.ExecutionWorkSteps,
+            Assert.Throws<Utf8ResourceLimitExceededException>(() => limited.Match(input)).ResourceKind);
+    }
+
+    [Theory]
     [InlineData(@"\A\s*(?<value>[a ])!\z", "a!", 0)]
     [InlineData(@"\A\s*(?<value>[a ])!\z", " a!", 1)]
     [InlineData(@"\A\s*(?<value>[a ])!\z", "\u2003a!", 3)]
