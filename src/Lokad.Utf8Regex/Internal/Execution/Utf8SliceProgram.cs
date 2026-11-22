@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Globalization;
 using System.Numerics;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Search;
@@ -1798,9 +1799,27 @@ internal static class Utf8SliceLowerer
                 case Utf8SliceNode.CategorySetNode categorySet:
                     var categorySetMaskIndex = SetMasks.Count;
                     var categoryMask = categorySet.Mask16;
-                    if (!categorySet.Negated && !categorySet.FoldCase &&
-                        categorySet.Categories is [{ Negated: false, Table: { Mask: not 0,
-                            Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }])
+                    var foldCategorySet = categorySet.FoldCase;
+                    var pureCategory = categorySet.Categories is [{ Negated: false, Table: {
+                        Ranges.Length: 0, ClassProgram: null, ScalarPredicate: null } table }] ? table.Mask : 0;
+                    if (!categorySet.Negated && pureCategory == 1u << (int)UnicodeCategory.DecimalDigitNumber)
+                    {
+                        var low = BinaryPrimitives.ReadUInt64LittleEndian(categoryMask);
+                        var high = BinaryPrimitives.ReadUInt64LittleEndian(categoryMask.AsSpan(8));
+                        // Decimal digits have no case equivalents. An explicit
+                        // member outside the digits retains its original folding.
+                        if ((low & ~Utf8AsciiBytePredicates.DecimalMask) == 0 && high == 0)
+                            foldCategorySet = false;
+                        var complete = low | Utf8AsciiBytePredicates.DecimalMask;
+                        if (!foldCategorySet && complete != low)
+                        {
+                            Budget.ChargeWork(2);
+                            categoryMask = Budget.AllocateArray<byte>(16, false);
+                            BinaryPrimitives.WriteUInt64LittleEndian(categoryMask, complete);
+                            BinaryPrimitives.WriteUInt64LittleEndian(categoryMask.AsSpan(8), high);
+                        }
+                    }
+                    else if (!categorySet.Negated && !foldCategorySet && pureCategory != 0)
                     {
                         // Complete the existing positive ASCII mask once. Runtime
                         // scalar tables still govern wider characters and misses.
@@ -1809,7 +1828,7 @@ internal static class Utf8SliceLowerer
                         Span<byte> completed = stackalloc byte[16];
                         categoryMask.CopyTo(completed);
                         for (var value = 0; value < 128; value++)
-                            if ((table.Mask & (1u << (int)Rune.GetUnicodeCategory(new Rune(value)))) != 0)
+                            if ((pureCategory & (1u << (int)Rune.GetUnicodeCategory(new Rune(value)))) != 0)
                                 completed[value >> 3] |= (byte)(1 << (value & 7));
                         if (!completed.SequenceEqual(categoryMask))
                         {
@@ -1829,7 +1848,7 @@ internal static class Utf8SliceLowerer
                     Emit(new Utf8SliceInstruction(
                         Utf8SliceInstructionKind.CategorySet,
                         categorySetMaskIndex,
-                        (categorySet.Negated ? 1 : 0) | (categorySet.FoldCase ? 2 : 0),
+                        (categorySet.Negated ? 1 : 0) | (foldCategorySet ? 2 : 0),
                         categorySetMemberBits,
                         categorySetMemberIndex));
                     break;

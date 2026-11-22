@@ -53,6 +53,23 @@ public sealed class Utf8PreparedCategoryMaskTests
     }
 
     [Fact]
+    public void IgnoreCaseDecimalRunKeepsWideScalarsAndCaptureHistory()
+    {
+        using var regex = new Utf8Regex(@"^(?<row>(?<digit>\d)+)[a-z]$",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 128, MaxWorkingBytes = 4096 } });
+        using var source = new CancellationTokenSource();
+        var input = "١𝟙K\n"u8.ToArray();
+        var range = new Utf8CaptureRange(0, 9);
+        Assert.Equal(range, regex.Match(input, cancellationToken: source.Token));
+        Assert.Equal(1, regex.Count(input, source.Token));
+        var match = Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token));
+        Assert.Equal(range, match.Value);
+        Assert.Equal(new Utf8CaptureRange(0, 6), Assert.Single(match.GetCaptures(1).ToArray()));
+        Assert.Equal(new[] { new Utf8CaptureRange(0, 2), new Utf8CaptureRange(2, 6) }, match.GetCaptures(2).ToArray());
+    }
+
+    [Fact]
     public void LoweringDoesNotMutateMasksBorrowedByOtherTrees()
     {
         var mask = new byte[16]; mask['+' >> 3] = (byte)(1 << ('+' & 7));
