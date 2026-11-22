@@ -1531,10 +1531,13 @@ internal static partial class Utf8SliceRunner
                             (int EndIndex, Utf8ExecutionLimitKind Breach) repeated;
                             int continuation;
                             bool ranWithoutRewind;
-                            // Both proofs verify the atom and exit during preparation.
-                            // Only the terminal proof depends on the absence of a required endpoint.
-                            if ((cursor.RequiredEnd is null && program.SkipsTerminalRewind(programIndex)) ||
-                                instructions[instruction.A].RepeatExitRejectsShorterEndpoints)
+                            // Prepared proofs verify the atom and exit. An empty
+                            // tail allows the greedy range path to keep its maximum
+                            // run. Boolean calls can still stop at the minimum.
+                            var exit = instructions[instruction.A];
+                            if (exit.RepeatExitRejectsShorterEndpoints ||
+                                cursor.RequiredEnd is null && (program.SkipsTerminalRewind(programIndex) ||
+                                    !existenceOnly && exit.RepeatExitAcceptsEmptyTail))
                             {
                                 repeated = RunClassRepeat(program, programIndex, input, inputIndex, ref invocation);
                                 continuation = instruction.A + 1;

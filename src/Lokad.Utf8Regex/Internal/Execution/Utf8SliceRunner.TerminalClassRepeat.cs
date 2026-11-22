@@ -970,6 +970,19 @@ internal static partial class Utf8SliceRunner
             return;
 
         var continuation = repeat.A + 1;
+        var exit = code[repeat.A];
+        if (repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0 } &&
+            atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
+        {
+            // Every visited instruction moves forward. The same bounded proof
+            // used by execution can be paid once before publishing the program.
+            budget.ChargeWork((ulong)Math.Min(32, code.Length - continuation));
+            if (CanAcceptEmptyTail(code, continuation))
+            {
+                exit = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitAcceptsEmptyTailFlag, exit.D);
+                code[repeat.A] = exit;
+            }
+        }
         for (var remaining = 32; continuation < code.Length && remaining > 0 &&
             code[continuation].Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd; remaining--)
         {
@@ -980,7 +993,6 @@ internal static partial class Utf8SliceRunner
             { Kind: Utf8SliceInstructionKind.Fork or Utf8SliceInstructionKind.Literal, B: 0 })
             return;
 
-        var exit = code[repeat.A];
         if (atom.Kind == Utf8SliceInstructionKind.Dot)
         {
             if (code[continuation].Kind != Utf8SliceInstructionKind.Fork) return;
@@ -997,7 +1009,7 @@ internal static partial class Utf8SliceRunner
         var consumed = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
             BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
         if (ExcludesShorterRepeatEnds(code, continuation, consumed, atom.Kind == Utf8SliceInstructionKind.Set, ref work))
-            code[repeat.A] = new(exit.Kind, exit.A, exit.B, 1, exit.D);
+            code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
     }
 
     private static int FindRepeatRewindStarts(ReadOnlySpan<Utf8SliceInstruction> code, byte[][] setMasks,

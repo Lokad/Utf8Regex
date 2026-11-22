@@ -194,6 +194,9 @@ internal sealed class Utf8SliceCategoryTable
 
 internal readonly struct Utf8SliceInstruction
 {
+    internal const int RepeatExitRejectsShorterFlag = 1;
+    internal const int RepeatExitAcceptsEmptyTailFlag = 2;
+
     internal Utf8SliceInstruction(Utf8SliceInstructionKind kind, int a, int b, int c, int d, bool isLiteralChoice = false)
     {
         Kind = kind;
@@ -223,9 +226,9 @@ internal readonly struct Utf8SliceInstruction
     // first literals fail the bounded prefix proof.
     internal int D { get; }
 
-    // On a RepeatExit, C marks a greedy ASCII run whose following arms
-    // all reject shorter endpoints.
-    internal bool RepeatExitRejectsShorterEndpoints => C != 0;
+    // RepeatExit C records independent proofs about the continuation.
+    internal bool RepeatExitRejectsShorterEndpoints => (C & RepeatExitRejectsShorterFlag) != 0;
+    internal bool RepeatExitAcceptsEmptyTail => (C & RepeatExitAcceptsEmptyTailFlag) != 0;
 
     // A RepeatExit can pack up to three required ASCII starters for rewind.
     internal int RepeatExitRewindStarts => D;
