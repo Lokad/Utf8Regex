@@ -1322,6 +1322,17 @@ internal static partial class Utf8SliceRunner
                     continue;
                 case Utf8SliceInstructionKind.Fork when entry.B == 0 && entry.A > index:
                     if (remaining == 0) return true;
+                    if (entry is { C: < 0, D: > 0 } && remaining >= 3 &&
+                        position < input.Length && input[position] == ~entry.C)
+                    {
+                        // The target byte excludes the prepared captured prefix.
+                        // Keep the visits for its open, its rejected first literal,
+                        // and the matching target literal.
+                        remaining -= 3;
+                        position++;
+                        index = entry.A + 1;
+                        continue;
+                    }
                     // Many arms start with a fixed byte and an exact ASCII
                     // interval. Reject those mismatches before recursion.
                     if (code[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } literal)
