@@ -1361,8 +1361,7 @@ internal static class Pcre2GraphemeClusterSemantics
         var indicConsonantSeen = (previousProperties & Pcre2GraphemeData.IndicConsonant) != 0;
         var indicLinkerSeen = false;
 
-        // One atom can span an arbitrarily long cluster. Validation's earlier
-        // charge does not make this matching pass interruptible.
+        // Poll during the scan because one cluster can span arbitrarily many scalars.
         var remaining = 256;
         while (TryDecode(input, end, out var next, out var nextWidth))
         {

@@ -539,7 +539,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
     /// <param name="startOffsetInBytes">The zero-based UTF-8 byte offset where matching starts.</param>
     /// <param name="substitutionOptions">The substitution options.</param>
     /// <param name="matchOptions">The per-operation match options.</param>
-    /// <param name="cancellationToken">The original token retained through validation, matching and output shaping.</param>
+    /// <param name="cancellationToken">The original token retained through template validation, matching and output shaping.</param>
     /// <exception cref="OperationCanceledException">Cancellation was requested.</exception>
     public byte[] Replace(ReadOnlySpan<byte> input, ReadOnlySpan<byte> replacementPatternUtf8, int startOffsetInBytes = 0, Pcre2SubstitutionOptions substitutionOptions = Pcre2SubstitutionOptions.None, Pcre2MatchOptions matchOptions = Pcre2MatchOptions.None, CancellationToken cancellationToken = default)
     {
