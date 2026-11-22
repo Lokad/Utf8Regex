@@ -286,20 +286,21 @@ Public managed PCRE2 operations over UTF-8, compared with the native PCRE2 NFA t
 
 Times are elapsed microseconds per operation from paired measurements when available. Tables rank `Utf8Pcre2 / PCRE2 NFA` from highest to lowest; lower is better. Status retains paired 95% uncertainty, lane stability and result compatibility. A point ratio is not a winner. Excluded/unqualified rows appear last without a qualified ratio; independently measured discovery values remain observations only.
 
-Snapshot SHA-256: `FBBC9909D89BD1ED412F934CFFDFD70D2A97407A156F35A89BF7C2A71295274F`.
+Snapshot SHA-256: `24EFDEC330D222E4F49B11987FED23A9C4E3CAFF28145C4794C926A3C011B02C`.
 
-Comparator Status: `64` managed faster, `0` equivalent, `15` native faster, `6` inconclusive, `0` unqualified, `23` excluded.
+Comparator Status: `66` managed faster, `0` equivalent, `13` native faster, `6` inconclusive, `0` unqualified, `23` excluded.
 
 Measured source `3476f1716d73`: .NET 11.0.0. Selective updates retain each row's identity.
+Measured source `b4d6906fc475`: .NET 11.0.0. Selective updates retain each row's identity.
 
 ### Compatible IsMatch
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
+| `simple/httpclient-caseless` | 0.176 us | 0.089 us | Native faster | 1.99x |
 | `common/ip-miss` | 1.274 us | 1.118 us | Native faster | 1.14x |
 | `common/date-miss` | 0.748 us | 0.658 us | Native faster | 1.14x |
 | `common/uri-match` | 0.334 us | 0.301 us | Native faster | 1.11x |
-| `simple/httpclient-caseless` | 0.244 us | 0.228 us | Native faster | 1.07x |
 | `common/ip-match` | 0.412 us | 0.401 us | Native faster | 1.03x |
 | `industry/boostdocs-postcode-match` | 0.222 us | 0.238 us | Managed faster | 0.93x |
 | `industry/boostdocs-credit-card-match` | 0.233 us | 0.273 us | Managed faster | 0.85x |
@@ -312,11 +313,11 @@ Measured source `3476f1716d73`: .NET 11.0.0. Selective updates retain each row's
 | `simple/ab-plus` | 0.156 us | 0.221 us | Managed faster | 0.70x |
 | `simple/loglevel-multiline` | 0.180 us | 0.299 us | Inconclusive | 0.60x |
 | `industry/boostdocs-ftp-line-match` | 0.205 us | 0.355 us | Managed faster | 0.58x |
+| `simple/foo-dense` | 0.034 us | 0.071 us | Managed faster | 0.47x |
 | `literal/missing` | 0.071 us | 0.211 us | Managed faster | 0.34x |
 | `literal/late` | 0.076 us | 0.250 us | Managed faster | 0.31x |
 | `backtracking/assertion-capture` | 0.077 us | 0.288 us | Managed faster | 0.27x |
 | `common/one-node-backtracking` | 0.047 us | 0.184 us | Managed faster | 0.25x |
-| `simple/foo-dense` | 0.039 us | 0.213 us | Managed faster | 0.18x |
 | `literal/early` | 0.038 us | 0.220 us | Managed faster | 0.17x |
 | `literal/absolute-anchored` | 0.031 us | 0.215 us | Managed faster | 0.14x |
 | `common/backtracking` | 0.171 us | 1.276 us | Managed faster | 0.13x |
@@ -327,9 +328,7 @@ Measured source `3476f1716d73`: .NET 11.0.0. Selective updates retain each row's
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `simple/httpclient-caseless` | 1.665 us | 0.366 us | Native faster | 4.51x |
 | `simple/ab-plus` | 0.919 us | 0.340 us | Native faster | 2.71x |
-| `simple/foo-dense` | 0.543 us | 0.223 us | Native faster | 2.44x |
 | `simple/loglevel-multiline` | 0.575 us | 0.349 us | Native faster | 1.65x |
 | `backtracking/alternation-repeat` | 136.945 us | 146.587 us | Managed faster | 0.93x |
 | `industry/rust-sherlock-ing-count` | 9,879.925 us | 12,395.267 us | Managed faster | 0.80x |
@@ -339,7 +338,9 @@ Measured source `3476f1716d73`: .NET 11.0.0. Selective updates retain each row's
 | `industry/rust-sherlock-holmes-window-count` | 148.728 us | 627.450 us | Managed faster | 0.24x |
 | `industry/mariomka-ip-count` | 2,121.121 us | 14,315.100 us | Managed faster | 0.15x |
 | `common/matches-words` | 8.918 us | 72.670 us | Managed faster | 0.12x |
+| `simple/httpclient-caseless` | 0.076 us | 1.092 us | Managed faster | 0.07x |
 | `common/matches-word` | 1.162 us | 17.357 us | Managed faster | 0.07x |
+| `simple/foo-dense` | 0.050 us | 0.808 us | Managed faster | 0.06x |
 | `industry/leipzig-name-family-count` | 1,057.511 us | 17,740.750 us | Managed faster | 0.06x |
 | `industry/rust-sherlock-letter-count` | 1,880.505 us | 34,960.600 us | Managed faster | 0.05x |
 | `industry/leipzig-river-window-count` | 1,887.552 us | 42,815.700 us | Managed faster | 0.04x |
@@ -355,10 +356,10 @@ Measured source `3476f1716d73`: .NET 11.0.0. Selective updates retain each row's
 
 | Case | Utf8Pcre2 elapsed | PCRE2 NFA elapsed | Status | Ratio (lower is better) |
 | --- | ---: | ---: | --- | ---: |
-| `simple/httpclient-caseless` | 1.890 us | 1.032 us | Native faster | 1.83x |
+| `simple/httpclient-caseless` | 1.729 us | 1.089 us | Native faster | 1.58x |
 | `simple/loglevel-multiline` | 1.036 us | 0.762 us | Native faster | 1.35x |
 | `simple/ab-plus` | 1.352 us | 1.043 us | Native faster | 1.30x |
-| `simple/foo-dense` | 0.686 us | 0.778 us | Managed faster | 0.88x |
+| `simple/foo-dense` | 0.610 us | 0.802 us | Managed faster | 0.76x |
 | `simple/foo-optional-bar` | 0.782 us | 1.121 us | Managed faster | 0.70x |
 
 ### Compatible Replace
@@ -367,9 +368,9 @@ Measured source `3476f1716d73`: .NET 11.0.0. Selective updates retain each row's
 | --- | ---: | ---: | --- | ---: |
 | `common/replace-words` | 53.376 us | — | Excluded | — |
 | `simple/ab-plus` | 2.789 us | — | Excluded | — |
-| `simple/foo-dense` | 0.809 us | — | Excluded | — |
+| `simple/foo-dense` | 0.962 us | — | Excluded | — |
 | `simple/foo-optional-bar` | 0.962 us | — | Excluded | — |
-| `simple/httpclient-caseless` | 2.100 us | — | Excluded | — |
+| `simple/httpclient-caseless` | 2.348 us | — | Excluded | — |
 | `simple/loglevel-multiline` | 2.407 us | — | Excluded | — |
 
 ### PCRE2-only IsMatch
