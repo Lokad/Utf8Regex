@@ -460,10 +460,26 @@ internal sealed class Utf8SliceProgram
                     instructions[0] = new(first.Kind, first.A, first.B, ascii, proof);
             }
             else if (first is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Contiguous } &&
-                !readsCaptures && repeatCount != 0 && instructions.Length <= 32 &&
-                instructions[1] is { Kind: Utf8SliceInstructionKind.RepeatGreedy } repeat &&
-                (instructions[repeat.A].RepeatExitAcceptsEmptyTail || instructions[repeat.A].RepeatExitRejectsShorterEndpoints))
-                instructions[0] = new(first.Kind, first.A, first.B, first.C, 1);
+                !readsCaptures && repeatCount != 0 && instructions.Length <= 32)
+            {
+                var index = 1;
+                if (groupCount == 0)
+                {
+                    // A prefix of exact ASCII atoms can be verified in the
+                    // same bounded walk as a repeat with one viable endpoint.
+                    while (index < instructions.Length - 1 &&
+                        instructions[index] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
+                    {
+                        Utf8ConstructionScope.ChargeWork(1);
+                        index++;
+                    }
+                }
+                if (instructions[index] is { Kind: Utf8SliceInstructionKind.RepeatGreedy } repeat &&
+                    (index == 1 || repeat.HasSingleAtomBody) &&
+                    (instructions[repeat.A].RepeatExitRejectsShorterEndpoints ||
+                        index == 1 && instructions[repeat.A].RepeatExitAcceptsEmptyTail))
+                    instructions[0] = new(first.Kind, first.A, first.B, first.C, index == 1 ? 1 : -1);
+            }
             else if (!ignoreCase && !canMatchEmpty && !hasContiguousAnchor)
                 LeadingByteCandidate = Utf8SliceRunner.FindLeadingByteCandidate(this, Utf8ConstructionScope.CurrentBudget);
         }
