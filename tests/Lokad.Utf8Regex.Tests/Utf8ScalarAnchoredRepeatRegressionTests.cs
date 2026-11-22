@@ -52,4 +52,26 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
             Utf8MatchSequence.AssertRange(actual, text, oracle.Index, oracle.Length);
         }
     }
+
+    [Theory]
+    [InlineData(" [|  /// title", 4, true)]
+    [InlineData(" [|  ///\n😀", 4, true)]
+    [InlineData(" [|  ///\n\n😀", 4, false)]
+    [InlineData(" [|\u2003///\u2003doc😀", 128, true)]
+    public void AnchoredWhitespaceProofPreservesGreedyScalarRanges(string text, int workLimit, bool expected)
+    {
+        const string pattern = @"^\s*(\[\|\s*)?///\s?(?<doc>.*)$";
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = (ulong)workLimit, MaxWorkingBytes = 4096 } });
+        using var source = new CancellationTokenSource();
+
+        var actual = regex.Match(Encoding.UTF8.GetBytes(text), cancellationToken: source.Token);
+
+        Assert.Equal(expected, actual.Success);
+        if (expected)
+        {
+            var oracle = Regex.Match(text, pattern);
+            Utf8MatchSequence.AssertRange(actual, text, oracle.Index, oracle.Length);
+        }
+    }
 }

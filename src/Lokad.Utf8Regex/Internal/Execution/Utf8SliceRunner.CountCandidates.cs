@@ -1261,7 +1261,8 @@ internal static partial class Utf8SliceRunner
         // The lowered delimiter proof prevents an unbounded run from rewinding.
         return repeat.RepeatMaximum == long.MaxValue &&
             code[repeat.A].RepeatExitRejectsShorterEndpoints &&
-            (code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } ||
+            (code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
              GetUnfoldedAsciiRange(code[index + 1], out _) >= 0) ? -index : 0;
     }
 
@@ -1363,7 +1364,8 @@ internal static partial class Utf8SliceRunner
                     var singleAtom = entry.HasSingleAtomBody;
                     if (singleAtom && minimum == 0 && entry.RepeatMaximum == 1 && code[index] is var optionalAtom &&
                         optionalAtom is ({ Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } or
-                            { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }))
+                            { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                            { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 }))
                     {
                         var repeatIndex = index - 1;
                         index = entry.A + 1;
@@ -1375,6 +1377,8 @@ internal static partial class Utf8SliceRunner
                             remaining--;
                         }
                         var value = input[position];
+                        if (value >= 128 && optionalAtom.Kind == Utf8SliceInstructionKind.Hybrid)
+                            return true;
                         var optionalFirst = GetUnfoldedAsciiRange(optionalAtom, out var optionalLast);
                         if (optionalFirst >= 0
                             ? (uint)(value - optionalFirst) > (uint)(optionalLast - optionalFirst)
@@ -1563,8 +1567,15 @@ internal static partial class Utf8SliceRunner
             stop = atom.A == 0 ? suffix.IndexOf((byte)'\n') : -1;
         else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
             stop = suffix.IndexOfAnyExceptInRange((byte)first, last);
-        else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
+        else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+            { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
+        {
+            // The unfolded mask contains every ASCII member. A wider scalar
+            // can extend a hybrid run, leaving its endpoint undecided.
             stop = ScanAsciiMask(suffix, program.SetMasks[atom.A], category: false);
+            if (atom.Kind == Utf8SliceInstructionKind.Hybrid &&
+                (uint)stop < (uint)suffix.Length && suffix[stop] >= 128) return null;
+        }
         else return null;
 
         // The dot proof needs at most one scalar. A LF stop is aligned in
