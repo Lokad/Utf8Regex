@@ -359,6 +359,30 @@ public sealed class PosixGreedyAsciiRunTests
     }
 
     [Fact]
+    public void AsciiRunBlocksRespectOffsetsBoundsAndNonAsciiStops()
+    {
+        const string pattern = "([[:alpha:]]{1,65})(0{1,65})";
+        Assert.True(PosixProgram.Compile(pattern, default).DirectGreedyRuns);
+        using var regex = new Utf8PosixRegex(pattern);
+        var captures = new Utf8CaptureRange[3];
+        foreach (var length in new[] { 1, 15, 16, 17, 63, 64, 65 })
+        {
+            var alphabet = string.Concat(Enumerable.Repeat("zA", 33))[..length];
+            var text = "😀" + alphabet + new string('0', length) + "K";
+            var input = Encoding.UTF8.GetBytes(text);
+            var whole = new Utf8CaptureRange(4, 4 + 2 * length);
+            Assert.Equal(whole, regex.Match(input, 4, captures));
+            Assert.Equal(whole, captures[0]);
+            Assert.Equal(new Utf8CaptureRange(4, 4 + length), captures[1]);
+            Assert.Equal(new Utf8CaptureRange(4 + length, 4 + 2 * length), captures[2]);
+        }
+
+        var overMaximum = Encoding.ASCII.GetBytes(new string('a', 65) + new string('0', 66));
+        Assert.Equal(new Utf8CaptureRange(0, 130), regex.Match(overMaximum, captures: captures));
+        Assert.False(regex.Match("aé0"u8, captures: captures).Success);
+    }
+
+    [Fact]
     public void SingleRunAndFixedPiecesKeepUsefulFiniteAdmission()
     {
         var regex = new Utf8PosixRegex("Z(a+)()", policy: new Utf8RegexPolicy()

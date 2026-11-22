@@ -239,16 +239,15 @@ public sealed class PosixWorkspaceTests
                 MaxWorkingBytes = 1 << 20
             }
         });
-        var input = Encoding.ASCII.GetBytes(new string('a', 4096) + "0");
+        var input = Encoding.ASCII.GetBytes(new string('a', 8192) + "0");
         var output = new Utf8CaptureRange[3];
         using var source = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var fired = false;
+        ulong lastCheckpoint = 0;
         var session = Utf8SearchDiagnosticsSession.Start(steps =>
         {
-            if (steps < 512) return;
-            fired = true;
+            lastCheckpoint = steps;
             if (timeout) ticks = 25; else source.Cancel();
         });
         var account = new Account(1 << 20);
@@ -256,7 +255,7 @@ public sealed class PosixWorkspaceTests
         try
         {
             var error = Record.Exception(() => regex.Match(input, captures: output, cancellationToken: source.Token, workingMemoryAllowance: account));
-            Assert.True(fired);
+            Assert.Equal(64UL, lastCheckpoint);
             if (timeout) Assert.IsType<System.Text.RegularExpressions.RegexMatchTimeoutException>(error);
             else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
             Assert.All(output, value => Assert.False(value.Success));

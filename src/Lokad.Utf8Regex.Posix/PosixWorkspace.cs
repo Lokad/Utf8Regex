@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Text;
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Posix;
 
@@ -174,7 +175,12 @@ internal partial struct PosixWorkspace
                         var trackLineEnd = pc == _program.TerminalLineEndRepeat;
                         var lastLineEnd = -1;
                         var consumed = 0;
-                        if (atom.B == 0)
+                        if (atom.B == 0 && !trackLineEnd)
+                        {
+                            consumed = ScanAsciiRun(input.Slice(at, limit), literal, mask, ref invocation);
+                            at += consumed;
+                        }
+                        else if (atom.B == 0)
                         {
                             var runStart = at;
                             var endLimit = at + limit;
@@ -184,7 +190,7 @@ internal partial struct PosixWorkspace
                                 var value = input[at];
                                 if (value >= 128 || (literal >= 0 ? value != literal :
                                     (mask[value >> 3] & (1 << (value & 7))) == 0)) break;
-                                if (trackLineEnd && value == '\n' && at - runStart >= runMinimum) lastLineEnd = at;
+                                if (value == '\n' && at - runStart >= runMinimum) lastLineEnd = at;
                                 at++;
                             }
                             consumed = at - runStart;
@@ -434,6 +440,39 @@ internal partial struct PosixWorkspace
             frontier = next;
             at += width;
         }
+    }
+
+    private static int ScanAsciiRun(ReadOnlySpan<byte> input, int literal, ReadOnlySpan<byte> mask,
+        ref Utf8SliceInvocation invocation)
+    {
+        const int blockSize = 64;
+        var consumed = 0;
+        while (consumed < input.Length)
+        {
+            // Admit a bounded input block and check its deadline before searching.
+            Check(invocation.TryChargeInputStep(), ref invocation);
+            var block = input.Slice(consumed, Math.Min(blockSize, input.Length - consumed));
+            if (literal >= 0)
+            {
+                var stop = block.IndexOfAnyExcept((byte)literal);
+                if (stop >= 0) return consumed + stop;
+            }
+            else if (block.Length >= 16 && PreparedByteSetState.CanScanAsciiMask)
+            {
+                var accepted = PreparedByteSetState.ScanAsciiMaskPrefix(block, mask);
+                if (accepted < block.Length) return consumed + accepted;
+            }
+            else
+            {
+                for (var index = 0; index < block.Length; index++)
+                {
+                    var value = block[index];
+                    if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) return consumed + index;
+                }
+            }
+            consumed += block.Length;
+        }
+        return consumed;
     }
 
     private bool MatchesLiteral(Rune scalar, int value)
