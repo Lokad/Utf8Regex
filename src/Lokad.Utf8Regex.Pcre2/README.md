@@ -122,7 +122,7 @@ var regex = new Utf8Pcre2Regex(
     Pcre2CompileOptions.None);
 
 ReadOnlySpan<byte> input = Encoding.UTF8.GetBytes(
-    "Visit https://example.com and http://localhost.");
+    "Visit https://example.com and http://localhost today.");
 
 var matches = regex.EnumerateMatches(input);
 while (matches.MoveNext())
@@ -147,20 +147,6 @@ removed. Custom computation uses `CreateMatchCursor` and host-owned buffers.
 Detailed numeric-slot/name-table results and explicit compile/execution settings
 remain available. Cursor advances preserve regex controls; host computation and
 final output admission/cancellation checks belong to the host.
-
-## Delivery evidence
-
-Core, PythonRe and PCRE2 0.4.0 are published. All four 0.5.0 packages form the
-qualified candidate.
-PCRE2 now requires caller-valid UTF-8, like the other profiles. Frozen packages
-and measurements retain their own identities.
-
-Use `tools/qualify-package-candidate.ps1 -Profiles Core,PythonRe,Pcre2,Posix` at a
-coherent boundary with a fresh common version and exact Core pins. It checks
-package/symbol provenance, APIs, restore identities and isolated consumers.
-Windows/Linux correctness, original consumer acceptance and current performance
-remain separate checks. Publication does not establish downstream adoption or
-complete profile equivalence.
 
 ## Resource controls and ownership
 

@@ -179,7 +179,7 @@ var regex = new Utf8PythonRegex(
 bool isMatch = regex.IsMatch("foo-foo"u8);
 var first = regex.Match("xx foo-foo yy"u8, mode: Utf8PythonMatchMode.Search);
 int count = regex.Count("foo-foo x foo-foo"u8);
-byte[] replaced = regex.Replace("foo x foo"u8, "<\\g<word>>"u8);
+byte[] replaced = regex.Replace("foo-foo x foo-foo"u8, "<\\g<word>>"u8);
 using var matches = regex.CreateMatchCursor("foo-foo xx foo-foo"u8.ToArray());
 while (matches.MoveNext(out var match))
 {
@@ -198,16 +198,15 @@ stable, unchanged subject memory; the host owns collected arrays/strings and
 their final admission/cancellation checks. `ReplaceToString`
 and `SubnToString` are removed too; decode the owned byte-template output when needed.
 
-Use mode: Utf8PythonMatchMode.Match for one anchored capture result or
-Utf8PythonMatchMode.FullMatch for one complete-suffix result; Search is the default
-and advances successively. An optional scalar-aligned endOffsetInBytes limits the
-subject prefix without rebasing byte coordinates or losing lookbehind context.
+`Match` defaults to one anchored result. Use `Utf8PythonMatchMode.Search` to seek
+from the specified start, or `Utf8PythonMatchMode.FullMatch` to match the complete
+suffix. An optional scalar-aligned `endOffsetInBytes` limits the subject prefix
+while preserving absolute byte coordinates and lookbehind context.
 Dispose after consuming the desired result; snapshots remain valid. The former
 SearchDetailed/MatchDetailed/FullMatchDetailed APIs and context/group view types
 are removed. `LastIndex` retains Python's last-capture-to-close semantics.
-A cursor owns persistent discovery state, so one-shot capture materialization now
-pays cursor setup and allocation too. Use Match with caller-owned capture slots
-when only byte ranges are required, or omit slots for a whole-match value.
+A cursor owns persistent discovery state. Use `Match` with caller-owned capture
+slots for one result's byte ranges, or omit slots for a whole-match value.
 Resolve names on the compiled regex before using the resulting numbers on a snapshot.
 
 `CreateMatchCursor(ReadOnlyMemory<byte>)` discovers one range result per

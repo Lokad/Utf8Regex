@@ -13,36 +13,25 @@ int count = regex.Count("A😀"u8); // 2
 var match = regex.Match("😀"u8); // StartOffsetInBytes == 0, EndOffsetInBytes == 4
 ```
 
-The owned managed engine supports documented .NET-style grammar, captures/history,
-backreferences, assertions, RTL and a supported NonBacktracking subset, with
-native UTF-8 search paths. It does not execute BCL Regex matchers/results or
-promise UTF-16 parity. CultureInvariant is the primary supported mode. Whole
-subjects must be valid UTF-8 and remain unchanged during use. Regex operations
-trust this contract without a validation pass. Core uses
-ordered alternatives, not POSIX leftmost-longest matching.
+The managed engine supports documented .NET-style grammar, captures and capture
+history, backreferences, assertions, right-to-left matching and a NonBacktracking
+subset. Core uses ordered alternatives. CultureInvariant is the primary supported
+mode.
 
 Optional IL preparation is skipped when the host disables dynamic code,
 including with `Compiled`; non-emitted execution preserves results. NativeAOT
 publishing and trimming have not been qualified.
 
-Replacement callbacks can pass local stack buffers and formatting slices to
-`Utf8ReplacementWriter.Append`. Its scoped byte/char span inputs are copied or
-encoded before returning; the writer remains valid only during the callback.
-
-UTF-8 replacement templates parse/cache directly as bytes. Warm queries borrow
-the supplied span; cold keys are copied after admission. Prepared plans retain
-byte literals and syntax flags rather than parser/text graphs. Native capture
-discovery stays eligible, with byte output through the existing writer and only
-final text results decoded. String templates retain their fragment-local
-surrogate repair and .NET-style reference grammar.
+Pass UTF-8 replacement templates to `Replace` for owned bytes or `TryReplace`
+for caller-owned storage. Use `CreateMatchCursor` to compute custom replacements
+and write the output in the host.
 
 Instances support finite `Utf8ResourcePolicy` work, depth, working-capacity and
-result-capacity limits. **Defaults and static cached calls are unlimited.**
-Original cancellation and absolute deadlines cover pattern/template checks, matching, required
-shaping and cursor advances. Explicit `Compile` factories offer separate
-construction controls. Memory accounting admits modeled major capacity before
-allocation; it is not total heap/RSS, all preparation, callbacks or retained-host
-storage containment. See [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits).
+result-capacity limits. Defaults are unlimited. The original cancellation token
+and absolute deadline cover matching, template preparation, result shaping and
+cursor advances. Explicit `Compile` factories offer separate construction
+controls. Memory accounting admits modeled major capacities before allocation.
+See the [resource contract](../../docs/SPEC.md#cancellation-deadlines-and-resource-limits).
 
 Constructors and `Compile` accept `Utf8RegexPolicy`, combining execution and
 construction limits/timeouts with optional `ProgramMemoryAllowance`. Both funded
@@ -60,9 +49,8 @@ valid after advance/failure/disposal. Copied value cursors retain independent
 positions while sharing numeric allowance/deadline. Funded span enumeration borrows
 an open regex and rejects later advances after close; Current values remain valid.
 Use the memory cursor for traversal surviving close or shared working admission.
-Span/owned-output/text-template operations keep numeric controls; APIs exposing a
-working allowance inherit program funding when it is null. A host must separately account for
-retained results and its own storage.
+APIs exposing a working allowance inherit program funding when it is null.
+The host accounts for its own storage and retained results.
 
 Optional `Lokad.Utf8Regex.PythonRe`, `Lokad.Utf8Regex.Pcre2` and
 `Lokad.Utf8Regex.Posix` adapters require
