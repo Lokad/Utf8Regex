@@ -1330,20 +1330,33 @@ internal static partial class Utf8SliceRunner
                         if (position < input.Length && input[position] == literal.A)
                         {
                             var next = index + 1;
-                            var edge = position + 1;
-                            if (remaining != 0 && GetUnfoldedAsciiRange(code[next], out var last) is >= 0 and var first)
+                            var fallback = entry.A;
+                            var afterSibling = literal.D;
+                            while (true)
                             {
-                                remaining--;
-                                if (edge == input.Length || (uint)(input[edge] - first) > (uint)(last - first))
+                                var edge = position + 1;
+                                var possible = true;
+                                if (remaining != 0 && GetUnfoldedAsciiRange(code[next], out var last) is >= 0 and var first)
                                 {
-                                    index = entry.A;
-                                    continue;
+                                    remaining--;
+                                    possible = edge < input.Length && (uint)(input[edge] - first) <= (uint)(last - first);
+                                    next++;
+                                    edge++;
                                 }
-                                next++;
-                                edge++;
+                                if (possible && MayMatchBranchedAsciiPrefix(program, input, edge, next,
+                                    ref remaining, proveMatch, out acceptedEnd)) return true;
+                                if (afterSibling == 0 || remaining < 2) break;
+
+                                // Preparation proved that this sibling starts with
+                                // the same matching byte. Keep its fork and literal
+                                // visits while entering directly at the next atom.
+                                remaining -= 2;
+                                next = fallback + 2;
+                                fallback = afterSibling;
+                                afterSibling = 0;
                             }
-                            if (MayMatchBranchedAsciiPrefix(program, input, edge, next,
-                                ref remaining, proveMatch, out acceptedEnd)) return true;
+                            index = fallback;
+                            continue;
                         }
                         else if (literal.D != 0 && remaining >= 2)
                         {
