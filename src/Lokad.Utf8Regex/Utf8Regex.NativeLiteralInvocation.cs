@@ -84,20 +84,23 @@ public sealed partial class Utf8Regex
 
     // Shared semantic eligibility, independent of the optional Core owner's
     // policy. An adapter can supply finite limits through its borrowed invocation.
-    private bool CanUseNativeLiteralSearch(Utf8SliceProgram program, int maximumAlternatives = 3, bool allowBoundaries = false) =>
-        !program.RightToLeft && !program.IgnoreCase &&
-        !program.HasBalancing && !program.HasSharedCaptureDeclarations &&
-        !program.HasExplicitCaptureNumbers && !program.HasContiguousAnchor &&
-        // A prepared trailing literal proves the complete positive lookahead;
-        // the shared metered confirmer checks it before publishing a result.
-        (!program.SawLookaround || _preparedRegex.SearchPlan.HasTrailingLiteralRequirement) && !program.HasConditionalTest &&
-        !_requiresKelvinSignFallback && !program.CanMatchEmpty &&
-        (_preparedRegex.ExecutionKind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
-            _preparedRegex.LiteralUtf8 is { Length: > 0 } ||
-         _preparedRegex.ExecutionKind == NativeExecutionKind.ExactUtf8Literals &&
-            _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: >= 2 } literals &&
-            literals.Length <= maximumAlternatives) &&
-        (allowBoundaries || !_preparedRegex.SearchPlan.HasBoundaryRequirements);
+    private bool CanUseNativeLiteralSearch(Utf8SliceProgram program, int maximumAlternatives = 3, bool allowBoundaries = false)
+    {
+        var kind = _preparedRegex.ExecutionKind;
+        return (kind is NativeExecutionKind.ExactAsciiLiteral or NativeExecutionKind.ExactUtf8Literal &&
+                _preparedRegex.LiteralUtf8 is { Length: > 0 } ||
+            kind == NativeExecutionKind.ExactUtf8Literals &&
+                _preparedRegex.SearchPlan.AlternateLiteralsUtf8 is { Length: >= 2 } literals &&
+                literals.Length <= maximumAlternatives) &&
+            !program.RightToLeft && !program.IgnoreCase &&
+            !program.HasBalancing && !program.HasSharedCaptureDeclarations &&
+            !program.HasExplicitCaptureNumbers && !program.HasContiguousAnchor &&
+            // A prepared trailing literal proves the complete positive lookahead.
+            // The shared metered confirmer checks it before publishing a result.
+            (!program.SawLookaround || _preparedRegex.SearchPlan.HasTrailingLiteralRequirement) && !program.HasConditionalTest &&
+            !_requiresKelvinSignFallback && !program.CanMatchEmpty &&
+            (allowBoundaries || !_preparedRegex.SearchPlan.HasBoundaryRequirements);
+    }
 
     // Decide eligibility before constructing the invocation. Each selected
     // search starts its deadline and checks admission before inspecting input.
