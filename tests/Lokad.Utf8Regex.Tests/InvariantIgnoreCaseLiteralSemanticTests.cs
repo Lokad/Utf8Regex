@@ -79,6 +79,25 @@ public sealed class InvariantIgnoreCaseLiteralSemanticTests
     }
 
     [Theory]
+    [InlineData("key", "😀Key KEY")]
+    [InlineData("abck", "AbCK ABCK")]
+    [InlineData("kk", "KKK")]
+    [InlineData("key", "Kx KEY")]
+    [InlineData("key", "Kx")]
+    public void LateKelvinResumeRetainsScalarEdgesAndEarlierOverlaps(string pattern, string suffix)
+    {
+        const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled;
+        var text = new string('x', 128) + suffix;
+        var input = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8Regex(pattern, options);
+        var expected = Regex.Match(text, pattern, options);
+        var actual = regex.Match(input);
+        Assert.Equal(expected.Success, regex.IsMatch(input));
+        Assert.Equal(expected.Success, actual.Success);
+        if (expected.Success) Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
+    }
+
+    [Theory]
     [InlineData("kilo", false)]
     [InlineData("kilo", true)]
     [InlineData("kilo|cat|dog", false)]

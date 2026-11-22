@@ -96,7 +96,8 @@ public sealed partial class Utf8Regex
                 HasTrailingLiteralRequirement: false, LiteralUtf8: { Length: > 0 and <= MaximumFoldedSearchLiteralLength } literal })
             return false;
 
-        var kelvinLead = "K"u8[0];
+        var kelvin = "K"u8;
+        var kelvinLead = kelvin[0];
         var first = literal[0];
         var other = (uint)((first | 0x20) - 'a') <= 'z' - 'a' ? (byte)(first ^ 0x20) : first;
         var lastStart = input.Length - literal.Length;
@@ -106,9 +107,17 @@ public sealed partial class Utf8Regex
             var offset = input[floor..].IndexOfAny(first, other, kelvinLead);
             if (offset < 0) break;
             var start = floor + offset;
-            // An alias can complete a candidate that started earlier. Leave
-            // all such leads to existing discovery, including dense nonaliases.
-            if (input[start] == kelvinLead) return false;
+            if (input[start] == kelvinLead)
+            {
+                if (!input[start..].StartsWith(kelvin) || GetOwnedSliceProgram(ReadOnlySpan<byte>.Empty) is not null)
+                    return false;
+                // A failed ASCII candidate can still match across this first
+                // Kelvin sign. All scalars before it in such a match are ASCII.
+                var resume = Math.Max(0, start - literal.Length + 1);
+                while ((input[resume] & 0xc0) == 0x80) resume++;
+                match = OwnedSliceMatchFromByte(input, _ownedSliceProgram, resume, token);
+                return true;
+            }
             if (start <= lastStart && System.Text.Ascii.EqualsIgnoreCase(input.Slice(start, literal.Length), literal))
             {
                 found = start;
