@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace Lokad.Utf8Regex.Internal.Search;
@@ -60,6 +61,30 @@ internal readonly struct PreparedByteSetState(
 
     private static readonly Vector128<byte> s_bits = Vector128.Create(
         (byte)1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128);
+
+    internal static bool CanScanAsciiMask => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported;
+
+    internal static int ScanAsciiMaskPrefix(ReadOnlySpan<byte> input, ReadOnlySpan<byte> mask)
+    {
+        var membership = MemoryMarshal.Read<Vector128<byte>>(mask);
+        var last = input.Length - Vector128<byte>.Count;
+        var position = 0;
+        while (true)
+        {
+            var bytes = MemoryMarshal.Read<Vector128<byte>>(input[position..]);
+            // The sixteen bitset bytes are the lookup table. Wider input
+            // bytes produce out-of-range buckets, which Shuffle maps to zero.
+            var buckets = Vector128.ShiftRightLogical(bytes, 3);
+            var bits = Vector128.Shuffle(s_bits, bytes & Vector128.Create((byte)7));
+            var hits = Vector128.Shuffle(membership, buckets) & bits;
+            var misses = Vector128.ExtractMostSignificantBits(Vector128.Equals(hits, Vector128<byte>.Zero));
+            if (misses != 0) return position + BitOperations.TrailingZeroCount(misses);
+            if (position == last) return input.Length;
+            // The final vector stays inside the span and overlaps only bytes
+            // already accepted, so it returns the same first stop.
+            position = Math.Min(last, position + Vector128<byte>.Count);
+        }
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal bool Contains(byte value)

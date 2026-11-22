@@ -149,9 +149,27 @@ public sealed class Utf8TerminalClassRepeatTests
         Assert.Equal(new Utf8CaptureRange(0, length - 1), captures[1]);
     }
 
+    [Fact]
+    public void PositiveAsciiMaskStopsAtAsciiAndWideBytesAcrossBlocks()
+    {
+        using var regex = Create(@"\G([-/A~]+)", 128);
+        using var cancellation = new CancellationTokenSource();
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        foreach (var length in new[] { 15, 16, 17, 31, 32, 63, 64, 65 })
+        foreach (var stop in new[] { "Z", "é", "😀" })
+        {
+            var run = new string('~', length - 3) + "-/A";
+            var input = Encoding.UTF8.GetBytes("😀" + run + stop + "~/");
+            var expected = new Utf8CaptureRange(4, 4 + length);
+            Assert.Equal(expected, regex.Match(input, 4, captures, cancellation.Token));
+            Assert.Equal(expected, captures[1]);
+        }
+    }
+
     [Theory]
     [InlineData(@"\AX[A-Za-z0-9_]+!", 2048)]
     [InlineData(@"\AX[^\s!]+!", 64)]
+    [InlineData(@"\AX[-A~]+!", 64)]
     public void AsciiClassRunIsAdmittedInBoundedWorkBlocks(string pattern, int blockLength)
     {
         var input = Encoding.UTF8.GetBytes("X" + new string('A', 12 * blockLength) + "!");

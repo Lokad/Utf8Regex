@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.Intrinsics;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Search;
 
@@ -1691,6 +1692,9 @@ internal static partial class Utf8SliceRunner
 
     private static int ScanAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category, bool negated = false)
     {
+        if (window.Length >= Vector128<byte>.Count && !category && !negated && PreparedByteSetState.CanScanAsciiMask)
+            return PreparedByteSetState.ScanAsciiMaskPrefix(window, mask);
+
         var membership = Utf8SearchAsciiSet.FromMasks(BinaryPrimitives.ReadUInt64LittleEndian(mask),
             BinaryPrimitives.ReadUInt64LittleEndian(mask[8..]));
         var consumed = 0;
