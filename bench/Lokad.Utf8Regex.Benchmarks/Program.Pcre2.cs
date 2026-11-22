@@ -160,8 +160,7 @@ internal static partial class BenchmarkProgramRouter
         {
             exitCode = BenchmarkInspectReporter.RunRefreshPcre2Benchmarks(
                 args.Length >= 2 ? args[1] : null,
-                args.Length >= 3 ? args[2] : null,
-                args.Length >= 4 ? args[3] : null);
+                args.Length >= 3 ? args[2] : null);
             return true;
         }
 

@@ -123,12 +123,7 @@ try {
         Invoke-RefreshBenchmark python-scaling @('--refresh-pythonre-scaling', '5')
     }
     if ('Pcre2' -in $Phase) {
-        Invoke-RefreshBenchmark pcre2-raw @('--refresh-pcre2-benchmarks', '', '1', '5')
-        $snapshot = Get-Content (Join-Path $repoRoot "artifacts/benchmark-refresh/current/PCRE2.Benchmarks.json") -Raw | ConvertFrom-Json -AsHashtable
-        $ids = @($snapshot.Sections.Values | ForEach-Object { $_.Cases.Keys } | Sort-Object -Unique)
-        foreach ($id in $ids) {
-            Invoke-RefreshBenchmark ('pcre2-paired-' + $id.Replace('/', '_')) @('--qualify-pcre2-comparator-case', $id, '9')
-        }
+        Invoke-RefreshBenchmark pcre2-paired @('--refresh-pcre2-benchmarks', '', '9')
         Invoke-RefreshBenchmark pcre2-scaling @('--refresh-pcre2-scaling-families', '1', '5')
     }
     if ('Resources' -in $Phase) {

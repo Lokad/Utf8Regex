@@ -842,25 +842,6 @@ internal static partial class BenchmarkInspectReporter
         return 0;
     }
 
-    public static int RunRefreshPcre2Benchmarks(string? sectionsText, string? iterationsText, string? samplesText)
-    {
-        var iterations = ParseIterations(iterationsText);
-        var samples = ParseSamples(samplesText);
-        var snapshot = LoadPcre2BenchmarkSnapshot();
-        snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
-        snapshot.PcreNetNativeBaseline = CapturePcreNetNativeBaselineDependency();
-        var sections = ParsePcre2Sections(sectionsText);
-
-        foreach (var section in sections)
-        {
-            RefreshPcre2SnapshotSection(snapshot, section, iterations, samples);
-        }
-
-        SavePcre2BenchmarkSnapshot(snapshot);
-        Console.WriteLine($"Updated PCRE2 benchmark sections: {string.Join(", ", sections.Select(GetPcre2SectionToken))}");
-        return 0;
-    }
-
     public static int RunRefreshPcre2ScalingFamilies(string? iterationsText, string? samplesText, string? familyName)
     {
         var requestedIterations = ParseIterations(iterationsText);
@@ -1165,12 +1146,13 @@ var rangeResult61356 = enumerator.Current;
         return snapshot;
     }
 
-    private static void SavePcre2BenchmarkSnapshot(Pcre2BenchmarkSnapshot snapshot)
+    private static void SavePcre2BenchmarkSnapshot(Pcre2BenchmarkSnapshot snapshot, bool publishPresentation = true)
     {
         var path = GetPcre2SnapshotPath();
         var json = JsonSerializer.Serialize(snapshot, Pcre2BenchmarkSnapshotJsonOptions);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         BenchmarkFileWriter.WriteTextAtomically(path, json + Environment.NewLine);
+        if (!publishPresentation) return;
         WritePcre2BenchmarkSummary(snapshot);
         RewritePcre2BenchmarkMarkdown();
     }
@@ -1213,30 +1195,6 @@ var rangeResult61356 = enumerator.Current;
                 yield return section;
             }
         }
-    }
-
-    private static void RefreshPcre2SnapshotSection(Pcre2BenchmarkSnapshot snapshot, Pcre2BenchmarkSection section, int iterations, int samples)
-    {
-        var sectionSnapshot = GetOrAddPcre2SnapshotSection(snapshot, section);
-        var benchmarkCases = Utf8Pcre2BenchmarkCatalog.GetAllCases()
-            .Where(c => IsCaseInPcre2Section(c, section))
-            .OrderBy(static c => c.Id, StringComparer.Ordinal)
-            .ToArray();
-        var currentCaseIds = benchmarkCases.Select(static benchmarkCase => benchmarkCase.Id).ToHashSet(StringComparer.Ordinal);
-
-        foreach (var benchmarkCase in benchmarkCases)
-        {
-            Console.WriteLine($"Measuring {GetPcre2SectionToken(section)}: {benchmarkCase.Id}");
-            sectionSnapshot.Cases[benchmarkCase.Id] = MeasurePcre2SnapshotCase(section, benchmarkCase.Id, iterations, samples);
-            SavePcre2BenchmarkSnapshot(snapshot);
-        }
-
-        foreach (var staleCaseId in sectionSnapshot.Cases.Keys.Where(caseId => !currentCaseIds.Contains(caseId)).ToArray())
-        {
-            sectionSnapshot.Cases.Remove(staleCaseId);
-        }
-
-        SavePcre2BenchmarkSnapshot(snapshot);
     }
 
     private static bool IsCaseInPcre2Section(Utf8Pcre2BenchmarkCase benchmarkCase, Pcre2BenchmarkSection section)
@@ -1305,40 +1263,47 @@ var rangeResult61356 = enumerator.Current;
         var comparison = MeasureComparisonLanes(iterations, maximumIterations, samples, actions.ToArray(), names.ToArray());
         var effectiveIterations = comparison.Iterations[0];
         var allocationIterations = Math.Min(effectiveIterations, 4096);
-        var constructionIterations = Math.Min(effectiveIterations, 16);
         double? Timing(string name) => names.IndexOf(name) is var index && index >= 0 ? comparison.Medians[index] : null;
 
-        var measurement = new Pcre2CaseMeasurementJson
+        var measurement = CreatePcre2CaseMeasurement(benchmarkCase, context.InputBytes.Length,
+            operation, effectiveIterations, comparison.Medians[0],
+            MeasureAllocatedBytesPerInvocation(allocationIterations, actions[0]), samples);
+        measurement.MeasuredAtUtc = DateTimeOffset.UtcNow;
+        measurement.Environment = CaptureBenchmarkEnvironment();
+        measurement.Utf8Regex = Timing("Utf8Regex");
+        measurement.PredecodedRegex = Timing("PredecodedRegex");
+        measurement.DecodeThenRegex = Timing("DecodeThenRegex");
+        measurement.MeasurementProtocol = "IndependentAlternatingLanesV1";
+        measurement.LaneNames = names.ToArray();
+        measurement.LaneIterations = comparison.Iterations;
+        measurement.SampleMicroseconds = comparison.RawSamples;
+        measurement.PhaseMilliseconds = comparison.Phases;
+        MeasurePcreNetNativeBaseline(measurement, benchmarkCase, operation, maximumIterations, samples);
+        return measurement;
+    }
+
+    private static Pcre2CaseMeasurementJson CreatePcre2CaseMeasurement(Utf8Pcre2BenchmarkCase benchmarkCase,
+        int inputLength, Utf8Pcre2BenchmarkOperation operation, int iterations, double microseconds, long allocatedBytes,
+        int constructionSamples = 5)
+    {
+        var constructionIterations = Math.Min(iterations, 16);
+        return new Pcre2CaseMeasurementJson
         {
-            MeasuredAtUtc = DateTimeOffset.UtcNow,
-            Environment = CaptureBenchmarkEnvironment(),
             PatternUtf8Bytes = Encoding.UTF8.GetByteCount(benchmarkCase.Pattern),
-            InputUtf8Bytes = context.InputBytes.Length,
-            EffectiveIterations = effectiveIterations,
+            InputUtf8Bytes = inputLength,
+            EffectiveIterations = iterations,
             ConstructionMicroseconds = MeasureMedianMicroseconds(
-                samples,
+                constructionSamples,
                 constructionIterations,
                 () => CreatePcre2BenchmarkRegex(benchmarkCase).Pattern.Length),
             ConstructionAllocatedBytes = MeasureAllocatedBytesPerInvocation(
                 constructionIterations,
                 () => CreatePcre2BenchmarkRegex(benchmarkCase).Pattern.Length),
             FirstCallAllocatedBytes = MeasurePcre2FirstCallAllocatedBytes(benchmarkCase, operation),
-            WarmAllocatedBytes = MeasureAllocatedBytesPerInvocation(
-                allocationIterations,
-                () => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, operation)),
-            Utf8Pcre2 = comparison.Medians[0],
-            Utf8Regex = Timing("Utf8Regex"),
-            PredecodedRegex = Timing("PredecodedRegex"),
-            DecodeThenRegex = Timing("DecodeThenRegex"),
-            MeasurementProtocol = "IndependentAlternatingLanesV1",
-            LaneNames = names.ToArray(),
-            LaneIterations = comparison.Iterations,
-            SampleMicroseconds = comparison.RawSamples,
-            PhaseMilliseconds = comparison.Phases,
+            WarmAllocatedBytes = allocatedBytes,
+            Utf8Pcre2 = microseconds,
             ConstructionIterations = constructionIterations
         };
-        MeasurePcreNetNativeBaseline(measurement, benchmarkCase, operation, maximumIterations, samples);
-        return measurement;
     }
 
     private static Utf8Pcre2Regex CreatePcre2BenchmarkRegex(Utf8Pcre2BenchmarkCase benchmarkCase)

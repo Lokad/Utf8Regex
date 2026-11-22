@@ -99,8 +99,11 @@ fresh checkout and saves each completed case for resumption. Use
 `--measure-pythonre-case` for focused .NET and decode-inclusive controls.
 The canonical PCRE2 comparison uses the interpreted UTF-mode matcher
 through benchmark-only PCRE.NET, with `NO_UTF_CHECK` on caller-valid text.
-Keep incompatible native rows marked with an exclusion reason. Compact PCRE2
-rows report `ReferenceMatchOptions` when recorded by the measured lane.
+The paired pass creates catalog rows directly. For incompatible operations it
+records the managed measurement and the exclusion reason. Use
+`--refresh-pcre2-benchmarks "" 9` for the full catalog or
+`--qualify-pcre2-comparator-case <id> 9` for one case.
+Compact PCRE2 rows report `ReferenceMatchOptions` when recorded by the measured lane.
 Historical rows keep their original measurements and metadata.
 Python paired qualification checks the loaded binaries and PDB source
 checksums against clean relevant inputs. Use the existing paired protocol and

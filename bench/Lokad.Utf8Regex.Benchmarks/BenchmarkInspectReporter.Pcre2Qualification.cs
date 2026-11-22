@@ -82,6 +82,13 @@ internal static partial class BenchmarkInspectReporter
         string caseId,
         string? samplesText,
         bool comparatorFirst = false)
+        => RunPcre2Qualification(GetPcre2SectionsForCase(caseId).ToArray(), caseId, samplesText, comparatorFirst);
+
+    public static int RunRefreshPcre2Benchmarks(string? sectionsText, string? samplesText)
+        => RunPcre2Qualification(ParsePcre2Sections(sectionsText), null, samplesText, comparatorFirst: false);
+
+    private static int RunPcre2Qualification(
+        IReadOnlyList<Pcre2BenchmarkSection> sections, string? caseId, string? samplesText, bool comparatorFirst)
     {
 #if DEBUG
         Console.Error.WriteLine("PCRE2 qualification requires a Release build.");
@@ -132,26 +139,52 @@ internal static partial class BenchmarkInspectReporter
         snapshot.SchemaVersion = Pcre2BenchmarkSchemaVersion;
         var comparatorDependency = CapturePcreNetNativeBaselineDependency();
         snapshot.PcreNetNativeBaseline = comparatorDependency;
-        var benchmarkCase = Utf8Pcre2BenchmarkCatalog.Get(caseId);
+        var cases = caseId is null
+            ? Utf8Pcre2BenchmarkCatalog.GetAllCases().Where(item => sections.Any(section => IsCaseInPcre2Section(item, section)))
+                .OrderBy(static item => item.Id, StringComparer.Ordinal).ToArray()
+            : [Utf8Pcre2BenchmarkCatalog.Get(caseId)];
+        foreach (var benchmarkCase in cases)
+        {
+            QualifyPcre2Case(snapshot, comparatorDependency, sections, benchmarkCase, environment,
+                processorSet, samples, comparatorFirst);
+            SavePcre2BenchmarkSnapshot(snapshot, publishPresentation: false);
+        }
+        if (caseId is null)
+        {
+            foreach (var section in sections)
+            {
+                var rows = GetOrAddPcre2SnapshotSection(snapshot, section).Cases;
+                var currentIds = cases.Where(item => IsCaseInPcre2Section(item, section))
+                    .Select(static item => item.Id).ToHashSet(StringComparer.Ordinal);
+                foreach (var stale in rows.Keys.Where(id => !currentIds.Contains(id)).ToArray()) rows.Remove(stale);
+            }
+        }
+        SavePcre2BenchmarkSnapshot(snapshot);
+        Console.WriteLine(caseId is null
+            ? $"Refreshed PCRE2 benchmark sections: {string.Join(", ", sections.Select(GetPcre2SectionToken))}"
+            : $"Qualified PCRE.NET / PCRE2 NFA benchmark case: {caseId}");
+        return 0;
+#endif
+    }
+
+    private static void QualifyPcre2Case(Pcre2BenchmarkSnapshot snapshot, PcreNetNativeBaselineDependencyJson comparatorDependency,
+        IReadOnlyList<Pcre2BenchmarkSection> sections, Utf8Pcre2BenchmarkCase benchmarkCase, BenchmarkEnvironmentJson environment,
+        BenchmarkProcessorScope processorSet, int samples, bool comparatorFirst)
+    {
+        var caseId = benchmarkCase.Id;
         var context = new Utf8Pcre2BenchmarkContext(benchmarkCase);
 
-        foreach (var section in GetPcre2SectionsForCase(caseId))
+        foreach (var section in sections)
         {
+            if (!IsCaseInPcre2Section(benchmarkCase, section)) continue;
             var sectionName = GetPcre2SectionToken(section);
-            if (!snapshot.Sections.TryGetValue(sectionName, out var sectionSnapshot) ||
-                !sectionSnapshot.Cases.TryGetValue(caseId, out var measurement))
-            {
-                Console.Error.WriteLine(
-                    $"The snapshot does not contain case '{caseId}' in section '{sectionName}'. Refresh that section first.");
-                return 1;
-            }
-
+            Console.WriteLine($"Measuring {sectionName}: {caseId}");
+            var sectionSnapshot = GetOrAddPcre2SnapshotSection(snapshot, section);
             var operation = GetPcre2SectionRequirements(section).Operation;
+            Func<int> managedAction = () => ExecutePcre2SnapshotOperation(context.Utf8Pcre2Regex, context, operation);
             if (!PcreNetNativeBenchmarkBaseline.Supports(operation))
             {
-                measurement.PcreNetNativePair = null;
-                measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
-                measurement.PcreNetNativeStatusReason = measurement.PcreNetNativeUnavailableReason;
+                RecordExcluded("PCRE.NET does not expose equivalent UTF-8 span replacement output.");
                 continue;
             }
 
@@ -165,19 +198,10 @@ internal static partial class BenchmarkInspectReporter
                 var actual = comparator.ComputeChecksum(operation);
                 if (actual != expected)
                 {
-                    var reason = $"Structured checksum mismatch: managed={expected}, comparator={actual}.";
-                    measurement.PcreNetNativePair = null;
-                    measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
-                    measurement.PcreNetNativeStatusReason = reason;
-                    measurement.PcreNetNativeUnavailableReason = reason;
-                    Console.WriteLine($"{sectionName}: Excluded; {reason}");
+                    RecordExcluded($"Structured checksum mismatch: managed={expected}, comparator={actual}.");
                     continue;
                 }
 
-                Func<int> managedAction = () => ExecutePcre2SnapshotOperation(
-                    context.Utf8Pcre2Regex,
-                    context,
-                    operation);
                 Func<int> comparatorAction = () => comparator.Execute(operation);
                 var managedWarmup = WarmPcre2QualificationLane(managedAction);
                 var comparatorWarmup = WarmPcre2QualificationLane(comparatorAction);
@@ -185,19 +209,19 @@ internal static partial class BenchmarkInspectReporter
                 var comparatorBatchCount = CalibratePcre2QualificationBatch(comparatorAction);
                 var pair = MeasureSection();
 
+                var measurement = CreatePcre2CaseMeasurement(benchmarkCase, context.InputBytes.Length,
+                    operation, managedBatchCount, pair.ManagedMedianMicroseconds, pair.ManagedAllocatedBytesPerOperation);
                 measurement.MeasuredAtUtc = pair.MeasuredAtUtc;
                 measurement.Environment = environment;
-                measurement.EffectiveIterations = managedBatchCount;
-                measurement.Utf8Pcre2 = pair.ManagedMedianMicroseconds;
                 measurement.PcreNetNativeMeasuredAtUtc = pair.MeasuredAtUtc;
                 measurement.PcreNetNativeEnvironment = environment;
                 measurement.PcreNetNativeEffectiveIterations = comparatorBatchCount;
                 measurement.PcreNetNativeMatchOptions = PcreNetNativeBenchmarkBaseline.MatchOptions.ToString();
                 measurement.PcreNetNative = pair.ComparatorMedianMicroseconds;
-                measurement.PcreNetNativeUnavailableReason = null;
                 measurement.PcreNetNativePair = pair;
                 measurement.PcreNetNativeStatus = pair.Status;
                 measurement.PcreNetNativeStatusReason = pair.StatusReason;
+                sectionSnapshot.Cases[caseId] = measurement;
 
                 var statusLabel = pair.Status switch
                 {
@@ -368,19 +392,30 @@ internal static partial class BenchmarkInspectReporter
             }
             catch (PCRE.PcreException exception)
             {
-                var reason = $"PCRE.NET / PCRE2 NFA rejected the mapped profile: {exception.Message}";
-                measurement.PcreNetNativePair = null;
+                RecordExcluded($"PCRE.NET / PCRE2 NFA rejected the mapped profile: {exception.Message}");
+            }
+
+            void RecordExcluded(string reason)
+            {
+                var maximum = ParsePcre2SnapshotIterations(benchmarkCase, section, 1);
+                var comparison = MeasureComparisonLanes(1, maximum, 5, [managedAction], ["Utf8Pcre2"]);
+                var iterations = comparison.Iterations[0];
+                var measurement = CreatePcre2CaseMeasurement(benchmarkCase, context.InputBytes.Length, operation,
+                    iterations, comparison.Medians[0], MeasureAllocatedBytesPerInvocation(Math.Min(iterations, 4096), managedAction));
+                measurement.MeasuredAtUtc = DateTimeOffset.UtcNow;
+                measurement.Environment = environment;
+                measurement.MeasurementProtocol = "ManagedOnlyV1";
+                measurement.LaneNames = ["Utf8Pcre2"];
+                measurement.LaneIterations = comparison.Iterations;
+                measurement.SampleMicroseconds = comparison.RawSamples;
+                measurement.PhaseMilliseconds = comparison.Phases;
                 measurement.PcreNetNativeStatus = Pcre2NativeComparisonStatus.Excluded;
                 measurement.PcreNetNativeStatusReason = reason;
                 measurement.PcreNetNativeUnavailableReason = reason;
+                sectionSnapshot.Cases[caseId] = measurement;
                 Console.WriteLine($"{sectionName}: Excluded; {reason}");
             }
         }
-
-        SavePcre2BenchmarkSnapshot(snapshot);
-        Console.WriteLine($"Qualified PCRE.NET / PCRE2 NFA benchmark case: {caseId}");
-        return 0;
-#endif
     }
 
     private static int GetPcre2QualificationAllocationProbeIterations(double microsecondsPerOperation)
