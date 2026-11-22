@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.Input;
@@ -1452,9 +1453,11 @@ internal static partial class Utf8SliceRunner
                             if (instruction.C < 0)
                             {
                                 // Only the alternate starts with this byte.
-                                // The fallthrough excludes it, so neither choice needs a retry.
-                                programIndex = remaining > 0 && input[inputIndex] == ~instruction.C
-                                    ? instruction.A : programIndex + 1;
+                                // A captured fallthrough requires its complete prefix first.
+                                var takeTarget = instruction.D == 0
+                                    ? remaining > 0 && input[inputIndex] == ~instruction.C
+                                    : remaining < 2 || BinaryPrimitives.ReadUInt16LittleEndian(input[inputIndex..]) != instruction.D - 1;
+                                programIndex = takeTarget ? instruction.A : programIndex + 1;
                                 break;
                             }
                             var excludesTarget = instruction.D > 0 && remaining >= instruction.D;

@@ -66,6 +66,8 @@ public sealed class Utf8OptionalRepeatTests
     [Theory]
     [InlineData("///doc")]
     [InlineData("\u2003[|\t/// doc😀\n")]
+    [InlineData("[")]
+    [InlineData("[é///doc")]
     public void DisjointAsciiContinuationsPrepareUnicodeWhitespaceRepeats(string text)
     {
         const string pattern = @"^\s*(\[\|\s*)?///\s?(?<doc>.*)$";
@@ -80,7 +82,9 @@ public sealed class Utf8OptionalRepeatTests
         var input = Encoding.UTF8.GetBytes(text);
         var expected = new Regex(pattern, options).Match(text);
         using var source = new CancellationTokenSource();
-        Utf8MatchSequence.AssertRange(regex.Match(input, cancellationToken: source.Token), text, expected.Index, expected.Length);
+        var actual = regex.Match(input, cancellationToken: source.Token);
+        Assert.Equal(expected.Success, actual.Success);
+        if (expected.Success) Utf8MatchSequence.AssertRange(actual, text, expected.Index, expected.Length);
         Utf8MatchSequence.AssertCaptures(expected,
             Utf8MatchSequence.First(regex.CreateMatchCursor(input, cancellationToken: source.Token)), input, text);
     }

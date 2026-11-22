@@ -220,13 +220,14 @@ internal readonly struct Utf8SliceInstruction
     // A backward Jump can carry an excluded starting ASCII byte plus one in C.
     // A normal Fork can carry exclusive remaining byte bounds in C and D
     // for the fall-through and target respectively. Zero leaves an arm unknown.
-    // A negative C on a normal Fork encodes a disjoint loop exit byte as ~C.
+    // A negative C on a normal Fork encodes a disjoint target byte as ~C.
     // A RepeatEnd can mark a proved consuming body for ordered discovery.
     internal int C { get; }
     // For a positive unfolded Set, packed ASCII interval endpoints:
     // low byte is first+1, high byte is last; zero means no exact interval.
     // A Literal at a fork entry can carry the destination after two equal
     // first literals fail the bounded prefix proof.
+    // With negative Fork C, D can hold the packed captured prefix plus one.
     internal int D { get; }
 
     // RepeatExit C records independent proofs about the continuation.

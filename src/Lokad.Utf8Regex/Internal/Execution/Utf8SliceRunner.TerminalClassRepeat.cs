@@ -1228,6 +1228,20 @@ internal static partial class Utf8SliceRunner
             return;
 
         ref var first = ref code[forkIndex + 1];
+        if (first.Kind == Utf8SliceInstructionKind.CaptureStart && fork.A - forkIndex >= 4 &&
+            code[fork.A] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } target &&
+            code[forkIndex + 2] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } prefix &&
+            prefix.A != target.A &&
+            code[forkIndex + 3] is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } second)
+        {
+            // Test both prefix bytes before entering the captured arm. A
+            // partial prefix can fail without making any capture writes.
+            budget.ChargeWork(3);
+            var prefixBytes = prefix.A | (second.A << 8);
+            fork = new(fork.Kind, fork.A, 0, ~target.A, prefixBytes + 1);
+            return;
+        }
+
         if (first is { Kind: Utf8SliceInstructionKind.Literal, B: 0, D: 0, A: >= 0 and < 128 } &&
             fork.A < code.Length - 1 &&
             code[fork.A] is { Kind: Utf8SliceInstructionKind.Fork, B: 0 } next && next.A > fork.A + 1 &&
