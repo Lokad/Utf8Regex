@@ -33,11 +33,23 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
     [InlineData("$", "100:\n", false)]
     [InlineData(@"\z", "100-😀", true)]
     [InlineData(@"\z", "100-😀\n", false)]
-    public void ShortAnchoredRepeatProvesBooleanResultWithUnobservedCaptures(string end, string text, bool expected)
+    public void ShortAnchoredRepeatProvesRangeWithUnobservedCaptures(string end, string text, bool expected)
     {
-        using var regex = new Utf8Regex($@"^([0-9]+)(\-| |{end})(.*){end}", RegexOptions.Compiled,
+        var pattern = $@"^([0-9]+)(\-| |{end})(.*){end}";
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled,
             new() { ResourcePolicy = new() { MaxWorkSteps = 3, MaxWorkingBytes = 1, MaxDepth = 1 } });
         using var token = new CancellationTokenSource();
-        Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(text), token.Token));
+        var bytes = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.IsMatch(bytes, token.Token));
+
+        using var ranges = new Utf8Regex(pattern, RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 4, MaxWorkingBytes = 1, MaxDepth = 1 } });
+        var actual = ranges.Match(bytes, cancellationToken: token.Token);
+        Assert.Equal(expected, actual.Success);
+        if (expected)
+        {
+            var oracle = Regex.Match(text, pattern);
+            Utf8MatchSequence.AssertRange(actual, text, oracle.Index, oracle.Length);
+        }
     }
 }

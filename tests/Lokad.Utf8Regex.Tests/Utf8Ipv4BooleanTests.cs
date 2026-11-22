@@ -95,14 +95,17 @@ public sealed class Utf8Ipv4BooleanTests
     [InlineData("012.200.033.199")]
     [InlineData("250.250.250.250")]
     [InlineData("😀012.200.033.199")]
-    public void CompleteBranchProofFitsBooleanWorkAndStorageLimits(string text)
+    public void CompleteBranchProofFitsBooleanAndRangeWorkAndStorageLimits(string text)
     {
         using var token = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
         {
             ResourcePolicy = new() { MaxWorkSteps = 8, MaxDepth = 1, MaxWorkingBytes = 1 }
         });
-        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(text), token.Token));
+        var input = Encoding.UTF8.GetBytes(text);
+        var expected = Regex.Match(text, Pattern);
+        Assert.True(regex.IsMatch(input, token.Token));
+        Utf8MatchSequence.AssertRange(regex.Match(input, cancellationToken: token.Token), text, expected.Index, expected.Length);
     }
 
     [Theory]

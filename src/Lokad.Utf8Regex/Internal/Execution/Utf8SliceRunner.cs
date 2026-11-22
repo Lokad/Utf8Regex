@@ -539,11 +539,11 @@ internal static partial class Utf8SliceRunner
                 return new(false, -1, -1, null, null, breach);
             invocation.Budget.ThrowIfCancellationRequested();
             var proofStart = -1;
-            if (seekBeginning && existenceOnly && !collectHistory)
+            if (seekBeginning && !collectHistory && captureStarts.Length == 0)
             {
                 if (first.D == 1 && input.Length <= 32)
                     proofStart = 1;
-                else if (first.D < 0 && captureStarts.Length == 0 && input.Length <= BranchedPrefixInstructionLimit)
+                else if (first.D < 0 && input.Length <= BranchedPrefixInstructionLimit)
                     proofStart = -first.D;
             }
             if (proofStart >= 0)
@@ -779,7 +779,9 @@ internal static partial class Utf8SliceRunner
                 // input step above also covers stopping after the last one.
                 if (position > lastProbedStart) break;
                 var proveDecimalPrefix = shortDecimalHead || proveDecimalWindow;
-                var proveMatch = proveDecimalPrefix || existenceOnly && !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
+                // A conclusive proof from instruction zero already gives the
+                // first ordered range when there are no captures to publish.
+                var proveMatch = proveDecimalPrefix || !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
                 var proofStart = proveDecimalPrefix ? 0 : leadingScalarIndex;
                 var proofPosition = position;
                 var proofLimit = BranchedPrefixInstructionLimit;
