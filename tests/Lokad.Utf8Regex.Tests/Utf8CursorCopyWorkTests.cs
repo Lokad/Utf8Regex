@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Lokad.Utf8Regex.Internal.Diagnostics;
@@ -8,6 +10,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
+[Collection(Utf8RuntimeAllocationCollection.Name)]
 public sealed class Utf8CursorCopyWorkTests
 {
     private static Utf8PreparedRegex Prepared(Utf8Regex regex) =>
@@ -62,22 +65,28 @@ public sealed class Utf8CursorCopyWorkTests
     [Fact]
     public void UnlimitedNoneTokenInvocationMetadataDoesNotAllocate()
     {
-        for (var i = 0; i < 32; i++)
-        {
-            var warm = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
-            Assert.Equal(Utf8ExecutionLimitKind.None, warm.TryChargeInputStep());
-        }
+        // Warm the measured call site through delayed tiering.
+        var warmup = Stopwatch.StartNew();
+        do { _ = MeasureInvocationMetadata(out _); }
+        while (warmup.ElapsedMilliseconds < 1_000);
+
+        var allocated = MeasureInvocationMetadata(out var steps);
+        Assert.Equal(512UL, steps);
+        Assert.Equal(0L, allocated);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long MeasureInvocationMetadata(out ulong steps)
+    {
+        steps = 0;
         var before = GC.GetAllocatedBytesForCurrentThread();
-        ulong steps = 0;
         for (var i = 0; i < 512; i++)
         {
             var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
             _ = invocation.TryChargeInputStep();
             steps += invocation.Budget.Steps;
         }
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Assert.Equal(512UL, steps);
-        Assert.Equal(0L, allocated);
+        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
     [Fact]
