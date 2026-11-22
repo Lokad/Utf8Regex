@@ -582,9 +582,9 @@ internal static partial class Utf8SliceRunner
         var screenedDelimiter = -1;
         var wideInput = input.Length - fromByte >= 256;
         var needsClassWindow = leading is < 0 or >= 128;
-        var alignedByteDelimiter = program.LeadingClassDelimiter is { Direct: true, Literal: >= 0 } &&
-            candidatePlan.LiteralSearch is { Length: 1, IgnoreCase: false };
-        if ((needsClassWindow || alignedByteDelimiter) && !seekLiteral && !seekBeginning && !program.RightToLeft &&
+        if ((needsClassWindow || candidatePlan.LiteralSearch is { Length: 1, IgnoreCase: false } &&
+                program.LeadingClassDelimiter is { Direct: true, Literal: >= 0 }) &&
+            !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
             (wideInput || candidatePlan.LiteralSearch is { Length: > 0, IgnoreCase: false } ||
                 candidatePlan.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral))
@@ -595,7 +595,7 @@ internal static partial class Utf8SliceRunner
             directClassLiteral = direct;
             if (leadingClass >= 0 && literal >= 0)
             {
-                classSearch = GetAlignedDelimiterSearch(program, literalIndex, candidatePlan);
+                classSearch = GetAlignedDelimiterSearch(program, literalIndex, literal, candidatePlan);
                 if (directClassLiteral && classSearch is { } aligned)
                 {
                     var proofBreach = TryProveSingleWindowAttempt(program, leadingClass, (byte)literal,
@@ -1033,7 +1033,7 @@ internal static partial class Utf8SliceRunner
         var requiredClassSuffix = default((int First, int Second));
         if (whitespaceLiteral >= 0 && leadingClass >= 0)
         {
-            classSearch = GetAlignedDelimiterSearch(program, whitespaceLiteralIndex, candidatePlan);
+            classSearch = GetAlignedDelimiterSearch(program, whitespaceLiteralIndex, whitespaceLiteral, candidatePlan);
             if (!literalImmediatelyAfterRepeat && classSearch is null) whitespaceLiteral = -1;
             if (directClassLiteral && classSearch is { } aligned)
             {

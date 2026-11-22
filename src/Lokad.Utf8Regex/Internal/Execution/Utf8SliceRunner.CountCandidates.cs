@@ -527,10 +527,11 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
-    private static PreparedSubstringSearch? GetAlignedDelimiterSearch(Utf8SliceProgram program, int index,
+    private static PreparedSubstringSearch? GetAlignedDelimiterSearch(Utf8SliceProgram program, int index, int literal,
         in Utf8SearchPlan candidatePlan)
         => candidatePlan.LiteralSearch is { IgnoreCase: false } search &&
-            LiteralStartsAtInstruction(program, index, search.Needle) ? search : null;
+            (search.Length == 1 ? search.Needle[0] == literal : LiteralStartsAtInstruction(program, index, search.Needle))
+            ? search : null;
 
     private static (int First, int Second) GetRequiredHybridSuffix(ReadOnlySpan<Utf8SliceInstruction> code, int index)
     {
