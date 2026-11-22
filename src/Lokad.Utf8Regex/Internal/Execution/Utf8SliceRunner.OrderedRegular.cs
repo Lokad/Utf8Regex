@@ -62,18 +62,19 @@ internal static partial class Utf8SliceRunner
         {
             var repeat = instructions[pc];
             if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy) continue;
-            if (instructions.Length - pc < 5 || repeat.RepeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1 ||
-                repeat.A != pc + 3 || instructions[pc + 1].Kind is not (Utf8SliceInstructionKind.Literal or
+            var optional = repeat is { RepeatMinimum: 0, RepeatMaximum: 1 };
+            if (instructions.Length - pc < 5 || !optional && (repeat.RepeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1) ||
+                !IsSingleAtomRepeat(instructions, pc, repeat) ||
+                instructions[pc + 1].Kind is not (Utf8SliceInstructionKind.Literal or
                     Utf8SliceInstructionKind.Set or Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid or
-                    Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.Dot) ||
-                instructions[pc + 2].Kind != Utf8SliceInstructionKind.RepeatEnd || instructions[pc + 2].A != pc ||
-                instructions[pc + 3].Kind != Utf8SliceInstructionKind.RepeatExit || instructions[pc + 3].A != repeat.B)
+                    Utf8SliceInstructionKind.Shorthand or Utf8SliceInstructionKind.Dot))
                 return [];
 
             if (repeat.RepeatMinimum == 0)
             {
                 projected[pc] = new(Utf8SliceInstructionKind.Fork, pc + 3, 0, 0, 0);
-                projected[pc + 2] = new(Utf8SliceInstructionKind.Jump, pc, 0, 0, 0);
+                // Greedy optionals also prefer the atom, then leave after one hit.
+                projected[pc + 2] = new(Utf8SliceInstructionKind.Jump, optional ? pc + 3 : pc, 0, 0, 0);
                 projected[pc + 3] = new(Utf8SliceInstructionKind.Jump, pc + 4, 0, 0, 0);
             }
             else

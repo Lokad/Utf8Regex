@@ -282,6 +282,34 @@ public sealed class Utf8CaptureSlotMatchTests
         Assert.Equal(0UL, account.Held);
     }
 
+    [Theory]
+    [InlineData(RegexOptions.None)]
+    [InlineData(RegexOptions.RightToLeft)]
+    public void OrderedGreedyOptionalPreservesBranchPriorityAndCaptures(RegexOptions options)
+    {
+        const string hits = "😀 z😀a";
+        var gap = new string('q', 4098);
+        var reverse = options == RegexOptions.RightToLeft;
+        var input = Encoding.UTF8.GetBytes(reverse ? hits + gap : gap + hits);
+        using var regex = new Utf8Regex("(?<first>😀a?)|(?<second>z+😀a)", options, new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxDepth = 32, MaxWorkSteps = 256, MaxWorkingBytes = 4096 }
+        });
+        var expected = reverse
+            ? new Utf8CaptureRange(Encoding.UTF8.GetByteCount("😀 z"), Encoding.UTF8.GetByteCount(hits))
+            : new Utf8CaptureRange(gap.Length, gap.Length + Encoding.UTF8.GetByteCount("😀"));
+        var account = new Account();
+        using var source = new CancellationTokenSource();
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[3];
+
+        Assert.Equal(expected, regex.Match(input, captures: slots, cancellationToken: source.Token, workingMemoryAllowance: account));
+        Assert.Equal(expected, slots[1]);
+        Assert.False(slots[2].Success);
+        Assert.Equal(0UL, account.Held);
+        Assert.Equal(2, regex.Count(input, source.Token, account));
+        Assert.Equal(0UL, account.Held);
+    }
+
     [Fact]
     public void OrdinaryOrderedBooleanNeedsNoScratchLoanFromTheCaller()
     {
