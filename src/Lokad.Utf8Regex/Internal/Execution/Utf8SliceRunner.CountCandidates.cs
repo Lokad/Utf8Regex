@@ -1233,7 +1233,7 @@ internal static partial class Utf8SliceRunner
         return 0;
     }
 
-    private static bool IsSingleAtomRepeat(ReadOnlySpan<Utf8SliceInstruction> code, int index, Utf8SliceInstruction entry)
+    internal static bool IsSingleAtomRepeat(ReadOnlySpan<Utf8SliceInstruction> code, int index, Utf8SliceInstruction entry)
         => entry.A == index + 3 && entry.A < code.Length &&
             code[index + 2] is { Kind: Utf8SliceInstructionKind.RepeatEnd } loop && loop.A == index &&
             code[entry.A] is { Kind: Utf8SliceInstructionKind.RepeatExit } exit && exit.A == entry.B;
@@ -1359,7 +1359,7 @@ internal static partial class Utf8SliceRunner
                 case Utf8SliceInstructionKind.RepeatGreedy:
                 case Utf8SliceInstructionKind.RepeatLazy:
                     var minimum = entry.RepeatMinimum;
-                    var singleAtom = IsSingleAtomRepeat(code, index - 1, entry);
+                    var singleAtom = entry.HasSingleAtomBody;
                     if (singleAtom && minimum == 0 && entry.RepeatMaximum == 1 && code[index] is var optionalAtom &&
                         optionalAtom is ({ Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } or
                             { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }))

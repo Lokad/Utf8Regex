@@ -632,9 +632,7 @@ internal static partial class Utf8SliceRunner
         continuation = 0;
         var instructions = program.Instructions;
         var repeat = instructions[repeatIndex];
-        if (program.RightToLeft || instructions.Length - repeatIndex < 5 ||
-            repeat.Kind is not (Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy) ||
-            !IsSingleAtomRepeat(instructions, repeatIndex, repeat)) return false;
+        if (program.RightToLeft || instructions.Length - repeatIndex < 5 || !repeat.HasSingleAtomBody) return false;
         var atom = instructions[repeatIndex + 1];
         if (!IsScalarRepeatAtom(atom)) return false;
         continuation = repeat.A + 1;
@@ -983,7 +981,7 @@ internal static partial class Utf8SliceRunner
         Utf8SliceNode.CategorySetMember[][] categories, int repeatIndex, Utf8ConstructionBudget budget)
     {
         var repeat = code[repeatIndex];
-        if (!IsSingleAtomRepeat(code, repeatIndex, repeat))
+        if (!repeat.HasSingleAtomBody)
         {
             if (repeat is { RepeatMinimum: 1, RepeatMaximum: long.MaxValue } &&
                 repeat.A < code.Length - 1 && HasCapturedScalarBody(code, repeatIndex, repeat.A) &&

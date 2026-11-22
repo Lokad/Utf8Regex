@@ -218,6 +218,7 @@ internal readonly struct Utf8SliceInstruction
     internal bool IsLiteralChoice { get; }
     // A positive Nd category with no other members has exact ASCII digits.
     internal bool IsDecimalDigitSet { get; }
+    internal bool HasSingleAtomBody { get; init; }
     internal int A { get; }
     // RepeatExit uses a positive B as an exclusive byte bound to the input end.
     // A nonzero RepeatEnd B packs three ASCII stop bytes for its guarded fallback.
@@ -526,8 +527,13 @@ internal sealed class Utf8SliceProgram
         for (var pc = 0; pc < instructions.Length; pc++)
         {
             var instruction = instructions[pc];
-            if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && !rightToLeft && !isNonBacktracking)
-                Utf8SliceRunner.PrepareScalarRepeatContinuation(instructions, setMasks, categorySetMembers, pc, budget);
+            if (instruction.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
+            {
+                // Record the final repeat layout once for runtime verification.
+                instructions[pc] = instruction with { HasSingleAtomBody = Utf8SliceRunner.IsSingleAtomRepeat(instructions, pc, instruction) };
+                if (instruction.Kind == Utf8SliceInstructionKind.RepeatGreedy && !rightToLeft && !isNonBacktracking)
+                    Utf8SliceRunner.PrepareScalarRepeatContinuation(instructions, setMasks, categorySetMembers, pc, budget);
+            }
             else if (instruction.Kind == Utf8SliceInstructionKind.Jump && !rightToLeft && !isNonBacktracking)
                 Utf8SliceRunner.MarkExcludedLoopStart(instructions, setMasks, pc, budget);
             else if (instruction.Kind == Utf8SliceInstructionKind.Fork && !rightToLeft && !isNonBacktracking)
