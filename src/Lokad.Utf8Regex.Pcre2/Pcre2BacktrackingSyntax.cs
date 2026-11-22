@@ -369,9 +369,26 @@ internal sealed class Pcre2BacktrackingProgram
         LeadingAsciiByte = leadingAsciiByte;
         LeadingExtendedGraphemeCluster = leadingExtendedGraphemeCluster;
         AnchoredFinalAscii = anchoredFinalAscii;
+        IsShortStateless = IsShortStatelessProgram(instructions);
         GreedyOptionalTail = UsesMatchBoundaryReset || subroutineTargets.Length != 0 ||
             (request.Options & Pcre2CompileOptions.EndAnchored) != 0
             ? int.MaxValue : FindGreedyOptionalTail(instructions);
+    }
+
+    private static bool IsShortStatelessProgram(ReadOnlySpan<Pcre2BacktrackingInstruction> instructions)
+    {
+        if (instructions.Length > 8) return false;
+        Utf8ConstructionScope.ChargeWork(1);
+        foreach (ref readonly var instruction in instructions)
+        {
+            if (instruction.Kind is Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureStart
+                or Pcre2BacktrackingInstructionKind.CaptureEnd or Pcre2BacktrackingInstructionKind.CaptureToken
+                or Pcre2BacktrackingInstructionKind.Accept)
+                continue;
+            if (instruction.Kind != Pcre2BacktrackingInstructionKind.ControlAccept || instruction.ControlNameId >= 0)
+                return false;
+        }
+        return true;
     }
 
     private static int FindGreedyOptionalTail(ReadOnlySpan<Pcre2BacktrackingInstruction> instructions)
@@ -398,6 +415,8 @@ internal sealed class Pcre2BacktrackingProgram
     }
 
     internal Pcre2BacktrackingInstruction[] Instructions { get; }
+    // Capture writes are stateless only when no caller needs their values.
+    internal bool IsShortStateless { get; }
     internal int GreedyOptionalTail { get; }
 
     private readonly Pcre2CompileRequest _request;

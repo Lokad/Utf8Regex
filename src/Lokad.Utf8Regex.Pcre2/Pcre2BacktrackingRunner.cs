@@ -286,6 +286,7 @@ internal static class Pcre2BacktrackingRunner
         var windowCandidateEnd = -1;
         string? lastMark = null;
         var skipsCrLfContinuation = program.Request.SkipsCrLfContinuation;
+        var stateless = captureMaterialization == Pcre2CaptureMaterialization.None && program.IsShortStateless;
         while (candidate <= maximumCandidate)
         {
             if (useCandidateSearch)
@@ -317,38 +318,47 @@ internal static class Pcre2BacktrackingRunner
                 if (++candidate > maximumCandidate) break;
             }
             budget.ChargeCandidate();
-            if (TryMatchAt(
-                    program,
-                    bytes,
-                    ref input,
-                    candidate,
-                    firstMatchingPosition.Value,
-                    matchOptions,
-                    captureMaterialization,
-                    default,
-                    0,
-                    false,
-                    ref budget,
-                    ref frames,
-                    ref repeatMutations,
-                    ref workspace,
-                    out var match,
-                    out var failure, destination))
+            if (stateless)
             {
-                return match;
+                if (MatchShortStateless(program, bytes, candidate, firstMatchingPosition.Value,
+                        matchOptions, false, ref budget, out var end))
+                    return new(true, candidate, end, candidate, end, false, default, null);
             }
-
-            lastMark = match.Mark ?? lastMark;
-
-            if (failure.Kind == Pcre2BacktrackingFailureKind.Commit)
+            else
             {
-                break;
-            }
+                if (TryMatchAt(
+                        program,
+                        bytes,
+                        ref input,
+                        candidate,
+                        firstMatchingPosition.Value,
+                        matchOptions,
+                        captureMaterialization,
+                        default,
+                        0,
+                        false,
+                        ref budget,
+                        ref frames,
+                        ref repeatMutations,
+                        ref workspace,
+                        out var match,
+                        out var failure, destination))
+                {
+                    return match;
+                }
 
-            if (failure.Kind == Pcre2BacktrackingFailureKind.Skip && failure.SkipPosition > candidate)
-            {
-                candidate = failure.SkipPosition;
-                continue;
+                lastMark = match.Mark ?? lastMark;
+
+                if (failure.Kind == Pcre2BacktrackingFailureKind.Commit)
+                {
+                    break;
+                }
+
+                if (failure.Kind == Pcre2BacktrackingFailureKind.Skip && failure.SkipPosition > candidate)
+                {
+                    candidate = failure.SkipPosition;
+                    continue;
+                }
             }
 
             if (useCandidateSearch)
@@ -1603,13 +1613,13 @@ internal static class Pcre2BacktrackingRunner
         if (!isLookbehind)
         {
             budget.ChargeCandidate();
-            if (captureState.IsEmpty && TryMatchStatelessLookahead(assertionProgram, input, inputIndex,
-                    outerFirstMatchingPosition, nestedOptions, ref budget, out var probeMatched))
+            if (captureState.IsEmpty && assertionProgram.IsShortStateless)
             {
                 captures = [];
                 mark = null;
                 reportedStartOffsetInBytes = -1;
-                return isNegative != probeMatched;
+                return isNegative != MatchShortStateless(assertionProgram, input, inputIndex,
+                    outerFirstMatchingPosition, nestedOptions, true, ref budget, out _);
             }
 
             var matched = TryMatchAt(
@@ -1702,49 +1712,43 @@ internal static class Pcre2BacktrackingRunner
             (next.Token.Options & Pcre2CharacterOptions.Caseless) == 0 && position < input.Length &&
             next.Token.CharacterClass.AsciiByteSet is { } ascii && ascii.Contains(input[position]);
 
-    private static bool TryMatchStatelessLookahead(
+    private static bool MatchShortStateless(
         Pcre2BacktrackingProgram program,
         ReadOnlySpan<byte> input,
         int position,
         int firstMatchingPosition,
         Pcre2MatchOptions options,
+        bool isAssertion,
         ref Pcre2ResourceBudget budget,
-        out bool matched)
+        out int end)
     {
-        matched = false;
-        var instructions = program.Instructions.AsSpan();
-        if (instructions.Length > 8) return false;
-        foreach (ref readonly var instruction in instructions)
-        {
-            if (instruction.Kind is Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureStart
-                or Pcre2BacktrackingInstructionKind.CaptureEnd or Pcre2BacktrackingInstructionKind.CaptureToken
-                or Pcre2BacktrackingInstructionKind.Accept)
-                continue;
-            if (instruction.Kind != Pcre2BacktrackingInstructionKind.ControlAccept || instruction.ControlNameId >= 0)
-                return false;
-        }
-
         // Keep the zero-byte admission checkpoint and charge the same reached
-        // instructions as a nested VM. A stateless lookahead has no open
+        // instructions as the general VM. A stateless attempt has no open
         // captures to close on ACCEPT and cannot publish a mark or reset.
         budget.ReserveWorking(0);
-        foreach (ref readonly var instruction in instructions)
+        end = position;
+        foreach (ref readonly var instruction in program.Instructions.AsSpan())
         {
             budget.ChargeBacktracking(in instruction);
-            if (instruction.Kind is Pcre2BacktrackingInstructionKind.Token or Pcre2BacktrackingInstructionKind.CaptureToken)
+            switch (instruction.Kind)
             {
-                if (!Pcre2CharacterRunner.TryMatchToken(instruction.Token, program.Request, input,
-                        position, firstMatchingPosition, options, ref budget, out position))
+                case Pcre2BacktrackingInstructionKind.Token:
+                case Pcre2BacktrackingInstructionKind.CaptureToken:
+                    if (!Pcre2CharacterRunner.TryMatchToken(instruction.Token, program.Request, input,
+                            end, firstMatchingPosition, options, ref budget, out end))
+                        return false;
                     break;
-            }
-            else if (instruction.Kind is Pcre2BacktrackingInstructionKind.Accept
-                or Pcre2BacktrackingInstructionKind.ControlAccept)
-            {
-                matched = true;
-                break;
+                case Pcre2BacktrackingInstructionKind.Accept:
+                    var endAnchored = (options & Pcre2MatchOptions.EndAnchored) != 0 ||
+                        !isAssertion && (program.Request.Options & Pcre2CompileOptions.EndAnchored) != 0;
+                    if (endAnchored && end != input.Length) return false;
+                    goto case Pcre2BacktrackingInstructionKind.ControlAccept;
+                case Pcre2BacktrackingInstructionKind.ControlAccept:
+                    return end != position || (options & Pcre2MatchOptions.NotEmpty) == 0 &&
+                        ((options & Pcre2MatchOptions.NotEmptyAtStart) == 0 || position != firstMatchingPosition);
             }
         }
-        return true;
+        return false;
     }
 
     private static void ThrowIfDisallowedNonMonotoneLookaroundReset(
