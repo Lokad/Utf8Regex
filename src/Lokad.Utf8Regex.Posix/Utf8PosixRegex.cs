@@ -29,8 +29,7 @@ public sealed class Utf8PosixRegex : IDisposable
         var resources = policy.ResourcePolicy;
         resources.Validate(nameof(policy));
         Pattern = pattern; Options = options;
-        _limits = new(resources.MaxWorkSteps ?? 0, resources.MaxDepth ?? 0,
-            resources.MaxWorkingBytes ?? 0, resources.MaxResultBytes ?? 0);
+        _limits = new(resources);
         var ownsConstruction = explicitCompile || account is not null ||
             constructionPolicy != default || constructionTimeout != Regex.InfiniteMatchTimeout;
         // PosixProgram already owns default construction and inherits a parent.
