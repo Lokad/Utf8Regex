@@ -508,61 +508,70 @@ internal static partial class Utf8SliceRunner
         var atContiguousOrigin = first is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Contiguous } &&
             !reverse && invocation.AnchorOriginByte == fromByte;
         if (seekBeginning && first.B == 0 || seekVeryEnd || atContiguousOrigin)
-        {
-            // These anchors admit one origin in the search direction.
-            // Keep its normal attempt and interruption checks.
-            if (seekBeginning && (fromByte != 0 || first.C != 0))
-            {
-                var seekBreach = TrySeekBeginning(program, input, ref fromByte, ref invocation);
-                if (seekBreach != Utf8ExecutionLimitKind.None || fromByte < 0)
-                    return new(false, -1, -1, seekBreach);
-            }
-            var breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None)
-                return new(false, -1, -1, breach);
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (seekVeryEnd && fromByte != input.Length)
-                return new(false, -1, -1, Utf8ExecutionLimitKind.None);
-            var proofStart = -1;
-            var proofLimit = BranchedPrefixInstructionLimit;
-            if (!reverse && !collectHistory && captureStarts.Length == 0)
-            {
-                if (first.D == 1 && input.Length - fromByte <= 32)
-                    proofStart = 1;
-                else if (first.D < 0 && input.Length <= SingleOriginPrefixInstructionLimit)
-                {
-                    proofStart = -first.D;
-                    // The anchor admits one proof. Keep the smaller allowance
-                    // on short inputs and when searching multiple origins.
-                    if (input.Length > BranchedPrefixInstructionLimit)
-                        proofLimit = SingleOriginPrefixInstructionLimit;
-                }
-            }
-            if (proofStart >= 0)
-            {
-                // The admitted short witness starts after the confirmed anchor.
-                // Unknown instructions still enter the original attempt.
-                var possible = MayMatchBranchedAsciiPrefix(program, input, fromByte, proofStart, out var acceptedEnd,
-                    proveMatch: true, instructionLimit: proofLimit);
-                if (!possible || acceptedEnd >= 0)
-                {
-                    breach = invocation.TryReserveWorking(0);
-                    if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
-                    invocation.Budget.ThrowIfCancellationRequested();
-                    return possible && breach == Utf8ExecutionLimitKind.None
-                        ? new(true, fromByte, acceptedEnd, breach)
-                        : new(false, -1, -1, breach);
-                }
-            }
-            var outcome = TryMatchAt(program, input, fromByte, captureStarts, captureEnds,
-                collectHistory, false, true, ref workspace, ref invocation, existenceOnly);
-            return outcome.IsMatch && outcome.Breach == Utf8ExecutionLimitKind.None
-                ? new(true, reverse ? outcome.EndIndex : fromByte, reverse ? fromByte : outcome.EndIndex,
-                    Utf8ExecutionLimitKind.None, outcome.CaptureHistory)
-                : new(false, -1, -1, outcome.Breach);
-        }
+            return TryFindFirstAtSingleOrigin(program, input, fromByte, captureStarts, captureEnds, collectHistory,
+                ref workspace, ref invocation, existenceOnly, first, seekBeginning, seekVeryEnd);
+
         return TryFindFirstByCandidateSearch(program, input, fromByte, captureStarts, captureEnds, collectHistory,
             ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral, seekBeginning);
+    }
+
+    private static Utf8SliceSearchOutcome TryFindFirstAtSingleOrigin(
+        Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
+        int[] captureStarts, int[] captureEnds, bool collectHistory,
+        ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, bool existenceOnly,
+        in Utf8SliceInstruction first, bool seekBeginning, bool seekVeryEnd)
+    {
+        // These anchors admit one origin in the search direction.
+        // Keep its normal attempt and interruption checks.
+        if (seekBeginning && (fromByte != 0 || first.C != 0))
+        {
+            var seekBreach = TrySeekBeginning(program, input, ref fromByte, ref invocation);
+            if (seekBreach != Utf8ExecutionLimitKind.None || fromByte < 0)
+                return new(false, -1, -1, seekBreach);
+        }
+        var breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None)
+            return new(false, -1, -1, breach);
+        invocation.Budget.ThrowIfCancellationRequested();
+        if (seekVeryEnd && fromByte != input.Length)
+            return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+        var proofStart = -1;
+        var proofLimit = BranchedPrefixInstructionLimit;
+        if (!seekVeryEnd && !collectHistory && captureStarts.Length == 0)
+        {
+            if (first.D == 1 && input.Length - fromByte <= 32)
+                proofStart = 1;
+            else if (first.D < 0 && input.Length <= SingleOriginPrefixInstructionLimit)
+            {
+                proofStart = -first.D;
+                // The anchor admits one proof. Keep the smaller allowance
+                // on short inputs and when searching multiple origins.
+                if (input.Length > BranchedPrefixInstructionLimit)
+                    proofLimit = SingleOriginPrefixInstructionLimit;
+            }
+        }
+        if (proofStart >= 0)
+        {
+            // The admitted short witness starts after the confirmed anchor.
+            // Unknown instructions still enter the original attempt.
+            var possible = MayMatchBranchedAsciiPrefix(program, input, fromByte, proofStart, out var acceptedEnd,
+                proveMatch: true, instructionLimit: proofLimit);
+            if (!possible || acceptedEnd >= 0)
+            {
+                breach = invocation.TryReserveWorking(0);
+                if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
+                invocation.Budget.ThrowIfCancellationRequested();
+                return possible && breach == Utf8ExecutionLimitKind.None
+                    ? new(true, fromByte, acceptedEnd, breach)
+                    : new(false, -1, -1, breach);
+            }
+        }
+        var outcome = TryMatchAt(program, input, fromByte, captureStarts, captureEnds,
+            collectHistory, false, true, ref workspace, ref invocation, existenceOnly);
+        return outcome.IsMatch && outcome.Breach == Utf8ExecutionLimitKind.None
+            ? new(true, seekVeryEnd ? outcome.EndIndex : fromByte, seekVeryEnd ? fromByte : outcome.EndIndex,
+                Utf8ExecutionLimitKind.None, outcome.CaptureHistory)
+            : new(false, -1, -1, outcome.Breach);
     }
 
     // Single-origin matches and ordered search do not need the candidate
