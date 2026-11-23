@@ -133,8 +133,9 @@ internal static class Utf8ExactStatePool
     private static void RemoveAt(Entry[] cache, int index)
     {
         s_retainedBytes -= cache[index].Bytes;
-        cache[index] = cache[--s_count];
-        cache[s_count] = default;
+        var last = --s_count;
+        if (index != last) cache[index] = cache[last];
+        cache[last] = default;
     }
 
     // Explicit release of the shared owner. Active working loans are independent
