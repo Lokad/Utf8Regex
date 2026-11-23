@@ -196,7 +196,7 @@ public sealed class Utf8SubstringPreparationQualificationTests
     }
 
     [Fact]
-    public void PublicLiteralSearchKeepsScalarRangesStrictValidationAndCancellation()
+    public void PublicLiteralSearchKeepsScalarRangesAndCancellation()
     {
         foreach (var options in new[] { RegexOptions.None, RegexOptions.Compiled, RegexOptions.RightToLeft,
             RegexOptions.RightToLeft | RegexOptions.Compiled })

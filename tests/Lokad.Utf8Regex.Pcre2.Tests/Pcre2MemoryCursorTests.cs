@@ -134,7 +134,7 @@ public sealed class Pcre2MemoryCursorTests
     }
 
     [Fact]
-    public void StrictValidationBoundaryAndNonMonotoneRejectionsPrecedePublication()
+    public void InvalidOffsetsAndNonMonotoneProgramsAreRejectedBeforeCursorPublication()
     {
         var regex = new Utf8Pcre2Regex(".");
         foreach (var offset in new[] { -1, 1, 2, 3, 6 })

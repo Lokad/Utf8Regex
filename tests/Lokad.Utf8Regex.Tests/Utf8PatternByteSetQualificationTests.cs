@@ -85,7 +85,7 @@ public sealed class Utf8PatternByteSetQualificationTests
     }
 
     [Fact]
-    public void CyrillicSharedAndUnequalAnchorsKeepScalarResultsAndStrictValidation()
+    public void CyrillicSharedAndUnequalAnchorsKeepScalarResultsAndCancellation()
     {
         foreach (var pattern in new[] { "Она", "Она|он", " Она| он", "Она| он|он!", "Я|я|Ты|ты|Он|он|Мы|мы" })
         {

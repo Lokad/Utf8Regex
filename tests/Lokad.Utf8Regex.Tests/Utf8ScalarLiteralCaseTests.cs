@@ -4,7 +4,7 @@ using Lokad.Utf8Regex.Internal.Planning;
 
 namespace Lokad.Utf8Regex.Tests;
 
-public sealed class Utf8DecodedFallbackTests
+public sealed class Utf8ScalarLiteralCaseTests
 {
     [Theory]
     [InlineData("Шерлок Холмс", "xx шерлок холмс yy ШЕРЛОК ХОЛМС", 2)]
@@ -38,22 +38,10 @@ public sealed class Utf8DecodedFallbackTests
         Assert.True(regex.Inspection.PreparedRegex.ScalarProgram is not null);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void UnicodeFallbackStrictDecodeRejectsMalformedPrefixAndSuffix(bool compiled)
-    {
-        var options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant |
-            (compiled ? RegexOptions.Compiled : RegexOptions.None);
-        var regex = new Utf8Regex("Шерлок", options: options);
-
-        Assert.Equal(NativeExecutionKind.FallbackRegex, regex.Inspection.ExecutionKind);
-    }
-
     [Fact]
-    public void UnicodeLiteralFallbackHasBoundedValueOperationFacts()
+    public void UnicodeFoldedLiteralKeepsBoundedPlanningFacts()
     {
-        var regex = new Utf8Regex(            "Шерлок Холмс", options:             RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var regex = new Utf8Regex("Шерлок Холмс", options: RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
         var prepared = regex.Inspection.PreparedRegex;
 
         Assert.Equal(NativeExecutionKind.FallbackRegex, prepared.ExecutionKind);

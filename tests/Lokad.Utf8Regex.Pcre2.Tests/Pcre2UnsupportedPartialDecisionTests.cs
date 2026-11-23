@@ -68,14 +68,13 @@ public sealed class Pcre2UnsupportedPartialDecisionTests
     }
 
     [Fact]
-    public void PreCancellationAndStrictValidationPrecedeUnsupportedDecision()
+    public void PreCancellationPrecedesUnsupportedDecision()
     {
         using var source = new CancellationTokenSource();
         source.Cancel();
         var regex = Create("(?<x>a+)", 5);
-        var malformed = new byte[] { (byte)'a', 0xFF };
         var failure = Assert.Throws<OperationCanceledException>(() =>
-        { _ = regex.Probe(malformed, Pcre2PartialMode.Hard, 0, Pcre2MatchOptions.None, source.Token); });
+        { _ = regex.Probe("a"u8, Pcre2PartialMode.Hard, 0, Pcre2MatchOptions.None, source.Token); });
         Assert.Equal(source.Token, failure.CancellationToken);
     }
 

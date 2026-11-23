@@ -63,7 +63,7 @@ public sealed class Utf8TerminatedPrefixValueMatchTests
     }
 
     [Fact]
-    public void OriginsUnicodeCapturesAndStrictValidationKeepTheirSemantics()
+    public void OriginsAndUnicodeCapturesKeepTheirByteRanges()
     {
         var regex = new Utf8Regex(Pattern);
         var bytes = "😀///é\n///next\n"u8.ToArray();
