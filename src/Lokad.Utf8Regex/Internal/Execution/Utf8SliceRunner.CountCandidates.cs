@@ -1517,7 +1517,13 @@ internal static partial class Utf8SliceRunner
                 foreach (var value in input.Slice(position, width))
                 {
                     if (value >= 128)
-                        return entry.C != 0 ? BranchedPrefixUndecided : BranchedPrefixRejected;
+                    {
+                        if (entry.C == 0) return BranchedPrefixRejected;
+                        if (width != 1) return BranchedPrefixUndecided;
+                        width = GetFoldedMaskScalarWidth(input, position, mask, program.CaseBehavior);
+                        if (width == 0) return BranchedPrefixRejected;
+                        break;
+                    }
                     if ((mask[value >> 3] & (1 << (value & 7))) == 0 &&
                         (entry.C == 0 || !Utf8SliceScalarClasses.MatchesMask(new Rune(value), mask, true, program.CaseBehavior)))
                         return BranchedPrefixRejected;
@@ -1582,12 +1588,19 @@ internal static partial class Utf8SliceRunner
                 if ((uint)stop < (uint)suffix.Length)
                 {
                     var value = suffix[stop];
-                    // A folded alias can extend the run. So can a wider member
-                    // of a hybrid class. The VM still owns those continuations.
-                    if (atom.Kind == Utf8SliceInstructionKind.Hybrid ? value >= 128 :
-                        atom.C != 0 && (value >= 128 ||
-                            Utf8SliceScalarClasses.MatchesMask(new Rune(value), mask, true, program.CaseBehavior)))
-                        return null;
+                    if (atom.Kind == Utf8SliceInstructionKind.Hybrid)
+                    {
+                        if (value >= 128) return null;
+                    }
+                    else if (atom.C != 0 && (value >= 128 ||
+                        Utf8SliceScalarClasses.MatchesMask(new Rune(value), mask, true, program.CaseBehavior)))
+                    {
+                        // The complete suffix is already within the proof's byte
+                        // allowance. With no upper count and at most one required
+                        // scalar, these byte endpoints suffice after folding.
+                        if (repeat.RepeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1) return null;
+                        stop = ContinueFoldedAsciiMask(suffix, stop, mask, program.CaseBehavior);
+                    }
                 }
             }
             else return null;
@@ -1671,6 +1684,24 @@ internal static partial class Utf8SliceRunner
         continueAt = position + consumed;
         return true;
     }
+
+    private static int ContinueFoldedAsciiMask(ReadOnlySpan<byte> input, int position,
+        byte[] mask, Utf8ScalarCaseBehavior behavior)
+    {
+        int width;
+        while ((width = GetFoldedMaskScalarWidth(input, position, mask, behavior)) != 0)
+        {
+            position += width;
+            position += ScanAsciiMask(input[position..], mask, category: false);
+        }
+        return position;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int GetFoldedMaskScalarWidth(ReadOnlySpan<byte> input, int position,
+        byte[] mask, Utf8ScalarCaseBehavior behavior)
+        => TryReadScalar(input, position, false, out var scalar, out var width) &&
+            Utf8SliceScalarClasses.MatchesMask(scalar, mask, true, behavior) ? width : 0;
 
     private const int BranchedPrefixInstructionLimit = 96;
     private const int SingleOriginPrefixInstructionLimit = 256;

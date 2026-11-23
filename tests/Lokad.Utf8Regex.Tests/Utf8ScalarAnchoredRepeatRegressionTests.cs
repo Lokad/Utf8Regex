@@ -76,7 +76,7 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
     }
 
     [Fact]
-    public void AnchoredFoldedSetProofKeepsScalarFallback()
+    public void AnchoredFoldedSetProofChecksAsciiAndUnicodeUnderTheSameLimit()
     {
         const string pattern = "^[a-z][a-z0-9_]*$";
         const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
@@ -89,8 +89,10 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
         Assert.Equal(new Utf8CaptureRange(0, 5), limited.Match("Name9\n"u8, cancellationToken: source.Token));
         Assert.False(limited.Match("Name9-"u8, cancellationToken: source.Token).Success);
         Assert.False(limited.Match("-Name9"u8, cancellationToken: source.Token).Success);
-        Assert.Equal(new Utf8CaptureRange(0, 5), ordinary.Match("Key\n"u8));
-        Assert.Equal(new Utf8CaptureRange(0, 5), ordinary.Match("AK9"u8));
+        Assert.Equal(new Utf8CaptureRange(0, 5), limited.Match("Key\n"u8, cancellationToken: source.Token));
+        Assert.Equal(new Utf8CaptureRange(0, 10), limited.Match("AKBCK9"u8, cancellationToken: source.Token));
+        Assert.False(limited.Match("AK😀9"u8, cancellationToken: source.Token).Success);
+        Assert.False(limited.Match("😀Name9"u8, cancellationToken: source.Token).Success);
         Assert.False(ordinary.Match("Name9\nx"u8).Success);
     }
 
