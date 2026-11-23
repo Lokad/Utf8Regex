@@ -77,6 +77,16 @@ public sealed class Utf8LiteralEdgeQualificationTests
         Assert.False(new Utf8Regex(@"\Aa(?i:b)").IsMatch("AB"u8)); Assert.False(new Utf8Regex(@"\A(?i:a)b").IsMatch("AB"u8));
     }
 
+    [Theory]
+    [InlineData(@"\Aab(?<=b)c", "abc😀", 0)]
+    [InlineData(@"a(?<=a)bc\z", "😀abc", 4)]
+    public void LookbehindPreventsAnAnchoredLiteralProof(string pattern, string text, int start)
+    {
+        const RegexOptions options = RegexOptions.CultureInvariant | RegexOptions.Compiled;
+        Assert.False(Plan(pattern, options).HasValue);
+        Range(pattern, text, options, start, 3);
+    }
+
     [Fact]
     public void WiderCaseFibersDeclineTheByteShortcutAndMatchCompleteScalars()
     {
@@ -159,8 +169,13 @@ public sealed class Utf8LiteralEdgeQualificationTests
     [Fact]
     public void LiteralWrapperAdmissionFailureLeavesTheOwnerUsable()
     {
-        var tree = Tree(@"\Aab", RegexOptions.CultureInvariant); var root = tree.Root;
-        for (var depth = 0; depth < 65; depth++) root = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, RegexOptions.CultureInvariant).WithChild(root);
+        const RegexOptions options = RegexOptions.CultureInvariant;
+        var tree = Tree(@"\Aab", options);
+        var literal = Utf8TreeNode.Create(Utf8TreeNodeKind.Multi, options, "ab");
+        for (var depth = 0; depth < 65; depth++)
+            literal = Utf8TreeNode.Create(Utf8TreeNodeKind.Group, options).WithChild(literal);
+        var root = Utf8TreeNode.Create(Utf8TreeNodeKind.Concatenate, options);
+        root.Children = new[] { Utf8TreeNode.Create(Utf8TreeNodeKind.Beginning, options), literal };
         var deep = Utf8OwnedRegexTree.Create(root, tree.CaptureCount, tree.CaptureNames, tree.CaptureNameToNumberMapping, tree.CaptureNumberSparseMapping,
             tree.Options, tree.Culture, tree.CaptureCatalog, tree.UsesLiteralClassBracketSyntax, tree.UsesIgnoreCase);
         var method = Classifier(); using var owner = new Utf8ConstructionScope(0, ulong.MaxValue, ulong.MaxValue, 8);

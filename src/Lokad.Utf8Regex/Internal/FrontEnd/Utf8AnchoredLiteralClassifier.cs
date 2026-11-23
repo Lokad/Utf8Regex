@@ -9,21 +9,6 @@ internal static class Utf8AnchoredLiteralClassifier
 {
     private readonly record struct Frame(Utf8TreeNode Node, int NextChild);
 
-    private static bool Admit(Utf8TreeNode root, bool allowFolding)
-    {
-        using var scratch = Utf8ConstructionScope.Enter(); var budget = scratch.Budget;
-        using var frames = Utf8ConstructionFrames<Frame>.Create(budget, new(root, 0));
-        while (frames.Count != 0)
-        {
-            budget.ChargeWork(1); var index = frames.Count - 1; var frame = frames[index];
-            if ((!allowFolding && frame.Node.MatchCaseInsensitive) ||
-                (frame.Node.Options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) != 0) return false;
-            if (frame.NextChild == frame.Node.ChildCount) { frames.Pop(); continue; }
-            frames[index] = new(frame.Node, frame.NextChild + 1); frames.Push(new(frame.Node.Child(frame.NextChild), 0));
-        }
-        return true;
-    }
-
     private static Utf8TreeNode Unwrap(Utf8TreeNode node)
     {
         while (node.ChildCount == 1 && (node.Kind == Utf8TreeNodeKind.Group || node.Kind == Utf8TreeNodeKind.Capture && node.N == -1))
@@ -36,7 +21,6 @@ internal static class Utf8AnchoredLiteralClassifier
     {
         if (tree is null || (tree.Options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) != 0) return default;
         using var scope = Utf8ConstructionScope.Enter();
-        if (!Admit(tree.Root, true)) return default;
         var body = Unwrap(tree.Root);
         if (body.Kind != Utf8TreeNodeKind.Concatenate || body.ChildCount < 2) return default;
         var first = Unwrap(body.Child(0)); var last = Unwrap(body.Child(body.ChildCount - 1));
@@ -44,6 +28,8 @@ internal static class Utf8AnchoredLiteralClassifier
         var suffix = last.Kind is Utf8TreeNodeKind.End or Utf8TreeNodeKind.EndZ || last.Kind == Utf8TreeNodeKind.Eol && (last.Options & RegexOptions.Multiline) == 0;
         if (!prefix && !suffix || prefix && suffix) return default;
         var start = suffix ? 0 : 1; var count = body.ChildCount - 1;
+        // Only lookarounds can change traversal direction within an admitted
+        // tree. The literal walk rejects assertions before visiting their children.
         if (!VisitLiteral(body, start, count, Span<byte>.Empty, false, out var length, out var folded)) return default;
         var bytes = scope.Budget.AllocateArray<byte>(length, false);
         if (!VisitLiteral(body, start, count, bytes, true, out var written, out var copiedFold) || written != length || copiedFold != folded)
