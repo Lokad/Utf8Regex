@@ -22,7 +22,8 @@ public sealed partial class Utf8Regex
 
     private Utf8AnalyzedReplacement PrepareBorrowedReplacement(ReadOnlySpan<byte> replacement, ReplacementPreparationControl control)
     {
-        using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
+        var maximumBytes = InvocationLimits.MaxWorkingBytes;
+        using var construction = maximumBytes != 0
             ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
             : Utf8ConstructionScope.Enter();
         var budget = construction.Budget;
@@ -115,7 +116,8 @@ public sealed partial class Utf8Regex
     {
         // The synchronous cache factory already shares this byte limit and
         // interruption control. The analyzer owns the parser's rollback scope.
-        using var construction = ResourcePolicy.MaxWorkingBytes is { } maximumBytes
+        var maximumBytes = InvocationLimits.MaxWorkingBytes;
+        using var construction = maximumBytes != 0
             ? Utf8ConstructionScope.RestrictAdditionalBytes(maximumBytes)
             : Utf8ConstructionScope.Enter();
         if (control.IsUncontrolled)

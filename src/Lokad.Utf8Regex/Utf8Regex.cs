@@ -70,7 +70,8 @@ public sealed partial class Utf8Regex : IDisposable
             _patternText = pattern.IsUtf8 ? null : pattern.Text;
             Options = options;
             MatchTimeout = matchTimeout;
-            ResourcePolicy = resourcePolicy;
+            InvocationLimits = new(resourcePolicy.MaxWorkSteps ?? 0, resourcePolicy.MaxDepth ?? 0,
+                resourcePolicy.MaxWorkingBytes ?? 0, resourcePolicy.MaxResultBytes ?? 0);
             HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
                 resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
             construction.Budget.CheckBytes(ProgramFixedMetadataBytes);
@@ -174,10 +175,9 @@ public sealed partial class Utf8Regex : IDisposable
         { throw new RegexMatchTimeoutException(string.Empty, pattern.IsUtf8 ? string.Empty : pattern.Text, constructionTimeout); }
     }
 
-    // ResourcePolicy is an immutable value copied by the shared constructor.
     private bool HasFiniteExecutionLimits { get; }
 
-    private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, ResourcePolicy.MaxDepth ?? 0, ResourcePolicy.MaxWorkingBytes ?? 0, ResourcePolicy.MaxResultBytes ?? 0);
+    private Utf8ExecutionLimits InvocationLimits { get; }
 
     private static Utf8ResourceLimitExceededException CreateExecutionResourceFailure(ref Utf8SliceInvocation invocation)
         => invocation.Budget.CreateResourceFailure();
@@ -211,7 +211,21 @@ public sealed partial class Utf8Regex : IDisposable
     public TimeSpan MatchTimeout { get; }
 
     /// <summary>Gets the invocation resource policy.</summary>
-    public Utf8ResourcePolicy ResourcePolicy { get; }
+    public Utf8ResourcePolicy ResourcePolicy
+    {
+        get
+        {
+            // Admission rejects explicit zero budgets, so zero round-trips as null.
+            var limits = InvocationLimits;
+            return new()
+            {
+                MaxWorkSteps = limits.MaxWorkSteps == 0 ? null : limits.MaxWorkSteps,
+                MaxDepth = limits.MaxDepth == 0 ? null : limits.MaxDepth,
+                MaxWorkingBytes = limits.MaxWorkingBytes == 0 ? null : limits.MaxWorkingBytes,
+                MaxResultBytes = limits.MaxResultBytes == 0 ? null : limits.MaxResultBytes
+            };
+        }
+    }
 
     private Utf8PreparedRegex _preparedRegex => _program.PreparedRegex;
 
