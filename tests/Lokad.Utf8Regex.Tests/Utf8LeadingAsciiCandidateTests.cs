@@ -540,6 +540,25 @@ public sealed class Utf8LeadingAsciiCandidateTests
     }
 
     [Fact]
+    public void LargeBranchedCountKeepsBothRequiredByteOffsets()
+    {
+        const string left = """(?:'|")(?:ALPHA|BRAVO|CHARL|DELTA|EAGLE|FRESH|GHOST)[A-Z]{16}(?:'|")""";
+        const string right = """(?:'|")[A-Z0-9]{40}[!%]""";
+        var text = new string('_', 300) + "😀'ALPHA" + new string('A', 16) + '"' + '~' + '"' +
+            new string('B', 40) + "%~'FRESH" + new string('A', 16);
+        var input = Encoding.UTF8.GetBytes(text);
+        foreach (var (first, second) in new[] { (left, right), (right, left) })
+        {
+            var pattern = $"(?:({first})|({second}))+";
+            var oracle = new Regex(pattern);
+            Assert.Equal(2, oracle.Count(text));
+            using var regex = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new() { ResourcePolicy = Funded });
+            using var source = new CancellationTokenSource();
+            Assert.Equal(2, regex.Count(input, source.Token));
+        }
+    }
+
+    [Fact]
     public void ImpossibleBranchedPrefixesStayWithinFiniteWork()
     {
         const string pattern = """(?:(?<open>'|")(?:(?<tag>AX|BY)[A-Z0-7]{4}|(?<word>[a-zA-Z0-9+/]{8}))(?:'|"))+""";

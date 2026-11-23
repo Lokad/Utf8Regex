@@ -1158,7 +1158,7 @@ internal static partial class Utf8SliceRunner
             if (suffix < 0) return new(0, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
         }
         var branchWindow = checkBranchedPrefix && input.Length - fromByte >= 256
-            ? FindBranchedAsciiLiteralWindow(program.Instructions, leadingScalarIndex) : default;
+            ? FindBranchedAsciiWindow(program, leadingScalarIndex) : default;
         var checkRepeatChain = leadingFirst is >= 0 and < 128 && leadingScalarIndex == 1 && CanSkipShortRepeatChain(program);
         var (whitespaceLiteral, leadingClass, whitespaceLiteralIndex, whitespaceGapMaximum, directClassLiteral) =
             !seekLiteral && !program.RightToLeft && !program.IgnoreCase &&
@@ -1278,7 +1278,7 @@ internal static partial class Utf8SliceRunner
                     if (leadingFirst < 128 && (shortRepeatWindow.Min != 0 ? !MayReachShortRepeatLiteral(input, position, shortRepeatWindow, seekDecimal) :
                         (leadingPrefix.IsEmpty && leadingSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingSecond) > (uint)(leadingSecondLast - leadingSecond))) ||
-                        (branchWindow.Min != 0 && !HasAsciiLiteralInWindow(input, position, branchWindow)) ||
+                        (branchWindow.Min != 0 && !HasAsciiByteInWindow(input, position, branchWindow)) ||
                         !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position,
                             proveBranchedMatch ? 0 : leadingScalarIndex,
                             out provedEnd, proveBranchedMatch) :

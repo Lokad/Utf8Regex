@@ -1145,11 +1145,31 @@ internal static partial class Utf8SliceRunner
         return probe == index ? verified : 0;
     }
 
-    private static (int Min, int Max, byte Literal) FindBranchedAsciiLiteralWindow(
-        ReadOnlySpan<Utf8SliceInstruction> code, int start)
+    private static (int Min, int Max, Utf8SearchAsciiSet Bytes) FindBranchedAsciiWindow(
+        Utf8SliceProgram program, int start)
     {
-        Span<(int Min, int Max)> widths = stackalloc (int, int)[32];
-        widths = widths[..Math.Min(widths.Length, code.Length - start)];
+        var code = program.Instructions;
+        if (code[start] is { Kind: Utf8SliceInstructionKind.Fork, B: 0, A: var other } &&
+            other - start >= 32)
+        {
+            // The two arms do not join within the common window. Each arm
+            // can still supply one required byte at a fixed, different offset.
+            var first = FindRequiredAsciiWindow(program, start + 1, other);
+            if (first.Min == 0 || first.Min != first.Max) return default;
+            var second = FindRequiredAsciiWindow(program, other, code.Length);
+            if (second.Min == 0 || second.Min != second.Max) return default;
+            return (Math.Min(first.Min, second.Min), Math.Max(first.Min, second.Min),
+                Utf8SearchAsciiSet.FromMasks(first.Bytes.Low | second.Bytes.Low, first.Bytes.High | second.Bytes.High));
+        }
+        return FindRequiredAsciiWindow(program, start, Math.Min(start + 32, code.Length));
+    }
+
+    private static (int Min, int Max, Utf8SearchAsciiSet Bytes) FindRequiredAsciiWindow(
+        Utf8SliceProgram program, int start, int end)
+    {
+        var code = program.Instructions.AsSpan();
+        Span<(int Min, int Max)> widths = stackalloc (int, int)[64];
+        widths = widths[..Math.Min(widths.Length, end - start)];
         widths.Fill((-1, 0));
         widths[0] = (0, 0);
         var furthest = 0;
@@ -1160,10 +1180,11 @@ internal static partial class Utf8SliceRunner
             var index = start + offset;
             var entry = code[index];
             // Every live path joins here when the furthest edge is reached.
-            // Keep at most two adjacent byte offsets for the hot check.
+            // Keep at most two byte offsets and a small exact ASCII set.
             if (offset == furthest && min >= 2 && max - min <= 1 &&
-                entry is { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
-                return (min, max, (byte)entry.A);
+                program.TryGetUnfoldedAsciiSet(entry, out var bytes, out var asciiOnly) && asciiOnly &&
+                BitOperations.PopCount(bytes.Low) + BitOperations.PopCount(bytes.High) is > 0 and <= 4)
+                return (min, max, bytes);
 
             var next = offset + 1;
             if (entry is { Kind: Utf8SliceInstructionKind.Jump } && entry.A > index)
@@ -1177,13 +1198,16 @@ internal static partial class Utf8SliceRunner
             }
             else if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
             {
-                if (entry.RepeatMaximum != 1 || !IsSingleAtomRepeat(code, index, entry) ||
-                    GetUnfoldedAsciiRange(code[index + 1], out _) < 0) return default;
+                if (entry.RepeatMaximum > 64 ||
+                    entry.RepeatMaximum != 1 && entry.RepeatMinimum != entry.RepeatMaximum ||
+                    !IsSingleAtomRepeat(code, index, entry) ||
+                    !program.TryGetUnfoldedAsciiSet(code[index + 1], out _, out var repeatAsciiOnly) ||
+                    !repeatAsciiOnly) return default;
                 min += (int)entry.RepeatMinimum;
-                max++;
+                max += (int)entry.RepeatMaximum;
                 next = entry.A + 1 - start;
             }
-            else if (GetUnfoldedAsciiRange(entry, out _) >= 0)
+            else if (program.TryGetUnfoldedAsciiSet(entry, out _, out var atomAsciiOnly) && atomAsciiOnly)
             {
                 min++;
                 max++;
@@ -1191,11 +1215,19 @@ internal static partial class Utf8SliceRunner
             else if (entry.Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd))
                 return default;
 
-            if (next >= widths.Length || max > 16) return default;
+            if (next >= widths.Length || max > 64) return default;
             JoinAsciiPrefixWidths(widths, next, min, max);
             furthest = Math.Max(furthest, next);
         }
         return default;
+    }
+
+    private static bool HasAsciiByteInWindow(ReadOnlySpan<byte> input, int start,
+        (int Min, int Max, Utf8SearchAsciiSet Bytes) window)
+    {
+        var remaining = input.Length - start;
+        return (window.Min < remaining && window.Bytes.Contains(input[start + window.Min])) ||
+            (window.Max != window.Min && window.Max < remaining && window.Bytes.Contains(input[start + window.Max]));
     }
 
     private static void JoinAsciiPrefixWidths(Span<(int Min, int Max)> widths, int offset, int min, int max)
