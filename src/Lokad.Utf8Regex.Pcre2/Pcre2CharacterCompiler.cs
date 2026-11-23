@@ -1177,7 +1177,7 @@ internal static class Pcre2CharacterRunner
         switch (token.Kind)
         {
             case Pcre2CharacterTokenKind.Literal:
-                if (!TryDecode(input, index, out var literalSubject, out var literalWidth) ||
+                if (!Pcre2CharacterSemantics.TryDecodeScalar(input, index, out var literalSubject, out var literalWidth) ||
                     !Pcre2CharacterSemantics.Equals(token.Literal, literalSubject, token.Options))
                 {
                     return false;
@@ -1187,7 +1187,7 @@ internal static class Pcre2CharacterRunner
                 return true;
 
             case Pcre2CharacterTokenKind.CharacterClass:
-                if (!TryDecode(input, index, out var classSubject, out var classWidth) ||
+                if (!Pcre2CharacterSemantics.TryDecodeScalar(input, index, out var classSubject, out var classWidth) ||
                     !token.CharacterClass.Matches(
                         classSubject,
                         (request.Options & Pcre2CompileOptions.Ucp) != 0,
@@ -1200,7 +1200,7 @@ internal static class Pcre2CharacterRunner
                 return true;
 
             case Pcre2CharacterTokenKind.Any:
-                if (!TryDecode(input, index, out _, out var anyWidth) ||
+                if (!Pcre2CharacterSemantics.TryDecodeScalar(input, index, out _, out var anyWidth) ||
                     (token.Options & Pcre2CharacterOptions.DotAll) == 0 &&
                     Pcre2CharacterSemantics.TryGetNewlineWidth(input, index, request.Settings.Newline, out _))
                 {
@@ -1211,7 +1211,7 @@ internal static class Pcre2CharacterRunner
                 return true;
 
             case Pcre2CharacterTokenKind.AnyNotNewline:
-                if (!TryDecode(input, index, out _, out var notNewlineWidth) ||
+                if (!Pcre2CharacterSemantics.TryDecodeScalar(input, index, out _, out var notNewlineWidth) ||
                     Pcre2CharacterSemantics.TryGetNewlineWidth(input, index, request.Settings.Newline, out _))
                 {
                     return false;
@@ -1326,18 +1326,6 @@ internal static class Pcre2CharacterRunner
         if (Pcre2CharacterSemantics.IsSkippedCrLfCandidate(request.SkipsCrLfContinuation, input.Bytes, next, candidate)) next++;
         return true;
     }
-
-    private static bool TryDecode(ReadOnlySpan<byte> input, int index, out Rune rune, out int width)
-    {
-        if ((uint)index >= (uint)input.Length)
-        {
-            rune = default;
-            width = 0;
-            return false;
-        }
-
-        return Rune.DecodeFromUtf8(input[index..], out rune, out width) == OperationStatus.Done;
-    }
 }
 
 internal static class Pcre2GraphemeClusterSemantics
@@ -1346,7 +1334,7 @@ internal static class Pcre2GraphemeClusterSemantics
     {
         var controlled = !budget.IsUnmetered;
         if (controlled) budget.ChargeWorkspaceStep();
-        if (!TryDecode(input, offset, out var previous, out var previousWidth))
+        if (!Pcre2CharacterSemantics.TryDecodeScalar(input, offset, out var previous, out var previousWidth))
         {
             width = 0;
             return false;
@@ -1363,7 +1351,7 @@ internal static class Pcre2GraphemeClusterSemantics
 
         // Poll during the scan because one cluster can span arbitrarily many scalars.
         var remaining = 256;
-        while (TryDecode(input, end, out var next, out var nextWidth))
+        while (Pcre2CharacterSemantics.TryDecodeScalar(input, end, out var next, out var nextWidth))
         {
             if (controlled && --remaining == 0)
             {
@@ -1434,18 +1422,6 @@ internal static class Pcre2GraphemeClusterSemantics
         previous == Pcre2GraphemeBreak.L && next is (Pcre2GraphemeBreak.L or Pcre2GraphemeBreak.V or Pcre2GraphemeBreak.LV or Pcre2GraphemeBreak.LVT) ||
         previous is (Pcre2GraphemeBreak.LV or Pcre2GraphemeBreak.V) && next is (Pcre2GraphemeBreak.V or Pcre2GraphemeBreak.T) ||
         previous is (Pcre2GraphemeBreak.LVT or Pcre2GraphemeBreak.T) && next == Pcre2GraphemeBreak.T;
-
-    private static bool TryDecode(ReadOnlySpan<byte> input, int offset, out Rune rune, out int width)
-    {
-        if ((uint)offset >= (uint)input.Length)
-        {
-            rune = default;
-            width = 0;
-            return false;
-        }
-
-        return Rune.DecodeFromUtf8(input[offset..], out rune, out width) == OperationStatus.Done;
-    }
 }
 
 internal static class Pcre2CharacterSemantics
@@ -1803,7 +1779,7 @@ internal static class Pcre2CharacterSemantics
             return true;
         }
 
-        if (!TryDecode(input, offset, out var scalar, out var scalarWidth))
+        if (!TryDecodeScalar(input, offset, out var scalar, out var scalarWidth))
         {
             return false;
         }
@@ -1831,7 +1807,7 @@ internal static class Pcre2CharacterSemantics
             return true;
         }
 
-        if (!TryDecode(input, offset, out var scalar, out width))
+        if (!TryDecodeScalar(input, offset, out var scalar, out width))
         {
             width = 0;
             return false;
@@ -1863,7 +1839,7 @@ internal static class Pcre2CharacterSemantics
         return false;
     }
 
-    private static bool TryDecode(ReadOnlySpan<byte> input, int offset, out Rune scalar, out int width)
+    internal static bool TryDecodeScalar(ReadOnlySpan<byte> input, int offset, out Rune scalar, out int width)
     {
         if ((uint)offset < (uint)input.Length)
         {
