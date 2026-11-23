@@ -1,5 +1,6 @@
 using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Internal.Execution;
+using Lokad.Utf8Regex.Internal.Input;
 
 namespace Lokad.Utf8Regex.PythonRe;
 
@@ -213,7 +214,7 @@ public sealed partial class Utf8PythonRegex
     {
         retained = null;
         using var programUse = EnterProgramUse();
-        ValidateStartOffset(input, startOffsetInBytes);
+        Utf8ValidatedInput.GetBytePosition(input, startOffsetInBytes, nameof(startOffsetInBytes));
         var invocation = CreateInvocation(cancellationToken);
         var scalarPlan = GetReplacementPlan(input, replacement, ref invocation, cancellationToken, out var memoryUse);
         using var planUse = memoryUse;

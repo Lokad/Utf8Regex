@@ -222,22 +222,4 @@ public sealed partial class Utf8PythonRegex
     internal static bool IsOptionalUtf8BackendUnavailableException(Exception exception)
         => exception is ArgumentException or NotSupportedException;
 
-    private void ValidateStartOffset(ReadOnlySpan<byte> input, int startOffsetInBytes)
-    {
-        if ((uint)startOffsetInBytes > (uint)input.Length)
-        {
-            throw new ArgumentOutOfRangeException(nameof(startOffsetInBytes));
-        }
-
-        if (startOffsetInBytes < input.Length &&
-            (input[startOffsetInBytes] & 0xC0) == 0x80)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(startOffsetInBytes),
-                startOffsetInBytes,
-                "The requested byte offset is not aligned to a UTF-8 scalar boundary.");
-        }
-
-    }
-
 }

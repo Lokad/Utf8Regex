@@ -170,7 +170,7 @@ public sealed partial class Utf8PythonRegex
     {
         bytesResult = default;
         retained = null;
-        ValidateScalarStartOffset(input, startOffsetInBytes);
+        // The substitution entry checks the byte start before preparing the template.
         var cursor = new PythonReScalarMatchCursor(input, ScalarProgram,
             startOffsetInBytes, MatchTimeout, _utf8Regex, this, invocation);
         Utf8SliceOutputWriter writer = default;
