@@ -70,8 +70,7 @@ public sealed partial class Utf8Regex : IDisposable
             _patternText = pattern.IsUtf8 ? null : pattern.Text;
             Options = options;
             MatchTimeout = matchTimeout;
-            InvocationLimits = new(resourcePolicy.MaxWorkSteps ?? 0, resourcePolicy.MaxDepth ?? 0,
-                resourcePolicy.MaxWorkingBytes ?? 0, resourcePolicy.MaxResultBytes ?? 0);
+            InvocationLimits = new(resourcePolicy);
             HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
                 resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
             construction.Budget.CheckBytes(ProgramFixedMetadataBytes);
@@ -211,21 +210,7 @@ public sealed partial class Utf8Regex : IDisposable
     public TimeSpan MatchTimeout { get; }
 
     /// <summary>Gets the invocation resource policy.</summary>
-    public Utf8ResourcePolicy ResourcePolicy
-    {
-        get
-        {
-            // Admission rejects explicit zero budgets, so zero round-trips as null.
-            var limits = InvocationLimits;
-            return new()
-            {
-                MaxWorkSteps = limits.MaxWorkSteps == 0 ? null : limits.MaxWorkSteps,
-                MaxDepth = limits.MaxDepth == 0 ? null : limits.MaxDepth,
-                MaxWorkingBytes = limits.MaxWorkingBytes == 0 ? null : limits.MaxWorkingBytes,
-                MaxResultBytes = limits.MaxResultBytes == 0 ? null : limits.MaxResultBytes
-            };
-        }
-    }
+    public Utf8ResourcePolicy ResourcePolicy => InvocationLimits.ToResourcePolicy();
 
     private Utf8PreparedRegex _preparedRegex => _program.PreparedRegex;
 

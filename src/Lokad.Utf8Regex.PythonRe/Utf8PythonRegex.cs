@@ -75,7 +75,7 @@ public sealed partial class Utf8PythonRegex
             }
             else _patternSource = patternSource.Text;
             Options = options;
-            ResourcePolicy = resourcePolicy;
+            InvocationLimits = new(resourcePolicy);
             HasFiniteExecutionLimits = resourcePolicy.MaxWorkSteps.HasValue || resourcePolicy.MaxDepth.HasValue ||
                 resourcePolicy.MaxWorkingBytes.HasValue || resourcePolicy.MaxResultBytes.HasValue;
 
@@ -187,7 +187,7 @@ public sealed partial class Utf8PythonRegex
     public TimeSpan MatchTimeout { get; }
 
     /// <summary>Gets the invocation resource policy. Finite work, depth, working and result-capacity limits are supported.</summary>
-    public Utf8ResourcePolicy ResourcePolicy { get; }
+    public Utf8ResourcePolicy ResourcePolicy => InvocationLimits.ToResourcePolicy();
 
     internal bool DebugUsesUtf8RegexBackend => _utf8Regex is not null;
 
@@ -206,7 +206,7 @@ public sealed partial class Utf8PythonRegex
 
     private bool HasFiniteExecutionLimits { get; }
 
-    private Utf8ExecutionLimits InvocationLimits => new(ResourcePolicy.MaxWorkSteps ?? 0, ResourcePolicy.MaxDepth ?? 0, ResourcePolicy.MaxWorkingBytes ?? 0, ResourcePolicy.MaxResultBytes ?? 0);
+    private Utf8ExecutionLimits InvocationLimits { get; }
 
     private RegexMatchTimeoutException CreateMatchTimeoutException(ReadOnlySpan<byte> input, string pattern)
         => _programMemory is not null

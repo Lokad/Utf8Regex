@@ -15,7 +15,9 @@ public sealed partial class Utf8PythonRegex
         // construction work/depth and retained-cache admission stay separate.
         // The frozen key still has its temporary invocation loan. Bound its
         // overlap with parser capacity; retained cache storage is separate.
-        var ceiling = Math.Min(ResourcePolicy.MaxWorkingBytes ?? ulong.MaxValue, Utf8ConstructionScope.DefaultBufferBytes);
+        var workingLimit = InvocationLimits.MaxWorkingBytes;
+        var ceiling = workingLimit == 0 ? Utf8ConstructionScope.DefaultBufferBytes
+            : Math.Min(workingLimit, Utf8ConstructionScope.DefaultBufferBytes);
         var keyBytes = Utf8ConstructionBudget.ArrayBytes<byte>(replacement.Length);
         using var construction = Utf8ConstructionScope.RestrictAdditionalBytes(ceiling - Math.Min(ceiling, keyBytes));
         var budget = construction.Budget;
