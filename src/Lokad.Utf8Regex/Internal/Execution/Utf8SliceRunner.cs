@@ -720,10 +720,10 @@ internal static partial class Utf8SliceRunner
                     {
                         var proof = program.LeadingClassWindowProof;
                         requiredClassSuffix = proof.SuffixAfter(aligned.Length);
-                        if (existenceOnly && !collectHistory && proof.CanReusePrefix)
+                        if (!collectHistory && proof.CanReusePrefix)
                         {
                             verifiedClassLiteralLength = aligned.Length;
-                            proveClassSuffix = requiredClassSuffix.Second != 0 && proof.CanAcceptAfterPair;
+                            proveClassSuffix = existenceOnly && requiredClassSuffix.Second != 0 && proof.CanAcceptAfterPair;
                         }
                     }
                 }

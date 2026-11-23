@@ -98,6 +98,24 @@ public sealed class Utf8ClassPrefixCandidateTests
             slots[1].EndOffsetInBytes - slots[1].StartOffsetInBytes)));
     }
 
+    [Fact]
+    public void CaptureFreeRangeReusesItsRewoundUnicodePrefix()
+    {
+        const string prefix = "😀 ";
+        var scheme = string.Concat(Enumerable.Repeat("élém", 1024));
+        var input = Encoding.UTF8.GetBytes(prefix + scheme + "://é/lien?q=東#Ω");
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        var floor = start + "é"u8.Length;
+        using var live = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?",
+            policy: new() { ResourcePolicy = Funded with { MaxWorkSteps = 4000 } });
+
+        Assert.Equal(new Utf8CaptureRange(start, input.Length), regex.Match(input, cancellationToken: live.Token));
+        using var cursor = regex.CreateMatchCursor(input, floor, live.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal(new Utf8CaptureRange(floor, input.Length), match.Value);
+    }
+
     [Theory]
     [InlineData(1)] [InlineData(64)] [InlineData(65)]
     public void PreparedDelimiterSuffixUsesTheAlignedNeedleLength(int length)
