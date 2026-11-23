@@ -1269,10 +1269,16 @@ internal static partial class Utf8SliceRunner
         if (program.ReadsCaptures) return 0;
 
         // An unobserved opening capture does not change the repeat.
-        var index = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 1);
+        var proofStart = Utf8SliceInstruction.SkipLeadingCaptureMarkers(code, 1);
+        var index = proofStart;
+        if (index < code.Length && code[index] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: not 0 })
+        {
+            budget.ChargeWork(1);
+            index++;
+        }
         if ((uint)index >= (uint)code.Length || code[index] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy } repeat)
             return 0;
-        if (index != 1 && code.Length <= 32 && repeat.RepeatMinimum is >= 1 and <= 4 &&
+        if (index == proofStart && index != 1 && code.Length <= 32 && repeat.RepeatMinimum is >= 1 and <= 4 &&
             repeat.RepeatMinimum == repeat.RepeatMaximum && IsSingleAtomRepeat(code, index, repeat) &&
             code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 })
             return 1;
@@ -1280,9 +1286,9 @@ internal static partial class Utf8SliceRunner
         // The lowered delimiter proof prevents an unbounded run from rewinding.
         return repeat.RepeatMaximum == long.MaxValue &&
             code[repeat.A].RepeatExitRejectsShorterEndpoints &&
-            (code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+            (code[index + 1] is { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
                 { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 } ||
-             GetUnfoldedAsciiRange(code[index + 1], out _) >= 0) ? -index : 0;
+             GetUnfoldedAsciiRange(code[index + 1], out _) >= 0) ? -proofStart : 0;
     }
 
     // This check eliminates impossible starts. A caller without capture output
@@ -1492,12 +1498,15 @@ internal static partial class Utf8SliceRunner
                     (width == 1 ? input[position] != entry.A : input.Slice(position, width).ContainsAnyExcept((byte)entry.A)))
                     return BranchedPrefixRejected;
             }
-            else if (entry is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } && program.SetMasks[entry.A].Length == 16)
+            else if (entry is { Kind: Utf8SliceInstructionKind.Set, B: 0 } && program.SetMasks[entry.A].Length == 16)
             {
                 if (width > input.Length - position) return BranchedPrefixRejected;
                 var mask = program.SetMasks[entry.A];
                 foreach (var value in input.Slice(position, width))
-                    if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) return BranchedPrefixRejected;
+                {
+                    if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0)
+                        return entry.C != 0 ? BranchedPrefixUndecided : BranchedPrefixRejected;
+                }
             }
             else return BranchedPrefixUndecided;
             position += width;
@@ -1550,14 +1559,15 @@ internal static partial class Utf8SliceRunner
                 stop = atom.A == 0 ? suffix.IndexOf((byte)'\n') : -1;
             else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
                 stop = suffix.IndexOfAnyExceptInRange((byte)first, last);
-            else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+            else if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0 } or
                 { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
             {
-                // A wider scalar can extend a hybrid run, leaving its endpoint
-                // undecided after the complete ASCII mask stops.
+                // A folded set still needs its scalar predicate at any mask
+                // stop. An unfolded hybrid needs it at a wider scalar.
                 stop = ScanAsciiMask(suffix, program.SetMasks[atom.A], category: false);
-                if (atom.Kind == Utf8SliceInstructionKind.Hybrid &&
-                    (uint)stop < (uint)suffix.Length && suffix[stop] >= 128) return null;
+                if ((uint)stop < (uint)suffix.Length &&
+                    (atom.Kind == Utf8SliceInstructionKind.Set ? atom.C != 0 : suffix[stop] >= 128))
+                    return null;
             }
             else return null;
 

@@ -76,6 +76,22 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
     }
 
     [Fact]
+    public void AnchoredFoldedSetProofKeepsScalarFallback()
+    {
+        const string pattern = "^[a-z][a-z0-9_]*$";
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase;
+        using var source = new CancellationTokenSource();
+        using var limited = new Utf8Regex(pattern, options,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 4, MaxWorkingBytes = 1, MaxDepth = 1 } });
+        using var ordinary = new Utf8Regex(pattern, options);
+
+        Assert.Equal(new Utf8CaptureRange(0, 5), limited.Match("Name9"u8, cancellationToken: source.Token));
+        Assert.Equal(new Utf8CaptureRange(0, 5), ordinary.Match("Key\n"u8));
+        Assert.Equal(new Utf8CaptureRange(0, 5), ordinary.Match("AK9"u8));
+        Assert.False(ordinary.Match("Name9\nx"u8).Success);
+    }
+
+    [Fact]
     public void SingleOriginProofChecksALongerLineWithinTheSamePublicWorkLimit()
     {
         const string pattern = @"^\s*(\[\|\s*)?///\s?(?<doc>.*)$";
