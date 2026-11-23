@@ -1567,6 +1567,14 @@ internal static partial class Utf8SliceRunner
                             remaining--;
                         }
                         var value = input[position];
+                        if (value < 128 && value != '\n' && proveMatch && code[entry.A].RepeatExitBeforeTerminalDot)
+                        {
+                            // The prepared terminal dot can consume this byte
+                            // whenever the optional atom leaves it. Only the
+                            // final endpoint is observed by this proof.
+                            position++;
+                            continue;
+                        }
                         if (value >= 128 && optionalAtom.Kind == Utf8SliceInstructionKind.Hybrid)
                             return BranchedPrefixUndecided;
                         var optionalFirst = GetUnfoldedAsciiRange(optionalAtom, out var optionalLast);
@@ -1574,10 +1582,8 @@ internal static partial class Utf8SliceRunner
                             ? (uint)(value - optionalFirst) > (uint)(optionalLast - optionalFirst)
                             : value >= 128 || (program.SetMasks[optionalAtom.A][value >> 3] & (1 << (value & 7))) == 0)
                             continue;
-                        if (proveMatch && (program.SkipsTerminalRewind(repeatIndex) ||
-                            value != '\n' && code[entry.A].RepeatExitBeforeTerminalDot))
+                        if (proveMatch && program.SkipsTerminalRewind(repeatIndex))
                         {
-                            // The terminal dot reaches the same end with or without this non-LF scalar.
                             position++;
                             continue;
                         }

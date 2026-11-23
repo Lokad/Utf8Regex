@@ -54,6 +54,8 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
     }
 
     [Theory]
+    [InlineData("///doc", 4, true)]
+    [InlineData("///doc\nlater", 4, false)]
     [InlineData(" [|  /// title", 4, true)]
     [InlineData(" [|  ///\n😀", 4, true)]
     [InlineData(" [|  ///\n\n😀", 4, false)]
