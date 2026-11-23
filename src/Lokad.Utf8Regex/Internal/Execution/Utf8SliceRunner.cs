@@ -1015,17 +1015,20 @@ internal static partial class Utf8SliceRunner
                 Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals;
 
     private static Utf8ExecutionLimitKind TrySeekExactPrefix(in Utf8SearchPlan candidatePlan,
-        ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation, out PreparedSearchMatch familyMatch)
+        ReadOnlySpan<byte> input, ref int position, ref Utf8SliceInvocation invocation, out PreparedSearchMatch match)
     {
-        familyMatch = default;
         if (candidatePlan.LiteralSearch is { Length: > 0 } literal)
-            return Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, position,
+        {
+            var literalBreach = Utf8SearchExecutor.TryFindLiteralCandidate(literal, input, position,
                 input.Length - literal.Length, false, ref invocation, out position);
+            match = position >= 0 ? new(position, literal.Length, 0) : default;
+            return literalBreach;
+        }
         var breach = Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
             candidatePlan.AlternateLiteralsUtf8 ?? [], false, input, position, input.Length,
-            false, ref invocation, out familyMatch, out var found,
+            false, ref invocation, out match, out var found,
             candidatePlan.AlternateLiteralSearch?.SearchData ?? default);
-        position = found ? familyMatch.Index : -1;
+        position = found ? match.Index : -1;
         return breach;
     }
 
@@ -1167,14 +1170,25 @@ internal static partial class Utf8SliceRunner
         var prefixContinuation = 0;
         scoped Span<int> familyContinuations = default;
         if (seekLiteral && !useBranchPrefixes && input.Length - fromByte >= 256 &&
-            program.Assertions.Length == 0 && candidatePlan.Kind == Utf8SearchKind.ExactAsciiLiterals &&
-            candidatePlan.LiteralSearch is null && candidatePlan.AlternateLiteralsUtf8 is { Length: >= 2 and <= 8 } literals)
+            program.Assertions.Length == 0)
         {
-            var breach = invocation.TryChargeInputStep();
-            if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
-            familyContinuations = stackalloc int[literals.Length];
-            if (!TryFindExactFamilyContinuations(program.Instructions, literals, familyContinuations, out prefixContinuation))
-                familyContinuations = default;
+            if (candidatePlan.LiteralSearch is { IgnoreCase: false, Length: > 0 and <= 64 } literal)
+            {
+                var prefixStart = first.Kind == Utf8SliceInstructionKind.Boundary ? 1 : 0;
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                if (LiteralStartsAtInstruction(program, prefixStart, literal.Needle))
+                    prefixContinuation = prefixStart + literal.Length;
+            }
+            else if (candidatePlan.Kind == Utf8SearchKind.ExactAsciiLiterals &&
+                candidatePlan.LiteralSearch is null && candidatePlan.AlternateLiteralsUtf8 is { Length: >= 2 and <= 8 } literals)
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return new(0, breach);
+                familyContinuations = stackalloc int[literals.Length];
+                if (!TryFindExactFamilyContinuations(program.Instructions, literals, familyContinuations, out prefixContinuation))
+                    familyContinuations = default;
+            }
         }
         var splitFamilyTails = prefixContinuation == 0 && !familyContinuations.IsEmpty;
         // A direct beginning anchor already owns bounded line/prefix discovery.
@@ -1258,16 +1272,13 @@ internal static partial class Utf8SliceRunner
             (leadingFirst == leadingLast || sparsePair) && leadingPrefix.IsEmpty && shortRepeatWindow.Min == 0 &&
             branchWindow.Min > 0 && branchWindow.Max > branchWindow.Min &&
             TryGetAsciiBytePair(branchWindow.Bytes, out tailFirst, out tailLast);
+        var reuseLeadingPrefix = !leadingPrefix.IsEmpty && !program.HasContiguousAnchor &&
+            (leadingScalarIndex == 0 || leadingScalarIndex == 1 && first.Kind == Utf8SliceInstructionKind.Boundary);
+        if (reuseLeadingPrefix) prefixContinuation = leadingScalarIndex + leadingPrefix.Length;
+        // Keep a leading boundary in the original verification order.
+        var straightPrefixStart = reuseLeadingPrefix && leadingScalarIndex == 0 ? prefixContinuation : 0;
+        var straightPrefixBytes = straightPrefixStart != 0 ? leadingPrefix.Length : 0;
         var (prefixRepeatAscii, prefixRepeatFollower) = GetExactPrefixRepeatHead(program, prefixContinuation);
-        if (!leadingPrefix.IsEmpty && !program.HasContiguousAnchor &&
-            (leadingScalarIndex == 0 || leadingScalarIndex == 1 && first.Kind == Utf8SliceInstructionKind.Boundary))
-        {
-            // The checked search has verified these literals. Reuse the family
-            // repeat proof when only the leading boundary still needs checking.
-            var afterPrefix = leadingScalarIndex + leadingPrefix.Length;
-            (prefixRepeatAscii, prefixRepeatFollower) = GetExactPrefixRepeatHead(program, afterPrefix);
-            if (prefixRepeatAscii.HasValue) prefixContinuation = afterPrefix;
-        }
         var remaining = program.RightToLeft ? fromByte : input.Length - fromByte;
         if (CanSearchOrdinaryOrdered(program, remaining, candidatePlan, ref invocation) &&
             captureStarts.Length == 0 && !seekLiteral && !seekBeginning && !seekVeryEnd &&
@@ -1329,7 +1340,8 @@ internal static partial class Utf8SliceRunner
                         !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position,
                             proveBranchedMatch ? 0 : leadingScalarIndex,
                             out provedEnd, proveBranchedMatch) :
-                            MatchesStraightAsciiPrefix(program, input, position, 0))))
+                            MatchesStraightAsciiPrefix(program, input, position + straightPrefixBytes,
+                                straightPrefixStart, 64 - straightPrefixStart))))
                     {
                         // The delimiter window retains wider decimals. Each
                         // rejection here is at an admitted ASCII scalar.
@@ -1382,10 +1394,10 @@ internal static partial class Utf8SliceRunner
                     }
                     else
                     {
-                        seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation, out var familyMatch);
-                        prefixBytes = familyMatch.Length;
-                        if ((uint)familyMatch.LiteralId < (uint)familyContinuations.Length)
-                            candidateContinuation = familyContinuations[familyMatch.LiteralId];
+                        seekBreach = TrySeekExactPrefix(candidatePlan, input, ref position, ref invocation, out var match);
+                        prefixBytes = match.Length;
+                        if ((uint)match.LiteralId < (uint)familyContinuations.Length)
+                            candidateContinuation = familyContinuations[match.LiteralId];
                     }
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     // Keep the final charge and recheck the original token after
