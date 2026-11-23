@@ -1120,6 +1120,18 @@ internal static partial class Utf8SliceRunner
         var entry = code[probe];
         if (entry.Kind == Utf8SliceInstructionKind.Jump)
         {
+            if (entry.C < 0)
+            {
+                if (input.Length - position < 2) return -1;
+                var pair = BinaryPrimitives.ReadUInt16LittleEndian(input[position..]);
+                var packed = ~entry.C;
+                if (pair != (packed & 0xFFFF) && pair != (packed >> 16)) return -1;
+
+                // This complete iteration can reach final acceptance again.
+                // An explicit endpoint can still need an older iteration.
+                provesAccept = allowAcceptProof;
+                return 0;
+            }
             if (entry.C > 0 && position < input.Length && input[position] == entry.C - 1) return -1;
             // A lowered delimited repeat cannot complete another iteration without
             // its exact delimiter. The fork step covers this bounded byte search.

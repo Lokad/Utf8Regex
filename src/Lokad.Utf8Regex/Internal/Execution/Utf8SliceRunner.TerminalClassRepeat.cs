@@ -1331,9 +1331,34 @@ internal static partial class Utf8SliceRunner
         var jump = code[jumpIndex];
         if (jump.A < 0 || jump.A >= jumpIndex - 1 || jumpIndex + 1 >= code.Length ||
             code[jumpIndex - 1] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0, C: 0, D: 0 } fork ||
-            fork.A != jumpIndex + 1 ||
-            code[fork.A] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } exit)
+            fork.A != jumpIndex + 1)
             return;
+
+        if (fork.A == code.Length - 1 && code[fork.A].Kind == Utf8SliceInstructionKind.Accept && jump.B == 0)
+        {
+            budget.ChargeWork(10);
+            var body = jump.A;
+            var end = jumpIndex - 1;
+            if (code[body] is { Kind: Utf8SliceInstructionKind.CaptureStart } opening)
+            {
+                if (code[end - 1] is not { Kind: Utf8SliceInstructionKind.CaptureEnd } closing || opening.A != closing.A)
+                    return;
+                body++;
+                end--;
+            }
+
+            // Each arm consumes two exact bytes and returns to this fork.
+            // A successful iteration leaves the VM in charge of captures.
+            if (end - body == 6 &&
+                code[body] is { Kind: Utf8SliceInstructionKind.Fork, B: 0, C: 0, D: 0 } arms && arms.A == body + 4 &&
+                code[body + 3] is { Kind: Utf8SliceInstructionKind.Jump, B: 0, C: 0, D: 0 } join && join.A == end &&
+                TryPackLiteralPair(code, body + 1, out var first) && TryPackLiteralPair(code, arms.A, out var second) &&
+                (first & 255) != (second & 255))
+                code[jumpIndex] = new(jump.Kind, jump.A, 0, ~(first | second << 16), 0);
+            return;
+        }
+
+        if (code[fork.A] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } exit) return;
 
         // A loop exit competes with one more iteration. Mark its ASCII
         // literal when every body arm rejects that byte at its first atom.
@@ -1368,6 +1393,16 @@ internal static partial class Utf8SliceRunner
             }
             else
                 code[jumpIndex] = new(jump.Kind, jump.A, jump.B, exit.A + 1, jump.D);
+        }
+
+        static bool TryPackLiteralPair(ReadOnlySpan<Utf8SliceInstruction> body, int start, out int pair)
+        {
+            pair = 0;
+            if (body[start] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } first ||
+                body[start + 1] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 } second)
+                return false;
+            pair = first.A | second.A << 8;
+            return true;
         }
 
         static bool RejectsLoopStart(ReadOnlySpan<Utf8SliceInstruction> body, byte[][] masks,

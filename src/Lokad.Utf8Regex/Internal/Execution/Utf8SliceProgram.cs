@@ -225,6 +225,7 @@ internal readonly struct Utf8SliceInstruction
     // A nonzero RepeatEnd B packs three ASCII stop bytes for its guarded fallback.
     internal int B { get; }
     // A backward Jump can carry an excluded starting ASCII byte plus one in C.
+    // Negative Jump C holds the complemented pair of two-byte terminal loop arms.
     // A normal Fork can carry exclusive remaining byte bounds in C and D
     // for the fall-through and target respectively. Zero leaves an arm unknown.
     // A negative C on a normal Fork encodes a disjoint target byte as ~C.

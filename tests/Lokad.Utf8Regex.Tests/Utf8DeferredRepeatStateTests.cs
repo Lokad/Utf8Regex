@@ -64,6 +64,17 @@ public sealed class Utf8DeferredRepeatStateTests
     }
 
     [Fact]
+    public void TerminalLiteralChoicesKeepTheirGreedyRangesWithoutRepeatStorage()
+    {
+        using var regex = new Utf8Regex("(ab|cd)+", policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxWorkingBytes = 1 }
+        });
+        Assert.Equal(new Utf8CaptureRange(4, 10), regex.Match("😀abcdcdc"u8));
+        Assert.Equal(2, regex.Count("😀abcdcdc ab"u8));
+    }
+
+    [Fact]
     public void FusedImportCountNeedsNoLocalWorkingBuffers()
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 10000, MaxDepth = 1,
