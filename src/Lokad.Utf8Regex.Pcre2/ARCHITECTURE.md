@@ -117,9 +117,11 @@ reset-empty substitution.
 
 `Pcre2ResourceBudget` meters candidate work, backtracking, depth, heap, and
 managed timeout independently. A public zero limit retains its documented
-engine-default or unlimited meaning. Stack-like transient state uses pooled
-storage with deterministic return; result arrays and caller-requested output
-remain ordinary owned allocations.
+engine-default or unlimited meaning. Stack-like transient state can reuse
+the shared pool and releases its working charge deterministically. Retry
+stacks start at eight entries when the invocation cannot retain storage in
+the pool. Growth still admits the old and new buffers together. Result
+arrays and caller-requested output remain ordinary owned allocations.
 
 ## Partial probing
 

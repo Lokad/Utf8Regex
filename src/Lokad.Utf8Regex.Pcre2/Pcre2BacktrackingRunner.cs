@@ -165,7 +165,10 @@ internal static class Pcre2BacktrackingRunner
         scoped ref Pcre2ResourceBudget budget, int depthBase)
     {
         var limit = budget.Limits.DepthLimit == 0 ? int.MaxValue : (int)Math.Min(budget.Limits.DepthLimit, int.MaxValue);
-        return new(limit == int.MaxValue ? limit : Math.Max(0, limit - depthBase), budget.CollectsDiagnostics);
+        // Funded retry arrays cannot return to the shared pool. Start smaller
+        // so shallow attempts can use less working storage without pool churn.
+        return new(limit == int.MaxValue ? limit : Math.Max(0, limit - depthBase), budget.CollectsDiagnostics,
+            initialCapacity: budget.CanRetainWorkspace ? 16 : 8);
     }
 
     internal static Pcre2CharacterMatch Match(

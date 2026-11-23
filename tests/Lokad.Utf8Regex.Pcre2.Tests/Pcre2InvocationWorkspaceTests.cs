@@ -276,6 +276,19 @@ public sealed class Pcre2InvocationWorkspaceTests
     }
 
     [Fact]
+    public void ShallowRecursiveSearchFitsAFundedRetryBuffer()
+    {
+        using var regex = new Utf8Pcre2Regex(@"^((.)(?1)\2|.?)$", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkingBytes = 1400 }
+        });
+
+        Assert.True(regex.IsMatch("redder"u8));
+        Assert.False(regex.IsMatch("reddet"u8));
+        Assert.True(regex.IsMatch("😀éxé😀"u8));
+    }
+
+    [Fact]
     public void ColdFiniteWorkspacesDoNotGrowSharedRetention()
     {
         Utf8ExactStatePool.Clear();
