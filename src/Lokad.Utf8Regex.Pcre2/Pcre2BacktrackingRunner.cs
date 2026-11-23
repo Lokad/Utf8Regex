@@ -1198,6 +1198,18 @@ internal static class Pcre2BacktrackingRunner
                         finally { ReleaseAssertionCaptures(assertionCaptures, ref budget); }
 
                     case Pcre2BacktrackingInstructionKind.SubroutineCall:
+                        if (program.CanScreenSubroutineBackreference && input.Length - inputIndex <= 16 &&
+                            program.Instructions[instructionIndex + 1] is { Kind: Pcre2BacktrackingInstructionKind.Backreference } next &&
+                            (next.BackreferenceOptions & Pcre2CharacterOptions.Caseless) == 0)
+                        {
+                            // A return restores the caller's capture. The call
+                            // cannot move the input backwards, so an exact
+                            // reference still needs its first byte in this suffix.
+                            ref readonly var referenced = ref captureState[next.CaptureSlot];
+                            if (referenced.Start >= 0 && referenced.End > referenced.Start &&
+                                (referenced.End - referenced.Start > input.Length - inputIndex ||
+                                    !input[inputIndex..].Contains(input[referenced.Start]))) break;
+                        }
                         subroutineCalls.Push(
                             new Pcre2SubroutineCallFrame(
                                 instructionIndex + 1,

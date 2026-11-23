@@ -6,6 +6,32 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 [Collection(Pcre2AllocationTestCollection.Name)]
 public sealed class Pcre2SubroutineCaptureReturnTests
 {
+    [Theory]
+    [InlineData(@"\A(a)(?&mid)\1\z(?(DEFINE)(?<mid>.*))", "a中a", true)]
+    [InlineData(@"\A(a)(?&mid)\1\z(?(DEFINE)(?<mid>.*))", "a中b", false)]
+    [InlineData(@"\A(a?)(?&mid)\1\z(?(DEFINE)(?<mid>t))", "t", true)]
+    [InlineData(@"\A(k)(?&mid)(?i:\1)\z(?(DEFINE)(?<mid>))", "kK", true)]
+    public void ImmediateBackreferenceKeepsReturnedAndFoldedMatches(string pattern, string text, bool expected)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern,
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 1000, MaxDepth = 64 } });
+        using var source = new CancellationTokenSource();
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.IsMatch(input, cancellationToken: source.Token));
+        var match = regex.Match(input, cancellationToken: source.Token);
+        Assert.Equal(expected, match.Success);
+        if (expected) Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+    }
+
+    [Fact]
+    public void FailedBackreferenceStillReportsTheCalleeMark()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(a)(?&mid)\1\z(?(DEFINE)(?<mid>(*MARK:called)))");
+        var match = regex.Match("a"u8);
+        Assert.False(match.Success);
+        Assert.Equal("called", match.Mark);
+    }
+
     [Fact]
     public void RecursiveAlternativeAtEndRestoresTheCallerCaptures()
     {

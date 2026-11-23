@@ -28,6 +28,7 @@ internal sealed class Pcre2BacktrackingLowerer
     private bool _mayReportNonMonotoneMatchOffsets;
     private bool _mayThrowDeferredLookaroundReset;
     private bool _hasSubroutineCalls;
+    private bool _hasControlVerbs;
     private int _autoPossessiveRepeatCount;
     private List<int>? _thenPatches;
 
@@ -93,6 +94,7 @@ internal sealed class Pcre2BacktrackingLowerer
             _backreferenceSlotSets.Take(),
             _conditions.Take(),
             _hasSubroutineCalls,
+            _hasControlVerbs,
             _markNames.Take(),
             _nameEntries,
             Pcre2BacktrackingAnalysis.GetMinimumByteLength(root),
@@ -586,6 +588,7 @@ internal sealed class Pcre2BacktrackingLowerer
 
     private void EmitControlVerb(Pcre2ControlVerbBacktrackingNode controlVerb)
     {
+        _hasControlVerbs = true;
         var nameId = GetMarkNameId(controlVerb.Name);
         switch (controlVerb.VerbKind)
         {

@@ -334,6 +334,7 @@ internal sealed class Pcre2BacktrackingProgram
         Pcre2BackreferenceSlotSet[] backreferenceSlotSets,
         Pcre2BacktrackingCondition[] conditions,
         bool hasSubroutineCalls,
+        bool hasControlVerbs,
         string[] markNames,
         Pcre2NameEntry[] nameEntries,
         int minimumByteLength,
@@ -361,6 +362,8 @@ internal sealed class Pcre2BacktrackingProgram
         BackreferenceSlotSets = backreferenceSlotSets;
         Conditions = conditions;
         HasSubroutineCalls = hasSubroutineCalls;
+        CanScreenSubroutineBackreference = hasSubroutineCalls && !hasControlVerbs && !UsesMatchBoundaryReset &&
+            assertionPrograms.Length == 0 && conditions.Length == 0;
         MarkNames = markNames;
         NameEntries = nameEntries;
         MinimumByteLength = minimumByteLength;
@@ -452,6 +455,7 @@ internal sealed class Pcre2BacktrackingProgram
     internal Pcre2BacktrackingCondition[] Conditions { get; }
 
     internal bool HasSubroutineCalls { get; }
+    internal bool CanScreenSubroutineBackreference { get; }
 
     internal string[] MarkNames { get; }
 
