@@ -9,11 +9,11 @@ public sealed class Pcre2SubroutineCaptureReturnTests
     [Theory]
     [InlineData("")]
     [InlineData("(*ACCEPT)never")]
-    public void DeterministicReturnsReuseCaptureJournalUnderWorkingLimit(string returnSuffix)
+    public void DeterministicReturnsReuseJournalsUnderWorkingLimit(string returnSuffix)
     {
         using var regex = new Utf8Pcre2Regex(
             @"\A(?<caller>é)(?&unit){24}\k<caller>END\z(?(DEFINE)(?<unit>(?<inner>😀)a" + returnSuffix + "))",
-            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 4 << 10 } });
+            policy: new() { ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxWorkingBytes = 2 << 10 } });
         var input = Encoding.UTF8.GetBytes("é" + string.Concat(Enumerable.Repeat("😀a", 24)) + "éEND");
         Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[4];
 

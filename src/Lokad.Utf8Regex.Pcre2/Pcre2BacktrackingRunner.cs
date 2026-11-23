@@ -2060,7 +2060,7 @@ internal static class Pcre2BacktrackingRunner
         var retainedExtent = RetainedCallExtent(in frames);
         // Checkpoints below this call's record precede its journal entries.
         // Only a retry saved during the call can need their inverse writes.
-        var retainCaptureMutations = retainedExtent >= calls.Checkpoint.Head;
+        var retainMutations = retainedExtent >= calls.Checkpoint.Head;
 
         restoreGeneration++;
         if (restoreGeneration <= 0)
@@ -2080,25 +2080,26 @@ internal static class Pcre2BacktrackingRunner
         {
             if (((index - call.RepeatCheckpoint) & 63) == 63) budget.ChargeWorkspaceStep();
             var mutation = repeatMutations[index];
-            if (repeatRestoreGenerations[mutation.RepeatId] == generation)
+            var repeatId = mutation.RepeatId;
+            if (repeatRestoreGenerations[repeatId] == generation)
             {
                 continue;
             }
 
-            repeatRestoreGenerations[mutation.RepeatId] = generation;
-            SetRepeat(
-                mutation.RepeatId,
-                mutation.PreviousCount,
-                mutation.PreviousPosition,
-                counts,
-                positions,
-                ref repeatMutations,
-                ref budget);
+            repeatRestoreGenerations[repeatId] = generation;
+            if (retainMutations)
+                SetRepeat(repeatId, mutation.PreviousCount, mutation.PreviousPosition,
+                    counts, positions, ref repeatMutations, ref budget);
+            else
+            {
+                counts[repeatId] = mutation.PreviousCount;
+                positions[repeatId] = mutation.PreviousPosition;
+            }
         }
 
         var captureMutationCount = captureMutations.Count;
         // With at most one writable slot, the first entry is its call-entry
-        // value. The inverse write still belongs to the retry journal.
+        // value.
         var tracksMultipleCaptures = !captureRestoreGenerations.IsEmpty;
         if (!tracksMultipleCaptures && call.CaptureCheckpoint < captureMutationCount)
             captureMutationCount = call.CaptureCheckpoint + 1;
@@ -2118,11 +2119,15 @@ internal static class Pcre2BacktrackingRunner
                 ref captureState[mutation.Slot],
                 mutation.Previous,
                 ref captureMutations,
-                ref budget, recordRollback: retainCaptureMutations);
+                ref budget, recordRollback: retainMutations);
         }
 
-        if (!retainCaptureMutations)
+        if (!retainMutations)
+        {
+            if (repeatMutationCount != call.RepeatCheckpoint)
+                repeatMutations.Truncate(call.RepeatCheckpoint);
             captureMutations.Truncate(call.CaptureCheckpoint);
+        }
         calls.Return(retainedExtent);
         return call.ReturnInstruction;
     }
