@@ -274,15 +274,27 @@ internal static class Pcre2SliceDriver
 
     internal static int GetDisjointClassDelimiter(Utf8SliceProgram program)
     {
-        // The delimiter follows the unbounded leading class directly.
-        // A later start in the same run reaches the same suffix with fewer
-        // scalars, so it cannot survive a failed verification of that run.
-        if (program.ReadsCaptures || program.HasContiguousAnchor || program.Assertions.Length != 0 ||
-            program.LeadingClassDelimiter is not { Direct: true, LeadingClass: 1, LiteralIndex: 4, Literal: >= 0 } window ||
-            program.Instructions[0].RepeatMaximum != long.MaxValue ||
-            !program.TryGetUnfoldedAsciiSet(program.Instructions[1], out var leading, out var asciiOnly) ||
+        if (program.ReadsCaptures || program.HasContiguousAnchor || program.SawLookaround ||
+            program.LeadingClassDelimiter is not { Direct: true, LeadingClass: > 0, Literal: >= 0 } window)
+            return -1;
+
+        var code = program.Instructions;
+        var repeat = window.LeadingClass - 1;
+        if (code[repeat] is not { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0, RepeatMaximum: long.MaxValue } ||
+            !program.TryGetUnfoldedAsciiSet(code[window.LeadingClass], out var leading, out var asciiOnly) ||
             !asciiOnly || leading.Contains((byte)window.Literal))
             return -1;
+
+        // Only capture markers may surround the run before its delimiter.
+        // A later start in the same run reaches the same suffix with fewer
+        // bytes. A different capture value cannot affect acceptance here.
+        Utf8ConstructionScope.ChargeWork((ulong)(window.LiteralIndex - 4));
+        for (var pc = 0; pc < window.LiteralIndex; pc++)
+        {
+            if (pc == repeat) { pc += 3; continue; }
+            if (code[pc].Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd))
+                return -1;
+        }
         return window.Literal;
     }
 
@@ -292,7 +304,8 @@ internal static class Pcre2SliceDriver
     {
         while (position >= 0 && position <= lastStart)
         {
-            var breach = Utf8SliceRunner.TrySeekLeadingClassLiteralWindow(program, input, 1, delimiter,
+            var breach = Utf8SliceRunner.TrySeekLeadingClassLiteralWindow(program, input,
+                program.LeadingClassDelimiter.LeadingClass, delimiter,
                 search: null, gapMaximum: 0, direct: true, ref position, ref invocation, out var windowEnd);
             ThrowIfSliceBreached(breach);
             if (position < 0 || position > lastStart) break;
@@ -333,7 +346,10 @@ internal static class Pcre2SliceDriver
         scoped ref Utf8SliceInvocation invocation)
     {
         var program = slice.SliceProgram;
-        if (slice.DisjointClassDelimiter >= 0 && input.ByteLength - start.Value - slice.Fallback.MinimumByteLength >= 64)
+        // The shared Count loop already skips impossible capture-first
+        // candidates without paying for the explicit delimiter rewind.
+        if (candidates.Kind == Pcre2CandidateSearchKind.LeadingRunThenLiteral &&
+            slice.DisjointClassDelimiter >= 0 && input.ByteLength - start.Value - slice.Fallback.MinimumByteLength >= 64)
             return CountWithDelimiterWindows(slice, input.Bytes, start.Value, ref invocation);
 
         // A non-empty program needs no PCRE2 empty retry. Keep admitted scratch
@@ -435,7 +451,7 @@ internal static class Pcre2SliceDriver
         scoped ref Utf8SliceInvocation invocation)
     {
         var lastStart = bytes.Length - slice.Fallback.MinimumByteLength;
-        if (slice.DisjointClassDelimiter >= 0 && lastStart - start >= 64)
+        if (lastStart - start >= 64 && slice.DisjointClassDelimiter >= 0)
         {
             var begin = start;
             var end = FindMatchingEnd(slice.SliceProgram, bytes, ref begin, lastStart, leadingAsciiByte: null,

@@ -206,6 +206,43 @@ public sealed class Pcre2LeadingSetCountTests
     }
 
     [Fact]
+    public void CapturedDelimiterWindowsRetainTheFirstStartAndItsRanges()
+    {
+        using var regex = Create("([a-z]+)@([a-z]+)(![0-9]+)?", work: 256);
+        var slice = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        Assert.Equal((int)'@', slice.DisjointClassDelimiter);
+        var prefix = string.Concat(Enumerable.Repeat("aa@!😀", 12));
+        var input = Encoding.UTF8.GetBytes(prefix + "hello@world!12 yz@tail");
+        var first = Encoding.UTF8.GetByteCount(prefix);
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[4];
+
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(first, regex.Match(input).StartOffsetInBytes);
+        Assert.Equal(2, regex.Count(input, first));
+        Assert.Equal(first + 2, regex.Match(input, first + 2, captures).StartOffsetInBytes);
+        Assert.Equal((first + 2, first + 5), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.Equal((first + 6, first + 11), (captures[2].StartOffsetInBytes, captures[2].EndOffsetInBytes));
+        Assert.Equal((first + 11, first + 14), (captures[3].StartOffsetInBytes, captures[3].EndOffsetInBytes));
+        var probe = regex.Probe(input, Pcre2PartialMode.None).GetMatch();
+        Assert.Equal(first, probe.Value.StartOffsetInBytes);
+        Assert.True(probe.GetGroup(1).GetValueBytes().SequenceEqual("hello"u8));
+    }
+
+    [Theory]
+    [InlineData(@"([a-z]+)@\1", "abcd@cd")]
+    [InlineData("([a-z]{1,2})@tail", "abcd@tail")]
+    public void CaptureReadsAndFiniteMaximaKeepLaterStartsInTheSameRun(string pattern, string suffix)
+    {
+        using var regex = Create(pattern);
+        var slice = Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        Assert.Equal(-1, slice.DisjointClassDelimiter);
+        var input = Encoding.UTF8.GetBytes(suffix + new string('!', 128));
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[2];
+        Assert.Equal(2, regex.Match(input, captures: captures).StartOffsetInBytes);
+        Assert.Equal((2, 4), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+    }
+
+    [Fact]
     public void RequiredLiteralMustOccurInTheRequestedSuffixAndStillNeedsVerification()
     {
         var regex = Create("[a-z]+@([a-z]+)");

@@ -686,7 +686,8 @@ internal static class Pcre2CompiledProgramOverlay
         var booleanLiteral = !countOnly && operations.IsMatch is Pcre2BacktrackingDirectProgram
             ? Pcre2LiteralCompiler.CompileImpliedLookahead(root) : null;
         var delimiter = -1;
-        if (!countOnly && candidateKind == Pcre2CandidateSearchKind.LeadingRunThenLiteral)
+        if (!countOnly && candidateKind is
+            (Pcre2CandidateSearchKind.LeadingRunThenLiteral or Pcre2CandidateSearchKind.LeadingAsciiSet))
         {
             Utf8ConstructionScope.ChargeWork(1);
             delimiter = Pcre2SliceDriver.GetDisjointClassDelimiter(sliceProgram);
