@@ -721,7 +721,8 @@ internal static partial class Utf8SliceRunner
                             var (firstClass, secondClass) = requiredClassSuffix;
                             var code = program.Instructions.AsSpan();
                             proveClassSuffix = secondClass != 0 && secondClass == firstClass + 2 &&
-                                code[secondClass - 1].RepeatMinimum == 1 && CanAcceptEmptyTail(code, secondClass + 3);
+                                code[secondClass - 1].RepeatMinimum == 1 &&
+                                (code[secondClass + 2].RepeatExitAcceptsEmptyTail || CanAcceptEmptyTail(code, secondClass + 3));
                         }
                     }
                 }
