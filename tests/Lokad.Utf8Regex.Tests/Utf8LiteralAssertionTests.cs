@@ -15,6 +15,8 @@ public sealed class Utf8LiteralAssertionTests
     [InlineData("bar(?!foo)")]
     [InlineData("bar(?=foo|go|baz)")]
     [InlineData("bar(?!foo|go|baz)")]
+    [InlineData("bar(?=[a-z]+oo)")]
+    [InlineData("bar(?=[a-e]+o)")]
     [InlineData("bar(?=(foo|go))")]
     [InlineData("(?:foo|fo)(?<=foo)bar")]
     [InlineData("(?<=(?<x>foo))bar")]
@@ -63,7 +65,9 @@ public sealed class Utf8LiteralAssertionTests
     [InlineData("(?=foo|bar)bar", "bar", 0)]
     [InlineData("(?!foo|goo)bar", "bar", 0)]
     [InlineData("(?<=foo|goo)bar", "goobar", 3)]
-    public void LiteralChoicesNeedOnlyLogicalAssertionDepth(string pattern, string text, int start)
+    [InlineData(@"q(?=\s+client)", "q\u2003client", 0)]
+    [InlineData(@"q(?![ab]{1,3}c)", "qaa!", 0)]
+    public void ProvedAssertionsNeedOnlyLogicalAssertionDepth(string pattern, string text, int start)
     {
         using var regex = Utf8Regex.Compile(pattern);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
@@ -144,6 +148,35 @@ public sealed class Utf8LiteralAssertionTests
             else Assert.Equal(token.Token,
                 Assert.Throws<OperationCanceledException>(() => regex.Match(input, cancellationToken: token.Token)).CancellationToken);
             Assert.True(entered);
+        }
+        finally { session.Complete(); }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RepeatLookaheadObservesInterruptionWithinAClassRun(bool expire)
+    {
+        var input = Encoding.UTF8.GetBytes("HttpClient" + new string(' ', 8192) + "client");
+        using var token = new CancellationTokenSource();
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var regex = new Utf8Regex(@"HttpClient(?=\s+client)", RegexOptions.Compiled, new()
+        {
+            MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new() { MaxWorkSteps = 100_000, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        Assert.Equal(1, regex.Count(input));
+
+        var session = Utf8SearchDiagnosticsSession.Start(_ =>
+        {
+            if (expire) clock.Advance(50);
+            else token.Cancel();
+        });
+        try
+        {
+            if (expire) Assert.Throws<RegexMatchTimeoutException>(() => regex.Count(input, token.Token));
+            else Assert.Equal(token.Token,
+                Assert.Throws<OperationCanceledException>(() => regex.Count(input, token.Token)).CancellationToken);
         }
         finally { session.Complete(); }
     }

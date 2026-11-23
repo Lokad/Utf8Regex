@@ -1662,15 +1662,18 @@ internal static partial class Utf8SliceRunner
                 }
 
                 case Utf8SliceInstructionKind.Fork:
-                    if (instruction is { B: 1, C: > 0 })
+                    if (instruction is { B: 1, C: not 0 })
                     {
                         // Both forward-lookahead layouts end their body two
                         // instructions before the failed-body target.
                         checkedInlineAssertion = true;
-                        var assertionBreach = TryMatchInlineLiteralAssertion(instructions,
-                            programIndex + 1, instruction.A - 2, instruction.C - 1, input, inputIndex,
-                            false, null, (uint)stacks.FrameCount + 1, ref invocation, out var matched,
-                            checkExitDeadline: false);
+                        var depth = (uint)stacks.FrameCount + 1;
+                        var assertionBreach = instruction.C < 0
+                            ? TryMatchInlineRepeatAssertion(program, programIndex + 1, instruction.A - 2,
+                                input, inputIndex, depth, ref invocation, out var matched)
+                            : TryMatchInlineLiteralAssertion(instructions, programIndex + 1, instruction.A - 2,
+                                instruction.C - 1, input, inputIndex, false, null, depth, ref invocation,
+                                out matched, checkExitDeadline: false);
                         if (assertionBreach != Utf8ExecutionLimitKind.None)
                             { failure = assertionBreach; goto Failure; }
                         failed = matched != (instruction.D != 0);

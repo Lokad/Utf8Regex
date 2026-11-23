@@ -1128,7 +1128,12 @@ internal static partial class Utf8SliceRunner
         var consumed = optionalAsciiLiteral ? default(Utf8SearchAsciiSet).With((byte)atom.A) : ReadAsciiSet(setMasks[atom.A]);
         if (ExcludesShorterRepeatEnds(code, setMasks, continuation, consumed,
             optionalAsciiLiteral || atom is { Kind: Utf8SliceInstructionKind.Set, C: 0 }, ref work))
+        {
             code[repeat.A] = new(exit.Kind, exit.A, exit.B, exit.C | Utf8SliceInstruction.RepeatExitRejectsShorterFlag, exit.D);
+            if (atom is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } or
+                { Kind: Utf8SliceInstructionKind.Hybrid, B: 0, D: 0 })
+                PrepareInlineRepeatAssertion(code, repeatIndex, budget);
+        }
     }
 
     private static Utf8SearchAsciiSet ReadAsciiSet(ReadOnlySpan<byte> mask)

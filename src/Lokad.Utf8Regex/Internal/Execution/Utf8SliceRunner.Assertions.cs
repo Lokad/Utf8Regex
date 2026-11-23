@@ -252,6 +252,46 @@ internal static partial class Utf8SliceRunner
         return true;
     }
 
+    private static void PrepareInlineRepeatAssertion(Span<Utf8SliceInstruction> code, int repeatIndex,
+        Utf8ConstructionBudget budget)
+    {
+        var fork = repeatIndex - 1;
+        if (fork < 0 || code[fork] is not { Kind: Utf8SliceInstructionKind.Fork, B: 1, C: 0 } guard ||
+            (uint)guard.A >= (uint)code.Length) return;
+        var tail = code[repeatIndex].A + 1;
+        var end = guard.A - 2;
+        if (tail >= end || code[end].Kind != Utf8SliceInstructionKind.Commit) return;
+        var exit = code[guard.A - 1];
+        var positive = exit.Kind == Utf8SliceInstructionKind.Jump && exit.A == guard.A + 1 &&
+            code[guard.A].Kind == Utf8SliceInstructionKind.Fail;
+        if (!positive && exit.Kind != Utf8SliceInstructionKind.Fail) return;
+        if (Utf8SliceAssertion.FindInlineLiteralPrefixLength(code, tail, end, budget) != end - tail) return;
+
+        // The repeat excludes the first tail literal. Its last endpoint is
+        // the only one that can match, and the body has no capture effects.
+        code[fork] = new(guard.Kind, guard.A, guard.B, -1, positive ? 1 : 0);
+    }
+
+    private static Utf8ExecutionLimitKind TryMatchInlineRepeatAssertion(Utf8SliceProgram program,
+        int repeatIndex, int end, ReadOnlySpan<byte> input, int start, uint depth,
+        ref Utf8SliceInvocation invocation, out bool matched)
+    {
+        matched = false;
+        var breach = invocation.TryChargeInputStep();
+        if (breach == Utf8ExecutionLimitKind.None) breach = invocation.Budget.TryNoteDepth(depth);
+        if (breach != Utf8ExecutionLimitKind.None) return breach;
+
+        var run = RunClassRepeat(program, repeatIndex, input, start, ref invocation, checkExitDeadline: false);
+        if (run.Breach != Utf8ExecutionLimitKind.None) return run.Breach;
+        var code = program.Instructions;
+        var tail = code[repeatIndex].A + 1;
+        matched = run.EndIndex >= 0 && MatchAsciiLiterals(code.AsSpan(tail, end - tail),
+            input, run.EndIndex, reverse: false, requiredEnd: null);
+        breach = ChargeRepeatBoundary(ref invocation, checkDeadline: false);
+        invocation.Budget.ThrowIfCancellationRequested();
+        return breach;
+    }
+
     private static Utf8ExecutionLimitKind TryMatchInlineLiteralAssertion(ReadOnlySpan<Utf8SliceInstruction> code,
         int first, int end, int prefixLength, ReadOnlySpan<byte> input, int start, bool reverse,
         int? requiredEnd, uint depth, ref Utf8SliceInvocation invocation, out bool matched,
