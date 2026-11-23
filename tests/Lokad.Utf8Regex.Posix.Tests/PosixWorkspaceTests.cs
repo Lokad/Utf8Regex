@@ -37,7 +37,7 @@ public sealed class PosixWorkspaceTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void ExactStateLoansResetWithoutChangingAnotherActiveWorkspace(bool finite)
+    public void ReusedStateLoansDoNotChangeAnotherActiveWorkspace(bool finite)
     {
         var program = PosixProgram.Compile("^([[:alpha:]]+)([0-9]+)$", default);
         var invocation = new Utf8SliceInvocation(finite ? new(1000000, 128, 1 << 20) : Utf8ExecutionLimits.Unlimited,
@@ -54,8 +54,8 @@ public sealed class PosixWorkspaceTests
             Assert.True(second.Find("xyz42"u8, secondState, 0, false, ref invocation, out _, out _));
             second.Release(ref invocation);
             PosixWorkspace.Initialize(out reused, program, ref invocation);
-            Assert.False(reused.Find("1"u8, secondState, 0, false, ref invocation, out _, out _));
-            Assert.False(reused.GetCapture(secondState, 2, ref invocation, out _, out _));
+            Assert.False(reused.Find("1"u8, secondState, 0, false, ref invocation, out var missStart, out var missEnd));
+            Assert.Equal((-1, -1), (missStart, missEnd));
             Assert.True(reused.Find("q4"u8, secondState, 0, false, ref invocation, out _, out _));
             Assert.True(reused.GetCapture(secondState, 2, ref invocation, out var start, out var end));
             Assert.Equal((1, 2), (start, end));

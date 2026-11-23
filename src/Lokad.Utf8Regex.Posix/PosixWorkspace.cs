@@ -139,7 +139,10 @@ internal partial struct PosixWorkspace
     private bool MatchAt(ReadOnlySpan<byte> input, scoped Span<int> state, int start, int firstWidth, bool existenceOnly, bool captureHistory,
         ref Utf8SliceInvocation invocation, out int end)
     {
-        Reset(state, ref invocation);
+        var directGreedyRuns = _program.DirectGreedyRuns;
+        // Direct runs have no retries or counters. Every public capture is
+        // outside the repeat bodies and is written on each successful attempt.
+        if (!directGreedyRuns) Reset(state, ref invocation);
         var code = _program.Scalar.Instructions;
         var pc = 0; var at = start; end = -1;
         var maximumEnd = input.Length;
@@ -189,7 +192,7 @@ internal partial struct PosixWorkspace
                     break;
                 case Utf8SliceInstructionKind.Jump: pc = instruction.A; break;
                 case Utf8SliceInstructionKind.RepeatGreedy:
-                    if (_program.DirectGreedyRuns)
+                    if (directGreedyRuns)
                     {
                         // The compiler proves greedy endpoints for these runs:
                         // required successors are disjoint, overlapping ones are

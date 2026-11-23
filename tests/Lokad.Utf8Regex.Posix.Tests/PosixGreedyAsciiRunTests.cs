@@ -5,6 +5,28 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 
 public sealed class PosixGreedyAsciiRunTests
 {
+    [Fact]
+    public void DirectCursorOverwritesEmptyCapturesAfterEarlierMatches()
+    {
+        const string pattern = "([a-z]+)([0-9]*)";
+        Assert.True(PosixProgram.Compile(pattern, default).DirectGreedyRuns);
+        using var regex = new Utf8PosixRegex(pattern);
+        using var cursor = regex.CreateMatchCursor("aa12 bb xx3 yy"u8.ToArray());
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[3];
+
+        Assert.True(cursor.MoveNext(out var first, captures));
+        Assert.Equal(new Utf8CaptureRange(2, 4), captures[2]);
+        Assert.True(cursor.MoveNext(out _, captures));
+        Assert.Equal(new Utf8CaptureRange(7, 7), captures[2]);
+        Assert.True(cursor.MoveNext(out _));
+        Assert.True(cursor.MoveNext(out var last, captures));
+        Assert.Equal(new Utf8CaptureRange(12, 14), last);
+        Assert.Equal(new Utf8CaptureRange(14, 14), captures[2]);
+        Assert.Equal(new Utf8CaptureRange(0, 4), first);
+        Assert.False(cursor.MoveNext(out _, captures));
+        Assert.False(captures[2].Success);
+    }
+
     [Theory]
     [InlineData("([[:alpha:]]+)([0-9]+)", 69)]
     [InlineData("([[:alpha:]]+)([0-9]+)", 512)]
