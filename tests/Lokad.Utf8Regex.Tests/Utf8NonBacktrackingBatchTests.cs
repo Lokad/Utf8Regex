@@ -65,6 +65,10 @@ public sealed class Utf8NonBacktrackingBatchTests
         var prefix = new string('!', 257) + "𐐀";
         var input = Encoding.UTF8.GetBytes(prefix + "K!");
         var start = Encoding.UTF8.GetByteCount(prefix);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[3];
+        Assert.Equal(new Utf8CaptureRange(start, start + 3), regex.Match(input, 257, captures));
+        Assert.False(captures[1].Success);
+        Assert.Equal(new Utf8CaptureRange(start, start + 3), captures[2]);
         var cursor = regex.EnumerateMatches(input, 257);
         var alias = cursor.GetEnumerator();
         Assert.True(cursor.MoveNext());

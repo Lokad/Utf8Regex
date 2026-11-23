@@ -20,16 +20,25 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
         Assert.Contains("array length", error.Message, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void OversizedThreadRegistersReportArrayCapacity()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(129)]
+    public void OversizedThreadRegistersAreAvoidedForShortCaptureSearches(int length)
     {
         using var regex = new Utf8Regex(string.Concat(Enumerable.Repeat("(a)", 16_000)), RegexOptions.NonBacktracking);
         var program = regex.Inspection.AvailableOwnedSliceProgram!;
         var registers = 2L * program.GroupCount + program.NonBacktrackingCaptureOpeningCount;
         Assert.True(registers * program.Instructions.Length > Array.MaxLength);
 
+        var input = Encoding.UTF8.GetBytes(new string('a', length));
         var captures = new Utf8CaptureRange[2];
-        var error = Assert.Throws<InvalidOperationException>(() => regex.Match("a"u8, captures: captures));
+        if (length == 1)
+        {
+            Assert.False(regex.Match(input, captures: captures).Success);
+            Assert.All(captures, capture => Assert.False(capture.Success));
+            return;
+        }
+        var error = Assert.Throws<InvalidOperationException>(() => regex.Match(input, captures: captures));
         Assert.Contains("capture registers", error.Message, StringComparison.Ordinal);
         Assert.Contains("array length", error.Message, StringComparison.Ordinal);
     }

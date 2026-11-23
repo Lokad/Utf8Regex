@@ -157,11 +157,11 @@ internal sealed class Utf8NonBacktrackingSearchState
     // Input is caller-valid UTF-8. A bounded size scan and scalar pass
     // admit exact offsets and bit rows; no UTF-16 subject or unit map is built.
     internal static Utf8ExecutionLimitKind TryCreate(Utf8SliceProgram program, ReadOnlySpan<byte> input,
-        ref Utf8SliceInvocation invocation, out Utf8NonBacktrackingSearchState? state)
+        ref Utf8SliceInvocation invocation, out Utf8NonBacktrackingSearchState? state, int fromByte = 0)
     {
         state = null;
         invocation.Budget.ThrowIfCancellationRequested();
-        var first = 0;
+        var first = fromByte;
         var singleWord = program.Instructions.Length <= 64;
         if (!singleWord)
         {
@@ -249,6 +249,21 @@ internal sealed class Utf8NonBacktrackingSearchState
             return Utf8ExecutionLimitKind.None;
         }
         finally { if (!published) invocation.Ledger.Release(reservation); }
+    }
+
+    internal static Utf8SliceSearchOutcome FindFirstWideCapture(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int fromByte, int[] captureStarts, int[] captureEnds, ref Utf8SliceInvocation invocation)
+    {
+        var breach = TryCreate(program, input, ref invocation, out var table, fromByte);
+        if (breach != Utf8ExecutionLimitKind.None)
+        {
+            Array.Fill(captureStarts, -1);
+            Array.Fill(captureEnds, -1);
+            return new(false, -1, -1, breach);
+        }
+        var boundary = 0;
+        try { return table!.FindFirst(program, ref boundary, captureStarts, captureEnds, ref invocation); }
+        finally { table!.Release(ref invocation); }
     }
 
     private static Utf8ExecutionLimitKind TryBuildPackedRow(Utf8SliceProgram program, ReadOnlySpan<byte> input,

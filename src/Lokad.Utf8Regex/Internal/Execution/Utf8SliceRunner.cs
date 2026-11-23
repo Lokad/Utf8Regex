@@ -481,6 +481,14 @@ internal static partial class Utf8SliceRunner
         {
             if (captureStarts.Length == 0 && program.NonBacktrackingOrderedClosures.Length != 0)
                 return FindOrderedRegularRange(program, input, fromByte, ref invocation);
+            // A short suffix needs comparatively few viability bits. Replay
+            // captures once when the thread register count justifies walking
+            // the suffix. Small early matches can finish without that walk.
+            var suffixBytes = input.Length - fromByte;
+            if (captureStarts.Length != 0 && program.Instructions.Length > 64 && suffixBytes <= 128 &&
+                suffixBytes <= 8L * (2L * program.GroupCount + program.NonBacktrackingCaptureOpeningCount))
+                return Utf8NonBacktrackingSearchState.FindFirstWideCapture(program, input, fromByte,
+                    captureStarts, captureEnds, ref invocation);
             return RunNonBacktracking(program, input, fromByte, captureStarts, captureEnds,
                 false, false, ref invocation);
         }

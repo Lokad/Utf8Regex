@@ -91,6 +91,11 @@ scalars in bounded input blocks to size their arrays, then record each byte
 offset under its row's work admission. A later refusal leaves prior cursor
 results valid.
 
+Short first-match searches in wide programs can build viability rows for the
+requested suffix and replay only the winning path. That path uses one set of
+capture openings and keeps byte offsets and boundary context in the original
+subject.
+
 ### Native pattern metadata
 
 `CaptureGroupCount` counts defined slots excluding zero. Shared declarations
