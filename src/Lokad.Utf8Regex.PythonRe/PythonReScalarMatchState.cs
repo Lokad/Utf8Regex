@@ -213,11 +213,19 @@ internal struct PythonReScalarMatchState
         _invocation.Budget.ThrowIfCancellationRequested();
     }
 
-    internal bool MoveNext(ReadOnlySpan<byte> input, bool existenceOnly = false) =>
-        MoveNextCore(input, search: true, existenceOnly);
-
-    internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input, bool requireFullInput = false) =>
-        MoveNextCore(input, search: false, existenceOnly: false, requireFullInput);
+    internal bool MatchAtCurrentPosition(ReadOnlySpan<byte> input, bool requireFullInput = false)
+    {
+        var matched = false;
+        try
+        {
+            if (_finished) return false;
+            Checkpoint();
+            matched = RecordMatch(VerifyCurrentPosition(input, existenceOnly: false, requireFullInput));
+            _finished = !matched;
+            return matched;
+        }
+        finally { if (!matched) _workspace.Release(ref _invocation); }
+    }
 
     private static bool TryGetLaterAsciiRange(Utf8SliceProgram program, int leadingLow, int leadingHigh,
         ref Utf8SliceInvocation invocation, out int distance, out int low, out int high)
@@ -367,13 +375,13 @@ internal struct PythonReScalarMatchState
         return true;
     }
 
-    private bool MoveNextCore(ReadOnlySpan<byte> input, bool search, bool existenceOnly, bool requireFullInput = false)
+    internal bool MoveNext(ReadOnlySpan<byte> input, bool existenceOnly = false)
     {
         // A scalar cursor exclusively owns this admitted scratch. Published
         // snapshots copy values; ResetAttempt never touches retained results.
         var keepWorkspace = false;
         var leadingClass = _delimiterLeadingClass;
-        var delimiter = search ? _delimiter : -1;
+        var delimiter = _delimiter;
         var windowEnd = -1;
         var verifyFirstCandidate = delimiter >= 0 && _leadingAsciiLow >= 0 &&
             (delimiter < _leadingAsciiLow || delimiter > _leadingAsciiHigh);
@@ -391,7 +399,7 @@ internal struct PythonReScalarMatchState
                 // The mandatory initial anchor already bounds candidate starts.
                 // Reuse Core's original-origin/LF finder instead of retrying the
                 // VM at every scalar, including after an anchored match.
-                if (search && !_program.RightToLeft && !_program.IsNonBacktracking &&
+                if (!_program.RightToLeft && !_program.IsNonBacktracking &&
                     _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.Beginning })
                 {
                     var breach = Utf8SliceRunner.TrySeekBeginning(_program, input, ref _position, ref _invocation);
@@ -399,10 +407,8 @@ internal struct PythonReScalarMatchState
                     if (_position < 0) { _finished = true; return false; }
                 }
                 Utf8SliceMatchOutcome outcome;
-                // A complete native literal match needs no capture/VM state.
-                // Match and FullMatch use search=false;
-                // their additional position/end constraints keep the VM.
-                if (search && _program.GroupCount == 0 && _candidateRegex is { } candidate &&
+                // A complete native literal match needs no capture or VM state.
+                if (_program.GroupCount == 0 && _candidateRegex is { } candidate &&
                     candidate.TryFindNativeLiteralForResult(input, _position, ref _invocation,
                         out var found, out var start, out var end))
                 {
@@ -449,19 +455,18 @@ internal struct PythonReScalarMatchState
                     }
                     // A necessary start hint still requires profile verification.
                     // Avoid its search helper when the current byte meets the hint.
-                    if (search && (_laterAsciiDistance > 0 || _candidateRegex is not null ||
+                    if ((_laterAsciiDistance > 0 || _candidateRegex is not null ||
                         _leadingAsciiLow >= 0 && ((uint)_position >= (uint)input.Length ||
                             (uint)(input[_position] - _leadingAsciiLow) > (uint)(_leadingAsciiHigh - _leadingAsciiLow))) &&
                         !SeekCandidate(input)) { _finished = true; return false; }
                     // The range hint may have jumped past this delimiter.
                     // Discover the next window before entering the verifier.
                     if (delimiter >= 0 && _position > windowEnd && !bypassWindow) continue;
-                    _invocation.AnchorOriginByte = _position;
                     // Once scratch is admitted, a positive leading boundary
                     // cannot match between two ASCII word scalars.
                     // A complete boundary-only root has no consuming hint,
                     // but admits the same proof without changing its retries.
-                    if (search && _workspace.Initialized &&
+                    if (_workspace.Initialized &&
                         _program.Instructions[0] is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
                         (_leadingAsciiLow >= 0 || _program.GroupCount == 0 && !_program.IsNonBacktracking &&
                             _program.Instructions is { Length: 2 } boundaryCode &&
@@ -508,24 +513,14 @@ internal struct PythonReScalarMatchState
                             _program, input, _position, 0, out provedEnd, proveMatch: true);
                         outcome = !possible || provedEnd >= 0
                             ? new(possible, provedEnd, Utf8ExecutionLimitKind.None)
-                            : Utf8SliceRunner.TryMatchAt(_program, input, _position,
-                                _slots.Starts, _slots.Ends, false, _retryNonEmpty, true, ref _workspace, ref _invocation,
-                                existenceOnly, requireFullInput: requireFullInput);
+                            : VerifyCurrentPosition(input, existenceOnly);
                     }
                 }
-                if (outcome.Breach != Utf8ExecutionLimitKind.None)
-                    throw ResourceFailure();
-                if (outcome.IsMatch)
+                if (RecordMatch(outcome))
                 {
-                    StartOffsetInBytes = _position;
-                    EndOffsetInBytes = outcome.EndIndex;
-                    _retryNonEmpty = outcome.EndIndex == _position;
-                    _position = outcome.EndIndex;
                     keepWorkspace = true;
                     return true;
                 }
-                _retryNonEmpty = false;
-                if (!search) { _finished = true; return false; }
                 if (_position == input.Length)
                 {
                     // The VM can fail on its last instruction after the entry
@@ -543,6 +538,25 @@ internal struct PythonReScalarMatchState
         }
 
         finally { if (!keepWorkspace) _workspace.Release(ref _invocation); }
+    }
+
+    private Utf8SliceMatchOutcome VerifyCurrentPosition(ReadOnlySpan<byte> input, bool existenceOnly,
+        bool requireFullInput = false)
+    {
+        _invocation.AnchorOriginByte = _position;
+        return Utf8SliceRunner.TryMatchAt(_program, input, _position, _slots.Starts, _slots.Ends,
+            false, _retryNonEmpty, true, ref _workspace, ref _invocation, existenceOnly, requireFullInput: requireFullInput);
+    }
+
+    private bool RecordMatch(Utf8SliceMatchOutcome outcome)
+    {
+        if (outcome.Breach != Utf8ExecutionLimitKind.None) throw ResourceFailure();
+        _retryNonEmpty = outcome.IsMatch && outcome.EndIndex == _position;
+        if (!outcome.IsMatch) return false;
+        StartOffsetInBytes = _position;
+        EndOffsetInBytes = outcome.EndIndex;
+        _position = outcome.EndIndex;
+        return true;
     }
 
     private bool SeekCandidate(ReadOnlySpan<byte> input)
