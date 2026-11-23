@@ -55,6 +55,43 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
     }
 
     [Fact]
+    public void AssertionAndMainProgramEmitOnlyTheirReachableCallBodies()
+    {
+        using var regex = new Utf8Pcre2Regex(
+            @"\A(?=(?&first))(?&second)\z(?(DEFINE)(?<first>(?&second))(?<second>é)(?<unused>y))");
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
+        var assertion = Assert.Single(program.AssertionPrograms);
+        Assert.Equal(-1, program.SubroutineTargets[1]);
+        Assert.True(program.SubroutineTargets[2] >= 0);
+        Assert.Equal(-1, program.SubroutineTargets[3]);
+        Assert.True(assertion.SubroutineTargets[1] >= 0);
+        Assert.True(assertion.SubroutineTargets[2] >= 0);
+        Assert.Equal(-1, assertion.SubroutineTargets[3]);
+
+        Assert.Equal(3, regex.CaptureGroupCount);
+        Span<Utf8Pcre2CaptureRange> captures = stackalloc Utf8Pcre2CaptureRange[4];
+        var match = regex.Match("é"u8, captures: captures);
+        Assert.True(match.Success);
+        Assert.Equal((0, 2), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.False(captures[1].Success);
+        Assert.False(captures[2].Success);
+        Assert.False(captures[3].Success);
+        Assert.False(regex.IsMatch("y"u8));
+    }
+
+    [Theory]
+    [InlineData(@"\A(?&first)\z(?(DEFINE)(?<first>a)(?<unused>(?&missing)))", Pcre2ErrorKind.InvalidAfterParensQuery)]
+    [InlineData(@"\A(?&first)\z(?(DEFINE)(?<first>a)(?<unused>(?(R&missing)a|b)))", Pcre2ErrorKind.InvalidAfterParensQuery)]
+    [InlineData(@"\A(?&first)\z(?(DEFINE)(?<first>a)(?<unused>\99))", Pcre2ErrorKind.UnrecognizedEscape)]
+    [InlineData(@"\A(?&first)\z(?(DEFINE)(?<first>a)(?<unused>(?(99)a|b)))", Pcre2ErrorKind.UnrecognizedEscape)]
+    [InlineData(@"\Aa\z(?(DEFINE)(?<unused>(?&missing)))", Pcre2ErrorKind.InvalidAfterParensQuery)]
+    public void UnusedBodiesStillValidateReferences(string pattern, Pcre2ErrorKind expected)
+    {
+        var error = Assert.Throws<Pcre2CompileException>(() => new Utf8Pcre2Regex(pattern));
+        Assert.Equal(expected, error.ErrorKind);
+    }
+
+    [Fact]
     public void DefineBlocksCanHoldMultipleForwardReferencedDefinitions()
     {
         var regex = new Utf8Pcre2Regex("^(?&left)(?&right)(?(DEFINE)(?<left>a|x)(?<right>b|y))$");

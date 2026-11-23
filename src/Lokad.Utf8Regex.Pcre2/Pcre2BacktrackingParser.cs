@@ -22,6 +22,7 @@ internal sealed class Pcre2BacktrackingParser
     private readonly List<Pcre2NameEntry> _nameEntries = [];
     private readonly Dictionary<int, string> _captureSlotNames = [];
     private readonly Dictionary<int, Pcre2CaptureBacktrackingNode> _captureDefinitions = [];
+    private List<(Pcre2BackreferenceTarget Target, bool Subroutine)>? _references;
 
     internal Pcre2BacktrackingParser(Pcre2CompileRequest request)
     {
@@ -41,6 +42,28 @@ internal sealed class Pcre2BacktrackingParser
     internal Pcre2NameEntry[] NameEntries => [.. _nameEntries];
 
     internal IReadOnlyDictionary<int, Pcre2CaptureBacktrackingNode> CaptureDefinitions => _captureDefinitions;
+
+    internal void ValidateReferences(IReadOnlyDictionary<string, int[]> nameSlots)
+    {
+        if (_references is null) return;
+        foreach (var (target, subroutine) in _references)
+        {
+            Utf8ConstructionScope.ChargeWork(1);
+            var slot = target.Kind == Pcre2BackreferenceTargetKind.Named
+                ? (nameSlots.TryGetValue(target.Name, out var slots) ? slots[0] : -1)
+                : Pcre2BacktrackingAnalysis.ResolveReferenceSlot(target);
+            if (slot >= (subroutine ? 0 : 1) && slot <= _captureCount &&
+                (!subroutine || slot == 0 || _captureDefinitions.ContainsKey(slot)))
+                continue;
+
+            if (subroutine)
+                throw new Pcre2CompileException("Reference to a non-existent subroutine.",
+                    Pcre2ErrorKind.InvalidAfterParensQuery);
+            throw new Pcre2CompileException("Reference to a non-existent capturing group.",
+                Pcre2ErrorKind.UnrecognizedEscape);
+        }
+        _references = null;
+    }
 
     private Pcre2TokenBacktrackingNode CreateTokenNode(Pcre2CharacterToken token)
     {
@@ -600,8 +623,12 @@ internal sealed class Pcre2BacktrackingParser
     private Pcre2BackreferenceBacktrackingNode CreateBackreference(
         Pcre2BackreferenceTargetKind kind,
         int number,
-        string name) =>
-        new(new Pcre2BackreferenceTarget(kind, number, name, _captureCount), _options);
+        string name)
+    {
+        var target = new Pcre2BackreferenceTarget(kind, number, name, _captureCount);
+        (_references ??= []).Add((target, false));
+        return new(target, _options);
+    }
 
     private bool TryReadReferenceNumber(ref int cursor, bool allowSign, out int number)
     {
@@ -946,8 +973,7 @@ internal sealed class Pcre2BacktrackingParser
             _pattern.StartsWithAscii(_offset, "(?0)"))
         {
             _offset += 4;
-            node = new Pcre2SubroutineCallBacktrackingNode(
-                new Pcre2BackreferenceTarget(Pcre2BackreferenceTargetKind.Absolute, 0, string.Empty, _captureCount));
+            node = CreateSubroutineCall(Pcre2BackreferenceTargetKind.Absolute, 0, string.Empty);
             return true;
         }
 
@@ -963,8 +989,7 @@ internal sealed class Pcre2BacktrackingParser
 
             var name = _pattern.CopyText(nameStart, nameEnd - nameStart);
             _offset = nameEnd + 1;
-            node = new Pcre2SubroutineCallBacktrackingNode(
-                new Pcre2BackreferenceTarget(Pcre2BackreferenceTargetKind.Named, 0, name, _captureCount));
+            node = CreateSubroutineCall(Pcre2BackreferenceTargetKind.Named, 0, name);
             return true;
         }
 
@@ -987,9 +1012,16 @@ internal sealed class Pcre2BacktrackingParser
             ? Pcre2BackreferenceTargetKind.Relative
             : Pcre2BackreferenceTargetKind.Absolute;
         _offset = cursor + 1;
-        node = new Pcre2SubroutineCallBacktrackingNode(
-            new Pcre2BackreferenceTarget(kind, number, string.Empty, _captureCount));
+        node = CreateSubroutineCall(kind, number, string.Empty);
         return true;
+    }
+
+    private Pcre2SubroutineCallBacktrackingNode CreateSubroutineCall(
+        Pcre2BackreferenceTargetKind kind, int number, string name)
+    {
+        var target = new Pcre2BackreferenceTarget(kind, number, name, _captureCount);
+        (_references ??= []).Add((target, true));
+        return new(target);
     }
 
     private bool TryParseConditional(out IPcre2BacktrackingNode node)
@@ -1061,6 +1093,8 @@ internal sealed class Pcre2BacktrackingParser
         _ungreedy = outerUngreedy;
         _noAutoCapture = outerNoAutoCapture;
         _allowDuplicateNames = outerAllowDuplicateNames;
+        if (conditionKind is Pcre2BacktrackingConditionKind.CaptureSet or Pcre2BacktrackingConditionKind.RecursionSlot)
+            (_references ??= []).Add((target, conditionKind == Pcre2BacktrackingConditionKind.RecursionSlot));
         node = new Pcre2ConditionalBacktrackingNode(
             conditionKind,
             target,

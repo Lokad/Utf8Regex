@@ -47,8 +47,8 @@ internal static class Pcre2BacktrackingCompiler
     internal static Pcre2CompiledBacktrackingOutcome? Compile(Pcre2CompileRequest request)
     {
         using var construction = Utf8ConstructionScope.Enter();
-        // Coarse admission for transient AST vectors, capture/name maps and
-        // metadata copies. Shared storage can be charged twice; no helper graph
+        // Coarse admission for transient AST vectors, references, capture/name
+        // maps and metadata copies. Shared storage can be charged twice; no helper graph
         // or per-object ledger is retained. Instructions have separate exact
         // array/slot admission in the lowerer.
         construction.Budget.ChargeWork((ulong)request.ConstructionPattern.Length);
@@ -72,6 +72,9 @@ internal static class Pcre2BacktrackingCompiler
                 static group => group.Key,
                 static group => group.Select(static entry => entry.Number).ToArray(),
                 StringComparer.Ordinal);
+        // References in DEFINE bodies remain syntax errors even when lowering
+        // never needs those bodies. All forward declarations are now known.
+        parser.ValidateReferences(nameSlots);
         var lowerer = new Pcre2BacktrackingLowerer(
             parser.CaptureCount,
             nameEntries,

@@ -28,7 +28,6 @@ internal sealed class Pcre2BacktrackingLowerer
     private bool _mayReportNonMonotoneMatchOffsets;
     private bool _mayThrowDeferredLookaroundReset;
     private bool _hasSubroutineCalls;
-    private bool _callsWholePattern;
     private int _autoPossessiveRepeatCount;
     private List<int>? _thenPatches;
 
@@ -53,21 +52,22 @@ internal sealed class Pcre2BacktrackingLowerer
         var subroutineTargets = Array.Empty<int>();
         if (_hasSubroutineCalls)
         {
-            subroutineTargets = Utf8ConstructionScope.CurrentBudget.AllocateArray<int>(_captureCount + 1, false);
+            var budget = Utf8ConstructionScope.CurrentBudget;
+            subroutineTargets = budget.AllocateArray<int>(_captureCount + 1, false);
+            budget.ChargeWork((ulong)subroutineTargets.Length);
             subroutineTargets.AsSpan().Fill(-1);
-            foreach (var definition in _captureDefinitions.OrderBy(static pair => pair.Key))
+            // Appended bodies can introduce more calls. Publishing the entry
+            // before emitting its body keeps self and mutual recursion finite.
+            for (var index = 0; index < _instructions.Count; index++)
             {
-                subroutineTargets[definition.Key] = _instructions.Count;
-                EmitNode(definition.Value, null);
-                _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
-            }
-
-            // A group body can call the whole pattern even when the main
-            // entry only calls numbered or named groups.
-            if (_callsWholePattern)
-            {
-                subroutineTargets[0] = _instructions.Count;
-                EmitNode(root, null);
+                budget.ChargeWork(1);
+                var instruction = _instructions[index];
+                if (instruction.Kind != Pcre2BacktrackingInstructionKind.SubroutineCall)
+                    continue;
+                var slot = instruction.SubroutineSlot;
+                if (subroutineTargets[slot] >= 0) continue;
+                subroutineTargets[slot] = _instructions.Count;
+                EmitNode(slot == 0 ? root : _captureDefinitions[slot], null);
                 _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
             }
         }
@@ -513,10 +513,9 @@ internal sealed class Pcre2BacktrackingLowerer
                         assertion.AssertionKind));
                     return;
                 case Pcre2SubroutineCallBacktrackingNode subroutineCall:
-                    var slot = ResolveSubroutine(subroutineCall.Target);
                     _hasSubroutineCalls = true;
-                    _callsWholePattern |= slot == 0;
-                    _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineCall(slot));
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineCall(
+                        GetSubroutineSlot(subroutineCall.Target)));
                     return;
                 case Pcre2ConditionalBacktrackingNode conditional:
                     EmitConditional(conditional);
@@ -784,12 +783,12 @@ internal sealed class Pcre2BacktrackingLowerer
                 [],
                 0,
                 default,
-                ResolveSubroutine(conditional.Target));
+                GetSubroutineSlot(conditional.Target));
         }
 
         var captureSlots = conditional.Target.Kind == Pcre2BackreferenceTargetKind.Named
-            ? ResolveNamedSlots(conditional.Target.Name)
-            : [ResolveBackreference(conditional.Target)];
+            ? _nameSlots[conditional.Target.Name]
+            : [Pcre2BacktrackingAnalysis.ResolveReferenceSlot(conditional.Target)];
         if (captureSlots.Length == 1) NoteCaptureRead(captureSlots[0]);
         else _captureReadSlot = -1;
         return new Pcre2BacktrackingCondition(
@@ -800,54 +799,17 @@ internal sealed class Pcre2BacktrackingLowerer
             0);
     }
 
-    private int[] ResolveNamedSlots(string name)
-    {
-        if (!_nameSlots.TryGetValue(name, out var slots))
-        {
-            throw new Pcre2CompileException(
-                "Reference to a non-existent capturing group.",
-                Pcre2ErrorKind.UnrecognizedEscape);
-        }
-
-        return slots;
-    }
-
-    private int ResolveBackreference(Pcre2BackreferenceTarget target)
-    {
-        var slot = target.Kind switch
-        {
-            Pcre2BackreferenceTargetKind.Absolute => target.Number,
-            Pcre2BackreferenceTargetKind.Relative when target.Number > 0 =>
-                target.CaptureCountAtReference + target.Number,
-            Pcre2BackreferenceTargetKind.Relative =>
-                target.CaptureCountAtReference + target.Number + 1,
-            _ => 0,
-        };
-        if (slot <= 0 || slot > _captureCount)
-        {
-            throw new Pcre2CompileException("Reference to a non-existent capturing group.", Pcre2ErrorKind.UnrecognizedEscape);
-        }
-
-        return slot;
-    }
-
     private void EmitBackreference(Pcre2BackreferenceBacktrackingNode backreference)
     {
         if (backreference.Target.Kind != Pcre2BackreferenceTargetKind.Named)
         {
-            var slot = ResolveBackreference(backreference.Target);
+            var slot = Pcre2BacktrackingAnalysis.ResolveReferenceSlot(backreference.Target);
             NoteCaptureRead(slot);
             _instructions.Add(Pcre2BacktrackingInstruction.CreateBackreference(slot, backreference.Options));
             return;
         }
 
-        if (!_nameSlots.TryGetValue(backreference.Target.Name, out var slots))
-        {
-            throw new Pcre2CompileException(
-                "Reference to a non-existent capturing group.",
-                Pcre2ErrorKind.UnrecognizedEscape);
-        }
-
+        var slots = _nameSlots[backreference.Target.Name];
         if (slots.Length == 1)
         {
             NoteCaptureRead(slots[0]);
@@ -869,24 +831,10 @@ internal sealed class Pcre2BacktrackingLowerer
             _captureReadSlot = _captureReadSlot == 0 ? slot : -1;
     }
 
-    private int ResolveSubroutine(Pcre2BackreferenceTarget target)
-    {
-        var slot = target.Kind switch
-        {
-            Pcre2BackreferenceTargetKind.Absolute or Pcre2BackreferenceTargetKind.Relative =>
-                Pcre2BacktrackingAnalysis.ResolveReferenceSlot(target),
-            Pcre2BackreferenceTargetKind.Named when _nameSlots.TryGetValue(target.Name, out var slots) => slots[0],
-            _ => -1,
-        };
-        if (slot < 0 || slot > _captureCount || slot > 0 && !_captureDefinitions.ContainsKey(slot))
-        {
-            throw new Pcre2CompileException(
-                "Reference to a non-existent subroutine.",
-                Pcre2ErrorKind.InvalidAfterParensQuery);
-        }
-
-        return slot;
-    }
+    private int GetSubroutineSlot(Pcre2BackreferenceTarget target)
+        => target.Kind == Pcre2BackreferenceTargetKind.Named
+            ? _nameSlots[target.Name][0]
+            : Pcre2BacktrackingAnalysis.ResolveReferenceSlot(target);
 
     private static bool ContainsMatchBoundaryReset(IPcre2BacktrackingNode node)
     {
