@@ -44,6 +44,8 @@ internal readonly record struct Pcre2RepeatMutation(
     int PreviousCount,
     int PreviousPosition);
 
+// An unset start has owner -1. An open capture and its owner are set and
+// cleared together, including when the journal restores an earlier state.
 internal readonly record struct Pcre2CaptureState(
     int Start, int End, int OpenStart, int Owner, int OpenOwner)
 {
@@ -1038,17 +1040,16 @@ internal static class Pcre2BacktrackingRunner
                             var depth = subroutineCalls.Count;
                             var recordRollback = frames.Count != 0 || depth != 0;
                             ref var current = ref captureState[slot];
-                            if (current.Start >= 0 && current.Owner > depth ||
-                                current.OpenStart >= 0 && current.OpenOwner > depth)
+                            if (current.Owner > depth || current.OpenOwner > depth)
                             {
                                 // The normal open would be blocked by a deeper
                                 // owner. Only an opening at this depth can close.
-                                tokenStart = current.OpenStart;
-                                if (tokenStart < 0 || current.OpenOwner != depth)
+                                if (current.OpenOwner != depth)
                                 {
                                     instructionIndex++;
                                     continue;
                                 }
+                                tokenStart = current.OpenStart;
                                 recordRollback = NeedsCaptureCloseRollback(slot, depth, ref frames,
                                     ref subroutineCalls, ref captureMutations);
                             }
@@ -1069,8 +1070,7 @@ internal static class Pcre2BacktrackingRunner
 
                         var currentCallDepth = subroutineCalls.Count;
                         ref var opening = ref captureState[startCaptureSlot];
-                        if (opening.Start >= 0 && opening.Owner > currentCallDepth ||
-                            opening.OpenStart >= 0 && opening.OpenOwner > currentCallDepth)
+                        if (opening.Owner > currentCallDepth || opening.OpenOwner > currentCallDepth)
                         {
                             instructionIndex++;
                             continue;
@@ -1082,7 +1082,7 @@ internal static class Pcre2BacktrackingRunner
                             new(opening.Start, opening.End, inputIndex, opening.Owner, currentCallDepth),
                             ref captureMutations,
                             ref budget,
-                            recordRollback: frames.Count != 0 || subroutineCalls.Count != 0);
+                            recordRollback: frames.Count != 0 || currentCallDepth != 0);
                         instructionIndex++;
                         continue;
 
@@ -1096,7 +1096,7 @@ internal static class Pcre2BacktrackingRunner
 
                         var endCallDepth = subroutineCalls.Count;
                         ref var closing = ref captureState[endCaptureSlot];
-                        if (closing.OpenStart < 0 || closing.OpenOwner != endCallDepth)
+                        if (closing.OpenOwner != endCallDepth)
                         {
                             instructionIndex++;
                             continue;
@@ -1853,7 +1853,7 @@ internal static class Pcre2BacktrackingRunner
         for (var slot = 1; slot < captureState.Length; slot++)
         {
             ref var current = ref captureState[slot];
-            if (current.OpenStart < 0 || current.OpenOwner != callDepth)
+            if (current.OpenOwner != callDepth)
             {
                 continue;
             }
