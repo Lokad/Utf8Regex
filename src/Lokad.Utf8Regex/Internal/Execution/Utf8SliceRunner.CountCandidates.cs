@@ -1,6 +1,8 @@
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -1250,6 +1252,56 @@ internal static partial class Utf8SliceRunner
         var remaining = input.Length - start;
         return (window.Min < remaining && window.Bytes.Contains(input[start + window.Min])) ||
             (window.Max != window.Min && window.Max < remaining && window.Bytes.Contains(input[start + window.Max]));
+    }
+
+    private static bool TryGetAsciiBytePair(Utf8SearchAsciiSet bytes, out byte first, out byte last)
+    {
+        first = last = 0;
+        if (BitOperations.PopCount(bytes.Low) + BitOperations.PopCount(bytes.High) is not (1 or 2)) return false;
+        first = (byte)(bytes.Low != 0 ? BitOperations.TrailingZeroCount(bytes.Low) : 64 + BitOperations.TrailingZeroCount(bytes.High));
+        last = (byte)(bytes.High != 0 ? 127 - BitOperations.LeadingZeroCount(bytes.High) : 63 - BitOperations.LeadingZeroCount(bytes.Low));
+        return true;
+    }
+
+    private static Utf8ExecutionLimitKind TrySeekAsciiBranchWindow(ReadOnlySpan<byte> input, ref int position,
+        byte first, byte last, int firstOffset, int lastOffset, byte tailFirst, byte tailLast, ref Utf8SliceInvocation invocation)
+    {
+        var head0 = Vector512.Create(first);
+        var head1 = Vector512.Create(last);
+        var tail0 = Vector512.Create(tailFirst);
+        var tail1 = Vector512.Create(tailLast);
+        var width = Vector512<byte>.Count;
+        var vectorEnd = input.Length - lastOffset - width;
+        var metered = !invocation.IsUnmetered || invocation.CheckpointHook is not null;
+        while (position <= vectorEnd)
+        {
+            if (metered)
+            {
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+            }
+            // Keep both proved offsets inside the same charged input block.
+            var blockEnd = position + Math.Min(2048 - lastOffset - width, vectorEnd - position);
+            do
+            {
+                var heads = MemoryMarshal.Read<Vector512<byte>>(input[position..]);
+                var early = MemoryMarshal.Read<Vector512<byte>>(input[(position + firstOffset)..]);
+                var late = MemoryMarshal.Read<Vector512<byte>>(input[(position + lastOffset)..]);
+                var starts = Vector512.Equals(heads, head0) | Vector512.Equals(heads, head1);
+                var tails = Vector512.Equals(early, tail0) | Vector512.Equals(early, tail1) |
+                    Vector512.Equals(late, tail0) | Vector512.Equals(late, tail1);
+                var hits = (starts & tails).ExtractMostSignificantBits();
+                if (hits != 0)
+                {
+                    position += BitOperations.TrailingZeroCount(hits);
+                    return Utf8ExecutionLimitKind.None;
+                }
+                position += width;
+            } while (position <= blockEnd);
+        }
+        // A last block can contain starts with the first offset still in bounds.
+        // The caller applies the scalar proof and verifier to these candidates.
+        return TrySeekLeadingByte(input, ref position, first, last, false, ref invocation, sparsePair: first != last);
     }
 
     private static void JoinAsciiPrefixWidths(Span<(int Min, int Max)> widths, int offset, int min, int max)

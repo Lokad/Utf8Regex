@@ -558,6 +558,30 @@ public sealed class Utf8LeadingAsciiCandidateTests
         }
     }
 
+    [Theory]
+    [InlineData(63)]
+    [InlineData(64)]
+    [InlineData(65)]
+    [InlineData(1983)]
+    [InlineData(1984)]
+    [InlineData(1985)]
+    public void LargeBranchedCountKeepsVectorAndTerminalStarts(int offset)
+    {
+        const string left = """(?:'|")(?:ALPHA|BRAVO|CHARL|DELTA|EAGLE|FRESH|GHOST)[A-Z]{16}(?:'|")""";
+        const string right = """(?:'|")[A-Z0-9]{40}(?:'|")""";
+        var pattern = $"(?:({left})|({right}))+";
+        var text = new string('_', offset) + '"' + new string('B', 40) + "'😀" +
+            new string('_', 300) + "'ALPHA" + new string('A', 16) + '"';
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(2, new Regex(pattern).Count(text));
+
+        using var ordinary = Utf8Regex.Compile(pattern, RegexOptions.Compiled);
+        using var funded = Utf8Regex.Compile(pattern, RegexOptions.Compiled, new() { ResourcePolicy = Funded });
+        using var source = new CancellationTokenSource();
+        Assert.Equal(2, ordinary.Count(input));
+        Assert.Equal(2, funded.Count(input, source.Token));
+    }
+
     [Fact]
     public void ImpossibleBranchedPrefixesStayWithinFiniteWork()
     {

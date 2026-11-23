@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 using Lokad.Utf8Regex.Internal.Input;
 using Lokad.Utf8Regex.Internal.Planning;
 using Lokad.Utf8Regex.Internal.Search;
@@ -1225,6 +1226,12 @@ internal static partial class Utf8SliceRunner
         var leadingPrefix = input.Length - fromByte >= 256 && whitespaceLiteral < 0 && leadingSecond >= 0
             ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage)
             : default;
+        byte tailFirst = 0, tailLast = 0;
+        var vectorBranchWindow = Vector512.IsHardwareAccelerated &&
+            !program.RightToLeft && !includeKelvin && !seekDecimal && leadingFirst is >= 0 and < 128 &&
+            (leadingFirst == leadingLast || sparsePair) && leadingPrefix.IsEmpty && shortRepeatWindow.Min == 0 &&
+            branchWindow.Min > 0 && branchWindow.Max > branchWindow.Min &&
+            TryGetAsciiBytePair(branchWindow.Bytes, out tailFirst, out tailLast);
         var (prefixRepeatAscii, prefixRepeatFollower) = GetExactPrefixRepeatHead(program, prefixContinuation);
         if (!leadingPrefix.IsEmpty && !program.HasContiguousAnchor &&
             (leadingScalarIndex == 0 || leadingScalarIndex == 1 && first.Kind == Utf8SliceInstructionKind.Boundary))
@@ -1276,8 +1283,11 @@ internal static partial class Utf8SliceRunner
                 var provedEnd = -1;
                 if (leadingFirst >= 0)
                 {
-                    var seekBreach = TrySeekLeadingByte(input, ref position, (byte)leadingFirst, leadingLast, seekDecimal,
-                        ref invocation, leadingPrefix, sparsePair, includeKelvin);
+                    var seekBreach = vectorBranchWindow
+                        ? TrySeekAsciiBranchWindow(input, ref position, (byte)leadingFirst, leadingLast,
+                            branchWindow.Min, branchWindow.Max, tailFirst, tailLast, ref invocation)
+                        : TrySeekLeadingByte(input, ref position, (byte)leadingFirst, leadingLast, seekDecimal,
+                            ref invocation, leadingPrefix, sparsePair, includeKelvin);
                     if (seekBreach != Utf8ExecutionLimitKind.None) return new(count, seekBreach);
                     if (position < 0)
                         return new(count, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
