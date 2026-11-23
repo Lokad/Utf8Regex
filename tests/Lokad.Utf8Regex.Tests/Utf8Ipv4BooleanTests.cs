@@ -62,6 +62,38 @@ public sealed class Utf8Ipv4BooleanTests
     }
 
     [Theory]
+    [InlineData("012.200.033.199", false)]
+    [InlineData("no leading digit", true)]
+    public void BranchedCandidateSearchChecksInterruptionWithAdmittedStorage(string text, bool expire)
+    {
+        using var regex = new Utf8Regex(Pattern, RegexOptions.Compiled);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var source = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(new(64, 1, 13),
+            expire ? TimeSpan.FromMilliseconds(200) : Timeout.InfiniteTimeSpan, source.Token);
+        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
+        for (var i = 0; i < 63; i++)
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeStep());
+        invocation.CheckpointHook = _ =>
+        {
+            if (expire) clock.Advance(250);
+            else source.Cancel();
+        };
+
+        var input = Encoding.UTF8.GetBytes(text);
+        var error = Record.Exception(() => Utf8SliceRunner.TryFindFirst(program, input, 0,
+            [], [], false, ref invocation, existenceOnly: true));
+
+        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
+        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.Equal(64UL, invocation.Budget.Steps);
+        Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(13);
+    }
+
+    [Theory]
     [InlineData(0)] [InlineData(2033)] [InlineData(2034)] [InlineData(2035)] [InlineData(4095)]
     public void ScalarDiscoveryPreservesPrefixesAndWindowBoundaries(int boundary)
     {

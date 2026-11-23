@@ -791,13 +791,6 @@ internal static partial class Utf8SliceRunner
         Span<byte> prefixStorage = stackalloc byte[16];
         var leadingPrefix = wideInput && second >= 0 && !candidatePlan.CanGuideFallbackStarts
             ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage) : default;
-        if (leading >= 0 || seekLiteral || hasClassWindow)
-        {
-            // A miss can avoid local scratch, but not an enclosing storage loan.
-            var admission = invocation.TryReserveWorking(0);
-            if (admission != Utf8ExecutionLimitKind.None)
-                return new(false, -1, -1, admission);
-        }
         var classWindowEnd = -1;
         var followingWindowEnd = 0;
         // Enable overlapping suffix checks only after a complete proof rejects.
