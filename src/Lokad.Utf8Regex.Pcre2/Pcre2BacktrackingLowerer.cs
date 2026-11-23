@@ -28,6 +28,7 @@ internal sealed class Pcre2BacktrackingLowerer
     private bool _mayReportNonMonotoneMatchOffsets;
     private bool _mayThrowDeferredLookaroundReset;
     private bool _hasSubroutineCalls;
+    private bool _callsWholePattern;
     private int _autoPossessiveRepeatCount;
     private List<int>? _thenPatches;
 
@@ -54,13 +55,19 @@ internal sealed class Pcre2BacktrackingLowerer
         {
             subroutineTargets = Utf8ConstructionScope.CurrentBudget.AllocateArray<int>(_captureCount + 1, false);
             subroutineTargets.AsSpan().Fill(-1);
-            subroutineTargets[0] = _instructions.Count;
-            EmitNode(root, null);
-            _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
             foreach (var definition in _captureDefinitions.OrderBy(static pair => pair.Key))
             {
                 subroutineTargets[definition.Key] = _instructions.Count;
                 EmitNode(definition.Value, null);
+                _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
+            }
+
+            // A group body can call the whole pattern even when the main
+            // entry only calls numbered or named groups.
+            if (_callsWholePattern)
+            {
+                subroutineTargets[0] = _instructions.Count;
+                EmitNode(root, null);
                 _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineReturn());
             }
         }
@@ -506,9 +513,10 @@ internal sealed class Pcre2BacktrackingLowerer
                         assertion.AssertionKind));
                     return;
                 case Pcre2SubroutineCallBacktrackingNode subroutineCall:
+                    var slot = ResolveSubroutine(subroutineCall.Target);
                     _hasSubroutineCalls = true;
-                    _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineCall(
-                        ResolveSubroutine(subroutineCall.Target)));
+                    _callsWholePattern |= slot == 0;
+                    _instructions.Add(Pcre2BacktrackingInstruction.CreateSubroutineCall(slot));
                     return;
                 case Pcre2ConditionalBacktrackingNode conditional:
                     EmitConditional(conditional);

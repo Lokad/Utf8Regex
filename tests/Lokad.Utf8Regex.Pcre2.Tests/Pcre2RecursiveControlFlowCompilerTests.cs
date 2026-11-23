@@ -37,6 +37,23 @@ public sealed class Pcre2RecursiveControlFlowCompilerTests
         Assert.Equal(expected, regex.IsMatch(Encoding.UTF8.GetBytes(input)));
     }
 
+    [Theory]
+    [InlineData(@"a(?R)?b", "aabb", true)]
+    [InlineData(@"a(?&x)?b(?(DEFINE)(?<x>x(?0)?y))", "axabyb", true)]
+    [InlineData(@"a(?&x)b(?(DEFINE)(?<x>x😀y))", "ax😀yb", false)]
+    public void WholePatternCallBodyIsEmittedOnlyForAWholePatternCall(string pattern, string text, bool wholeCall)
+    {
+        using var regex = new Utf8Pcre2Regex(pattern);
+        var program = Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Match).Program;
+        Assert.Equal(wholeCall, program.SubroutineTargets[0] >= 0);
+
+        var input = Encoding.UTF8.GetBytes(text);
+        using var token = new CancellationTokenSource();
+        var match = regex.Match(input, cancellationToken: token.Token);
+        Assert.True(match.Success);
+        Assert.Equal((0, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+    }
+
     [Fact]
     public void DefineBlocksCanHoldMultipleForwardReferencedDefinitions()
     {
