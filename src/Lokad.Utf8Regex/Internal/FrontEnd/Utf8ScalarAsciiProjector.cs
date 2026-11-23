@@ -8,60 +8,7 @@ namespace Lokad.Utf8Regex.Internal.FrontEnd;
 /// The mask is an ASCII intersection, not a proof about non-ASCII subjects.</summary>
 internal static class Utf8ScalarAsciiProjector
 {
-    // Native structural families run only within their qualified ASCII input
-    // envelope. Keep their definition proof distinct from Unicode shorthands.
-    internal static bool TryProjectAsciiDefinition(Utf8ScalarClass? scalarClass, out AsciiCharClass charClass)
-    {
-        charClass = default;
-        if (scalarClass is null || scalarClass.Data.Length < 3 || scalarClass.Data[2] != 0) return false;
-        if (TryCreateToken(scalarClass, out var token) && token.Kind == AsciiPatternTokenKind.CharClass)
-        {
-            charClass = token.CharClass;
-            return true;
-        }
-        // ASCII range subtraction is still a qualified native definition. Fold
-        // its right-associated chain without an array of intermediate masks.
-        var data = scalarClass.Data.AsSpan();
-        ulong unresolvedLow = ulong.MaxValue, unresolvedHigh = ulong.MaxValue;
-        ulong acceptedLow = 0, acceptedHigh = 0;
-        var position = 0;
-        var depth = 0;
-        while (position < data.Length)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (data.Length - position < 3 || data[position + 2] != 0) return false;
-            var negated = data[position] != 0;
-            var count = data[position + 1];
-            position += 3;
-            if (count < 0 || (count & 1) != 0 || count > data.Length - position) return false;
-            ulong low = 0, high = 0;
-            for (var index = 0; index < count; index += 2)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                var start = data[position + index];
-                var end = data[position + index + 1];
-                if (start < 0 || end > 128 || start >= end) return false;
-                for (var value = start; value < end; value++)
-                {
-                    Utf8ConstructionScope.ChargeWork(1);
-                    if (value < 64) low |= 1UL << value;
-                    else high |= 1UL << (value - 64);
-                }
-            }
-            position += count;
-            if (negated) { low = ~low; high = ~high; }
-            if ((depth++ & 1) != 0)
-            {
-                acceptedLow |= unresolvedLow & ~low;
-                acceptedHigh |= unresolvedHigh & ~high;
-            }
-            unresolvedLow &= low;
-            unresolvedHigh &= high;
-        }
-        if ((depth & 1) != 0) { acceptedLow |= unresolvedLow; acceptedHigh |= unresolvedHigh; }
-        charClass = new AsciiCharClass(acceptedLow, acceptedHigh);
-        return true;
-    }
+    private const ulong AsciiWhitespaceMask = (1UL << 9) | (1UL << 10) | (1UL << 11) | (1UL << 12) | (1UL << 13) | (1UL << 32);
 
     internal static bool IsPositiveWhitespace(Utf8ScalarClass? scalarClass) => scalarClass is not null &&
         (scalarClass.Data.AsSpan().SequenceEqual([0, 0, 1, 100]) ||
@@ -76,7 +23,7 @@ internal static class Utf8ScalarAsciiProjector
         var data = scalarClass.Data;
         Utf8ConstructionScope.ChargeWork(1);
         return data[0] == 0 && data[2] == 0 && 3L + data[1] == data.Length &&
-            TryProjectAsciiDefinition(scalarClass, out charClass);
+            TryProjectRanges(data.AsSpan(3), 128, out charClass);
     }
 
     // A byte candidate must cover the complete lexical case fiber. Wider
@@ -158,7 +105,7 @@ internal static class Utf8ScalarAsciiProjector
             position += 3;
             if (rangeCount < 0 || predicateCount < 0 ||
                 (long)rangeCount + predicateCount > data.Length - position ||
-                !TryProjectRanges(data.Slice(position, rangeCount), out var ranges) ||
+                !TryProjectRanges(data.Slice(position, rangeCount), 0x110000, out var ranges) ||
                 !TryProjectPredicates(data.Slice(position + rangeCount, predicateCount), out var predicates)) return false;
             position += rangeCount + predicateCount;
             var low = ranges.ActualLowMask | predicates.ActualLowMask;
@@ -177,7 +124,7 @@ internal static class Utf8ScalarAsciiProjector
         return true;
     }
 
-    private static bool TryProjectRanges(ReadOnlySpan<int> ranges, out AsciiCharClass charClass)
+    private static bool TryProjectRanges(ReadOnlySpan<int> ranges, int maximumEnd, out AsciiCharClass charClass)
     {
         charClass = default;
         if ((ranges.Length & 1) != 0) return false;
@@ -187,31 +134,32 @@ internal static class Utf8ScalarAsciiProjector
             Utf8ConstructionScope.ChargeWork(1);
             var start = ranges[index];
             var end = ranges[index + 1];
-            if (start < 0 || start >= end || end > 0x110000) return false;
-            for (var value = start; value < Math.Min(end, 128); value++)
-            {
-                Utf8ConstructionScope.ChargeWork(1);
-                if (value < 64) low |= 1UL << value;
-                else high |= 1UL << (value - 64);
-            }
+            if (start < 0 || start >= end || end > maximumEnd) return false;
+            // Each charged range touches at most two words. A wider definition
+            // contributes only its ASCII intersection to an ASCII query.
+            if (start < 64) low |= RangeBits(start, Math.Min(end, 64));
+            if (end > 64 && start < 128) high |= RangeBits(Math.Max(start - 64, 0), Math.Min(end - 64, 64));
         }
         charClass = new AsciiCharClass(low, high);
         return true;
     }
+
+    // The caller supplies a nonempty half-open interval within one word.
+    private static ulong RangeBits(int start, int end) =>
+        (ulong.MaxValue << start) & (ulong.MaxValue >> (64 - end));
 
     private static bool TryProjectPredicates(ReadOnlySpan<int> predicates, out AsciiCharClass charClass)
     {
         charClass = default;
         ulong low = 0, high = 0;
         uint categoryMask = 0;
-        const ulong whitespace = (1UL << 9) | (1UL << 10) | (1UL << 11) | (1UL << 12) | (1UL << 13) | (1UL << 32);
         for (var index = 0; index < predicates.Length; index++)
         {
             Utf8ConstructionScope.ChargeWork(1);
             var code = predicates[index];
             if (code is 100 or -100)
             {
-                low |= code > 0 ? whitespace : ~whitespace;
+                low |= code > 0 ? AsciiWhitespaceMask : ~AsciiWhitespaceMask;
                 if (code < 0) high = ulong.MaxValue;
             }
             else if (code == Utf8ScalarClass.RangePredicateCode)
@@ -220,7 +168,7 @@ internal static class Utf8ScalarAsciiProjector
                 var negated = predicates[++index] != 0;
                 var count = predicates[++index];
                 if (count < 0 || count > predicates.Length - index - 1 ||
-                    !TryProjectRanges(predicates.Slice(index + 1, count), out var ranges)) return false;
+                    !TryProjectRanges(predicates.Slice(index + 1, count), 0x110000, out var ranges)) return false;
                 low |= negated ? ~ranges.ActualLowMask : ranges.ActualLowMask;
                 high |= negated ? ~ranges.ActualHighMask : ranges.ActualHighMask;
                 index += count;
@@ -280,12 +228,8 @@ internal static class Utf8ScalarAsciiProjector
             token = AsciiPatternToken.Dot;
             return true;
         }
-        for (var index = 0; index < ranges.Length; index += 2)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (ranges[index] < 0 || ranges[index + 1] > 128 || ranges[index] >= ranges[index + 1]) return false;
-        }
-        if (!TryGetShorthand(categories, out var shorthand, out var categoryNegated)) return false;
+        if (!TryProjectRanges(ranges, 128, out var rangeMask) ||
+            !TryGetShorthand(categories, out var shorthand, out var categoryNegated)) return false;
 
         var effectiveNegation = negated != categoryNegated;
         // A pure double negation denotes its positive shorthand. Mixed ASCII
@@ -293,37 +237,20 @@ internal static class Utf8ScalarAsciiProjector
         var collapse = ranges.IsEmpty && negated && categoryNegated;
         var whitespace = ranges.IsEmpty && shorthand == 2;
         var maskNegated = whitespace ? effectiveNegation : collapse ? false : negated;
-        ulong low = 0, high = 0;
-        for (var value = 0; value < 128; value++)
+        var (low, high) = shorthand switch
         {
-            Utf8ConstructionScope.ChargeWork(1);
-            var categoryHit = shorthand switch
-            {
-                0 => Utf8AsciiBytePredicates.IsDigit((byte)value),
-                1 => Utf8AsciiBytePredicates.IsWord((byte)value),
-                2 => Utf8AsciiBytePredicates.IsSixByteWhitespace((byte)value),
-                _ => false,
-            };
-            var hit = whitespace || collapse ? categoryHit :
-                shorthand >= 0 && (categoryHit != categoryNegated) || InRanges(value, ranges);
-            if (hit)
-            {
-                if (value < 64) low |= 1UL << value;
-                else high |= 1UL << (value - 64);
-            }
+            0 => (Utf8AsciiBytePredicates.DecimalMask, 0UL),
+            1 => (Utf8AsciiBytePredicates.WordSearch.Mask0, Utf8AsciiBytePredicates.WordSearch.Mask1),
+            2 => (AsciiWhitespaceMask, 0UL),
+            _ => (0UL, 0UL),
+        };
+        if (categoryNegated && !whitespace && !collapse)
+        {
+            low = ~low;
+            high = ~high;
         }
-        token = new AsciiPatternToken(new AsciiCharClass(low, high, maskNegated));
+        token = new AsciiPatternToken(new AsciiCharClass(low | rangeMask.ActualLowMask, high | rangeMask.ActualHighMask, maskNegated));
         return true;
-    }
-
-    private static bool InRanges(int value, ReadOnlySpan<int> ranges)
-    {
-        for (var index = 0; index < ranges.Length; index += 2)
-        {
-            Utf8ConstructionScope.ChargeWork(1);
-            if (value >= ranges[index] && value < ranges[index + 1]) return true;
-        }
-        return false;
     }
 
     private static bool TryGetShorthand(ReadOnlySpan<int> categories, out int shorthand, out bool negated)

@@ -33,6 +33,29 @@ public sealed class Utf8ScalarClassPreparationTests
         Assert.Equal(0ul, owner.Budget.PeakBytes);
     }
 
+    [Theory]
+    [InlineData(@"[\u0000-\u007f]", true, 128)]
+    [InlineData(@"[\u003f-\u0040]", true, 2)]
+    [InlineData(@"[\u0040-\u007f]", true, 64)]
+    [InlineData(@"[\u007f-\u0100]", false, 1)]
+    [InlineData(@"[\u0080-\u0100]", false, 0)]
+    public void RangeProjectionPreservesWordEdgesAndClipsOnlyQueries(string pattern, bool complete, int asciiCount)
+    {
+        var scalarClass = Class(pattern);
+        Assert.True(Utf8ScalarAsciiProjector.TryProjectAsciiQuery(scalarClass, out var query));
+        Assert.Equal(asciiCount, query.Count);
+        Assert.Equal(complete, Utf8ScalarAsciiProjector.TryProjectPositiveAsciiDefinition(scalarClass, out var definition));
+        Assert.Equal(complete, Utf8ScalarAsciiProjector.TryCreateToken(scalarClass, out var token));
+        if (complete)
+        {
+            Assert.Equal(query, definition);
+            Assert.Equal(query, token.CharClass);
+        }
+        var oracle = new Regex(@"\A" + pattern + @"\z", RegexOptions.CultureInvariant);
+        for (var value = 0; value < 128; value++)
+            Assert.Equal(oracle.IsMatch(((char)value).ToString()), query.Contains((byte)value));
+    }
+
     [Fact]
     public void CanonicalAsciiQueriesCoverPredicatesAndClassesBeyondTheFormerProjectionLimit()
     {
