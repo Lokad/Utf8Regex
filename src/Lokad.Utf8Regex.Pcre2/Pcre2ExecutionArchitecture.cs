@@ -604,8 +604,11 @@ internal static class Pcre2CompiledProgramOverlay
         var partialProbe = Pcre2PartialProbeCompiler.Compile(root, request);
         operations = WithSlice(request, root, backtrackingProgram, preparedCore, operations, candidateSearch.Kind);
         if (operations.Count is Pcre2BacktrackingDirectProgram &&
-            Pcre2LiteralCompiler.CompileCaselessCount(root, request) is { } caselessCount)
-            operations = operations with { Count = new Pcre2LiteralDirectProgram(caselessCount) };
+            Pcre2LiteralCompiler.CompileCaselessLiteral(root, request) is { } caselessLiteral)
+        {
+            var literal = new Pcre2LiteralDirectProgram(caselessLiteral);
+            operations = operations with { Count = literal, Enumerate = literal };
+        }
         var core = Pcre2ProgramInvariant.GetCoreRegex(operations.IsMatch) ??
             Pcre2ProgramInvariant.GetCoreRegex(operations.Count) ??
             Pcre2ProgramInvariant.GetCoreRegex(operations.Match) ??

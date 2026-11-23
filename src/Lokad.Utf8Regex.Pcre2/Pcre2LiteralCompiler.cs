@@ -103,13 +103,13 @@ internal static class Pcre2LiteralCompiler
         Pcre2CompileOptions.ExtendedMore |
         Pcre2CompileOptions.FirstLine;
 
-    // A whole nonempty folded literal can count without the VM when each
-    // token's PCRE2 case fiber is exactly its ASCII fold.
-    internal static Pcre2LiteralProgram? CompileCaselessCount(IPcre2BacktrackingNode root, in Pcre2CompileRequest request)
+    // A whole nonempty folded literal can discover ranges without the VM
+    // when each token's PCRE2 case fiber is exactly its ASCII fold.
+    internal static Pcre2LiteralProgram? CompileCaselessLiteral(IPcre2BacktrackingNode root, in Pcre2CompileRequest request)
     {
-        const Pcre2CompileOptions countOptions = Pcre2CompileOptions.Caseless | Pcre2CompileOptions.Anchored |
+        const Pcre2CompileOptions options = Pcre2CompileOptions.Caseless | Pcre2CompileOptions.Anchored |
             Pcre2CompileOptions.EndAnchored | Pcre2CompileOptions.FirstLine;
-        if ((request.Options & countOptions) != Pcre2CompileOptions.Caseless) return null;
+        if ((request.Options & options) != Pcre2CompileOptions.Caseless) return null;
 
         var children = (root as Pcre2SequenceBacktrackingNode)?.Children;
         var length = children?.Length ?? 1;
@@ -419,7 +419,7 @@ internal static class Pcre2LiteralRunner
         ReadOnlySpan<byte> input,
         ref Pcre2ResourceBudget budget)
     {
-        if (!budget.RequiresCandidateMetering)
+        if (budget.IsUnmetered)
         {
             return program.Search.IndexOf(input);
         }
@@ -467,10 +467,11 @@ internal static class Pcre2LiteralRunner
         bool endAnchored)
     {
         var literal = program.LiteralUtf8;
-        return candidate >= 0 &&
-               candidate <= input.Length - literal.Length &&
-               (!endAnchored || candidate + literal.Length == input.Length) &&
-               input.Slice(candidate, literal.Length).SequenceEqual(literal);
+        if (candidate < 0 || candidate > input.Length - literal.Length ||
+            endAnchored && candidate + literal.Length != input.Length) return false;
+
+        var bytes = input.Slice(candidate, literal.Length);
+        return program.Search.IgnoreCase ? Ascii.EqualsIgnoreCase(bytes, literal) : bytes.SequenceEqual(literal);
     }
 
     private static bool RejectsEmptyAtRequestedStart(ReadOnlySpan<byte> literal, Pcre2MatchOptions matchOptions)

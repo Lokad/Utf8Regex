@@ -11,8 +11,6 @@ public sealed class Pcre2LiteralCountBridgeTests
     public void FoldedCountKeepsByteOffsetsNonoverlapAndMatchFlags()
     {
         using var regex = new Utf8Pcre2Regex("Aa", Pcre2CompileOptions.Caseless);
-        Assert.IsType<Pcre2LiteralDirectProgram>(regex.DebugCompiledProgram.Operations.Count);
-        Assert.IsType<Pcre2BacktrackingDirectProgram>(regex.DebugCompiledProgram.Operations.Enumerate);
         using var token = new CancellationTokenSource();
         Assert.Equal(3, regex.Count("😀aAaAa\nAa"u8, 4));
         Assert.Equal(2, regex.Count("😀aAaAa\nAa"u8, 6, cancellationToken: token.Token));
@@ -20,6 +18,42 @@ public sealed class Pcre2LiteralCountBridgeTests
         Assert.Equal(0, regex.Count([]));
         Assert.Equal(2, regex.Count("😀aAaAa\nAa"u8, 4, Pcre2MatchOptions.Anchored));
         Assert.Throws<ArgumentOutOfRangeException>(() => regex.Count("😀ab"u8, 1));
+    }
+
+    [Theory]
+    [InlineData(Pcre2MatchOptions.None, 4, 4, 7, 10)]
+    [InlineData(Pcre2MatchOptions.Anchored, 4, 4)]
+    [InlineData(Pcre2MatchOptions.EndAnchored, 4, 10)]
+    [InlineData(Pcre2MatchOptions.Anchored | Pcre2MatchOptions.EndAnchored, 10, 10)]
+    [InlineData(Pcre2MatchOptions.Anchored | Pcre2MatchOptions.EndAnchored, 4)]
+    public void FoldedEnumerationKeepsByteOffsetsAndMatchFlags(Pcre2MatchOptions flags, int start,
+        params int[] expected)
+    {
+        using var regex = new Utf8Pcre2Regex("Aa", Pcre2CompileOptions.Caseless);
+        using var token = new CancellationTokenSource();
+        var cursor = regex.EnumerateMatches("😀aA aaXAA"u8, start, flags, token.Token);
+        foreach (var offset in expected)
+        {
+            Assert.True(cursor.MoveNext());
+            Assert.Equal(offset, cursor.Current.StartOffsetInBytes);
+            Assert.Equal(offset + 2, cursor.Current.EndOffsetInBytes);
+        }
+        Assert.False(cursor.MoveNext());
+        Assert.Equal(expected.Length, regex.Count("😀aA aaXAA"u8, start, flags, token.Token));
+    }
+
+    [Fact]
+    public void FoldedEnumerationChargesWorkAcrossALongMiss()
+    {
+        using var regex = new Utf8Pcre2Regex("Aa", Pcre2CompileOptions.Caseless, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 2 }
+        });
+        var cursor = regex.EnumerateMatches(new byte[3 * 4096]);
+        Exception? failure = null;
+        try { _ = cursor.MoveNext(); }
+        catch (Exception error) { failure = error; }
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, Assert.IsType<Pcre2MatchException>(failure).ErrorKind);
     }
 
     [Theory]
@@ -31,7 +65,12 @@ public sealed class Pcre2LiteralCountBridgeTests
     {
         using var regex = new Utf8Pcre2Regex(pattern, Pcre2CompileOptions.Caseless);
         Assert.Equal(prepared, regex.DebugCompiledProgram.Operations.Count is Pcre2LiteralDirectProgram);
-        Assert.Equal(expected, regex.Count(Encoding.UTF8.GetBytes(text)));
+        var input = Encoding.UTF8.GetBytes(text);
+        Assert.Equal(expected, regex.Count(input));
+        var found = 0;
+        var cursor = regex.EnumerateMatches(input);
+        while (cursor.MoveNext()) found++;
+        Assert.Equal(expected, found);
     }
 
     [Theory]
