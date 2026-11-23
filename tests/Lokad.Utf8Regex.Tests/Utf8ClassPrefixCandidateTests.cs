@@ -98,17 +98,19 @@ public sealed class Utf8ClassPrefixCandidateTests
             slots[1].EndOffsetInBytes - slots[1].StartOffsetInBytes)));
     }
 
-    [Fact]
-    public void CaptureFreeRangeReusesItsRewoundUnicodePrefix()
+    [Theory]
+    [InlineData(61)] [InlineData(62)] [InlineData(63)] [InlineData(64)]
+    public void CaptureFreeRangeReusesItsRewoundUnicodePrefix(int asciiTailLength)
     {
         const string prefix = "😀 ";
-        var scheme = string.Concat(Enumerable.Repeat("élém", 1024));
+        // Exercise a four-byte letter at and across the 64-byte block edge.
+        var scheme = string.Concat(Enumerable.Repeat("élém", 1024)) + "𐐀" + new string('a', asciiTailLength);
         var input = Encoding.UTF8.GetBytes(prefix + scheme + "://é/lien?q=東#Ω");
         var start = Encoding.UTF8.GetByteCount(prefix);
         var floor = start + "é"u8.Length;
         using var live = new CancellationTokenSource();
         using var regex = Utf8Regex.Compile(@"[\w]+://[^/\s?#]+[^\s?#]+(?:\?[^\s#]*)?(?:#[^\s]*)?",
-            policy: new() { ResourcePolicy = Funded with { MaxWorkSteps = 4000 } });
+            policy: new() { ResourcePolicy = Funded with { MaxWorkSteps = 256 } });
 
         Assert.Equal(new Utf8CaptureRange(start, input.Length), regex.Match(input, cancellationToken: live.Token));
         using var cursor = regex.CreateMatchCursor(input, floor, live.Token);
@@ -574,6 +576,8 @@ public sealed class Utf8ClassPrefixCandidateTests
     [InlineData(2, true)]
     [InlineData(3, false)]
     [InlineData(3, true)]
+    [InlineData(4, false)]
+    [InlineData(4, true)]
     public void OriginalInterruptionCoversSearchBothRewindsAndFailedCandidates(int phase, bool expire)
     {
         var text = phase switch
@@ -581,13 +585,15 @@ public sealed class Utf8ClassPrefixCandidateTests
             0 => "word Holmes!" + new string('!', 200000),
             1 => new string('x', 200000) + " Holmes",
             2 => "word" + new string(' ', 200000) + "Holmes",
-            _ => string.Concat(Enumerable.Repeat("word Holmesx ", 16000)),
+            3 => string.Concat(Enumerable.Repeat("word Holmesx ", 16000)),
+            _ => string.Concat(Enumerable.Repeat("élém", 2048)) + "://host/a",
         };
         var input = Encoding.UTF8.GetBytes(text);
         using var cancellation = new CancellationTokenSource();
         long ticks = 0;
         using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
-        var regex = new Utf8Regex(@"\w+\s+Holmes" + (phase == 3 ? "(?=!)" : ""), options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
+        var pattern = phase == 4 ? @"[\w]+://[^/\s?#]+[^\s?#]+" : @"\w+\s+Holmes" + (phase == 3 ? "(?=!)" : "");
+        using var regex = new Utf8Regex(pattern, options: RegexOptions.Compiled, policy: new Utf8RegexPolicy
         {
             MatchTimeout = expire ? TimeSpan.FromMilliseconds(20) : Regex.InfiniteMatchTimeout,
             ResourcePolicy = Funded
@@ -600,7 +606,11 @@ public sealed class Utf8ClassPrefixCandidateTests
             if (expire) ticks = 50; else cancellation.Cancel();
         });
         Exception? failure = null;
-        try { regex.Count(input, cancellation.Token); }
+        try
+        {
+            if (phase == 4) regex.Match(input, cancellationToken: cancellation.Token);
+            else regex.Count(input, cancellation.Token);
+        }
         catch (Exception error) { failure = error; }
         finally { session.Complete(); }
         Assert.True(entered);

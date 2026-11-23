@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -803,34 +804,44 @@ internal static partial class Utf8SliceRunner
             }
             else hasAsciiMask = program.TryGetUnfoldedAsciiSet(code[leadingClass], out ascii, out _);
         }
-        for (long remaining = classMaximum; remaining > 0 && position > floor; remaining--)
+        var categories = hasAsciiMask && classMaximum == long.MaxValue && position - floor >= 64
+            ? program.GetCompleteAsciiCategoryMask(code[leadingClass]) : 0;
+        if (categories != 0)
         {
-            var breach = invocation.TryChargeInputStep();
+            var breach = TryRewindCategoryRun(input, floor, categories, ascii, ref position, ref invocation);
             if (breach != Utf8ExecutionLimitKind.None) return breach;
-            if (hasAsciiMask && input[position - 1] < 128)
+        }
+        else
+        {
+            for (var remaining = classMaximum; remaining > 0 && position > floor; remaining--)
             {
-                // The exact ASCII predicate can rewind one charged block
-                // within the remaining scalar bound.
-                // Stop at the first wider scalar and decode it at its right edge.
-                var length = (int)Math.Min(remaining, Math.Min(64, position - floor));
-                var block = input.Slice(position - length, length);
-                var index = length - 1;
-                while (index >= 0 && ascii.Contains(block[index])) index--;
-                var consumed = length - 1 - index;
-                position -= consumed;
-                if (index < 0)
+                var breach = invocation.TryChargeInputStep();
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (hasAsciiMask && input[position - 1] < 128)
                 {
-                    remaining -= consumed - 1;
-                    continue;
+                    // The exact ASCII predicate can rewind one charged block
+                    // within the remaining scalar bound.
+                    // Stop at the first wider scalar and decode it at its right edge.
+                    var length = (int)Math.Min(remaining, Math.Min(64, position - floor));
+                    var block = input.Slice(position - length, length);
+                    var index = length - 1;
+                    while (index >= 0 && ascii.Contains(block[index])) index--;
+                    var consumed = length - 1 - index;
+                    position -= consumed;
+                    if (index < 0)
+                    {
+                        remaining -= consumed - 1;
+                        continue;
+                    }
+                    if (block[index] < 128) break;
+                    remaining -= consumed;
                 }
-                if (block[index] < 128) break;
-                remaining -= consumed;
+                if (!TryReadScalar(input, position, true, out var scalar, out var width)) break;
+                breach = TryMatchScalarClass(program, code[leadingClass], scalar, ref invocation, out var hit);
+                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                if (!hit) break;
+                position -= width;
             }
-            if (!TryReadScalar(input, position, true, out var scalar, out var width)) break;
-            breach = TryMatchScalarClass(program, program.Instructions[leadingClass], scalar, ref invocation, out var hit);
-            if (breach != Utf8ExecutionLimitKind.None) return breach;
-            if (!hit) break;
-            position -= width;
         }
         // A backwards class step already proved membership at the new start.
         // Otherwise discard only the unproved prefix once per window; every
@@ -848,6 +859,38 @@ internal static partial class Utf8SliceRunner
                 if (hit) break;
                 position += width;
             }
+        }
+        return Utf8ExecutionLimitKind.None;
+    }
+
+    private static Utf8ExecutionLimitKind TryRewindCategoryRun(ReadOnlySpan<byte> input, int floor, uint categories,
+        Utf8SearchAsciiSet ascii, ref int position, ref Utf8SliceInvocation invocation)
+    {
+        while (position > floor)
+        {
+            // One charge admits 64 bytes and enough lookbehind to finish the
+            // last scalar. Decoding never crosses the actual search floor.
+            var breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None) return breach;
+            var blockFloor = Math.Max(floor, position - 64);
+            var edge = position;
+            do
+            {
+                var previous = input[edge - 1];
+                if (previous < 128)
+                {
+                    if (!ascii.Contains(previous)) break;
+                    edge--;
+                    continue;
+                }
+                if (Rune.DecodeLastFromUtf8(input[floor..edge], out var scalar, out var width) != OperationStatus.Done ||
+                    (categories & (1u << (int)Rune.GetUnicodeCategory(scalar))) == 0)
+                    break;
+                edge -= width;
+            } while (edge > blockFloor);
+
+            position = edge;
+            if (edge > blockFloor) break;
         }
         return Utf8ExecutionLimitKind.None;
     }

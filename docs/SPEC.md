@@ -218,6 +218,11 @@ admits up to 2,048 bytes at a time. Folded starters can include a wider
 scalar's lead byte. The scalar verifier decides whether each candidate
 matches.
 
+Backward discovery for an unbounded class with a complete Unicode category
+mask can admit up to 64 input bytes per step, plus the bytes needed to finish
+a scalar crossing the block edge. It tests exact membership and stays at or
+after the requested search floor.
+
 Exact backreferences compare captured bytes in admitted blocks of up to
 2,048 bytes, starting at the right edge in RTL mode. Folded backreferences
 compare scalar equivalents. Fixed RTL dot repeats can admit ASCII suffixes
