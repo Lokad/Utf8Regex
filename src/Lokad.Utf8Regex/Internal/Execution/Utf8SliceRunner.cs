@@ -1715,7 +1715,8 @@ internal static partial class Utf8SliceRunner
                         }
                         var allowAcceptProof = !cursor.RequiredEnd.HasValue;
                         verifiedPrefix = GetForkPrefixLength(program, input, inputIndex, programIndex + 1,
-                            allowAcceptProof, out var provesAccept);
+                            allowAcceptProof, out var provesAccept,
+                            allowEmptyAccept: allowAcceptProof && (!requireNonEmpty || inputIndex != start));
                         if (verifiedPrefix < 0)
                         {
                             programIndex = instruction.A;

@@ -9,6 +9,43 @@ public sealed class Utf8DeferredRepeatStateTests
     private static Utf8SliceProgram Program(string pattern) =>
         new Utf8Regex(pattern).Inspection.AvailableOwnedSliceProgram ?? throw new InvalidOperationException();
 
+    [Theory]
+    [InlineData("x*|y", "y", 0, 2)]
+    [InlineData("x*|y", "xx😀y", 2, 4)]
+    [InlineData("é*|😀", "😀", 0, 2)]
+    public void APreferredTerminalRepeatCanFinishWithoutAnOuterRetry(string pattern, string text, int end, int count)
+    {
+        using var regex = new Utf8Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1000, MaxWorkingBytes = 1 }
+        });
+        var input = System.Text.Encoding.UTF8.GetBytes(text);
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(new Utf8CaptureRange(0, end), regex.Match(input));
+        Assert.Equal(count, regex.Count(input));
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void AnEmptyFirstArmStillRetainsARequiredConsumingAlternative(bool nonEmpty, bool full)
+    {
+        var program = Program("x*|y");
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, Regex.InfiniteMatchTimeout, default);
+        var workspace = new Utf8SliceRunner.AttemptWorkspace();
+        try
+        {
+            var result = Utf8SliceRunner.TryMatchAt(program, "y"u8, 0, [], [], false, nonEmpty, true,
+                ref workspace, ref invocation, requireFullInput: full);
+            Assert.True(result.IsMatch);
+            Assert.Equal(1, result.EndIndex);
+        }
+        finally { workspace.Release(ref invocation); }
+
+        using var withSuffix = new Utf8Regex("(x*|y)z");
+        Assert.Equal(new Utf8CaptureRange(0, 2), withSuffix.Match("yz"u8));
+    }
+
     [Fact]
     public void FusedImportCountNeedsNoLocalWorkingBuffers()
     {

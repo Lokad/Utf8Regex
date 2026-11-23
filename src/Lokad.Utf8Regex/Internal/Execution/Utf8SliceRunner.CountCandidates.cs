@@ -1111,7 +1111,7 @@ internal static partial class Utf8SliceRunner
     // Return -1 for a disproved arm or the number of consecutive pure
     // one-byte atoms verified at the arm's original entry.
     private static int GetForkPrefixLength(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position, int index,
-        bool allowAcceptProof, out bool provesAccept)
+        bool allowAcceptProof, out bool provesAccept, bool allowEmptyAccept = false)
     {
         provesAccept = false;
         var code = program.Instructions.AsSpan();
@@ -1133,6 +1133,17 @@ internal static partial class Utf8SliceRunner
         if (entry.Kind is Utf8SliceInstructionKind.RepeatGreedy or Utf8SliceInstructionKind.RepeatLazy)
         {
             var minimum = entry.RepeatMinimum;
+            if (minimum == 0 && entry.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+                allowEmptyAccept && probe == index && entry.HasSingleAtomBody &&
+                IsScalarRepeatAtom(code[probe + 1]) && entry.A < code.Length - 1 &&
+                code[entry.A + 1] is { Kind: Utf8SliceInstructionKind.Jump, A: var join } &&
+                join == code.Length - 1 && code[join].Kind == Utf8SliceInstructionKind.Accept)
+            {
+                // This terminal arm can always finish at the zero endpoint.
+                // The repeat still executes to select its normal extent.
+                provesAccept = true;
+                return 0;
+            }
             if (minimum == 0 && entry.RepeatMaximum == 1)
                 return MayMatchBranchedAsciiPrefix(program, input, position, probe, out _, instructionLimit: 4) ? 0 : -1;
             if (minimum > 0 && IsSingleAtomRepeat(code, probe, entry))
