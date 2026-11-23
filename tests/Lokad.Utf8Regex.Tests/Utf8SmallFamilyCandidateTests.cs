@@ -41,6 +41,32 @@ public sealed class Utf8SmallFamilyCandidateTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PreparedPrefixResumesAtTheNextOverlappingStart(bool shorterFirst)
+    {
+        byte[][] literals = ["aaaBx"u8.ToArray(), "aaaB"u8.ToArray(), "aaaC"u8.ToArray()];
+        if (shorterFirst) (literals[0], literals[1]) = (literals[1], literals[0]);
+        var prepared = new PreparedLiteralSetSearch(literals).SearchData;
+        foreach (var padding in new[] { 0, 2039, 2040, 4095 })
+        {
+            // Four false prefixes overlap the first complete candidate.
+            var input = Encoding.UTF8.GetBytes(new string('z', padding) + "aaaaaaaBx");
+            foreach (var end in new[] { input.Length, input.Length - 1 })
+            {
+                var ordinal = shorterFirst || end == input.Length ? 0 : 1;
+                var invocation = new Utf8SliceInvocation(new(16, 1, 7, 1), Regex.InfiniteMatchTimeout, default);
+                Assert.True(invocation.Ledger.TryReserve(7));
+                Assert.Equal(Utf8ExecutionLimitKind.None, Utf8SearchExecutor.TryFindLiteralFamilyCandidate(
+                    literals, false, input, 0, end, false, ref invocation, out var match, out var found, prepared));
+                Assert.True(found);
+                Assert.Equal((padding + 4, literals[ordinal].Length, ordinal), (match.Index, match.Length, match.LiteralId));
+                Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
+            }
+        }
+    }
+
     [Theory] [InlineData(false)] [InlineData(true)]
     public void EveryWorkCutoffKeepsStickyDenialAndCallerLoan(bool hit)
     {

@@ -121,7 +121,7 @@ internal readonly partial struct PreparedLiteralSetSearch
 
         if (Strategy == PreparedLiteralSetStrategy.SingleBucketPrefix)
         {
-            return TryFindFirstMatchSingleBucketPrefix(input, SearchData, out index, out matchedLength);
+            return TryFindFirstMatchSingleBucketPrefix(input, SearchData, out index, out matchedLength, out _);
         }
 
         if (Strategy == PreparedLiteralSetStrategy.SingleLiteralBuckets)
@@ -178,14 +178,17 @@ internal readonly partial struct PreparedLiteralSetSearch
         return false;
     }
 
-    private static bool TryFindFirstMatchSingleBucketPrefix(
+    internal static bool TryFindFirstMatchSingleBucketPrefix(
         ReadOnlySpan<byte> input,
         AsciiExactLiteralSearchData searchData,
         out int index,
-        out int matchedLength)
+        out int matchedLength,
+        out int firstUnsearchedStart,
+        int maxRejected = int.MaxValue)
     {
         index = -1;
         matchedLength = 0;
+        firstUnsearchedStart = input.Length;
         var bucket = searchData.Buckets[0];
         var prefix = bucket.CommonPrefix;
         var offset = 0;
@@ -206,6 +209,11 @@ internal readonly partial struct PreparedLiteralSetSearch
             }
 
             offset++;
+            if (--maxRejected == 0)
+            {
+                firstUnsearchedStart = offset;
+                return false;
+            }
         }
 
         return false;

@@ -169,12 +169,14 @@ internal static partial class Utf8SearchExecutor
             }
             longest = Math.Max(longest, literal.Length);
         }
-        // One bucket per original needle proves distinct heads. Borrow only
-        // short prepared families; raw/overlapping/other families keep the
-        // complete per-needle primitive below, without new preparation.
-        var usePrepared = prepared.Buckets is { Length: 3 or 4 } buckets &&
-            buckets.Length == literals.Length && prepared.ShortestLength >= 3 && longest is > 0 and <= 16;
-        if (longest == 0 || confirmBoundaries && !usePrepared)
+        // One bucket per original needle proves distinct heads. For raw
+        // candidates, one shared prefix can screen all needles together.
+        var shortPrepared = prepared.ShortestLength >= 3 && longest is > 0 and <= 16;
+        var distinctHeads = shortPrepared && prepared.Buckets is { Length: 3 or 4 } buckets &&
+            buckets.Length == literals.Length;
+        var sharedPrefix = shortPrepared && !confirmBoundaries &&
+            prepared.Buckets is [{ CommonPrefix.Length: >= 3, Literals.Length: var size }] && size == literals.Length;
+        if (longest == 0 || confirmBoundaries && !distinctHeads)
         {
             PreparedByteSearch? firstBytes = confirmBoundaries && prepared.ShortestLength is > 0 and < int.MaxValue
                 ? prepared.FirstByteSearch : null;
@@ -188,35 +190,45 @@ internal static partial class Utf8SearchExecutor
             var starts = Math.Min(2049 - longest, end - low);
             var block = input.Slice(low, Math.Min(starts + longest - 1, end - low));
             var best = -1; var ordinal = -1;
-            if (usePrepared)
+            var firstUnsearched = 0;
+            if (distinctHeads || sharedPrefix)
             {
                 // The same checked search used by ordinary execution runs
                 // wholly inside this admitted window. Charge the combined
                 // primitive once; original authority also gates publication.
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
-                if (PreparedLiteralSetSearch.TryFindFirstMatchSingleLiteralBuckets(block, prepared,
-                    out var relative, out _) && relative < starts)
+                firstUnsearched = starts;
+                // A few rejects per block preserve the common sparse case.
+                // Dense false prefixes hand the remaining starts to the
+                // complete-needle search, within the original block bounds.
+                var foundInBlock = sharedPrefix
+                    ? PreparedLiteralSetSearch.TryFindFirstMatchSingleBucketPrefix(block, prepared,
+                        out var relative, out _, out firstUnsearched, maxRejected: 4)
+                    : PreparedLiteralSetSearch.TryFindFirstMatchSingleLiteralBuckets(block, prepared, out relative, out _);
+                if (foundInBlock && relative < starts)
                 {
-                    // Distinct heads identify the original branch after full
-                    // verification. Bucket sorting cannot change its ordinal.
+                    // Distinct heads identify the branch. With a shared
+                    // prefix, complete matches at the same start keep order.
                     for (var id = 0; id < literals.Length; id++)
-                        if (literals[id][0] == block[relative])
+                        if (sharedPrefix ? block[relative..].StartsWith(literals[id]) : literals[id][0] == block[relative])
                         { best = relative; ordinal = id; break; }
                 }
             }
-            else for (var id = 0; id < literals.Length; id++)
+            if (firstUnsearched < starts) for (var id = 0; id < literals.Length; id++)
             {
                 var breach = invocation.TryChargeInputStep();
                 if (breach != Utf8ExecutionLimitKind.None) return breach;
                 var literal = literals[id];
                 // A later needle must start strictly before the current
                 // winner. Keep its full lookahead at that last valid start.
-                var search = best < 0 ? block : block[..Math.Min(block.Length, best + literal.Length - 1)];
-                var relative = search.IndexOf(literal);
-                if (relative >= 0 && relative < starts)
+                var endOfSearch = best < 0 ? block.Length : Math.Min(block.Length, best + literal.Length - 1);
+                var relative = block[firstUnsearched..endOfSearch].IndexOf(literal);
+                if (relative < 0) continue;
+                relative += firstUnsearched;
+                if (relative < starts)
                 { best = relative; ordinal = id; }
-                if (best == 0) break;
+                if (best == firstUnsearched) break;
             }
             if (best >= 0)
             {
