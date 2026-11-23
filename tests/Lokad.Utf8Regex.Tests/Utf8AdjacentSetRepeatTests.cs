@@ -13,6 +13,10 @@ public sealed class Utf8AdjacentSetRepeatTests
     [InlineData(@"\Aitem(\s+)[0-9]+\z", "item\u2003\u3000 12345")]
     [InlineData(@"(\s+)[0-9]", "π😀  7 xx \u20032")]
     [InlineData(@"([a-z]+)[0-9]+", "abc123 de45")]
+    [InlineData(@"(a+)(b+)", "😀aaaabb aaaab")]
+    [InlineData(@"(a+)(a+b)", "😀aaaabb")]
+    [InlineData(@"(a+)(b*)a", "😀aaaa")]
+    [InlineData(@"(é+)(β+?)", "😀ééβββ")]
     [InlineData(@"([a-z]{0,3})[0-9]{1,2}", "1 abc12 abcd34")]
     [InlineData(@"\A([+0]?)([0-9]+)\z", "0")]
     [InlineData(@"\A([a-zA-Z]{1,4})([a-zA-Z]{2})!\z", "abcd!")]
@@ -121,6 +125,8 @@ public sealed class Utf8AdjacentSetRepeatTests
     [InlineData(@"\Aitem\s+[0-9]+\z", "item   12345")]
     [InlineData(@"\A\w+\s+\w+\s+Holmes\z", "é\u0085東\u3000Holmes")]
     [InlineData(@"\A\p{L}+\p{Zs}+K\z", "é\u00a0K")]
+    [InlineData(@"(a+)(b+)", "xxaaabbyy")]
+    [InlineData(@"(é+)(β+)", "😀ééβββ")]
     public void FusedRunsNeedNoRepeatOrRewindStorage(string pattern, string text)
     {
         var policy = new Utf8ResourcePolicy { MaxWorkSteps = 1_000_000, MaxDepth = 1,

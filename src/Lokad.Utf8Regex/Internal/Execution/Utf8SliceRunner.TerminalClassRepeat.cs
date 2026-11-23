@@ -920,7 +920,7 @@ internal static partial class Utf8SliceRunner
             // A boundary consumes nothing. Its following literal is still
             // necessary at the repeat endpoint, including for absence checks.
             leadingBoundary = tail;
-            suffix = instructions[++tail];
+            following = suffix = instructions[++tail];
         }
         // End anchors can succeed only at the subject end or before LF. If the
         // atom excludes LF, no shorter endpoint can satisfy either kind of $.
@@ -937,8 +937,8 @@ internal static partial class Utf8SliceRunner
         }
         else
         {
-            excludedScalar = suffix.Kind == Utf8SliceInstructionKind.Literal && suffix.B == 0 && Rune.IsValid(suffix.A)
-                ? suffix.A
+            excludedScalar = following.Kind == Utf8SliceInstructionKind.Literal && following.B == 0 && Rune.IsValid(following.A)
+                ? following.A
                 : endAnchor ? '\n' : -1;
         }
         if (excludedScalar < 0) return false;
