@@ -130,9 +130,14 @@ public sealed class Utf8RegexMatchCursor : IDisposable
                 : Utf8SliceRunner.TryFindFirst(program, _input.Span, _position, _slots.Starts, _slots.Ends,
                     collectHistory, ref _workspace, ref _invocation, _regex!.Inspection.SearchPlan);
             if (outcome.Breach != Utf8ExecutionLimitKind.None) throw _invocation.Budget.CreateResourceFailure();
-            Checkpoint();
-            if (!outcome.Found) { exhausted = true; return false; }
+            if (!outcome.Found)
+            {
+                Checkpoint();
+                exhausted = true;
+                return false;
+            }
 
+            // Snapshot checks during capture shaping and before allocating each result array.
             var completed = Snapshot(outcome, useCaptureSlots, ref results);
             Utf8RetainedRangeMatch? receipt = null;
             if (retain)
