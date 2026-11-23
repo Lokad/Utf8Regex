@@ -501,6 +501,13 @@ internal static partial class Utf8SliceRunner
                     replay.Breach, replay.CaptureHistory)
                 : new(false, -1, -1, replay.Breach);
         }
+        if (program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSetThenRepeat &&
+            remaining <= 64 && !existenceOnly && !collectHistory && program.GroupCount == 0 &&
+            program.LeadingByteCandidate is { First: >= 0 and < 128 } starter)
+            return TryFindFirstShortAsciiRepeat(program, input, fromByte,
+                input.Length - candidatePlan.MinRequiredLength, (byte)starter.First, starter.Last,
+                starter.SparsePair, ref invocation);
+
         var first = program.Instructions[0];
         var seekBeginning = !reverse && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
@@ -574,6 +581,50 @@ internal static partial class Utf8SliceRunner
             : new(false, -1, -1, outcome.Breach);
     }
 
+    private static Utf8SliceSearchOutcome TryFindFirstShortAsciiRepeat(
+        Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte, int lastProbedStart,
+        byte first, byte last, bool sparsePair, ref Utf8SliceInvocation invocation)
+    {
+        // The complete shape has one ASCII set followed by a terminal ASCII
+        // repeat. Its own starter and masks suffice for the bounded search.
+        var breach = invocation.TryReserveWorking(0);
+        if (breach != Utf8ExecutionLimitKind.None)
+            return new(false, -1, -1, breach);
+        var code = program.Instructions;
+        var head = program.SetMasks[code[0].A];
+        var tail = program.SetMasks[code[2].A];
+        var minimum = code[1].RepeatMinimum;
+        for (var position = fromByte; ; position++)
+        {
+            if (position == input.Length || !MayStartAtByte(input[position], first, last, sparsePair, includeKelvin: false))
+            {
+                breach = TrySeekLeadingByte(input, ref position, first, last, false, ref invocation, sparsePair: sparsePair);
+                if (breach != Utf8ExecutionLimitKind.None)
+                    return new(false, -1, -1, breach);
+                if (position < 0)
+                    return new(false, -1, -1, new Utf8InvocationBufferControl(ref invocation).TryChargeWorkspaceStep());
+            }
+            breach = invocation.TryChargeInputStep();
+            if (breach != Utf8ExecutionLimitKind.None)
+                return new(false, -1, -1, breach);
+            invocation.Budget.ThrowIfCancellationRequested();
+            if (position > lastProbedStart)
+                return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+
+            // The starter is ASCII. A rejected candidate advances one byte.
+            var value = input[position];
+            if ((head[value >> 3] & (1 << (value & 7))) == 0) continue;
+            var length = ScanAsciiMask(input[(position + 1)..], tail, category: false);
+            if (length < minimum) continue;
+
+            breach = invocation.TryChargeInputStep();
+            invocation.Budget.ThrowIfCancellationRequested();
+            return breach == Utf8ExecutionLimitKind.None
+                ? new(true, position, position + 1 + length, breach)
+                : new(false, -1, -1, breach);
+        }
+    }
+
     // Single-origin matches and ordered search do not need the candidate
     // scanner's search windows, delimiter state or per-candidate proofs.
     private static Utf8SliceSearchOutcome TryFindFirstByCandidateSearch(
@@ -591,8 +642,8 @@ internal static partial class Utf8SliceRunner
         if (seekLiteral) leading = -1;
         var checkBranchedPrefix = leading is >= 0 and < 128 && program.Instructions[leadingScalarIndex] is
             { Kind: Utf8SliceInstructionKind.Fork } or { IsLiteralChoice: true };
-        // The bounded prefix proof can publish the greedy endpoint of a
-        // straight ASCII set and terminal repeat without entering the VM.
+        // A capture declaration can survive lowering even when the complete
+        // path contains no capture instructions. Keep its attempt checks.
         var checkStraightRepeat = leading is >= 0 and < 128 && leadingScalarIndex == 0 &&
             !existenceOnly && !collectHistory && input.Length - fromByte <= 64 &&
             program.TerminalRoot == Utf8SliceTerminalRootKind.AsciiSetThenRepeat;
@@ -809,53 +860,37 @@ internal static partial class Utf8SliceRunner
                 // Starts only advance in these forward searches. The
                 // input step above also covers stopping after the last one.
                 if (position > lastProbedStart) break;
-                int acceptedEnd;
-                if (checkStraightRepeat && program.GroupCount == 0)
+                var proveDecimalPrefix = shortDecimalHead || proveDecimalWindow;
+                // A conclusive proof from instruction zero already gives the
+                // first ordered range when nothing can read or publish its captures.
+                var proveMatch = proveDecimalPrefix || proveBranchedMatch;
+                var proofStart = proveMatch ? 0 : leadingScalarIndex;
+                var proofPosition = position;
+                var proofLimit = BranchedPrefixInstructionLimit;
+                if (reuseRewoundDigits)
                 {
-                    // The checked instruction shape has just two consuming
-                    // atoms. Confirm the exact head mask and the greedy tail.
-                    var value = input[position];
-                    var head = program.SetMasks[first.A];
-                    if (value >= 128 || (head[value >> 3] & (1 << (value & 7))) == 0) continue;
-                    var repeatMask = program.SetMasks[program.Instructions[2].A];
-                    var length = ScanAsciiMask(input[(position + 1)..], repeatMask, category: false);
-                    if (length < program.Instructions[1].RepeatMinimum) continue;
-                    acceptedEnd = position + 1 + length;
+                    // Rewind already admitted a nonempty decimal run ending at
+                    // this excluded delimiter. Confirm any remaining Unicode
+                    // boundary and start the proof at the continuation.
+                    if (!provedAsciiBoundary && !MatchesBoundary(program, first, input, position)) continue;
+                    proofPosition = classWindowEnd;
+                    proofStart = program.Instructions[1].A + 1;
+                    if (followingWindowEnd > 0)
+                    {
+                        proofPosition = followingWindowEnd;
+                        proofStart = program.FollowingDecimalContinuation;
+                        proofLimit -= followingWindow.Max + 3;
+                    }
                 }
-                else
+                if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch, proofLimit))
                 {
-                    var proveDecimalPrefix = shortDecimalHead || proveDecimalWindow;
-                    // A conclusive proof from instruction zero already gives the
-                    // first ordered range when nothing can read or publish its captures.
-                    var proveMatch = proveDecimalPrefix || proveBranchedMatch;
-                    var proofStart = proveMatch ? 0 : leadingScalarIndex;
-                    var proofPosition = position;
-                    var proofLimit = BranchedPrefixInstructionLimit;
-                    if (reuseRewoundDigits)
-                    {
-                        // Rewind already admitted a nonempty decimal run ending at
-                        // this excluded delimiter. Confirm any remaining Unicode
-                        // boundary and start the proof at the continuation.
-                        if (!provedAsciiBoundary && !MatchesBoundary(program, first, input, position)) continue;
-                        proofPosition = classWindowEnd;
-                        proofStart = program.Instructions[1].A + 1;
-                        if (followingWindowEnd > 0)
-                        {
-                            proofPosition = followingWindowEnd;
-                            proofStart = program.FollowingDecimalContinuation;
-                            proofLimit -= followingWindow.Max + 3;
-                        }
-                    }
-                    if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out acceptedEnd, proveMatch, proofLimit))
-                    {
-                        var remainingDigits = classWindowEnd - position;
-                        // The proved leading boundary excludes the interior of a
-                        // short ASCII digit run. Its delimiter is an excluded byte.
-                        if (reuseDecimalWindow && remainingDigits is > 0 and <= 4 &&
-                            !input.Slice(position, remainingDigits).ContainsAnyExceptInRange((byte)'0', (byte)'9'))
-                            position = classWindowEnd;
-                        continue;
-                    }
+                    var remainingDigits = classWindowEnd - position;
+                    // The proved leading boundary excludes the interior of a
+                    // short ASCII digit run. Its delimiter is an excluded byte.
+                    if (reuseDecimalWindow && remainingDigits is > 0 and <= 4 &&
+                        !input.Slice(position, remainingDigits).ContainsAnyExceptInRange((byte)'0', (byte)'9'))
+                        position = classWindowEnd;
+                    continue;
                 }
                 if (acceptedEnd >= 0)
                 {
