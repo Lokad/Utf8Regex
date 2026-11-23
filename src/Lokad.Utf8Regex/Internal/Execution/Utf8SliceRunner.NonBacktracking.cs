@@ -453,6 +453,8 @@ internal static partial class Utf8SliceRunner
                     Utf8SliceCaseEquivalences.ScalarsEquivalent(scalar, new Rune(instruction.A), program.CaseBehavior);
             case Utf8SliceInstructionKind.Dot:
                 return instruction.A != 0 || scalar.Value != '\n';
+            case Utf8SliceInstructionKind.Set when instruction.D != 0:
+                return instruction.MatchesAsciiInterval(scalar.Value);
             case Utf8SliceInstructionKind.Set:
                 return Utf8SliceScalarClasses.MatchesMask(scalar, program.SetMasks[instruction.A], instruction.C != 0, program.CaseBehavior) != (instruction.B != 0);
             case Utf8SliceInstructionKind.Shorthand:

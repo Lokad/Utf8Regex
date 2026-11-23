@@ -242,7 +242,7 @@ internal readonly struct Utf8SliceInstruction
 
     internal int AsciiIntervalStart => D & 255;
     internal int AsciiIntervalWidth => D >> 8;
-    internal bool MatchesAsciiInterval(byte value)
+    internal bool MatchesAsciiInterval(int value)
         => (uint)(value - AsciiIntervalStart) < (uint)AsciiIntervalWidth;
 
     // RepeatExit C records independent proofs about the continuation.
