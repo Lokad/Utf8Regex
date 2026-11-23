@@ -109,10 +109,22 @@ public sealed class Pcre2PolicyOwnershipTests
     [Fact]
     public void NumericSpanWorkingLimitDoesNotAcquireHostWorkingFunding()
     {
-        var account = new Account(); using var regex = new Utf8Pcre2Regex("(?:ab|cd)+", policy: new()
-        { ProgramMemoryAllowance = account, ResourcePolicy = new() { MaxWorkingBytes = 1 } });
+        // The successful branch can only be found by retrying the capture
+        // and backreference. Disjoint terminal literals need no retry storage.
+        const string pattern = @"\A(a|ab)+\1\z";
+        using var unrestricted = new Utf8Pcre2Regex(pattern);
+        var unrestrictedCursor = unrestricted.EnumerateMatches("abab"u8);
+        Assert.True(unrestrictedCursor.MoveNext());
+        Assert.Equal(4, unrestrictedCursor.Current.EndOffsetInBytes);
+
+        var account = new Account();
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new()
+        {
+            ProgramMemoryAllowance = account,
+            ResourcePolicy = new() { MaxWorkingBytes = 1 }
+        });
         var attempts = account.Attempts;
-        try { var cursor = regex.EnumerateMatches("abcd"u8); cursor.MoveNext(); Assert.Fail("Expected numeric working refusal."); }
+        try { var cursor = regex.EnumerateMatches("abab"u8); cursor.MoveNext(); Assert.Fail("Expected numeric working refusal."); }
         catch (Pcre2MatchException error) { Assert.Equal(Pcre2ErrorKind.HeapLimit, error.ErrorKind); }
         Assert.Equal(attempts, account.Attempts);
     }
