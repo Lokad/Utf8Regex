@@ -586,8 +586,9 @@ internal static partial class Utf8SliceRunner
                 proveMatch: true, instructionLimit: proofLimit);
             if (!possible || acceptedEnd >= 0)
             {
-                breach = invocation.TryReserveWorking(0);
-                if (breach == Utf8ExecutionLimitKind.None) breach = invocation.TryChargeInputStep();
+                // The proof acquires no storage. Any enclosing loan was
+                // already admitted, and this step retains a prior denial.
+                breach = invocation.TryChargeInputStep();
                 invocation.Budget.ThrowIfCancellationRequested();
                 return possible && breach == Utf8ExecutionLimitKind.None
                     ? new(true, fromByte, acceptedEnd, breach)

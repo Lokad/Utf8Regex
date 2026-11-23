@@ -111,4 +111,36 @@ public sealed class Utf8ScalarAnchoredRepeatRegressionTests
             regex.Match(Encoding.UTF8.GetBytes(text + "\n"), cancellationToken: source.Token));
         Assert.False(regex.Match(Encoding.UTF8.GetBytes(text + "\nx"), cancellationToken: source.Token).Success);
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SingleOriginProofChecksInterruptionBeforeReturningWithAnEnclosingLoan(bool expire)
+    {
+        using var regex = new Utf8Regex("^[a-z][a-z0-9_]*$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        var program = regex.Inspection.AvailableOwnedSliceProgram;
+        using var clock = Utf8DeadlineTestClock.Start();
+        using var source = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(new(64, 1, 13),
+            expire ? TimeSpan.FromMilliseconds(200) : Regex.InfiniteMatchTimeout, source.Token);
+        Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryReserveWorking(13));
+        for (var i = 0; i < 62; i++)
+            Assert.Equal(Utf8ExecutionLimitKind.None, invocation.TryChargeStep());
+        invocation.CheckpointHook = _ =>
+        {
+            if (expire) clock.Advance(250);
+            else source.Cancel();
+        };
+
+        var error = Record.Exception(() => Utf8SliceRunner.TryFindFirst(program, "Name9"u8, 0,
+            [], [], false, ref invocation));
+
+        if (expire) Assert.IsType<Utf8ExecutionDeadlineExpiredException>(error);
+        else Assert.Equal(source.Token, Assert.IsType<OperationCanceledException>(error).CancellationToken);
+        Assert.Equal(64UL, invocation.Budget.Steps);
+        Assert.Equal(13UL, invocation.Budget.PeakWorkingBytes);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(13);
+    }
 }
