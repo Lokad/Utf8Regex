@@ -62,6 +62,21 @@ public sealed class Utf8Ipv4BooleanTests
     }
 
     [Theory]
+    [InlineData("😀11.22.33.44", true)]
+    [InlineData("😀11.22.33.XY", false)]
+    [InlineData("😀. 012.200.033.199", true)]
+    public void ScreenedRequiredByteBoundsTheFirstCandidate(string tail, bool expected)
+    {
+        var input = Encoding.UTF8.GetBytes(new string('8', 8192) + tail);
+        using var source = new CancellationTokenSource();
+        using var regex = Utf8Regex.Compile(Pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 128, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        Assert.Equal(expected, regex.IsMatch(input, source.Token));
+    }
+
+    [Theory]
     [InlineData("012.200.033.199", false)]
     [InlineData("no leading digit", true)]
     public void BranchedCandidateSearchChecksInterruptionWithAdmittedStorage(string text, bool expire)
