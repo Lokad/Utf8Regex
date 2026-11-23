@@ -1260,9 +1260,10 @@ internal static class Pcre2BacktrackingRunner
                             break;
                         }
 
-                        var returnCall = subroutineCalls.Current;
-                        RestoreSubroutineState(
-                            returnCall,
+                        instructionIndex = ReturnFromSubroutine(
+                            subroutineCalls.Current,
+                            in frames,
+                            ref subroutineCalls,
                             counts,
                             positions,
                             captureState,
@@ -1272,8 +1273,6 @@ internal static class Pcre2BacktrackingRunner
                             ref repeatMutations,
                             ref captureMutations,
                             ref budget);
-                        subroutineCalls.Return(RetainedCallExtent(in frames));
-                        instructionIndex = returnCall.ReturnInstruction;
                         continue;
 
                     case Pcre2BacktrackingInstructionKind.Conditional:
@@ -1398,8 +1397,10 @@ internal static class Pcre2BacktrackingRunner
                             frames.Truncate(acceptedCall.BacktrackingCheckpoint);
                             atomicCheckpoints.Truncate(acceptedCall.AtomicCheckpoint);
                             markTrail.Truncate(acceptedCall.MarkTrailCheckpoint);
-                            RestoreSubroutineState(
+                            instructionIndex = ReturnFromSubroutine(
                                 acceptedCall,
+                                in frames,
+                                ref subroutineCalls,
                                 counts,
                                 positions,
                                 captureState,
@@ -1409,8 +1410,6 @@ internal static class Pcre2BacktrackingRunner
                                 ref repeatMutations,
                                 ref captureMutations,
                                 ref budget);
-                            subroutineCalls.Return(RetainedCallExtent(in frames));
-                            instructionIndex = acceptedCall.ReturnInstruction;
                             continue;
                         }
 
@@ -2044,8 +2043,10 @@ internal static class Pcre2BacktrackingRunner
         return false;
     }
 
-    private static void RestoreSubroutineState(
+    private static int ReturnFromSubroutine(
         Pcre2SubroutineCallFrame call,
+        scoped in Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames,
+        scoped ref Pcre2SubroutineCalls calls,
         Span<int> counts,
         Span<int> positions,
         Span<Pcre2CaptureState> captureState,
@@ -2056,6 +2057,11 @@ internal static class Pcre2BacktrackingRunner
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
         ref Pcre2ResourceBudget budget)
     {
+        var retainedExtent = RetainedCallExtent(in frames);
+        // Checkpoints below this call's record precede its journal entries.
+        // Only a retry saved during the call can need their inverse writes.
+        var retainCaptureMutations = retainedExtent >= calls.Checkpoint.Head;
+
         restoreGeneration++;
         if (restoreGeneration <= 0)
         {
@@ -2112,8 +2118,13 @@ internal static class Pcre2BacktrackingRunner
                 ref captureState[mutation.Slot],
                 mutation.Previous,
                 ref captureMutations,
-                ref budget, recordRollback: true);
+                ref budget, recordRollback: retainCaptureMutations);
         }
+
+        if (!retainCaptureMutations)
+            captureMutations.Truncate(call.CaptureCheckpoint);
+        calls.Return(retainedExtent);
+        return call.ReturnInstruction;
     }
 
     private static void SetMark(
