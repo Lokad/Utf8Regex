@@ -19,7 +19,7 @@ public sealed class Utf8UriExistenceTests
         var regex = new Utf8Regex(Pattern, options: options);
         var captured = new Utf8Regex("(?<uri>" + Pattern + ")", options: options);
         foreach (var text in new[] { "", "x://a?query", "x://host?query", "x://😀", "𐐀://😀😀", "é://ab", "١://ab",
-            "x://😀/", "x:///😀😀", "😀://ab", "://ab é://ab", "x://a x://ab",
+            "x://😀/", "x:///😀😀", "😀://ab", "://ab é://ab", "x://a x://ab", "x:///b x://?b", "x:///ab x://a/",
             "://a" + new string(' ', 2041) + "𐐀://ab", "x://ab?#tail x://cd" })
         {
             var input = Encoding.UTF8.GetBytes(text);
@@ -41,6 +41,7 @@ public sealed class Utf8UriExistenceTests
     [InlineData(@"[\w]{2,}://ab", "x://ab", "𐐀y://ab")]
     [InlineData(@"[\w:]+://ab", "://ab", "x:://ab")]
     [InlineData(@"(?<scheme>[\w]+)://\k<scheme>", "xy://x", "xy://xy")]
+    [InlineData(Pattern + "!$", "x://ab", "x://ab!")]
     public void DelimiterSearchPreservesUnprovedRepeatAndCaptureRequirements(string pattern, string miss, string hit)
     {
         using var regex = new Utf8Regex(pattern, RegexOptions.Compiled);

@@ -657,6 +657,7 @@ internal static partial class Utf8SliceRunner
         var singleWindowAttempt = false;
         var requiredClassSuffix = default((int First, int Second));
         var verifiedClassLiteralLength = 0;
+        var proveClassSuffix = false;
         var screenedDelimiter = -1;
         var wideInput = input.Length - fromByte >= 256;
         var needsClassWindow = leading is < 0 or >= 128;
@@ -695,7 +696,13 @@ internal static partial class Utf8SliceRunner
                     {
                         requiredClassSuffix = GetRequiredHybridSuffix(program.Instructions, literalIndex + aligned.Length);
                         if (existenceOnly && !collectHistory && CanReuseLeadingClassWindow(program, leadingClass, literalIndex))
+                        {
                             verifiedClassLiteralLength = aligned.Length;
+                            var (firstClass, secondClass) = requiredClassSuffix;
+                            var code = program.Instructions.AsSpan();
+                            proveClassSuffix = secondClass != 0 && secondClass == firstClass + 2 &&
+                                code[secondClass - 1].RepeatMinimum == 1 && CanAcceptEmptyTail(code, secondClass + 3);
+                        }
                     }
                 }
                 // One attempt per disjoint delimiter can replace a broad
@@ -910,6 +917,22 @@ internal static partial class Utf8SliceRunner
             var verifiedPrefix = verifiedClassLiteralLength != 0 && position < classWindowEnd
                 ? (4 + verifiedClassLiteralLength, classWindowEnd - position + verifiedClassLiteralLength)
                 : default;
+            if (proveClassSuffix && verifiedPrefix.Item2 != 0)
+            {
+                var suffix = position + verifiedPrefix.Item2;
+                var code = program.Instructions;
+                if (MatchesAdjacentAsciiHybridClasses(program, code[requiredClassSuffix.First],
+                    code[requiredClassSuffix.Second], input[suffix..]))
+                {
+                    // Two admitted scalars satisfy the minimum and the rest
+                    // may be empty. Only the Boolean caller uses this witness.
+                    breach = invocation.TryChargeInputStep();
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    return breach == Utf8ExecutionLimitKind.None
+                        ? new(true, position, suffix + 2, breach)
+                        : new(false, -1, -1, breach);
+                }
+            }
             var outcome = TryMatchAt(program, input, position, captureStarts, captureEnds,
                 collectHistory, false, true, ref workspace, ref invocation, existenceOnly, verifiedPrefix);
             if (outcome.Breach != Utf8ExecutionLimitKind.None)

@@ -1936,6 +1936,16 @@ internal static partial class Utf8SliceRunner
         return firstMember == (first.B != 0) && secondMember == (second.B != 0);
     }
 
+    private static bool MatchesAdjacentAsciiHybridClasses(Utf8SliceProgram program, in Utf8SliceInstruction first,
+        in Utf8SliceInstruction second, ReadOnlySpan<byte> input)
+    {
+        if (input.Length < 2 || (input[0] | input[1]) >= 128) return false;
+        return Contains(first, input[0]) && Contains(second, input[1]);
+
+        bool Contains(in Utf8SliceInstruction atom, byte value)
+            => ((program.SetMasks[atom.A][value >> 3] & (1 << (value & 7))) != 0) != (atom.B != 0);
+    }
+
     private static bool TryRunTerminalHybridMinimum(Utf8SliceProgram program, ReadOnlySpan<byte> input,
         int index, int position, ref Utf8SliceInvocation invocation, out (int EndIndex, Utf8ExecutionLimitKind Breach) result)
     {
