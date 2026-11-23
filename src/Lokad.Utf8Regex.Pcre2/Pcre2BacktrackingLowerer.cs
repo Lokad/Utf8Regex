@@ -158,10 +158,15 @@ internal sealed class Pcre2BacktrackingLowerer
         // Only a final LF could satisfy a lax end there.
         if (children[^2] is Pcre2RepeatBacktrackingNode { Maximum: > 0, Preference: Pcre2RepeatPreference.Greedy,
                 Body: Pcre2TokenBacktrackingNode { Token: var finalAtom } } &&
-            finalAtom.Kind is Pcre2CharacterTokenKind.Literal or Pcre2CharacterTokenKind.CharacterClass &&
-            (!allowTrailingLf || (finalAtom.Options & Pcre2CharacterOptions.Caseless) == 0 &&
-                (finalAtom.Kind == Pcre2CharacterTokenKind.Literal ? finalAtom.Literal.Value != '\n'
-                    : !finalAtom.CharacterClass.AsciiSet.Contains((byte)'\n'))))
+            (finalAtom.Kind switch
+            {
+                Pcre2CharacterTokenKind.Literal => !allowTrailingLf ||
+                    (finalAtom.Options & Pcre2CharacterOptions.Caseless) == 0 && finalAtom.Literal.Value != '\n',
+                Pcre2CharacterTokenKind.CharacterClass => !allowTrailingLf ||
+                    (finalAtom.Options & Pcre2CharacterOptions.Caseless) == 0 && !finalAtom.CharacterClass.AsciiSet.Contains((byte)'\n'),
+                Pcre2CharacterTokenKind.Any or Pcre2CharacterTokenKind.AnyNotNewline => !allowTrailingLf,
+                _ => false,
+            }))
             final = children.Length - 2;
 
         if (children.Length < 4) return (-1, final);

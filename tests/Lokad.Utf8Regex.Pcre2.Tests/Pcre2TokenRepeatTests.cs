@@ -100,6 +100,40 @@ public sealed class Pcre2TokenRepeatTests
         Assert.Equal("é", System.Text.Encoding.UTF8.GetString(codeUnits.Match("é"u8).GetValueBytes()));
     }
 
+    [Theory]
+    [InlineData(".+", Pcre2NewlineConvention.Crlf, Pcre2CompileOptions.None)]
+    [InlineData(@"\N+", Pcre2NewlineConvention.Any, Pcre2CompileOptions.DotAll)]
+    public void StrictEndDotRepeatKeepsByteCapturesWithLimitedDepth(
+        string run, Pcre2NewlineConvention newline, Pcre2CompileOptions options)
+    {
+        using var regex = new Utf8Pcre2Regex(@"\G(?<body>" + run + @"\z)", options: options,
+            compileSettings: new() { Newline = newline },
+            policy: new() { ResourcePolicy = new() { MaxDepth = 8, MaxWorkSteps = 1024 } });
+        var text = "é" + string.Concat(Enumerable.Repeat("😀é", 64));
+        var input = Encoding.UTF8.GetBytes(text);
+        var captures = new Utf8Pcre2CaptureRange[2];
+        using var source = new CancellationTokenSource();
+
+        var match = regex.Match(input, 2, captures, cancellationToken: source.Token);
+        Assert.True(match.Success);
+        Assert.Equal((2, input.Length), (match.StartOffsetInBytes, match.EndOffsetInBytes));
+        Assert.True(captures[1].Success);
+        Assert.Equal((2, input.Length), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(text + "\r\n"), 2, cancellationToken: source.Token));
+    }
+
+    [Fact]
+    public void DotAllCanGiveBackFinalLfAtALaxEndBeforeAConsumingSuffix()
+    {
+        using var regex = new Utf8Pcre2Regex(@"\A(?<body>.+\Z)\n", options: Pcre2CompileOptions.DotAll);
+        var captures = new Utf8Pcre2CaptureRange[2];
+        var match = regex.Match("é😀\n"u8, captures: captures);
+        Assert.True(match.Success);
+        Assert.Equal(7, match.EndOffsetInBytes);
+        Assert.True(captures[1].Success);
+        Assert.Equal((0, 6), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+    }
+
     [Fact]
     public void ExcludedUnicodeScalarPreservesWholeValues()
     {
