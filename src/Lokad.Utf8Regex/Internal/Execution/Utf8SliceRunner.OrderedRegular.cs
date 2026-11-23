@@ -457,7 +457,7 @@ internal static partial class Utf8SliceRunner
         var seek = TrySeekInitialRegularStart(program, input, ref fromByte, ref invocation);
         if (seek != Utf8ExecutionLimitKind.None || fromByte < 0) return new(0, seek);
         var length = program.Instructions.Length;
-        var epsilon = GetWideRegularEpsilonOrder(program);
+        var epsilon = program.NonBacktrackingEpsilonOrder.AsSpan();
         var maskLength = program.NonBacktrackingWideMasks.Length;
         var wordCount = maskLength / 2;
         var useStack = length <= 256;
@@ -522,28 +522,19 @@ internal static partial class Utf8SliceRunner
     internal static ulong[] PrepareWideRegularMasks(Utf8SliceProgram program, Utf8ConstructionBudget budget)
     {
         var instructions = program.Instructions.AsSpan();
-        var order = program.NonBacktrackingEpsilonOrder.AsSpan();
-        var leafCount = FindWideRegularLeafCount(instructions, order);
         var wordCount = (instructions.Length - 1) / 64 + 1;
         var masks = budget.AllocateArray<ulong>(2 * wordCount, false);
         // Each word records the consuming leaves and the unconditional accepts.
-        for (var index = 0; index < leafCount; index++)
+        for (var pc = 0; pc < instructions.Length; pc++)
         {
-            if ((index & 63) == 0) budget.ChargeWork((ulong)Math.Min(64, leafCount - index));
-            var pc = order[index];
+            if ((pc & 63) == 0) budget.ChargeWork((ulong)Math.Min(64, instructions.Length - pc));
             var kind = instructions[pc].Kind;
             if (kind == Utf8SliceInstructionKind.Accept)
                 masks[wordCount + (pc >> 6)] |= 1UL << (pc & 63);
-            else if (kind != Utf8SliceInstructionKind.Fail)
+            else if (kind != Utf8SliceInstructionKind.Fail && !Utf8NonBacktrackingSearchState.IsEpsilonInstruction(kind))
                 masks[pc >> 6] |= 1UL << (pc & 63);
         }
         return masks;
-    }
-
-    internal static ReadOnlySpan<int> GetWideRegularEpsilonOrder(Utf8SliceProgram program)
-    {
-        var order = program.NonBacktrackingEpsilonOrder.AsSpan();
-        return order[FindWideRegularLeafCount(program.Instructions, order)..];
     }
 
     // Capture tables keep every viability row. Count also keeps suffix counts
@@ -628,19 +619,6 @@ internal static partial class Utf8SliceRunner
             viable[pc >> 6] |= 1UL << (pc & 63);
         }
         return Utf8ExecutionLimitKind.None;
-    }
-
-    private static int FindWideRegularLeafCount(ReadOnlySpan<Utf8SliceInstruction> instructions, ReadOnlySpan<int> order)
-    {
-        var start = 0;
-        var end = order.Length;
-        while (start < end)
-        {
-            var middle = start + (end - start) / 2;
-            if (Utf8NonBacktrackingSearchState.IsEpsilonInstruction(instructions[order[middle]].Kind)) end = middle;
-            else start = middle + 1;
-        }
-        return start;
     }
 
     private static bool IsWideRegularViable(ReadOnlySpan<ulong> viable, int pc)

@@ -55,13 +55,23 @@ internal sealed class Utf8NonBacktrackingSearchState
         }
         try
         {
-            // Only the wide graph keeps the whole order. Compact graphs keep
-            // just the condition entries after building their packed closures.
-            var result = wide ? budget.AllocateArray<int>(instructions.Length, false) : [];
+            var orderLength = instructions.Length;
+            if (wide)
+            {
+                // Consuming and terminal leaves have no same-row dependencies.
+                // Only epsilon instructions need an order or a DFS visit.
+                orderLength = 0;
+                for (var pc = 0; pc < instructions.Length; pc++)
+                {
+                    if ((pc & 63) == 0) budget.ChargeWork((ulong)Math.Min(64, instructions.Length - pc));
+                    if (IsEpsilonInstruction(instructions[pc].Kind)) orderLength++;
+                    else colors[pc] = 2;
+                }
+            }
+            var result = wide ? budget.AllocateArray<int>(orderLength, false) : [];
             Span<int> order = wide ? result : stackalloc int[instructions.Length];
             if (!wide) budget.ChargeWork((ulong)instructions.Length);
             var written = 0;
-            var epsilonStart = instructions.Length;
             using var frames = new Utf8ConstructionBuffer<(int Pc, bool Complete)>(budget);
             for (var pc = 0; pc < instructions.Length; pc++)
             {
@@ -72,10 +82,7 @@ internal sealed class Utf8NonBacktrackingSearchState
                     if (frame.Complete)
                     {
                         colors[frame.Pc] = 2;
-                        if (wide && IsEpsilonInstruction(instructions[frame.Pc].Kind))
-                            order[--epsilonStart] = frame.Pc;
-                        else
-                            order[written++] = frame.Pc;
+                        order[written++] = frame.Pc;
                         continue;
                     }
                     if (colors[frame.Pc] == 2) continue;
@@ -137,13 +144,6 @@ internal sealed class Utf8NonBacktrackingSearchState
                         order[kept++] = pc;
                 result = kept == 0 ? [] : budget.AllocateArray<int>(kept, false);
                 order[..kept].CopyTo(result);
-            }
-            else
-            {
-                // Leaves have no same-row dependencies. Keep them together
-                // and preserve the dependency order among epsilon operations.
-                budget.ChargeWork((ulong)(order.Length - epsilonStart));
-                order[epsilonStart..].Reverse();
             }
             construction.Complete();
             return result;
@@ -210,7 +210,7 @@ internal sealed class Utf8NonBacktrackingSearchState
             var boundaries = new int[(int)count];
             var bits = new ulong[(int)cells];
             var result = new Utf8NonBacktrackingSearchState(boundaries, bits, stride, reservation);
-            var epsilon = singleWord ? default : Utf8SliceRunner.GetWideRegularEpsilonOrder(program);
+            var epsilon = program.NonBacktrackingEpsilonOrder.AsSpan();
             var scalar = default(Rune);
             var edge = input.Length;
             for (var boundary = scalars; boundary >= 0; boundary--)
