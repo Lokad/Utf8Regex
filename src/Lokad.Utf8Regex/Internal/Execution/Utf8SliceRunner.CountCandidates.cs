@@ -1178,19 +1178,31 @@ internal static partial class Utf8SliceRunner
         {
             // The two arms do not join within the common window. Each arm
             // can still supply one required byte at a fixed, different offset.
-            var first = FindRequiredAsciiWindow(program, start + 1, other);
+            var first = FindRequiredAsciiWindow(program, start + 1, other, out _);
             if (first.Min == 0 || first.Min != first.Max) return default;
-            var second = FindRequiredAsciiWindow(program, other, code.Length);
+            var second = FindRequiredAsciiWindow(program, other, code.Length, out _);
             if (second.Min == 0 || second.Min != second.Max) return default;
             return (Math.Min(first.Min, second.Min), Math.Max(first.Min, second.Min),
                 Utf8SearchAsciiSet.FromMasks(first.Bytes.Low | second.Bytes.Low, first.Bytes.High | second.Bytes.High));
         }
-        return FindRequiredAsciiWindow(program, start, Math.Min(start + 32, code.Length));
+        return FindRequiredAsciiWindow(program, start, Math.Min(start + 32, code.Length), out _);
+    }
+
+    internal static (int Instruction, byte Min, byte Max, byte Value) PrepareRequiredBranchLiteral(Utf8SliceProgram program)
+    {
+        var end = Math.Min(32, program.Instructions.Length);
+        Utf8ConstructionScope.ChargeWork((ulong)end);
+        var window = FindRequiredAsciiWindow(program, 0, end, out var instruction);
+        if (window.Min == 0 || program.Instructions[instruction] is not
+            { Kind: Utf8SliceInstructionKind.Literal, A: >= 0 and < 128 and var value, B: 0 })
+            return default;
+        return (instruction, (byte)window.Min, (byte)window.Max, (byte)value);
     }
 
     private static (int Min, int Max, Utf8SearchAsciiSet Bytes) FindRequiredAsciiWindow(
-        Utf8SliceProgram program, int start, int end)
+        Utf8SliceProgram program, int start, int end, out int instruction)
     {
+        instruction = -1;
         var code = program.Instructions.AsSpan();
         Span<(int Min, int Max)> widths = stackalloc (int, int)[64];
         widths = widths[..Math.Min(widths.Length, end - start)];
@@ -1208,7 +1220,10 @@ internal static partial class Utf8SliceRunner
             if (offset == furthest && min >= 2 && max - min <= 1 &&
                 program.TryGetUnfoldedAsciiSet(entry, out var bytes, out var asciiOnly) && asciiOnly &&
                 BitOperations.PopCount(bytes.Low) + BitOperations.PopCount(bytes.High) is > 0 and <= 4)
+            {
+                instruction = index;
                 return (min, max, bytes);
+            }
 
             var next = offset + 1;
             if (entry is { Kind: Utf8SliceInstructionKind.Jump } && entry.A > index)
@@ -1244,6 +1259,30 @@ internal static partial class Utf8SliceRunner
             furthest = Math.Max(furthest, next);
         }
         return default;
+    }
+
+    private static bool RejectRequiredBranchLiteralSuffix(Utf8SliceProgram program, ReadOnlySpan<byte> input,
+        int start, ref int rejectedSuffix, ref int proofLimit)
+    {
+        var (instruction, min, max, value) = program.RequiredBranchLiteral;
+        var length = input.Length - start;
+        var first = min < length && input[start + min] == value;
+        var second = max != min && max < length && input[start + max] == value;
+        proofLimit -= 2;
+        // When both positions can reach the literal, keep the ordered proof.
+        if (first == second) return !first;
+        var suffix = start + (first ? min : max) + 1;
+        if (suffix == rejectedSuffix) return true;
+
+        // Admit the suffix check from the same candidate step as the ordinary
+        // proof. Leave time for the whole proof if the suffix is inconclusive.
+        const int suffixLimit = 40;
+        var remaining = suffixLimit;
+        var end = ProbeBranchedAsciiPrefix(program, input, suffix, instruction + 1, ref remaining, proveMatch: true);
+        proofLimit -= suffixLimit - remaining;
+        if (end != BranchedPrefixRejected) return false;
+        rejectedSuffix = suffix;
+        return true;
     }
 
     private static bool HasAsciiByteInWindow(ReadOnlySpan<byte> input, int start,

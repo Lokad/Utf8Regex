@@ -799,6 +799,9 @@ internal static partial class Utf8SliceRunner
         }
         var classWindowEnd = -1;
         var followingWindowEnd = 0;
+        // Enable overlapping suffix checks only after a complete proof rejects.
+        const int noSuffixCheck = -2;
+        var rejectedSuffix = noSuffixCheck;
         for (var position = fromByte; position >= 0; position = AdvancePastScalar(input, position, program.RightToLeft))
         {
             // The required delimiter proves a window of possible starts.
@@ -916,8 +919,14 @@ internal static partial class Utf8SliceRunner
                         proofLimit -= followingWindow.Max + 3;
                     }
                 }
+                if (rejectedSuffix != noSuffixCheck &&
+                    RejectRequiredBranchLiteralSuffix(program, input, position, ref rejectedSuffix, ref proofLimit))
+                    continue;
                 if (!MayMatchBranchedAsciiPrefix(program, input, proofPosition, proofStart, out var acceptedEnd, proveMatch, proofLimit))
                 {
+                    if (rejectedSuffix == noSuffixCheck && existenceOnly && proveBranchedMatch &&
+                        program.RequiredBranchLiteral.Min != 0 && input.Length - position <= 64)
+                        rejectedSuffix = -1;
                     var remainingDigits = classWindowEnd - position;
                     // The proved leading boundary excludes the interior of a
                     // short ASCII digit run. Its delimiter is an excluded byte.

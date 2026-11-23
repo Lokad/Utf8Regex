@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Search;
 
@@ -363,7 +364,8 @@ internal sealed class Utf8SliceProgram
 {
 
     // Conservative carrier allowance; major children have separate admission.
-    internal static ulong ObjectBytes => 512 + (ulong)IntPtr.Size;
+    internal static ulong ObjectBytes =>
+        512 + (ulong)IntPtr.Size + (ulong)Unsafe.SizeOf<(int, byte, byte, byte)>();
 
     private Utf8SliceProgram(
         Utf8SliceInstruction[] instructions,
@@ -520,6 +522,9 @@ internal sealed class Utf8SliceProgram
         }
         var leadingIndex = LeadingByteCandidate.InstructionIndex;
         LeadingScalarIsDecimal = leadingIndex >= 0 && instructions[leadingIndex].IsDecimalDigitSet;
+        if (groupCount == 0 && LeadingByteCandidate is { First: >= 0 and < 128, FromBranch: true, InstructionIndex: 0 } &&
+            instructions[0].Kind == Utf8SliceInstructionKind.Fork)
+            RequiredBranchLiteral = Utf8SliceRunner.PrepareRequiredBranchLiteral(this);
         if (leadingIndex > 0 && repeatCount != 0)
         {
             Utf8ConstructionScope.CurrentBudget.ChargeWork(4);
@@ -743,6 +748,7 @@ internal sealed class Utf8SliceProgram
     internal bool HasSingleCapturePerGroup { get; }
     internal (int First, byte Last, int Second, byte SecondLast, int InstructionIndex, bool FromBranch, bool SparsePair) LeadingByteCandidate { get; }
         = (-1, 0, -1, 0, -1, false, false);
+    internal (int Instruction, byte Min, byte Max, byte Value) RequiredBranchLiteral { get; }
     internal bool LeadingByteAdmitsKelvin => LeadingByteCandidate is { First: 'K', InstructionIndex: 0, SparsePair: true } &&
         Instructions[0] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 };
     internal (int Literal, int LeadingClass, int LiteralIndex, long GapMaximum, bool Direct) LeadingClassDelimiter { get; }

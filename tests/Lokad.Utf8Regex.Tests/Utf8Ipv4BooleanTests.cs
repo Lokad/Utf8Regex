@@ -42,6 +42,26 @@ public sealed class Utf8Ipv4BooleanTests
     }
 
     [Theory]
+    [InlineData("2345.200.033.1AA")]
+    [InlineData("2345.200.033.199")]
+    [InlineData("256.200.033.199")]
+    [InlineData("12..23.34.45.56")]
+    [InlineData("😀2345.200.033.1AA 23.34.45.56")]
+    public void BranchedSearchReusesOnlyConclusiveSuffixRejections(string text)
+    {
+        using var source = new CancellationTokenSource();
+        using var ordinary = new Utf8Regex(Pattern, RegexOptions.Compiled);
+        using var limited = new Utf8Regex(Pattern, RegexOptions.Compiled, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 24, MaxDepth = 1, MaxWorkingBytes = 1 }
+        });
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var expected = Regex.IsMatch(text, Pattern);
+        Assert.Equal(expected, ordinary.IsMatch(bytes));
+        Assert.Equal(expected, limited.IsMatch(bytes, source.Token));
+    }
+
+    [Theory]
     [InlineData(0)] [InlineData(2033)] [InlineData(2034)] [InlineData(2035)] [InlineData(4095)]
     public void ScalarDiscoveryPreservesPrefixesAndWindowBoundaries(int boundary)
     {
