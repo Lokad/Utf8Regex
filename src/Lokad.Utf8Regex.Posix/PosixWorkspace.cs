@@ -555,9 +555,14 @@ internal partial struct PosixWorkspace
 
     private void SetState(scoped Span<int> state, int index, int value, ref Utf8SliceInvocation invocation)
     {
-        if (state[index] == value) return;
-        if (_frames.Count != 0) Check(_undo.TryPush(new(index, state[index]), ref invocation), ref invocation);
-        state[index] = value;
+        ref var entry = ref state[index];
+        if (_frames.Count != 0)
+        {
+            var previous = entry;
+            if (previous == value) return;
+            Check(_undo.TryPush(new(index, previous), ref invocation), ref invocation);
+        }
+        entry = value;
     }
 
     private bool Backtrack(scoped Span<int> state, ref int pc, ref int at, ref Utf8SliceInvocation invocation)
