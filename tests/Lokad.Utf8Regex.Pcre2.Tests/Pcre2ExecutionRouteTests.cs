@@ -642,6 +642,25 @@ substitutionOptions: Pcre2SubstitutionOptions.SubstituteOverflowLength));
     }
 
     [Fact]
+    public void BooleanSliceSearchSkipsRejectedDelimiterRunsUnderAFiniteWorkLimit()
+    {
+        using var regex = new Utf8Pcre2Regex(@"[a-z]+@(?<tail>[a-z]+)", policy: new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 256, MaxWorkingBytes = 4096 },
+        });
+        var prefix = "😀" + new string('a', 2048);
+        var rejected = prefix + "@!";
+        const int floor = 4;
+
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingRunThenLiteral, regex.DebugCompiledProgram.CandidateSearch.Kind);
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.IsMatch);
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(rejected), startOffsetInBytes: floor));
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(rejected + "𐐨abc@tail!"), startOffsetInBytes: floor));
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(prefix + "@tail!"), startOffsetInBytes: floor));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(rejected + "abc@!@tail!"), startOffsetInBytes: floor));
+    }
+
+    [Fact]
     public void LeadingRunRewindKeepsTheUtf8FloorAndUnicodeClassMembership()
     {
         using var unicode = new Utf8Pcre2Regex(@"[\p{L}]+@(?<tail>[a-z]+)", policy: new()

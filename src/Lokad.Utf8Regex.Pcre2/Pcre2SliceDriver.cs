@@ -244,7 +244,8 @@ internal static class Pcre2SliceDriver
         int start,
         int minimumByteLength,
         scoped ref Utf8SliceInvocation invocation,
-        byte? leadingAsciiByte = null)
+        byte? leadingAsciiByte = null,
+        bool seekDelimiterAfterMiss = false)
     {
         CheckInvocation(ref invocation);
         // Bound candidate starts; the matcher still sees the full subject.
@@ -257,7 +258,11 @@ internal static class Pcre2SliceDriver
         invocation.AnchorOriginByte = start;
         if (program.CanMatchEmpty || program.HasContiguousAnchor) leadingAsciiByte = null;
         int end;
-        try { end = FindMatchingEnd(program, input, ref position, lastStart, leadingAsciiByte, slots, ref workspace, ref invocation); }
+        try
+        {
+            end = FindMatchingEnd(program, input, ref position, lastStart, leadingAsciiByte, slots,
+                ref workspace, ref invocation, seekDelimiterAfterMiss);
+        }
         catch (Utf8ExecutionDeadlineExpiredException)
         {
             throw new Pcre2MatchException("The PCRE2 match deadline expired.", Pcre2ErrorKind.Timeout);
@@ -273,7 +278,7 @@ internal static class Pcre2SliceDriver
 
     internal static int FindMatchingEnd(Utf8SliceProgram program, ReadOnlySpan<byte> input, ref int position,
         int lastStart, byte? leadingAsciiByte, Utf8SliceSlots slots, scoped ref Utf8SliceRunner.AttemptWorkspace workspace,
-        scoped ref Utf8SliceInvocation invocation)
+        scoped ref Utf8SliceInvocation invocation, bool seekDelimiterAfterMiss = false)
     {
         while (position <= lastStart)
         {
@@ -285,7 +290,54 @@ internal static class Pcre2SliceDriver
                 false, false, IsScalarAligned(input, position), ref workspace, ref invocation);
             ThrowIfSliceBreached(outcome.Breach);
             if (outcome.IsMatch) return outcome.EndIndex;
+
+            if (seekDelimiterAfterMiss && lastStart - position >= 64)
+            {
+                seekDelimiterAfterMiss = false;
+                if (GetDisjointClassDelimiter(program) is >= 0 and var delimiter)
+                {
+                    position = Utf8SliceRunner.AdvancePastScalar(input, position, reverse: false);
+                    return FindInDelimiterWindows(program, input, (byte)delimiter, ref position,
+                        lastStart, ref workspace, ref invocation);
+                }
+            }
             position++;
+        }
+        return -1;
+    }
+
+    private static int GetDisjointClassDelimiter(Utf8SliceProgram program)
+    {
+        // The delimiter follows the unbounded leading class directly.
+        // A later start in the same run reaches the same suffix with fewer
+        // scalars, so it cannot survive a failed verification of that run.
+        if (program.ReadsCaptures || program.HasContiguousAnchor || program.Assertions.Length != 0 ||
+            program.LeadingClassDelimiter is not { Direct: true, LeadingClass: 1, LiteralIndex: 4, Literal: >= 0 } window ||
+            program.Instructions[0].RepeatMaximum != long.MaxValue ||
+            !program.TryGetUnfoldedAsciiSet(program.Instructions[1], out var leading, out var asciiOnly) ||
+            !asciiOnly || leading.Contains((byte)window.Literal))
+            return -1;
+        return window.Literal;
+    }
+
+    private static int FindInDelimiterWindows(Utf8SliceProgram program, ReadOnlySpan<byte> input, byte delimiter,
+        ref int position, int lastStart, scoped ref Utf8SliceRunner.AttemptWorkspace workspace,
+        scoped ref Utf8SliceInvocation invocation)
+    {
+        while (position >= 0 && position <= lastStart)
+        {
+            var breach = Utf8SliceRunner.TrySeekLeadingClassLiteralWindow(program, input, 1, delimiter,
+                search: null, gapMaximum: 0, direct: true, ref position, ref invocation, out var windowEnd);
+            ThrowIfSliceBreached(breach);
+            if (position < 0 || position > lastStart) break;
+            if (position < windowEnd)
+            {
+                var result = Utf8SliceRunner.TryMatchAt(program, input, position, [], [],
+                    false, false, true, ref workspace, ref invocation);
+                ThrowIfSliceBreached(result.Breach);
+                if (result.IsMatch) return result.EndIndex;
+            }
+            position = windowEnd + 1;
         }
         return -1;
     }

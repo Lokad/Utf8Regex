@@ -1535,7 +1535,8 @@ internal static partial class Pcre2Runner
             var leadingAsciiByte = (compiledProgram.Request.Options & Pcre2CompileOptions.Anchored) != 0
                 ? null : sliceProgram.Fallback.LeadingAsciiByte;
             result = Pcre2SliceDriver.FindFirst(sliceProgram.SliceProgram, input.Bytes, start.Value,
-                sliceProgram.Fallback.MinimumByteLength, ref invocation, leadingAsciiByte).Success;
+                sliceProgram.Fallback.MinimumByteLength, ref invocation, leadingAsciiByte,
+                seekDelimiterAfterMiss: compiledProgram.CandidateSearch.Kind == Pcre2CandidateSearchKind.LeadingRunThenLiteral).Success;
             return true;
         }
 
