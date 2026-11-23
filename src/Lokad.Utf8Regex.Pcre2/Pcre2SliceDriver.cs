@@ -173,14 +173,16 @@ internal static class Pcre2SliceDriver
 
     // These admitted searches prove a necessary byte/literal absent, never a
     // match present. Share the proof and original authority across scalar public
-    // operations before renting VM scratch; candidates still need verification.
+    // operations before renting VM scratch. A leading byte hit can also
+    // supply the first possible start for capture verification.
     internal static bool RejectMissingCandidate(
         Utf8SliceProgram program,
         in Pcre2CandidateSearchProgram candidates,
         ReadOnlySpan<byte> input,
         int start,
-        scoped ref Utf8SliceInvocation invocation)
+        scoped ref Utf8SliceInvocation invocation, out int firstAsciiStart)
     {
+        firstAsciiStart = -1;
         if (program.RejectsByFinalAscii(input))
         {
             ThrowIfSliceBreached(invocation.TryChargeInputStep());
@@ -191,8 +193,10 @@ internal static class Pcre2SliceDriver
                 Pcre2CandidateSearchKind.LeadingRunThenLiteral)) return false;
 
         var breach = candidates.Searcher.TryFindMatch(input, start, input.Length,
-            false, ref invocation, out _, out var found);
+            false, ref invocation, out var hit, out var found);
         ThrowIfSliceBreached(breach);
+        if (found && candidates.Kind == Pcre2CandidateSearchKind.LeadingAsciiSet)
+            firstAsciiStart = hit.Index;
         return !found;
     }
 
@@ -458,13 +462,28 @@ internal static class Pcre2SliceDriver
         {
             var bytes = input.Bytes;
             invocation.AnchorOriginByte = start.Value;
-            if (RejectMissingCandidate(program, candidateSearch, bytes, start.Value, ref invocation)) return true;
+            if (RejectMissingCandidate(program, candidateSearch, bytes, start.Value, ref invocation, out var firstAsciiStart))
+                return true;
             slots = RentProgramSlots(program, ref invocation);
             var workspace = new Utf8SliceRunner.AttemptWorkspace();
-            Utf8SliceSearchOutcome outcome;
+            Utf8SliceSearchOutcome outcome = default;
             try
             {
-                outcome = FindCaptureRanges(slice, bytes, start.Value, slots, ref workspace, ref invocation);
+                var position = firstAsciiStart >= 0 ? firstAsciiStart : start.Value;
+                if (firstAsciiStart >= 0 && bytes.Length - position <= 64)
+                {
+                    // The screen skipped only impossible starts. Verify
+                    // its ASCII hit on the original subject and origin.
+                    var attempt = Utf8SliceRunner.TryMatchAt(program, bytes, position, slots.Starts, slots.Ends,
+                        false, false, true, ref workspace, ref invocation);
+                    ThrowIfSliceBreached(attempt.Breach);
+                    if (attempt.IsMatch)
+                        outcome = new(true, position, attempt.EndIndex, Utf8ExecutionLimitKind.None);
+                    else
+                        position++;
+                }
+                if (!outcome.Found)
+                    outcome = FindCaptureRanges(slice, bytes, position, slots, ref workspace, ref invocation);
             }
             finally { workspace.Release(ref invocation); }
             ThrowIfSliceBreached(outcome.Breach);

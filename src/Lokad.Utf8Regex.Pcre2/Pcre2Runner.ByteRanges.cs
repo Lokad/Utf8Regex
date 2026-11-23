@@ -70,7 +70,7 @@ internal static partial class Pcre2Runner
         ref var invocation = ref budget.WorkingInvocation;
         invocation.AnchorOriginByte = firstMatchingPosition.Value;
         if (!retryNonEmpty && Pcre2SliceDriver.RejectMissingCandidate(program, compiled.CandidateSearch,
-                input.Bytes, start.Value, ref invocation)) return default;
+                input.Bytes, start.Value, ref invocation, out _)) return default;
         // The exclusive memory cursor owns this admitted storage across moves,
         // just as Core's memory cursor does. Attempts reset semantic VM state;
         // capacity and its loan survive host waits until EOF/failure/Dispose.

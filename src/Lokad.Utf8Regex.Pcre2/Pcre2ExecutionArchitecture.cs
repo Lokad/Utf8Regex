@@ -1535,7 +1535,7 @@ internal static partial class Pcre2Runner
             }
 
             if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,
-                compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation))
+                compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation, out _))
             {
                 result = false;
                 return true;
@@ -1798,7 +1798,7 @@ internal static class Pcre2GlobalOperationDriver
         if (program is Pcre2SliceDirectProgram sliceProgram && matchOptions == Pcre2MatchOptions.None)
         {
             if (Pcre2SliceDriver.RejectMissingCandidate(sliceProgram.SliceProgram,
-                compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation))
+                compiledProgram.CandidateSearch, input.Bytes, start.Value, ref invocation, out _))
             {
                 result = 0;
                 return true;

@@ -110,6 +110,7 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
         using var regex = Create("([a-z]+)@([a-z]+)(![0-9]+)?", 256);
         Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
         Assert.Equal(Pcre2PartialProbeProgramKind.None, regex.DebugCompiledProgram.PartialProbe.Kind);
+        Assert.Equal(Pcre2CandidateSearchKind.LeadingAsciiSet, regex.DebugCompiledProgram.CandidateSearch.Kind);
         var input = Encoding.UTF8.GetBytes(new string('_', 2048) + "😀ab@tail xy@next!42");
 
         var probe = regex.Probe(input, mode);
@@ -121,6 +122,11 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
         Assert.False(match.GetGroup(3).Success);
         if (mode == Pcre2PartialMode.None)
             Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe(input.AsSpan(0, 2052), mode).Kind);
+
+        var afterFalseStart = regex.Probe("😀aa@!ab@tail"u8, mode).GetMatch();
+        Assert.Equal((8, 15), (afterFalseStart.Value.StartOffsetInBytes, afterFalseStart.Value.EndOffsetInBytes));
+        Assert.True(afterFalseStart.GetGroup(1).GetValueBytes().SequenceEqual("ab"u8));
+        Assert.False(afterFalseStart.GetGroup(3).Success);
     }
 
     private static Utf8Pcre2Regex Create(string pattern, uint work, ulong heap = 1 << 20, ulong result = 1 << 20)
