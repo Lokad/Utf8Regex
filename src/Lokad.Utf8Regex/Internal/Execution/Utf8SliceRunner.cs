@@ -462,7 +462,10 @@ internal static partial class Utf8SliceRunner
             return TryFindFirst(program, input, fromByte, captureStarts, captureEnds,
                 collectHistory, ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral);
         }
-        finally { workspace.Release(ref invocation); }
+        finally
+        {
+            if (workspace.NeedsRelease) workspace.Release(ref invocation);
+        }
     }
 
     // Repeated searches for one program/invocation can keep their admitted
@@ -2576,6 +2579,9 @@ internal static partial class Utf8SliceRunner
         internal Utf8InvocationStateBuffer<AssertionContinuation> AssertionContinuations;
         internal bool Initialized;
         private ulong _reservation;
+
+        // A failed balancing setup can still own its reservation.
+        internal readonly bool NeedsRelease => Initialized || _reservation != 0;
 
         internal Utf8ExecutionLimitKind Initialize(Utf8SliceProgram program, ref Utf8SliceInvocation invocation)
         {

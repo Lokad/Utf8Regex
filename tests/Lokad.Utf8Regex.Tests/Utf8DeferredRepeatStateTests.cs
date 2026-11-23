@@ -52,6 +52,21 @@ public sealed class Utf8DeferredRepeatStateTests
     }
 
     [Fact]
+    public void WorkDenialDuringBalanceSetupRefundsThePartialWorkspace()
+    {
+        var program = Program(@"^(?<x>a)(?<-x>b)");
+        var invocation = new Utf8SliceInvocation(new(1, 128, 1024), Regex.InfiniteMatchTimeout, default);
+        Assert.True(invocation.Ledger.TryReserve(13));
+
+        var denied = Utf8SliceRunner.TryFindFirst(program, "ab"u8, 0, [], [], false, ref invocation);
+
+        Assert.Equal(Utf8ExecutionLimitKind.WorkSteps, denied.Breach);
+        Assert.True(invocation.Budget.PeakWorkingBytes > 13);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+        invocation.Ledger.Release(13);
+    }
+
+    [Fact]
     public void AssertionRootsRetainTheirTablesAcrossChildResumeAndHistoryPublication()
     {
         var program = Program(@"(?<x>a{1,3}?)(?=b{1,2}c)b+c");
