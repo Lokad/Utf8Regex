@@ -100,6 +100,31 @@ public sealed class Pcre2BacktrackingControlCompilerTests
         Assert.False(subroutine3Captures[1].Success);
     }
 
+    [Theory]
+    [InlineData(63, false, 10, true)]
+    [InlineData(64, false, 10, false)]
+    [InlineData(64, false, 11, true)]
+    [InlineData(128, true, 10, true)]
+    public void AcceptMetersWideScansAndSkipsUnobservedSlots(int unused, bool singleReader, int work, bool allowed)
+    {
+        var suffix = singleReader ? @"\g{1})\z" : @"\g{1}\g{2})\z";
+        var pattern = @"\A(?:(é(*ACCEPT)z)|" + string.Concat(Enumerable.Repeat("(x)", unused)) + suffix;
+        using var regex = new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy
+        {
+            ResourcePolicy = new() { MaxWorkSteps = (ulong)work, MaxWorkingBytes = 1 << 20 }
+        });
+        using var live = new CancellationTokenSource();
+        if (allowed)
+        {
+            Assert.True(regex.IsMatch("éz"u8, cancellationToken: live.Token));
+        }
+        else
+        {
+            var failure = Assert.Throws<Pcre2MatchException>(() => regex.IsMatch("éz"u8, cancellationToken: live.Token));
+            Assert.Equal(Pcre2ErrorKind.MatchLimit, failure.ErrorKind);
+        }
+    }
+
     [Fact]
     public void FailForcesImmediateBacktracking()
     {

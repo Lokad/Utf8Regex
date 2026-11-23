@@ -192,6 +192,9 @@ Work and storage requirements vary by version and pattern. Borrowed input,
 caller destinations, host retention and metadata queries fall outside
 numeric execution limits. [Shared resource rules](SPEC.md#cancellation-deadlines-and-resource-limits)
 
+`(*ACCEPT)` closes open captures at the current call depth. Wide scans of
+capture slots use bounded work and interruption checkpoints.
+
 ### Program and working allowances
 
 `ProgramMemoryAllowance` admits the program and reserves capacity for the

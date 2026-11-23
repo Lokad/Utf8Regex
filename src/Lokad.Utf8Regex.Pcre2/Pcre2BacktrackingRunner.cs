@@ -1380,6 +1380,7 @@ internal static class Pcre2BacktrackingRunner
                         CloseOpenCaptures(
                             inputIndex,
                             subroutineCalls.Count,
+                            onlyCaptureSlot,
                             captureState,
                             ref captureMutations,
                             ref budget);
@@ -1838,24 +1839,32 @@ internal static class Pcre2BacktrackingRunner
     private static void CloseOpenCaptures(
         int inputIndex,
         int callDepth,
+        int onlyCaptureSlot,
         Span<Pcre2CaptureState> captureState,
         ref Pcre2InvocationStateStack<Pcre2CaptureMutation> captureMutations,
         ref Pcre2ResourceBudget budget)
     {
-        for (var slot = 1; slot < captureState.Length; slot++)
+        // The same proof that skips other capture writes also excludes
+        // their open states. The ACCEPT instruction admits the first block.
+        var first = onlyCaptureSlot == 0 ? 1 : onlyCaptureSlot;
+        var end = onlyCaptureSlot == 0 ? captureState.Length : onlyCaptureSlot + 1;
+        for (var firstInBlock = first; firstInBlock < end;)
         {
-            ref var current = ref captureState[slot];
-            if (current.OpenOwner != callDepth)
+            if (firstInBlock != first) budget.ChargeWorkspaceStep();
+            var blockEnd = firstInBlock + Math.Min(64, end - firstInBlock);
+            for (var slot = firstInBlock; slot < blockEnd; slot++)
             {
-                continue;
-            }
+                ref var current = ref captureState[slot];
+                if (current.OpenOwner != callDepth) continue;
 
-            SetCapture(
-                slot,
-                ref current,
-                new(current.OpenStart, inputIndex, -1, callDepth, -1),
-                ref captureMutations,
-                ref budget, recordRollback: true);
+                SetCapture(
+                    slot,
+                    ref current,
+                    new(current.OpenStart, inputIndex, -1, callDepth, -1),
+                    ref captureMutations,
+                    ref budget, recordRollback: true);
+            }
+            firstInBlock = blockEnd;
         }
     }
 
