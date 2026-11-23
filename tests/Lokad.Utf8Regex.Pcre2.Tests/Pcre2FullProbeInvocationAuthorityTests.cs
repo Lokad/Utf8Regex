@@ -102,6 +102,27 @@ public sealed class Pcre2FullProbeInvocationAuthorityTests
             }
     }
 
+    [Theory]
+    [InlineData(Pcre2PartialMode.None)]
+    [InlineData(Pcre2PartialMode.Soft)]
+    public void GenericFullProbeSeeksLateCapturesWithinTheOriginalBudget(Pcre2PartialMode mode)
+    {
+        using var regex = Create("([a-z]+)@([a-z]+)(![0-9]+)?", 256);
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Match);
+        Assert.Equal(Pcre2PartialProbeProgramKind.None, regex.DebugCompiledProgram.PartialProbe.Kind);
+        var input = Encoding.UTF8.GetBytes(new string('_', 2048) + "😀ab@tail xy@next!42");
+
+        var probe = regex.Probe(input, mode);
+        Assert.Equal(Utf8Pcre2ProbeKind.FullMatch, probe.Kind);
+        var match = probe.GetMatch();
+        Assert.Equal((2052, 2059), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+        Assert.True(match.GetGroup(1).GetValueBytes().SequenceEqual("ab"u8));
+        Assert.True(match.GetGroup(2).GetValueBytes().SequenceEqual("tail"u8));
+        Assert.False(match.GetGroup(3).Success);
+        if (mode == Pcre2PartialMode.None)
+            Assert.Equal(Utf8Pcre2ProbeKind.NoMatch, regex.Probe(input.AsSpan(0, 2052), mode).Kind);
+    }
+
     private static Utf8Pcre2Regex Create(string pattern, uint work, ulong heap = 1 << 20, ulong result = 1 << 20)
         => new(pattern, options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {

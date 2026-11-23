@@ -1657,7 +1657,8 @@ internal static partial class Pcre2Runner
             }
 
             return Pcre2SliceDriver.TryMatchDetailed(
-                sliceProgram.SliceProgram,
+                sliceProgram,
+                compiledProgram.CandidateSearch,
                 ref input,
                 start,
                 ref invocation,

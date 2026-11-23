@@ -425,49 +425,52 @@ internal static class Pcre2SliceDriver
         finally { Utf8SliceRunner.ReleaseSlots(slots, ref invocation); }
     }
 
+    internal static Utf8SliceSearchOutcome FindCaptureRanges(Pcre2SliceDirectProgram slice, ReadOnlySpan<byte> bytes,
+        int start, Utf8SliceSlots slots, scoped ref Utf8SliceRunner.AttemptWorkspace workspace,
+        scoped ref Utf8SliceInvocation invocation)
+    {
+        var lastStart = bytes.Length - slice.Fallback.MinimumByteLength;
+        if (slice.DisjointClassDelimiter >= 0 && lastStart - start >= 64)
+        {
+            var begin = start;
+            var end = FindMatchingEnd(slice.SliceProgram, bytes, ref begin, lastStart, leadingAsciiByte: null,
+                slots, ref workspace, ref invocation, slice.DisjointClassDelimiter);
+            return end < 0 ? new(false, -1, -1, Utf8ExecutionLimitKind.None) : new(true, begin, end, Utf8ExecutionLimitKind.None);
+        }
+        return Utf8SliceRunner.TryFindFirst(slice.SliceProgram, bytes, start,
+            slots.Starts, slots.Ends, false, ref workspace, ref invocation);
+    }
+
     internal static bool TryMatchDetailed(
-        Utf8SliceProgram program,
+        Pcre2SliceDirectProgram slice, in Pcre2CandidateSearchProgram candidateSearch,
         ref Utf8ValidatedInput input,
         Utf8BytePosition start,
         scoped ref Utf8SliceInvocation invocation,
         out Pcre2GroupData[] groups,
         out string? mark)
     {
-        var slots = Pcre2SliceDriver.RentProgramSlots(program, ref invocation);
+        var program = slice.SliceProgram;
+        var slots = new Utf8SliceSlots([], []);
         Pcre2GroupData[]? projected = null;
+        groups = [];
+        mark = null;
         try
         {
             var bytes = input.Bytes;
             invocation.AnchorOriginByte = start.Value;
-            for (var position = start.Value; position <= bytes.Length; position++)
+            if (RejectMissingCandidate(program, candidateSearch, bytes, start.Value, ref invocation)) return true;
+            slots = RentProgramSlots(program, ref invocation);
+            var workspace = new Utf8SliceRunner.AttemptWorkspace();
+            Utf8SliceSearchOutcome outcome;
+            try
             {
-                var outcome = Utf8SliceRunner.TryMatchAt(
-                    program,
-                    bytes,
-                    position,
-                    slots.Starts,
-                    slots.Ends,
-                    Pcre2SliceDriver.IsScalarAligned(bytes, position),
-                    ref invocation);
-                ThrowIfSliceBreached(outcome.Breach);
-                if (!outcome.IsMatch)
-                {
-                    continue;
-                }
-
-                groups = projected = ProjectSliceGroups(
-                    program,
-                    ref input,
-                    position,
-                    outcome.EndIndex,
-                    slots.Starts,
-                    slots.Ends, ref invocation);
-                mark = null;
-                return true;
+                outcome = FindCaptureRanges(slice, bytes, start.Value, slots, ref workspace, ref invocation);
             }
-
-            groups = [];
-            mark = null;
+            finally { workspace.Release(ref invocation); }
+            ThrowIfSliceBreached(outcome.Breach);
+            if (outcome.Found)
+                groups = projected = ProjectSliceGroups(program, ref input, outcome.StartByte, outcome.EndByte,
+                    slots.Starts, slots.Ends, ref invocation);
             return true;
         }
         catch (Utf8ExecutionDeadlineExpiredException)
