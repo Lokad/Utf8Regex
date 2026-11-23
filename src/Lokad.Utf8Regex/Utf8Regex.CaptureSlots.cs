@@ -37,8 +37,8 @@ public sealed partial class Utf8Regex
         var output = captures[..Math.Min(captures.Length, _program.CaptureCatalog.GroupNumbers.Length)];
         // This synchronous call passes the invocation by reference through
         // search, capture replay and publication.
-        var invocation = Utf8SliceInvocation.CreateExclusive(
-            InvocationLimits, MatchTimeout, cancellationToken, workingMemoryAllowance);
+        Utf8SliceInvocation.InitializeExclusive(out var invocation, InvocationLimits, MatchTimeout,
+            cancellationToken, workingMemoryAllowance);
         var slots = new Utf8SliceSlots([], []);
         try
         {
