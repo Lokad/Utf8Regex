@@ -476,24 +476,17 @@ internal partial struct PosixWorkspace
     private static int SkipRejectedAscii(ReadOnlySpan<byte> input, int literal, ReadOnlySpan<byte> mask,
         ref Utf8SliceInvocation invocation)
     {
-        Span<byte> rejected = stackalloc byte[16];
-        if (mask.IsEmpty)
-        {
-            rejected.Fill(byte.MaxValue);
-            rejected[literal >> 3] ^= (byte)(1 << (literal & 7));
-        }
-        else
-        {
-            for (var index = 0; index < rejected.Length; index++)
-                rejected[index] = (byte)(mask[index] ^ byte.MaxValue);
-        }
+        if (!mask.IsEmpty)
+            return ScanAsciiRun(input, -1, mask, ref invocation, negated: true);
 
-        // The ASCII mask scanner also stops at a wide scalar's leading byte.
+        Span<byte> rejected = stackalloc byte[16];
+        rejected.Fill(byte.MaxValue);
+        rejected[literal >> 3] ^= (byte)(1 << (literal & 7));
         return ScanAsciiRun(input, -1, rejected, ref invocation);
     }
 
     private static int ScanAsciiRun(ReadOnlySpan<byte> input, int literal, ReadOnlySpan<byte> mask,
-        ref Utf8SliceInvocation invocation)
+        ref Utf8SliceInvocation invocation, bool negated = false)
     {
         var consumed = 0;
         while (consumed < input.Length)
@@ -508,7 +501,7 @@ internal partial struct PosixWorkspace
             }
             else if (block.Length >= 16 && PreparedByteSetState.CanScanAsciiMask)
             {
-                var accepted = PreparedByteSetState.ScanAsciiMaskPrefix(block, mask);
+                var accepted = PreparedByteSetState.ScanAsciiMaskPrefix(block, mask, negated);
                 if (accepted < block.Length) return consumed + accepted;
             }
             else
@@ -516,7 +509,8 @@ internal partial struct PosixWorkspace
                 for (var index = 0; index < block.Length; index++)
                 {
                     var value = block[index];
-                    if (value >= 128 || (mask[value >> 3] & (1 << (value & 7))) == 0) return consumed + index;
+                    if (value >= 128 || ((mask[value >> 3] & (1 << (value & 7))) != 0) == negated)
+                        return consumed + index;
                 }
             }
             consumed += block.Length;

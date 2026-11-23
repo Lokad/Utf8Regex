@@ -6,6 +6,7 @@ namespace Lokad.Utf8Regex.Posix.Tests;
 public sealed class PosixGreedyAsciiRunTests
 {
     [Theory]
+    [InlineData("([[:alpha:]]+)([0-9]+)", 69)]
     [InlineData("([[:alpha:]]+)([0-9]+)", 512)]
     [InlineData("(sku)([0-9]+)", 67)]
     [InlineData("(sku)([0-9]+)", 68)]
