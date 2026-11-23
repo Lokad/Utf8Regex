@@ -9,6 +9,42 @@ public sealed class Utf8NonBacktrackingPreparationDeadlineTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public void ResumedWideSeekObservesInterruptionAndRefundsWorkspace(bool expire)
+    {
+        using var regex = new Utf8Regex("(?<long>a{72})z|(?<short>xy)", RegexOptions.NonBacktracking);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        var input = Encoding.UTF8.GetBytes("a!" + new string('!', 256 * 1024) + "xy");
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var source = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromMilliseconds(50), source.Token);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        invocation.CheckpointHook = step =>
+        {
+            if (step != 64) return;
+            if (expire) ticks = 100;
+            else source.Cancel();
+        };
+
+        var starts = new int[3];
+        var ends = new int[3];
+        if (expire)
+            Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+                Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends, false, ref invocation));
+        else
+            Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
+                Utf8SliceRunner.TryFindFirst(program, input, 0, starts, ends, false, ref invocation)).CancellationToken);
+
+        Assert.Equal(64UL, invocation.Budget.Steps);
+        Assert.All(starts, value => Assert.Equal(-1, value));
+        Assert.All(ends, value => Assert.Equal(-1, value));
+        Assert.True(invocation.Budget.PeakWorkingBytes > 13);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void WideClosureObservesInterruptionWithinItsPollingCadence(bool expire)
     {
         var pattern = string.Concat(Enumerable.Repeat(@"\A", 4096)) + "a";

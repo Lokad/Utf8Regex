@@ -55,6 +55,39 @@ public sealed class Utf8NonBacktrackingBatchTests
     }
 
     [Fact]
+    public void WideSearchResumesPastFailedStartsUnderAFiniteWorkLimit()
+    {
+        const int gap = 16_384;
+        using var regex = new Utf8Regex("(?<long>a{72})z|(?<short>xy)", RegexOptions.NonBacktracking, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 512 },
+        });
+        var prefix = "éa!" + new string('!', gap) + "😀";
+        var input = Encoding.UTF8.GetBytes(prefix + "xy");
+        var range = new Utf8CaptureRange(Encoding.UTF8.GetByteCount(prefix), input.Length);
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[3];
+
+        Assert.True(regex.IsMatch(input));
+        Assert.False(regex.IsMatch(input.AsSpan(0, range.StartOffsetInBytes)));
+        Assert.Equal(range, regex.Match(input, 2, captures));
+        Assert.False(captures[1].Success);
+        Assert.Equal(range, captures[2]);
+    }
+
+    [Fact]
+    public void ResumedWideSearchRevisitsAssertionsAtTheNewEdge()
+    {
+        using var regex = new Utf8Regex(@"(?:\b(?<part>X))+\b!|(?<long>Y{72})z", RegexOptions.NonBacktracking);
+        var prefix = "X" + new string('q', 16_384) + "!";
+        var input = Encoding.UTF8.GetBytes(prefix + "X!");
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[3];
+
+        Assert.Equal(new Utf8CaptureRange(prefix.Length, input.Length), regex.Match(input, captures: captures));
+        Assert.Equal(new Utf8CaptureRange(prefix.Length, prefix.Length + 1), captures[1]);
+        Assert.False(captures[2].Success);
+    }
+
+    [Fact]
     public void TrimmedWideRowsKeepWordContextAndOriginalOffsets()
     {
         const RegexOptions options = RegexOptions.NonBacktracking | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;

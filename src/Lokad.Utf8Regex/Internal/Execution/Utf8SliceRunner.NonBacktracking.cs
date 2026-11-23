@@ -154,7 +154,9 @@ internal static partial class Utf8SliceRunner
         Array.Fill(captureEnds, -1);
         try
         {
-            if (!anchored && program.Instructions.Length > 64)
+            var canSeek = !anchored && program.Instructions.Length > 64 &&
+                program.NonBacktrackingOrderedStartBytes.Count != 0;
+            if (canSeek)
             {
                 var seek = TrySeekInitialRegularStart(program, input, ref fromByte, ref invocation);
                 if (seek != Utf8ExecutionLimitKind.None || fromByte < 0)
@@ -221,6 +223,20 @@ internal static partial class Utf8SliceRunner
                 (workspace.Current, workspace.Next) = (workspace.Next, workspace.Current);
                 workspace.Next.Count = 0;
                 position += width;
+                if (canSeek && workspace.Current.Count == 0 && position < input.Length)
+                {
+                    // No older thread or saved match can extend across the gap.
+                    var previous = position;
+                    breach = TrySeekInitialRegularStart(program, input, ref position, ref invocation);
+                    if (breach != Utf8ExecutionLimitKind.None || position < 0)
+                        return new(false, -1, -1, breach);
+                    if (position != previous)
+                    {
+                        // Failed assertions may have marked states at the skipped edge.
+                        breach = workspace.ClearVisited(ref invocation);
+                        if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
+                    }
+                }
             }
         }
         finally
