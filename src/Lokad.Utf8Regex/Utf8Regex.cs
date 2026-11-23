@@ -372,9 +372,7 @@ public sealed partial class Utf8Regex : IDisposable
         }
         if (RejectMissingRequiredInput(input, program, ref invocation, out var screenedLiteral)) return false;
         ref readonly var search = ref _preparedRegex.SearchPlan;
-        ref readonly var prefilter = ref search.RequiredPrefilterSearcher;
-        if (screenedLiteral >= 0 && screenedLiteral >= startByte &&
-            Utf8SliceRunner.HasRequiredLiteralWitness(program, prefilter.LiteralSearch.Needle))
+        if (screenedLiteral >= 0 && screenedLiteral >= startByte && _preparedRegex.RequiredLiteralProvesMatch)
         {
             Utf8SliceBufferWork.Checkpoint(ref invocation);
             return true;

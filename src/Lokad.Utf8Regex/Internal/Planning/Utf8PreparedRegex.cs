@@ -1,5 +1,6 @@
 using Lokad.Utf8Regex.Internal.Execution;
 using Lokad.Utf8Regex.Internal.FrontEnd;
+using Lokad.Utf8Regex.Internal.Search;
 
 namespace Lokad.Utf8Regex.Internal.Planning;
 
@@ -18,7 +19,8 @@ internal sealed class Utf8PreparedRegex
     private Utf8PreparedRegex(
         Utf8AnchoredLiteralPlan anchoredLiteral, Utf8OperationMatchCursorPlans operationMatchCursorPlans,
         Utf8PreparedSemanticRegex semanticRegex, Utf8RegexFeatures features, string? executionPattern,
-        NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, byte[]? literalUtf8, string? fallbackReason)
+        NativeExecutionKind executionKind, Utf8SliceProgram? scalarProgram, byte[]? literalUtf8, string? fallbackReason,
+        bool requiredLiteralProvesMatch)
     {
         _anchoredLiteral = anchoredLiteral;
         _operationMatchCursorPlans = operationMatchCursorPlans;
@@ -29,6 +31,7 @@ internal sealed class Utf8PreparedRegex
         ScalarProgram = scalarProgram;
         LiteralUtf8 = literalUtf8;
         FallbackReason = fallbackReason;
+        RequiredLiteralProvesMatch = requiredLiteralProvesMatch;
     }
 
     internal static Utf8PreparedRegex Create(
@@ -39,10 +42,16 @@ internal sealed class Utf8PreparedRegex
         using var scope = Utf8ConstructionScope.Enter();
         scope.Budget.CheckBytes(ObjectBytes);
         scope.Budget.ChargeWork(2);
+        ref readonly var search = ref operationMatchCursorPlans.SearchPlan;
+        ref readonly var prefilter = ref search.RequiredPrefilterSearcher;
+        var requiredLiteralProvesMatch = scalarProgram is { RightToLeft: false, HasContiguousAnchor: false } &&
+            !features.HasAbsoluteStartAnchor && !search.CanGuideFallbackStarts &&
+            prefilter.Kind == PreparedSearcherKind.ExactLiteral &&
+            Utf8SliceRunner.PrepareRequiredLiteralWitness(scalarProgram, prefilter.LiteralSearch.Needle, scope.Budget);
         scope.Budget.ReserveBytes(ObjectBytes);
         var result = new Utf8PreparedRegex(
             anchoredLiteral, operationMatchCursorPlans, semanticRegex, features, executionPattern,
-            executionKind, scalarProgram, literalUtf8, fallbackReason);
+            executionKind, scalarProgram, literalUtf8, fallbackReason, requiredLiteralProvesMatch);
         scope.Complete();
         return result;
     }
@@ -56,6 +65,8 @@ internal sealed class Utf8PreparedRegex
     public NativeExecutionKind ExecutionKind { get; }
 
     public bool HasLiteralPlan => ExecutionKind != NativeExecutionKind.FallbackRegex;
+
+    internal bool RequiredLiteralProvesMatch { get; }
 
     public Utf8SliceProgram? ScalarProgram { get; }
 

@@ -119,6 +119,21 @@ public sealed class Utf8LiteralEdgeQualificationTests
     }private static IEnumerable<string> Subjects(int remaining, string prefix)
     { yield return prefix; if (remaining == 0) yield break; foreach (var value in "aZ\n\r") foreach (var text in Subjects(remaining - 1, prefix + value)) yield return text; }
 
+    [Theory]
+    [InlineData(".*needle", "prefix\nneedle", "prefix\nneed", true)]
+    [InlineData(".*é猫", "😀prefix\né猫", "😀prefix\né", true)]
+    [InlineData(@"\A.*needle", "prefix needle", "prefix\nneedle", false)]
+    [InlineData(".*needle(?=!)", "prefix needle!", "prefix needle", false)]
+    public void RequiredLiteralWitnessRespectsTheFullPattern(string pattern, string hit, string miss, bool provesMatch)
+    {
+        using var regex = new Utf8Regex(pattern, RegexOptions.CultureInvariant | RegexOptions.Compiled,
+            new() { ResourcePolicy = new() { MaxWorkSteps = 1000 } });
+        Assert.Equal(provesMatch, regex.Inspection.PreparedRegex.RequiredLiteralProvesMatch);
+        using var source = new CancellationTokenSource();
+        Assert.True(regex.IsMatch(Encoding.UTF8.GetBytes(hit), source.Token));
+        Assert.False(regex.IsMatch(Encoding.UTF8.GetBytes(miss), source.Token));
+    }
+
     [Fact]
     public void CompleteScalarDotProofDeclinesSinglelineLazyAtomicAndDifferentRepeatBounds()
     {

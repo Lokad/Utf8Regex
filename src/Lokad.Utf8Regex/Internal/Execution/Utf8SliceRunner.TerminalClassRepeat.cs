@@ -38,8 +38,10 @@ internal static partial class Utf8SliceRunner
         return CanRunTerminalClassRepeat(program) ? Utf8SliceTerminalRootKind.ClassRepeat : Utf8SliceTerminalRootKind.None;
     }
 
-    internal static bool HasRequiredLiteralWitness(Utf8SliceProgram program, ReadOnlySpan<byte> needle)
+    internal static bool PrepareRequiredLiteralWitness(Utf8SliceProgram program, ReadOnlySpan<byte> needle,
+        Utf8ConstructionBudget budget)
     {
+        budget.ChargeWork(1);
         var code = program.Instructions.AsSpan();
         if (program.IsNonBacktracking || program.HasBalancing || code.Length is < 6 or > 32 ||
             needle.Length is < 1 or > 64 || code[^1].Kind != Utf8SliceInstructionKind.Accept)
@@ -56,6 +58,7 @@ internal static partial class Utf8SliceRunner
                 Utf8SliceInstructionKind.CategorySet or Utf8SliceInstructionKind.Hybrid))
             return false;
 
+        budget.ChargeWork((ulong)(code.Length + needle.Length));
         var offset = 0;
         foreach (ref readonly var op in code[(repeat.A + 1)..^1])
         {
