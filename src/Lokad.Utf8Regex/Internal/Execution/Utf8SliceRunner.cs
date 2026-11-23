@@ -685,12 +685,15 @@ internal static partial class Utf8SliceRunner
             ? program.FollowingDecimalLiteralWindow : default;
         var seekDecimal = leading < 0 && !seekLiteral && !hasClassWindow &&
             program.LeadingScalarIsDecimal;
-        var canProveDecimal = !collectHistory && captureStarts.Length == 0 && !program.ReadsCaptures;
-        var shortDecimalHead = canProveDecimal && seekDecimal &&
+        var canProveValue = !collectHistory && captureStarts.Length == 0 && !program.ReadsCaptures;
+        var proveBranchedMatch = canProveValue && checkBranchedPrefix &&
+            (leadingScalarIndex == 0 ||
+             Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, 0) == leadingScalarIndex);
+        var shortDecimalHead = canProveValue && seekDecimal &&
             program.Instructions.Length <= 32 && leadingScalarIndex > 0 &&
             program.Instructions[leadingScalarIndex - 1] is
                 { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: > 0, RepeatMaximum: <= 4 };
-        var proveDecimalWindow = canProveDecimal && followingWindow.Min != 0 && program.SkipsTerminalRewind(1);
+        var proveDecimalWindow = canProveValue && followingWindow.Min != 0 && program.SkipsTerminalRewind(1);
         var reuseDecimalWindow = proveDecimalWindow && leadingClass == 2 && program.Instructions[1].RepeatMinimum == 1;
         var verifyFollowingWindow = reuseDecimalWindow && program.FollowingDecimalContinuation != 0 &&
             !repeatPrefix.Any.HasValue && classAlternatives is null && classLiteral == program.LeadingClassDelimiter.Literal;
@@ -822,9 +825,9 @@ internal static partial class Utf8SliceRunner
                 {
                     var proveDecimalPrefix = shortDecimalHead || proveDecimalWindow;
                     // A conclusive proof from instruction zero already gives the
-                    // first ordered range when there are no captures to publish.
-                    var proveMatch = proveDecimalPrefix || !collectHistory && program.GroupCount == 0 && leadingScalarIndex == 0;
-                    var proofStart = proveDecimalPrefix ? 0 : leadingScalarIndex;
+                    // first ordered range when nothing can read or publish its captures.
+                    var proveMatch = proveDecimalPrefix || proveBranchedMatch;
+                    var proofStart = proveMatch ? 0 : leadingScalarIndex;
                     var proofPosition = position;
                     var proofLimit = BranchedPrefixInstructionLimit;
                     if (reuseRewoundDigits)
@@ -1170,8 +1173,10 @@ internal static partial class Utf8SliceRunner
         var whitespaceWindowEnd = -1;
         // Only a proof from the actual candidate can supply a whole match.
         // A delimiter window can still move that start before verification.
-        var proveBranchedMatch = leadingScalarIndex == 0 && program.GroupCount == 0 &&
-            captureStarts.Length == 0 && whitespaceLiteral < 0;
+        var proveBranchedMatch = checkBranchedPrefix && captureStarts.Length == 0 &&
+            !program.ReadsCaptures && whitespaceLiteral < 0 &&
+            (leadingScalarIndex == 0 ||
+             Utf8SliceInstruction.SkipLeadingCaptureMarkers(program.Instructions, 0) == leadingScalarIndex);
         var workspace = new AttemptWorkspace();
         try
         {
@@ -1194,7 +1199,8 @@ internal static partial class Utf8SliceRunner
                         (leadingPrefix.IsEmpty && leadingSecond >= 0 && ((uint)(position + 1) >= (uint)input.Length ||
                         (uint)(input[position + 1] - leadingSecond) > (uint)(leadingSecondLast - leadingSecond))) ||
                         (branchWindow.Min != 0 && !HasAsciiLiteralInWindow(input, position, branchWindow)) ||
-                        !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position, leadingScalarIndex,
+                        !checkRepeatChain && !(checkBranchedPrefix ? MayMatchBranchedAsciiPrefix(program, input, position,
+                            proveBranchedMatch ? 0 : leadingScalarIndex,
                             out provedEnd, proveBranchedMatch) :
                             MatchesStraightAsciiPrefix(program, input, position, 0))))
                     {

@@ -486,6 +486,30 @@ public sealed class Utf8LeadingAsciiCandidateTests
         Assert.True(regex.IsMatch(input, live.Token));
     }
 
+    [Fact]
+    public void ValueOperationsProveAnOrderedBranchInsideAnUnobservedCapture()
+    {
+        const string octet = @"(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9])";
+        const string pattern = "(?<part>" + octet + @")\." + octet;
+        var input = "012.200.033.199"u8;
+        using var live = new CancellationTokenSource();
+        using var value = Utf8Regex.Compile(pattern, policy: new()
+        {
+            ResourcePolicy = Funded with { MaxWorkSteps = 12, MaxWorkingBytes = 1 }
+        });
+        var range = value.Match(input, cancellationToken: live.Token);
+        Assert.True(range.Success);
+        Assert.Equal((0, 7), (range.StartOffsetInBytes, range.EndOffsetInBytes));
+        Assert.Equal(2, value.Count(input, live.Token));
+
+        using var detailed = Utf8Regex.Compile(pattern, policy: new() { ResourcePolicy = Funded });
+        Span<Utf8CaptureRange> captures = stackalloc Utf8CaptureRange[2];
+        var capturedRange = detailed.Match(input, captures: captures, cancellationToken: live.Token);
+        Assert.Equal(range, capturedRange);
+        Assert.True(captures[1].Success);
+        Assert.Equal((0, 3), (captures[1].StartOffsetInBytes, captures[1].EndOffsetInBytes));
+    }
+
     [Theory]
     [InlineData("(?<tag>AX|BY)[A-Z0-7]{4}|(?<word>[a-zA-Z0-9+/]{8})")]
     [InlineData("(?<word>[a-zA-Z0-9+/]{8})|(?<tag>AX|BY)[A-Z0-7]{4}")]
