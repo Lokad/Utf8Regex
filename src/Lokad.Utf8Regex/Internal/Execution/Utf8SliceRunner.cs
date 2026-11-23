@@ -508,7 +508,7 @@ internal static partial class Utf8SliceRunner
                 input.Length - candidatePlan.MinRequiredLength, (byte)starter.First, starter.Last,
                 starter.SparsePair, ref invocation);
 
-        var first = program.Instructions[0];
+        ref readonly var first = ref program.Instructions[0];
         var seekBeginning = !reverse && first.Kind == Utf8SliceInstructionKind.Anchor &&
             first.A == (int)Utf8SliceAnchorKind.Beginning;
         var seekVeryEnd = reverse && first is { Kind: Utf8SliceInstructionKind.Anchor, A: (int)Utf8SliceAnchorKind.VeryEnd };
@@ -519,7 +519,7 @@ internal static partial class Utf8SliceRunner
                 ref workspace, ref invocation, existenceOnly, first, seekBeginning, seekVeryEnd);
 
         return TryFindFirstByCandidateSearch(program, input, fromByte, captureStarts, captureEnds, collectHistory,
-            ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral, seekBeginning);
+            ref workspace, ref invocation, candidatePlan, existenceOnly, screenedLiteral, seekBeginning, first);
     }
 
     private static Utf8SliceSearchOutcome TryFindFirstAtSingleOrigin(
@@ -631,9 +631,8 @@ internal static partial class Utf8SliceRunner
         Utf8SliceProgram program, ReadOnlySpan<byte> input, int fromByte,
         int[] captureStarts, int[] captureEnds, bool collectHistory,
         ref AttemptWorkspace workspace, ref Utf8SliceInvocation invocation, in Utf8SearchPlan candidatePlan,
-        bool existenceOnly, int screenedLiteral, bool seekBeginning)
+        bool existenceOnly, int screenedLiteral, bool seekBeginning, in Utf8SliceInstruction first)
     {
-        var first = program.Instructions[0];
         var (leading, leadingLast, second, secondLast, leadingScalarIndex, fromBranch, sparsePair) = program.LeadingByteCandidate;
         var includeKelvin = leading == 'K' && program.LeadingByteAdmitsKelvin;
         // Prefer a straight ASCII proof. Prepared literal search can be more
@@ -664,14 +663,15 @@ internal static partial class Utf8SliceRunner
         var leadingDecimalBoundary = first is { Kind: Utf8SliceInstructionKind.Boundary, A: 1 } &&
             program.LeadingScalarIsDecimal;
         var exactNeedle = candidatePlan.Kind == Utf8SearchKind.AsciiFoldedByteLiteral ? null : candidatePlan.LiteralUtf8;
+        var classDelimiter = program.LeadingClassDelimiter;
         if ((needsClassWindow || exactNeedle is { Length: 1 } &&
-                program.LeadingClassDelimiter is { Direct: true, Literal: >= 0 }) &&
+                classDelimiter is { Direct: true, Literal: >= 0 }) &&
             !seekLiteral && !seekBeginning && !program.RightToLeft &&
             !program.IgnoreCase && !program.HasContiguousAnchor &&
             (wideInput || exactNeedle is { Length: > 0 } ||
                 candidatePlan.RequiredPrefilterSearcher.Kind == PreparedSearcherKind.MultiLiteral))
         {
-            var (literal, windowClass, literalIndex, gapMaximum, direct) = program.LeadingClassDelimiter;
+            var (literal, windowClass, literalIndex, gapMaximum, direct) = classDelimiter;
             leadingClass = windowClass;
             classGapMaximum = gapMaximum;
             directClassLiteral = direct;
@@ -748,7 +748,7 @@ internal static partial class Utf8SliceRunner
         var proveDecimalWindow = canProveValue && followingWindow.Min != 0 && program.SkipsTerminalRewind(1);
         var reuseDecimalWindow = proveDecimalWindow && leadingClass == 2 && program.Instructions[1].RepeatMinimum == 1;
         var verifyFollowingWindow = reuseDecimalWindow && program.FollowingDecimalContinuation != 0 &&
-            !repeatPrefix.Any.HasValue && classAlternatives is null && classLiteral == program.LeadingClassDelimiter.Literal;
+            !repeatPrefix.Any.HasValue && classAlternatives is null && classLiteral == classDelimiter.Literal;
         if (seekDecimal)
         {
             leading = '0';
@@ -930,9 +930,9 @@ internal static partial class Utf8SliceRunner
     // Count and primary matching share the same necessary-prefix proof. Every
     // candidate is still verified by the scalar VM under the original invocation.
     private static bool CanSeekExactPrefix(Utf8SliceProgram program, in Utf8SearchPlan candidatePlan)
-        => !program.RightToLeft && !program.CanMatchEmpty &&
-            !program.HasContiguousAnchor && !program.IgnoreCase && candidatePlan.CanGuideFallbackStarts &&
-            candidatePlan.Distance == 0 && candidatePlan.Kind is
+        => candidatePlan.CanGuideFallbackStarts && candidatePlan.Distance == 0 &&
+            !program.RightToLeft && !program.CanMatchEmpty && !program.HasContiguousAnchor && !program.IgnoreCase &&
+            candidatePlan.Kind is
                 Utf8SearchKind.ExactAsciiLiteral or
                 Utf8SearchKind.ExactAsciiLiterals or Utf8SearchKind.ExactUtf8Literals;
 
