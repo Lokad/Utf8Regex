@@ -955,6 +955,35 @@ public sealed class PreparedSearchPrimitivesTests
         Assert.False(searcher.TryFindNextOverlappingMatch("0x1y2"u8, ref state, out _));
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2048)]
+    [InlineData(2049)]
+    public void SingleByteInvocationPreservesSliceAndWindowAdmission(int width)
+    {
+        var search = new PreparedSearcher(new PreparedSubstringSearch([(byte)'.'], false), false);
+        const int start = 2;
+        var end = start + width;
+        var input = new byte[end + 2];
+        input[start - 1] = input[end] = (byte)'.';
+        if (width != 0) input[start] = input[end - 1] = (byte)'.';
+        foreach (var reverse in new[] { false, true })
+        {
+            var steps = width == 0 ? 2ul : 3ul;
+            var invocation = Utf8SliceInvocation.CreateExclusive(new(steps, 0, 0), Timeout.InfiniteTimeSpan, default);
+            Assert.Equal(Utf8ExecutionLimitKind.None,
+                search.TryFindMatch(input, start, end, reverse, ref invocation, out var match, out var found));
+            Assert.Equal(width != 0, found);
+            if (found) Assert.Equal(new PreparedSearchMatch(reverse ? end - 1 : start, 1, 0), match);
+            Assert.Equal(steps, invocation.Budget.Steps);
+
+            invocation = Utf8SliceInvocation.CreateExclusive(new(steps - 1, 0, 0), Timeout.InfiniteTimeSpan, default);
+            Assert.Equal(Utf8ExecutionLimitKind.WorkSteps,
+                search.TryFindMatch(input, start, end, reverse, ref invocation, out _, out found));
+            Assert.False(found);
+        }
+    }
+
     private static PreparedMultiLiteralPackedNibbleSimdPrefilter CreatePackedIgnoreCasePrefilter()
     {
         byte[][] literals =

@@ -22,6 +22,20 @@ internal readonly partial struct PreparedSearcher
         {
             length = LiteralSearch.Length;
             if (length == 0) candidate = reverse ? end : start;
+            else if (length == 1 && !LiteralSearch.IgnoreCase && end - start <= 2048)
+            {
+                // One exact byte needs no literal-window setup. Keep the
+                // same admission between the entry and publication checks.
+                if (start != end && (!invocation.IsUnmetered || invocation.CheckpointHook is not null))
+                {
+                    breach = invocation.TryChargeInputStep();
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                }
+                var window = input[start..end];
+                var value = LiteralSearch.Needle[0];
+                var relative = reverse ? window.LastIndexOf(value) : window.IndexOf(value);
+                if (relative >= 0) candidate = start + relative;
+            }
             else
             {
                 breach = Utf8SearchExecutor.TryFindLiteralCandidate(LiteralSearch, input, start, end - length,
