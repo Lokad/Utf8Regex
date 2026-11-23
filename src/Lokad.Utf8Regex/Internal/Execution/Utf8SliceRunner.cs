@@ -788,6 +788,10 @@ internal static partial class Utf8SliceRunner
         Span<byte> prefixStorage = stackalloc byte[16];
         var leadingPrefix = wideInput && second >= 0 && !candidatePlan.CanGuideFallbackStarts
             ? GetExactLeadingLiteral(program, leadingScalarIndex, prefixStorage) : default;
+        // The checked search also verifies a prefix at the current position.
+        // Only a forward, instruction-zero run can enter the VM directly.
+        var verifiedLeadingPrefix = !leadingPrefix.IsEmpty && leadingScalarIndex == 0 &&
+            !program.RightToLeft && !program.HasContiguousAnchor ? (leadingPrefix.Length, leadingPrefix.Length) : default;
         if ((leading >= 0 || seekLiteral || hasClassWindow) && invocation.Ledger.ReservedBytes != 0)
         {
             // An enclosing loan still counts when candidate discovery needs no storage.
@@ -957,7 +961,7 @@ internal static partial class Utf8SliceRunner
             // the delimiter. Shorter endpoints cannot reach this literal.
             var verifiedPrefix = verifiedClassLiteralLength != 0 && position < classWindowEnd
                 ? (4 + verifiedClassLiteralLength, classWindowEnd - position + verifiedClassLiteralLength)
-                : default;
+                : verifiedLeadingPrefix;
             if (proveClassSuffix && verifiedPrefix.Item2 != 0)
             {
                 var suffix = position + verifiedPrefix.Item2;

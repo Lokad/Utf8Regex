@@ -234,4 +234,27 @@ public sealed class Utf8LiteralAssertionTests
         }
         finally { session.Complete(); }
     }
+
+    [Fact]
+    public void FirstLookaheadReusesDiscoveryAcrossRejectedCandidates()
+    {
+        var before = "é😀 " + string.Concat(Enumerable.Repeat("HttpClient handler ", 64));
+        var input = Encoding.UTF8.GetBytes(before + "HttpClient\u2003client");
+        var start = Encoding.UTF8.GetByteCount(before);
+        var end = start + "HttpClient"u8.Length;
+        using var token = new CancellationTokenSource();
+        using var regex = new Utf8Regex(@"HttpClient(?=\s+client)", RegexOptions.Compiled, new()
+        {
+            MatchTimeout = Timeout.InfiniteTimeSpan,
+            ResourcePolicy = new() { MaxWorkSteps = 700, MaxDepth = 64, MaxWorkingBytes = 1 << 16 }
+        });
+
+        Assert.True(regex.IsMatch(input, token.Token));
+        var range = regex.Match(input, cancellationToken: token.Token);
+        Assert.True(range.Success);
+        Assert.Equal((start, end), (range.StartOffsetInBytes, range.EndOffsetInBytes));
+        using var cursor = regex.CreateMatchCursor(input, cancellationToken: token.Token);
+        Assert.True(cursor.MoveNext(out var match));
+        Assert.Equal((start, end), (match.Value.StartOffsetInBytes, match.Value.EndOffsetInBytes));
+    }
 }
