@@ -155,77 +155,13 @@ public sealed class Pcre2GraphemeInvocationTests
             {
                 var regex = new Utf8Pcre2Regex(@"\X", options: default, compileSettings: default, policy: new Utf8RegexPolicy
                 {
-                    ResourcePolicy = new Utf8ResourcePolicy
+                    ResourcePolicy = finite ? new()
                     {
-                        MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                        {
-                            MatchLimit = 1_000_000,
-                            DepthLimit = 1024,
-                            HeapLimitInBytes = 16 << 20,
-                            ResultLimitInBytes = 16 << 20
-                        }
-
-                        : default)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                        {
-                            MatchLimit = 1_000_000,
-                            DepthLimit = 1024,
-                            HeapLimitInBytes = 16 << 20,
-                            ResultLimitInBytes = 16 << 20
-                        }
-
-                        : default)).MatchLimit,
-                        MaxDepth = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                        {
-                            MatchLimit = 1_000_000,
-                            DepthLimit = 1024,
-                            HeapLimitInBytes = 16 << 20,
-                            ResultLimitInBytes = 16 << 20
-                        }
-
-                        : default)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                        {
-                            MatchLimit = 1_000_000,
-                            DepthLimit = 1024,
-                            HeapLimitInBytes = 16 << 20,
-                            ResultLimitInBytes = 16 << 20
-                        }
-
-                        : default)).DepthLimit,
-                        MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                        {
-                            MatchLimit = 1_000_000,
-                            DepthLimit = 1024,
-                            HeapLimitInBytes = 16 << 20,
-                            ResultLimitInBytes = 16 << 20
-                        }
-
-                        : default)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                        {
-                            MatchLimit = 1_000_000,
-                            DepthLimit = 1024,
-                            HeapLimitInBytes = 16 << 20,
-                            ResultLimitInBytes = 16 << 20
-                        }
-
-                        : default)).HeapLimitInBytes,
-                        MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                        {
-                            MatchLimit = 1_000_000,
-                            DepthLimit = 1024,
-                            HeapLimitInBytes = 16 << 20,
-                            ResultLimitInBytes = 16 << 20
-                        }
-
-                        : default)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                        {
-                            MatchLimit = 1_000_000,
-                            DepthLimit = 1024,
-                            HeapLimitInBytes = 16 << 20,
-                            ResultLimitInBytes = 16 << 20
-                        }
-
-                        : default)).ResultLimitInBytes
-                    },
+                        MaxWorkSteps = 1_000_000,
+                        MaxDepth = 1024,
+                        MaxWorkingBytes = 16 << 20,
+                        MaxResultBytes = 16 << 20,
+                    } : Utf8ResourcePolicy.Unlimited,
                     MatchTimeout = Timeout.InfiniteTimeSpan
                 });
                 var ranges = new List<(int, int)>();

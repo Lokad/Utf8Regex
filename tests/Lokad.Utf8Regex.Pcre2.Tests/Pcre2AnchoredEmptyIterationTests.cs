@@ -59,77 +59,13 @@ public sealed class Pcre2AnchoredEmptyIterationTests
     private static Utf8Pcre2Regex Create(string pattern, Pcre2CompileOptions compile, bool finite) =>
         new(pattern, options: compile, compileSettings: default, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new Utf8ResourcePolicy
+            ResourcePolicy = finite ? new()
             {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).MatchLimit,
-                MaxDepth = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).DepthLimit,
-                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).HeapLimitInBytes,
-                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(finite ? new()
-                {
-                    MatchLimit = 1000000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).ResultLimitInBytes
-            },
+                MaxWorkSteps = 1000000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20,
+            } : Utf8ResourcePolicy.Unlimited,
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
 }

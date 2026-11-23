@@ -88,77 +88,13 @@ public sealed class Pcre2DuplicateOptionScopeTests
         using var cancellation = new CancellationTokenSource();
         var regex = new Utf8Pcre2Regex(@"(?J:(?<x>😀)|(?<x>é))\k<x>", options: Pcre2CompileOptions.None, compileSettings: default, policy: new Utf8RegexPolicy
         {
-            ResourcePolicy = new Utf8ResourcePolicy
+            ResourcePolicy = controlled ? new()
             {
-                MaxWorkSteps = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
-                {
-                    MatchLimit = 100000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).MatchLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
-                {
-                    MatchLimit = 100000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).MatchLimit,
-                MaxDepth = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
-                {
-                    MatchLimit = 100000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).DepthLimit == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
-                {
-                    MatchLimit = 100000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).DepthLimit,
-                MaxWorkingBytes = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
-                {
-                    MatchLimit = 100000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).HeapLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
-                {
-                    MatchLimit = 100000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).HeapLimitInBytes,
-                MaxResultBytes = ((Utf8Pcre2ExecutionLimits)(controlled ? new()
-                {
-                    MatchLimit = 100000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).ResultLimitInBytes == 0 ? null : ((Utf8Pcre2ExecutionLimits)(controlled ? new()
-                {
-                    MatchLimit = 100000,
-                    DepthLimit = 256,
-                    HeapLimitInBytes = 1 << 20,
-                    ResultLimitInBytes = 1 << 20
-                }
-
-                : default)).ResultLimitInBytes
-            },
+                MaxWorkSteps = 100000,
+                MaxDepth = 256,
+                MaxWorkingBytes = 1 << 20,
+                MaxResultBytes = 1 << 20,
+            } : Utf8ResourcePolicy.Unlimited,
             MatchTimeout = Timeout.InfiniteTimeSpan
         });
         var input = "q😀😀 éé"u8.ToArray();
