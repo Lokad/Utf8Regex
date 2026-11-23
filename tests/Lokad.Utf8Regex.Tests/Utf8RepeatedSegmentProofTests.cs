@@ -60,6 +60,31 @@ public sealed class Utf8RepeatedSegmentProofTests
             .Select(range => (range.StartOffsetInBytes, range.EndOffsetInBytes)).ToArray());
     }
 
+    [Theory]
+    [InlineData("é12𝟛٤-5678 ١٢٣٤-4567", 2)]
+    [InlineData("10-12𝟛٤-5678 ١٢٣٤-456", 3)]
+    [InlineData("12😀٤-5678 ١٢٣٤-4567", -1)]
+    [InlineData("12𝟛-5678 ١٢٣٤-4567", -1)]
+    public void FixedDecimalProofRetainsMixedScalarWidthsAndLaterStarts(string subject, int start)
+    {
+        const string pattern = @"(\d{4}[- ]){3}\d{3,4}";
+        const RegexOptions options = RegexOptions.Compiled | RegexOptions.CultureInvariant;
+        var bytes = Encoding.UTF8.GetBytes(subject);
+        var expected = start < 0 ? default : new Utf8CaptureRange(start, bytes.Length);
+        using var ordinary = new Utf8Regex(pattern, options);
+        using var funded = new Utf8Regex(pattern, options, new()
+        {
+            ResourcePolicy = new() { MaxWorkSteps = 1024, MaxDepth = 128, MaxWorkingBytes = 8192 }
+        });
+        using var source = new CancellationTokenSource();
+        foreach (var (regex, token) in new[] { (ordinary, CancellationToken.None), (funded, source.Token) })
+        {
+            Assert.Equal(start >= 0, regex.IsMatch(bytes, token));
+            Assert.Equal(start >= 0 ? 1 : 0, regex.Count(bytes, token));
+            Assert.Equal(expected, regex.Match(bytes, cancellationToken: token));
+        }
+    }
+
     [Fact]
     public void ZeroMinimumAlternationRewindsWithoutRepeatStorage()
     {

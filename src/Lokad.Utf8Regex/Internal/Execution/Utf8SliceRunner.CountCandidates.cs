@@ -1789,6 +1789,30 @@ internal static partial class Utf8SliceRunner
                     if (proveMatch && singleAtom && (minimum != entry.RepeatMaximum ||
                         code[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }))
                     {
+                        if (minimum == entry.RepeatMaximum && minimum <= 4 && code[index].IsDecimalDigitSet)
+                        {
+                            // A fixed decimal run has one continuation. Admit
+                            // the same bounded probe before inspecting its bytes.
+                            var count = (int)minimum;
+                            var available = Math.Min(input.Length - position, count);
+                            if (available > remaining) return BranchedPrefixUndecided;
+                            remaining -= available;
+                            var digits = input.Slice(position, available);
+                            var stop = digits.IndexOfAnyExceptInRange((byte)'0', (byte)'9');
+                            if (stop < 0)
+                            {
+                                if (available != count) return BranchedPrefixRejected;
+                                position += count;
+                            }
+                            else
+                            {
+                                if (digits[stop] < 128) return BranchedPrefixRejected;
+                                position = MatchWideDecimalPrefix(input, position + stop, count - stop);
+                                if (position < 0) return BranchedPrefixRejected;
+                            }
+                            index = entry.A + 1;
+                            continue;
+                        }
                         var end = TryMatchPrefixRepeat(program, input, position, index, in entry, ref remaining,
                             out var continueProof);
                         if (continueProof)
@@ -1845,6 +1869,18 @@ internal static partial class Utf8SliceRunner
             position += width;
         }
         return BranchedPrefixUndecided;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int MatchWideDecimalPrefix(ReadOnlySpan<byte> input, int position, int count)
+    {
+        for (var digit = 0; digit < count; digit++)
+        {
+            if (!TryReadScalar(input, position, false, out var scalar, out var width) ||
+                !Rune.IsDigit(scalar)) return BranchedPrefixRejected;
+            position += width;
+        }
+        return position;
     }
 
     // Keep complete repeat verification out of the rejection walk used
@@ -1959,22 +1995,7 @@ internal static partial class Utf8SliceRunner
         while (consumed < maximum)
         {
             var value = input[position + consumed];
-            if (value >= 128 && !asciiOnly)
-            {
-                if (minimum != repeatMaximum || !decimalDigits)
-                    return BranchedPrefixUndecided;
-
-                // A fixed decimal repeat has one end. Decode the remaining scalars under the same small bound.
-                var end = position + consumed;
-                for (var digit = consumed; digit < minimum; digit++)
-                {
-                    if (!TryReadScalar(input, end, false, out var scalar, out var scalarWidth) ||
-                        !Rune.IsDigit(scalar)) return BranchedPrefixRejected;
-                    end += scalarWidth;
-                }
-                continueProof = true;
-                return end;
-            }
+            if (value >= 128 && !asciiOnly) return BranchedPrefixUndecided;
             if (decimalDigits || !ascii.Contains(value) && additionalAsciiMember?.Invoke(value) != true) break;
             consumed++;
         }
