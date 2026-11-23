@@ -229,6 +229,7 @@ internal readonly struct Utf8SliceInstruction
     // A negative C on a normal Fork encodes a disjoint target byte as ~C.
     // A RepeatEnd can mark a proved consuming body for ordered discovery.
     // A leading Beginning anchor records a required first ASCII byte plus one.
+    // Wide regular capture markers can record where a consecutive marker run ends.
     internal int C { get; }
     // For a positive unfolded Set, the low byte is the first ASCII byte
     // and the high byte is the interval width. Zero means no exact interval.

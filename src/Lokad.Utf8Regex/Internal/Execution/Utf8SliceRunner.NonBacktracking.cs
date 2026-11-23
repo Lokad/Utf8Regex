@@ -369,11 +369,17 @@ internal static partial class Utf8SliceRunner
                             pc = instruction.A;
                             continue;
                         case Utf8SliceInstructionKind.CaptureStart:
-                            if (RegisterCount != 0) Scratch[program.GroupCount * 2 + instruction.B] = position;
-                            pc++;
-                            continue;
                         case Utf8SliceInstructionKind.CaptureEnd:
-                            if (RegisterCount != 0)
+                            if (RegisterCount == 0)
+                            {
+                                // These markers have one continuation and write
+                                // no state when discovering a range without captures.
+                                pc = instruction.C != 0 ? instruction.C : pc + 1;
+                                continue;
+                            }
+                            if (instruction.Kind == Utf8SliceInstructionKind.CaptureStart)
+                                Scratch[program.GroupCount * 2 + instruction.B] = position;
+                            else
                             {
                                 Scratch[instruction.A * 2] = Scratch[program.GroupCount * 2 + instruction.B];
                                 Scratch[instruction.A * 2 + 1] = position;

@@ -38,7 +38,7 @@ internal sealed class Utf8NonBacktrackingSearchState
         Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd or
         Utf8SliceInstructionKind.Anchor or Utf8SliceInstructionKind.Boundary;
 
-    internal static int[] BuildEpsilonOrder(ReadOnlySpan<Utf8SliceInstruction> instructions, out ulong[] ancestors,
+    internal static int[] BuildEpsilonOrder(Span<Utf8SliceInstruction> instructions, out ulong[] ancestors,
         out (ulong[] Closures, byte[] Leaves, uint Conditions) ordered)
     {
         ancestors = [];
@@ -61,11 +61,20 @@ internal sealed class Utf8NonBacktrackingSearchState
                 // Consuming and terminal leaves have no same-row dependencies.
                 // Only epsilon instructions need an order or a DFS visit.
                 orderLength = 0;
-                for (var pc = 0; pc < instructions.Length; pc++)
+                var last = instructions.Length - 1;
+                var afterCaptures = instructions.Length;
+                for (var pc = last; pc >= 0; pc--)
                 {
-                    if ((pc & 63) == 0) budget.ChargeWork((ulong)Math.Min(64, instructions.Length - pc));
-                    if (IsEpsilonInstruction(instructions[pc].Kind)) orderLength++;
+                    if (((last - pc) & 63) == 0) budget.ChargeWork((ulong)Math.Min(64, pc + 1));
+                    var instruction = instructions[pc];
+                    if (IsEpsilonInstruction(instruction.Kind)) orderLength++;
                     else colors[pc] = 2;
+                    if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
+                    {
+                        if (afterCaptures != pc + 1)
+                            instructions[pc] = new(instruction.Kind, instruction.A, instruction.B, afterCaptures, instruction.D);
+                    }
+                    else afterCaptures = pc;
                 }
             }
             var result = wide ? budget.AllocateArray<int>(orderLength, false) : [];
