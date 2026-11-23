@@ -114,7 +114,7 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
     }
 
     [Fact]
-    public void CursorCapturePublishesIndependentArraysAndRestoresParent()
+    public void CursorCaptureReusesAdmittedBufferAndRestoresParent()
     {
         using var cancellation = new CancellationTokenSource();
         var regex = new Utf8Pcre2Regex("(é)(😀)");
@@ -125,21 +125,26 @@ public sealed class Pcre2SliceCaptureProjectionBudgetTests
         Assert.True(cursor.WorkingInvocation.Ledger.TryReserve(7));
         var slots = Pcre2SliceDriver.RentProgramSlots(direct.SliceProgram, ref cursor.WorkingInvocation);
         var held = cursor.WorkingInvocation.Ledger.ReservedBytes;
+        Pcre2GroupData[]? groups = null;
         try
         {
             Assert.True(cursor.MoveNext(slots));
-            var first = cursor.ProjectCurrentCaptures(slots);
-            Assert.Equal(held, cursor.WorkingInvocation.Ledger.ReservedBytes);
+            groups = cursor.ProjectCurrentCaptures(slots);
+            var projectedHeld = held + Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(3);
+            Assert.Equal(projectedHeld, cursor.WorkingInvocation.Ledger.ReservedBytes);
+            Assert.Equal((3, 7), Edges(groups[2]));
             Assert.True(cursor.MoveNext(slots));
-            var second = cursor.ProjectCurrentCaptures(slots);
-            Assert.NotSame(first, second);
-            Assert.Equal(held, cursor.WorkingInvocation.Ledger.ReservedBytes);
+            Assert.Same(groups, cursor.ProjectCurrentCaptures(slots, groups));
+            Assert.Equal(projectedHeld, cursor.WorkingInvocation.Ledger.ReservedBytes);
+            Assert.Equal((10, 14), Edges(groups[2]));
             Assert.False(cursor.MoveNext(slots));
-            Assert.Equal(held, cursor.WorkingInvocation.Ledger.ReservedBytes);
-            Assert.Equal((3, 7), Edges(first[2]));
-            Assert.Equal((10, 14), Edges(second[2]));
+            Assert.Equal(projectedHeld, cursor.WorkingInvocation.Ledger.ReservedBytes);
         }
-        finally { Utf8SliceRunner.ReleaseSlots(slots, ref cursor.WorkingInvocation); }
+        finally
+        {
+            if (groups is not null) Pcre2SliceDriver.DetachProjectedGroups(groups, ref cursor.WorkingInvocation);
+            Utf8SliceRunner.ReleaseSlots(slots, ref cursor.WorkingInvocation);
+        }
         Assert.Equal(7UL, cursor.WorkingInvocation.Ledger.ReservedBytes);
         cursor.WorkingInvocation.Ledger.Release(7);
     }

@@ -70,14 +70,11 @@ internal ref struct Pcre2SliceGlobalMatchCursor
 
     [UnscopedRef] internal ref Utf8SliceInvocation WorkingInvocation => ref _invocation;
 
-    // The replacement caller supplies slots to the advance and owns their loan.
-    internal Pcre2GroupData[] ProjectCurrentCaptures(Utf8SliceSlots slots)
-    {
-        var groups = Pcre2SliceDriver.ProjectSliceGroups(_program, ref _input,
-            Current.StartOffsetInBytes, Current.EndOffsetInBytes, slots.Starts, slots.Ends, ref _invocation);
-        Pcre2SliceDriver.DetachProjectedGroups(groups, ref _invocation);
-        return groups;
-    }
+    // The caller owns the slot and projection loans. An existing projection
+    // buffer is already admitted and has room for this program's groups.
+    internal Pcre2GroupData[] ProjectCurrentCaptures(Utf8SliceSlots slots, Pcre2GroupData[]? groups = null)
+        => Pcre2SliceDriver.ProjectSliceGroups(_program, ref _input,
+            Current.StartOffsetInBytes, Current.EndOffsetInBytes, slots.Starts, slots.Ends, ref _invocation, groups);
 
     internal bool MoveNext(Utf8SliceSlots slots = default)
     {
@@ -493,9 +490,9 @@ internal static class Pcre2SliceDriver
     internal static Pcre2GroupData[] ProjectSliceGroups(
         Utf8SliceProgram program, ref Utf8ValidatedInput input,
         int matchStart, int matchEnd, int[] captureStarts, int[] captureEnds,
-        ref Utf8SliceInvocation invocation) =>
+        ref Utf8SliceInvocation invocation, Pcre2GroupData[]? groups = null) =>
         Pcre2Runner.PublishSliceCaptures(checked(program.GroupCount + 1),
-            matchStart, matchEnd, captureStarts, captureEnds, ref input, ref invocation);
+            matchStart, matchEnd, captureStarts, captureEnds, ref input, ref invocation, groups);
 
     // Single lexical publishing owner; immutable external arrays are never pooled.
     internal static void DetachProjectedGroups(Pcre2GroupData[] groups, ref Utf8SliceInvocation invocation)

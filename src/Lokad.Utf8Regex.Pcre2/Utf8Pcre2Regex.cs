@@ -1114,6 +1114,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
         try
         {
             var position = 0;
+            Pcre2GroupData[]? groups = null;
             bool matched;
             try
             {
@@ -1128,7 +1129,7 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                     writer = new Pcre2ReplacementTemplateWriter(input, NameEntries, cursor.WorkingInvocation);
                     do
                     {
-                        var groups = cursor.ProjectCurrentCaptures(slots);
+                        groups = cursor.ProjectCurrentCaptures(slots, groups);
                         var value = groups[0];
                         if (!replacementOnly) writer.AppendGap(position, value.StartOffsetInBytes - position);
                         writer.AppendTemplate(preparation, templateOptions, groups, value.StartOffsetInBytes,
@@ -1137,7 +1138,11 @@ public sealed partial class Utf8Pcre2Regex : IDisposable
                     } while (cursor.MoveNext(slots));
                 }
             }
-            finally { Utf8SliceRunner.ReleaseSlots(slots, ref cursor.WorkingInvocation); }
+            finally
+            {
+                try { if (groups is not null) Pcre2SliceDriver.DetachProjectedGroups(groups, ref cursor.WorkingInvocation); }
+                finally { Utf8SliceRunner.ReleaseSlots(slots, ref cursor.WorkingInvocation); }
+            }
             if (!matched)
             {
                 if (replacementOnly) return new([]);

@@ -47,27 +47,28 @@ internal static partial class Pcre2Runner
     internal static Pcre2GroupData[] PublishSliceCaptures(
         int captureSlotCount, int matchStart, int matchEnd,
         ReadOnlySpan<int> captureStarts, ReadOnlySpan<int> captureEnds,
-        ref Utf8ValidatedInput input, ref Utf8SliceInvocation invocation)
+        ref Utf8ValidatedInput input, ref Utf8SliceInvocation invocation, Pcre2GroupData[]? groups = null)
     {
         var control = new Pcre2ResultControl(ref invocation);
         return PublishCaptureGroups(captureSlotCount, matchStart, matchEnd,
-            new(captureStarts, captureEnds), -1, true, ref input, control);
+            new(captureStarts, captureEnds), -1, true, ref input, control, groups);
     }
 
     private static Pcre2GroupData[] PublishCaptureGroups(
         int captureSlotCount, int matchStart, int matchEnd,
         scoped Pcre2CaptureRanges captureRanges,
         int slotOffset, bool normalizeDirection,
-        ref Utf8ValidatedInput input, scoped Pcre2ResultControl budget)
+        ref Utf8ValidatedInput input, scoped Pcre2ResultControl budget, Pcre2GroupData[]? groups = null)
     {
         var groupBytes = Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(captureSlotCount);
-        budget.ReserveWorking(groupBytes);
+        var needsAllocation = groups is null;
+        if (needsAllocation) budget.ReserveWorking(groupBytes);
         var completed = false;
         try
         {
             budget.ChargeWorkspaceStep();
             budget.TryChargeResultBytes(groupBytes);
-            var groups = captureSlotCount == 0 ? [] : new Pcre2GroupData[captureSlotCount];
+            groups ??= captureSlotCount == 0 ? [] : new Pcre2GroupData[captureSlotCount];
             for (var slot = 0; slot < captureSlotCount; slot++)
             {
                 if ((slot & 63) == 0) budget.ChargeWorkspaceStep();
@@ -92,7 +93,7 @@ internal static partial class Pcre2Runner
             completed = true;
             return groups;
         }
-        finally { if (!completed) budget.ReleaseWorking(groupBytes); }
+        finally { if (needsAllocation && !completed) budget.ReleaseWorking(groupBytes); }
     }
 
     private static bool ReadCaptureEdges(int slot, int matchStart, int matchEnd,

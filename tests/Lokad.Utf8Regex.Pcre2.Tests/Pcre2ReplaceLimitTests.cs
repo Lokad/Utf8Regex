@@ -1,5 +1,6 @@
 using System.Text;
 using Lokad.Utf8Regex;
+using Lokad.Utf8Regex.Internal;
 using Lokad.Utf8Regex.Pcre2;
 
 namespace Lokad.Utf8Regex.Pcre2.Tests;
@@ -53,5 +54,25 @@ public sealed class Pcre2ReplaceLimitTests
         var input = Encoding.UTF8.GetBytes("aaabbb aaabbb");
         var exception = Assert.Throws<Pcre2MatchException>(() => Create("(a+)(b+)", new Utf8Pcre2ExecutionLimits { HeapLimitInBytes = 1 }).Replace(input, "Z"u8));
         Assert.Equal(Pcre2ErrorKind.HeapLimit, exception.ErrorKind);
+    }
+
+    [Fact]
+    public void SliceTemplateReuseClearsUnsetGroupsAndChargesEachProjection()
+    {
+        const string pattern = "[a-z]+@(?<word>[a-z]+)?(?<digits>[0-9]+)?";
+        const Pcre2SubstitutionOptions options = Pcre2SubstitutionOptions.UnsetEmpty;
+        using var regex = Create(pattern, default);
+        Assert.IsType<Pcre2SliceDirectProgram>(regex.DebugCompiledProgram.Operations.Replace);
+        Assert.Equal("<tail:>!<:12>!<fin:>"u8.ToArray(),
+            regex.Replace("ab@tail!cd@12!xy@fin"u8, "<${word}:${digits}>"u8, substitutionOptions: options));
+
+        using var limited = Create(pattern, new()
+        {
+            ResultLimitInBytes = 2 * Utf8ConstructionBudget.ArrayBytes<Pcre2GroupData>(3)
+        });
+        Assert.IsType<Pcre2SliceDirectProgram>(limited.DebugCompiledProgram.Operations.Replace);
+        var error = Assert.Throws<Pcre2MatchException>(() =>
+            limited.Replace("ab@tail!cd@12!xy@fin"u8, "<${word}:${digits}>"u8, substitutionOptions: options));
+        Assert.Equal(Pcre2ErrorKind.ResultLimit, error.ErrorKind);
     }
 }

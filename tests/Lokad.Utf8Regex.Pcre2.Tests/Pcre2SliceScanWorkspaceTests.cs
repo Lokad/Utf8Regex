@@ -37,6 +37,7 @@ public sealed class Pcre2SliceScanWorkspaceTests
                 Assert.True(cursor.MoveNext(slots));
                 Assert.Equal((11, 16), (cursor.Current.StartOffsetInBytes, cursor.Current.EndOffsetInBytes));
                 retained = cursor.ProjectCurrentCaptures(slots);
+                Pcre2SliceDriver.DetachProjectedGroups(retained, ref cursor.WorkingInvocation);
                 Assert.Equal(held, cursor.WorkingInvocation.Ledger.ReservedBytes);
             }
             finally { Utf8SliceRunner.ReleaseSlots(slots, ref cursor.WorkingInvocation); }

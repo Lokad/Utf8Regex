@@ -166,6 +166,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var leftSlots = Pcre2SliceDriver.RentProgramSlots(direct.SliceProgram, ref left.WorkingInvocation);
         Assert.True(left.MoveNext(leftSlots));
         var leftGroups = left.ProjectCurrentCaptures(leftSlots);
+        Pcre2SliceDriver.DetachProjectedGroups(leftGroups, ref left.WorkingInvocation);
         Utf8SliceRunner.ReleaseSlots(leftSlots, ref left.WorkingInvocation);
         Assert.True(left.WorkingInvocation.Budget.Steps > 0);
         Assert.Equal(0UL, right.WorkingInvocation.Budget.Steps);
@@ -173,6 +174,7 @@ public sealed class Pcre2ExecutionArchitectureTests
         var rightSlots = Pcre2SliceDriver.RentProgramSlots(direct.SliceProgram, ref right.WorkingInvocation);
         Assert.True(right.MoveNext(rightSlots)); Assert.Equal(0, right.Current.StartOffsetInBytes);
         var rightGroups = right.ProjectCurrentCaptures(rightSlots);
+        Pcre2SliceDriver.DetachProjectedGroups(rightGroups, ref right.WorkingInvocation);
         Utf8SliceRunner.ReleaseSlots(rightSlots, ref right.WorkingInvocation);
         Assert.NotSame(leftGroups, rightGroups);
         Assert.Equal((2, 6), (leftGroups[2].StartOffsetInBytes, leftGroups[2].EndOffsetInBytes));

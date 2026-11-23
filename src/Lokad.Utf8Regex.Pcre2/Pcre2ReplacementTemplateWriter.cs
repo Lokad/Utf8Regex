@@ -14,7 +14,6 @@ internal ref struct Pcre2ReplacementTemplateWriter
     private readonly Pcre2NameEntry[] _names;
     private Utf8SliceOutputWriter _writer;
     private Utf8SliceInvocation _invocation;
-    private Pcre2GroupData[] _groups;
     private string? _mark;
     private Pcre2ReplacementRuntimeFrame[] _frames;
     private int _frameCount;
@@ -23,7 +22,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
     internal Pcre2ReplacementTemplateWriter(ReadOnlySpan<byte> input, Pcre2NameEntry[] names,
         Utf8SliceInvocation invocation)
     {
-        _input = input; _names = names; _groups = []; _mark = null;
+        _input = input; _names = names; _mark = null;
         _frames = []; _frameCount = 0; _frameReservation = 0; _writer = default;
         _invocation = invocation;
         try
@@ -40,9 +39,9 @@ internal ref struct Pcre2ReplacementTemplateWriter
     internal void AppendGap(int start, int length) => AppendBytes(_input.Slice(start, length));
 
     internal void AppendTemplate(Pcre2ReplacementPreparation preparation, Pcre2SubstitutionOptions options,
-        Pcre2GroupData[] groups, int matchStart, int matchLength, string? mark)
+        scoped ReadOnlySpan<Pcre2GroupData> groups, int matchStart, int matchLength, string? mark)
     {
-        _groups = groups; _mark = mark; _frameCount = 0;
+        _mark = mark; _frameCount = 0;
         if (preparation.Simple is { } simple)
         {
             foreach (var segment in simple.Segments)
@@ -69,7 +68,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
                 case Pcre2ReplacementOpcode.Literal:
                     AppendReplacementBytes(instruction.Payload, ref state, syntaxOnly); break;
                 case Pcre2ReplacementOpcode.Reference:
-                    AppendResolvedReference(Resolve(instruction), options, ref state, syntaxOnly); break;
+                    AppendResolvedReference(Resolve(instruction, groups), options, ref state, syntaxOnly); break;
                 case Pcre2ReplacementOpcode.Whole:
                     AppendReplacementBytes(_input.Slice(matchStart, matchLength), ref state, syntaxOnly); break;
                 case Pcre2ReplacementOpcode.Prefix:
@@ -79,7 +78,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
                 case Pcre2ReplacementOpcode.Subject:
                     AppendReplacementBytes(_input, ref state, syntaxOnly); break;
                 case Pcre2ReplacementOpcode.Plus:
-                    var last = ResolveLastCapture();
+                    var last = ResolveLastCapture(groups);
                     if (last.Known || (options & Pcre2SubstitutionOptions.UnknownUnset) == 0)
                         AppendResolvedReference(last, options, ref state, syntaxOnly);
                     break;
@@ -97,7 +96,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
                 case Pcre2ReplacementOpcode.Error: ThrowSubstitution((Pcre2ErrorKind)instruction.Argument); break;
                 case Pcre2ReplacementOpcode.Conditional:
                 case Pcre2ReplacementOpcode.Fallback:
-                    var resolution = Resolve(instruction);
+                    var resolution = Resolve(instruction, groups);
                     if (!resolution.Known && (options & Pcre2SubstitutionOptions.UnknownUnset) == 0)
                         ThrowSubstitution(Pcre2ErrorKind.UnknownReplacementGroup);
                     if (instruction.Kind == Pcre2ReplacementOpcode.Fallback && resolution.Known && resolution.Success)
@@ -112,7 +111,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
                     pc = Root(plan, instruction.ThenFragment, state.Quoted);
                     continue;
                 case Pcre2ReplacementOpcode.BackslashDigits:
-                    var digits = ResolveNumber(instruction.Argument);
+                    var digits = ResolveNumber(instruction.Argument, groups);
                     if (digits.Known) { AppendResolvedReference(digits, options, ref state, syntaxOnly); break; }
                     AppendReplacementBytes(instruction.Payload, ref state, syntaxOnly);
                     Push(new(instruction.NextNormal, instruction.NextQuoted, false, syntaxOnly, false, default));
@@ -159,7 +158,7 @@ internal ref struct Pcre2ReplacementTemplateWriter
         catch (InvalidOperationException) when (_invocation.Budget.LimitBreach != Utf8ExecutionLimitKind.None)
         { Pcre2SliceDriver.ThrowIfSliceBreached(_invocation.Budget.LimitBreach); throw; }
     }
-    internal void Release() { ReleaseFrames(); _writer.Release(ref _invocation); _groups = []; _mark = null; }
+    internal void Release() { ReleaseFrames(); _writer.Release(ref _invocation); _mark = null; }
 
     // EOF releases discovery scratch, not its authority. Fund the returned root
     // before acquiring it, and keep the original budget/token/deadline for copying.
@@ -239,21 +238,22 @@ internal ref struct Pcre2ReplacementTemplateWriter
     private static void ThrowSubstitution(Pcre2ErrorKind kind)
         => throw new Pcre2SubstitutionException("Invalid PCRE2 replacement template.", kind);
 
-    private Pcre2ReplacementReferenceResolution Resolve(Pcre2ReplacementInstruction instruction) => instruction.Selector switch
+    private Pcre2ReplacementReferenceResolution Resolve(
+        Pcre2ReplacementInstruction instruction, scoped ReadOnlySpan<Pcre2GroupData> groups) => instruction.Selector switch
     {
-        Pcre2ReplacementSelectorKind.Number => ResolveNumber(instruction.Argument),
-        Pcre2ReplacementSelectorKind.Name => ResolveName(instruction.Payload),
+        Pcre2ReplacementSelectorKind.Number => ResolveNumber(instruction.Argument, groups),
+        Pcre2ReplacementSelectorKind.Name => ResolveName(instruction.Payload, groups),
         _ => new(true, _mark is not null, 0, 0, true)
     };
 
-    private Pcre2ReplacementReferenceResolution ResolveNumber(int number)
+    private static Pcre2ReplacementReferenceResolution ResolveNumber(int number, ReadOnlySpan<Pcre2GroupData> groups)
     {
-        if ((uint)number >= (uint)_groups.Length) return default;
-        var group = _groups[number];
+        if ((uint)number >= (uint)groups.Length) return default;
+        var group = groups[number];
         return new(true, group.Success, group.StartOffsetInBytes, group.EndOffsetInBytes - group.StartOffsetInBytes, false);
     }
 
-    private Pcre2ReplacementReferenceResolution ResolveName(ReadOnlySpan<byte> name)
+    private Pcre2ReplacementReferenceResolution ResolveName(ReadOnlySpan<byte> name, scoped ReadOnlySpan<Pcre2GroupData> groups)
     {
         var known = false;
         foreach (var entry in _names)
@@ -269,16 +269,16 @@ internal ref struct Pcre2ReplacementTemplateWriter
             }
             if (!token.IsEmpty || !candidate.IsEmpty) continue;
             known = true;
-            if ((uint)entry.Number < (uint)_groups.Length && _groups[entry.Number].Success) return ResolveNumber(entry.Number);
+            if ((uint)entry.Number < (uint)groups.Length && groups[entry.Number].Success) return ResolveNumber(entry.Number, groups);
         }
         return known ? new(true, false, 0, 0, false) : default;
     }
 
-    private Pcre2ReplacementReferenceResolution ResolveLastCapture()
+    private Pcre2ReplacementReferenceResolution ResolveLastCapture(scoped ReadOnlySpan<Pcre2GroupData> groups)
     {
-        if (_groups.Length <= 1) return default;
-        for (var index = _groups.Length - 1; index >= 1; index--)
-        { CheckWork(); if (_groups[index].Success) return ResolveNumber(index); }
+        if (groups.Length <= 1) return default;
+        for (var index = groups.Length - 1; index >= 1; index--)
+        { CheckWork(); if (groups[index].Success) return ResolveNumber(index, groups); }
         return new(true, false, 0, 0, false);
     }
 
