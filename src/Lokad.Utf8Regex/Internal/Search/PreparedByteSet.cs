@@ -64,9 +64,10 @@ internal readonly struct PreparedByteSetState(
 
     internal static bool CanScanAsciiMask => Ssse3.IsSupported || AdvSimd.Arm64.IsSupported;
 
-    internal static int ScanAsciiMaskPrefix(ReadOnlySpan<byte> input, ReadOnlySpan<byte> mask)
+    internal static int ScanAsciiMaskPrefix(ReadOnlySpan<byte> input, ReadOnlySpan<byte> mask, bool negated = false)
     {
         var membership = MemoryMarshal.Read<Vector128<byte>>(mask);
+        if (negated) membership = ~membership;
         var last = input.Length - Vector128<byte>.Count;
         var position = 0;
         while (true)

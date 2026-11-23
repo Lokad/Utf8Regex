@@ -1939,8 +1939,8 @@ internal static partial class Utf8SliceRunner
 
     private static int ScanAsciiMask(ReadOnlySpan<byte> window, ReadOnlySpan<byte> mask, bool category, bool negated = false)
     {
-        if (window.Length >= Vector128<byte>.Count && !category && !negated && PreparedByteSetState.CanScanAsciiMask)
-            return PreparedByteSetState.ScanAsciiMaskPrefix(window, mask);
+        if (window.Length >= Vector128<byte>.Count && !category && PreparedByteSetState.CanScanAsciiMask)
+            return PreparedByteSetState.ScanAsciiMaskPrefix(window, mask, negated);
 
         var consumed = 0;
         foreach (var value in window)

@@ -69,6 +69,28 @@ public sealed class Utf8FiniteUriCountTests
         }
     }
 
+    [Theory]
+    [InlineData(15, "\t")]
+    [InlineData(16, "\u2003")]
+    [InlineData(17, "\t")]
+    [InlineData(31, "\u2003")]
+    [InlineData(32, "\t")]
+    [InlineData(63, "\u2003")]
+    [InlineData(64, "\t")]
+    [InlineData(65, "\u2003")]
+    public void NegatedUriRepeatsKeepWideScalarsAndStopAtWhitespace(int asciiRun, string separator)
+    {
+        var first = "x://a" + new string('b', asciiRun) + "😀tail?q=é#片";
+        var input = Encoding.UTF8.GetBytes(first + separator + "y://cd");
+        using var regex = Create(RegexOptions.Compiled, 100000);
+        using var cancellation = new CancellationTokenSource();
+        var match = regex.Match(input, cancellationToken: cancellation.Token);
+        Assert.True(match.Success);
+        Assert.Equal(0, match.StartOffsetInBytes);
+        Assert.Equal(Encoding.UTF8.GetByteCount(first), match.EndOffsetInBytes);
+        Assert.Equal(2, regex.Count(input, cancellation.Token));
+    }
+
     [Fact]
     public void EntireInputValidityAndWorkDenialRemainAuthoritative()
     {
