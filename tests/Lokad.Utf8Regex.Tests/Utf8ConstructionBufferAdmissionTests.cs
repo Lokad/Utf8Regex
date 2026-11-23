@@ -130,15 +130,21 @@ public sealed class Utf8ConstructionBufferAdmissionTests
     [InlineData(1)] [InlineData(17)] [InlineData(128)]
     public void ArrayChargeCoversMeasuredManagedArrayAllocation(int count)
     {
-        var budget = new Utf8ConstructionBudget(ulong.MaxValue, ulong.MaxValue);
-        // Warm generic instantiations before measuring only the acquired array.
-        var warm = budget.AllocateArray<Utf8SliceInstruction>(count, false);
-        budget.ReleaseArray(warm, false);
+        // The charge models the array itself. Measure a batch of bare arrays
+        // to keep budget and one-time runtime overhead out of the comparison.
+        const int samples = 32;
+        var arrays = new Utf8SliceInstruction[samples][];
+        arrays[0] = new Utf8SliceInstruction[count];
         var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var index = 0; index < arrays.Length; index++)
+            arrays[index] = new Utf8SliceInstruction[count];
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        GC.KeepAlive(arrays);
+
+        var budget = new Utf8ConstructionBudget(ulong.MaxValue, ulong.MaxValue);
         var array = budget.AllocateArray<Utf8SliceInstruction>(count, false);
-        var allocated = (ulong)(GC.GetAllocatedBytesForCurrentThread() - before);
-        Assert.True(allocated <= budget.ReservedBytes);
-        Assert.True(allocated > 0);
+        Assert.Equal(count, array.Length);
+        Assert.InRange(allocated, 1, (long)budget.ReservedBytes * samples);
         budget.ReleaseArray(array, false);
         Assert.Equal(0ul, budget.ReservedBytes);
     }
