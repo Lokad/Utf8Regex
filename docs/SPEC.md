@@ -90,6 +90,9 @@ working admission and bounded execution checks. Full viability tables count
 scalars in bounded input blocks to size their arrays, then record each byte
 offset under its row's work admission. A later refusal leaves prior cursor
 results valid.
+Forward closure visits check work and cancellation individually and poll
+the deadline on the engine cadence. The scan checks it directly at scalar
+edges, bulk register copies and final publication.
 
 First-match capture searches in wide programs can use viability rows when the
 suffix is small relative to the number of capture registers. On longer eligible

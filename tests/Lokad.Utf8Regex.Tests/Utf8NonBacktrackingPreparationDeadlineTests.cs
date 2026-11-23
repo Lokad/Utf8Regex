@@ -7,6 +7,39 @@ namespace Lokad.Utf8Regex.Tests;
 public sealed class Utf8NonBacktrackingPreparationDeadlineTests
 {
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WideClosureObservesInterruptionWithinItsPollingCadence(bool expire)
+    {
+        var pattern = string.Concat(Enumerable.Repeat(@"\A", 4096)) + "a";
+        using var regex = new Utf8Regex(pattern, RegexOptions.NonBacktracking);
+        var program = regex.Inspection.AvailableOwnedSliceProgram!;
+        Assert.True(program.Instructions.Length > 2048);
+        long ticks = 0;
+        using var clock = Utf8ExecutionDeadline.UseClockForDiagnostics(() => ticks);
+        using var source = new CancellationTokenSource();
+        var invocation = new Utf8SliceInvocation(Utf8ExecutionLimits.Unlimited, TimeSpan.FromMilliseconds(50), source.Token);
+        Assert.True(invocation.Ledger.TryReserve(13));
+        invocation.CheckpointHook = step =>
+        {
+            if (step != 64) return;
+            if (expire) ticks = 100;
+            else source.Cancel();
+        };
+
+        if (expire)
+            Assert.Throws<Utf8ExecutionDeadlineExpiredException>(() =>
+                Utf8SliceRunner.TryFindFirst(program, "a"u8, 0, [], [], false, ref invocation));
+        else
+            Assert.Equal(source.Token, Assert.Throws<OperationCanceledException>(() =>
+                Utf8SliceRunner.TryFindFirst(program, "a"u8, 0, [], [], false, ref invocation)).CancellationToken);
+
+        Assert.InRange(invocation.Budget.Steps, 64UL, expire ? 2048UL : 64UL);
+        Assert.True(invocation.Budget.PeakWorkingBytes > 13);
+        Assert.Equal(13UL, invocation.Ledger.ReservedBytes);
+    }
+
+    [Theory]
     [InlineData(0, "x")]
     [InlineData(62, "x")]
     [InlineData(63, "😀")]

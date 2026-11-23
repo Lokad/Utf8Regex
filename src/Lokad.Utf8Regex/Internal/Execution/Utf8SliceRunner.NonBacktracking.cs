@@ -208,11 +208,16 @@ internal static partial class Utf8SliceRunner
                     breach = workspace.Project(program, captureStarts, captureEnds, ref invocation);
                     if (breach != Utf8ExecutionLimitKind.None) return new(false, -1, -1, breach);
                     invocation.Budget.ThrowIfCancellationRequested();
+                    invocation.Budget.CheckDeadline();
                     completed = true;
                     return new(true, bestStart, bestEnd, Utf8ExecutionLimitKind.None);
                 }
                 if (!hasScalar || anchored && workspace.Next.Count == 0)
+                {
+                    invocation.Budget.ThrowIfCancellationRequested();
+                    invocation.Budget.CheckDeadline();
                     return new(false, -1, -1, Utf8ExecutionLimitKind.None);
+                }
                 (workspace.Current, workspace.Next) = (workspace.Next, workspace.Current);
                 workspace.Next.Count = 0;
                 position += width;
@@ -347,8 +352,14 @@ internal static partial class Utf8SliceRunner
             var pending = 0;
             while (true)
             {
-                breach = invocation.TryChargeInputStep();
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                // Each visit is fixed work. Bulk register copies check the
+                // deadline before each block, and the scan checks each edge.
+                breach = invocation.TryChargeStep();
+                if (breach != Utf8ExecutionLimitKind.None)
+                {
+                    invocation.Budget.CheckDeadline();
+                    return breach;
+                }
                 invocation.Budget.ThrowIfCancellationRequested();
                 if (!Visited[pc])
                 {
@@ -358,7 +369,11 @@ internal static partial class Utf8SliceRunner
                     {
                         case Utf8SliceInstructionKind.Fork:
                             breach = invocation.Budget.TryNoteDepth((uint)pending + 1);
-                            if (breach != Utf8ExecutionLimitKind.None) return breach;
+                            if (breach != Utf8ExecutionLimitKind.None)
+                            {
+                                invocation.Budget.CheckDeadline();
+                                return breach;
+                            }
                             PendingPcs[pending] = instruction.B == 0 ? instruction.A : pc + 1;
                             breach = Copy(Scratch, PendingRegisters.AsSpan(pending * RegisterCount, RegisterCount), ref invocation);
                             if (breach != Utf8ExecutionLimitKind.None) return breach;
