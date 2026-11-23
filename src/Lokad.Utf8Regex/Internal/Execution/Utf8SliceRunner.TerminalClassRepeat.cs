@@ -636,7 +636,8 @@ internal static partial class Utf8SliceRunner
 
     private static bool TryRunClassRepeatWithoutRewind(Utf8SliceProgram program, int repeatIndex,
         ReadOnlySpan<byte> input, int start, int? requiredEnd, ref Utf8SliceInvocation invocation,
-        out (int EndIndex, Utf8ExecutionLimitKind Breach) outcome, out int continuation, bool existenceOnly)
+        out (int EndIndex, Utf8ExecutionLimitKind Breach) outcome, out int continuation, bool existenceOnly,
+        bool dotTailChecked)
     {
         outcome = (-1, Utf8ExecutionLimitKind.None);
         continuation = 0;
@@ -655,23 +656,13 @@ internal static partial class Utf8SliceRunner
             outcome = RunFixedReverseClassRepeat(program, atom, input, start, repeat.RepeatMinimum, ref invocation);
             return true;
         }
-        if (atom.Kind == Utf8SliceInstructionKind.Dot && instructions[repeat.A - 1].D is > 0 and var packedTail)
+        if (!dotTailChecked && atom.Kind == Utf8SliceInstructionKind.Dot &&
+            instructions[repeat.A - 1].D is > 0 and var packedTail &&
+            !MayMatchPreparedDotTail(instructions, input, start, packedTail, (int)repeat.RepeatMaximum,
+                ref invocation, out var probeBreach))
         {
-            // The repeat cannot cover more than four bytes per scalar.
-            var probeBreach = invocation.TryChargeInputStep();
-            if (probeBreach != Utf8ExecutionLimitKind.None)
-            { outcome = (-1, probeBreach); return true; }
-            Span<byte> prefix = stackalloc byte[8];
-            var tailStart = packedTail >> 4;
-            var width = packedTail & 15;
-            for (var offset = 0; offset < width; offset++)
-                prefix[offset] = (byte)instructions[tailStart + offset].A;
-            var window = input.Slice(start, Math.Min(input.Length - start, (int)repeat.RepeatMaximum * 4 + width));
-            var possible = width == 1 ? window.Contains(prefix[0]) : window.IndexOf(prefix[..width]) >= 0;
-            probeBreach = invocation.TryChargeInputStep();
-            invocation.Budget.ThrowIfCancellationRequested();
-            if (probeBreach != Utf8ExecutionLimitKind.None || !possible)
-            { outcome = (-1, probeBreach); return true; }
+            outcome = (-1, probeBreach);
+            return true;
         }
         if (!existenceOnly &&
             repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 0, RepeatMaximum: long.MaxValue } &&
@@ -986,6 +977,24 @@ internal static partial class Utf8SliceRunner
         }
         outcome = RunClassRepeat(program, repeatIndex, input, start, ref invocation);
         return true;
+    }
+
+    private static bool MayMatchPreparedDotTail(ReadOnlySpan<Utf8SliceInstruction> code, ReadOnlySpan<byte> input,
+        int start, int packedTail, int maximum, ref Utf8SliceInvocation invocation, out Utf8ExecutionLimitKind breach)
+    {
+        breach = invocation.TryChargeInputStep();
+        if (breach != Utf8ExecutionLimitKind.None) return false;
+        Span<byte> prefix = stackalloc byte[8];
+        var tailStart = packedTail >> 4;
+        var width = packedTail & 15;
+        for (var offset = 0; offset < width; offset++)
+            prefix[offset] = (byte)code[tailStart + offset].A;
+        // The repeat cannot cover more than four bytes per scalar.
+        var window = input.Slice(start, Math.Min(input.Length - start, maximum * 4 + width));
+        var possible = width == 1 ? window.Contains(prefix[0]) : window.IndexOf(prefix[..width]) >= 0;
+        breach = invocation.TryChargeInputStep();
+        invocation.Budget.ThrowIfCancellationRequested();
+        return breach == Utf8ExecutionLimitKind.None && possible;
     }
 
     internal static void PrepareScalarRepeatContinuation(Span<Utf8SliceInstruction> code, byte[][] setMasks,

@@ -324,7 +324,7 @@ internal static partial class Utf8SliceRunner
         bool startIsScalarBoundary,
         ref AttemptWorkspace workspace,
         ref Utf8SliceInvocation invocation, bool existenceOnly = false,
-        (int Instruction, int Bytes) verifiedPrefix = default, bool requireFullInput = false)
+        (int Instruction, int Bytes) verifiedPrefix = default, bool requireFullInput = false, bool dotTailChecked = false)
     {
         // Profile cursors can reuse this admitted workspace across candidate
         // attempts while preserving their own empty-match and anchor progress.
@@ -400,7 +400,8 @@ internal static partial class Utf8SliceRunner
                 try
                 {
                     attempt = RunSegment(input, captureStarts, captureEnds, heads, ref current,
-                        false, preserveCaptureTrail: false, ref workspace.Stacks, ref invocation, out _, canStopEarly);
+                        false, preserveCaptureTrail: false, ref workspace.Stacks, ref invocation, out _, canStopEarly,
+                        dotTailChecked ? verifiedPrefix.Instruction : -1);
                 }
                 finally
                 {
@@ -1149,6 +1150,7 @@ internal static partial class Utf8SliceRunner
             if (!TryFindExactFamilyContinuations(program.Instructions, literals, familyContinuations, out prefixContinuation))
                 familyContinuations = default;
         }
+        var splitFamilyTails = prefixContinuation == 0 && !familyContinuations.IsEmpty;
         // A direct beginning anchor already owns bounded line/prefix discovery.
         // Keep one candidate search rather than scanning its prefix twice.
         var (leadingFirst, leadingLast, leadingSecond, leadingSecondLast, leadingScalarIndex, _, sparsePair) = seekLiteral
@@ -1409,6 +1411,27 @@ internal static partial class Utf8SliceRunner
                     if (extra != 0)
                         verifiedPrefix = (prefixContinuation + 5, prefixBytes + extra);
                 }
+                var dotTailChecked = false;
+                if (splitFamilyTails && candidateContinuation != 0)
+                {
+                    var code = program.Instructions;
+                    var repeat = code[candidateContinuation];
+                    if (repeat is { Kind: Utf8SliceInstructionKind.RepeatGreedy, HasSingleAtomBody: true } &&
+                        code[repeat.A - 1].D is > 0 and var packedTail &&
+                        !code[repeat.A].RepeatExitRejectsShorterEndpoints &&
+                        !program.SkipsTerminalRewind(candidateContinuation))
+                    {
+                        // Screen the selected tail before starting an attempt.
+                        if (!MayMatchPreparedDotTail(code, input, position + prefixBytes, packedTail,
+                            (int)repeat.RepeatMaximum, ref invocation, out var probeBreach))
+                        {
+                            if (probeBreach != Utf8ExecutionLimitKind.None) return new(count, probeBreach);
+                            position++;
+                            continue;
+                        }
+                        dotTailChecked = true;
+                    }
+                }
                 // The bounded proof can count a complete ordered endpoint.
                 // An undecided result still enters the scalar matcher.
                 if (proveDecimalMatch && input[position] < 128 &&
@@ -1420,7 +1443,7 @@ internal static partial class Utf8SliceRunner
                 var outcome = provedEnd >= 0
                     ? new Utf8SliceMatchOutcome(true, provedEnd, invocation.TryReserveWorking(0))
                     : TryMatchAt(program, input, position, captureStarts, captureEnds, false, false, true,
-                        ref workspace, ref invocation, verifiedPrefix: verifiedPrefix);
+                        ref workspace, ref invocation, verifiedPrefix: verifiedPrefix, dotTailChecked: dotTailChecked);
                 if (outcome.Breach != Utf8ExecutionLimitKind.None)
                     return new Utf8SliceCountOutcome(count, outcome.Breach);
                 invocation.Budget.ThrowIfCancellationRequested();
@@ -1452,7 +1475,8 @@ internal static partial class Utf8SliceRunner
     private static Utf8SliceMatchOutcome RunSegment(
         ReadOnlySpan<byte> input, int[] captureStarts, int[] captureEnds, int[] balanceHeads,
         ref AssertionCursor cursor, bool resumeFailure, bool preserveCaptureTrail,
-        ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation, out bool suspended, bool existenceOnly = false)
+        ref ChunkedStacks stacks, ref Utf8SliceInvocation invocation, out bool suspended, bool existenceOnly = false,
+        int checkedDotTailAt = -1)
     {
         suspended = false;
         var program = cursor.Program;
@@ -1757,7 +1781,7 @@ internal static partial class Utf8SliceRunner
                             {
                                 ranWithoutRewind = TryRunClassRepeatWithoutRewind(program, programIndex, input,
                                     inputIndex, cursor.RequiredEnd, ref invocation, out repeated, out continuation,
-                                    existenceOnly);
+                                    existenceOnly, checkedDotTailAt == programIndex && inputIndex == cursor.InputIndex);
                             }
                             if (ranWithoutRewind)
                             {
