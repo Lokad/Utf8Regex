@@ -694,10 +694,10 @@ public sealed partial class Utf8Regex : IDisposable
         var outcome = FindOwnedSliceValue(program, input, startByte, ref invocation, _preparedRegex.SearchPlan);
         if (outcome.Breach != Utf8ExecutionLimitKind.None)
             throw new InvalidOperationException("Owned slice execution breached the invocation budget.");
+        if (outcome.Found)
+            return Utf8SliceBufferWork.CreateMatchRange(outcome.StartByte, outcome.EndByte, ref invocation);
         invocation.Budget.ThrowIfCancellationRequested();
-        return outcome.Found
-            ? Utf8SliceBufferWork.CreateMatchRange(outcome.StartByte, outcome.EndByte, ref invocation)
-            : default;
+        return default;
     }
 
     private struct CaptureCheckFrame(Utf8TreeNode node)
