@@ -25,6 +25,13 @@ public sealed class PosixWorkspaceTests
         Assert.Equal(new Utf8CaptureRange(prefixLength, prefixLength + 3), output[1]);
         Assert.Equal(new Utf8CaptureRange(prefixLength + 3, input.Length), output[2]);
         Assert.Equal(0UL, account.Used);
+
+        input[prefixLength / 2] = (byte)'x';
+        Assert.False(regex.Match(input, captures: output, workingMemoryAllowance: account).Success);
+        Assert.False(output[0].Success);
+        Assert.False(output[1].Success);
+        Assert.False(output[2].Success);
+        Assert.Equal(0UL, account.Used);
     }
 
     [Theory]

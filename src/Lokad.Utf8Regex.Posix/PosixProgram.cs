@@ -206,9 +206,25 @@ internal sealed partial class PosixProgram
             else if (instruction.Kind is Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd)
             {
                 var slot = tags[instruction.A];
-                instruction = slot < 0
-                    ? new(Utf8SliceInstructionKind.Jump, index + 1, 0, 0, 0)
-                    : new(instruction.Kind, slot, instruction.B, instruction.C, instruction.D);
+                if (slot >= 0)
+                {
+                    instruction = new(instruction.Kind, slot, instruction.B, instruction.C, instruction.D);
+                    continue;
+                }
+
+                // Outside the skipped repeat bodies, the direct proof permits
+                // no branches into this run of private markers.
+                var destination = index + 1;
+                for (; destination < code.Length; destination++)
+                {
+                    ref var marker = ref code[destination];
+                    if (marker.Kind is not (Utf8SliceInstructionKind.CaptureStart or Utf8SliceInstructionKind.CaptureEnd) ||
+                        tags[marker.A] >= 0) break;
+                    budget.ChargeWork(1);
+                    marker = new(Utf8SliceInstructionKind.Jump, destination + 1, 0, 0, 0);
+                }
+                instruction = new(Utf8SliceInstructionKind.Jump, destination, 0, 0, 0);
+                index = destination - 1;
             }
         }
     }
