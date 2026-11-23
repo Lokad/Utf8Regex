@@ -1125,16 +1125,7 @@ internal static class Pcre2BacktrackingRunner
 
                     case Pcre2BacktrackingInstructionKind.BackreferenceSlotSet:
                         var duplicateSlots = program.BackreferenceSlotSets[instruction.BackreferenceSlotSetId].Slots;
-                        var selectedSlot = 0;
-                        foreach (var slot in duplicateSlots)
-                        {
-                            ref readonly var current = ref captureState[slot];
-                            if (current.Start >= 0 && current.End >= current.Start)
-                            {
-                                selectedSlot = slot;
-                                break;
-                            }
-                        }
+                        var selectedSlot = FindFirstParticipatingCapture(duplicateSlots, captureState, ref budget);
 
                         if (selectedSlot != 0 && TryMatchBackreference(
                                 input,
@@ -1272,7 +1263,7 @@ internal static class Pcre2BacktrackingRunner
                         var conditionMet = condition.Kind switch
                         {
                             Pcre2BacktrackingConditionKind.CaptureSet =>
-                                IsAnyCaptureSet(condition.CaptureSlots, captureState),
+                                FindFirstParticipatingCapture(condition.CaptureSlots, captureState, ref budget) != 0,
                             Pcre2BacktrackingConditionKind.RecursionAny => subroutineCalls.Count != 0,
                             Pcre2BacktrackingConditionKind.RecursionSlot =>
                                 subroutineCalls.Contains(condition.SubroutineSlot, ref budget),
@@ -1762,21 +1753,27 @@ internal static class Pcre2BacktrackingRunner
         }
     }
 
-    private static bool IsAnyCaptureSet(
+    private static int FindFirstParticipatingCapture(
         ReadOnlySpan<int> slots,
-        ReadOnlySpan<Pcre2CaptureState> captureState)
+        ReadOnlySpan<Pcre2CaptureState> captureState,
+        ref Pcre2ResourceBudget budget)
     {
-        foreach (var slot in slots)
+        // The instruction charge admits the first block. Backreferences
+        // compare only the first participating capture in declaration order.
+        for (var offset = 0; offset < slots.Length;)
         {
-            if ((uint)slot < (uint)captureState.Length &&
-                captureState[slot].Start >= 0 &&
-                captureState[slot].End >= captureState[slot].Start)
+            if (offset != 0) budget.ChargeWorkspaceStep();
+            var block = slots.Slice(offset, Math.Min(64, slots.Length - offset));
+            foreach (var slot in block)
             {
-                return true;
+                if ((uint)slot >= (uint)captureState.Length) continue;
+                ref readonly var capture = ref captureState[slot];
+                if (capture.Start >= 0 && capture.End >= capture.Start) return slot;
             }
+            offset += block.Length;
         }
 
-        return false;
+        return 0;
     }
 
     private static int RetainedCallExtent(scoped in Pcre2InvocationStateStack<Pcre2BacktrackingFrame> frames)

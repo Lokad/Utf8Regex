@@ -193,7 +193,8 @@ caller destinations, host retention and metadata queries fall outside
 numeric execution limits. [Shared resource rules](SPEC.md#cancellation-deadlines-and-resource-limits)
 
 `(*ACCEPT)` closes open captures at the current call depth. Wide scans of
-capture slots use bounded work and interruption checkpoints.
+capture slots use bounded work and interruption checkpoints, including
+duplicate-name backreferences and capture conditions.
 
 ### Program and working allowances
 

@@ -8,6 +8,36 @@ namespace Lokad.Utf8Regex.Pcre2.Tests;
 public sealed class Pcre2DuplicateOptionScopeTests
 {
     [Theory]
+    [InlineData(@"\k<x>\z", 8)]
+    [InlineData(@"(?(x)é|x)\z", 10)]
+    public void DuplicateCaptureReadersChargeEachAdditionalBlock(string suffix, int firstBlockWork)
+    {
+        using var live = new CancellationTokenSource();
+        using var firstBlock = Create(63, firstBlockWork);
+        using var denied = Create(64, firstBlockWork);
+        using var twoBlocks = Create(64, firstBlockWork + 1);
+
+        Assert.True(firstBlock.IsMatch("éé"u8, cancellationToken: live.Token));
+        var error = Assert.Throws<Pcre2MatchException>(() => denied.IsMatch("éé"u8, cancellationToken: live.Token));
+        Assert.Equal(Pcre2ErrorKind.MatchLimit, error.ErrorKind);
+        Assert.True(twoBlocks.IsMatch("éé"u8, cancellationToken: live.Token));
+
+        Utf8Pcre2Regex Create(int unused, int work)
+        {
+            var pattern = @"(?J)(?(DEFINE)" + string.Concat(Enumerable.Repeat("(?<x>a)", unused)) + @")\A(?<x>é)" + suffix;
+            return new Utf8Pcre2Regex(pattern, policy: new Utf8RegexPolicy { ResourcePolicy = new() { MaxWorkSteps = (ulong)work } });
+        }
+    }
+
+    [Fact]
+    public void DuplicateBackreferenceKeepsTheFirstParticipatingCapture()
+    {
+        using var regex = new Utf8Pcre2Regex(@"(?J)\A(?<x>é)(?<x>😀)\k<x>\z");
+        Assert.True(regex.IsMatch("é😀é"u8));
+        Assert.False(regex.IsMatch("é😀😀"u8));
+    }
+
+    [Theory]
     [InlineData("(?J:(?<x>a)|(?<x>b))", "b", "b")]
     [InlineData(@"(?J:(?<x>a)|(?<x>b))\k<x>", "bb", "bb")]
     [InlineData(@"(?J:(?<x>😀)|(?<x>é))\k<x>", "éé", "éé")]
