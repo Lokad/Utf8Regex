@@ -121,7 +121,13 @@ public sealed class Pcre2FiniteLanguageCountTests
         Assert.Equal(2, tinyTerminal.Count("ab a"u8)); // The preferred arm can accept without a retry.
         var tiny = Create("((ab)|(a)|(c)|(d))b", new() { HeapLimitInBytes = 1 });
         Assert.Equal(2, tiny.Count("ab ab"u8)); // The bounded proof can resolve this retry.
-        var depth = Create("(?:(a|aa)+)b", new() { DepthLimit = 1 });
+        var proved = Create("(a|aa)+b", new() { DepthLimit = 1 });
+        Assert.Equal(1, proved.Count("aaaab"u8));
+
+        // A backreference observes the repeated capture and requires live retries.
+        const string needsBacktracking = @"(a|aa)+\1b";
+        Assert.Equal(1, Create(needsBacktracking, new()).Count("aaaab"u8));
+        var depth = Create(needsBacktracking, new() { DepthLimit = 1 });
         Assert.Equal(Pcre2ErrorKind.DepthLimit,
             Assert.Throws<Pcre2MatchException>(() => depth.Count("aaaab"u8)).ErrorKind);
     }
