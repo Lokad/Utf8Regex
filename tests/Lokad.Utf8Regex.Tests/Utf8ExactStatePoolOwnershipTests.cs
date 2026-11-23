@@ -9,15 +9,34 @@ public sealed class Utf8ExactStatePoolOwnershipTests
 {
     private readonly record struct HeaderState(long Value);
 
-    [Fact]
-    public void RetainedTypeLoanIncludesItsArrayHeaderAndRounding()
+    [Theory]
+    [InlineData(16)]
+    [InlineData(512)]
+    public void RetainedTypeLoanIncludesItsArrayHeaderAndRounding(int capacity)
     {
         Utf8ExactStatePool.Clear();
         try
         {
-            var items = Utf8ExactStatePool<HeaderState>.Rent(16, true);
+            var items = Utf8ExactStatePool<HeaderState>.Rent(capacity, true);
             Utf8ExactStatePool<HeaderState>.Return(items, true);
-            Assert.Equal(Utf8ConstructionBudget.ArrayBytes<HeaderState>(16), (ulong)Utf8ExactStatePool<HeaderState>.RetainedBytes);
+            Assert.Equal(Utf8ConstructionBudget.ArrayBytes<HeaderState>(capacity), (ulong)Utf8ExactStatePool<HeaderState>.RetainedBytes);
+            Assert.Same(items, Utf8ExactStatePool<HeaderState>.Rent(capacity, false));
+        }
+        finally { Utf8ExactStatePool.Clear(); }
+    }
+
+    [Fact]
+    public void LargerReferenceBearingArraysStayOutsideThePool()
+    {
+        Utf8ExactStatePool.Clear();
+        try
+        {
+            var small = Utf8ExactStatePool<object>.Rent(256, true);
+            var large = Utf8ExactStatePool<object>.Rent(512, true);
+            Utf8ExactStatePool<object>.Return(small, true);
+            Utf8ExactStatePool<object>.Return(large, true);
+            Assert.Equal(Utf8ConstructionBudget.ArrayBytes<object>(256), (ulong)Utf8ExactStatePool<object>.RetainedBytes);
+            Assert.NotSame(large, Utf8ExactStatePool<object>.Rent(512, false));
         }
         finally { Utf8ExactStatePool.Clear(); }
     }

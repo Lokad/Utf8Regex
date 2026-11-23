@@ -55,7 +55,7 @@ internal static class Utf8ExactStatePool
 
     internal static T[] Rent<T>(int capacity, bool retain)
     {
-        if (CanPool(capacity))
+        if (CanPool<T>(capacity))
         {
             var taken = false;
             try
@@ -89,7 +89,7 @@ internal static class Utf8ExactStatePool
 
     internal static void Return<T>(T[] items, bool retain)
     {
-        if (!retain || !CanPool(items.Length)) return;
+        if (!retain || !CanPool<T>(items.Length)) return;
         // Reference arrays are covariant. A pooled leaf must have the exact
         // requested element type so later borrowers can write any T safely.
         if (items.GetType() != typeof(T[])) return;
@@ -154,6 +154,8 @@ internal static class Utf8ExactStatePool
         finally { if (taken) s_gate.Exit(); }
     }
 
-    private static bool CanPool(int capacity)
-        => capacity is >= 8 and <= 256 && BitOperations.IsPow2((uint)capacity);
+    // Larger value-only staging buffers need no graph clearing on return.
+    private static bool CanPool<T>(int capacity)
+        => capacity is >= 8 and <= 512 && BitOperations.IsPow2((uint)capacity) &&
+            (capacity <= 256 || !RuntimeHelpers.IsReferenceOrContainsReferences<T>());
 }
