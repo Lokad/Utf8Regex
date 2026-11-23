@@ -1669,9 +1669,9 @@ internal static partial class Utf8SliceRunner
         continueAt = -1;
         var atom = program.Instructions[atomIndex];
         var continuation = repeat.A + 1;
-        if (repeat.RepeatMaximum == long.MaxValue && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
-            input.Length - position <= Math.Min(32, remaining) && program.SkipsTerminalRewind(atomIndex - 1) &&
-            atom.IsDecimalDigitSet)
+        var repeatMaximum = repeat.RepeatMaximum;
+        if (atom.IsDecimalDigitSet && repeatMaximum == long.MaxValue && repeat.Kind == Utf8SliceInstructionKind.RepeatGreedy &&
+            input.Length - position <= Math.Min(32, remaining) && program.SkipsTerminalRewind(atomIndex - 1))
         {
             // Only a proved greedy endpoint can continue. A wider scalar
             // may still be a decimal digit and needs the original scalar VM.
@@ -1685,20 +1685,21 @@ internal static partial class Utf8SliceRunner
             return true;
         }
 
-        if (repeat.RepeatMaximum > 4)
+        if (repeatMaximum > 4)
         {
-            var available = Math.Min(input.Length - position, repeat.RepeatMaximum);
+            var available = Math.Min(input.Length - position, repeatMaximum);
             var exit = program.Instructions[repeat.A];
             // A greedy run with an unconditional empty tail can keep its
             // longest endpoint. Verify the tail in order for the final range.
             if (repeat.Kind != Utf8SliceInstructionKind.RepeatGreedy || available > remaining ||
-                !(program.SkipsTerminalRewind(atomIndex - 1) || exit.RepeatExitRejectsShorterEndpoints ||
-                    repeat.RepeatMaximum == long.MaxValue && exit.RepeatExitAcceptsEmptyTail))
+                !(exit.RepeatExitRejectsShorterEndpoints ||
+                    repeatMaximum == long.MaxValue && exit.RepeatExitAcceptsEmptyTail ||
+                    program.SkipsTerminalRewind(atomIndex - 1)))
                 return null;
 
             var suffix = input.Slice(position, (int)available);
             int stop;
-            if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMinimum <= 1 && repeat.RepeatMaximum == long.MaxValue)
+            if (atom.Kind == Utf8SliceInstructionKind.Dot && repeat.RepeatMinimum <= 1 && repeatMaximum == long.MaxValue)
                 stop = atom.A == 0 ? suffix.IndexOf((byte)'\n') : -1;
             else if (GetUnfoldedAsciiRange(atom, out var last) is >= 0 and var first)
                 stop = suffix.IndexOfAnyExceptInRange((byte)first, last);
@@ -1720,7 +1721,7 @@ internal static partial class Utf8SliceRunner
                         // The complete suffix is already within the proof's byte
                         // allowance. With no upper count and at most one required
                         // scalar, these byte endpoints suffice after folding.
-                        if (repeat.RepeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1) return null;
+                        if (repeatMaximum != long.MaxValue || repeat.RepeatMinimum > 1) return null;
                         stop = ContinueFoldedAsciiMask(suffix, stop, mask, program.CaseBehavior);
                     }
                 }
@@ -1756,7 +1757,7 @@ internal static partial class Utf8SliceRunner
         }
 
         var minimum = (int)repeat.RepeatMinimum;
-        var maximum = Math.Min(input.Length - position, (int)repeat.RepeatMaximum);
+        var maximum = Math.Min(input.Length - position, (int)repeatMaximum);
         if (maximum > remaining) return true;
         remaining -= maximum;
         var consumed = 0;
@@ -1770,7 +1771,7 @@ internal static partial class Utf8SliceRunner
             var value = input[position + consumed];
             if (value >= 128 && !asciiOnly)
             {
-                if (minimum != repeat.RepeatMaximum || !decimalDigits)
+                if (minimum != repeatMaximum || !decimalDigits)
                     return true;
 
                 // A fixed decimal repeat has one end. Decode the remaining scalars under the same small bound.
