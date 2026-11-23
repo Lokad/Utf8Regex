@@ -98,6 +98,26 @@ public sealed class Utf8ClassPrefixCandidateTests
             slots[1].EndOffsetInBytes - slots[1].StartOffsetInBytes)));
     }
 
+    [Theory]
+    [InlineData(1)] [InlineData(64)] [InlineData(65)]
+    public void PreparedDelimiterSuffixUsesTheAlignedNeedleLength(int length)
+    {
+        var delimiter = new string('!', length);
+        var prefix = "😀é" + delimiter + "a ";
+        const string scheme = "décor";
+        var input = Encoding.UTF8.GetBytes(prefix + scheme + delimiter + "é/");
+        using var regex = Utf8Regex.Compile(@"(?<scheme>[\w]+)" + delimiter + @"[^/\s?#]+[^\s?#]+",
+            policy: new() { ResourcePolicy = Funded });
+
+        var start = Encoding.UTF8.GetByteCount(prefix);
+        Assert.False(regex.IsMatch(input.AsSpan(0, start)));
+        Assert.True(regex.IsMatch(input));
+        Assert.Equal(1, regex.Count(input));
+        Span<Utf8CaptureRange> slots = stackalloc Utf8CaptureRange[2];
+        Assert.Equal(new Utf8CaptureRange(start, input.Length), regex.Match(input, captures: slots));
+        Assert.Equal(new Utf8CaptureRange(start, start + Encoding.UTF8.GetByteCount(scheme)), slots[1]);
+    }
+
     [Fact]
     public void RequiredDelimiterSkipsBroadAsciiStartsAndKeepsCaptures()
     {

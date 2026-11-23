@@ -718,15 +718,12 @@ internal static partial class Utf8SliceRunner
                         return new(false, -1, -1, proofBreach);
                     if (singleWindowAttempt)
                     {
-                        requiredClassSuffix = GetRequiredHybridSuffix(program.Instructions, literalIndex + aligned.Length);
-                        if (existenceOnly && !collectHistory && CanReuseLeadingClassWindow(program, leadingClass, literalIndex))
+                        var proof = program.LeadingClassWindowProof;
+                        requiredClassSuffix = proof.SuffixAfter(aligned.Length);
+                        if (existenceOnly && !collectHistory && proof.CanReusePrefix)
                         {
                             verifiedClassLiteralLength = aligned.Length;
-                            var (firstClass, secondClass) = requiredClassSuffix;
-                            var code = program.Instructions.AsSpan();
-                            proveClassSuffix = secondClass != 0 && secondClass == firstClass + 2 &&
-                                code[secondClass - 1].RepeatMinimum == 1 &&
-                                (code[secondClass + 2].RepeatExitAcceptsEmptyTail || CanAcceptEmptyTail(code, secondClass + 3));
+                            proveClassSuffix = requiredClassSuffix.Second != 0 && proof.CanAcceptAfterPair;
                         }
                     }
                 }
@@ -1223,8 +1220,9 @@ internal static partial class Utf8SliceRunner
                 if (proofBreach != Utf8ExecutionLimitKind.None) return new(count, proofBreach);
                 if (singleWindowAttempt)
                 {
-                    requiredClassSuffix = GetRequiredHybridSuffix(program.Instructions, whitespaceLiteralIndex + aligned.Length);
-                    if (CanReuseLeadingClassWindow(program, leadingClass, whitespaceLiteralIndex))
+                    var proof = program.LeadingClassWindowProof;
+                    requiredClassSuffix = proof.SuffixAfter(aligned.Length);
+                    if (proof.CanReusePrefix)
                         verifiedClassLiteralLength = aligned.Length;
                 }
             }

@@ -572,6 +572,59 @@ internal static partial class Utf8SliceRunner
         return (first, next + 1);
     }
 
+    internal static Utf8SliceClassWindowProof PrepareDirectClassWindow(Utf8SliceProgram program, int leadingClass,
+        int literalIndex, byte literal, Utf8ConstructionBudget budget)
+    {
+        var code = program.Instructions;
+        if (program.ReadsCaptures || program.Assertions.Length != 0 ||
+            code[leadingClass - 1].RepeatMaximum != long.MaxValue)
+            return default;
+
+        budget.ChargeWork(1);
+        ref readonly var atom = ref code[leadingClass];
+        // These masks include the ASCII members of unfolded shorthands.
+        // Category tables and folded classes retain their invocation path.
+        bool? excludes = atom switch
+        {
+            { Kind: Utf8SliceInstructionKind.Hybrid, D: 0 } or { Kind: Utf8SliceInstructionKind.Set, C: 0 }
+                => ((program.SetMasks[atom.A][literal >> 3] & (1 << (literal & 7))) != 0) == (atom.B != 0),
+            { Kind: Utf8SliceInstructionKind.Dot } => atom.A == 0 && literal == '\n',
+            { Kind: Utf8SliceInstructionKind.Shorthand } =>
+                !Utf8SliceScalarClasses.MatchesShorthand(new Rune(literal), (Utf8SliceShorthand)atom.A),
+            _ => null,
+        };
+        if (excludes == false) return new(0, 0, 0, false, false, false);
+
+        // Any shorter aligned needle ends at a literal and cannot supply
+        // the hybrid suffix. Longer needles already decline alignment.
+        var index = literalIndex + 1;
+        for (; index < code.Length && index - literalIndex < 64; index++)
+        {
+            budget.ChargeWork(1);
+            if (code[index] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0, A: >= 0 and < 128 })
+                break;
+        }
+        budget.ChargeWork(12);
+        var (first, second) = GetRequiredHybridSuffix(code, index);
+        var canReuse = leadingClass == 1 && literalIndex == 4 && program.GroupCount == 0 &&
+            code[0] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 };
+        var canAccept = false;
+        if (canReuse && second != 0 && second == first + 2 && code[second - 1].RepeatMinimum == 1)
+        {
+            budget.ChargeWork(1);
+            canAccept = code[second + 2].RepeatExitAcceptsEmptyTail;
+            if (!canAccept)
+            {
+                budget.ChargeWork((ulong)Math.Min(code.Length - second - 3, 32));
+                canAccept = CanAcceptEmptyTail(code, second + 3);
+            }
+        }
+        // The delimiter starts within 64 instructions. The exact needle and
+        // these two single-class nodes keep both offsets within a byte.
+        return new((byte)(index - literalIndex), checked((byte)first), checked((byte)second),
+            canReuse, canAccept, excludes);
+    }
+
     private static byte[][]? GetAlignedDelimiterAlternatives(Utf8SliceProgram program, int index,
         in PreparedSearcher search)
     {
@@ -661,6 +714,12 @@ internal static partial class Utf8SliceRunner
         byte delimiter, ref Utf8SliceInvocation invocation, out bool singleAttempt)
     {
         singleAttempt = false;
+        if (program.LeadingClassWindowProof.ExcludesDelimiter is { } excluded)
+        {
+            var admission = invocation.TryChargeStep();
+            singleAttempt = admission == Utf8ExecutionLimitKind.None && excluded;
+            return admission;
+        }
         if (program.ReadsCaptures || program.Assertions.Length != 0 ||
             program.Instructions[leadingClass - 1].RepeatMaximum != long.MaxValue)
             return Utf8ExecutionLimitKind.None;
@@ -675,10 +734,6 @@ internal static partial class Utf8SliceRunner
         singleAttempt = breach == Utf8ExecutionLimitKind.None && !includesDelimiter;
         return breach;
     }
-
-    private static bool CanReuseLeadingClassWindow(Utf8SliceProgram program, int leadingClass, int literalIndex)
-        => leadingClass == 1 && literalIndex == 4 && program.GroupCount == 0 &&
-            program.Instructions[0] is { Kind: Utf8SliceInstructionKind.RepeatGreedy, RepeatMinimum: 1 };
 
     private static Utf8ExecutionLimitKind TryRewindClassWhitespace(Utf8SliceProgram program,
         ReadOnlySpan<byte> input, int floor, int leadingClass, long gapMaximum, bool directClassLiteral,

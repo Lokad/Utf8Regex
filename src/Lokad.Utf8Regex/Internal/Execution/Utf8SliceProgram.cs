@@ -361,12 +361,21 @@ internal sealed class Utf8SliceAssertion
     internal int InlineLiteralPrefixLength { get; }
 }
 
+internal readonly record struct Utf8SliceClassWindowProof(
+    byte LiteralLength, byte FirstSuffixClass, byte SecondSuffixClass,
+    bool CanReusePrefix, bool CanAcceptAfterPair, bool? ExcludesDelimiter)
+{
+    internal (int First, int Second) SuffixAfter(int length)
+        => length == LiteralLength ? (FirstSuffixClass, SecondSuffixClass) : default;
+}
+
 internal sealed class Utf8SliceProgram
 {
 
     // Conservative carrier allowance; major children have separate admission.
     internal static ulong ObjectBytes =>
-        512 + (ulong)IntPtr.Size + (ulong)Unsafe.SizeOf<(int, byte, byte, byte)>();
+        512 + (ulong)IntPtr.Size + (ulong)Unsafe.SizeOf<(int, byte, byte, byte)>() +
+        (ulong)Unsafe.SizeOf<(long, Utf8SliceClassWindowProof)>() - sizeof(long);
 
     private Utf8SliceProgram(
         Utf8SliceInstruction[] instructions,
@@ -516,10 +525,14 @@ internal sealed class Utf8SliceProgram
         {
             // The class/delimiter shape is independent of the subject and its
             // search plan. Charge for the bounded inspection before it starts.
-            Utf8ConstructionScope.CurrentBudget.ChargeWork((ulong)Math.Min(instructions.Length, 64));
+            var construction = Utf8ConstructionScope.CurrentBudget;
+            construction.ChargeWork((ulong)Math.Min(instructions.Length, 64));
             var literal = Utf8SliceRunner.FindLeadingClassDelimiter(this,
                 out var leadingClass, out var literalIndex, out var gapMaximum, out var direct);
             LeadingClassDelimiter = (literal, leadingClass, literalIndex, gapMaximum, direct);
+            if (direct)
+                LeadingClassWindowProof = Utf8SliceRunner.PrepareDirectClassWindow(
+                    this, leadingClass, literalIndex, (byte)literal, construction);
         }
         var leadingIndex = LeadingByteCandidate.InstructionIndex;
         LeadingScalarIsDecimal = leadingIndex >= 0 && instructions[leadingIndex].IsDecimalDigitSet;
@@ -754,6 +767,7 @@ internal sealed class Utf8SliceProgram
         Instructions[0] is { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 1 };
     internal (int Literal, int LeadingClass, int LiteralIndex, long GapMaximum, bool Direct) LeadingClassDelimiter { get; }
         = (-1, -1, -1, 0, false);
+    internal Utf8SliceClassWindowProof LeadingClassWindowProof { get; }
     internal bool LeadingScalarIsDecimal { get; }
     internal (int Min, int Max, byte Literal) LeadingRepeatLiteralWindow { get; }
     internal (int Min, int Max, byte Literal) FollowingDecimalLiteralWindow { get; }
