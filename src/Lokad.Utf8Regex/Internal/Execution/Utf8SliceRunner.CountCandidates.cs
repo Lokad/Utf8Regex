@@ -1583,7 +1583,7 @@ internal static partial class Utf8SliceRunner
                     if (proveMatch && singleAtom && (minimum != entry.RepeatMaximum ||
                         code[index] is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 }))
                     {
-                        var proof = TryMatchPrefixRepeat(program, input, position, index, entry, ref remaining,
+                        var proof = TryMatchPrefixRepeat(program, input, position, index, in entry, ref remaining,
                             out var end, out var continueAt);
                         if (proof.HasValue)
                         {
@@ -1647,7 +1647,7 @@ internal static partial class Utf8SliceRunner
     // still try their continuations before choosing the next one.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool? TryMatchPrefixRepeat(Utf8SliceProgram program, ReadOnlySpan<byte> input, int position,
-        int atomIndex, Utf8SliceInstruction repeat, ref int remaining, out int acceptedEnd, out int continueAt)
+        int atomIndex, in Utf8SliceInstruction repeat, ref int remaining, out int acceptedEnd, out int continueAt)
     {
         acceptedEnd = -1;
         continueAt = -1;
