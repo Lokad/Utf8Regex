@@ -1440,8 +1440,10 @@ internal static partial class Utf8SliceRunner
                             ? (uint)(value - optionalFirst) > (uint)(optionalLast - optionalFirst)
                             : value >= 128 || (program.SetMasks[optionalAtom.A][value >> 3] & (1 << (value & 7))) == 0)
                             continue;
-                        if (proveMatch && program.SkipsTerminalRewind(repeatIndex))
+                        if (proveMatch && (program.SkipsTerminalRewind(repeatIndex) ||
+                            value != '\n' && code[entry.A].RepeatExitBeforeTerminalDot))
                         {
+                            // The terminal dot reaches the same end with or without this non-LF scalar.
                             position++;
                             continue;
                         }
