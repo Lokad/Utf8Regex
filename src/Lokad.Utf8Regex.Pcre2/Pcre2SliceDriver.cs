@@ -441,8 +441,6 @@ internal static class Pcre2SliceDriver
             invocation.AnchorOriginByte = start.Value;
             for (var position = start.Value; position <= bytes.Length; position++)
             {
-                Array.Fill(slots.Starts, -1);
-                Array.Fill(slots.Ends, -1);
                 var outcome = Utf8SliceRunner.TryMatchAt(
                     program,
                     bytes,

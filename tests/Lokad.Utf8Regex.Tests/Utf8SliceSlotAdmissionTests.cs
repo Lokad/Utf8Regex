@@ -31,12 +31,7 @@ public sealed class Utf8SliceSlotAdmissionTests
                 Assert.Equal(groups, slots.Starts.Length);
                 Assert.Equal(groups, slots.Ends.Length);
                 Assert.Equal(7 + bytes, invocation.Ledger.ReservedBytes);
-                if (groups > 0)
-                {
-                    Assert.NotSame(slots.Starts, slots.Ends);
-                    Assert.All(slots.Starts, value => Assert.Equal(-1, value));
-                    Assert.All(slots.Ends, value => Assert.Equal(-1, value));
-                }
+                if (groups > 0) Assert.NotSame(slots.Starts, slots.Ends);
                 Utf8SliceRunner.ReleaseSlots(slots, ref invocation);
                 Assert.Equal(7UL, invocation.Ledger.ReservedBytes);
             }

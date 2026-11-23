@@ -171,11 +171,9 @@ internal static partial class Utf8SliceRunner
 
         try
         {
-            var starts = new int[groups];
-            var ends = new int[groups];
-            Array.Fill(starts, -1);
-            Array.Fill(ends, -1);
-            slots = new Utf8SliceSlots(starts, ends);
+            // Matching and capture replay install the unset markers before
+            // reading the slots. Renting only admits and allocates storage.
+            slots = new Utf8SliceSlots(new int[groups], new int[groups]);
             return Utf8ExecutionLimitKind.None;
         }
         catch
