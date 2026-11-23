@@ -1475,9 +1475,7 @@ internal static partial class Utf8SliceRunner
                     if (instruction.D != 0)
                     {
                         // This operand describes the complete positive ASCII interval.
-                        var firstByte = (instruction.D & 255) - 1;
-                        var lastByte = instruction.D >> 8;
-                        matches = (uint)(value - firstByte) <= (uint)(lastByte - firstByte);
+                        matches = instruction.MatchesAsciiInterval(value);
                     }
                     else if (value < 128 && instruction.C == 0)
                     {

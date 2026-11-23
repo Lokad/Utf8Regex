@@ -261,11 +261,12 @@ internal static partial class Utf8SliceRunner
             last = (byte)literal.A;
             return literal.A;
         }
-        if (instruction is not { Kind: Utf8SliceInstructionKind.Set, B: 0, C: 0 } set) return -1;
+        if (instruction is not { Kind: Utf8SliceInstructionKind.Set, D: not 0 } set) return -1;
         // Common lowering proves the immutable mask once. The existing operand
         // stores this fact without growing instructions or per-cursor state.
-        last = (byte)(set.D >> 8);
-        return (set.D & 255) - 1;
+        var first = set.AsciiIntervalStart;
+        last = (byte)(first + set.AsciiIntervalWidth - 1);
+        return first;
     }
 
     private static bool IsNonDecimalWideStart(ReadOnlySpan<byte> input, int position)
@@ -1305,12 +1306,9 @@ internal static partial class Utf8SliceRunner
                     if ((uint)position >= (uint)input.Length || input[position] != entry.A) return BranchedPrefixRejected;
                     position++;
                     continue;
-                case Utf8SliceInstructionKind.Set when entry is { B: 0, C: 0, D: not 0 }:
-                    // Exact ASCII intervals already have checked endpoints in the instruction.
-                    var firstByte = (entry.D & 255) - 1;
-                    var lastByte = (byte)(entry.D >> 8);
-                    if ((uint)position >= (uint)input.Length ||
-                        (uint)(input[position] - firstByte) > (uint)(lastByte - firstByte)) return BranchedPrefixRejected;
+                case Utf8SliceInstructionKind.Set when entry.D != 0:
+                    if ((uint)position >= (uint)input.Length || !entry.MatchesAsciiInterval(input[position]))
+                        return BranchedPrefixRejected;
                     position++;
                     continue;
                 case Utf8SliceInstructionKind.Set:

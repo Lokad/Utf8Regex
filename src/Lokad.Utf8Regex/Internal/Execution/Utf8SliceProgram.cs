@@ -230,8 +230,8 @@ internal readonly struct Utf8SliceInstruction
     // A RepeatEnd can mark a proved consuming body for ordered discovery.
     // A leading Beginning anchor records a required first ASCII byte plus one.
     internal int C { get; }
-    // For a positive unfolded Set, packed ASCII interval endpoints:
-    // low byte is first+1, high byte is last; zero means no exact interval.
+    // For a positive unfolded Set, the low byte is the first ASCII byte
+    // and the high byte is the interval width. Zero means no exact interval.
     // A Literal at a fork entry can carry the destination after two equal
     // first literals fail the bounded prefix proof.
     // With negative Fork C, D can hold the packed captured prefix plus one.
@@ -239,6 +239,11 @@ internal readonly struct Utf8SliceInstruction
     // A Beginning or Contiguous anchor stores 1 for the short repeat proof.
     // An absolute Beginning can also store the negated start of a longer proof.
     internal int D { get; }
+
+    internal int AsciiIntervalStart => D & 255;
+    internal int AsciiIntervalWidth => D >> 8;
+    internal bool MatchesAsciiInterval(byte value)
+        => (uint)(value - AsciiIntervalStart) < (uint)AsciiIntervalWidth;
 
     // RepeatExit C records independent proofs about the continuation.
     internal bool RepeatExitRejectsShorterEndpoints => (C & RepeatExitRejectsShorterFlag) != 0;
@@ -1526,8 +1531,9 @@ internal static class Utf8SliceLowerer
             var last = high != 0 ? 127 - BitOperations.LeadingZeroCount(high)
                 : 63 - BitOperations.LeadingZeroCount(low);
             // Equal population and width prove there are no holes.
-            return BitOperations.PopCount(low) + BitOperations.PopCount(high) == last - first + 1
-                ? (last << 8) | (first + 1) : 0;
+            var width = last - first + 1;
+            return BitOperations.PopCount(low) + BitOperations.PopCount(high) == width
+                ? (width << 8) | first : 0;
         }
 
         internal void Emit(Utf8SliceInstruction instruction)
