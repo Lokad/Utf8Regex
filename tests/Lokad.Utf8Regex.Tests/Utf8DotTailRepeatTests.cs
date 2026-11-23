@@ -7,6 +7,22 @@ namespace Lokad.Utf8Regex.Tests;
 
 public sealed class Utf8DotTailRepeatTests
 {
+    [Theory]
+    [InlineData(@"Alpha.{0,25}(?<a>Stop)\k<a>|Beta.{0,25}(?<b>End)\k<b>",
+        "Alpha StopElse! Beta EndEnd! Alpha StopStop!", 2)]
+    [InlineData(@"\b(?:Alpha.{0,25}Stop|Beta.{0,25}End)", "xBeta End! Alpha Stop! Beta End!", 2)]
+    [InlineData(@"Ford.{0,8}End|Fordham.{0,8}Stop", "Fordham Stop! Ford End!", 2)]
+    public void LiteralFamilyCountRespectsDistinctTailsBoundariesAndOverlaps(string pattern, string line, int expected)
+    {
+        var text = string.Concat(Enumerable.Repeat(line + "\n", 12));
+        var bytes = Encoding.UTF8.GetBytes(text);
+        using var regex = new Utf8Regex(pattern, RegexOptions.Compiled, new() { ResourcePolicy = Policy() });
+        using var source = new CancellationTokenSource();
+
+        Assert.Equal(expected * 12, new Regex(pattern, RegexOptions.Compiled).Count(text));
+        Assert.Equal(expected * 12, regex.Count(bytes, source.Token));
+    }
+
     [Fact]
     public void BoundedDotTailKeepsScalarBoundsAndCaptureAcrossBoundary()
     {

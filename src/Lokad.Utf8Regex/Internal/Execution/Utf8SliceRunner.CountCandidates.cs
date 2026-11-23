@@ -9,18 +9,20 @@ namespace Lokad.Utf8Regex.Internal.Execution;
 
 internal static partial class Utf8SliceRunner
 {
-    private static int FindExactFamilyContinuation(ReadOnlySpan<Utf8SliceInstruction> code, byte[][] literals)
+    private static bool TryFindExactFamilyContinuations(ReadOnlySpan<Utf8SliceInstruction> code, byte[][] literals,
+        Span<int> continuations, out int commonContinuation)
     {
         // Prove that the discovery plan covers every arm of one leading fork
         // family. Only one exact arm may match at the same start.
-        // The caller checks a leading boundary before entering the shared tail.
+        // The caller checks a leading boundary before entering the selected tail.
         var index = code[0].Kind == Utf8SliceInstructionKind.Boundary ? 1 : 0;
-        var continuation = 0;
+        commonContinuation = 0;
+        var common = 0;
         var heads = default(Utf8SearchAsciiSet);
         for (var arm = 0; arm < literals.Length; arm++)
         {
             var literal = literals[arm];
-            if (literal.Length is 0 or > 16 || literal[0] >= 128) return 0;
+            if (literal.Length is 0 or > 16 || literal[0] >= 128) return false;
             if (heads.Contains(literal[0]))
             {
                 for (var earlier = 0; earlier < arm; earlier++)
@@ -28,34 +30,37 @@ internal static partial class Utf8SliceRunner
                     var alternate = literals[earlier];
                     var commonLength = Math.Min(literal.Length, alternate.Length);
                     if (literal.AsSpan(0, commonLength).SequenceEqual(alternate.AsSpan(0, commonLength)))
-                        return 0;
+                        return false;
                 }
             }
             heads = heads.With(literal[0]);
 
             var last = arm == literals.Length - 1;
-            var next = continuation;
+            var next = code.Length;
             if (!last)
             {
                 if ((uint)index >= (uint)code.Length ||
                     code[index++] is not { Kind: Utf8SliceInstructionKind.Fork, B: 0, C: 0, D: 0 } fork)
-                    return 0;
+                    return false;
                 next = fork.A;
             }
-            if ((uint)next >= (uint)code.Length || next - index != literal.Length + (last ? 0 : 1)) return 0;
+            if ((uint)next > (uint)code.Length || next - index <= literal.Length) return false;
 
             foreach (var value in literal)
                 if (value >= 128 || code[index++] is not { Kind: Utf8SliceInstructionKind.Literal, B: 0 } atom || atom.A != value)
-                    return 0;
+                    return false;
 
-            if (last) break;
-            if (code[index] is not { Kind: Utf8SliceInstructionKind.Jump, B: 0 } jump ||
-                jump.A <= next || jump.A >= code.Length || continuation != 0 && continuation != jump.A)
-                return 0;
-            continuation = jump.A;
+            // Preserve the existing shared-tail proof for bare literal arms.
+            var tail = !last && index == next - 1 &&
+                code[index] is { Kind: Utf8SliceInstructionKind.Jump, B: 0, C: 0, D: 0 } jump &&
+                jump.A > next && jump.A < code.Length ? jump.A : index;
+            continuations[arm] = tail;
+            if (arm == 0) common = tail;
+            else if (common != tail) common = 0;
             index = next;
         }
-        return continuation;
+        commonContinuation = common;
+        return true;
     }
 
     private static (Utf8SearchAsciiSet Repeated, Utf8SearchAsciiSet Follower) GetExactPrefixRepeatHead(
