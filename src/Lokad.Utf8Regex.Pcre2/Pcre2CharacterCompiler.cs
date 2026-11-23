@@ -1200,24 +1200,15 @@ internal static class Pcre2CharacterRunner
                 return true;
 
             case Pcre2CharacterTokenKind.Any:
-                if (!Pcre2CharacterSemantics.TryDecodeScalar(input, index, out _, out var anyWidth) ||
-                    (token.Options & Pcre2CharacterOptions.DotAll) == 0 &&
-                    Pcre2CharacterSemantics.TryGetNewlineWidth(input, index, request.Settings.Newline, out _))
-                {
-                    return false;
-                }
-
-                nextIndex += anyWidth;
-                return true;
-
             case Pcre2CharacterTokenKind.AnyNotNewline:
-                if (!Pcre2CharacterSemantics.TryDecodeScalar(input, index, out _, out var notNewlineWidth) ||
-                    Pcre2CharacterSemantics.TryGetNewlineWidth(input, index, request.Settings.Newline, out _))
+                if (!Pcre2CharacterSemantics.TryDecodeScalar(input, index, out var scalar, out var width) ||
+                    (token.Kind == Pcre2CharacterTokenKind.AnyNotNewline || (token.Options & Pcre2CharacterOptions.DotAll) == 0) &&
+                    Pcre2CharacterSemantics.GetNewlineWidth(input, index, request.Settings.Newline, scalar, width) != 0)
                 {
                     return false;
                 }
 
-                nextIndex += notNewlineWidth;
+                nextIndex += width;
                 return true;
 
             case Pcre2CharacterTokenKind.NewlineSequence:
@@ -1765,37 +1756,37 @@ internal static class Pcre2CharacterSemantics
         Pcre2NewlineConvention convention,
         out int width)
     {
-        convention = convention == Pcre2NewlineConvention.Default ? Pcre2NewlineConvention.Lf : convention;
-        width = 0;
-        if ((uint)offset >= (uint)input.Length)
-        {
-            return false;
-        }
-
-        if (convention is Pcre2NewlineConvention.Crlf or Pcre2NewlineConvention.Any or Pcre2NewlineConvention.AnyCrlf &&
-            input[offset] == (byte)'\r' && offset + 1 < input.Length && input[offset + 1] == (byte)'\n')
-        {
-            width = 2;
-            return true;
-        }
-
         if (!TryDecodeScalar(input, offset, out var scalar, out var scalarWidth))
         {
+            width = 0;
             return false;
+        }
+
+        width = GetNewlineWidth(input, offset, convention, scalar, scalarWidth);
+        return width != 0;
+    }
+
+    // At a decoded scalar, only CR may need its successor to determine the newline width.
+    internal static int GetNewlineWidth(ReadOnlySpan<byte> input, int offset, Pcre2NewlineConvention convention,
+        Rune scalar, int scalarWidth)
+    {
+        if (scalar.Value == '\r' &&
+            convention is Pcre2NewlineConvention.Crlf or Pcre2NewlineConvention.Any or Pcre2NewlineConvention.AnyCrlf &&
+            offset + 1 < input.Length && input[offset + 1] == (byte)'\n')
+        {
+            return 2;
         }
 
         var matches = convention switch
         {
             Pcre2NewlineConvention.Cr => scalar.Value == '\r',
-            Pcre2NewlineConvention.Lf => scalar.Value == '\n',
-            Pcre2NewlineConvention.Crlf => false,
+            Pcre2NewlineConvention.Default or Pcre2NewlineConvention.Lf => scalar.Value == '\n',
             Pcre2NewlineConvention.AnyCrlf => scalar.Value is '\r' or '\n',
             Pcre2NewlineConvention.Any => IsVerticalSpace(scalar),
             Pcre2NewlineConvention.Nul => scalar.Value == 0,
             _ => false,
         };
-        width = matches ? scalarWidth : 0;
-        return matches;
+        return matches ? scalarWidth : 0;
     }
 
     internal static bool TryGetBsrWidth(ReadOnlySpan<byte> input, int offset, Pcre2BsrConvention convention, out int width)
