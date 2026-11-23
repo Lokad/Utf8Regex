@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Numerics;
 using Lokad.Utf8Regex.Internal.FrontEnd;
 using Lokad.Utf8Regex.Internal.Input;
@@ -202,43 +203,38 @@ internal sealed class Utf8NonBacktrackingSearchState
             var breach = invocation.TryChargeInputStep();
             if (breach != Utf8ExecutionLimitKind.None) return breach;
             var boundaries = new int[(int)count];
-            boundaries[0] = first;
             var bits = new ulong[(int)cells];
-            for (var index = 1; index < boundaries.Length; index++)
-            {
-                if (((index - 1) & 63) == 0)
-                {
-                    breach = invocation.TryChargeInputStep();
-                    if (breach != Utf8ExecutionLimitKind.None) return breach;
-                }
-                boundaries[index] = Utf8SliceRunner.AdvancePastScalar(input, boundaries[index - 1], false);
-                if (boundaries[index] < 0) throw new InvalidOperationException("The NonBacktracking batch requires validated scalar input.");
-            }
             var result = new Utf8NonBacktrackingSearchState(boundaries, bits, stride, reservation);
             var epsilon = singleWord ? default : Utf8SliceRunner.GetWideRegularEpsilonOrder(program);
             var scalar = default(Rune);
+            var edge = input.Length;
             for (var boundary = scalars; boundary >= 0; boundary--)
             {
-                var edge = boundaries[boundary];
+                // Each admitted row also stores its byte offset. The same
+                // decode provides the preceding context and the next offset.
                 var before = default(Rune);
-                if (boundary > 0) _ = Rune.DecodeFromUtf8(input[boundaries[boundary - 1]..], out before, out _);
-                else if (edge != 0) _ = Rune.DecodeLastFromUtf8(input[..edge], out before, out _);
+                var width = 0;
+                if (edge != 0 && Rune.DecodeLastFromUtf8(input[..edge], out before, out width) != OperationStatus.Done)
+                    throw new InvalidOperationException("The NonBacktracking batch requires complete scalars.");
                 if (singleWord)
                 {
                     var following = boundary < scalars ? bits[boundary + 1] : 0;
                     breach = TryBuildPackedRow(program, input, edge, scalar, before, following, ref invocation, out var current);
                     if (breach != Utf8ExecutionLimitKind.None) return breach;
                     bits[boundary] = current;
-                    scalar = before;
-                    continue;
                 }
-                var currentRow = bits.AsSpan(boundary * stride, stride);
-                var followingRow = boundary == scalars ? default : bits.AsSpan((boundary + 1) * stride, stride);
-                breach = Utf8SliceRunner.TryBuildWideRegularRow(program, epsilon, input, edge, scalar, before,
-                    followingRow, currentRow, ref invocation);
-                if (breach != Utf8ExecutionLimitKind.None) return breach;
+                else
+                {
+                    var currentRow = bits.AsSpan(boundary * stride, stride);
+                    var followingRow = boundary == scalars ? default : bits.AsSpan((boundary + 1) * stride, stride);
+                    breach = Utf8SliceRunner.TryBuildWideRegularRow(program, epsilon, input, edge, scalar, before,
+                        followingRow, currentRow, ref invocation);
+                    if (breach != Utf8ExecutionLimitKind.None) return breach;
+                }
+                boundaries[boundary] = edge;
                 // On the next reverse row this preceding scalar is current.
                 // The end row has no current scalar; the physical start has no prior one.
+                edge -= width;
                 scalar = before;
             }
             invocation.Budget.ThrowIfCancellationRequested();

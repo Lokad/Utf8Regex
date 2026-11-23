@@ -19,9 +19,9 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
         using var live = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(1_000_000, 0, 1_000_000), TimeSpan.FromMilliseconds(50), live.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
-        // Size/offset admission plus EOF row align the actual false-literal
+        // Size/allocation admission plus EOF row align the actual false-literal
         // row with step64. It has no separately charged predicate anymore.
-        for (var step = 0; step < (lastRow ? 59 : 57); step++) _ = invocation.TryChargeStep();
+        for (var step = 0; step < (lastRow ? 60 : 59); step++) _ = invocation.TryChargeStep();
         invocation.CheckpointHook = step => { if (step == 64) { if (expire) ticks = 100; else live.Cancel(); } };
         Utf8NonBacktrackingSearchState? table = null;
         if (expire)
@@ -54,7 +54,7 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
             var input = Encoding.UTF8.GetBytes(string.Concat(Enumerable.Repeat(unit, scalars)));
             // Only the last literal can be feasible, and it does not match.
             // Up to three wide mask words fit in one charged batch per row.
-            var steps = (ulong)((input.Length + 63) / 64 + 1 + (scalars + 63) / 64 + scalars + 1);
+            var steps = (ulong)((input.Length + 63) / 64 + 1 + scalars + 1);
             for (ulong limit = 1; limit <= steps; limit++)
             {
                 var invocation = new Utf8SliceInvocation(new(limit, 0, 1_000_000), Timeout.InfiniteTimeSpan, default);
@@ -92,9 +92,9 @@ public sealed class Utf8NonBacktrackingRowAdmissionTests
         using var live = new CancellationTokenSource();
         var invocation = new Utf8SliceInvocation(new(1_000_000, 0, 1_000_000), TimeSpan.FromMilliseconds(50), live.Token);
         Assert.True(invocation.Ledger.TryReserve(13));
-        // Size2 + allocation1 + offsets2, then first and second row admissions.
+        // Two size steps and one allocation step precede the first and second rows.
         // The second admission is step64; there are no atom charges here.
-        for (var step = 0; step < 57; step++) _ = invocation.TryChargeStep();
+        for (var step = 0; step < 59; step++) _ = invocation.TryChargeStep();
         invocation.CheckpointHook = step => { if (step == 64) { if (expire) ticks = 100; else live.Cancel(); } };
         Utf8NonBacktrackingSearchState? table = null;
         if (expire)

@@ -86,8 +86,10 @@ of a malformed tail. Representation and resource failures remain distinct.
 It preserves branch priority, greedy and lazy preference, scalar empty
 progress and the last completed capture in each group. Unsupported syntax
 fails during construction. Viability tables and capture registers use
-working admission and bounded execution checks. A later refusal leaves prior
-cursor results valid.
+working admission and bounded execution checks. Full viability tables count
+scalars in bounded input blocks to size their arrays, then record each byte
+offset under its row's work admission. A later refusal leaves prior cursor
+results valid.
 
 ### Native pattern metadata
 
